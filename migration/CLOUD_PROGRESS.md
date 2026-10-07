@@ -1457,3 +1457,22 @@ full **2,751 PASS, 0 fail/skip/cancel; strict TS exit 0**. A same-test RED/GREEN
 an unexpected post-dispatch watch exception could bypass transport abort/join; cleanup
 now unconditionally aborts and joins all three owned Promises. Original source and
 cancellation-red.log retained; fixed test SHA is in the publication manifest.
+
+## 2026-10-07 — Revalidated HTTP-work dispatch
+
+Connected scheduler/work.rs delivery selection to the existing guarded final,
+commentary, Goal and exact no-turn start-notice paths. Every entry reloads its current
+source head/body bound first; stale hints return without POST. Observed records are
+state work and do not send through this dispatcher. Start delivery now shares one
+owned-notice helper instead of duplicating its receipt/retirement sequence.
+
+Question delivery requires a separate checked UI adapter and re-reads the current
+server generation after loading, as the source does. No unchecked/default question
+sender is supplied and no question authorization is inferred from metadata. This
+module must run in a separately channel-serialized lane; lane task launch, full UI,
+production transport and native cancellation are still unfinished.
+
+Evidence .runtime/cloud-http-work-075: 7 new real SQLite/fake transport cases / 15
+focused, full **2,758 PASS, 0 fail/skip/cancel; strict TS exit 0**. Current/stale final,
+progress branches, legacy Goal refusal, no-turn custody, current-generation checked
+question delegation, Observed no-POST and pre-open integer bound are covered.

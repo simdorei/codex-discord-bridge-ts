@@ -1,15 +1,11 @@
 import {StateAccessFacade as state} from "../../store/state-access-facade.ts";
-import {START_NOTICE_DOMAIN} from "../../store/start-notice-outbox.ts";
+import {START_NOTICE_DOMAIN,type StartNotice} from "../../store/start-notice-outbox.ts";
 import {sendReceiptChunk,type DiscordReceiptTransport} from "./receipt-sender.ts";
 import {attemptAllFinals,deliverFinal,validateCompletionChannel,type FinalDeliveryOptions} from "./final-delivery.ts";
 import {deliverPendingCommentary} from "./commentary-delivery.ts";
 /** No turn is invented; the receipt writer rechecks exact held no-turn custody. */
 export async function deliverStartFailures(path:string,transport:DiscordReceiptTransport):Promise<void>{
-  await attemptAllFinals(await state.pendingStartNotices(path),async notice=>{
-    validateCompletionChannel(notice.channelId);
-    await sendReceiptChunk(path,transport,notice.channelId,{domain:START_NOTICE_DOMAIN,logicalKey:notice.jobId,chunkIndex:0,content:notice.content});
-    await state.completeStartNotice(path,notice.jobId);
-  });
+  await attemptAllFinals(await state.pendingStartNotices(path),notice=>deliverStartNotice(path,notice,transport));
 }
 type Result={ok:true}|{ok:false;error:unknown};
 async function settle(operation:()=>Promise<void>):Promise<Result>{try{await operation();return {ok:true};}catch(error){return {ok:false,error};}}
@@ -23,4 +19,12 @@ export async function deliverPendingOutputs(path:string,options:FinalDeliveryOpt
   const pending=await state.listPendingDeliveries(path);
   const finals=await settle(()=>attemptAllFinals(pending,item=>deliverFinal(path,item,fixed)));
   for(const result of [starts,commentary,finals])if(!result.ok)throw result.error;
+}
+
+/** Capture an owned typed notice before any asynchronous receipt operation. */
+export async function deliverStartNotice(path:string,notice:StartNotice,transport:DiscordReceiptTransport):Promise<void>{
+  const channel=notice.channelId,job=notice.jobId,content=notice.content;
+  validateCompletionChannel(channel);
+  await sendReceiptChunk(path,transport,channel,{domain:START_NOTICE_DOMAIN,logicalKey:job,chunkIndex:0,content});
+  await state.completeStartNotice(path,job);
 }
