@@ -1,3 +1,4 @@
+import {isObservationalRequest} from "./requests.ts";
 import {ClientLifecycle,type ClientAdmissionPermit} from "./client-lifecycle.ts";
 import {requestIdKey,type RequestId} from "../protocol/ids.ts";
 import type {ResponseResult} from "../protocol/rpc.ts";
@@ -16,6 +17,8 @@ export class PendingResponses{
   get size():number{return this.#entries.size;}
   #take(key:string,occurrence?:symbol):Entry|undefined{const entry=this.#entries.get(key);if(entry===undefined||(occurrence!==undefined&&entry.occurrence!==occurrence))return undefined;this.#entries.delete(key);if(entry.timer!==null)clearTimeout(entry.timer);return entry;}
   #settle(entry:Entry,outcome:PendingOutcome|null):void{entry.permit.release();if(outcome===null)entry.reject(new PendingReceiverClosedError());else entry.resolve(Object.freeze(outcome));}
+  /** Production callers derive cancellation behavior from the exact central method profile. */
+  registerForMethod(id:RequestId,permit:ClientAdmissionPermit,waitMilliseconds:number,method:string):PendingRegistration{return this.register(id,permit,waitMilliseconds,isObservationalRequest(method));}
   /** Consumes a verified owned permit, including rejection cleanup. Do not release the old handle. */
   register(id:RequestId,permit:ClientAdmissionPermit,waitMilliseconds:number,observational:boolean):PendingRegistration{
     const ownedPermit=this.#lifecycle.transferPermit(permit);let accepted=false;let registered:{key:string;occurrence:symbol;entry:Entry}|null=null;

@@ -1630,3 +1630,18 @@ owners and an explicit delayed-cleanup test barrier verify no early publication,
 first intent/reason, response settlement, cleanup-failure conservatism and retained
 dead-work evidence. This is a single execution-context coordinator, not a native
 multi-thread/child-exit/kill test or full transport integration.
+
+## 2026-10-07 — Central request profiles and literal app-server builders
+
+Ported requests.rs exact nine-method observational allowlist and all supplied request
+builders. Unknown methods/tool calls stay mutation-conservative. Pending registration
+now offers registerForMethod so production cancellation behavior derives from one
+profile instead of caller guesses. Settings preserve omission versus explicit null,
+effort-clear precedence and unchanged/set/clear service tiers; prompts and expected
+turn IDs remain exact. Constructed parameter graphs are immutable copies.
+
+Evidence .runtime/cloud-app-requests-083: 7 new cases / 18 focused, full **2,826 PASS,
+0 fail/skip/cancel; strict TS exit 0**. All supplied method/time defaults, readonly
+allowlist negatives, settings tri-state, text_elements, immutable inputs and actual
+pending read/mutation disposal are covered. Custom timeout API uses supported native
+integer milliseconds; no nanosecond equivalence, model switch, API call or RPC dispatch.
