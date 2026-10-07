@@ -1375,3 +1375,18 @@ Evidence .runtime/cloud-turn-outcomes-069: 8 new cases, full **2,717 PASS,
 status, duration limits/exponents/-0, structured depth/priority, accessor-free own
 fields, Unicode bound, sorted history and sanitized journal roundtrip. No fresh Rust
 executable differential or live RPC.
+
+## 2026-10-07 — Explicit final text versus legacy fallback
+
+Completed the pinned outcomes.rs text readers and the independent async-message
+classification predicate. History keeps the last explicit final_answer even when
+later commentary exists; only absent explicit text uses the weaker last-agent/empty
+fallback, carrying explicitFinal=false. Async messages are excluded even if their
+choices are malformed. Direct text and supported content blocks follow source trim
+and join rules. Item completion requires original thread/turn IDs and exact phase.
+
+Evidence .runtime/cloud-final-text-070: 6 new cases / 14 focused, full **2,723 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Duplicate-turn first-match, malformed items,
+Unicode trim, legacy fallback and async-not-Final cases are covered. These readers
+preserve evidence strength but do not themselves supersede a stored final journal,
+observe a live stream or authorize a send.

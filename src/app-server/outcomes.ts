@@ -48,3 +48,29 @@ export function completionJournalPayload(completion:TurnCompletion):unknown{
   let status:string;switch(completion.status){case "Completed":status="completed";break;case "Interrupted":status="interrupted";break;case "Failed":status="failed";break;case "InProgress":status="inProgress";break;default:throw new TypeError("Unknown completion status");}
   return {threadId:completion.threadId,turn:{id:completion.turnId,status,durationMs:completion.durationMs,error:{message:completion.errorMessage,codexErrorInfo:completion.status==="Failed"&&completion.usageLimit?"usageLimitExceeded":null}}};
 }
+
+export interface TurnText {readonly text:string;readonly explicitFinal:boolean}
+export interface CompletedFinalAnswer {readonly threadId:string;readonly turnId:string;readonly text:string}
+/** Classification is independent of whether async choices are valid/renderable. */
+export function isAsyncAgentMessage(item:unknown):boolean{return (get(item,"type")==="agentMessage"||get(item,"type")==="agent_message")&&get(item,"delivery")==="async";}
+function agentMessageText(item:unknown):string{
+  const direct=text(get(item,"text"));if(direct!=="")return direct;const content=get(item,"content");if(!Array.isArray(content))return "";
+  const parts:string[]=[];for(const block of content){const type=get(block,"type"),value=get(block,"text");if((type==="output_text"||type==="text")&&typeof value==="string")parts.push(value);}
+  return trim(parts.join("\n"));
+}
+/** History fallback is explicitly weaker than a final_answer; caller preserves that distinction. */
+export function extractTurnText(result:unknown,expectedThreadId:string,expectedTurnId:string):TurnText{
+  const thread=get(result,"thread");if(!object(thread))throw new TurnOutcomeError("InvalidThread");if(text(get(thread,"id"))!==expectedThreadId)throw new TurnOutcomeError("DifferentThread");
+  const turns=get(thread,"turns");if(!Array.isArray(turns))throw new TurnOutcomeError("InvalidTurns");const turn=turns.find(t=>text(get(t,"id"))===expectedTurnId);if(turn===undefined)throw new TurnOutcomeError("TurnNotFound");
+  const items=get(turn,"items");if(!Array.isArray(items))throw new TurnOutcomeError("InvalidItems");let fallback="",final="";
+  for(const item of items){const type=get(item,"type");if((type!=="agentMessage"&&type!=="agent_message")||isAsyncAgentMessage(item))continue;
+    const message=agentMessageText(item);if(message==="")continue;fallback=message;if(get(item,"phase")==="final_answer")final=message;
+  }
+  return Object.freeze({text:final!==""?final:fallback,explicitFinal:final!==""});
+}
+export function extractTurnFinalText(result:unknown,thread:string,turn:string):string{return extractTurnText(result,thread,turn).text;}
+export function extractCompletedFinalAnswer(params:unknown):CompletedFinalAnswer|null{
+  const item=get(params,"item"),type=get(item,"type");if((type!=="agentMessage"&&type!=="agent_message")||isAsyncAgentMessage(item)||get(item,"phase")!=="final_answer")return null;
+  const threadId=text(get(params,"threadId")),turnId=text(get(params,"turnId")),message=agentMessageText(item);if(threadId===""||turnId===""||message==="")return null;
+  return Object.freeze({threadId,turnId,text:message});
+}
