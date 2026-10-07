@@ -1817,3 +1817,25 @@ Also covered close-after-initialized-before-commit, observer installation failur
 cancellation, cleanup/disposer failures and already-aborted ownership cleanup. No child
 process or actual pipe was spawned; cleanupOwned remains a mandatory native-owner contract,
 not a stubbed proof of process reaping or native background task termination.
+
+## 2026-10-07 — Frozen Tokio authority recovered and fatal UTF-8 line reader
+
+Resolved the earlier dependency-source limitation through the official tokio 1.53.1 crate,
+without installing/running it. Archive SHA256 exactly matches frozen Cargo.lock:
+202caea871b69668250d242070849eb495be178ed697a3e98aebce5bc81a0bed.
+Read exact lines.rs, read_line.rs and read_until.rs; binding and archive retained under
+.runtime/authority-tokio-1.53.1. Official source:
+https://static.crates.io/crates/tokio/tokio-1.53.1.crate
+
+Ported LF/CRLF framing, EOF tail handling, BOM preservation and fatal UTF-8 decoding over
+borrowed byte input. Decode each complete line, not a whole incoming chunk, so invalid
+later bytes do not erase an earlier valid line. I/O error takes precedence over invalid
+incomplete buffered bytes. Captured chunks are owned copies. Concurrent reads reject.
+Error-terminal behavior is scoped to transport drains (which stop on first error), not
+generic Tokio Lines recovery/cancellation parity. No new per-line size cap was invented.
+
+Evidence .runtime/cloud-line-reader-093: 10 focused PASS, full **2,909 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Every byte split of Korean/emoji/BOM, overlong and
+surrogate/out-of-range/truncated UTF-8, CRLF vs lone EOF CR, I/O precedence, buffer reuse,
+empty/long input and an actual Node Readable stream covered. No child process or live
+pipe ran; native byte-source ownership/cancellation remains to be wired and tested.
