@@ -1,0 +1,47 @@
+# Cloud migration checkpoint
+
+## Baseline
+
+- TS snapshot: `47d0f7f9a3c75a6ec94b38833cd1992740efaeb3`.
+- User-approved remote Rust authority: `release/stabilization-held-20261002`,
+  commit `4e213aa69dc89bed1552d8b83e12471d7664b7ae`.
+- This replaces the unavailable local frozen source for new work. It is not a
+  claim that every previous unit has been revalidated against this commit.
+- Linux Node 24.21.0: baseline 2,061 tests passed, zero failed/skipped; strict TS passed.
+- From this checkpoint, implementation and review are performed directly by SSS
+  at the user's request. AGY is not the author of the changes below.
+
+## Borrowed async admission coordinator
+
+`src/store/async-resolution-admission.ts` implements the unsettled query,
+lifecycle admission loop, and policy/unsettled/lifecycle/legacy coordinator.
+Authority: `crates/cdr-store/src/async_resolution.rs` (`held_in`) and
+`async_resolution/lifecycle.rs` (`admission_held_in`) at the commit above.
+
+The lifecycle query projects CASE-result storage class and bytes rather than
+TEXT to prevent Node's eager row conversion from decoding an unused outcome or
+the 129th row. It retains the SQL byte limit, filters, order, and LIMIT. Text is
+decoded only when needed using the existing SQLite encoding decoder; encoding
+is read lazily once per invocation. Ordinary records skip outcome conversion.
+Native SQLite prepare/step errors propagate. Typed text conversion failures use
+the existing TS StoreIntegrityError taxonomy; Rust exception class/message
+identity is not claimed.
+
+Validation: 14 new in-memory SQLite tests; full Linux suite 2,075 passed, zero
+failed/skipped; strict TypeScript passed. Tests include invalid UTF-8, SQL types,
+CASE NULL, UTF-8/UTF-16LE/UTF-16BE byte boundaries, 128/129 rows, control precedence,
+refusal disposition, thread/owner filters, error masking, query-only reads and
+caller transaction rollback. Diagnostic fixtures intentionally allow corrupt
+types/NULL; they do not claim full production-schema reachability.
+The raw UTF-16 test reuses all 22 retained Rust observations from
+`migration/oracles/sqlite-utf16-0.40.2/decoded-results.json` through the new
+lifecycle query. These are reused historical observations, not a fresh Rust run.
+
+Remaining: fresh cross-language differential execution, complete raw malformed
+UTF-16 matrix, owned-path wrappers, caller/runtime wiring, actual Discord/Codex
+transport, Windows restart/end-to-end validation. A Rust toolchain installation
+attempt's execution approval was cancelled; no fresh Rust oracle run is claimed.
+No deployment, live database, credential, hook, or existing source changes.
+
+Local logs: `.runtime/cloud-baseline-20261007/` and
+`.runtime/cloud-admission-001/` (ignored execution evidence, not source artifacts).
