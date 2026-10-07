@@ -1403,3 +1403,17 @@ Evidence .runtime/cloud-goal-status-071: 5 new cases / 24 focused, full **2,728 
 0 fail/skip/cancel; strict TS exit 0**. All status spellings, missing/null goal,
 validation precedence, get/update identity distinction, optional turn and NEL/BOM
 semantics pass. These pure parsers do not perform Goal RPC or change queue state.
+
+## 2026-10-07 — Bounded commentary stream buffer
+
+Ported commentary_stream.rs with 128 active items and 16KiB UTF-8 scalar-safe retained
+summary text per item. Completion removes its exact thread/turn/item buffer before
+classification. Only completed camel-case agentMessage/commentary text emits;
+reasoning summaries, final answers and async-question messages do not become progress
+replies. Output comes from the completed item, never retained reasoning deltas.
+
+Evidence .runtime/cloud-commentary-stream-072: 6 new cases, full **2,734 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Tests cover scalar byte boundaries, capacity,
+exact turn discard, tuple-key separation, empty-delta behavior and excluded message
+classes. Diagnostic retainedSummaryBytes excludes key/map overhead and is not a total
+heap bound; live event charging, producer connection and scheduler remain unfinished.
