@@ -20,6 +20,7 @@ export class NotificationState{
   get retainedCount():number{return this.#notifications.length;}
   get hasActiveTurns():boolean{return this.#active.size>0;}
   activeTurnId(thread:string):string|null{return this.#active.get(thread)??null;}
+  activeTurnIdentities():readonly {readonly threadId:string;readonly turnId:string}[]{return Object.freeze([...this.#active].map(([threadId,turnId])=>Object.freeze({threadId,turnId})).sort((a,b)=>Buffer.compare(Buffer.from(a.threadId),Buffer.from(b.threadId))||Buffer.compare(Buffer.from(a.turnId),Buffer.from(b.turnId))));}
   close():void{this.#closed=true;}
   record(input:AppNotification):void{
     const notification=copy(input),next=nextNotificationRevision(this.#revision);this.#revision=next.revision;this.#exhausted||=next.exhausted;

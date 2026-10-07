@@ -1542,3 +1542,49 @@ Evidence .runtime/cloud-notification-state-078: 11 new cases / 21 focused, full
 fixed-window duplicate occurrences, eviction/oversize positions, settings invalidation,
 immutable copies and getter refusal pass. u64 exhaustion is tested at the pure checked
 increment boundary, not by generating 2^64 live events. No idle release or process action.
+
+## 2026-10-07 — Composed client runtime state and dead-work snapshot
+
+Added one client-state owner over notification and server-request state. Lifecycle
+snapshots preserve initialized/PID/closed predicates and client generation 0→1 at a
+TRUSTED startup commit, which still requires the future open-lifecycle/handshake parent.
+Canonical close reason is first-wins. Pending approval/input selectors retain exact
+method/MCP URL-mode rules and exclude claimed/deferred requests.
+
+Closed-work snapshots sort active thread/turn pairs by UTF-8 and requests by typed ID
+(integer before string) then occurrence bytes, including pending, responding,
+indeterminate and deferred evidence. Snapshot creation does not clear anything.
+Native exit proof, durable fence serialization/commit, exact-match clearing and
+resident replacement remain unavailable; PID or closed status is not exit authority.
+Unbound observation windows still require a parent identity binding.
+
+Evidence .runtime/cloud-client-runtime-state-079: 6 new cases / 27 focused, full
+**2,794 PASS, 0 fail/skip/cancel; strict TS exit 0**. Lifecycle predicates, canonical
+reason, preserved uncertain work, deterministic ordering, pending-only selectors,
+settings invalidation and immutable snapshots pass. No app-server process started.
+
+## 2026-10-07 — Client lifecycle permits and close-signal primitive
+
+Ported client/lifecycle.rs admission count, sealing, quiescent predicate, open-only
+synchronous actions, first close intent and separate close publication/waiting.
+Opaque permits are owner-bound and explicitly/idempotently released. Callback failure
+poisons new admission while existing permits remain releasable, preserving the source
+fail-closed intent with a TS error instead of a native poisoned Mutex panic. Promise
+callbacks are unsupported and rejected/drained; this does not cancel arbitrary work
+a caller may have launched. Callbacks must be trusted, synchronous and non-reentrant.
+
+IMPORTANT publication reconciliation: staged 079 was not published separately.
+Reading transport.rs showed actual closure also clears initialized and process_id.
+Those flags and their regression oracle were corrected before this combined 079/080
+publication; old candidate/source/test evidence remains retained. Generation and
+unsettled work remain preserved. Clearing a PID field is not OS exit proof.
+
+publishClosed requires a sealed gate and remains a TRUSTED winning-closer operation
+AFTER pending-response cleanup. Winner coordination and pending registry integration
+are not yet supplied. No live process, response or close signal outside tests.
+
+Evidence .runtime/cloud-client-lifecycle-080: 9 new lifecycle cases / 15 focused with
+reconciled runtime snapshot tests, full **2,803 PASS, 0 fail/skip/cancel; strict TS
+exit 0**. Quiescence short-circuit, permit ownership/cleanup, poisoned admission,
+reentry, intent/publication separation, waiter abort cleanup and unsupported async
+checks pass. Native cross-thread lock and Rust Drop equivalence remain unverified.
