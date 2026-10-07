@@ -1,3 +1,4 @@
+import * as ObservedCompletion from "../../src/store/observed-completion.ts";
 import * as Delivery from "../../src/store/delivery.ts";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -28,6 +29,7 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.recordObservedCompletionForResident, ObservedCompletion.recordObservedCompletionForResident);
     assert.strictEqual(StateAccessFacade.stageOwnedQueueCompletion, Delivery.stageOwnedQueueCompletion);
     assert.strictEqual(StateAccessFacade.enqueue, QueueEnqueue.enqueue);
     assert.strictEqual(
@@ -89,6 +91,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "markRunningIfClaimed",
       "markRunningWithResidentIfClaimed",
       "openCheckedRead",
+      "recordObservedCompletionForResident",
       "recordPreflightFailure",
       "recordStartFailureIfClaimed",
       "stageOwnedQueueCompletion",
@@ -96,7 +99,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected);
-    assert.strictEqual(actual.length, 19);
+    assert.strictEqual(actual.length, 20);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

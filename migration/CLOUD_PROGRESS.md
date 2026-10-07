@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **2,212 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **2,222 tests passed**, no failures/skips;
 strict TypeScript passed. Migration and Windows/live transport validation remain incomplete.
 
 ## Baseline
@@ -242,3 +242,27 @@ Still incomplete: resident notification proof producer/candidate capture, Goal
 progress and handoff writer, authoritative recovery, intake promotion, actual
 Discord delivery/transport workers, centralized runtime error handlers, Windows
 and live process validation. No Rust differential execution, merge or deployment.
+
+
+## Resident notification proof producer and raw journal
+
+Ported terminal notification capture and its lifetime-bounded diagnostic
+candidates (8 unverified, 1 conflict, 2 replaced). Exact accepted evidence uses
+Rust struct declaration order. Duplicate accepted observations do not rewrite
+proof; conflicting accepted outcomes persist their conflict before throwing.
+Invalid old proofs are retained byte-for-byte before replacement, and a full
+retention budget blocks replacement rather than discarding evidence.
+
+The live-resident raw journal producer preserves Rust's two-transaction order:
+proof capture commits first; a separate writer transaction rechecks live owner,
+accepted proof and canonical notification before recording raw payload/resident.
+A failure of the second transaction does not erase accepted proof. Exact Stop
+control and server-response terminal hooks run in that journal transaction.
+Recovery must not invoke this producer to manufacture resident provenance.
+
+New tests cover typed proof field order, foreign diagnostics, conflict persistence,
+lifetime replacement capacity, lost proof CAS rollback, proof-survives-journal-
+failure retry, Stop hold disposition, response custody and resident stamping of
+only byte-matching raw observations. Full Linux suite: 2,222 PASS, zero failed/
+skipped; strict TypeScript PASS. Logs: `.runtime/cloud-resident-proof-012/final/`.
+The live Codex notification adapter itself is not connected yet.

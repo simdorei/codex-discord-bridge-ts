@@ -1,3 +1,4 @@
+import * as ObservedCompletion from "./observed-completion.ts";
 import * as Delivery from "./delivery.ts";
 import { CheckedRead } from "./owned-driver.ts";
 import * as MutationAttempt from "./mutation-attempt.ts";
@@ -9,6 +10,8 @@ import * as ExecutionHold from "./execution-hold.ts";
 import * as QueueClaims from "./queue-claims.ts";
 import * as DeadGeneration from "./dead-generation-admission.ts";
 import * as Preflight from "./queue-preflight-failure.ts";
+
+export const recordObservedCompletionForResident: typeof ObservedCompletion.recordObservedCompletionForResident = ObservedCompletion.recordObservedCompletionForResident;
 
 export const stageOwnedQueueCompletion: typeof Delivery.stageOwnedQueueCompletion = Delivery.stageOwnedQueueCompletion;
 
@@ -45,6 +48,7 @@ export const openCheckedRead: typeof CheckedRead.open =
   CheckedRead.open;
 
 export interface IStateAccessFacade {
+  readonly recordObservedCompletionForResident: typeof ObservedCompletion.recordObservedCompletionForResident;
   readonly stageOwnedQueueCompletion: typeof Delivery.stageOwnedQueueCompletion;
   readonly deadTargetHeld: typeof DeadGeneration.targetIsHeld;
   readonly recordPreflightFailure: typeof Preflight.recordPreflightFailure;
@@ -69,6 +73,7 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  recordObservedCompletionForResident,
   stageOwnedQueueCompletion,
   deadTargetHeld,
   recordPreflightFailure,

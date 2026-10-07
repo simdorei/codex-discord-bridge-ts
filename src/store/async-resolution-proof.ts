@@ -66,3 +66,9 @@ export function decodeTerminalProof(row: ProofBinding, owner: ExecutionOwner, ra
       evidence.payload_sha256 !== sha256SerdeValue(metadata)) return null;
   return evidence;
 }
+
+/** Rust derives serialize struct fields in declaration order, unlike Value maps. */
+export function serializeTerminalEvidence(evidence: TerminalEvidence): string {
+  return "{" + TERMINAL.fields.map(([key]) => serializeSerdeValue(key) + ":" +
+    serializeSerdeValue(evidence[key as keyof TerminalEvidence])).join(",") + "}";
+}

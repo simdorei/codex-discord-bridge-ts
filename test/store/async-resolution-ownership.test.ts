@@ -228,3 +228,89 @@ test("owned outbox completion combines settlement and queue deletion in one roll
     assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_idle_release").get()?.n,fail?0:1);
   });
 });
+import { recordAsyncTerminalNotification, asyncJournalObservationAllowedIn } from "../../src/store/async-resolution-terminal.ts";
+const payload=(status="completed")=>JSON.stringify({threadId:"target",turn:{id:"turn",status}});
+test("resident producer creates exact typed proof and enables later journal authorization",async()=>{
+  await fixture(async(db,row,path)=>{
+    assert.equal(asyncJournalObservationAllowedIn(db,"target","turn",1n,"resident",payload()),false);
+    await recordAsyncTerminalNotification(path,"target","turn",1n,"resident",payload());
+    const raw=db.prepare("SELECT terminal_proof_json FROM cdr_async_execution_obligations").get()?.terminal_proof_json;
+    assert.equal(typeof raw,"string");
+    assert.ok((raw as string).startsWith('{"version":1,"source":"resident_notification_v1","observer":"resident","generation":1,"thread_id":"target","turn_id":"turn","canonical_terminal":'));
+    assert.ok((raw as string).endsWith('"revision":7,"owner_verified":true}'));
+    assert.equal(asyncJournalObservationAllowedIn(db,"target","turn",1n,"resident",payload()),true);
+    assert.equal(asyncJournalObservationAllowedIn(db,"target","turn",1n,"other",payload()),false);
+    await recordAsyncTerminalNotification(path,"target","turn",1n,"resident",payload());
+    assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_async_terminal_candidates").get()?.n,0);
+    await state.stageOwnedQueueCompletion(path,selectJob(db,"saved"),"final",5,release);
+    assert.equal(db.prepare("SELECT execution_state FROM cdr_async_execution_obligations").get()?.execution_state,"terminal");
+  });
+});
+test("conflicting accepted notification commits one conflict and keeps the accepted proof before throwing",async()=>{
+  await fixture(async(db,row,path)=>{
+    await recordAsyncTerminalNotification(path,"target","turn",1n,"resident",payload());
+    const original=db.prepare("SELECT terminal_proof_json FROM cdr_async_execution_obligations").get()?.terminal_proof_json;
+    await assert.rejects(()=>recordAsyncTerminalNotification(path,"target","turn",1n,"resident",payload("failed")),/conflicting accepted terminal/);
+    await assert.rejects(()=>recordAsyncTerminalNotification(path,"target","turn",1n,"resident",payload("interrupted")),/conflicting accepted terminal/);
+    assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_async_terminal_candidates WHERE kind='conflict'").get()?.n,1);
+    assert.equal(db.prepare("SELECT terminal_proof_json FROM cdr_async_execution_obligations").get()?.terminal_proof_json,original);
+    assert.equal(asyncJournalObservationAllowedIn(db,"target","turn",1n,"resident",payload()),false);
+  });
+});
+test("foreign observations are bounded diagnostics and cannot become accepted proof",async()=>{
+  await fixture(async(db,row,path)=>{
+    for(let i=0;i<12;i++) await recordAsyncTerminalNotification(path,"target","turn",BigInt(i+2),"other",payload());
+    assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_async_terminal_candidates WHERE kind='unverified'").get()?.n,8);
+    assert.equal(db.prepare("SELECT terminal_proof_json FROM cdr_async_execution_obligations").get()?.terminal_proof_json,null);
+    await recordAsyncTerminalNotification(path,"target","turn",1n,"resident",payload());
+    assert.equal(asyncJournalObservationAllowedIn(db,"target","turn",1n,"resident",payload()),true);
+  });
+});
+test("invalid proof replacement preserves exact bytes and stops when lifetime retention is full",async()=>{
+  await fixture(async(db,row,path)=>{
+    for(let i=0;i<3;i++) {
+      const raw="invalid-proof-"+i;
+      db.prepare("UPDATE cdr_async_execution_obligations SET terminal_proof_json=?").run(raw);
+      const op=recordAsyncTerminalNotification(path,"target","turn",1n,"resident",payload());
+      if(i<2) await op; else await assert.rejects(()=>op,/existing invalid proof must be retained/);
+      if(i===2) assert.equal(db.prepare("SELECT terminal_proof_json FROM cdr_async_execution_obligations").get()?.terminal_proof_json,raw);
+    }
+    assert.deepEqual(db.prepare("SELECT evidence_text FROM cdr_async_terminal_candidates WHERE kind='replaced' ORDER BY evidence_text").all().map(r=>r.evidence_text),["invalid-proof-0","invalid-proof-1"]);
+  });
+});
+test("unmatched notification skips observer and payload interpretation; matching invalid observer rejects",async()=>{
+  await fixture(async(db,row,path)=>{
+    await assert.doesNotReject(()=>recordAsyncTerminalNotification(path,"target","other",-1n,"","not json"));
+    await assert.rejects(()=>recordAsyncTerminalNotification(path,"target","turn",-1n,"","not json"),/observer identity is invalid/);
+    assert.equal(db.prepare("SELECT terminal_proof_json FROM cdr_async_execution_obligations").get()?.terminal_proof_json,null);
+  });
+});
+test("lost proof CAS rolls back candidate retention instead of partially replacing evidence",async()=>{
+  await fixture(async(db,row,path)=>{
+    db.exec("UPDATE cdr_async_execution_obligations SET terminal_proof_json='invalid'; CREATE TRIGGER test_ignore_proof BEFORE UPDATE OF terminal_proof_json ON cdr_async_execution_obligations BEGIN SELECT RAISE(IGNORE); END");
+    await assert.rejects(()=>recordAsyncTerminalNotification(path,"target","turn",1n,"resident",payload()),/accepted terminal proof lost/);
+    assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_async_terminal_candidates").get()?.n,0);
+    assert.equal(db.prepare("SELECT terminal_proof_json FROM cdr_async_execution_obligations").get()?.terminal_proof_json,"invalid");
+  });
+});
+test("live resident journaling preserves proof across later journal failure, then safely retries",async()=>{
+  await fixture(async(db,row,path)=>{
+    db.exec("CREATE TRIGGER test_journal_failure BEFORE INSERT ON codex_observed_completions BEGIN SELECT RAISE(ABORT,'journal failed'); END");
+    await assert.rejects(()=>state.recordObservedCompletionForResident(path,"target","turn",1n,payload(),"resident"),/journal failed/);
+    assert.equal(typeof db.prepare("SELECT terminal_proof_json FROM cdr_async_execution_obligations").get()?.terminal_proof_json,"string");
+    assert.equal(db.prepare("SELECT count(*) AS n FROM codex_observed_completions").get()?.n,0);
+    db.exec("DROP TRIGGER test_journal_failure");
+    assert.equal(await state.recordObservedCompletionForResident(path,"target","turn",1n,payload(),"resident"),true);
+    assert.equal(db.prepare("SELECT resident_owner FROM codex_observed_completions").get()?.resident_owner,"resident");
+    assert.equal(await state.recordObservedCompletionForResident(path,"target","turn",1n,payload(),"resident"),false);
+    await state.stageOwnedQueueCompletion(path,selectJob(db,"saved"),"final",5,release);
+    assert.equal(db.prepare("SELECT count(*) AS n FROM codex_observed_completions").get()?.n,0);
+  });
+});
+test("foreign resident notification remains diagnostic and cannot enter the owned journal",async()=>{
+  await fixture(async(db,row,path)=>{
+    assert.equal(await state.recordObservedCompletionForResident(path,"target","turn",1n,payload(),"foreign"),false);
+    assert.equal(db.prepare("SELECT count(*) AS n FROM codex_observed_completions").get()?.n,0);
+    assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_async_terminal_candidates WHERE kind='unverified'").get()?.n,1);
+  });
+});

@@ -125,3 +125,33 @@ test("only pristine expired questions permit idle release",async()=>{
     await edit(path,db=>assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_idle_release").get()?.n,chosen===null?1:0));
   });
 });
+test("resident journal updates exact Stop and response custody, keeping missing hold as unknown",async()=>{
+  for(const held of [false,true]) await fixture(async(path,job)=>{
+    await edit(path,db=>{
+      db.exec("DELETE FROM codex_observed_completions");
+      const record=JSON.stringify({can_settle:true,jobs:[JSON.stringify({job_id:"saved"})]});
+      db.prepare("INSERT INTO cdr_stop_controls(operation_id,target_thread_id,resident_owner,generation,turn_id,record_json,phase) VALUES ('stop','target','resident',1,'turn',?,'accepted')").run(record);
+      if(held) db.exec("INSERT INTO cdr_execution_holds(job_id,target_thread_id,reason,evidence_json,created_at) VALUES ('saved','target','stop','{}',0)");
+      db.exec(`INSERT INTO cdr_server_responses(request_key,runtime_id,resident_owner,generation,target_thread_id,turn_id,job_id,authority_json,response_sha256,phase,created_at,updated_at)
+        VALUES ('request','runtime','resident',1,'target','turn','saved','{}','hash','admitted',0,0)`);
+    });
+    const payload=JSON.stringify({threadId:"target",turn:{id:"turn",status:"interrupted"}});
+    assert.equal(await state.recordObservedCompletionForResident(path,"target","turn",1n,payload,"resident"),true);
+    await edit(path,db=>{
+      assert.equal(db.prepare("SELECT phase FROM cdr_stop_controls").get()?.phase,held?"settled":"unknown");
+      assert.equal(db.prepare("SELECT phase FROM cdr_server_responses").get()?.phase,"terminal");
+      assert.equal(db.prepare("SELECT resident_owner FROM codex_observed_completions").get()?.resident_owner,"resident");
+    });
+  });
+});
+test("existing raw journal cannot acquire resident authority from different payload or generation",async()=>{
+  await fixture(async(path,job)=>{
+    await edit(path,db=>db.exec("UPDATE codex_observed_completions SET resident_owner=NULL"));
+    assert.equal(await state.recordObservedCompletionForResident(path,"target","turn",1n,'{"different":true}',"resident"),false);
+    await edit(path,db=>assert.equal(db.prepare("SELECT resident_owner FROM codex_observed_completions").get()?.resident_owner,null));
+    assert.equal(await state.recordObservedCompletionForResident(path,"target","turn",2n,'{}',"resident"),false);
+    await edit(path,db=>assert.equal(db.prepare("SELECT resident_owner FROM codex_observed_completions").get()?.resident_owner,null));
+    assert.equal(await state.recordObservedCompletionForResident(path,"target","turn",1n,'{}',"resident"),false);
+    await edit(path,db=>assert.equal(db.prepare("SELECT resident_owner FROM codex_observed_completions").get()?.resident_owner,"resident"));
+  });
+});
