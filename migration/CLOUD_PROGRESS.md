@@ -1417,3 +1417,22 @@ Evidence .runtime/cloud-commentary-stream-072: 6 new cases, full **2,734 PASS,
 exact turn discard, tuple-key separation, empty-delta behavior and excluded message
 classes. Diagnostic retainedSummaryBytes excludes key/map overhead and is not a total
 heap bound; live event charging, producer connection and scheduler remain unfinished.
+
+## 2026-10-07 — Terminal revocation and retention version
+
+Ported terminal_fence.rs identities and compare-version retention. Stop records the
+exact u64 generation/thread/turn and publishes the wrapping version synchronously,
+before I/O. A stale queue snapshot cannot prune a later terminal. Only current
+same-generation exact queue identities survive successful retention. All provided
+snapshot fields are validated before pruning, without invoking job accessors.
+
+JS watch subscriptions coalesce pending changes, support cancellation without
+consuming a future update and require explicit dispose. Selected/queued subscriber
+ownership is not delegated to GC. This is one synchronous JS execution context;
+Rust mutex poisoning, cross-thread synchronization, HTTP abort and native future-drop
+behavior remain unverified. Typing transport/worker orchestration is not wired here.
+
+Evidence .runtime/cloud-terminal-fence-073: 8 new cases, full **2,742 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Tests cover stale retention, immediate revoke,
+coalescing, generation isolation, abort/reuse, subscriber cleanup and atomic
+getter-free pruning. No Discord typing request or live process was started.
