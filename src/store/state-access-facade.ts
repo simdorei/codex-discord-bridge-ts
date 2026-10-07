@@ -1,3 +1,4 @@
+import * as CommentaryOutbox from "./commentary-outbox.ts";
 import * as DeliveryPreflight from "./delivery-preflight.ts";
 import * as DeliveryReceipts from "./delivery-receipts.ts";
 import * as NewReplyClaims from "./new-reply-claims.ts";
@@ -79,6 +80,10 @@ export const newReplyOutputHold: typeof NewReplyClaims.newReplyOutputHold = NewR
 export const newReplyAcknowledgementSendable: typeof NewReplyClaims.newReplyAcknowledgementSendable = NewReplyClaims.newReplyAcknowledgementSendable;
 export const releaseNewReplyAcknowledgement: typeof NewReplyClaims.releaseNewReplyAcknowledgement = NewReplyClaims.releaseNewReplyAcknowledgement;
 
+export const stageCommentary: typeof CommentaryOutbox.stageCommentary = CommentaryOutbox.stageCommentary;
+export const pendingCommentary: typeof CommentaryOutbox.pendingCommentary = CommentaryOutbox.pendingCommentary;
+export const hasPendingCommentary: typeof CommentaryOutbox.hasPendingCommentary = CommentaryOutbox.hasPendingCommentary;
+export const completeCommentary: typeof CommentaryOutbox.completeCommentary = CommentaryOutbox.completeCommentary;
 export const finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight = DeliveryPreflight.finalDeliveryPreflight;
 export const pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply = DeliveryPreflight.pendingFirstReply;
 
@@ -184,6 +189,10 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly stageCommentary: typeof CommentaryOutbox.stageCommentary;
+  readonly pendingCommentary: typeof CommentaryOutbox.pendingCommentary;
+  readonly hasPendingCommentary: typeof CommentaryOutbox.hasPendingCommentary;
+  readonly completeCommentary: typeof CommentaryOutbox.completeCommentary;
   readonly finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight;
   readonly pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply;
 
@@ -335,6 +344,10 @@ export const StateAccessFacade: IStateAccessFacade = {
   newReplyOutputHold,
   newReplyAcknowledgementSendable,
   releaseNewReplyAcknowledgement,
+  stageCommentary,
+  pendingCommentary,
+  hasPendingCommentary,
+  completeCommentary,
   finalDeliveryPreflight,
   pendingFirstReply,
   admitIngress,

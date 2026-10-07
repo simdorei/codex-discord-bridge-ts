@@ -1,10 +1,11 @@
+import {hasPendingCommentaryIn} from "./commentary-outbox.ts";
 import type {DatabaseSync} from "node:sqlite";
 import {CheckedRead,openInitialized} from "./owned-driver.ts";
 import {snapshotStoredDelivery,type StoredDelivery} from "./delivery.ts";
 import {finalRecoveryAuthorizedIn} from "./final-recovery-claims.ts";
 import {newReplyOutputHoldIn} from "./new-reply-claims.ts";
 import {hasPendingGoalProgressIn} from "./goal-progress.ts";
-import {receiptRow,receiptText,receiptTextColumns,receiptExists} from "./delivery-receipt-key.ts";
+import {receiptRow,receiptText,receiptTextColumns} from "./delivery-receipt-key.ts";
 import {decodeI64} from "./sqlite-values.ts";
 export type FinalReadiness={kind:"Ready"|"Commentary"|"GoalProgress"}|{kind:"Held";reason:string}|{kind:"FirstReply";request:string};
 /** Earliest original visible request only; a later canonical duplicate cannot re-close this barrier. */
@@ -19,7 +20,7 @@ export async function pendingFirstReply(path:string,job:string):Promise<string|n
 function read(db:DatabaseSync,pending:StoredDelivery):FinalReadiness{
   const grant=finalRecoveryAuthorizedIn(db,pending),hold=newReplyOutputHoldIn(db,pending.jobId);if(hold!==null)return {kind:"Held",reason:hold};
   if(!grant){const request=pendingFirstReplyIn(db,pending.jobId);if(request!==null)return {kind:"FirstReply",request};
-    if(receiptExists(db,"SELECT EXISTS(SELECT 1 FROM codex_commentary_outbox WHERE job_id=?1 AND (?2 IS NULL OR sequence<?2)) AS held",pending.jobId,null))return {kind:"Commentary"};}
+    if(hasPendingCommentaryIn(db,pending.jobId,null))return {kind:"Commentary"};}
   if(hasPendingGoalProgressIn(db,pending.jobId,pending.targetThreadId))return {kind:"GoalProgress"};return {kind:"Ready"};
 }
 /** A short read snapshot, not send authorization. Finish the snapshot before returning; no result cache. */

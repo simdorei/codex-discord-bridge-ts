@@ -1140,3 +1140,20 @@ retry, ambiguous no-resend, Held, commentary barrier, bad channel, failed receip
 commit, failed retirement/reentry, clock/record error precedence, input mutation and
 sequential batch failure ownership. Initial commentary fixture used nonexistent
 columns; corrected fixture only, original RED retained, production guards unchanged.
+
+## 2026-10-07 — Durable commentary outbox
+
+Ported commentary_outbox stage/pending/has_pending/complete. Stage captures the
+running thread/turn owner inside BEGIN IMMEDIATE, rejects dead targets, trims with
+Rust White_Space and deduplicates the exact Serde tuple digest without replacing
+saved owner/channel/text. Missing running owner returns None before dead-target
+lookup. Pending reads preserve sequence ordering and typed lossless SQLite values.
+Existing final preflight now reuses the shared job/before predicate; four owned
+entrypoints join StateAccessFacade (102 functions), with no borrowed handles exposed.
+
+Evidence .runtime/cloud-commentary-outbox-058: 8 new tests / 24 focused, full
+**2,623 PASS, 0 fail/skip/cancel; strict TS exit 0**. Tests cover deduplication, byte
+hash/trim semantics, saved-owner retention, strict sequence barrier, held targets,
+failed insert rollback, borrowed transaction preservation and native missing-table
+errors. Empty source commentary is intentionally preserved. No HTTP or runtime
+commentary loop is connected by this storage slice.
