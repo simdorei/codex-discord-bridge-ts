@@ -534,3 +534,28 @@ rename semantics and process-crash durability remain unverified. This is not a
 cross-process file lock or directory-fsync guarantee. Evidence:
 .runtime/cloud-bridge-state-027 (8 focused tests, actual full 2,350 PASS with
 0 fail/skip/cancel, strict TS exit 0). No live bridge-state file was accessed.
+
+## 2026-10-07: durable fork begin, response staging and finalization
+
+Implemented fork_handoff.rs begin and target.rs stage/finalize/cancel using the
+complete storage.rs and transition.rs/transition/validation.rs authorities.
+Shared full-record reads now support ID/source/ambiguous-job selectors without
+reconstructing rows. Beginning records a source mapping snapshot only after dead
+hold, exact existing intent, 120-second Starting lease and other-in-flight checks.
+
+Staging deliberately retains the observed response even when target custody will
+fail finalization. Finalization validates source mapping and target non-use, then
+atomically quarantines the ambiguous Starting job, publishes its notice, clears
+old unresolved notices, moves pending jobs/intakes and mapping/detail state, and
+CAS-marks the handoff complete. Failed finalization retains the separately committed
+observation. Repeated completion preserves its original generation and does not
+move work again. Unobserved cancellation refuses sticky ambiguity or any observed
+target. Existing typed cancellation errors and notice/queue readers are reused.
+
+Evidence: .runtime/cloud-fork-begin-028 and cloud-fork-target-029. One initial test
+incorrectly assumed the fork schema survived a rolled-back failed begin; its log
+is retained and the oracle now accepts absence as zero records. Product validation
+was not loosened. Focused begin/read tests 19 PASS; target tests 6 PASS. Actual
+full target **2,363 PASS, 0 fail/skip/cancel, strict TS exit 0**. Runtime RPC fork
+orchestration and recording failure wrappers remain unfinished. No actual Codex
+fork, live DB, Windows test or fresh Rust executable comparison was performed.
