@@ -1683,3 +1683,21 @@ winning after seal, explicit sender drop, ID reuse, zero deadline and rejected D
 This is explicit JS ownership, not Rust automatic Drop. A caller abandoning a detached
 claim without disposal remains a leak; the upcoming transport dispatcher must always
 settle/dispose it. No stdout reader, process, or external RPC is integrated by this slice.
+
+## 2026-10-07 — Lifecycle-gated stdout line dispatch
+
+Connected the existing lossless RPC classifier, client state, detached response sender
+and diagnostics for one already-decoded stdout line. Server-request canonical duplicate,
+conflict/deferred and capacity behavior precedes queued publication. Notifications record
+state before immutable queued publication; responses settle only outside the lifecycle
+gate with finally disposal. Sealed incoming messages do not consume pending response
+cleanup ownership. Adapter errors remain visible/poisoned rather than being mislabeled
+as seal rejection. Queue ports must be synchronous insertion, not subscriber execution.
+
+Evidence .runtime/cloud-transport-dispatch-086: 10 focused PASS, full **2,847 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Covered whitespace (NEL vs BOM), malformed JSON
+vs RPC, 200-scalar preview, lossless response values, seal exclusion, duplicate/conflict/
+deferred requests, 500-entry saturation, notification ordering, throwing/async queue
+ports and diagnostic-renderer noncoercion. Parsing error rendering is a required trusted
+public-safe adapter; exact Rust parser Display text is not claimed. UTF-8 byte framing,
+pipe reads/EOF, real broadcasters and native process ownership remain unimplemented.
