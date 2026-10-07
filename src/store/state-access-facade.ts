@@ -1,3 +1,4 @@
+import * as DeliveryPreflight from "./delivery-preflight.ts";
 import * as DeliveryReceipts from "./delivery-receipts.ts";
 import * as NewReplyClaims from "./new-reply-claims.ts";
 import * as RecoveryCancellation from "./queue-cancel-recovery.ts";
@@ -77,6 +78,9 @@ export const blockedDeliveryReceiptCount: typeof DeliveryReceipts.blockedDeliver
 export const newReplyOutputHold: typeof NewReplyClaims.newReplyOutputHold = NewReplyClaims.newReplyOutputHold;
 export const newReplyAcknowledgementSendable: typeof NewReplyClaims.newReplyAcknowledgementSendable = NewReplyClaims.newReplyAcknowledgementSendable;
 export const releaseNewReplyAcknowledgement: typeof NewReplyClaims.releaseNewReplyAcknowledgement = NewReplyClaims.releaseNewReplyAcknowledgement;
+
+export const finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight = DeliveryPreflight.finalDeliveryPreflight;
+export const pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply = DeliveryPreflight.pendingFirstReply;
 
 export const admitIngress: typeof IngressAdmission.admitIngress = IngressAdmission.admitIngress;
 export const pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt = NewPromptArm.pendingNewPrompt;
@@ -180,6 +184,9 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight;
+  readonly pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply;
+
   readonly beginDeliveryReceipt: typeof DeliveryReceipts.beginDeliveryReceipt;
   readonly confirmDeliveryReceipt: typeof DeliveryReceipts.confirmDeliveryReceipt;
   readonly releaseRejectedDelivery: typeof DeliveryReceipts.releaseRejectedDelivery;
@@ -328,6 +335,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   newReplyOutputHold,
   newReplyAcknowledgementSendable,
   releaseNewReplyAcknowledgement,
+  finalDeliveryPreflight,
+  pendingFirstReply,
   admitIngress,
   pendingNewPrompt,
   newThreadOrigin,

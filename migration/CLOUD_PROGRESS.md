@@ -1036,3 +1036,24 @@ confirmation failure. One Reserve test fixture initially omitted the stored atte
 error setup; corrected fixture and original RED log retained, guards unchanged.
 Source-authority scope is pinned Rust 4e213aa; newer complete_confirmed optimization
 remains phase 2. No live HTTP, process, Windows or performance certification.
+
+## 2026-10-07 — Final-only read preflight and visible-first-reply ordering
+
+Migrated delivery/preflight.rs with first_reply::pending_in and the existing
+commentary/Goal predicates. A CheckedRead snapshot validates an existing saved-final
+grant first, then New readiness, earliest visible original reply, commentary and
+Goal progress in the pinned order. Later unconfirmed canonical duplicates do not
+re-close a confirmed original reply; headless Actions have no ordinary first-reply
+barrier. Explicit saved-final grants retain only the existing exception and still
+revalidate their error/progress evidence. Readiness is never cached or itself a send
+authorization; the receipt writer must independently validate the actual claim.
+
+A stable typed StoredDelivery snapshot rejects caller accessors before opening the
+read, and the read snapshot finishes before any result returns. Existing receipt
+fixtures were factored into a shared test-only helper without changing guards.
+Evidence .runtime/cloud-final-preflight-053: 8 new cases / 32 focused with receipts
+and facade, full **2,581 PASS, 0 fail/skip/cancel; strict TS exit 0**. Tests exercise
+live data changes between read snapshots, exact ordering, legacy/foreign-job Goal
+scope, grant error precedence, missing-file read-only behavior and zero getter calls.
+No POST, grant creation, backend connection, worker-loop scheduling or performance
+certification is established by this preflight slice.

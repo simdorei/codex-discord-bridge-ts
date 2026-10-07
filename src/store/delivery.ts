@@ -1,3 +1,4 @@
+import {types} from "node:util";
 import { trimUnicodeWhitespace, takeUnicodeScalarChars } from "./queue-preflight-failure.ts";
 import type { DatabaseSync } from "node:sqlite";
 import { openInitialized } from "./owned-driver.ts";
@@ -13,6 +14,16 @@ import { decodeI64, decodeTextField, decodeTimestamp, textDecoderFor } from "./s
 export interface StoredDelivery {
   deliveryId:string; jobId:string; targetThreadId:string; turnId:string; channelId:bigint;
   content:string; attemptCount:bigint; lastError:string; createdAt:number; updatedAt:number;
+}
+/** Stable typed boundary for a caller-owned delivery read before asynchronous work. */
+export function snapshotStoredDelivery(input:StoredDelivery):StoredDelivery{
+  if(input===null||typeof input!=="object"||types.isProxy(input))throw new TypeError("Expected stored delivery data");
+  const field=(key:string):unknown=>{const d=Object.getOwnPropertyDescriptor(input,key);if(!d||!Object.hasOwn(d,"value"))throw new TypeError("Expected own delivery field");return d.value;};
+  const text=(v:unknown):string=>{validText(v);return v;};
+  const integer=(v:unknown):bigint=>{if(typeof v!=="bigint"||v<-(1n<<63n)||v>=(1n<<63n))throw new TypeError("Expected i64 delivery field");return v;};
+  const timestamp=(v:unknown):number=>{if(typeof v!=="number")throw new TypeError("Expected numeric delivery timestamp");return v;};
+  return {deliveryId:text(field("deliveryId")),jobId:text(field("jobId")),targetThreadId:text(field("targetThreadId")),turnId:text(field("turnId")),channelId:integer(field("channelId")),content:text(field("content")),
+    attemptCount:integer(field("attemptCount")),lastError:text(field("lastError")),createdAt:timestamp(field("createdAt")),updatedAt:timestamp(field("updatedAt"))};
 }
 export class QueueJobHasNoTurnError extends Error {
   readonly kind="QueueJobHasNoTurn"; readonly jobId:string;

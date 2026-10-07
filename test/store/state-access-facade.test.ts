@@ -1,3 +1,4 @@
+import * as DeliveryPreflight from "../../src/store/delivery-preflight.ts";
 import * as DeliveryReceipts from "../../src/store/delivery-receipts.ts";
 import * as NewReplyClaims from "../../src/store/new-reply-claims.ts";
 import * as RecoveryCancellation from "../../src/store/queue-cancel-recovery.ts";
@@ -102,6 +103,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.newReplyOutputHold, NewReplyClaims.newReplyOutputHold);
     assert.strictEqual(StateAccessFacade.newReplyAcknowledgementSendable, NewReplyClaims.newReplyAcknowledgementSendable);
     assert.strictEqual(StateAccessFacade.releaseNewReplyAcknowledgement, NewReplyClaims.releaseNewReplyAcknowledgement);
+    assert.strictEqual(StateAccessFacade.finalDeliveryPreflight, DeliveryPreflight.finalDeliveryPreflight);
+    assert.strictEqual(StateAccessFacade.pendingFirstReply, DeliveryPreflight.pendingFirstReply);
     assert.strictEqual(StateAccessFacade.admitIngress, IngressAdmission.admitIngress);
     assert.strictEqual(StateAccessFacade.pendingNewPrompt, NewPromptArm.pendingNewPrompt);
     assert.strictEqual(StateAccessFacade.newThreadOrigin, NewOrigin.newThreadOrigin);
@@ -230,6 +233,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "newReplyOutputHold",
       "newReplyAcknowledgementSendable",
       "releaseNewReplyAcknowledgement",
+      "finalDeliveryPreflight",
+      "pendingFirstReply",
       "admitIngress",
       "pendingNewPrompt",
       "captureStopOrigin",
@@ -263,7 +268,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 96);
+    assert.strictEqual(actual.length, 98);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
