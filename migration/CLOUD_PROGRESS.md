@@ -1101,3 +1101,18 @@ Evidence .runtime/cloud-completion-identity-055: 6 new tests, full **2,599 PASS,
 0 fail/skip/cancel; strict TS exit 0**. UTF-8 lengths, NEL/BOM distinction, source
 retry scenario, domain isolation, empty policy failure ownership and zero-trap
 forgeries are covered. No fresh Rust executable differential is claimed.
+
+## 2026-10-07 — Completion and commentary message formatting
+
+Ported pinned completion_message/commentary_message and error_message::readable_error.
+Final/Failed/Interrupted/InProgress headings and non-complete Goal prefixes preserve
+exact-empty distinctions. Error envelopes peel at most four times using the existing
+Serde Value parser: present nested null/nonstring blocks fallback, unknown JSON is
+retained, and successfully peeled text is not silently retrimmed. Own-only lookup
+prevents inherited property interpretation. This pure function expects an already
+validated outcome status; it neither observes nor finalizes a live turn.
+
+Evidence .runtime/cloud-completion-message-056: 5 new tests, full **2,604 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Covers all status/Goal labels, Unicode trim,
+known envelope precedence, nesting cap, malformed/range-invalid Serde input and
+last-duplicate-key semantics. No new runtime or deployment certification.
