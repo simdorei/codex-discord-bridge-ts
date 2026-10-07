@@ -73,3 +73,15 @@ test("prepared executor connects real intake and queue ownership before the inje
     const action=await executor.submit(target(),{...request(),intakeClaim:claim});assert.equal(starts,1);assert.equal(action.text,"In progress\nmessage: original");assert.equal(action.waitsForFinal,true);
   });
 });
+
+test("preparation cancellation is forwarded and prevents a new queue submission after late completion",async()=>{
+  const f=fixture(),abort=new AbortController(),reason=new Error("lease lost");let release!:(value:string)=>void;
+  const waiting=new Promise<string>(r=>{release=r;});f.services.preparePrompt=async(_raw,_target,signal)=>{assert.equal(signal,abort.signal);return waiting;};
+  const pending=new PreparedPromptExecutor("unused",f.queue,f.services).submit(target(),request(),abort.signal);
+  await new Promise<void>(r=>setImmediate(r));abort.abort(reason);release("late prompt");await assert.rejects(pending,e=>e===reason);assert.deepEqual(f.calls,["busy:old"]);
+});
+test("cancellation after queue result suppresses additional active-writer recovery rather than starting a new fork",async()=>{
+  const f=fixture(),abort=new AbortController(),reason=new Error("cancelled");f.queue.submit=async()=>{abort.abort(reason);return result();};
+  await assert.rejects(()=>new PreparedPromptExecutor("unused",f.queue,f.services).submit(target(),request(),abort.signal),e=>e===reason);
+  assert.deepEqual(f.calls,["busy:old","prepare:old"]);
+});

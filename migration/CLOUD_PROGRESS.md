@@ -629,3 +629,49 @@ https://github.com/simdorei/codex-discord-remote-rust/pull/2 is merged, merge co
 `ed47c482420631447f0a38ef55a8d29acc1f6f6a`. These identities are distinct. This does
 not establish deployment approval or replace phase-1 authority `4e213aa...`.
 Repin final reviewed source/evidence when the registered second phase starts.
+
+## 2026-10-07: intake processing, lease renewal and recovery worker
+
+PromptIntakeProcessor now composes durable admission, claim acquisition, original
+route validation, prepared submission, atomic-promotion checks, manual hold
+presentation, owned backoff, saved-request replay and ready-intake recovery.
+Recovery continues other ready items after a backoff-recording failure and returns
+the first recording error. Existing queued intakes are cleaned without replay;
+dead-target holds retain their intake. All store access uses StateAccessFacade.
+The caller's original busy policy remains stored, but admitted requests queue if
+the target becomes busy, matching the pinned runtime's explicit durable policy.
+
+PromptClaimLeaseRunner performs initial renewal, 600-second extensions and delayed
+2-minute renewal ticks. Missing lease after durable queue/outbox transfer waits for
+that operation rather than cancelling it. On lease loss/error, AbortSignal reaches
+preparation and safe pre-dispatch boundaries; the runner joins processing before
+returning. This is an explicit JS lifetime adaptation, not equivalence between
+Rust future-drop and Promise cancellation. Processing adapters must not detach
+owned work. Uncooperative work can still stall: no hard worker termination, bounded
+reclamation latency or production transport cancellation is certified.
+
+A real SQLite/injected-backend regression exposed cancelled intake submission
+waiting on a target lock and then dispatching after unlock. The same unchanged
+regression is RED→GREEN in .runtime/cloud-intake-cancel-race-036, including the prior
+start coordinator and test SHA. Cancellation now removes waiters without releasing
+foreign leases, gates late preflight/baseline continuation, and prevents new
+pre-dispatch work. If a durable Starting claim already exists, it is conservatively
+retained rather than silently reset/replayed. After dispatch begins, actual ACK or
+ambiguous failure is awaited and persisted before target/admission release.
+
+The 30-second periodic recovery worker uses a common admission gate, skips sealed
+admission, reports other admission/recovery errors and never abandons an in-flight
+cycle on shutdown. A delayed/coalesced timer starts its next period from late tick
+consumption, avoiding catch-up bursts. Timer behavior is tested with controlled
+Node timers; exact real-time Tokio scheduling/Windows timing remains unverified.
+Startup release of all leases is deliberately not wired without singleton runtime
+ownership. Real preprocessing, Discord transport and production startup remain
+unfinished.
+
+Pinned authorities: action_executor/prompt_intake.rs,
+action_executor/prompt_intake/recovery.rs, queue_submission.rs,
+prompt_intake_worker.rs and queue_runner/submission.rs/start flow. Evidence:
+.runtime/cloud-intake-renewal-034, cloud-intake-processor-035,
+cloud-intake-cancel-race-036 and cloud-intake-worker-037. Actual final combined
+**2,417 tests PASS, 0 fail/skip/cancel; strict TS exit 0** on Node 24.21.0. No live
+DB/service/Codex/Discord operation or fresh Rust executable differential was run.

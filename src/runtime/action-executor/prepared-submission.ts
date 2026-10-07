@@ -16,7 +16,7 @@ export interface PreparedPromptSubmission {
 }
 export interface PreparedTargetServices {
   requiresAppServerFork():boolean;
-  preparePrompt(raw:string,target:string):Promise<string>;
+  preparePrompt(raw:string,target:string,signal?:AbortSignal):Promise<string>;
   busyResult(target:string,channel:bigint,user:bigint,prompt:string,allowSteer:boolean,mapped:boolean):Promise<PromptActionResult>;
   canonicalizeCompletedTarget(target:string):Promise<string>;
   currentMirrorTarget(channel:bigint,fallback:string):Promise<readonly [string,string]>;
@@ -36,30 +36,38 @@ export class PreparedPromptExecutor {
   constructor(path:string,queue:QueuePort,services:PreparedTargetServices,state:Pick<IStateAccessFacade,"canonicalizePromptIntakeTarget">=StateAccessFacade){
     this.#path=path;this.#queue=queue;this.#services=services;this.#state=state;
   }
-  async submit(inputTarget:ActionTarget,request:PreparedPromptSubmission):Promise<PromptActionResult>{
+  async submit(inputTarget:ActionTarget,request:PreparedPromptSubmission,signal?:AbortSignal):Promise<PromptActionResult>{
+    signal?.throwIfAborted();
     let target:ActionTarget={...inputTarget};
     const raw=request.rawPrompt,channel=request.channelId,user=request.userId,event=request.discordMessageId,auto=request.autoQueueWhenBusy,
       claim=request.intakeClaim===null?null:snapshotPromptIntakeClaim(request.intakeClaim);
     for(let attempt=0;attempt<=1;attempt++){
-      const busy=await this.#queue.reads.busyStatus(target.threadId);
+      signal?.throwIfAborted();
+      const busy=await this.#queue.reads.busyStatus(target.threadId,signal);
+      signal?.throwIfAborted();
       if(busy.busy&&!auto)return this.#services.busyResult(target.threadId,channel,user,raw,busy.allowSteer,target.mirrorMapping);
-      const prompt=await this.#services.preparePrompt(raw,target.threadId);
+      const prompt=await this.#services.preparePrompt(raw,target.threadId,signal);
+      signal?.throwIfAborted();
       let submission:Submission;
       // Only submission failures are retry-classified; preprocessing and post-submit recovery errors propagate.
       try{
         if(claim!==null){
           const current=await this.#state.canonicalizePromptIntakeTarget(this.#path,claim.intake.jobId);
+          signal?.throwIfAborted();
           if(current===null)throw new PromptIntakeClaimLostError(claim.intake.jobId);
-          submission=await this.#queue.submitPromptIntake({intake:current,claimToken:claim.claimToken},target.threadId,prompt);
+          submission=await this.#queue.submitPromptIntake({intake:current,claimToken:claim.claimToken},target.threadId,prompt,signal);
         }else if(target.mirrorMapping){
           submission=await this.#queue.submitMirrorIdentified(randomUUID(),target.threadId,channel,user,event,prompt);
         }else submission=await this.#queue.submit(target.threadId,channel,user,event,prompt);
       }catch(error){
+        signal?.throwIfAborted();
         if(target.mirrorMapping&&error instanceof MirrorMappingChangedError){
           if(!this.#services.requiresAppServerFork())throw new InvalidActionRequestError(`original mirror mapping changed; request preserved without retargeting: ${detail(error)}`);
           if(attempt===1)throw new InvalidActionRequestError(`mirror mapping changed again while queueing; no request was queued: ${detail(error)}`);
           await this.#services.canonicalizeCompletedTarget(target.threadId);
+          signal?.throwIfAborted();
           const [current,source]=await this.#services.currentMirrorTarget(channel,target.threadId);
+          signal?.throwIfAborted();
           if(source!=="mirror")throw new InvalidActionRequestError(`mirror mapping disappeared while queueing; no request was queued: ${detail(error)}`);
           target={...await this.#services.prepareActionTarget(current,source)};continue;
         }
@@ -69,6 +77,7 @@ export class PreparedPromptExecutor {
         }
         throw error;
       }
+      signal?.throwIfAborted();
       const [current,result]=await this.#services.recoverActiveWriterSubmission(target,submission);
       return submissionResult(current.threadId,current.sourceLabel,result,raw);
     }

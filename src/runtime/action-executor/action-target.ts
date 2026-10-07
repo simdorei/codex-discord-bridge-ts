@@ -12,7 +12,7 @@ export class ActionTargetServices implements PreparedTargetServices {
   readonly #path:string;readonly #bridge:BridgeState;readonly #queue:TargetQueue;readonly #state:TargetState;readonly #prompts:PromptServices;
   constructor(path:string,bridge:BridgeState,queue:TargetQueue,prompts:PromptServices,state:TargetState=StateAccessFacade){this.#path=path;this.#bridge=bridge;this.#queue=queue;this.#prompts=prompts;this.#state=state;}
   requiresAppServerFork():boolean{return this.#queue.requiresAppServerFork();}
-  preparePrompt(raw:string,target:string):Promise<string>{return this.#prompts.preparePrompt(raw,target);}
+  preparePrompt(raw:string,target:string,signal?:AbortSignal):Promise<string>{return this.#prompts.preparePrompt(raw,target,signal);}
   busyResult(...args:Parameters<PromptServices["busyResult"]>):ReturnType<PromptServices["busyResult"]>{return this.#prompts.busyResult(...args);}
   async canonicalizeCompletedTarget(source:string):Promise<string>{
     if(!this.requiresAppServerFork())return source;

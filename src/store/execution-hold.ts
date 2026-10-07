@@ -93,3 +93,7 @@ export async function eligibleJobs(path: string, jobs: readonly StoredQueueJob[]
   const db = await openInitialized(path);
   try { return eligibleJobsIn(db, jobs); } finally { db.close(); }
 }
+
+export async function executionHoldReason(path:string,id:string):Promise<string|null>{
+  const db=await openInitialized(path);try{return reasonIn(db,id);}finally{db.close();}
+}

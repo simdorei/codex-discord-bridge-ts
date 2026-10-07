@@ -1,3 +1,4 @@
+import * as PromptIntakeLease from "../../src/store/prompt-intake.ts";
 import * as MirrorMapping from "../../src/store/busy-choice.ts";
 import * as ForkBegin from "../../src/store/fork-begin.ts";
 import * as ForkTarget from "../../src/store/fork-target.ts";
@@ -60,6 +61,15 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.completedAppServerForkTargetForSource, ForkCompleted.completedAppServerForkTargetForSource);
     assert.strictEqual(StateAccessFacade.isAppServerManagedTarget, ForkManaged.isAppServerManagedTarget);
     assert.strictEqual(StateAccessFacade.mirroredThreadId, MirrorMapping.mirroredThreadId);
+    assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimIfCurrent, PromptIntakeLease.renewPromptIntakeClaimIfCurrent);
+    assert.strictEqual(StateAccessFacade.promptIntakeHasDurableOwner, PromptIntakeLease.promptIntakeHasDurableOwner);
+    assert.strictEqual(StateAccessFacade.admitPromptIntake, PromptIntakeWrite.admitPromptIntake);
+    assert.strictEqual(StateAccessFacade.getPromptIntake, PromptIntakeLease.getPromptIntake);
+    assert.strictEqual(StateAccessFacade.tryClaimPromptIntake, PromptIntakeLease.tryClaimPromptIntake);
+    assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueued, PromptIntakeWrite.removePromptIntakeIfQueued);
+    assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureIfClaimed, PromptIntakeLease.recordPromptIntakeFailureIfClaimed);
+    assert.strictEqual(StateAccessFacade.listPromptIntakes, PromptIntakeLease.listPromptIntakes);
+    assert.strictEqual(StateAccessFacade.executionHoldReason, ExecutionHold.executionHoldReason);
     assert.strictEqual(StateAccessFacade.canonicalizePromptIntakeTarget, PromptIntakeWrite.canonicalizePromptIntakeTarget);
     assert.strictEqual(StateAccessFacade.promotePromptIntakeToQueue, PromptIntakePromotion.promotePromptIntakeToQueue);
     assert.strictEqual(StateAccessFacade.enqueue, QueueEnqueue.enqueue);
@@ -109,6 +119,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
   it("contains only the supplied writes, CheckedRead.open and async admission reads", () => {
     const expected = [
       "activate",
+      "admitPromptIntake",
       "adoptTargetGeneration",
       "asyncAdmissionHeld",
       "asyncTargetDispatchHeld",
@@ -126,15 +137,18 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "enqueue",
       "enqueueIfMirrorMatches",
       "enqueueInTransaction",
+      "executionHoldReason",
       "finalizeAppServerForkHandoff",
       "finish",
       "finishObservedCompletion",
+      "getPromptIntake",
       "hasObservedCompletion",
       "hasPendingGoalProgress",
       "holdStartingForAmbiguousCandidatesIfClaimed",
       "isAppServerManagedTarget",
       "listFiltered",
       "listPendingDeliveries",
+      "listPromptIntakes",
       "markGoalWaiting",
       "markRunning",
       "markRunningIfClaimed",
@@ -144,6 +158,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "pendingGoalProgress",
       "pendingObservedCompletions",
       "promotePromptIntakeToQueue",
+      "promptIntakeHasDurableOwner",
       "recordAndCancelDefiniteForkFailure",
       "recordAppServerForkFailure",
       "recordAppServerForkFinalizeFailure",
@@ -152,7 +167,10 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "recordObservedCompletionError",
       "recordObservedCompletionForResident",
       "recordPreflightFailure",
+      "recordPromptIntakeFailureIfClaimed",
       "recordStartFailureIfClaimed",
+      "removePromptIntakeIfQueued",
+      "renewPromptIntakeClaimIfCurrent",
       "repairLegacyDefiniteForkFailures",
       "retainAsyncHistoryCandidate",
       "retireCopyOnlyHandoffs",
@@ -161,11 +179,12 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "stageOwnedGoalProgress",
       "stageOwnedQueueCompletion",
       "tryBeginAttempt",
+      "tryClaimPromptIntake",
       "unresolvedAppServerForkHandoffForSource",
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected);
-    assert.strictEqual(actual.length, 54);
+    assert.strictEqual(actual.length, 63);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

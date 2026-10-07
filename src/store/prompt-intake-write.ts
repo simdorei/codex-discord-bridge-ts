@@ -39,11 +39,15 @@ export function snapshotNewPromptIntake(input:NewPromptIntake):NewPromptIntake{
     ownerUserId:optional(data(input,"ownerUserId")),discordMessageId:optional(data(input,"discordMessageId")),rawPrompt:string(data(input,"rawPrompt")),
     autoQueueWhenBusy:boolean(data(input,"autoQueueWhenBusy")),requireCurrentMirror:boolean(data(input,"requireCurrentMirror")),createdAt:number(data(input,"createdAt"))};
 }
-export function snapshotPromptIntakeClaim(input:PromptIntakeClaim):PromptIntakeClaim{
-  const value=data(input,"intake"),base=snapshotNewPromptIntake(value as NewPromptIntake),token=data(value,"claimToken");
-  return {claimToken:string(data(input,"claimToken")),intake:{...base,attemptCount:integer(data(value,"attemptCount")),lastError:string(data(value,"lastError")),
-    retryAfter:number(data(value,"retryAfter")),claimToken:token===null?null:string(token),claimExpiresAt:number(data(value,"claimExpiresAt")),updatedAt:number(data(value,"updatedAt"))}};
+export function snapshotStoredPromptIntake(value:StoredPromptIntake):StoredPromptIntake{
+  const base=snapshotNewPromptIntake(value),token=data(value,"claimToken");
+  return {...base,attemptCount:integer(data(value,"attemptCount")),lastError:string(data(value,"lastError")),retryAfter:number(data(value,"retryAfter")),
+    claimToken:token===null?null:string(token),claimExpiresAt:number(data(value,"claimExpiresAt")),updatedAt:number(data(value,"updatedAt"))};
 }
+export function snapshotPromptIntakeClaim(input:PromptIntakeClaim):PromptIntakeClaim{
+  const value=data(input,"intake"),token=string(data(input,"claimToken"));return {claimToken:token,intake:snapshotStoredPromptIntake(value as StoredPromptIntake)};
+}
+
 function validateIdentity(input:NewPromptIntake):void{
   if(input.jobId===""||trim(input.jobId)!==input.jobId||input.targetThreadId===""||trim(input.targetThreadId)!==input.targetThreadId)
     throw new InvalidPromptIntakeIdentityError(input.jobId,input.targetThreadId);

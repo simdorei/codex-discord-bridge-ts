@@ -32,8 +32,8 @@ export type QueueAttemptClaim = Readonly<Omit<StoredQueueJob, "baselineTurnIds">
 export interface QueueStartBackend extends QueueReadBackend {
   generation(): bigint;
   residentInstanceId(): string | null;
-  resumeThread(target: string): Promise<void>;
-  readTurns(target: string): Promise<readonly {readonly turnId: string; readonly status?: "Completed" | "Interrupted" | "Failed" | "InProgress"}[]>;
+  resumeThread(target: string, signal?: AbortSignal): Promise<void>;
+  readTurns(target: string, signal?: AbortSignal): Promise<readonly {readonly turnId: string; readonly status?: "Completed" | "Interrupted" | "Failed" | "InProgress"}[]>;
   startClaimedTurn(claim: QueueAttemptClaim): Promise<string>;
   requiresAppServerFork?(): boolean;
   forkThread?(source: string): Promise<string>;
@@ -186,25 +186,29 @@ export class QueueStartCoordinator {
     return this.#submit(jobId, target, channel, owner, message, prompt, true);
   }
 
-  async submitPromptIntake(input: PromptIntakeClaim, target: string, prompt: string): Promise<Submission> {
+  async submitPromptIntake(input: PromptIntakeClaim, target: string, prompt: string, signal?: AbortSignal): Promise<Submission> {
+    signal?.throwIfAborted();
     const claim = snapshotPromptIntakeClaim(input), intake = claim.intake;
     if (intake.ownerUserId === null) throw new QueueIntegerRangeError();
     return this.#submit(intake.jobId, target, intake.channelId, intake.ownerUserId,
-      intake.discordMessageId, prompt, intake.requireCurrentMirror, claim);
+      intake.discordMessageId, prompt, intake.requireCurrentMirror, claim, signal);
   }
 
   async #submit(jobId: string, target: string, channel: bigint, owner: bigint,
-    message: bigint | null, prompt: string, mirror: boolean, intakeClaim: PromptIntakeClaim | null = null): Promise<Submission> {
+    message: bigint | null, prompt: string, mirror: boolean, intakeClaim: PromptIntakeClaim | null = null, signal?: AbortSignal): Promise<Submission> {
     for (const value of [jobId, target, prompt])
       if (typeof value !== "string" || /[\uD800-\uDFFF]/u.test(value)) throw new TypeError("Expected well-formed submission text");
     for (const value of [channel, owner, ...(message === null ? [] : [message])])
       if (typeof value !== "bigint" || value < 0n || value > I64_MAX) throw new QueueIntegerRangeError();
     return this.locks.run(target, async () => {
+      signal?.throwIfAborted();
       const path = this.#path; const state = this.#state;
       if (await state.deadTargetHeld(path, target)) throw new DeadGenerationTargetHeldError(target);
+      signal?.throwIfAborted();
       const generation = this.#backend.generation();
       if (typeof generation !== "bigint" || generation < 0n || generation > I64_MAX) throw new QueueIntegerRangeError();
       const existing = await state.eligibleJobs(path, await state.listFiltered(path, target, null));
+      signal?.throwIfAborted();
       const queued = existing.some(job => job.state !== "Quarantined");
       const recovery = existing.some(job => job.state !== "Quarantined" && job.appServerGeneration !== generation);
       const createdAt = this.#now();
@@ -215,20 +219,23 @@ export class QueueStartCoordinator {
         : mirror
         ? await state.enqueueIfMirrorMatches(path, input, {discordChannelId: channel, targetThreadId: target})
         : await state.enqueue(path, input);
+      signal?.throwIfAborted();
       if (!enqueued.created) return presentSavedSubmission(path, enqueued.job, state);
       if (recovery) return withTargetHold(path, target,
         {jobId: enqueued.job.jobId, queued: true, turnId: null}, false, state);
       let started: StoredQueueJob | null;
-      try { started = await this.#start(target, generation); }
+      try { started = await this.#start(target, generation, undefined, signal); }
       catch (error) {
+        signal?.throwIfAborted();
         if (!(error instanceof BackendFailureError)) throw error;
         const current = (await state.listFiltered(path, target, generation)).find(job => job.jobId === enqueued.job.jobId);
         if (current !== undefined && current.lastError !== "") return presentSavedSubmission(path, current, state);
         throw error;
       }
+      signal?.throwIfAborted();
       const turnId = started?.jobId === enqueued.job.jobId ? started.turnId : null;
       return withTargetHold(path, target, {jobId: enqueued.job.jobId, queued: turnId === null, turnId}, false, state);
-    });
+    }, signal);
   }
 
   #now(): number {
@@ -238,40 +245,50 @@ export class QueueStartCoordinator {
     return now;
   }
 
-  async #start(target: string, generation: bigint, recoveredTurns?: readonly {readonly turnId: string}[]): Promise<StoredQueueJob | null> {
+  async #start(target: string, generation: bigint, recoveredTurns?: readonly {readonly turnId: string}[], signal?: AbortSignal): Promise<StoredQueueJob | null> {
+    signal?.throwIfAborted();
     const state = this.#state; const path = this.#path;
     if (await state.asyncTargetDispatchHeld(path, target)) return null;
+    signal?.throwIfAborted();
     let permit: AdmissionPermit | undefined;
     try {
       try { permit = this.#gate?.tryEnter(); }
       catch (error) { if (error instanceof DrainGateError && error.kind === "Sealed") return null; throw error; }
       if (await state.deadTargetHeld(path, target)) return null;
       const jobs = await state.eligibleJobs(path, await state.listFiltered(path, target, null));
+      signal?.throwIfAborted();
       if (jobs.some(job => job.state === "Starting" || job.state === "Running")) return null;
       const job = jobs.find(job => job.state === "Pending" && !legacyOrCurrentError(job.lastError));
       if (job === undefined || job.appServerGeneration !== generation) return null;
       if (!pendingRetryIsDue(job.attemptCount, job.lastError, job.updatedAt, this.#now())) return null;
-      if (await this.#backend.activeTurnId(target) !== null) return null;
+      if (await this.#backend.activeTurnId(target, signal) !== null) return null;
+      signal?.throwIfAborted();
       let baseline: string[];
       try {
         if (recoveredTurns !== undefined) baseline = recoveredTurns.map(turn => turn.turnId);
         else {
-          await this.#backend.resumeThread(target);
-          baseline = (await this.#backend.readTurns(target)).map(turn => turn.turnId);
+          await this.#backend.resumeThread(target, signal);
+          signal?.throwIfAborted();
+          baseline = (await this.#backend.readTurns(target, signal)).map(turn => turn.turnId);
         }
       } catch (error) {
+        signal?.throwIfAborted();
         if (error instanceof BackendFailureError)
           await state.recordPreflightFailure(path, job.jobId, generation, error.failure.message);
         throw error;
       }
+      signal?.throwIfAborted();
       const obtained = await state.tryBeginAttempt(path, job.jobId, baseline, generation);
       if (obtained === null) return null;
+      signal?.throwIfAborted();
       const claim: StoredQueueJob = {...obtained, baselineTurnIds: [...obtained.baselineTurnIds]};
       const backendClaim: QueueAttemptClaim = Object.freeze({...claim,
         baselineTurnIds: Object.freeze([...claim.baselineTurnIds])});
       const resident = this.#backend.residentInstanceId(); // Capture before the dispatch await.
       if (resident !== null && (typeof resident !== "string" || /[\uD800-\uDFFF]/u.test(resident)))
         throw new TypeError("Expected a well-formed resident identity or null");
+      signal?.throwIfAborted();
+      // After dispatch begins, await and persist its actual outcome even if cancellation is requested.
       let turn: string;
       try { turn = await this.#backend.startClaimedTurn(backendClaim); }
       catch (error) {

@@ -3,7 +3,7 @@ import type { IStateAccessFacade } from "../../store/state-access-facade.ts";
 import { TargetLocks } from "./target-locks.ts";
 
 export interface QueueReadBackend {
-  activeTurnId(target: string): Promise<string | null>;
+  activeTurnId(target: string, signal?: AbortSignal): Promise<string | null>;
 }
 
 export interface BusyStatus { readonly busy: boolean; readonly allowSteer: boolean; }
@@ -22,13 +22,16 @@ export class QueueReadCoordinator {
     this.path = path; this.backend = backend; this.state = state; this.locks = locks;
   }
 
-  busyStatus(target: string): Promise<BusyStatus> {
+  busyStatus(target: string, signal?: AbortSignal): Promise<BusyStatus> {
     return this.locks.run(target, async () => {
-      const active = await this.backend.activeTurnId(target) !== null;
+      signal?.throwIfAborted();
+      const active = await this.backend.activeTurnId(target, signal) !== null;
+      signal?.throwIfAborted();
       const jobs = await this.state.listFiltered(this.path, target, null);
       const eligible = await this.state.eligibleJobs(this.path, jobs);
+      signal?.throwIfAborted();
       return {busy: active || eligible.some(job => job.state !== "Quarantined"), allowSteer: active};
-    });
+    }, signal);
   }
 
   /** Rust performs this evidence read without the target mutex or hold filtering. */

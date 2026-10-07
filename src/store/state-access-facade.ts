@@ -1,3 +1,4 @@
+import * as PromptIntakeLease from "./prompt-intake.ts";
 import * as MirrorMapping from "./busy-choice.ts";
 import * as ForkBegin from "./fork-begin.ts";
 import * as ForkTarget from "./fork-target.ts";
@@ -72,6 +73,15 @@ export const recordAndCancelDefiniteForkFailure: typeof ForkFailure.recordAndCan
 export const completedAppServerForkTargetForSource: typeof ForkCompleted.completedAppServerForkTargetForSource = ForkCompleted.completedAppServerForkTargetForSource;
 export const isAppServerManagedTarget: typeof ForkManaged.isAppServerManagedTarget = ForkManaged.isAppServerManagedTarget;
 export const mirroredThreadId: typeof MirrorMapping.mirroredThreadId = MirrorMapping.mirroredThreadId;
+export const renewPromptIntakeClaimIfCurrent: typeof PromptIntakeLease.renewPromptIntakeClaimIfCurrent = PromptIntakeLease.renewPromptIntakeClaimIfCurrent;
+export const promptIntakeHasDurableOwner: typeof PromptIntakeLease.promptIntakeHasDurableOwner = PromptIntakeLease.promptIntakeHasDurableOwner;
+export const admitPromptIntake: typeof PromptIntakeWrite.admitPromptIntake = PromptIntakeWrite.admitPromptIntake;
+export const getPromptIntake: typeof PromptIntakeLease.getPromptIntake = PromptIntakeLease.getPromptIntake;
+export const tryClaimPromptIntake: typeof PromptIntakeLease.tryClaimPromptIntake = PromptIntakeLease.tryClaimPromptIntake;
+export const removePromptIntakeIfQueued: typeof PromptIntakeWrite.removePromptIntakeIfQueued = PromptIntakeWrite.removePromptIntakeIfQueued;
+export const recordPromptIntakeFailureIfClaimed: typeof PromptIntakeLease.recordPromptIntakeFailureIfClaimed = PromptIntakeLease.recordPromptIntakeFailureIfClaimed;
+export const listPromptIntakes: typeof PromptIntakeLease.listPromptIntakes = PromptIntakeLease.listPromptIntakes;
+export const executionHoldReason: typeof ExecutionHold.executionHoldReason = ExecutionHold.executionHoldReason;
 export const canonicalizePromptIntakeTarget: typeof PromptIntakeWrite.canonicalizePromptIntakeTarget = PromptIntakeWrite.canonicalizePromptIntakeTarget;
 export const promotePromptIntakeToQueue: typeof PromptIntakePromotion.promotePromptIntakeToQueue = PromptIntakePromotion.promotePromptIntakeToQueue;
 
@@ -114,6 +124,17 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly admitPromptIntake: typeof PromptIntakeWrite.admitPromptIntake;
+  readonly getPromptIntake: typeof PromptIntakeLease.getPromptIntake;
+  readonly tryClaimPromptIntake: typeof PromptIntakeLease.tryClaimPromptIntake;
+  readonly removePromptIntakeIfQueued: typeof PromptIntakeWrite.removePromptIntakeIfQueued;
+  readonly recordPromptIntakeFailureIfClaimed: typeof PromptIntakeLease.recordPromptIntakeFailureIfClaimed;
+  readonly listPromptIntakes: typeof PromptIntakeLease.listPromptIntakes;
+  readonly executionHoldReason: typeof ExecutionHold.executionHoldReason;
+
+  readonly renewPromptIntakeClaimIfCurrent: typeof PromptIntakeLease.renewPromptIntakeClaimIfCurrent;
+  readonly promptIntakeHasDurableOwner: typeof PromptIntakeLease.promptIntakeHasDurableOwner;
+
   readonly mirroredThreadId: typeof MirrorMapping.mirroredThreadId;
   readonly beginAppServerForkHandoff: typeof ForkBegin.beginAppServerForkHandoff;
   readonly stageAppServerForkTarget: typeof ForkTarget.stageAppServerForkTarget;
@@ -174,6 +195,17 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  admitPromptIntake,
+  getPromptIntake,
+  tryClaimPromptIntake,
+  removePromptIntakeIfQueued,
+  recordPromptIntakeFailureIfClaimed,
+  listPromptIntakes,
+  executionHoldReason,
+
+  renewPromptIntakeClaimIfCurrent,
+  promptIntakeHasDurableOwner,
+
   mirroredThreadId,
   beginAppServerForkHandoff,
   stageAppServerForkTarget,
