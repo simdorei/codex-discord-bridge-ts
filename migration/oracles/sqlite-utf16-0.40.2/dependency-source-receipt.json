@@ -1,0 +1,22 @@
+[
+  {
+    "archivePath": "C:\\repos\\simdorei\\codex-discord-bridge-ts\\migration\\oracles\\.cargo-cache\\registry\\cache\\index.crates.io-1949cf8c6b5b557f\\rusqlite-0.40.2.crate",
+    "version": "0.40.2",
+    "sourceReceipt": "Exact official crate archive SHA256; unpacked .cargo-checksum.json absent",
+    "expectedFrozenChecksum": "23f2a97da3e3873c73cb2a2e71b35c40ff95e0b1eefa8d72d8499a6928c3b5b3",
+    "name": "rusqlite",
+    "archiveSha256": "23f2a97da3e3873c73cb2a2e71b35c40ff95e0b1eefa8d72d8499a6928c3b5b3",
+    "matches": true,
+    "lockChecksum": "23f2a97da3e3873c73cb2a2e71b35c40ff95e0b1eefa8d72d8499a6928c3b5b3"
+  },
+  {
+    "archivePath": "C:\\repos\\simdorei\\codex-discord-bridge-ts\\migration\\oracles\\.cargo-cache\\registry\\cache\\index.crates.io-1949cf8c6b5b557f\\libsqlite3-sys-0.38.2.crate",
+    "version": "0.38.2",
+    "sourceReceipt": "Exact official crate archive SHA256; unpacked .cargo-checksum.json absent",
+    "expectedFrozenChecksum": "f1d20bef17f513b9b3004532233187769cd072d790971f4e4da0e346eb6401e8",
+    "name": "libsqlite3-sys",
+    "archiveSha256": "f1d20bef17f513b9b3004532233187769cd072d790971f4e4da0e346eb6401e8",
+    "matches": true,
+    "lockChecksum": "f1d20bef17f513b9b3004532233187769cd072d790971f4e4da0e346eb6401e8"
+  }
+]

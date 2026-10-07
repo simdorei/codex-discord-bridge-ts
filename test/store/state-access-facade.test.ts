@@ -1,0 +1,125 @@
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+
+import {
+  StateAccessFacade,
+  enqueue,
+  enqueueIfMirrorMatches,
+  enqueueInTransaction,
+  markRunning,
+  activate,
+  beginChecked,
+  finish,
+  openCheckedRead,
+} from "../../src/store/state-access-facade.ts";
+import type { IStateAccessFacade } from "../../src/store/state-access-facade.ts";
+
+import * as QueueEnqueue from "../../src/store/queue-enqueue.ts";
+import * as QueueMarkRunning from "../../src/store/queue-mark-running.ts";
+import * as MutationAttempt from "../../src/store/mutation-attempt.ts";
+import { CheckedRead } from "../../src/store/owned-driver.ts";
+
+describe("StateAccessFacade runtime function identity (no database)", () => {
+  it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.enqueue, QueueEnqueue.enqueue);
+    assert.strictEqual(
+      StateAccessFacade.enqueueIfMirrorMatches,
+      QueueEnqueue.enqueueIfMirrorMatches,
+    );
+    assert.strictEqual(
+      StateAccessFacade.enqueueInTransaction,
+      QueueEnqueue.enqueueInTransaction,
+    );
+    assert.strictEqual(StateAccessFacade.markRunning, QueueMarkRunning.markRunning);
+    assert.strictEqual(StateAccessFacade.activate, MutationAttempt.activate);
+    assert.strictEqual(StateAccessFacade.beginChecked, MutationAttempt.beginChecked);
+    assert.strictEqual(StateAccessFacade.finish, MutationAttempt.finish);
+    assert.strictEqual(StateAccessFacade.openCheckedRead, CheckedRead.open);
+  });
+
+  it("exposes exact direct function references via named whole-function aliases", () => {
+    assert.strictEqual(enqueue, QueueEnqueue.enqueue);
+    assert.strictEqual(
+      enqueueIfMirrorMatches,
+      QueueEnqueue.enqueueIfMirrorMatches,
+    );
+    assert.strictEqual(
+      enqueueInTransaction,
+      QueueEnqueue.enqueueInTransaction,
+    );
+    assert.strictEqual(markRunning, QueueMarkRunning.markRunning);
+    assert.strictEqual(activate, MutationAttempt.activate);
+    assert.strictEqual(beginChecked, MutationAttempt.beginChecked);
+    assert.strictEqual(finish, MutationAttempt.finish);
+    assert.strictEqual(openCheckedRead, CheckedRead.open);
+  });
+
+  it("contains only the seven supplied writes and authorized CheckedRead.open", () => {
+    const expected = [
+      "activate",
+      "beginChecked",
+      "enqueue",
+      "enqueueIfMirrorMatches",
+      "enqueueInTransaction",
+      "finish",
+      "markRunning",
+      "openCheckedRead",
+    ];
+    const actual = Object.keys(StateAccessFacade).sort();
+    assert.deepStrictEqual(actual, expected);
+    assert.strictEqual(actual.length, 8);
+  });
+
+  it("does not expose unsupplied readPendingAuthority on the facade", () => {
+    assert.strictEqual("readPendingAuthority" in StateAccessFacade, false);
+  });
+
+  it("does not apply new freezes to StateAccessFacade", () => {
+    assert.strictEqual(Object.isFrozen(StateAccessFacade), false);
+  });
+});
+
+describe("StateAccessFacade type signature fidelity (compile-time)", () => {
+  it("preserves exact whole-function types matching adapter functions", () => {
+    type AssertEqual<T, U> = [T] extends [U]
+      ? [U] extends [T]
+        ? true
+        : false
+      : false;
+
+    const eq1: AssertEqual<typeof StateAccessFacade.enqueue, typeof QueueEnqueue.enqueue> = true;
+    const eq2: AssertEqual<typeof StateAccessFacade.enqueueIfMirrorMatches, typeof QueueEnqueue.enqueueIfMirrorMatches> = true;
+    const eq3: AssertEqual<typeof StateAccessFacade.enqueueInTransaction, typeof QueueEnqueue.enqueueInTransaction> = true;
+    const eq4: AssertEqual<typeof StateAccessFacade.markRunning, typeof QueueMarkRunning.markRunning> = true;
+    const eq5: AssertEqual<typeof StateAccessFacade.activate, typeof MutationAttempt.activate> = true;
+    const eq6: AssertEqual<typeof StateAccessFacade.beginChecked, typeof MutationAttempt.beginChecked> = true;
+    const eq7: AssertEqual<typeof StateAccessFacade.finish, typeof MutationAttempt.finish> = true;
+    const eq8: AssertEqual<typeof StateAccessFacade.openCheckedRead, typeof CheckedRead.open> = true;
+
+    assert.strictEqual(eq1, true);
+    assert.strictEqual(eq2, true);
+    assert.strictEqual(eq3, true);
+    assert.strictEqual(eq4, true);
+    assert.strictEqual(eq5, true);
+    assert.strictEqual(eq6, true);
+    assert.strictEqual(eq7, true);
+    assert.strictEqual(eq8, true);
+  });
+
+  it("strictly conforms to IStateAccessFacade interface", () => {
+    const facade: IStateAccessFacade = StateAccessFacade;
+    assert.strictEqual(typeof facade.enqueue, "function");
+    assert.strictEqual(typeof facade.enqueueIfMirrorMatches, "function");
+    assert.strictEqual(typeof facade.enqueueInTransaction, "function");
+    assert.strictEqual(typeof facade.markRunning, "function");
+    assert.strictEqual(typeof facade.activate, "function");
+    assert.strictEqual(typeof facade.beginChecked, "function");
+    assert.strictEqual(typeof facade.finish, "function");
+    assert.strictEqual(typeof facade.openCheckedRead, "function");
+  });
+
+  it("documents bounded review scope without overclaiming runtime integration", () => {
+    // Note: Identity and signature fidelity only; no databases, live transactions, or data mutations invoked.
+    assert.strictEqual(typeof StateAccessFacade, "object");
+  });
+});

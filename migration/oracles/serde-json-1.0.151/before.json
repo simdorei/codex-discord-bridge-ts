@@ -1,0 +1,9 @@
+{
+  "purpose": "Independent locked serializer oracle, not bridge implementation",
+  "dependencies": [
+    "serde_json=1.0.151",
+    "sha2=0.10.9"
+  ],
+  "scope": "Target-only source/cache/build, no Rust repository writes or live data",
+  "startedUtc": "2026-10-06T04:23:14.0025300Z"
+}

@@ -1,0 +1,12 @@
+{"input":"f64:0","serialized":"0.0","sha256":"8aed642bf5118b9d3c859bd4be35ecac75b6e873cce34e7b6f554b06f75550d7"}
+{"input":"f64:-0","serialized":"-0.0","sha256":"c26617c7ccbcaa6631b45d851b8cf56e21d2ca624bdb1193afdbd4b560702cec"}
+{"input":"f64:0.000001","serialized":"1e-6","sha256":"f465f55ffed8578e62d598c801779430834a6a908a7b2d25b4b6e9cb1e65b68d"}
+{"input":"f64:0.00001","serialized":"0.00001","sha256":"661710915adfa7c40b5dbd6b2122dfa65b1accb57a8b7cdee05423ecfe14b0c7"}
+{"input":"f64:1000000000000000","serialized":"1000000000000000.0","sha256":"c02731631f61648f06ba5501a9c68e2b0a9186a934ff45f40ab28eb6f3673021"}
+{"input":"f64:10000000000000000","serialized":"1e+16","sha256":"a144838520595009e7daf5aff8472573f9ce6a4bcd8c30673675618883464ab0"}
+{"input":"f64:1e21","serialized":"1e+21","sha256":"241c4643fa70b1dcde1205b71be4e3bebb17e9f880c8e1a33d0ead6c27271d3c"}
+{"input":"f64:5e-324","serialized":"5e-324","sha256":"c46e7ca1be4c8734f373a56530787288fa2058d73d07855e9247e949f811a42a"}
+{"input":"f64:1.7976931348623157e308","serialized":"1.7976931348623157e+308","sha256":"c2784e1abd6317452708f3fbf9641c16b959561bc621a1d408c23a20aa2cb585"}
+{"input":"{\"2\":2,\"10\":10,\"z\":{\"b\":2,\"a\":1},\"id\":9007199254740993,\"f\":1.0}","serialized":"{\"10\":10,\"2\":2,\"f\":1.0,\"id\":9007199254740993,\"z\":{\"a\":1,\"b\":2}}","sha256":"23ef518ed45170de2d7918e7bac16f9e3acdbbfdae3a0707cce7cba63ee7e465"}
+{"input":"{\"\\ue000\":1,\"\\ud800\\udc00\":2,\"ascii\":3}","serialized":"{\"ascii\":3,\"\":1,\"𐀀\":2}","sha256":"2ec247be634c6952ad09fd4f6fd15c1f3d6d10fc828cf02ea03cf9d39c4f9f5b"}
+{"input":"{\"null\":null,\"quoted\":\"a\\n\\u0000\\t\\\"\",\"u64\":18446744073709551615,\"i64\":-9223372036854775808}","serialized":"{\"i64\":-9223372036854775808,\"null\":null,\"quoted\":\"a\\n\\u0000\\t\\\"\",\"u64\":18446744073709551615}","sha256":"41269f190f39f7e69f8eb78b649d5c99f27e44f0dfe81198467c5904801b010c"}

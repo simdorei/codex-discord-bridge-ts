@@ -1,0 +1,13 @@
+{
+  "identityNormalizedExact": true,
+  "ingressEnumNormalizedExact": true,
+  "entireSourceRead": true,
+  "caseCountStatic": 58,
+  "maxGeneratedDepth": 256,
+  "generatedCaseBytesUpperBound": 2000,
+  "rawSurrogateEscapesPreserved": true,
+  "noInputValuePreparse": true,
+  "noRuntimeFilesystemNetworkSubprocessEnvironmentOrStdin": true,
+  "allowedToRun": true,
+  "scope": "Test-only oracle, not production Identity parser"
+}

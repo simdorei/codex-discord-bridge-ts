@@ -1,0 +1,8 @@
+{
+  "seed": "123456789abcdef0",
+  "randomIterations": 20000,
+  "finiteUniqueFixtures": 20524,
+  "exitCode": 0,
+  "error": null,
+  "oracleBinary": "C:\\repos\\simdorei\\codex-discord-bridge-ts\\migration\\oracles\\.cargo-build\\debug\\migration-serde-json-oracle.exe"
+}

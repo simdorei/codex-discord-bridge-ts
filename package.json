@@ -1,0 +1,14 @@
+{
+  "name": "codex-discord-bridge-ts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.21.0"
+  },
+  "description": "In-progress current Rust bridge migration; not ready to run",
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "typescript": "7.0.2"
+  }
+}

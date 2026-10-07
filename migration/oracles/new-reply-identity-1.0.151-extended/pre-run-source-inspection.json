@@ -1,0 +1,11 @@
+{
+  "maxDepth": 256,
+  "unchangedTypesIgnoringWhitespace": true,
+  "priorImmutable": "migration/oracles/new-reply-identity-1.0.151",
+  "unchangedCaseGeneration": true,
+  "noExternalEffects": true,
+  "wholeSourceRead": true,
+  "boundedConstantLists": true,
+  "gate": "PASS",
+  "sourceSha256": "a1ffe4bf70a72debef6253150e06556f479b2d1f3379fef848af65bbec5d5680"
+}

@@ -1,0 +1,5 @@
+{
+  "rows": 16,
+  "exitCode": 0,
+  "scope": "Exact declared Rust struct key order and synthetic f64 bits, bigint bounds, nulls and enum/string values"
+}

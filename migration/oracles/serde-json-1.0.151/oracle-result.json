@@ -1,0 +1,7 @@
+{
+  "exitCode": 0,
+  "checkedUtc": "2026-10-06T04:24:56.4880611Z",
+  "oracleSourceSha256": "890649d88ece53b69620633dd50ce82e55e7b4c5dc7b55661779982091f5dcf5",
+  "scope": "Independent fixture serializer oracle only",
+  "lockSha256": "80c6f40366734b4062322d6a0194d469b63713103dc5786eb791a17bf14bc21d"
+}

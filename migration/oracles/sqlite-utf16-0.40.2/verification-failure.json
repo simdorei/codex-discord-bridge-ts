@@ -1,0 +1,8 @@
+{
+  "dependencyVersionsChanged": false,
+  "secondError": "Unpacked .cargo-checksum.json absent; cannot use that receipt",
+  "resolution": "Exact package versions and direct frozen lock checksums confirmed; official cached .crate archive SHA256 matches both",
+  "phase": "Metadata verification before compilation",
+  "initialError": "Initial combined regex verifier rejected matching lock metadata",
+  "sourceChanged": false
+}

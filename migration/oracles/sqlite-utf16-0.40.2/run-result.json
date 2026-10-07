@@ -1,0 +1,7 @@
+{
+  "locked": true,
+  "checkedUtc": "2026-10-06T06:28:30.8759344Z",
+  "scope": "Exact parent TESTONLY in-memory oracle; no frozen/original Rust modifications",
+  "exitCode": 0,
+  "offline": true
+}

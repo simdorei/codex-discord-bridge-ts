@@ -1,0 +1,26 @@
+[
+  {
+    "sha256": "a1ffe4bf70a72debef6253150e06556f479b2d1f3379fef848af65bbec5d5680",
+    "path": "migration/oracles/new-reply-identity-1.0.151-extended/src/main.rs"
+  },
+  {
+    "sha256": "d090e49c5f139cd08ddf79055aa821b34f494647140efff06a9ba342326947f7",
+    "path": "migration/oracles/new-reply-identity-1.0.151-extended/Cargo.toml"
+  },
+  {
+    "sha256": "3fb226400220346aa7c58be6ee39decf683a91fc999a5893020d671f36dc468e",
+    "path": "migration/oracles/new-reply-identity-1.0.151-extended/Cargo.lock"
+  },
+  {
+    "sha256": "2351f3c4a542576a62d5288941443bb8581a3efa74933b36f3b09db7e54cfc81",
+    "path": "migration/oracles/new-reply-identity-1.0.151-extended/stdout.ndjson"
+  },
+  {
+    "sha256": "54fa40c8875c01c3f1eefd0b58fc7ce788284a1b5bb4f5e87d2eef8cdd6ca6d7",
+    "path": "migration/oracles/new-reply-identity-1.0.151-extended/cases.ndjson"
+  },
+  {
+    "sha256": "56935fa72e8889ec673434420ab98debfb9caa772666b41691016272dd7c286b",
+    "path": "migration/oracles/new-reply-identity-1.0.151-extended/observed-results.json"
+  }
+]

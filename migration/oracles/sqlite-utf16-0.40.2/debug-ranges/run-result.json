@@ -1,0 +1,11 @@
+{
+  "offline": true,
+  "sourcePath": "C:\\repos\\simdorei\\codex-discord-bridge-ts/migration/oracles/sqlite-utf16-0.40.2/src/bin/debug_ranges.rs",
+  "exitCode": 0,
+  "sourceSha256": "aaa0211b529b568172058f6b0c95afe9a1c15f615637c1095f733705b428287b",
+  "author": "ExactparentTESTONLYbin",
+  "outputPath": "C:\\repos\\simdorei\\codex-discord-bridge-ts/migration/oracles/sqlite-utf16-0.40.2/debug-ranges/stdout.json",
+  "locked": true,
+  "checkedUtc": "2026-10-06T06:39:37.3091696Z",
+  "toolchain": "1.97.1explicit"
+}

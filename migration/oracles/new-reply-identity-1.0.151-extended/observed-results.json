@@ -1,0 +1,1147 @@
+{
+  "metadata": {
+    "type": "metadata",
+    "metadata": {
+      "oracle": "new-reply-identity-1.0.151",
+      "serde": "1.0.228",
+      "serde_json": "1.0.151",
+      "case_count": 161
+    }
+  },
+  "caseCount": 161,
+  "original58OutputsByteIdentical": true,
+  "accept": 47,
+  "reject": 114,
+  "rawInputsPreserved": true,
+  "summaryOmitsTypedNumericValues": true,
+  "authoritativeTypedValues": "stdout.ndjson contains exact Rust serde integer spellings",
+  "cases": [
+    {
+      "name": "baseline",
+      "ok": true,
+      "error": null,
+      "rawSha256": "ba30bae2170c2776f72db7a9c1fccaa9239e60c74bf606112c9648feff8fb016",
+      "rawUtf8Bytes": 238
+    },
+    {
+      "name": "missing_event_id",
+      "ok": true,
+      "error": null,
+      "rawSha256": "80402eeef43ebf3ea424dfcde159a39399be0cf1578e0412a931040a62955416",
+      "rawUtf8Bytes": 223
+    },
+    {
+      "name": "missing_ingress_id",
+      "ok": false,
+      "error": "missing field `ingress_id` at line 1 column 217",
+      "rawSha256": "a439cf56da5f6add446d677f51a4b7ee3cd2f3715bd82d4ab89d3dba12838829",
+      "rawUtf8Bytes": 217
+    },
+    {
+      "name": "missing_job_id",
+      "ok": false,
+      "error": "missing field `job_id` at line 1 column 221",
+      "rawSha256": "5bbb4b267a4b296a247f4675c10dea421c10f911a0d456f1692eb89169c3e8aa",
+      "rawUtf8Bytes": 221
+    },
+    {
+      "name": "missing_thread_id",
+      "ok": false,
+      "error": "missing field `thread_id` at line 1 column 219",
+      "rawSha256": "1ac5bb343958e9953b915a21371a0c5c05077d3d731691899c05549ac0c86994",
+      "rawUtf8Bytes": 219
+    },
+    {
+      "name": "missing_cwd",
+      "ok": false,
+      "error": "missing field `cwd` at line 1 column 225",
+      "rawSha256": "c242eaf055f35393b8d7cf14d5740c72bcfa7fc404e7aa87e98077da7ff7e8a3",
+      "rawUtf8Bytes": 225
+    },
+    {
+      "name": "missing_state_db",
+      "ok": false,
+      "error": "missing field `state_db` at line 1 column 216",
+      "rawSha256": "21c4ea0e70fd93cbc81c12136a605694c8272a702e74edc02307ece31eca160f",
+      "rawUtf8Bytes": 216
+    },
+    {
+      "name": "missing_channel_id",
+      "ok": false,
+      "error": "missing field `channel_id` at line 1 column 221",
+      "rawSha256": "66e5ef468adb57d03597738a091f4b5e3af65d56e02bf5e0dde9fe3b1530cc73",
+      "rawUtf8Bytes": 221
+    },
+    {
+      "name": "missing_origin_channel_id",
+      "ok": false,
+      "error": "missing field `origin_channel_id` at line 1 column 214",
+      "rawSha256": "8ff9206dfb18446885877a1beb2ee40f2750131a728d4ed6fe29efc4ccdaf91a",
+      "rawUtf8Bytes": 214
+    },
+    {
+      "name": "missing_kind",
+      "ok": false,
+      "error": "missing field `kind` at line 1 column 221",
+      "rawSha256": "a00b8d9b201008c9380f52e1eb4729372a2f626fe7c55d9288fbfddaf2b167c3",
+      "rawUtf8Bytes": 221
+    },
+    {
+      "name": "missing_creation_generation",
+      "ok": false,
+      "error": "missing field `creation_generation` at line 1 column 214",
+      "rawSha256": "487f830db42f568deb75f6813bccabb97b38ec51dc6395676506c62c91a3727b",
+      "rawUtf8Bytes": 214
+    },
+    {
+      "name": "missing_prompt_sha256",
+      "ok": false,
+      "error": "missing field `prompt_sha256` at line 1 column 216",
+      "rawSha256": "fc6c8de7969ba6a5a9e39d114913c5f105c68bf832447c0a8fbd01152cac36e6",
+      "rawUtf8Bytes": 216
+    },
+    {
+      "name": "missing_acknowledgement",
+      "ok": false,
+      "error": "missing field `acknowledgement` at line 1 column 212",
+      "rawSha256": "a995b42e58d8386cd84c7ca0e0f9ee3412ac841ac4751581ce78110402ffebb5",
+      "rawUtf8Bytes": 212
+    },
+    {
+      "name": "duplicate_known_job_id",
+      "ok": false,
+      "error": "duplicate field `job_id` at line 1 column 47",
+      "rawSha256": "85c3e9aaa3e1cde7c0a5a51baebdc8f5da48fe59852d32a2696667e88da21635",
+      "rawUtf8Bytes": 255
+    },
+    {
+      "name": "escaped_name_job_id",
+      "ok": true,
+      "error": null,
+      "rawSha256": "b1e9e5be5c80bb5a5b4cc81abf880ca0371e065959e60f48630dd626da9cf6b5",
+      "rawUtf8Bytes": 243
+    },
+    {
+      "name": "duplicate_escaped_job_id",
+      "ok": false,
+      "error": "duplicate field `job_id` at line 1 column 52",
+      "rawSha256": "72152a32a8158e30506528a29b7faa39b21cae9c10b8d04db00ff031e93632f5",
+      "rawUtf8Bytes": 260
+    },
+    {
+      "name": "duplicate_null_event_id",
+      "ok": false,
+      "error": "duplicate field `event_id` at line 1 column 160",
+      "rawSha256": "4285b681154deba707d3bedc18f00f7a7ee87618e8a6d6d35bb2dac1244219a9",
+      "rawUtf8Bytes": 255
+    },
+    {
+      "name": "duplicate_event_id_some_then_null",
+      "ok": false,
+      "error": "duplicate field `event_id` at line 1 column 159",
+      "rawSha256": "11c8a61302128aff05635cde742441d70c098915389926fcd34f60630f9c3b93",
+      "rawUtf8Bytes": 254
+    },
+    {
+      "name": "duplicate_event_id_null_then_some",
+      "ok": false,
+      "error": "duplicate field `event_id` at line 1 column 160",
+      "rawSha256": "9a416f316d24afb847edc73c1674468b33c8fe80753b847566d5fa4997bcf086",
+      "rawUtf8Bytes": 254
+    },
+    {
+      "name": "duplicate_unknown_key",
+      "ok": true,
+      "error": null,
+      "rawSha256": "50add252e8fc6d9c9a01e3481996692bf67da9319aa2b27eacf8c6d9b27c3f8d",
+      "rawUtf8Bytes": 268
+    },
+    {
+      "name": "array_exact_12",
+      "ok": true,
+      "error": null,
+      "rawSha256": "eb629ca9a6663e9f0e4c5116de4feb80321b6450f19570d3dee5b557bcc6ee7b",
+      "rawUtf8Bytes": 80
+    },
+    {
+      "name": "array_exact_12_null_event",
+      "ok": true,
+      "error": null,
+      "rawSha256": "b97c59732f774a99e1bb932c16c0c4b6ccc624ad894a1604ebea52d87fa9cde2",
+      "rawUtf8Bytes": 81
+    },
+    {
+      "name": "array_truncated_2",
+      "ok": false,
+      "error": "invalid length 2, expected struct Identity with 12 elements at line 1 column 17",
+      "rawSha256": "a412ad854b77c8fa441a405e107538d936f3ee55981e1c3964cd0a2d39046434",
+      "rawUtf8Bytes": 17
+    },
+    {
+      "name": "array_truncated_11",
+      "ok": false,
+      "error": "invalid length 11, expected struct Identity with 12 elements at line 1 column 72",
+      "rawSha256": "7dd6db77bc6ed8b434131db3919ad25dfab0b84623f92d8fe1709f93e2bf8a37",
+      "rawUtf8Bytes": 72
+    },
+    {
+      "name": "array_extra_field_13",
+      "ok": false,
+      "error": "trailing characters at line 1 column 81",
+      "rawSha256": "f99d1edcaf75daf2d82cfdacc861034271c22452bf9170c2f1931e6bd5088c67",
+      "rawUtf8Bytes": 88
+    },
+    {
+      "name": "i64_channel_id_float_1_0",
+      "ok": false,
+      "error": "invalid type: floating point `1.0`, expected i64 at line 1 column 109",
+      "rawSha256": "79f10c23e292fc70cfe6982dce72691e83d740f8f775fccb9e7500e578b914fb",
+      "rawUtf8Bytes": 238
+    },
+    {
+      "name": "i64_channel_id_exp_1e0",
+      "ok": false,
+      "error": "invalid type: floating point `1.0`, expected i64 at line 1 column 109",
+      "rawSha256": "009fb60c687902ce8a8738dc152c9a109f3ddafd1ba7333a56f505fd540240a8",
+      "rawUtf8Bytes": 238
+    },
+    {
+      "name": "i64_channel_id_neg_zero",
+      "ok": false,
+      "error": "invalid type: floating point `-0.0`, expected i64 at line 1 column 108",
+      "rawSha256": "f36d3abf3152f787da825ad3026878a1551ee32e765e7e665a301fd5ecd906a9",
+      "rawUtf8Bytes": 237
+    },
+    {
+      "name": "i64_channel_id_max",
+      "ok": true,
+      "error": null,
+      "rawSha256": "66fd9f796cff489341936f4f1ff88404f0f6f3b8ec1f9a0afa11d5da759f1bec",
+      "rawUtf8Bytes": 254
+    },
+    {
+      "name": "i64_channel_id_min",
+      "ok": true,
+      "error": null,
+      "rawSha256": "701fa6dd66a46805bb39eb992747693d402eb4dd641232beabadfb5cbcec5eb4",
+      "rawUtf8Bytes": 255
+    },
+    {
+      "name": "i64_channel_id_overflow",
+      "ok": false,
+      "error": "invalid value: integer `9223372036854775808`, expected i64 at line 1 column 125",
+      "rawSha256": "14c044eee37ae795ed0ccb8ccc1d5fbe25d8bbfc3fd348701660abc93a3a6e17",
+      "rawUtf8Bytes": 254
+    },
+    {
+      "name": "i64_channel_id_u64_max",
+      "ok": false,
+      "error": "invalid value: integer `18446744073709551615`, expected i64 at line 1 column 126",
+      "rawSha256": "e228944227dc4fa664601dff502a382b58240b4d83a4b18febce91dc7fe40e77",
+      "rawUtf8Bytes": 255
+    },
+    {
+      "name": "i64_channel_id_2_pow_53_plus_1",
+      "ok": true,
+      "error": null,
+      "rawSha256": "85934d8a2c79a25ea4b2274b72e084439ee3ca46141dab935613287764507c01",
+      "rawUtf8Bytes": 251
+    },
+    {
+      "name": "enum_message",
+      "ok": true,
+      "error": null,
+      "rawSha256": "ba30bae2170c2776f72db7a9c1fccaa9239e60c74bf606112c9648feff8fb016",
+      "rawUtf8Bytes": 238
+    },
+    {
+      "name": "enum_interaction",
+      "ok": true,
+      "error": null,
+      "rawSha256": "eac557f3ac10c962ecdeda3be795541fadff3979e4bf6f150c604678c2be64a3",
+      "rawUtf8Bytes": 242
+    },
+    {
+      "name": "enum_action",
+      "ok": true,
+      "error": null,
+      "rawSha256": "b9366982d6201bdc83287746e380227f46d03f74ca16a859a55394cee822497a",
+      "rawUtf8Bytes": 237
+    },
+    {
+      "name": "enum_invalid_component",
+      "ok": false,
+      "error": "unknown variant `component`, expected one of `message`, `interaction`, `action` at line 1 column 167",
+      "rawSha256": "2b480e08bc483e822dda4ebc264d8cf076980bdcc1137827452405172dc889dd",
+      "rawUtf8Bytes": 240
+    },
+    {
+      "name": "enum_object_message_null",
+      "ok": true,
+      "error": null,
+      "rawSha256": "5ff5b738d74187788072d1c9df5a36e6796c7033416517ab65d274729633cbfd",
+      "rawUtf8Bytes": 245
+    },
+    {
+      "name": "enum_object_message_non_null",
+      "ok": false,
+      "error": "invalid type: string \"payload\", expected unit at line 1 column 176",
+      "rawSha256": "c21f9f870a007028e44460805e818802ad26d657910a7bb83422c2fc55fc6829",
+      "rawUtf8Bytes": 250
+    },
+    {
+      "name": "enum_object_multiple_keys",
+      "ok": false,
+      "error": "expected value at line 1 column 171",
+      "rawSha256": "17a5e553bbde02da207188820485935718e4c07621aa0eb11708e73d5460b6c9",
+      "rawUtf8Bytes": 264
+    },
+    {
+      "name": "unknown_1e999",
+      "ok": true,
+      "error": null,
+      "rawSha256": "2758111fc63fff694a2f3a42cd0e9d0a0601a69d77f1ac4f4cffa63bf5ef50f9",
+      "rawUtf8Bytes": 252
+    },
+    {
+      "name": "known_numeric_channel_id_1e999",
+      "ok": false,
+      "error": "number out of range at line 1 column 111",
+      "rawSha256": "edb3778971077976e77035214ae85bfb488552410410b1cdff720346fc29c599",
+      "rawUtf8Bytes": 240
+    },
+    {
+      "name": "known_string_ingress_id_1e999",
+      "ok": false,
+      "error": "number out of range at line 1 column 19",
+      "rawSha256": "b0e4a8359034521dc7db1ae6bfad69f1841e4a0b507faa89dd18a6490320bf0d",
+      "rawUtf8Bytes": 236
+    },
+    {
+      "name": "unknown_lone_surrogate",
+      "ok": true,
+      "error": null,
+      "rawSha256": "645463a957f93cec4cc75518a88e3e91ead4f1d0739b93eddcf47e4abf56fa86",
+      "rawUtf8Bytes": 255
+    },
+    {
+      "name": "known_string_lone_surrogate",
+      "ok": false,
+      "error": "unexpected end of hex escape at line 1 column 22",
+      "rawSha256": "81a18192ae62417980a52519ae8172102bb86153b610ca5c4b19197e792404b8",
+      "rawUtf8Bytes": 239
+    },
+    {
+      "name": "toplevel_key_lone_surrogate",
+      "ok": false,
+      "error": "unexpected end of hex escape at line 1 column 246",
+      "rawSha256": "7967c3c0b57a381ebddffc044703d2300dced269e42ef68fba91fe36b897b6fe",
+      "rawUtf8Bytes": 253
+    },
+    {
+      "name": "nested_unknown_key_lone_surrogate",
+      "ok": true,
+      "error": null,
+      "rawSha256": "e78fe99241ad593776155cdbb7db13d40574bae497ba4dea414a71e9e3cbd1b3",
+      "rawUtf8Bytes": 263
+    },
+    {
+      "name": "known_string_valid_surrogate_pair",
+      "ok": true,
+      "error": null,
+      "rawSha256": "7f44f2dbedc10caadc0807e63f46f3ea0a3d67a40434c66b1c79bf7fe9887a21",
+      "rawUtf8Bytes": 245
+    },
+    {
+      "name": "unknown_container_depth_127",
+      "ok": true,
+      "error": null,
+      "rawSha256": "bbd575790d39bd7a9407a14de07a91856d8297be8e9206bc2689251996bd489f",
+      "rawUtf8Bytes": 502
+    },
+    {
+      "name": "known_string_container_depth_127",
+      "ok": false,
+      "error": "invalid type: sequence, expected a string at line 1 column 14",
+      "rawSha256": "b8a62a4fae0c0de8d5da5520bf7ba43c44a32b435c632df50d5354373779b25e",
+      "rawUtf8Bytes": 486
+    },
+    {
+      "name": "unknown_container_depth_128",
+      "ok": true,
+      "error": null,
+      "rawSha256": "ce4b727f754d9e0d64e6b949e78484068b25ab09b0974a789ddb21139c48ff68",
+      "rawUtf8Bytes": 504
+    },
+    {
+      "name": "known_string_container_depth_128",
+      "ok": false,
+      "error": "invalid type: sequence, expected a string at line 1 column 14",
+      "rawSha256": "41b8d9cb7f698269312f5c954804f4e6dd5f22f794e0f01a2b3d7f82a8722a94",
+      "rawUtf8Bytes": 488
+    },
+    {
+      "name": "unknown_container_depth_129",
+      "ok": true,
+      "error": null,
+      "rawSha256": "2591d85edbd8da3ceb7f14d02c6ecdaccad30ee2fcb05b4c244d1515ca05da2b",
+      "rawUtf8Bytes": 506
+    },
+    {
+      "name": "known_string_container_depth_129",
+      "ok": false,
+      "error": "invalid type: sequence, expected a string at line 1 column 14",
+      "rawSha256": "1f363df4e2f72c73c42324075e08875b8d9ce4c0c58083b833e2a3ce719d418b",
+      "rawUtf8Bytes": 490
+    },
+    {
+      "name": "unknown_container_depth_150",
+      "ok": true,
+      "error": null,
+      "rawSha256": "812e379221dfedeb67492d5da514c58a951e7894a4a66e498759218f4f2011e1",
+      "rawUtf8Bytes": 548
+    },
+    {
+      "name": "known_string_container_depth_150",
+      "ok": false,
+      "error": "invalid type: sequence, expected a string at line 1 column 14",
+      "rawSha256": "bd3f6f3f87a76c32b0e3206c59448cf2b3b0bcdb4dd3ded8ca90b426dc1c38eb",
+      "rawUtf8Bytes": 532
+    },
+    {
+      "name": "unknown_container_depth_256",
+      "ok": true,
+      "error": null,
+      "rawSha256": "ab8a54be1ce4bbb840f8b4d9c373805f3700d34c0f547c15b3fb85e3933147f3",
+      "rawUtf8Bytes": 760
+    },
+    {
+      "name": "known_string_container_depth_256",
+      "ok": false,
+      "error": "invalid type: sequence, expected a string at line 1 column 14",
+      "rawSha256": "9ca2930b1714055dc2901f85a0ae652da61cb03c949f13d4f7eaa8aa34063157",
+      "rawUtf8Bytes": 744
+    },
+    {
+      "name": "enum_object_interaction_null",
+      "ok": true,
+      "error": null,
+      "rawSha256": "839274ba4c45b494a31f8555d186b6c864780738bf9a5921991e8c567a8b7fd7",
+      "rawUtf8Bytes": 249
+    },
+    {
+      "name": "enum_object_action_null",
+      "ok": true,
+      "error": null,
+      "rawSha256": "7d3b35af00eec4b8c1f04ec3e4c2397fca07d278096b81ecc6f526e447520870",
+      "rawUtf8Bytes": 244
+    },
+    {
+      "name": "enum_object_duplicate_key_same_variant",
+      "ok": false,
+      "error": "expected value at line 1 column 171",
+      "rawSha256": "8a914b998d70fd0e313fa7540b9dd87cdd3e082ab5489b693d5fb6ca1053f9de",
+      "rawUtf8Bytes": 260
+    },
+    {
+      "name": "enum_object_empty",
+      "ok": false,
+      "error": "expected value at line 1 column 158",
+      "rawSha256": "f153b531897731dc5c3dbf3278ebaa153171333b41c9acd20178d9f5cc2e0dfa",
+      "rawUtf8Bytes": 231
+    },
+    {
+      "name": "enum_object_payload_bool",
+      "ok": false,
+      "error": "invalid type: boolean `true`, expected unit at line 1 column 171",
+      "rawSha256": "88c8b54320d173d122a1bc055f8d10dfd36a6daae78a831e6d04b9ec74ce3bce",
+      "rawUtf8Bytes": 245
+    },
+    {
+      "name": "enum_object_payload_number",
+      "ok": false,
+      "error": "invalid type: integer `123`, expected unit at line 1 column 170",
+      "rawSha256": "63a26f4ea5c79669e006dd7b7dea58b401b46fcee4584ebcd7e502a01b60a63c",
+      "rawUtf8Bytes": 244
+    },
+    {
+      "name": "enum_object_payload_string",
+      "ok": false,
+      "error": "invalid type: string \"invalid_payload\", expected unit at line 1 column 184",
+      "rawSha256": "5b49cbc4f5ddcb7d19b6f10bdc62f7cacce7437f80dac847bf87d4a6dc4c9bb2",
+      "rawUtf8Bytes": 258
+    },
+    {
+      "name": "enum_object_payload_array",
+      "ok": false,
+      "error": "invalid type: sequence, expected unit at line 1 column 167",
+      "rawSha256": "af5a2a590febd7b2c3f0f51904cc3b70f34c932be934076fa9c373f19979b288",
+      "rawUtf8Bytes": 243
+    },
+    {
+      "name": "enum_object_payload_object",
+      "ok": false,
+      "error": "invalid type: map, expected unit at line 1 column 167",
+      "rawSha256": "d415cd57588f3f329fcdf4a075c6120c0efafaf1945db2485f99706637c06c41",
+      "rawUtf8Bytes": 243
+    },
+    {
+      "name": "empty_string_ingress_id",
+      "ok": true,
+      "error": null,
+      "rawSha256": "275384bbce52e7d78651025fd31e7fc1b56c5ea99f0f83b60fe02cb4e7f47030",
+      "rawUtf8Bytes": 233
+    },
+    {
+      "name": "empty_string_job_id",
+      "ok": true,
+      "error": null,
+      "rawSha256": "f74c8839ef31c0c2c729b92859dd11ed7df482f5809950be240f0103d99a9238",
+      "rawUtf8Bytes": 233
+    },
+    {
+      "name": "empty_string_thread_id",
+      "ok": true,
+      "error": null,
+      "rawSha256": "fc86cec2eb8abe1d4f0e67ad1ad1e77ab8ca042ddca50607af6e23284219112a",
+      "rawUtf8Bytes": 234
+    },
+    {
+      "name": "empty_string_cwd",
+      "ok": true,
+      "error": null,
+      "rawSha256": "a68e69c8d665b29043c922163ef2de226665b3149b05369c62f1aa435ad24c2a",
+      "rawUtf8Bytes": 234
+    },
+    {
+      "name": "empty_string_state_db",
+      "ok": true,
+      "error": null,
+      "rawSha256": "989633c65ab8c77cbaa19f64c4ba3678e8a2269d94c3dee9a4685f420f906f83",
+      "rawUtf8Bytes": 230
+    },
+    {
+      "name": "empty_string_prompt_sha256",
+      "ok": true,
+      "error": null,
+      "rawSha256": "8986e6e47dc8407386af73c889ffb6ec5db341eb2eb318ee4ce06e1a84ba0fa6",
+      "rawUtf8Bytes": 235
+    },
+    {
+      "name": "empty_string_acknowledgement",
+      "ok": true,
+      "error": null,
+      "rawSha256": "8845c7e96ba585249d5bf3cfba5984b5ec46c33d45728b7e8f1f58b42ff98ab9",
+      "rawUtf8Bytes": 233
+    },
+    {
+      "name": "known_field_null_ingress_id",
+      "ok": false,
+      "error": "invalid type: null, expected a string at line 1 column 18",
+      "rawSha256": "5e8f780a9632497fc31dc1fb78da2162354ab897562e66a3f5cc8ff51074fec4",
+      "rawUtf8Bytes": 235
+    },
+    {
+      "name": "known_field_bool_ingress_id",
+      "ok": false,
+      "error": "invalid type: boolean `true`, expected a string at line 1 column 18",
+      "rawSha256": "33cfdca5ddd6dc01ffbc927b8eae0acd90dd0595a18d0208e75406eda7604163",
+      "rawUtf8Bytes": 235
+    },
+    {
+      "name": "known_field_wrong_numeric_ingress_id",
+      "ok": false,
+      "error": "invalid type: integer `123`, expected a string at line 1 column 17",
+      "rawSha256": "e8488acd02bd03df8a79367d51f4ffd22f334b5caecce3384fb1fc03c1e2729e",
+      "rawUtf8Bytes": 234
+    },
+    {
+      "name": "known_field_null_job_id",
+      "ok": false,
+      "error": "invalid type: null, expected a string at line 1 column 35",
+      "rawSha256": "aed53d4a52f3eca7c8549c8a23a8427bd4e1ee9ab705ae3a543749c6f00cbcf5",
+      "rawUtf8Bytes": 235
+    },
+    {
+      "name": "known_field_bool_job_id",
+      "ok": false,
+      "error": "invalid type: boolean `true`, expected a string at line 1 column 35",
+      "rawSha256": "f1a51ad307d76d67b0a52ab60a76d4be06c94318dbb6a626488d8d5dcee7631b",
+      "rawUtf8Bytes": 235
+    },
+    {
+      "name": "known_field_wrong_numeric_job_id",
+      "ok": false,
+      "error": "invalid type: integer `123`, expected a string at line 1 column 34",
+      "rawSha256": "ad42ce1a4b7a205ebeba099df9146926a5bc056dd89b9a91accc99e742d49dc8",
+      "rawUtf8Bytes": 234
+    },
+    {
+      "name": "known_field_null_thread_id",
+      "ok": false,
+      "error": "invalid type: null, expected a string at line 1 column 55",
+      "rawSha256": "26a6bd442a51bfc6dc45d4f95eaed4003ebf3567d8af91dfb04061ce558fa98b",
+      "rawUtf8Bytes": 236
+    },
+    {
+      "name": "known_field_bool_thread_id",
+      "ok": false,
+      "error": "invalid type: boolean `true`, expected a string at line 1 column 55",
+      "rawSha256": "87436576864ab64578b15bdd5de4703966b5707a73089daf2105db6f2217a52d",
+      "rawUtf8Bytes": 236
+    },
+    {
+      "name": "known_field_wrong_numeric_thread_id",
+      "ok": false,
+      "error": "invalid type: integer `123`, expected a string at line 1 column 54",
+      "rawSha256": "e183c09c4bc9d559788184a84a217e24207ea9e7452cdbd13d949d7c63f1e793",
+      "rawUtf8Bytes": 235
+    },
+    {
+      "name": "known_field_null_cwd",
+      "ok": false,
+      "error": "invalid type: null, expected a string at line 1 column 68",
+      "rawSha256": "e76197828ed74ba15c2aabccc9191e783414a1a2858b9fbebd47ad1e3be3cd70",
+      "rawUtf8Bytes": 236
+    },
+    {
+      "name": "known_field_bool_cwd",
+      "ok": false,
+      "error": "invalid type: boolean `true`, expected a string at line 1 column 68",
+      "rawSha256": "fcb4603949e724f8398048541ca852730aaadfa77cd35df015e0787f8662101c",
+      "rawUtf8Bytes": 236
+    },
+    {
+      "name": "known_field_wrong_numeric_cwd",
+      "ok": false,
+      "error": "invalid type: integer `123`, expected a string at line 1 column 67",
+      "rawSha256": "6560ef7897976a76783fcfd74f005013db07d18ea5756897977f0da016f6a53b",
+      "rawUtf8Bytes": 235
+    },
+    {
+      "name": "known_field_null_state_db",
+      "ok": false,
+      "error": "invalid type: null, expected a string at line 1 column 86",
+      "rawSha256": "1488709e690d9f33ba52573c17a05334a0b03b28f5e174cfb1a463fbc39ee803",
+      "rawUtf8Bytes": 232
+    },
+    {
+      "name": "known_field_bool_state_db",
+      "ok": false,
+      "error": "invalid type: boolean `true`, expected a string at line 1 column 86",
+      "rawSha256": "2beafef307876242276adac2efb10c4d44b892d876f03f686e4262bd9b10c6ed",
+      "rawUtf8Bytes": 232
+    },
+    {
+      "name": "known_field_wrong_numeric_state_db",
+      "ok": false,
+      "error": "invalid type: integer `123`, expected a string at line 1 column 85",
+      "rawSha256": "9090ffbb723768bc316dc1f4da2470ea121798f781894dba22a41c9dbf043d23",
+      "rawUtf8Bytes": 231
+    },
+    {
+      "name": "known_field_null_channel_id",
+      "ok": false,
+      "error": "invalid type: null, expected i64 at line 1 column 110",
+      "rawSha256": "ce024fdcb161de98b87d7a6132bc1e56b7cad7da283ee629a01f421e8657ddb8",
+      "rawUtf8Bytes": 239
+    },
+    {
+      "name": "known_field_bool_channel_id",
+      "ok": false,
+      "error": "invalid type: boolean `true`, expected i64 at line 1 column 110",
+      "rawSha256": "c82dda5cb0e42edd72857ed3c1b68b4ae824025de9ad45185b4ff07fc75f0ba9",
+      "rawUtf8Bytes": 239
+    },
+    {
+      "name": "known_field_wrong_numeric_channel_id",
+      "ok": false,
+      "error": "invalid type: floating point `123.45`, expected i64 at line 1 column 112",
+      "rawSha256": "fbc37c7d5483824e5ded4eb8d97ebd4bf9fd64376fd7b97be37f87d6154efa87",
+      "rawUtf8Bytes": 241
+    },
+    {
+      "name": "known_field_null_origin_channel_id",
+      "ok": false,
+      "error": "invalid type: null, expected i64 at line 1 column 134",
+      "rawSha256": "df80a0cfabfd3ca8f23ac86dca1a14f894b0bd12d539076fe78472512c231bf0",
+      "rawUtf8Bytes": 239
+    },
+    {
+      "name": "known_field_bool_origin_channel_id",
+      "ok": false,
+      "error": "invalid type: boolean `true`, expected i64 at line 1 column 134",
+      "rawSha256": "d0eafdccf289a34a3b0316ba53345c9f686872d8992759f199872364d0eabbc4",
+      "rawUtf8Bytes": 239
+    },
+    {
+      "name": "known_field_wrong_numeric_origin_channel_id",
+      "ok": false,
+      "error": "invalid type: floating point `123.45`, expected i64 at line 1 column 136",
+      "rawSha256": "d1fafe77e5e041ab1ed15a2c6544826dcf0f42cfa1655881431a3d26a34eaf22",
+      "rawUtf8Bytes": 241
+    },
+    {
+      "name": "known_field_null_event_id",
+      "ok": true,
+      "error": null,
+      "rawSha256": "d8267893106ea5334d0303afded33ffeb6296151c2f51cebb79820452af44ae7",
+      "rawUtf8Bytes": 239
+    },
+    {
+      "name": "known_field_bool_event_id",
+      "ok": false,
+      "error": "invalid type: boolean `true`, expected i64 at line 1 column 149",
+      "rawSha256": "288479ed3b5d9ff5b3d7c09ebd2b5d232b5240721d331d82b2d7dca4bd536024",
+      "rawUtf8Bytes": 239
+    },
+    {
+      "name": "known_field_wrong_numeric_event_id",
+      "ok": false,
+      "error": "invalid type: floating point `123.45`, expected i64 at line 1 column 151",
+      "rawSha256": "51f74befdf77d587955dc07f78a36146c66c0c5c6c75984511c60ca5492fe24f",
+      "rawUtf8Bytes": 241
+    },
+    {
+      "name": "known_field_null_kind",
+      "ok": false,
+      "error": "expected value at line 1 column 157",
+      "rawSha256": "2de1a90d5d6990ccb5e29857db39a4906e7bbad08e6da431957d6f87867f1522",
+      "rawUtf8Bytes": 233
+    },
+    {
+      "name": "known_field_bool_kind",
+      "ok": false,
+      "error": "expected value at line 1 column 157",
+      "rawSha256": "903b36e9cc67aa4eddd44d79805a0b69aa8c2eccc9e469d6991039f41722e84c",
+      "rawUtf8Bytes": 233
+    },
+    {
+      "name": "known_field_wrong_numeric_kind",
+      "ok": false,
+      "error": "expected value at line 1 column 157",
+      "rawSha256": "e212312c50932ba6d7f89f92c4e0d2616e3e8553de4f014f9afd5d2f5a1906f1",
+      "rawUtf8Bytes": 232
+    },
+    {
+      "name": "known_field_null_creation_generation",
+      "ok": false,
+      "error": "invalid type: null, expected i64 at line 1 column 192",
+      "rawSha256": "14c83ade79326cfa3d88f134ce5ef32ba80ecbbfe4d5af9e8c82383ab759b51e",
+      "rawUtf8Bytes": 241
+    },
+    {
+      "name": "known_field_bool_creation_generation",
+      "ok": false,
+      "error": "invalid type: boolean `true`, expected i64 at line 1 column 192",
+      "rawSha256": "ac0d010d23bb88323af1a9c26a6f7595c554409a1f56d3c453bf1c841e6ce485",
+      "rawUtf8Bytes": 241
+    },
+    {
+      "name": "known_field_wrong_numeric_creation_generation",
+      "ok": false,
+      "error": "invalid type: floating point `123.45`, expected i64 at line 1 column 194",
+      "rawSha256": "ee4129deb1a982a176fd490f1c2192974cf0c5db0791dbe543d886a5d3e98b80",
+      "rawUtf8Bytes": 243
+    },
+    {
+      "name": "known_field_null_prompt_sha256",
+      "ok": false,
+      "error": "invalid type: null, expected a string at line 1 column 210",
+      "rawSha256": "6834f566bf3033e47ec0a0a6fbceb05d9a79a2b1a9c6805a5d8e9a7d429b28c2",
+      "rawUtf8Bytes": 237
+    },
+    {
+      "name": "known_field_bool_prompt_sha256",
+      "ok": false,
+      "error": "invalid type: boolean `true`, expected a string at line 1 column 210",
+      "rawSha256": "441190da5f17b2ba7187f3dc98f2c9b2c87a2aaefcafaee74af6878193b8dc3b",
+      "rawUtf8Bytes": 237
+    },
+    {
+      "name": "known_field_wrong_numeric_prompt_sha256",
+      "ok": false,
+      "error": "invalid type: integer `123`, expected a string at line 1 column 209",
+      "rawSha256": "232d20f6f1fd35b8cf1b99a9e7f537d96941c9eda1c9892aab15d5d9516a878c",
+      "rawUtf8Bytes": 236
+    },
+    {
+      "name": "known_field_null_acknowledgement",
+      "ok": false,
+      "error": "invalid type: null, expected a string at line 1 column 234",
+      "rawSha256": "45fb8604d085b9d2a65055389f7e4e340b082306db9c6e95d1a09ecba80b0f82",
+      "rawUtf8Bytes": 235
+    },
+    {
+      "name": "known_field_bool_acknowledgement",
+      "ok": false,
+      "error": "invalid type: boolean `true`, expected a string at line 1 column 234",
+      "rawSha256": "184d103416e8d2556b0c808d09daaa40f466f454a71fc31fe8a0336d337107c1",
+      "rawUtf8Bytes": 235
+    },
+    {
+      "name": "known_field_wrong_numeric_acknowledgement",
+      "ok": false,
+      "error": "invalid type: integer `123`, expected a string at line 1 column 233",
+      "rawSha256": "cbcd19d966e5e067575deffd92c3a36da840bccaafb0deccf664fde41f277af1",
+      "rawUtf8Bytes": 234
+    },
+    {
+      "name": "i64_channel_id_underflow",
+      "ok": false,
+      "error": "invalid type: floating point `-9.223372036854776e+18`, expected i64 at line 1 column 126",
+      "rawSha256": "93e909792f301d753d6d9c85ff45bcfd1391f8dcc84845faab5774c0292e04b4",
+      "rawUtf8Bytes": 255
+    },
+    {
+      "name": "i64_origin_channel_id_float_1_0",
+      "ok": false,
+      "error": "invalid type: floating point `1.0`, expected i64 at line 1 column 133",
+      "rawSha256": "edc4a1e37872b4705965ff57b3415d9b2167c2be41c6e51bdc2a503426518a21",
+      "rawUtf8Bytes": 238
+    },
+    {
+      "name": "i64_origin_channel_id_exp_1e0",
+      "ok": false,
+      "error": "invalid type: floating point `1.0`, expected i64 at line 1 column 133",
+      "rawSha256": "b2658ff2cf38639d3a90d7e170741ad0fdfecfbbdd618e3e148665250e06556c",
+      "rawUtf8Bytes": 238
+    },
+    {
+      "name": "i64_origin_channel_id_neg_zero",
+      "ok": false,
+      "error": "invalid type: floating point `-0.0`, expected i64 at line 1 column 132",
+      "rawSha256": "64af75a8b81e8721fc972b3f3342babddeb141dadc2b55f828c9acb888fbbf10",
+      "rawUtf8Bytes": 237
+    },
+    {
+      "name": "i64_origin_channel_id_max",
+      "ok": true,
+      "error": null,
+      "rawSha256": "f4765245f9bb84368e93c9cf2494c2f4962570eab48a766fe6f5151ff9228399",
+      "rawUtf8Bytes": 254
+    },
+    {
+      "name": "i64_origin_channel_id_min",
+      "ok": true,
+      "error": null,
+      "rawSha256": "6224c7489eb615f372e6687d23ed364ac7e714f6a8b5c409cb61a9a15af9436a",
+      "rawUtf8Bytes": 255
+    },
+    {
+      "name": "i64_origin_channel_id_overflow",
+      "ok": false,
+      "error": "invalid value: integer `9223372036854775808`, expected i64 at line 1 column 149",
+      "rawSha256": "ce673ef6b155f545a3579e5e43a3d802b1651307aca9f16a8563e7d945c6ed31",
+      "rawUtf8Bytes": 254
+    },
+    {
+      "name": "i64_origin_channel_id_underflow",
+      "ok": false,
+      "error": "invalid type: floating point `-9.223372036854776e+18`, expected i64 at line 1 column 150",
+      "rawSha256": "032fba5c0e3fd2e44a45b8f434d1a3148afc3316185ccd8b7139a3a44d02779b",
+      "rawUtf8Bytes": 255
+    },
+    {
+      "name": "i64_origin_channel_id_u64_max",
+      "ok": false,
+      "error": "invalid value: integer `18446744073709551615`, expected i64 at line 1 column 150",
+      "rawSha256": "e81c769de555bebd807e95b26bd9afff81ca438ce9c7507f95c6642f5c241b46",
+      "rawUtf8Bytes": 255
+    },
+    {
+      "name": "i64_origin_channel_id_2_pow_53_plus_1",
+      "ok": true,
+      "error": null,
+      "rawSha256": "a2b4c42c57739f766ec783637a9e51aaef27bec731f1fc44915192bf91a4a1df",
+      "rawUtf8Bytes": 251
+    },
+    {
+      "name": "i64_event_id_float_1_0",
+      "ok": false,
+      "error": "invalid type: floating point `1.0`, expected i64 at line 1 column 148",
+      "rawSha256": "b889afdf51a3df5f786cf47e270e121717af2fc58ca9e334f5470b65f383662a",
+      "rawUtf8Bytes": 238
+    },
+    {
+      "name": "i64_event_id_exp_1e0",
+      "ok": false,
+      "error": "invalid type: floating point `1.0`, expected i64 at line 1 column 148",
+      "rawSha256": "809903ec8a939980df5a6c081bf8a926f1a171a0cf617f8c07a3b85ae127abe5",
+      "rawUtf8Bytes": 238
+    },
+    {
+      "name": "i64_event_id_neg_zero",
+      "ok": false,
+      "error": "invalid type: floating point `-0.0`, expected i64 at line 1 column 147",
+      "rawSha256": "1d608399b81b3292e8204cc34a4940b5693187bcae405f969886d25284632730",
+      "rawUtf8Bytes": 237
+    },
+    {
+      "name": "i64_event_id_max",
+      "ok": true,
+      "error": null,
+      "rawSha256": "9e5733b0e11ce3dc29b5d938df1673c47f76eaa0c8d3c11d426fc63076c89a69",
+      "rawUtf8Bytes": 254
+    },
+    {
+      "name": "i64_event_id_min",
+      "ok": true,
+      "error": null,
+      "rawSha256": "4b7dce7b056a84d390465da2f2e2a2ec510a6bc9719503cab928431a5ae6b9e0",
+      "rawUtf8Bytes": 255
+    },
+    {
+      "name": "i64_event_id_overflow",
+      "ok": false,
+      "error": "invalid value: integer `9223372036854775808`, expected i64 at line 1 column 164",
+      "rawSha256": "0dcacd7b039411a4e14a5592c0af9386a83c8d2bdf8a20b4213628c42a5f661b",
+      "rawUtf8Bytes": 254
+    },
+    {
+      "name": "i64_event_id_underflow",
+      "ok": false,
+      "error": "invalid type: floating point `-9.223372036854776e+18`, expected i64 at line 1 column 165",
+      "rawSha256": "3845d6bf08d61bc9f89daea12cbef5cc940ea7c8822ad29298e58bbb63428323",
+      "rawUtf8Bytes": 255
+    },
+    {
+      "name": "i64_event_id_u64_max",
+      "ok": false,
+      "error": "invalid value: integer `18446744073709551615`, expected i64 at line 1 column 165",
+      "rawSha256": "283adc23808482a2c86725399c2b8bc6972f382194829b332e17e7060a8237c7",
+      "rawUtf8Bytes": 255
+    },
+    {
+      "name": "i64_event_id_2_pow_53_plus_1",
+      "ok": true,
+      "error": null,
+      "rawSha256": "598c13955a1b9554fb749ea344a7449252035336c68f3841601bddf1075a18e1",
+      "rawUtf8Bytes": 251
+    },
+    {
+      "name": "i64_creation_generation_float_1_0",
+      "ok": false,
+      "error": "invalid type: floating point `1.0`, expected i64 at line 1 column 191",
+      "rawSha256": "7fe5f356658af4b5f4d15a1ae677df5abcc248d57e4084812db700e8961d0ac8",
+      "rawUtf8Bytes": 240
+    },
+    {
+      "name": "i64_creation_generation_exp_1e0",
+      "ok": false,
+      "error": "invalid type: floating point `1.0`, expected i64 at line 1 column 191",
+      "rawSha256": "e8eea14df5af763d7fd43136fa3fbefc58124f258d591446f266319ce7cb0f15",
+      "rawUtf8Bytes": 240
+    },
+    {
+      "name": "i64_creation_generation_neg_zero",
+      "ok": false,
+      "error": "invalid type: floating point `-0.0`, expected i64 at line 1 column 190",
+      "rawSha256": "071d8e242bcadf744358959bd1b074c4d0845b2657dbc78b24472ec74c50d02f",
+      "rawUtf8Bytes": 239
+    },
+    {
+      "name": "i64_creation_generation_max",
+      "ok": true,
+      "error": null,
+      "rawSha256": "4a7202b1e620694ebd7b2c26adfcb662483c1ac10f2c612f817f96d16b3475fe",
+      "rawUtf8Bytes": 256
+    },
+    {
+      "name": "i64_creation_generation_min",
+      "ok": true,
+      "error": null,
+      "rawSha256": "3fb4ad9dd17b466035f54ec58054497518e84cc8bc615991b6ea75269d13f997",
+      "rawUtf8Bytes": 257
+    },
+    {
+      "name": "i64_creation_generation_overflow",
+      "ok": false,
+      "error": "invalid value: integer `9223372036854775808`, expected i64 at line 1 column 207",
+      "rawSha256": "6b11cde6eac5662a5c9e4da6f488ce349c4c91e67a3b3422081afaac26badddb",
+      "rawUtf8Bytes": 256
+    },
+    {
+      "name": "i64_creation_generation_underflow",
+      "ok": false,
+      "error": "invalid type: floating point `-9.223372036854776e+18`, expected i64 at line 1 column 208",
+      "rawSha256": "0a6d522f3f6eb3046718ae4962acf5167252d6efcdc33d498b2f694a6ed39a99",
+      "rawUtf8Bytes": 257
+    },
+    {
+      "name": "i64_creation_generation_u64_max",
+      "ok": false,
+      "error": "invalid value: integer `18446744073709551615`, expected i64 at line 1 column 208",
+      "rawSha256": "1b835c3914eaa5da214fb7d6320f9448189027e08a183b201e069ae987d02890",
+      "rawUtf8Bytes": 257
+    },
+    {
+      "name": "i64_creation_generation_2_pow_53_plus_1",
+      "ok": true,
+      "error": null,
+      "rawSha256": "06619fa6671d703a63291bb545b4f03fc77ba31f99a6dc1a8fdcf16c7efabe05",
+      "rawUtf8Bytes": 253
+    },
+    {
+      "name": "malformed_json_1e_plus",
+      "ok": false,
+      "error": "invalid number at line 1 column 250",
+      "rawSha256": "e843ab0f13ae1c47ec8ec8c7d567aebc2c08927f302d2e6197e241bac06a5029",
+      "rawUtf8Bytes": 250
+    },
+    {
+      "name": "malformed_json_invalid_escape",
+      "ok": false,
+      "error": "invalid escape at line 1 column 249",
+      "rawSha256": "81f043948e19dbdd16c84c3c809e959e8b80efd53759bb75f48c048ca19357c2",
+      "rawUtf8Bytes": 251
+    },
+    {
+      "name": "malformed_json_invalid_escape_hex",
+      "ok": false,
+      "error": "invalid escape at line 1 column 253",
+      "rawSha256": "98d049b1b682f4bdfcaec2566368fbe27413c12fada91622aa69b5a0117aa2ec",
+      "rawUtf8Bytes": 255
+    },
+    {
+      "name": "malformed_json_trailing_comma_object",
+      "ok": false,
+      "error": "trailing comma at line 1 column 239",
+      "rawSha256": "9bc4ca321bdffd259a8f78b45d95a0b44395f8fb67b5c2a1e212ccfeee2ea7ad",
+      "rawUtf8Bytes": 239
+    },
+    {
+      "name": "malformed_json_trailing_comma_unknown_array",
+      "ok": false,
+      "error": "expected value at line 1 column 252",
+      "rawSha256": "2b78a9dd4f63fda697b0f9194c887bd69cac9fcaa1788fd744bcfd5189717296",
+      "rawUtf8Bytes": 253
+    },
+    {
+      "name": "malformed_json_bracket_mismatch_close",
+      "ok": false,
+      "error": "expected `,` or `}` at line 1 column 238",
+      "rawSha256": "b8fd21e0c9d8c630fd130c1b76370619c85afdb12b7e2c955295c04dbf65ff11",
+      "rawUtf8Bytes": 238
+    },
+    {
+      "name": "malformed_json_bracket_unclosed_object",
+      "ok": false,
+      "error": "EOF while parsing an object at line 1 column 237",
+      "rawSha256": "8a3bc5bdb55f239cf155099ef47041b5015dac4dfabcd03258d353dcb6de8fae",
+      "rawUtf8Bytes": 237
+    },
+    {
+      "name": "malformed_json_bracket_extra_brace",
+      "ok": false,
+      "error": "trailing characters at line 1 column 239",
+      "rawSha256": "e61742b8144d280332a0190cb0a4ac340610e8b7cd38228e6b56ba9a40356dde",
+      "rawUtf8Bytes": 239
+    },
+    {
+      "name": "malformed_json_bracket_mismatched_container",
+      "ok": false,
+      "error": "expected `,` or `]` at line 1 column 261",
+      "rawSha256": "16062f0fbff0509fb66c99e9e7ba42587faa139be1923487124fc4c7c1e72118",
+      "rawUtf8Bytes": 263
+    },
+    {
+      "name": "toplevel_key_lone_surrogate_low",
+      "ok": false,
+      "error": "lone leading surrogate in hex escape at line 1 column 245",
+      "rawSha256": "904e3c3655873d3f5a5dd458646bbe066923dd9794938878e60f0c1b3f13cef0",
+      "rawUtf8Bytes": 253
+    },
+    {
+      "name": "nested_unknown_key_lone_surrogate_low",
+      "ok": true,
+      "error": null,
+      "rawSha256": "4ab0ab7ef327a985240772f599e1c36c458276ac1a5062b50288e9b96032b46c",
+      "rawUtf8Bytes": 263
+    },
+    {
+      "name": "unknown_object_depth_256",
+      "ok": true,
+      "error": null,
+      "rawSha256": "c156287f9bba43b02267e53b615aae258d26fee98d0a944af0bc4283c96c12a4",
+      "rawUtf8Bytes": 1784
+    },
+    {
+      "name": "known_string_object_depth_256",
+      "ok": false,
+      "error": "invalid type: map, expected a string at line 1 column 14",
+      "rawSha256": "80c7b2c97b63f724e63f7b77971ff00bc386fd12bdcc1554b1b52eaa3b33aed8",
+      "rawUtf8Bytes": 1768
+    },
+    {
+      "name": "outer_whitespace_bom_prefix",
+      "ok": false,
+      "error": "expected value at line 1 column 1",
+      "rawSha256": "9074c802cacc90cabf8a3e93260d203f4d2888c3778c6f08478130a3d2a7e48e",
+      "rawUtf8Bytes": 241
+    },
+    {
+      "name": "outer_whitespace_bom_suffix",
+      "ok": false,
+      "error": "trailing characters at line 1 column 239",
+      "rawSha256": "ae763c68b1c334c96d0c99ae0dbf80af90ad00e62fc0d70510f7570f89ab324a",
+      "rawUtf8Bytes": 241
+    },
+    {
+      "name": "outer_whitespace_nel_prefix",
+      "ok": false,
+      "error": "expected value at line 1 column 1",
+      "rawSha256": "99d819279f158e8a33757bc32f222f41cff4a069a2db060437e966ec8d3ab778",
+      "rawUtf8Bytes": 240
+    },
+    {
+      "name": "outer_whitespace_nel_suffix",
+      "ok": false,
+      "error": "trailing characters at line 1 column 239",
+      "rawSha256": "a8f4e218e75bd52a03893e687cd8259a88fb7bab35caabd49473820328a57e85",
+      "rawUtf8Bytes": 240
+    },
+    {
+      "name": "outer_whitespace_bom_both",
+      "ok": false,
+      "error": "expected value at line 1 column 1",
+      "rawSha256": "c4a4a571b63f2ed352df78f46027a9706c8271be4b1cd32b425db7968542ed65",
+      "rawUtf8Bytes": 244
+    },
+    {
+      "name": "outer_whitespace_nel_both",
+      "ok": false,
+      "error": "expected value at line 1 column 1",
+      "rawSha256": "770ba36acc66a61b23cd0752d71b7f70750d56ab2693eecfed11e53b1f00fcaa",
+      "rawUtf8Bytes": 242
+    },
+    {
+      "name": "unknown_key_proto",
+      "ok": true,
+      "error": null,
+      "rawSha256": "9601cd3b543e40a7cdf9d6427a00a3a511eba234d7149f0450bd0ad4f244b160",
+      "rawUtf8Bytes": 261
+    },
+    {
+      "name": "unknown_key_constructor",
+      "ok": true,
+      "error": null,
+      "rawSha256": "d2830f29a1820b0eff7fc79ebc6aca066aecd867e96113775e8b3c907a6d37e4",
+      "rawUtf8Bytes": 263
+    },
+    {
+      "name": "unknown_key_proto_object",
+      "ok": true,
+      "error": null,
+      "rawSha256": "5c1af2b42706f4b75203ce74fbbc60df24ee9741a4bec858b2a688bc8e90ec85",
+      "rawUtf8Bytes": 268
+    },
+    {
+      "name": "unknown_key_constructor_object",
+      "ok": true,
+      "error": null,
+      "rawSha256": "d540cc6845169e819057d885880b2a0efe668202adf5c20adae1fc3937baeadc",
+      "rawUtf8Bytes": 270
+    }
+  ]
+}

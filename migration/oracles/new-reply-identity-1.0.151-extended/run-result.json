@@ -1,0 +1,11 @@
+{
+  "exitCode": 0,
+  "manifestSha256": "d090e49c5f139cd08ddf79055aa821b34f494647140efff06a9ba342326947f7",
+  "toolchain": "1.97.1",
+  "offline": true,
+  "stdoutSha256": "2351f3c4a542576a62d5288941443bb8581a3efa74933b36f3b09db7e54cfc81",
+  "lockSha256": "3fb226400220346aa7c58be6ee39decf683a91fc999a5893020d671f36dc468e",
+  "checkedUtc": "2026-10-06T08:22:48.6960647Z",
+  "locked": true,
+  "sourceSha256": "a1ffe4bf70a72debef6253150e06556f479b2d1f3379fef848af65bbec5d5680"
+}

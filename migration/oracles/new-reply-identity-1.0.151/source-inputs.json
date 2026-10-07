@@ -1,0 +1,22 @@
+[
+  {
+    "path": "migration/slice-005-queue-attempt/new-reply-identity-oracle-source-correction-002/files/migration/oracles/new-reply-identity-1.0.151/Cargo.toml",
+    "sha256": "a4bfb7a8e5826b3c698c7c2ddf30c36ce18b2053e8d615e9547f827bab30282f"
+  },
+  {
+    "path": "migration/slice-005-queue-attempt/new-reply-identity-oracle-source-correction-002/files/migration/oracles/new-reply-identity-1.0.151/src/main.rs",
+    "sha256": "58c17b7b10fd7013405c44c09067a835736921c884c3d4337bc5706ea0ebc8be"
+  },
+  {
+    "path": "migration/checkpoint-001/source/crates/cdr-store/src/new_reply.rs",
+    "sha256": "d8f4ca11983e672f76365af2e4d9ec9bdc373a12a0bb046ec34785b6b2088792"
+  },
+  {
+    "path": "migration/checkpoint-001/source/crates/cdr-store/src/new_reply/intent.rs",
+    "sha256": "cc2bc35332ac1aa236bdc074fb96aad44acad49ff3888e05e2bc0b11a8e51354"
+  },
+  {
+    "path": "migration/checkpoint-001/source/crates/cdr-store/src/ingress.rs",
+    "sha256": "5d62b5f237b7fa29b3c4219124dd70ced94cb2e65db0e5cb37075172165f2e1c"
+  }
+]

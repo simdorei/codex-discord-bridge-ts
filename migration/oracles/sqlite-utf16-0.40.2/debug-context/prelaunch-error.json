@@ -1,0 +1,4 @@
+{
+  "launchFailure": "First functions.exec JavaScript parse rejected a PowerShell backtick newline embedded in String.raw; no command executed",
+  "correctedTransport": "Used [char]10 for final newline; exact parent oracle unchanged"
+}

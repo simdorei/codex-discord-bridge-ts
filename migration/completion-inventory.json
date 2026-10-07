@@ -1,0 +1,238 @@
+{
+  "version": 1,
+  "checkedUtc": "2026-10-06T10:05:24.4357552Z",
+  "sourceManifestSha256": "95c817d445c384fe7abd96498940ef686a958c77da7ecdb6b2ecb4b0f52b57cb",
+  "denominator": "18 named obligation groups; unequal size, no percentage derived",
+  "summary": {
+    "notStarted": 7,
+    "completedScoped": 1,
+    "partial": 10,
+    "endToEndRuntimeGroupsCompleted": 0
+  },
+  "statusDefinition": {
+    "notStarted": "No implementation of group behavior; shared schemas/codecs do not qualify",
+    "completedScoped": "Frozen standalone contract implemented/reviewed/tested within stated scope; explicit diagnostic/domain exceptions remain",
+    "partial": "Some prerequisites or helpers applied; group call path or major obligations missing"
+  },
+  "acceptance": [
+    "Frozen current Rust entrypoint/call path and dirty-source authority mapped",
+    "AGY-authored implementation plus independent source/contract review",
+    "Dependency/runtime wiring preserves exact identity fences and no replay for started/unknown effects",
+    "Meaningful adversarial tests with owned fixtures and relevant source-equivalent results",
+    "Relevant Windows/native or external interface fixture checks explicitly scoped; mocks separate",
+    "Open omissions/limitations reviewed and installation/import behavior accounted for"
+  ],
+  "excluded": [
+    "Automatic Reserve switching/replay intentionally removed",
+    "Live service start/reset/termination, deployment/cutover, commits/push/remotes unauthorized",
+    "Masked incident constants not reconstructed"
+  ],
+  "uncertainty": "Initial broad Rust inventory is not an exhaustive function-by-function parity mapping; pending runtime audits can split/extend groups. Group counts and test counts are not effort/feature coverage percentages. Earlier 15–20 or20–30 estimates are superseded.",
+  "groups": [
+    {
+      "evidence": "migration/slice-004-authority/applied-wire-serde-checkpoint",
+      "remaining": "No runtime dispatch claim; exact Rust diagnostic positions and exhaustive all-f64 parity excluded from completion",
+      "id": "01",
+      "group": "Pure protocol/value codecs",
+      "done": "Reviewed standalone wire IDs/occurrences, scalar JSON/value boundaries and Rust Debug rendering",
+      "modules": [
+        "src/protocol/ids.ts",
+        "src/protocol/rpc.ts",
+        "src/core/serde-json.ts",
+        "src/core/serde-json-parse.ts",
+        "src/core/rust-debug.ts"
+      ],
+      "status": "completed-scoped"
+    },
+    {
+      "evidence": "migration/slice-002-config-cli",
+      "remaining": "Effectful main/bootstrap, environment acquisition, readiness/admin/config checks and shutdown",
+      "id": "02",
+      "group": "Startup/configuration",
+      "done": "Pure parser and branch-selection contracts",
+      "modules": [
+        "src/cli/startup.ts",
+        "src/config/runtime.ts",
+        "src/config/remote.ts"
+      ],
+      "status": "partial"
+    },
+    {
+      "evidence": "migration/slice-003-store/applied-owned-driver-checkpoint/review.md",
+      "remaining": "Deterministic three-boundary concurrent initializer parity; backup cleanup/symlink replacement cases; all runtime entrypoints; platform lifecycle",
+      "id": "03",
+      "group": "Store schema/open/backup/read ownership",
+      "done": "Applied migrations, catalog validation, owned initialized driver/backup, existing-only and CheckedRead helpers with owned SQLite fixtures",
+      "modules": [
+        "src/store/schema-assembly.ts",
+        "src/store/owned-driver.ts",
+        "src/store/existing-store.ts",
+        "src/store/catalog-cache.ts"
+      ],
+      "status": "partial"
+    },
+    {
+      "evidence": "migration/slice-004-authority/applied-mutation-checkpoint/review.md",
+      "remaining": "Gateway/resident response integration, every runtime completion/cancellation branch and exact clock precision domain",
+      "id": "04",
+      "group": "Mutation authority/journal",
+      "done": "Begin/check/owner/finish helper contracts, prepared/unknown retention and native fixture claim race",
+      "modules": [
+        "src/store/mutation-attempt.ts"
+      ],
+      "status": "partial"
+    },
+    {
+      "evidence": "migration/slice-004-authority/queue-enqueue-authority-audit",
+      "remaining": "Claims/leases, runner dispatch, retry taxonomy, terminal reconciliation and goal completion; documented timestamp/schema-bypassed gaps",
+      "id": "05",
+      "group": "Queue/admission/retry/goals",
+      "done": "Queue read/serialization/admission, guarded enqueue/remove, borrowed idle/fork/dead-generation gates",
+      "modules": [
+        "src/store/queue-read.ts",
+        "src/store/queue-enqueue.ts",
+        "src/store/queue-remove.ts",
+        "src/store/queue-admission-guards.ts",
+        "src/store/idle-release-admission.ts",
+        "src/store/fork-handoff-admission.ts",
+        "src/store/dead-generation-admission.ts"
+      ],
+      "status": "partial"
+    },
+    {
+      "evidence": "migration/slice-007-new-reply-promotion/applied-promotion",
+      "remaining": "Seed SQL/native filesystem acquisition, public wrappers, identity validation/claim, notice release, checkpoint/warnings/delivery and runtime integration; Unix compile/executable unverified; existing documented input/DB/concurrency test gaps",
+      "id": "06",
+      "group": "New first-reply identity/intent",
+      "done": "Standalone Identity plus borrowed get/bind/promote independently reviewed and applied; Windows-only owned-data native lossiness helper applied with32actualRustWindows observations",
+      "modules": [
+        "src/store/new-reply-identity.ts",
+        "src/store/new-reply-read.ts",
+        "src/store/new-reply-bind.ts",
+        "src/store/new-reply-promote.ts",
+        "src/core/windows-native-path.ts"
+      ],
+      "status": "partial"
+    },
+    {
+      "evidence": "migration/checkpoint-001/call-path-audit.md",
+      "remaining": "Typed routing custody, message/interaction/history entrypoints, event dedupe, ACK deadlines and durable confirmation",
+      "id": "07",
+      "group": "Gateway/input/durable acknowledgement",
+      "done": "Schema/codec prerequisites only; no translated runtime",
+      "modules": [],
+      "status": "not-started"
+    },
+    {
+      "evidence": "migration/checkpoint-001/call-path-audit.md",
+      "remaining": "Resident transport, writer lock revalidation, partial-write/drop sealing, generation quarantine, monotonic deadline ownership, Windows suspended-create/job-assign/resume process trees",
+      "id": "08",
+      "group": "Resident RPC/writer/process/deadlines",
+      "done": "Pure RPC codec prerequisites",
+      "modules": [
+        "src/protocol/rpc.ts"
+      ],
+      "status": "partial"
+    },
+    {
+      "evidence": "migration/slice-005-queue-attempt",
+      "remaining": "Stop claim/cancel workers, late ACK fences, unresolved running admission and owned cancellation RPC cleanup",
+      "id": "09",
+      "group": "Stop/cancel/late ACK/holds",
+      "done": "Borrowed execution hold helpers and related schemas",
+      "modules": [
+        "src/store/execution-hold.ts"
+      ],
+      "status": "partial"
+    },
+    {
+      "evidence": "migration/checkpoint-001/test-contract-inventory.json",
+      "remaining": "Scoped repair capabilities, original revision checks, recover cutover, startup holds, tray/watchdog lifecycle",
+      "id": "10",
+      "group": "Repair/recover/tray/watchdog",
+      "done": "No translated runtime",
+      "modules": [],
+      "status": "not-started"
+    },
+    {
+      "evidence": "migration/slice-008-new-reply-seed/plan-only/source-authority.json",
+      "remaining": "Creation evidence, atomic immediate intake/ingress transfer, claim renewal, target preparation, attachment bounded download and model submission",
+      "id": "11",
+      "group": "New thread/prompt intake/attachments",
+      "done": "Store intent/schema prerequisites only",
+      "modules": [],
+      "status": "not-started"
+    },
+    {
+      "evidence": "migration/checkpoint-001/test-contract-inventory.json",
+      "remaining": "Question routing, occurrence/revision ownership, async UI disposition, orphan recovery and response acknowledgement",
+      "id": "12",
+      "group": "Async-question owner/revision/disposition",
+      "done": "Async resolution/publication/abandonment schema prerequisites only",
+      "modules": [],
+      "status": "not-started"
+    },
+    {
+      "evidence": "migration/slice-005-queue-attempt",
+      "remaining": "Mirror workers/history polling/cursor custody, backlog/fairness/byte budgets, archive/delete/admission safeguards and backup evidence",
+      "id": "13",
+      "group": "Mirror/history/cursor/archive",
+      "done": "Exact origin marker records and borrowed start-notice staging",
+      "modules": [
+        "src/store/mirror-origin.ts",
+        "src/store/start-notice-stage.ts"
+      ],
+      "status": "partial"
+    },
+    {
+      "evidence": "migration/checkpoint-001/call-path-audit.md",
+      "remaining": "Explicit manual switching, history boundary/custody, retirement integration and reserve lifecycle; automatic switching/replay excluded",
+      "id": "14",
+      "group": "Manual Reserve operations",
+      "done": "Configuration parser and retirement schema prerequisites only",
+      "modules": [],
+      "status": "not-started"
+    },
+    {
+      "evidence": "migration/checkpoint-001/source/Cargo.toml",
+      "remaining": "Protocol/server HTTP/WebSocket/MCP routes, OAuth owner approval/token lifecycle, remote files/images/computer/terminal and native ownership adapters",
+      "id": "15",
+      "group": "Remote MCP/OAuth/Windows interfaces",
+      "done": "Remote configuration parser only",
+      "modules": [
+        "src/config/remote.ts"
+      ],
+      "status": "partial"
+    },
+    {
+      "evidence": "migration/checkpoint-001/test-contract-inventory.json",
+      "remaining": "Conversation scoped creation/restart leases, plugins/connectors, exact conversation identity and no unsafe request replay",
+      "id": "16",
+      "group": "Pro conversation leases/plugins",
+      "done": "No translated integration",
+      "modules": [],
+      "status": "not-started"
+    },
+    {
+      "evidence": "migration/slice-003-store/applied-owned-driver-checkpoint/review.md",
+      "remaining": "Original data import compatibility, install profiles, portable paths/config, entrypoint packaging, backup/restore across schemas and platform release checks",
+      "id": "17",
+      "group": "Fresh DB/import/install portability",
+      "done": "Fresh owned SQLite creation/migration and existing-only primitives",
+      "modules": [
+        "src/store/owned-driver.ts",
+        "src/store/existing-store.ts"
+      ],
+      "status": "partial"
+    },
+    {
+      "evidence": "migration/checkpoint-001/call-path-audit.md",
+      "remaining": "Guarded exact content receipts, nonce/hash, accepted-but-unconfirmed unknown hold, rejection release taxonomy and Unicode chunking",
+      "id": "18",
+      "group": "Output delivery/receipt/Unicode chunking",
+      "done": "Schemas/identity prerequisites only",
+      "modules": [],
+      "status": "not-started"
+    }
+  ]
+}

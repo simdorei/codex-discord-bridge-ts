@@ -1,0 +1,34 @@
+[
+  {
+    "path": "Cargo.toml",
+    "sha256": "d090e49c5f139cd08ddf79055aa821b34f494647140efff06a9ba342326947f7"
+  },
+  {
+    "path": "Cargo.lock",
+    "sha256": "3fb226400220346aa7c58be6ee39decf683a91fc999a5893020d671f36dc468e"
+  },
+  {
+    "path": "src/main.rs",
+    "sha256": "02ece0eeedbeac314ff9524cdee305a7e2b28538ef4721f50bc9432b9e9f1dad"
+  },
+  {
+    "path": "stdout.ndjson",
+    "sha256": "c1c5b279fbb73e77aa5c40532152e5385ef59f20f2803fb982b1c586ae7f58e0"
+  },
+  {
+    "path": "cases.ndjson",
+    "sha256": "e2a26a9f337f3dd3f874f2b08206234823d63e2a52157f1b457d5a3939fdf11c"
+  },
+  {
+    "path": "observed-results.json",
+    "sha256": "51cfb67ae32c5fa753d3a114535e30b8917c68f1f900deb50727399d133a07a4"
+  },
+  {
+    "path": "dependency-archive-receipts.json",
+    "sha256": "fd7d51f12f0c131b90d1b0677b9225dd5ef538803342fa1b471098cc0130c99c"
+  },
+  {
+    "path": "toolchain-receipt.json",
+    "sha256": "2e315988e6581880b400247d801f4dd6e44c7a0847ebc187a0aab897a92f8d23"
+  }
+]

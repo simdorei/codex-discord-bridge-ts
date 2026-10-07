@@ -1,0 +1,13 @@
+import{readFileSync,writeFileSync}from"node:fs";import{createHash}from"node:crypto";
+const dir=process.argv[2],prior=process.argv[3];
+const lines=readFileSync(dir+"/stdout.ndjson","utf8").split(/\r?\n/).filter(Boolean);
+const old=readFileSync(prior+"/stdout.ndjson","utf8").split(/\r?\n/).filter(Boolean).slice(1);
+const rows=lines.map(JSON.parse),metadata=rows.shift();
+if(rows.length!==161||metadata.metadata.case_count!==161||new Set(rows.map(x=>x.name)).size!==161)throw Error("Case count/identity mismatch");
+for(let i=0;i<58;i++)if(old[i]!==lines[i+1])throw Error("Original output/raw changed at "+i);
+const summary=rows.map(x=>({name:x.name,ok:x.ok,error:x.error??null,rawSha256:createHash("sha256").update(x.raw).digest("hex"),rawUtf8Bytes:Buffer.byteLength(x.raw)}));
+if(summary.some(x=>x.rawUtf8Bytes>10000))throw Error("Raw bound exceeded");
+writeFileSync(dir+"/cases.ndjson",rows.map(x=>JSON.stringify({name:x.name,raw:x.raw})).join("\n")+"\n");
+const observed={metadata,caseCount:rows.length,original58OutputsByteIdentical:true,accept:summary.filter(x=>x.ok).length,reject:summary.filter(x=>!x.ok).length,rawInputsPreserved:true,summaryOmitsTypedNumericValues:true,authoritativeTypedValues:"stdout.ndjson contains exact Rust serde integer spellings",cases:summary};
+writeFileSync(dir+"/observed-results.json",JSON.stringify(observed,null,2));
+console.log(JSON.stringify({caseCount:observed.caseCount,accept:observed.accept,reject:observed.reject,original58OutputsByteIdentical:true}));

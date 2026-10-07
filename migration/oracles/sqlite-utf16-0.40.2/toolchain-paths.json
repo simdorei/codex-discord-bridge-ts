@@ -1,0 +1,10 @@
+[
+  {
+    "Name": "cargo.exe",
+    "Source": "C:\\Users\\ihavg\\.cargo\\bin\\cargo.exe"
+  },
+  {
+    "Name": "rustc.exe",
+    "Source": "C:\\Users\\ihavg\\.cargo\\bin\\rustc.exe"
+  }
+]
