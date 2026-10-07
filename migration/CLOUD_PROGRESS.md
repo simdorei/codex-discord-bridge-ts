@@ -675,3 +675,27 @@ prompt_intake_worker.rs and queue_runner/submission.rs/start flow. Evidence:
 cloud-intake-cancel-race-036 and cloud-intake-worker-037. Actual final combined
 **2,417 tests PASS, 0 fail/skip/cancel; strict TS exit 0** on Node 24.21.0. No live
 DB/service/Codex/Discord operation or fresh Rust executable differential was run.
+
+## 2026-10-07: bulk queue recovery and unmanaged-target preparation
+
+Connected recovery.rs bulk ordering to the shared QueueRecoveryCoordinator state:
+repair/retire legacy handoffs, snapshot/observe all initial targets, prepare unmanaged
+targets, rescan mutation targets, and mutate each under the same target registry.
+Active-writer conflicts get only the source's safe handoff checks. If targets move,
+a fresh observation/mutation report is returned (not summed with the first pass),
+while original active-writer identities remain in the report.
+
+Unmanaged preparation iterates Rust UTF-8 target order, excludes quarantined jobs,
+skips held or unfenced in-flight targets, and continues only a typed nonfatal
+blocker WITH a durable unresolved fence. Native/recording errors and refusals
+without a fence are not swallowed. Read-unavailable targets do not prevent safe
+independent targets from progressing. Simultaneous bulk passes share target locks
+and cannot dispatch the same pending job twice in the tested single-process model.
+
+Authorities: queue_runner/recovery.rs recover/recovery_targets/pass helpers and
+fork_handoff.rs prepare_unmanaged_targets/fork_writer_conflict_if_safe/nonfatal
+classification. Evidence: .runtime/cloud-fork-bulk-038 (6 focused) and
+cloud-queue-bulk-039 (5 focused). Actual full target: **2,428 tests PASS,
+0 fail/skip/cancel; strict TS exit 0**. The pinned whole-inventory observation
+barrier/unbounded scan is retained; bounded incremental lanes and measured latency
+remain later work, not certified by this pass. No live service/backend operation.

@@ -1,3 +1,7 @@
+import {ForkTransitionError} from "../../store/fork-transition-validation.ts";
+import {ForkHandoffConflictingIntentError} from "../../store/fork-definite-stage.ts";
+import {ForkHandoffConflictingIntentError as UnresolvedConflictError} from "../../store/fork-unresolved-stage.ts";
+import {AmbiguousForkCannotBeCancelledError,ForkTargetAlreadyObservedError} from "../../store/fork-legacy-repair.ts";
 import {randomUUID} from "node:crypto";
 import {StateAccessFacade,type IStateAccessFacade} from "../../store/state-access-facade.ts";
 import type {AppServerForkHandoff} from "../../store/fork-handoff-by-id.ts";
@@ -5,6 +9,10 @@ import {DeadGenerationTargetHeldError} from "../../store/fork-completed-target.t
 import {BackendFailureError,QueueIntegerRangeError} from "./errors.ts";
 import {ForkRuntimeError} from "./fork-errors.ts";
 import {TargetLocks} from "./target-locks.ts";
+export function isNonfatalForkRecoveryBlocker(error:unknown):boolean{
+  if(error instanceof ForkRuntimeError)return error.kind==="ForkBackend"||error.kind==="ForkFinalize"||error.kind==="UnresolvedForkHandoff";
+  return error instanceof ForkTransitionError||error instanceof ForkHandoffConflictingIntentError||error instanceof UnresolvedConflictError||error instanceof AmbiguousForkCannotBeCancelledError||error instanceof ForkTargetAlreadyObservedError;
+}
 export interface AppServerTarget {threadId:string;forkedFrom:string|null;quarantinedJobId:string|null}
 export interface ForkBackend {generation():bigint;requiresAppServerFork?():boolean;forkThread?(source:string):Promise<string>}
 type ForkState=Pick<IStateAccessFacade,"deadTargetHeld"|"listFiltered"|"completedAppServerForkTargetForSource"|"unresolvedAppServerForkHandoffForSource"|"isAppServerManagedTarget"|"beginAppServerForkHandoff"|"stageAppServerForkTarget"|"finalizeAppServerForkHandoff"|"recordAppServerForkFailure"|"recordAppServerForkFinalizeFailure"|"recordAndCancelDefiniteForkFailure">;
@@ -13,10 +21,32 @@ const visible=(error:string)=>error===""?"app-server fork handoff was interrupte
 const unchanged=(threadId:string):AppServerTarget=>({threadId,forkedFrom:null,quarantinedJobId:null});
 /** Durable observation divides source RPC ownership from ordered source/target finalization locks. */
 export class QueueForkCoordinator{
-  readonly #path:string;readonly #backend:ForkBackend;readonly #state:ForkState;readonly #locks:TargetLocks;
-  constructor(path:string,backend:ForkBackend,state:ForkState=StateAccessFacade,locks=new TargetLocks()){this.#path=path;this.#backend=backend;this.#state=state;this.#locks=locks;}
+  readonly #path:string;readonly #backend:ForkBackend;readonly #state:ForkState;readonly #locks:TargetLocks;readonly #blocked:(target:string,error:unknown)=>void;
+  constructor(path:string,backend:ForkBackend,state:ForkState=StateAccessFacade,locks=new TargetLocks(),onRecoveryBlocked:(target:string,error:unknown)=>void=()=>{}){this.#path=path;this.#backend=backend;this.#state=state;this.#locks=locks;this.#blocked=onRecoveryBlocked;}
   ensureTarget(source:string):Promise<AppServerTarget>{return this.#handoff(source,false,"app-server-only ownership fork");}
   forceTarget(source:string):Promise<AppServerTarget>{return this.#handoff(source,true,"app-server active-writer ownership fork");}
+  async prepareUnmanagedTargets():Promise<void>{
+    if(!this.#backend.requiresAppServerFork?.())return;
+    const targets=new Map<string,Array<"Pending"|"Starting"|"Running">>();
+    for(const job of await this.#state.listFiltered(this.#path,null,null)){
+      if(job.state==="Quarantined")continue;
+      const states=targets.get(job.targetThreadId)??[];states.push(job.state);targets.set(job.targetThreadId,states);
+    }
+    for(const target of [...targets.keys()].sort((a,b)=>Buffer.compare(Buffer.from(a),Buffer.from(b)))){
+      if(await this.#state.deadTargetHeld(this.#path,target))continue;
+      const hasUnresolved=await this.#state.unresolvedAppServerForkHandoffForSource(this.#path,target)!==null;
+      if(!hasUnresolved&&targets.get(target)!.some(state=>state==="Starting"||state==="Running"))continue;
+      try{await this.ensureTarget(target);}catch(error){
+        const fenced=await this.#state.unresolvedAppServerForkHandoffForSource(this.#path,target)!==null;
+        if(isNonfatalForkRecoveryBlocker(error)&&fenced){this.#blocked(target,error);continue;}throw error;
+      }
+    }
+  }
+  async forkWriterConflictIfSafe(target:string):Promise<boolean>{
+    const jobs=await this.#state.listFiltered(this.#path,target,null);
+    if(jobs.length===0||jobs.some(job=>job.state==="Starting"||job.state==="Running"))return false;
+    await this.forceTarget(target);return true;
+  }
   #generation():bigint{const value=this.#backend.generation();if(typeof value!=="bigint"||value<0n||value>9223372036854775807n)throw new QueueIntegerRangeError();return value;}
   async #unheld(target:string):Promise<void>{if(await this.#state.deadTargetHeld(this.#path,target))throw new DeadGenerationTargetHeldError(target);}
   async #chain(source:string):Promise<string|null>{

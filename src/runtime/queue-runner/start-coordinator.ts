@@ -67,11 +67,14 @@ export class QueueStartCoordinator {
     this.#fork = new QueueForkCoordinator(path, backend, this.#state, this.locks);
     this.reads = new QueueReadCoordinator(path, backend, this.#state, this.locks);
     this.#recovery = new QueueRecoveryCoordinator(path, backend, this.#state, this.locks, this.#gate,
-      () => this.#now(), (target, generation, turns) => this.#start(target, generation, turns));
+      () => this.#now(), (target, generation, turns) => this.#start(target, generation, turns), {forks: this.#fork});
   }
 
   ensureAppServerOnlyTarget(source: string): Promise<AppServerTarget> { return this.#fork.ensureTarget(source); }
   forceAppServerOnlyTarget(source: string): Promise<AppServerTarget> { return this.#fork.forceTarget(source); }
+
+  prepareUnmanagedTargets(): Promise<void> { return this.#fork.prepareUnmanagedTargets(); }
+  forkWriterConflictIfSafe(target: string): Promise<boolean> { return this.#fork.forkWriterConflictIfSafe(target); }
 
   requiresAppServerFork(): boolean { return this.#backend.requiresAppServerFork?.() ?? false; }
 
@@ -88,6 +91,8 @@ export class QueueStartCoordinator {
     const job = (await this.#state.listFiltered(this.#path, null, null)).find(value => value.discordMessageId === messageId);
     return job === undefined ? null : presentSavedSubmission(this.#path, job, this.#state);
   }
+
+  recover(): Promise<RecoveryReport> { return this.#recovery.recoverAll(); }
 
   recoverTarget(target: string): Promise<RecoveryReport> { return this.#recovery.recoverTarget(target); }
 

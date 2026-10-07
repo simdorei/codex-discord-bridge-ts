@@ -1,3 +1,4 @@
+import {isNonfatalForkRecoveryBlocker,type QueueForkCoordinator} from "./fork-coordinator.ts";
 import type {QueueStartBackend} from "./start-coordinator.ts";
 import {BackendFailureError,QueueIntegerRangeError} from "./errors.ts";
 import {QueueRecoveryState,recoveryReport,type RecoveryReport,type UnavailableReport} from "./recovery-state.ts";
@@ -21,22 +22,53 @@ async function budgetRead<T>(deadline:number,read:(signal:AbortSignal)=>Promise<
   finally{if(timer!==undefined)clearTimeout(timer);controller.abort();}
 }
 
-/** One-target authoritative recovery; bulk unmanaged-target/fork orchestration is separate. */
+/** Shared authoritative recovery state for bulk and explicitly selected-target passes. */
 export class QueueRecoveryCoordinator {
   readonly #path:string;readonly #backend:QueueStartBackend;readonly #state:IStateAccessFacade;
   readonly #locks:TargetLocks;readonly #gate:AdmissionGate|null;readonly #recovery:QueueRecoveryState;
   readonly #clock:()=>number;readonly #start:(target:string,generation:bigint,turns:readonly RecoveryTurn[])=>Promise<StoredQueueJob|null>;
   readonly #log:(target:string,report:UnavailableReport)=>void;
+  readonly #forks:Pick<QueueForkCoordinator,"prepareUnmanagedTargets"|"forkWriterConflictIfSafe">|undefined;
   constructor(path:string,backend:QueueStartBackend,state:IStateAccessFacade,locks:TargetLocks,gate:AdmissionGate|null,
     clock:()=>number,start:(target:string,generation:bigint,turns:readonly RecoveryTurn[])=>Promise<StoredQueueJob|null>,
-    options:{recovery?:QueueRecoveryState;log?:(target:string,report:UnavailableReport)=>void}={}){
+    options:{recovery?:QueueRecoveryState;log?:(target:string,report:UnavailableReport)=>void;forks?:Pick<QueueForkCoordinator,"prepareUnmanagedTargets"|"forkWriterConflictIfSafe">}={}){
     this.#path=path;this.#backend=backend;this.#state=state;this.#locks=locks;this.#gate=gate;this.#clock=clock;this.#start=start;
-    this.#recovery=options.recovery??new QueueRecoveryState();this.#log=options.log??(()=>{});
+    this.#recovery=options.recovery??new QueueRecoveryState();this.#log=options.log??(()=>{});this.#forks=options.forks;
+  }
+  async #repair():Promise<void>{
+    if(this.#backend.requiresAppServerFork?.()??false)await this.#state.repairLegacyDefiniteForkFailures(this.#path);
+    else await this.#state.retireCopyOnlyHandoffs(this.#path);
+  }
+  async #targets():Promise<Set<string>>{
+    const jobs=await this.#state.listFiltered(this.#path,null,null);
+    return new Set([...new Set(jobs.filter(job=>job.state!=="Quarantined").map(job=>job.targetThreadId))].sort((a,b)=>Buffer.compare(Buffer.from(a),Buffer.from(b))));
+  }
+  async #observeTargets(targets:ReadonlySet<string>,g:bigint,report:RecoveryReport):Promise<void>{
+    for(const target of targets)await this.#locks.run(target,()=>this.#observe(target,g,report));
+  }
+  async #mutateTargets(targets:ReadonlySet<string>,g:bigint,report:RecoveryReport):Promise<void>{
+    for(const target of targets)await this.#locks.run(target,()=>this.#mutate(target,g,report));
+  }
+  async recoverAll():Promise<RecoveryReport>{
+    if(this.#forks===undefined)throw new Error("Bulk recovery requires its coordinator-owned fork service");
+    await this.#repair();const initial=await this.#targets();this.#recovery.initialize(initial);
+    const g=generation(this.#backend.generation()),first=recoveryReport();await this.#observeTargets(initial,g,first);
+    await this.#forks.prepareUnmanagedTargets();const mutation=await this.#targets();this.#recovery.initialize(mutation);await this.#mutateTargets(mutation,g,first);
+    if(!this.#backend.requiresAppServerFork?.())return first;
+    const conflicts=new Set(first.activeWriterTargets);let moved=false;
+    for(const target of [...conflicts].sort((a,b)=>Buffer.compare(Buffer.from(a),Buffer.from(b)))){
+      try{const changed=await this.#forks.forkWriterConflictIfSafe(target);moved=moved||changed;}
+      catch(error){const fenced=await this.#state.unresolvedAppServerForkHandoffForSource(this.#path,target)!==null;
+        if(isNonfatalForkRecoveryBlocker(error)&&fenced)this.#log(target,{error:error instanceof Error?error.message:"Fork recovery blocked",suppressed:0n});else throw error;}
+    }
+    if(!moved)return first;
+    const targets=await this.#targets();this.#recovery.initialize(targets);const recovered=recoveryReport();
+    await this.#observeTargets(targets,g,recovered);await this.#mutateTargets(targets,g,recovered);
+    for(const target of conflicts)recovered.activeWriterTargets.add(target);return recovered;
   }
   async recoverTarget(target:string):Promise<RecoveryReport>{
     if(typeof target!=="string"||/[\uD800-\uDFFF]/u.test(target))throw new TypeError("Expected a well-formed target");
-    if(this.#backend.requiresAppServerFork?.()??false)await this.#state.repairLegacyDefiniteForkFailures(this.#path);
-    else await this.#state.retireCopyOnlyHandoffs(this.#path);
+    await this.#repair();
     this.#recovery.initialize(new Set([target]));const g=generation(this.#backend.generation()),report=recoveryReport();
     // Rust releases the target between observation and mutation passes; writers may interleave.
     await this.#locks.run(target,()=>this.#observe(target,g,report));
