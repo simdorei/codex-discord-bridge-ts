@@ -1235,3 +1235,22 @@ orphan ownership, UTF-8 compound receipt prefixes, transaction/cursor preservati
 and phase-1 target ranking. Initial malformed-data fixture attempted a forbidden NULL;
 changed fixture to invalid non-NULL channel, retained original RED, no DDL relaxation.
 No SQL execution-cost, memory peak, Windows or fresh Rust executable certification.
+
+## 2026-10-07 — Bounded negative-only async orphan preflight
+
+Ported async_resolution/preflight.rs (pinned SHA
+ca9cebe782155992101e051e26f056b40106dd9e58527cf0758ffc096414a5ea):
+128 rows and 2 MiB shared materialization budget, scalar size/overflow probes first,
+then original-question validation. Returns input positions only; never permission.
+Unrecognized storage/query errors propagate. JSON negatives are recognized by a
+private weak identity set populated only at the existing pure validator's decoder
+calls; the original thrown error identity/type is preserved. Arbitrary SyntaxError
+objects or caller getters do not become negative evidence by their name alone.
+
+Evidence .runtime/cloud-orphan-preflight-063: 8 new tests / 16 focused with history,
+full **2,666 PASS, 0 fail/skip/cancel; strict TS exit 0**. Covers valid/invalid seals,
+parser numeric range, native query/type failure, exact 128/overflow 129 boundaries,
+byte preflight and cumulative budget, no evidence mutation and decode-error origin.
+Initial corrupt fixtures tried to update immutable claims; replaced with initial
+malformed inserts, retained RED, no production trigger or validation weakened.
+The lazy metadata round/scheduler connection is still pending; no RPC is authorized.
