@@ -1,3 +1,5 @@
+import {isMappedSlashPrompt} from "./ingress-new-input.ts";
+import {mirroredThreadIdIn} from "./busy-choice.ts";
 import type {DatabaseSync} from "node:sqlite";
 import {openInitialized} from "./owned-driver.ts";
 import {getIngressIn,ingressByOriginIn,type StoredIngress} from "./ingress-read.ts";
@@ -47,4 +49,14 @@ export async function admitIngress(path:string,input:NewIngress):Promise<Ingress
   const request=snapshotNewIngress(input);validate(request);const db=await openInitialized(path);
   try{db.exec("BEGIN IMMEDIATE");const [admitted]=admitIngressRecordedIn(db,request);db.exec("COMMIT");return admitted;}
   finally{if(db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
+}
+
+/** Capture a supported slash prompt's actual mapping in the original admission transaction. */
+export async function admitMappedSlashIngress(path:string,input:NewIngress):Promise<IngressAdmission>{
+  const request=snapshotNewIngress(input);
+  if(!isMappedSlashPrompt(request.kind,request.payload)||request.targetThreadId!==null)throw new StoreIntegrityError("unsupported mapped slash admission envelope");
+  const db=await openInitialized(path);try{
+    db.exec("BEGIN IMMEDIATE");request.targetThreadId=mirroredThreadIdIn(db,request.channelId);
+    const [admitted]=admitIngressRecordedIn(db,request);db.exec("COMMIT");return admitted;
+  }finally{if(db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
 }

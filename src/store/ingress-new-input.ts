@@ -19,10 +19,13 @@ export function newCommandPrompt(ingress:StoredIngress):string|null{
   }
   return null;
 }
+export function isMappedSlashPrompt(kind:string,payload:unknown):boolean{
+  const name=field(payload,"work","Slash","name");
+  return kind==="interaction"&&asU64(getOwn(payload,"version"))===1n&&(name==="ask"||name==="interview")&&
+    typeof field(payload,"work","Slash","values","prompt","String")==="string";
+}
 export function frozenSlashTarget(ingress:StoredIngress):string|null{
-  const name=field(ingress.payload,"work","Slash","name");
-  return ingress.kind==="interaction"&&asU64(getOwn(ingress.payload,"version"))===1n&&(name==="ask"||name==="interview")&&
-    typeof field(ingress.payload,"work","Slash","values","prompt","String")==="string"?ingress.targetThreadId:null;
+  return isMappedSlashPrompt(ingress.kind,ingress.payload)?ingress.targetThreadId:null;
 }
 function envelopeDigest(record:StoredIngress):string{
   return digest(serializeSerdeValue([record.ingressId,record.kind,record.eventId,record.channelId,record.ownerUserId,record.payload]));

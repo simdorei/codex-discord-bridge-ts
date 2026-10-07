@@ -42,6 +42,9 @@ export const recordIngressResult: typeof IngressLifecycle.recordIngressResult = 
 export const confirmIngress: typeof IngressLifecycle.confirmIngress = IngressLifecycle.confirmIngress;
 export const recordIngressProcessingMode: typeof IngressLifecycle.recordIngressProcessingMode = IngressLifecycle.recordIngressProcessingMode;
 
+export const admitMappedSlashIngress: typeof IngressAdmission.admitMappedSlashIngress = IngressAdmission.admitMappedSlashIngress;
+export const recordIngressNewCreation: typeof IngressLifecycle.recordIngressNewCreation = IngressLifecycle.recordIngressNewCreation;
+
 export const admitIngress: typeof IngressAdmission.admitIngress = IngressAdmission.admitIngress;
 export const pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt = NewPromptArm.pendingNewPrompt;
 
@@ -144,6 +147,9 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly admitMappedSlashIngress: typeof IngressAdmission.admitMappedSlashIngress;
+  readonly recordIngressNewCreation: typeof IngressLifecycle.recordIngressNewCreation;
+
   readonly acknowledgeIngress: typeof IngressLifecycle.acknowledgeIngress;
   readonly beginIngressConfirmation: typeof IngressLifecycle.beginIngressConfirmation;
   readonly beginIngressExecution: typeof IngressLifecycle.beginIngressExecution;
@@ -246,6 +252,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   recordIngressResult,
   confirmIngress,
   recordIngressProcessingMode,
+  admitMappedSlashIngress,
+  recordIngressNewCreation,
   admitIngress,
   pendingNewPrompt,
   newThreadOrigin,

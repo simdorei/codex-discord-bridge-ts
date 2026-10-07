@@ -783,3 +783,21 @@ TS exit 0**. Fixture syntax typo corrected before tests. No live backend calls,
 production message-handler integration, startup, fresh Rust executable differential,
 Windows or performance certification. Central error dispatch integration remains
 unfinished; RequestCancelled is a typed error, not an automatic replay signal.
+
+## 2026-10-07 — Slash route and New creation context custody
+
+Connected mapped_slash.rs admission and new_creation.rs context recording. Slash
+ask/interview mapping is resolved inside original admission's writer transaction,
+with no selected-target guess. Duplicate admission retains its original target;
+execution still rechecks the frozen route. Unsupported envelopes and ambiguous
+rooms refuse. The supported-envelope predicate is shared with execution checks.
+
+New creation context writes require the same semantic room/project snapshot from
+classification/admission, exact generation-bound thread/start phase, original
+channel and an unwritten new_creation field. Display metadata is excluded as in
+source; null cwd is permitted, blank cwd refused. Context cannot be overwritten
+by a retry or a later created-thread acknowledgement.
+
+Evidence .runtime/cloud-ingress-routing-044: 5 new cases, 23 focused with lifecycle
+and facade regressions; full **2,476 PASS, 0 fail/skip/cancel; strict TS exit 0**.
+No remote thread creation, live routing, full bridge startup or deployment occurred.

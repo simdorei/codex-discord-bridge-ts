@@ -73,6 +73,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.recordIngressResult, IngressLifecycle.recordIngressResult);
     assert.strictEqual(StateAccessFacade.confirmIngress, IngressLifecycle.confirmIngress);
     assert.strictEqual(StateAccessFacade.recordIngressProcessingMode, IngressLifecycle.recordIngressProcessingMode);
+    assert.strictEqual(StateAccessFacade.admitMappedSlashIngress, IngressAdmission.admitMappedSlashIngress);
+    assert.strictEqual(StateAccessFacade.recordIngressNewCreation, IngressLifecycle.recordIngressNewCreation);
     assert.strictEqual(StateAccessFacade.admitIngress, IngressAdmission.admitIngress);
     assert.strictEqual(StateAccessFacade.pendingNewPrompt, NewPromptArm.pendingNewPrompt);
     assert.strictEqual(StateAccessFacade.newThreadOrigin, NewOrigin.newThreadOrigin);
@@ -180,6 +182,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "recordIngressResult",
       "confirmIngress",
       "recordIngressProcessingMode",
+      "admitMappedSlashIngress",
+      "recordIngressNewCreation",
       "admitIngress",
       "pendingNewPrompt",
       "captureStopOrigin",
@@ -213,7 +217,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 75);
+    assert.strictEqual(actual.length, 77);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

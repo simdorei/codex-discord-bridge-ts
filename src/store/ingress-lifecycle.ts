@@ -1,3 +1,5 @@
+import {newThreadOriginIn} from "./new-thread-origin.ts";
+import {serdeValueEqual} from "../core/serde-value-equal.ts";
 import type {DatabaseSync,SQLInputValue} from "node:sqlite";
 import {openInitialized} from "./owned-driver.ts";
 import {StoreIntegrityError} from "./schema-assembly.ts";
@@ -77,5 +79,17 @@ export function recordIngressProcessingMode(path:string,key:string,mode:string):
     const record=getIngressIn(db,key);if(record===null)throw new StoreIntegrityError("missing admitted message custody");if(record.state!=="staged")throw new StoreIntegrityError("message processing mode already frozen");
     if(!isJsonObject(record.payload))throw new StoreIntegrityError("admitted message payload is not an object");record.payload.processing_mode=mode;
     db.prepare("UPDATE discord_ingress_journal SET payload_json=? WHERE ingress_id=?").run(serializeSerdeValue(record.payload),key);
+  });
+}
+
+/** Resolved context belongs only to the matching original thread/start attempt. */
+export function recordIngressNewCreation(path:string,key:string,gen:bigint,cwd:string|null,channel:bigint,now:number):Promise<void>{
+  text(key);generation(gen);generation(channel);if(cwd!==null)text(cwd);time(now);
+  if((cwd!==null&&trim(cwd)==="")||channel<=0n)throw new StoreIntegrityError("invalid new creation context");
+  const context={version:1n,cwd,origin_channel_id:channel};return connection(path,true,db=>{
+    const record=getIngressIn(db,key);if(record===null)throw new StoreIntegrityError("new creation ingress is missing");
+    const origin=newThreadOriginIn(db,channel);
+    if(!serdeValueEqual(getOwn(record.payload,"new_origin"),origin))throw new StoreIntegrityError("new origin mapping changed after classification/admission; no thread/start permitted");
+    if(!changed(db,"UPDATE discord_ingress_journal SET outcome_json=json_set(outcome_json,'$.new_creation',json(?)),updated_at=? WHERE ingress_id=? AND state='executing' AND phase='thread/start' AND json_extract(outcome_json,'$.thread_start_generation')=? AND json_type(outcome_json,'$.new_creation') IS NULL AND channel_id=?",serializeSerdeValue(context),now,key,gen,channel))throw new StoreIntegrityError("new creation context has no matching unwritten attempt");
   });
 }
