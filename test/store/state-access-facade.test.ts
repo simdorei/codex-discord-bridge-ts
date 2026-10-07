@@ -18,6 +18,7 @@ import * as QueueEnqueue from "../../src/store/queue-enqueue.ts";
 import * as QueueMarkRunning from "../../src/store/queue-mark-running.ts";
 import * as MutationAttempt from "../../src/store/mutation-attempt.ts";
 import { CheckedRead } from "../../src/store/owned-driver.ts";
+import * as AsyncAdmission from "../../src/store/async-resolution-admission.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
@@ -35,6 +36,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.beginChecked, MutationAttempt.beginChecked);
     assert.strictEqual(StateAccessFacade.finish, MutationAttempt.finish);
     assert.strictEqual(StateAccessFacade.openCheckedRead, CheckedRead.open);
+    assert.strictEqual(StateAccessFacade.asyncAdmissionHeld, AsyncAdmission.asyncResolutionAdmissionHeld);
+    assert.strictEqual(StateAccessFacade.asyncTargetDispatchHeld, AsyncAdmission.asyncQuestionTargetDispatchHeld);
   });
 
   it("exposes exact direct function references via named whole-function aliases", () => {
@@ -54,9 +57,11 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(openCheckedRead, CheckedRead.open);
   });
 
-  it("contains only the seven supplied writes and authorized CheckedRead.open", () => {
+  it("contains only the supplied writes, CheckedRead.open and async admission reads", () => {
     const expected = [
       "activate",
+      "asyncAdmissionHeld",
+      "asyncTargetDispatchHeld",
       "beginChecked",
       "enqueue",
       "enqueueIfMirrorMatches",
@@ -67,7 +72,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected);
-    assert.strictEqual(actual.length, 8);
+    assert.strictEqual(actual.length, 10);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

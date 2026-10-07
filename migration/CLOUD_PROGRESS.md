@@ -38,10 +38,31 @@ The raw UTF-16 test reuses all 22 retained Rust observations from
 lifecycle query. These are reused historical observations, not a fresh Rust run.
 
 Remaining: fresh cross-language differential execution, complete raw malformed
-UTF-16 matrix, owned-path wrappers, caller/runtime wiring, actual Discord/Codex
+UTF-16 matrix, complete runtime wiring, actual Discord/Codex
 transport, Windows restart/end-to-end validation. A Rust toolchain installation
 attempt's execution approval was cancelled; no fresh Rust oracle run is claimed.
 No deployment, live database, credential, hook, or existing source changes.
 
 Local logs: `.runtime/cloud-baseline-20261007/` and
 `.runtime/cloud-admission-001/` (ignored execution evidence, not source artifacts).
+
+## Owned reads and saved-request presentation
+
+The owned admission and target-dispatch wrappers now use `openInitialized`,
+close the first handle before opening the second, and skip the second open on
+an admission hold. They are exposed through `StateAccessFacade` so the new
+runtime presentation code performs state reads through that interface.
+
+`presentSavedSubmission` and `withTargetHold` follow the Rust submission
+presentation rules: only Pending/Starting jobs query admission; existing turn
+IDs and protected warnings skip the read; current holds overlay a warning
+without changing the stored job, attempts, queued flag or turn ID. Database
+errors propagate rather than being converted into permission.
+
+Full Linux suite: 2,084 passed, zero failed/skipped; strict TypeScript passed.
+Three owned-store tests use real initialized temporary databases and verify
+one/two-handle closure plus start/steer/thread behavior. Six presentation tests
+use the state interface to check masking, warning precedence, isolation and
+error identity. These are not live Discord execution or a complete queue
+coordinator. Existing runtime intake/start/recovery orchestration remains open.
+Latest local logs: `.runtime/cloud-admission-owned-002/`.

@@ -7,6 +7,8 @@ import { asyncLegacySteerHeldIn } from "./async-resolution-legacy-steer.ts";
 import { asyncLifecycleOrdinary } from "./async-resolution-ordinary.ts";
 import { asyncLifecycleDeclaredControl } from "./async-resolution-declared-control.ts";
 import { cleanupRefusalFromOutcome } from "./async-resolution-cleanup-refusal.ts";
+import { openInitialized } from "./owned-driver.ts";
+import { asyncQuestionDispatchHeldIn } from "./queue-admission-guards.ts";
 
 const EVIDENCE_BYTES = 131072;
 const TARGET_RECORDS = 128;
@@ -104,4 +106,20 @@ export function asyncResolutionHeldIn(db: DatabaseSync, thread: string): boolean
     if (asyncLifecycleAdmissionHeldIn(db, thread)) return true;
   }
   return asyncLegacySteerHeldIn(db, thread);
+}
+
+async function withInitialized<T>(path: string, read: (db: DatabaseSync) => T): Promise<T> {
+  const db = await openInitialized(path);
+  try { return read(db); } finally { db.close(); }
+}
+
+export async function asyncResolutionAdmissionHeld(path: string, thread: string): Promise<boolean> {
+  requireThread(thread);
+  return withInitialized(path, db => asyncResolutionHeldIn(db, thread));
+}
+
+/** Rust opens a second initialized handle only after admission returns false. */
+export async function asyncQuestionTargetDispatchHeld(path: string, thread: string): Promise<boolean> {
+  if (await asyncResolutionAdmissionHeld(path, thread)) return true;
+  return withInitialized(path, db => asyncQuestionDispatchHeldIn(db, thread));
 }
