@@ -724,3 +724,37 @@ Evidence: .runtime/cloud-origin-040. Final 30 focused tests PASS, full **2,439 P
 signature/key-list integration failures were corrected without weakening guards.
 No full ingress admission, production startup, backend, Windows or performance
 certification is implied; frozen Rust authority and phase-2 ordering unchanged.
+
+## 2026-10-07 — Durable ingress admission, original order and new-prompt reservation
+
+Connected the pinned ingress/admission.rs, ingress/new_prompt_arm.rs and
+async_resolution/admission_order.rs paths. Owned admission snapshots its typed
+request before the first await, opens one IMMEDIATE writer transaction, checks
+both ID and original-event reads eagerly, returns duplicates before capture, and
+keeps old processed messages without inventing journal/ordinal records. New rows
+capture original route/Stop metadata, prepare any !new reservation, save the
+journal, record its ordinal, save the processed marker and reverify the original
+proof before committing. Wrappers can retain the same opaque WeakMap-backed proof;
+cloning or serializing it does not acquire custody.
+
+The ordinal digest uses exact Rust struct field order, raw serialized payload,
+lossless i64 fields and normalized zero f64 timestamp bits. Current format is
+checked per operation, not just by schema cache. Trigger mutation, ignored INSERT,
+sequence exhaustion and later original-identity changes fail closed. Phase/state
+updates remain outside original identity as in source. Duplicate/legacy paths do
+not mint a proof. This is first-admission ordering, never execution/release authority.
+
+!new without text reserves the next eligible same-room/same-owner human message.
+Event order, mention-arm identity and original route snapshots are checked. A
+changed route consumes the reservation with a refusal response. Downstream failure
+rolls back reservation consumption together with journal, ordinal and processed
+receipt. The unchanged access checks and final Discord response adapter are still
+caller responsibilities. Payload API is an already-parsed Serde Value contract,
+not a passive inspector for arbitrary hostile JavaScript objects/prototypes.
+
+Actual evidence: .runtime/cloud-admission-order-041 (9 focused) and
+.runtime/cloud-ingress-042 (30 focused including facade, full **2,461 PASS,
+0 fail/skip/cancel; strict TS exit 0**). Includes concurrent same-event admission,
+post-receipt fault injection, stale/changed route, command/bot/old-event/non-owner
+reservation exclusions and unchanged ordinary Stop regressions. No live Discord
+or Codex call, fresh Rust executable comparison or operational/performance PASS.

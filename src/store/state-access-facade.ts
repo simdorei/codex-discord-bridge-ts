@@ -1,3 +1,5 @@
+import * as IngressAdmission from "./ingress-admission.ts";
+import * as NewPromptArm from "./ingress-new-prompt-arm.ts";
 import * as NewOrigin from "./new-thread-origin.ts";
 import * as StopRevision from "./stop-revision-read.ts";
 import * as PromptIntakeLease from "./prompt-intake.ts";
@@ -29,6 +31,9 @@ import * as ExecutionHold from "./execution-hold.ts";
 import * as QueueClaims from "./queue-claims.ts";
 import * as DeadGeneration from "./dead-generation-admission.ts";
 import * as Preflight from "./queue-preflight-failure.ts";
+
+export const admitIngress: typeof IngressAdmission.admitIngress = IngressAdmission.admitIngress;
+export const pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt = NewPromptArm.pendingNewPrompt;
 
 export const newThreadOrigin: typeof NewOrigin.newThreadOrigin = NewOrigin.newThreadOrigin;
 export const captureStopOrigin: typeof StopRevision.captureStopOrigin = StopRevision.captureStopOrigin;
@@ -129,6 +134,8 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly admitIngress: typeof IngressAdmission.admitIngress;
+  readonly pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt;
   readonly newThreadOrigin: typeof NewOrigin.newThreadOrigin;
   readonly captureStopOrigin: typeof StopRevision.captureStopOrigin;
   readonly admitPromptIntake: typeof PromptIntakeWrite.admitPromptIntake;
@@ -213,6 +220,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   renewPromptIntakeClaimIfCurrent,
   promptIntakeHasDurableOwner,
 
+  admitIngress,
+  pendingNewPrompt,
   newThreadOrigin,
   captureStopOrigin,
   mirroredThreadId,

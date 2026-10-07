@@ -1,3 +1,5 @@
+import * as IngressAdmission from "../../src/store/ingress-admission.ts";
+import * as NewPromptArm from "../../src/store/ingress-new-prompt-arm.ts";
 import * as NewOrigin from "../../src/store/new-thread-origin.ts";
 import * as StopRevision from "../../src/store/stop-revision-read.ts";
 import * as PromptIntakeLease from "../../src/store/prompt-intake.ts";
@@ -62,6 +64,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.recordAndCancelDefiniteForkFailure, ForkFailure.recordAndCancelDefiniteForkFailure);
     assert.strictEqual(StateAccessFacade.completedAppServerForkTargetForSource, ForkCompleted.completedAppServerForkTargetForSource);
     assert.strictEqual(StateAccessFacade.isAppServerManagedTarget, ForkManaged.isAppServerManagedTarget);
+    assert.strictEqual(StateAccessFacade.admitIngress, IngressAdmission.admitIngress);
+    assert.strictEqual(StateAccessFacade.pendingNewPrompt, NewPromptArm.pendingNewPrompt);
     assert.strictEqual(StateAccessFacade.newThreadOrigin, NewOrigin.newThreadOrigin);
     assert.strictEqual(StateAccessFacade.captureStopOrigin, StopRevision.captureStopOrigin);
     assert.strictEqual(StateAccessFacade.mirroredThreadId, MirrorMapping.mirroredThreadId);
@@ -159,6 +163,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "markRunningWithResidentIfClaimed",
       "mirroredThreadId",
       "newThreadOrigin",
+      "admitIngress",
+      "pendingNewPrompt",
       "captureStopOrigin",
       "openCheckedRead",
       "pendingGoalProgress",
@@ -190,7 +196,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 65);
+    assert.strictEqual(actual.length, 67);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
