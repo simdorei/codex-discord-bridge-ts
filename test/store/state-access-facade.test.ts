@@ -93,10 +93,12 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "adoptTargetGeneration",
       "asyncAdmissionHeld",
       "asyncTargetDispatchHeld",
+      "attachGoalTurnObservedIfOwned",
       "beginChecked",
       "captureAsyncHistorySnapshot",
       "captureTerminalHistorySnapshot",
       "completeDelivery",
+      "completeGoalProgress",
       "deadTargetHeld",
       "eligibleJobs",
       "enqueue",
@@ -105,15 +107,19 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "finish",
       "finishObservedCompletion",
       "hasObservedCompletion",
+      "hasPendingGoalProgress",
       "holdStartingForAmbiguousCandidatesIfClaimed",
       "listFiltered",
       "listPendingDeliveries",
+      "markGoalWaiting",
       "markRunning",
       "markRunningIfClaimed",
       "markRunningWithResidentIfClaimed",
       "openCheckedRead",
+      "pendingGoalProgress",
       "pendingObservedCompletions",
       "recordDeliveryFailure",
+      "recordGoalProgressError",
       "recordObservedCompletionError",
       "recordObservedCompletionForResident",
       "recordPreflightFailure",
@@ -122,13 +128,14 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "retainAsyncHistoryCandidate",
       "retireCopyOnlyHandoffs",
       "settleTerminalHistory",
+      "stageOwnedGoalProgress",
       "stageOwnedQueueCompletion",
       "tryBeginAttempt",
       "unresolvedAppServerForkHandoffForSource",
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected);
-    assert.strictEqual(actual.length, 36);
+    assert.strictEqual(actual.length, 43);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

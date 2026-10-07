@@ -388,3 +388,39 @@ test("start-next failure after completion cannot undo the committed final",async
     assert.equal(queue.locks.activeTargetCount,0);
   });
 });
+test("Goal progress and observed successor share target lock without rewriting original generation",async()=>{
+  await storeFixture(async path=>{
+    await state.enqueue(path,queueJob());const claim=(await state.tryBeginAttempt(path,"saved",[],1n))!;
+    const original=(await state.markRunningIfClaimed(path,claim,"old"))!;
+    const queue=new QueueStartCoordinator(path,backend({generation:()=>2n}).value);
+    assert.equal((await queue.stageOwnedGoalProgress(original,"progress"))?.content,"progress");
+    const waiting=(await state.listFiltered(path,"target",null))[0]!;
+    assert.equal(await queue.goalTurnStartedObserved("target","next",2n,waiting),true);
+    const next=(await state.listFiltered(path,"target",null))[0]!;
+    assert.equal(next.appServerGeneration,1n);assert.equal(next.executionGeneration,1n);assert.equal(next.turnObservationGeneration,2n);
+    assert.equal(await queue.goalContinues("target","next"),true);
+    assert.equal(await queue.goalTurnStartedObserved("target","old",2n),false);
+    assert.equal(queue.locks.activeTargetCount,0);
+  });
+});
+test("Goal observation generation is rechecked after waiting for the target lock",async()=>{
+  await storeFixture(async path=>{
+    await state.enqueue(path,queueJob());const claim=(await state.tryBeginAttempt(path,"saved",[],1n))!;
+    const job=(await state.markRunningIfClaimed(path,claim,"old"))!;
+    let generation=2n;const queue=new QueueStartCoordinator(path,backend({generation:()=>generation}).value);
+    await queue.stageOwnedGoalProgress(job,"");const lease=await queue.locks.acquire("target");
+    const operation=queue.goalTurnStartedObserved("target","next",2n);generation=3n;lease.release();
+    assert.equal(await operation,false);assert.equal((await state.listFiltered(path,"target",null))[0]!.turnId,"old");
+  });
+});
+test("Goal expected owner is copied before waits, and an already stale owner cannot attach",async()=>{
+  await storeFixture(async path=>{
+    await state.enqueue(path,queueJob());const claim=(await state.tryBeginAttempt(path,"saved",[],1n))!;
+    const job=(await state.markRunningIfClaimed(path,claim,"old"))!;
+    const queue=new QueueStartCoordinator(path,backend({generation:()=>2n}).value);await queue.stageOwnedGoalProgress(job,"");
+    const waiting=(await state.listFiltered(path,"target",null))[0]!;
+    assert.equal(await queue.goalTurnStartedObserved("target","next",2n,{...waiting,attemptCount:99n}),false);
+    const lease=await queue.locks.acquire("target");const operation=queue.goalTurnStartedObserved("target","next",2n,waiting);
+    waiting.attemptCount=99n;lease.release();assert.equal(await operation,true);
+  });
+});

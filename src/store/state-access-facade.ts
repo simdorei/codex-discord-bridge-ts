@@ -1,3 +1,6 @@
+import * as GoalWaiting from "./queue-goal-waiting.ts";
+import * as GoalAttach from "./queue-attach-goal.ts";
+import * as GoalProgress from "./goal-progress.ts";
 import * as ForkRepair from "./fork-legacy-repair.ts";
 import * as ForkRetirement from "./fork-retirement.ts";
 import * as ForkRead from "./fork-unresolved-read.ts";
@@ -76,7 +79,28 @@ export const retireCopyOnlyHandoffs: typeof ForkRetirement.retireCopyOnlyHandoff
 
 export const repairLegacyDefiniteForkFailures: typeof ForkRepair.repairLegacyDefiniteForkFailures = ForkRepair.repairLegacyDefiniteForkFailures;
 
+export const stageOwnedGoalProgress: typeof GoalProgress.stageOwnedGoalProgress = GoalProgress.stageOwnedGoalProgress;
+
+export const pendingGoalProgress: typeof GoalProgress.pendingGoalProgress = GoalProgress.pendingGoalProgress;
+
+export const recordGoalProgressError: typeof GoalProgress.recordGoalProgressError = GoalProgress.recordGoalProgressError;
+
+export const completeGoalProgress: typeof GoalProgress.completeGoalProgress = GoalProgress.completeGoalProgress;
+
+export const hasPendingGoalProgress: typeof GoalProgress.hasPendingGoalProgress = GoalProgress.hasPendingGoalProgress;
+
+export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObservedIfOwned = GoalAttach.attachGoalTurnObservedIfOwned;
+
+export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
+
 export interface IStateAccessFacade {
+  readonly markGoalWaiting: typeof GoalWaiting.markGoalWaiting;
+  readonly attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObservedIfOwned;
+  readonly hasPendingGoalProgress: typeof GoalProgress.hasPendingGoalProgress;
+  readonly completeGoalProgress: typeof GoalProgress.completeGoalProgress;
+  readonly recordGoalProgressError: typeof GoalProgress.recordGoalProgressError;
+  readonly pendingGoalProgress: typeof GoalProgress.pendingGoalProgress;
+  readonly stageOwnedGoalProgress: typeof GoalProgress.stageOwnedGoalProgress;
   readonly repairLegacyDefiniteForkFailures: typeof ForkRepair.repairLegacyDefiniteForkFailures;
   readonly retireCopyOnlyHandoffs: typeof ForkRetirement.retireCopyOnlyHandoffs;
   readonly unresolvedAppServerForkHandoffForSource: typeof ForkRead.unresolvedAppServerForkHandoffForSource;
@@ -118,6 +142,13 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  markGoalWaiting,
+  attachGoalTurnObservedIfOwned,
+  hasPendingGoalProgress,
+  completeGoalProgress,
+  recordGoalProgressError,
+  pendingGoalProgress,
+  stageOwnedGoalProgress,
   repairLegacyDefiniteForkFailures,
   retireCopyOnlyHandoffs,
   unresolvedAppServerForkHandoffForSource,

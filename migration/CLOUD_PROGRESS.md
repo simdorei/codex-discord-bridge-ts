@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **2,277 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **2,289 tests passed**, no failures/skips;
 strict TypeScript passed. Migration and Windows/live transport validation remain incomplete.
 
 ## Baseline
@@ -362,3 +362,31 @@ Bulk recovery inventory/unmanaged-target and conflict-fork orchestration, Goal
 progress/handoff writer, intake promotion, real backend/Discord adapters, central
 runtime error dispatch, Windows and live validation remain incomplete. The
 recovery report/log callback is not a substitute for that final error-dispatch wiring.
+
+
+## Owned Goal progress and successor handoff
+
+Added owned progress staging with exact full-job/unique-owner checks, durable
+payload conflict detection, mirror-origin retention, goal-waiting transition and
+journal consumption in one transaction. Empty progress still preserves waiting
+custody without fabricating a message. Pending/error/completion APIs and the
+legacy NULL-job protection predicate are available through the state facade.
+
+Observed Goal attachment preserves original execution generation and separately
+binds the actual turn-observation generation. It refuses duplicate all-generation
+Running owners, stale snapshots and completed-origin rewind. Async obligations
+require exact original sealed owner and accepted prior terminal proof; the new
+handoff retains that proof, hashes declaration-ordered evidence, checks the
+128-entry lifetime chain and revision overflow, and atomically advances policy
+revision. Failure rolls back the queue update and handoff evidence together.
+
+Runtime Goal APIs use the shared target mutex, recheck live observation generation
+after acquiring it, and snapshot expected jobs before awaits. Compatibility
+attachment remains its existing separate behavior and does not manufacture async
+handoff authority. Legacy non-owned progress staging is not newly implemented.
+
+Full Linux suite: 2,289 PASS, zero failed/skipped; strict TS PASS. Tests include
+cross-generation exact successors, no-proof/ignored-CAS rollback, evidence-chain
+capacity/revision overflow, stale and delayed events, duplicate owners, immutable
+payload conflicts and continued terminal settlement. Logs `.runtime/cloud-goal-handoff-018/`.
+Actual notification/Discord adapters and bulk scheduling remain unfinished.

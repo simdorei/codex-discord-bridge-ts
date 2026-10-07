@@ -1,3 +1,4 @@
+import {StoreIntegrityError} from "./schema-assembly.ts";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import type { DatabaseSync } from "node:sqlite";
@@ -59,7 +60,7 @@ export function asyncExecutionOwnerIn(db: DatabaseSync, row: AsyncObligation): E
       getOwn(owner.job, "turn_id") !== owner.turn_id) held(row, "invalid execution owner identity");
   return owner;
 }
-export function exactAsyncOwnerIn(db: DatabaseSync, row: AsyncObligation): boolean {
+export function asyncClaimIsCurrentIn(db: DatabaseSync, row: AsyncObligation): boolean {
   const stmt = db.prepare(`SELECT ${ASYNC_QUESTION_CLAIM_SQL} AS claim,CAST(${ASYNC_QUESTION_CLAIM_SQL} AS BLOB) AS claim_raw,
     q.preparation_json AS seal,CAST(q.preparation_json AS BLOB) AS seal_raw
     FROM cdr_async_questions q WHERE q.id=? AND EXISTS(SELECT 1 FROM mirror_threads m
@@ -68,11 +69,50 @@ export function exactAsyncOwnerIn(db: DatabaseSync, row: AsyncObligation): boole
   const current = stmt.get(row.question_id);
   if (!current) return false;
   const claim = text(db, current, "claim"), seal = text(db, current, "seal", true);
-  if (claim !== row.claim || seal !== row.original_seal) return false;
+  return claim === row.claim && seal === row.original_seal;
+}
+export function exactAsyncOwnerIn(db: DatabaseSync, row: AsyncObligation): boolean {
+  if (!asyncClaimIsCurrentIn(db,row)) return false;
   const exists = db.prepare("SELECT EXISTS(SELECT 1 FROM codex_turn_queue WHERE job_id=?) AS present");
   exists.setReadBigInts(true);
   if (decodeI64(exists.get(row.origin_job_id)?.present, "present") === 0n) return false;
   const owner = asyncExecutionOwnerIn(db, row), job = selectJob(db, row.origin_job_id);
   return job.state === "Running" && !job.goalWaiting && completionEvidenceGeneration(job) === owner.generation &&
     isDeepStrictEqual(executionOwnerJobValue(job), owner.job);
+}
+
+import {readAsyncObligationsIn} from "./async-resolution-records.ts";
+import {verifiedAsyncTerminalProofIn} from "./async-resolution-terminal.ts";
+import {serializeOwnershipHandoff} from "./async-resolution-proof.ts";
+import {serdeValueEqual} from "../core/serde-value-equal.ts";
+/** After the exact waiting-owner update, in the same caller-owned transaction. */
+export function handoffOwnedAsyncIn(db:DatabaseSync,previous:StoredQueueJob):void{
+  if(!db.isTransaction)throw new StoreIntegrityError("Borrowed mutation requires an active transaction");
+  const next=selectJob(db,previous.jobId);
+  for(const row of readAsyncObligationsIn(db,previous.targetThreadId)){
+    if(row.origin_job_id!==previous.jobId||row.execution_state!=="unresolved")continue;
+    const owner=asyncExecutionOwnerIn(db,row),waiting=executionOwnerJobValue(previous);
+    waiting.goal_waiting=false;waiting.updated_at=getOwn(owner.job,"updated_at")??null;
+    if(!previous.goalWaiting||previous.state!=="Running"||previous.turnId!==owner.turn_id||!serdeValueEqual(waiting,owner.job)||!asyncClaimIsCurrentIn(db,row))
+      held(row,"Goal handoff lost the original execution owner");
+    const proof=verifiedAsyncTerminalProofIn(db,row,owner);
+    if(proof===null)held(row,"Goal handoff has no exact owned terminal evidence");
+    const expectedNext=executionOwnerJobValue(previous),nextValue=executionOwnerJobValue(next);
+    expectedNext.turn_id=next.turnId;expectedNext.turn_observation_generation=next.turnObservationGeneration;
+    expectedNext.goal_waiting=false;expectedNext.updated_at=nextValue.updated_at;
+    if(!serdeValueEqual(expectedNext,nextValue)||next.turnId===previous.turnId||next.state!=="Running"||next.goalWaiting)
+      held(row,"Goal successor snapshot is not an exact owned handoff");
+    const countQuery=db.prepare("SELECT count(*) AS n FROM cdr_async_execution_handoffs WHERE question_id=?");countQuery.setReadBigInts(true);
+    const count=decodeI64(countQuery.get(row.question_id)?.n,"handoff count");
+    if(count<0n||count>=128n)held(row,"Goal evidence chain needs bounded reconciliation");
+    if(row.revision===9223372036854775807n)held(row,"execution revision overflow");
+    if(next.turnId===null)held(row,"missing Goal successor turn");
+    const revision=row.revision+1n,raw=serializeOwnershipHandoff({version:1n,revision,claim_sha256:row.claim_sha256,previous_terminal:proof[0],
+      owner:{turn_id:next.turnId,generation:completionEvidenceGeneration(next),observer:owner.observer,job:nextValue}});
+    if(Buffer.byteLength(raw)>131072)held(row,"Goal handoff evidence exceeds bound");
+    db.prepare("INSERT INTO cdr_async_execution_handoffs(question_id,revision,evidence_json,evidence_sha256) VALUES(?,?,?,?)")
+      .run(row.question_id,revision,raw,createHash("sha256").update(raw).digest("hex"));
+    if(BigInt(db.prepare("UPDATE cdr_async_execution_obligations SET revision=?,terminal_proof_json=NULL WHERE question_id=? AND revision=? AND terminal_proof_json=? AND execution_state='unresolved'")
+      .run(revision,row.question_id,row.revision,proof[0]).changes)!==1n)held(row,"Goal handoff lost the exact policy revision");
+  }
 }

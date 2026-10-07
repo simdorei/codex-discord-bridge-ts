@@ -72,3 +72,8 @@ export function serializeTerminalEvidence(evidence: TerminalEvidence): string {
   return "{" + TERMINAL.fields.map(([key]) => serializeSerdeValue(key) + ":" +
     serializeSerdeValue(evidence[key as keyof TerminalEvidence])).join(",") + "}";
 }
+
+export function serializeOwnershipHandoff(handoff: OwnershipHandoff): string {
+  const owner="{"+OWNER.fields.map(([key])=>serializeSerdeValue(key)+":"+serializeSerdeValue(handoff.owner[key as keyof ExecutionOwner])).join(",")+"}";
+  return "{"+HANDOFF.fields.map(([key])=>serializeSerdeValue(key)+":"+(key==="owner"?owner:serializeSerdeValue(handoff[key as keyof OwnershipHandoff]))).join(",")+"}";
+}

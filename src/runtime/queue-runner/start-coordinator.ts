@@ -1,3 +1,4 @@
+import type { PendingGoalProgress } from "../../store/goal-progress.ts";
 import { QueueRecoveryCoordinator } from "./recovery-coordinator.ts";
 import type { RecoveryReport } from "./recovery-state.ts";
 import { BackendFailureError, AttemptClaimLostError, QueueIntegerRangeError } from "./errors.ts";
@@ -71,6 +72,39 @@ export class QueueStartCoordinator {
       if (typeof generation !== "bigint" || generation < 0n || generation > I64_MAX)
         throw new QueueIntegerRangeError();
       await this.#start(target, generation);
+    });
+  }
+
+  stageOwnedGoalProgress(expectedInput: StoredQueueJob, content: string): Promise<PendingGoalProgress | null> {
+    const expected = snapshotStoredQueueJob(expectedInput);
+    return this.locks.run(expected.targetThreadId, () => this.#state.stageOwnedGoalProgress(this.#path, expected, content));
+  }
+
+  goalContinues(target: string, turn: string): Promise<boolean> {
+    return this.locks.run(target, async () => {
+      if (await this.#state.deadTargetHeld(this.#path, target)) return false;
+      const jobs = await this.#state.listFiltered(this.#path, target, null);
+      const job = jobs.find(job => job.state === "Running" && job.turnId === turn);
+      return job === undefined ? false : this.#state.markGoalWaiting(this.#path, job.jobId, turn, job.appServerGeneration);
+    });
+  }
+
+  goalTurnStarted(target: string, turn: string): Promise<boolean> {
+    return this.goalTurnStartedObserved(target, turn, this.#backend.generation());
+  }
+
+  goalTurnStartedObserved(target: string, turn: string, observedGeneration: bigint, expectedInput: StoredQueueJob | null = null): Promise<boolean> {
+    if (typeof observedGeneration !== "bigint" || observedGeneration < 0n || observedGeneration > 18446744073709551615n) throw new QueueIntegerRangeError();
+    const expected = expectedInput === null ? null : snapshotStoredQueueJob(expectedInput);
+    return this.locks.run(target, async () => {
+      if (observedGeneration !== this.#backend.generation() || await this.#state.deadTargetHeld(this.#path, target)) return false;
+      const jobs = await this.#state.listFiltered(this.#path, target, null);
+      const waiting = jobs.filter(job => job.state === "Running" && job.goalWaiting);
+      const job = waiting[0]; if (job === undefined) return false;
+      if (waiting.length > 1) throw new InvalidQueueStateError(`multiple goal-waiting jobs for ${target}`);
+      if (expected !== null && !storedQueueJobsEqual(expected, job)) return false;
+      if (observedGeneration > I64_MAX) throw new QueueIntegerRangeError();
+      return this.#state.attachGoalTurnObservedIfOwned(this.#path, job, turn, observedGeneration);
     });
   }
 

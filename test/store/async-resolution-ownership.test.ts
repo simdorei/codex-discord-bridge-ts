@@ -323,3 +323,68 @@ test("finishing unverified journal preserves unresolved async evidence instead o
     assert.equal(await state.hasObservedCompletion(path,"target","turn"),false);
   });
 });
+import {stageOwnedGoalProgress,pendingGoalProgress} from "../../src/store/goal-progress.ts";
+import {attachGoalTurnObservedIfOwned} from "../../src/store/queue-attach-goal.ts";
+test("Goal progress and successor preserve original job while carrying exact prior terminal evidence",async()=>{
+  await fixture(async(db,row,path)=>{
+    await recordAsyncTerminalNotification(path,"target","turn",1n,"resident",payload());
+    const original=selectJob(db,"saved"),progress=await stageOwnedGoalProgress(path,original,"progress");
+    assert.equal(progress?.content,"progress");const waiting=selectJob(db,"saved");assert.equal(waiting.goalWaiting,true);
+    assert.equal(await attachGoalTurnObservedIfOwned(path,waiting,"successor",2n),true);
+    const next=selectJob(db,"saved");assert.equal(next.turnId,"successor");assert.equal(next.goalWaiting,false);
+    assert.equal(next.appServerGeneration,original.appServerGeneration);assert.equal(next.executionGeneration,original.executionGeneration);assert.equal(next.turnObservationGeneration,2n);
+    const updated=readAsyncObligationsIn(db,"target")[0]!;assert.equal(updated.revision,8n);
+    const owner=asyncExecutionOwnerIn(db,updated);assert.equal(owner.turn_id,"successor");assert.equal(owner.generation,2n);assert.equal(owner.observer,"resident");
+    assert.equal(exactAsyncOwnerIn(db,updated),true);assert.equal(db.prepare("SELECT terminal_proof_json FROM cdr_async_execution_obligations").get()?.terminal_proof_json,null);
+    const handoff=db.prepare("SELECT evidence_json FROM cdr_async_execution_handoffs").get()?.evidence_json as string;
+    assert.ok(handoff.startsWith('{"version":1,"revision":8,"claim_sha256":'));assert.ok(handoff.includes('"owner":{"turn_id":"successor","generation":2,"observer":"resident","job":'));
+    const nextPayload=JSON.stringify({threadId:"target",turn:{id:"successor",status:"completed"}});
+    await recordAsyncTerminalNotification(path,"target","successor",2n,"resident",nextPayload);
+    await state.stageOwnedQueueCompletion(path,next,"final",6,{observer:"resident",generation:2n});
+    assert.equal(db.prepare("SELECT execution_state FROM cdr_async_execution_obligations").get()?.execution_state,"terminal");
+    assert.equal((await pendingGoalProgress(path)).length,1);
+  });
+});
+test("Goal handoff without accepted prior proof rolls back the successor queue update",async()=>{
+  await fixture(async(db,row,path)=>{
+    const original=selectJob(db,"saved");await stageOwnedGoalProgress(path,original,"");const waiting=selectJob(db,"saved");
+    await assert.rejects(()=>attachGoalTurnObservedIfOwned(path,waiting,"successor",2n),/no exact owned terminal evidence/);
+    const unchanged=selectJob(db,"saved");assert.equal(unchanged.turnId,"turn");assert.equal(unchanged.goalWaiting,true);
+    assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_async_execution_handoffs").get()?.n,0);
+  });
+});
+test("ignored obligation handoff CAS rolls back both successor and new evidence row",async()=>{
+  await fixture(async(db,row,path)=>{
+    await recordAsyncTerminalNotification(path,"target","turn",1n,"resident",payload());
+    await stageOwnedGoalProgress(path,selectJob(db,"saved"),"");const waiting=selectJob(db,"saved");
+    db.exec("CREATE TRIGGER test_ignore_handoff BEFORE UPDATE OF revision ON cdr_async_execution_obligations BEGIN SELECT RAISE(IGNORE); END");
+    await assert.rejects(()=>attachGoalTurnObservedIfOwned(path,waiting,"successor",2n),/lost the exact policy revision/);
+    assert.equal(selectJob(db,"saved").turnId,"turn");assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_async_execution_handoffs").get()?.n,0);
+  });
+});
+import {serializeOwnershipHandoff} from "../../src/store/async-resolution-proof.ts";
+test("Goal handoff lifetime chain cap rolls back the successor without discarding prior evidence",async()=>{
+  await fixture(async(db,row,path)=>{
+    const owner=asyncExecutionOwnerIn(db,row);
+    db.exec("BEGIN IMMEDIATE");
+    for(let revision=1n;revision<=128n;revision++){
+      const raw=serializeOwnershipHandoff({version:1n,revision,claim_sha256:row.claim_sha256,previous_terminal:"prior",owner});
+      db.prepare("INSERT INTO cdr_async_execution_handoffs VALUES (?,?,?,?)").run("question",revision,raw,createHash("sha256").update(raw).digest("hex"));
+    }
+    db.exec("UPDATE cdr_async_execution_obligations SET revision=128; COMMIT");
+    const current=readAsyncObligationsIn(db,"target")[0]!;installProof(db,current);
+    await stageOwnedGoalProgress(path,selectJob(db,"saved"),"");const waiting=selectJob(db,"saved");
+    await assert.rejects(()=>attachGoalTurnObservedIfOwned(path,waiting,"successor",2n),/bounded reconciliation/);
+    assert.equal(selectJob(db,"saved").turnId,"turn");assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_async_execution_handoffs").get()?.n,128);
+  });
+});
+test("Goal execution revision overflow preserves waiting queue and old terminal proof",async()=>{
+  await fixture(async(db,row,path)=>{
+    db.exec("UPDATE cdr_async_execution_obligations SET revision=9223372036854775807");
+    const current=readAsyncObligationsIn(db,"target")[0]!,raw=installProof(db,current);
+    await stageOwnedGoalProgress(path,selectJob(db,"saved"),"");const waiting=selectJob(db,"saved");
+    await assert.rejects(()=>attachGoalTurnObservedIfOwned(path,waiting,"successor",2n),/execution revision overflow/);
+    assert.equal(selectJob(db,"saved").goalWaiting,true);
+    assert.equal(db.prepare("SELECT terminal_proof_json FROM cdr_async_execution_obligations").get()?.terminal_proof_json,raw);
+  });
+});
