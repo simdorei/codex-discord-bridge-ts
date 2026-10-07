@@ -1436,3 +1436,24 @@ Evidence .runtime/cloud-terminal-fence-073: 8 new cases, full **2,742 PASS,
 0 fail/skip/cancel; strict TS exit 0**. Tests cover stale retention, immediate revoke,
 coalescing, generation isolation, abort/reuse, subscriber cleanup and atomic
 getter-free pruning. No Discord typing request or live process was started.
+
+## 2026-10-07 — Revocable typing orchestration
+
+Connected typing.rs eligibility/order using central queue/terminal reads, original
+active turn, lifecycle generation and terminal fence. Channels are deduplicated;
+Goal-waiting/nonrunning/observed-terminal jobs cannot send typing. In-flight revocation
+aborts the REQUIRED injected transport, then awaits settlement and releases watches.
+Backend/HTTP failures preserve first-error precedence while later channels proceed.
+
+The JS adapter requires nonthrowing lifecycle change status, abort-settling watch
+Promises and a transport that cancels pending dispatch and reclaims owned work.
+It intentionally joins, rather than claiming Rust future-drop equivalence. Default
+store reads are not offloaded like Rust spawn_blocking; native/network cancellation,
+latency bounds and actual HTTP implementation remain unverified. A noncooperative
+adapter can still delay cancellation. No live typing request was made.
+
+Evidence .runtime/cloud-typing-074: 9 focused tests, including actual SQLite facade,
+full **2,751 PASS, 0 fail/skip/cancel; strict TS exit 0**. A same-test RED/GREEN found
+an unexpected post-dispatch watch exception could bypass transport abort/join; cleanup
+now unconditionally aborts and joins all three owned Promises. Original source and
+cancellation-red.log retained; fixed test SHA is in the publication manifest.
