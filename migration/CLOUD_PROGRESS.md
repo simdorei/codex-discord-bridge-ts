@@ -513,3 +513,24 @@ is NOT implemented: Rust future-drop and JS Promise cancellation/reclamation are
 not treated as interchangeable. No live adapter, actual cancellation or deployment
 PASS is claimed by these leaf and injected-backend tests.
 Final combined target: **2,342 tests PASS, 0 fail/skip/cancel; strict TS exit 0**.
+
+## 2026-10-07: shared bridge state persistence
+
+Ported bridge_state.rs selected/tracked thread state, settings and fork inheritance
+into one BridgeState owner. Operations preserve unrelated lossless JSON, source
+settings and any pre-existing target entry. Rust whitespace and UTF-8 key ordering
+are retained; prototype-like keys are ordinary data. A single leading UTF-8 BOM
+is accepted; corrupt bytes/JSON/nonobjects fail without replacing the file.
+
+Save uses an exclusive same-directory temporary file, full write, fsync and
+rename. Cleanup checks the temporary inode/device and never deletes the target.
+Injected fsync/rename failures preserve original bytes and remove only the owned
+temporary file. The pretty formatter operates on the existing lossless serializer's
+tokens without JSON-number rounding. No fresh Rust serializer oracle was run.
+
+Synchronous methods contain no await and require a single execution-context owner;
+final filesystem-worker placement, Rust mutex poisoning equivalence, Windows
+rename semantics and process-crash durability remain unverified. This is not a
+cross-process file lock or directory-fsync guarantee. Evidence:
+.runtime/cloud-bridge-state-027 (8 focused tests, actual full 2,350 PASS with
+0 fail/skip/cancel, strict TS exit 0). No live bridge-state file was accessed.
