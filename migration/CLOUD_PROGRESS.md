@@ -1732,3 +1732,28 @@ Evidence .runtime/cloud-server-response-claim-088: 6 focused PASS, full **2,860 
 0 fail/skip/cancel; strict TS exit 0**. Stale IDs/turns, direct-vs-nested turn field,
 NEL/BOM, already-claimed error precedence, indeterminate disposal and promotion failure
 covered. Explicit JS finally-disposal remains required instead of automatic Rust Drop.
+
+## 2026-10-07 — Serialized writer ownership and cancellation
+
+Ported source control/write.rs ordering: closed check, Serde encoding plus LF, exclusive
+writer acquisition, second closed check, synchronous preflight, input presence, started
+hook, write-all and flush. Failure after started guard closes as indeterminate before
+releasing the writer. Explicit AbortSignal substitutes for future cancellation: queued
+cancellation removes only its waiter; active cancellation closes promptly but retains
+the writer until the required adapter stops/joins the owned operation. Abandoning the
+returned Promise alone does not cancel it. Preflight resources have explicit failure
+cleanup and successful ownership transfer. No native pipe implementation supplied.
+
+Moved the existing TargetLocks implementation byte-identically into core/keyed-locks.ts;
+the old queue-runner path re-exports it. No duplicate lock implementation or registry
+sharing between independent writer and queue owners. All existing FIFO/cancellation tests
+still pass. During review, cleanup failures could hide the original write failure; now
+AggregateError preserves primary plus cleanup/disposer identities. Same final test bytes
+produce old 8 PASS/1 FAIL and fixed 9 PASS. First RED-stage attempt lacked protocol/ids.ts
+and failed module loading; retained separately and not counted as behavioral evidence.
+
+Evidence .runtime/cloud-serialized-writer-089: focused 18 PASS (9 writer + 9 lock), full
+**2,869 PASS, 0 fail/skip/cancel; strict TS exit 0**. Exact source adapters, real native
+write cancellation and OS integration remain unverified. Adapter native errors propagate
+without claiming Rust Io Display parity. Caller must still hold the outer admission
+permit; this internal writer does not create new dispatch authority.
