@@ -94,3 +94,28 @@ Still missing: claim-fenced start/ACK/failure transitions, resident late-stop
 binding, full submit/completion/recovery coordination and transport/restart wiring.
 The existing compatibility mutation helpers must not substitute for guarded
 `try_begin_attempt` / `*_if_claimed` APIs.
+
+## Claim-fenced queue mutations
+
+`queue-claims.ts` now implements `tryBeginAttempt`,
+`recordStartFailureIfClaimed`, and the **non-resident** `markRunningIfClaimed`.
+Authority: `crates/cdr-store/src/queue/write/attempt.rs` at the pinned Rust commit.
+All use one IMMEDIATE transaction owner and the exact job/target/generation/
+attempt/timestamp/raw-baseline/state/turn/fork comparisons. Input snapshots are
+captured before asynchronous initialization. Existing dead-generation, async
+admission, baseline, reply-binding and origin helpers are reused.
+
+Definite execution-held failure atomically writes the hold and notice; neither
+may commit if the notice fails. ACK turn replacement by a trigger is rejected
+and rolled back. A stale comparison returns no claim, never replay permission.
+The non-resident ACK API does not accept a resident argument and must not replace
+`mark_running_with_resident_if_claimed`; late-stop binding is still pending.
+
+Full Linux suite: 2,119 passed, zero failed/skipped; strict TypeScript passed.
+18 claim tests include competing callers, stale identities, generation/dead
+holds, ignored/aborted updates, rollback, Unicode bounds, mutable caller input,
+atomic notices and ACK/origin failures. This is not a cross-process contention
+or Windows run. Clock precision remains Date.now milliseconds, unlike Rust's
+submillisecond SystemTime. Typed AsyncResolutionHeld errors are defined here;
+complete central runtime error routing remains unfinished.
+Latest logs: `.runtime/cloud-claims-004/`.

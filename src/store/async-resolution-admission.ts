@@ -108,6 +108,21 @@ export function asyncResolutionHeldIn(db: DatabaseSync, thread: string): boolean
   return asyncLegacySteerHeldIn(db, thread);
 }
 
+export class AsyncResolutionHeldError extends Error {
+  readonly kind = "AsyncResolutionHeld";
+  readonly threadId: string;
+  readonly reason: string;
+  constructor(threadId: string, reason: string) {
+    super(`[cdr-rust:async-resolution-held:v1] ${threadId}: ${reason}`);
+    this.name = "AsyncResolutionHeldError"; this.threadId = threadId; this.reason = reason;
+  }
+}
+
+export function assertAsyncAdmissionIn(db: DatabaseSync, thread: string): void {
+  if (asyncResolutionHeldIn(db, thread)) throw new AsyncResolutionHeldError(thread,
+    "original async execution, lifecycle request or recovery authorization is unresolved; no automatic retry");
+}
+
 async function withInitialized<T>(path: string, read: (db: DatabaseSync) => T): Promise<T> {
   const db = await openInitialized(path);
   try { return read(db); } finally { db.close(); }

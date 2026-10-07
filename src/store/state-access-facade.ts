@@ -5,6 +5,11 @@ import * as QueueMarkRunning from "./queue-mark-running.ts";
 import * as AsyncAdmission from "./async-resolution-admission.ts";
 import * as QueueRead from "./queue-read.ts";
 import * as ExecutionHold from "./execution-hold.ts";
+import * as QueueClaims from "./queue-claims.ts";
+
+export const tryBeginAttempt: typeof QueueClaims.tryBeginAttempt = QueueClaims.tryBeginAttempt;
+export const recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed = QueueClaims.recordStartFailureIfClaimed;
+export const markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed = QueueClaims.markRunningIfClaimed;
 
 export const listFiltered: typeof QueueRead.listFiltered = QueueRead.listFiltered;
 export const eligibleJobs: typeof ExecutionHold.eligibleJobs = ExecutionHold.eligibleJobs;
@@ -31,6 +36,9 @@ export const openCheckedRead: typeof CheckedRead.open =
   CheckedRead.open;
 
 export interface IStateAccessFacade {
+  readonly tryBeginAttempt: typeof QueueClaims.tryBeginAttempt;
+  readonly recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed;
+  readonly markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed;
   readonly listFiltered: typeof QueueRead.listFiltered;
   readonly eligibleJobs: typeof ExecutionHold.eligibleJobs;
   readonly asyncAdmissionHeld: typeof AsyncAdmission.asyncResolutionAdmissionHeld;
@@ -48,6 +56,9 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  tryBeginAttempt,
+  recordStartFailureIfClaimed,
+  markRunningIfClaimed,
   listFiltered,
   eligibleJobs,
   asyncAdmissionHeld,

@@ -1,27 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { DatabaseSync } from "node:sqlite";
-import { mkdtempSync, realpathSync, rmSync, existsSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join, dirname } from "node:path";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { storeFixture as fixture } from "../helpers/store-fixture.ts";
 import { openInitialized } from "../../src/store/owned-driver.ts";
 import { StateAccessFacade } from "../../src/store/state-access-facade.ts";
 import { REVIEWED_INCIDENT_THREAD } from "../../src/store/async-resolution-policy.ts";
 import { eligibleJobsIn, holdIn } from "../../src/store/execution-hold.ts";
 import { queueJob } from "../helpers/queue-job.ts";
 import { QueueReadCoordinator } from "../../src/runtime/queue-runner/read-coordinator.ts";
-
-async function fixture(run: (path: string) => Promise<void>): Promise<void> {
-  const parent = realpathSync(tmpdir());
-  const root = mkdtempSync(join(parent, "cdr-cloud-admission-"));
-  const initial = realpathSync(root);
-  try { await run(join(root, "store.sqlite")); }
-  finally {
-    assert.equal(realpathSync(root), initial);
-    assert.equal(dirname(initial), parent);
-    rmSync(root, { recursive: true });
-  }
-}
 
 test("owned facade read creates real schema and closes first handle before second", async ctx => {
   await fixture(async path => {
