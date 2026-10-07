@@ -1668,3 +1668,18 @@ Evidence .runtime/cloud-diagnostics-084: 5 new cases, full **2,831 PASS,
 un-aligned Korean, zero-byte lines and immutable snapshots pass. Initial test used a
 runtime-supported String method absent from the configured TS library; corrected the
 test assertion without changing target settings. No diagnostic stream or process ran.
+
+## 2026-10-07 — Detached pending response ownership
+
+Added takeResponse to preserve transport.rs's take-under-open-gate, respond-after-gate
+ordering. The immutable claim retains its admission permit until explicit respond or
+dispose; registry closure, deadlines, and older caller cleanup cannot consume it or a
+new same-ID occurrence. Malformed DTO copy failure leaves the claim owned and explicitly
+disposable, with no getter invocation. Duplicate respond fails; dispose is idempotent.
+
+Evidence .runtime/cloud-response-claim-085: focused 17 PASS (6 new), full **2,837 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Tests cover gate non-reentry/quiescence, response
+winning after seal, explicit sender drop, ID reuse, zero deadline and rejected DTOs.
+This is explicit JS ownership, not Rust automatic Drop. A caller abandoning a detached
+claim without disposal remains a leak; the upcoming transport dispatcher must always
+settle/dispose it. No stdout reader, process, or external RPC is integrated by this slice.

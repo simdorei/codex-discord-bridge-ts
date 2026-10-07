@@ -7,6 +7,8 @@ export type PendingOutcome={readonly kind:"Response";readonly result:ResponseRes
 export class PendingRegistrationError extends Error{readonly kind="InvalidReply";constructor(detail:string){super(`invalid app-server reply: ${detail}`);this.name="PendingRegistrationError";}}
 export class PendingReceiverClosedError extends Error{constructor(){super("pending response sender dropped");this.name="PendingReceiverClosedError";}}
 export interface PendingRegistration{readonly result:Promise<PendingOutcome>;finish():void;dispose():void}
+/** Explicit transferred sender ownership. Settle or dispose outside the lifecycle gate. */
+export interface PendingResponseClaim{respond(result:ResponseResult):void;dispose():void}
 interface Entry{occurrence:symbol;permit:ClientAdmissionPermit;resolve:(outcome:PendingOutcome)=>void;reject:(error:unknown)=>void;timer:ReturnType<typeof setTimeout>|null}
 /** Outgoing response ownership, separate from incoming server-request occurrences.
  * Producer must use fresh wire IDs. Deadlines/disposal are occurrence-scoped but wire
@@ -40,6 +42,22 @@ export class PendingResponses{
       }});
       accepted=true;return registration;
     }finally{if(!accepted){if(registered!==null&&this.#take(registered.key,registered.occurrence)!==undefined)registered.entry.reject(new PendingReceiverClosedError());ownedPermit.release();}}
+  }
+  /** Remove under withOpen; settle AFTER leaving the gate, as Rust transport does.
+   * The detached claim retains its permit, is no longer subject to registry close or
+   * deadline, and MUST be responded to or explicitly disposed by its owner. */
+  takeResponse(id:RequestId):PendingResponseClaim|undefined{
+    const entry=this.#take(requestIdKey(id));if(entry===undefined)return undefined;
+    let consumed=false;
+    return Object.freeze({
+      respond:(result:ResponseResult)=>{
+        if(consumed)throw new TypeError("Pending response claim already consumed");
+        // A rejected unvalidated DTO leaves the claim owned, so caller can dispose.
+        const owned=cloneOwnedSerdeValue(result) as ResponseResult;
+        this.#settle(entry,{kind:"Response",result:owned});consumed=true;
+      },
+      dispose:()=>{if(consumed)return;this.#settle(entry,null);consumed=true;},
+    });
   }
   /** Validated response DTO from the wire parser, never raw unvalidated JSON. */
   respond(id:RequestId,result:ResponseResult):boolean{
