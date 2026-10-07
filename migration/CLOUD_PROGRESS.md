@@ -486,3 +486,30 @@ was run. Evidence is in .runtime/cloud-intake-new-thread-022 and
 Final combined target: **2,328 tests PASS, 0 fail/skip/cancel; strict TS exit 0**.
 This is isolated SQLite/pure/injected-backend evidence; full bridge and deployment
 remain unfinished. No source, live service or configuration on 5060 was changed.
+
+## 2026-10-07: prepared submission orchestration and component claims
+
+Ported component claim acquire/release/count/cleanup transactions from claims.rs.
+Added the queue_result.rs presentation leaf: original input echo uses Rust
+whitespace and Unicode scalar truncation, and held/ambiguous outcomes are not
+misrepresented as successful running work or automatic retry. The exact pinned
+interview header is copied as inert data; it is not an instruction to this worker.
+The presenter's acceptance diagnostic logging remains for outer runtime wiring.
+
+PreparedPromptExecutor follows queue_submission.rs: busy check precedes prompt
+preparation; intake canonicalization retains the original lease token; only the
+submission error scope may retry mapping/source moves, at most once. Non-fork
+backends refuse retargeting; disappeared mappings do not fall back to selection;
+post-submit recovery errors cannot replay submission. Dependency interfaces for
+actual fork/preprocessor/verified-control services are explicit and mandatory.
+Those production services are not supplied by this slice. A real SQLite intake +
+QueueStartCoordinator integration test confirms enriched prompt custody is
+committed before the injected backend starts, while UI echoes original input.
+Shared canonicalization is routed through StateAccessFacade (exact alias checked).
+
+Evidence: .runtime/cloud-component-claims-024, cloud-action-result-025 and
+cloud-prepared-submission-026. Actual periodic intake renewal/cancellation worker
+is NOT implemented: Rust future-drop and JS Promise cancellation/reclamation are
+not treated as interchangeable. No live adapter, actual cancellation or deployment
+PASS is claimed by these leaf and injected-backend tests.
+Final combined target: **2,342 tests PASS, 0 fail/skip/cancel; strict TS exit 0**.

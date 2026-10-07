@@ -1,3 +1,4 @@
+import * as PromptIntakeWrite from "./prompt-intake-write.ts";
 import * as PromptIntakePromotion from "./prompt-intake-promotion.ts";
 import * as GoalWaiting from "./queue-goal-waiting.ts";
 import * as GoalAttach from "./queue-attach-goal.ts";
@@ -56,6 +57,7 @@ export const asyncAdmissionHeld: typeof AsyncAdmission.asyncResolutionAdmissionH
 export const asyncTargetDispatchHeld: typeof AsyncAdmission.asyncQuestionTargetDispatchHeld =
   AsyncAdmission.asyncQuestionTargetDispatchHeld;
 
+export const canonicalizePromptIntakeTarget: typeof PromptIntakeWrite.canonicalizePromptIntakeTarget = PromptIntakeWrite.canonicalizePromptIntakeTarget;
 export const promotePromptIntakeToQueue: typeof PromptIntakePromotion.promotePromptIntakeToQueue = PromptIntakePromotion.promotePromptIntakeToQueue;
 
 export const enqueue: typeof QueueEnqueue.enqueue = QueueEnqueue.enqueue;
@@ -132,6 +134,7 @@ export interface IStateAccessFacade {
   readonly eligibleJobs: typeof ExecutionHold.eligibleJobs;
   readonly asyncAdmissionHeld: typeof AsyncAdmission.asyncResolutionAdmissionHeld;
   readonly asyncTargetDispatchHeld: typeof AsyncAdmission.asyncQuestionTargetDispatchHeld;
+  readonly canonicalizePromptIntakeTarget: typeof PromptIntakeWrite.canonicalizePromptIntakeTarget;
   readonly promotePromptIntakeToQueue: typeof PromptIntakePromotion.promotePromptIntakeToQueue;
   readonly enqueue: typeof QueueEnqueue.enqueue;
   readonly enqueueIfMirrorMatches: typeof QueueEnqueue.enqueueIfMirrorMatches;
@@ -181,6 +184,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   eligibleJobs,
   asyncAdmissionHeld,
   asyncTargetDispatchHeld,
+  canonicalizePromptIntakeTarget,
   promotePromptIntakeToQueue,
   enqueue,
   enqueueIfMirrorMatches,
