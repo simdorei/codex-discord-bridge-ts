@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **2,173 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **2,212 tests passed**, no failures/skips;
 strict TypeScript passed. Migration and Windows/live transport validation remain incomplete.
 
 ## Baseline
@@ -202,3 +202,43 @@ a missing transaction now reports StoreIntegrityError requiring a transaction,
 not the opposite migration-only ActiveTransactionError. No guard was weakened.
 Completion/outbox settlement, recovery, intake promotion, transport integration,
 Windows and live deployment remain incomplete.
+
+
+## Owned completion transaction and coordinator
+
+Added exact async obligation reads (claim/seal/owner length-prefixed SHA-256,
+lossless integers, ordered conversion, 129-row decode-before-limit semantics),
+original/latest-handoff ownership validation, accepted terminal-proof checks,
+revision-fenced settlement and conservative terminal-journal retention.
+SQLite TEXT decoding retains UTF-8/UTF-16 handling. Claim and seal byte equality,
+mirror mapping, full Running job identity and timestamp IEEE bit patterns are
+required. These checks do not create original preparation or handoff authority.
+
+The owned completion writer now atomically checks the whole captured job and
+unique turn owner, rejects dead targets, records mirror origin, reconciles inbox,
+settles eligible async obligations, stages final delivery, removes the job,
+conditionally retains its terminal journal, removes final-answer observation,
+and stages an unsent idle-release candidate. Capacity defers release, not the
+final; existing unresolved intents are preserved. No unsubscribe is sent.
+
+The runtime coordinator uses the same target lock and StateAccessFacade as
+submission/start. It snapshots generation/resident around reads, suppresses
+release authority if either changes or observed generation is missing, commits
+final delivery before notification and starting the next job, and preserves the
+committed final even when next-start fails. Compatibility completion never gains
+release authority. Shared stored-job snapshot/equality helpers avoid divergent
+claim/ACK/completion ownership logic.
+
+Verification: full Linux Node 24.21.0 suite 2,212 PASS, zero failed/skipped;
+strict TypeScript PASS. New real SQLite and fake-backend tests cover ownership,
+raw claim bytes, large integers, UTF encodings, page limits, stale/oversized/
+conflicting evidence, revision overflow, ignored CAS, transactional rollback,
+inbox-before-delete, idle capacity/history, resident changes and start-next failure.
+A facade API-list test was updated to include the new whole-function alias;
+initial failed integration logs remain under `.runtime/cloud-completion-011/`.
+Final logs: `.runtime/cloud-completion-011/runtime-final/`.
+
+Still incomplete: resident notification proof producer/candidate capture, Goal
+progress and handoff writer, authoritative recovery, intake promotion, actual
+Discord delivery/transport workers, centralized runtime error handlers, Windows
+and live process validation. No Rust differential execution, merge or deployment.

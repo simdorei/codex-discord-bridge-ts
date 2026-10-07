@@ -318,3 +318,73 @@ test("an unrelated thread completes submission while another dispatch waits", as
     assert.equal(queue.locks.activeTargetCount, 0);
   });
 });
+test("completion persists delivery then notifies and starts the next queued job under the shared lock", async () => {
+  await storeFixture(async path => {
+    let starts=0, notifications=0;
+    const b=backend({startClaimedTurn:async()=>"turn"+(++starts)});
+    const queue=new QueueStartCoordinator(path,b.value,{notifyDeliveryReady:()=>{notifications++;}});
+    await state.enqueue(path,queueJob()); await queue.kickTarget("target");
+    const expected=(await state.listFiltered(path,"target",null))[0]!;
+    await state.enqueue(path,queueJob({jobId:"next",createdAt:1}));
+    const delivery=await queue.stageOwnedTurnCompletion(expected,"final",1n);
+    assert.equal(delivery?.jobId,"saved"); assert.equal(notifications,1); assert.equal(starts,2);
+    const remaining=await state.listFiltered(path,"target",null);
+    assert.equal(remaining.length,1); assert.equal(remaining[0]!.jobId,"next"); assert.equal(remaining[0]!.turnId,"turn2");
+    assert.equal(queue.locks.activeTargetCount,0);
+  });
+});
+test("compatibility completion has no release authority; observed stable resident does",async()=>{
+  for(const observed of [null,1n]) await storeFixture(async path=>{
+    const queue=new QueueStartCoordinator(path,backend().value);
+    await state.enqueue(path,queueJob());await queue.kickTarget("target");
+    await queue.stageTurnCompletion("target","ack","final",observed);
+    const db=await openInitialized(path);
+    try{assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_idle_release").get()?.n,observed===null?0:1);}finally{db.close();}
+  });
+});
+test("generation or resident changes across state read suppress release without losing final delivery",async()=>{
+  for(const change of ["generation","resident"]) await storeFixture(async path=>{
+    await state.enqueue(path,queueJob());
+    const claim=(await state.tryBeginAttempt(path,"saved",[],1n))!;await state.markRunningIfClaimed(path,claim,"ack");
+    let generation=1n,resident="resident";
+    const queue=new QueueStartCoordinator(path,backend({generation:()=>generation,residentInstanceId:()=>resident}).value,{state:{...state,
+      listFiltered:async(...args)=>{const rows=await state.listFiltered(...args);if(change==="generation") generation=2n;else resident="other";return rows;},
+    }});
+    assert.equal((await queue.stageTurnCompletion("target","ack","final",1n))?.content,"final");
+    const db=await openInitialized(path);try{assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_idle_release").get()?.n,0);}finally{db.close();}
+  });
+});
+test("completion rejects observed stale owner rather than selecting a newer attempt by ID",async()=>{
+  await storeFixture(async path=>{
+    const queue=new QueueStartCoordinator(path,backend().value);
+    await state.enqueue(path,queueJob());await queue.kickTarget("target");
+    const stale=(await state.listFiltered(path,"target",null))[0]!;
+    await update(path,"UPDATE codex_turn_queue SET attempt_count=attempt_count+1");
+    await assert.rejects(()=>queue.stageOwnedTurnCompletion(stale,"final",1n),/ownership changed during observation/);
+    assert.equal((await state.listFiltered(path,"target",null)).length,1);
+  });
+});
+test("held or unmatched completion is a no-op and does not notify",async()=>{
+  let notifications=0;
+  const b=backend();const queue=new QueueStartCoordinator("unused",b.value,{state:{...state,deadTargetHeld:async()=>true},notifyDeliveryReady:()=>{notifications++;}});
+  assert.equal(await queue.stageTurnCompletion("target","turn","final",1n),null);
+  assert.deepEqual(b.calls,[]);assert.equal(notifications,0);
+  await storeFixture(async path=>{
+    const unmatched=new QueueStartCoordinator(path,backend().value,{notifyDeliveryReady:()=>{notifications++;}});
+    assert.equal(await unmatched.stageTurnCompletion("target","missing","final"),null);assert.equal(notifications,0);
+  });
+});
+test("start-next failure after completion cannot undo the committed final",async()=>{
+  await storeFixture(async path=>{
+    await state.enqueue(path,queueJob());const claim=(await state.tryBeginAttempt(path,"saved",[],1n))!;
+    await state.markRunningIfClaimed(path,claim,"turn");await state.enqueue(path,queueJob({jobId:"next",createdAt:1}));
+    const sentinel=new Error("next preflight unknown");
+    const queue=new QueueStartCoordinator(path,backend({resumeThread:async()=>{throw sentinel;}}).value);
+    await assert.rejects(()=>queue.stageTurnCompletion("target","turn","final"),e=>e===sentinel);
+    const db=await openInitialized(path);try{
+      assert.equal(db.prepare("SELECT content FROM codex_delivery_outbox WHERE delivery_id='saved'").get()?.content,"final");
+      assert.equal(db.prepare("SELECT count(*) AS n FROM codex_turn_queue WHERE job_id='saved'").get()?.n,0);
+    }finally{db.close();}
+    assert.equal(queue.locks.activeTargetCount,0);
+  });
+});

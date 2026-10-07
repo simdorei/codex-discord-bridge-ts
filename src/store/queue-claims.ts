@@ -1,3 +1,4 @@
+import { snapshotStoredQueueJob } from "./queue-read.ts";
 import type { DatabaseSync } from "node:sqlite";
 import { types } from "node:util";
 import { I64_MIN, I64_MAX } from "../protocol/ids.ts";
@@ -66,20 +67,6 @@ function baselineSnapshot(value: readonly string[]): string[] {
   return snapshot;
 }
 
-function claimSnapshot(claimed: StoredQueueJob): StoredQueueJob {
-  if (claimed === null || typeof claimed !== "object" || types.isProxy(claimed) || Array.isArray(claimed))
-    throw new TypeError("Expected a stored job data object");
-  const copy = Object.create(null) as Record<string, unknown>;
-  for (const key of Object.getOwnPropertyNames(claimed)) {
-    const field = Object.getOwnPropertyDescriptor(claimed, key)!;
-    if (!Object.hasOwn(field, "value") || !field.enumerable) throw new TypeError("Expected stored job data properties");
-    copy[key] = field.value;
-  }
-  copy.baselineTurnIds = baselineSnapshot(copy.baselineTurnIds as readonly string[]);
-  const result = copy as unknown as StoredQueueJob;
-  serializeStoredQueueJob(result); // Reuse the exact full stored-job value validation.
-  return result;
-}
 
 function claimedResult(db: DatabaseSync, jobId: string, changes: number | bigint): Decision<StoredQueueJob | null> {
   const job = changes === 1 || changes === 1n ? selectJob(db, jobId) : null;
@@ -122,7 +109,7 @@ export async function recordStartFailureIfClaimed(
 ): Promise<StoredQueueJob | null> {
   text(path); text(error);
   if (typeof ambiguous !== "boolean") throw new TypeError("Expected ambiguity boolean");
-  const claim = claimSnapshot(claimed);
+  const claim = snapshotStoredQueueJob(claimed);
   const bounded = takeUnicodeScalarChars(trimUnicodeWhitespace(error), 1000);
   return withWriter(path, db => {
     ensureForkHandoffTable(db);
@@ -151,7 +138,7 @@ export async function markRunningWithResidentIfClaimed(
 ): Promise<StoredQueueJob | null> {
   text(path); text(turnId);
   if (resident !== null) text(resident);
-  const claim = claimSnapshot(claimed);
+  const claim = snapshotStoredQueueJob(claimed);
   return withWriter(path, db => {
     ensureForkHandoffTable(db);
     if (!jobCanMutate(db, claim)) return {value: null, commit: false};

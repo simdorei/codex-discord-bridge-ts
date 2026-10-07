@@ -1,3 +1,5 @@
+import { snapshotStoredQueueJob, storedQueueJobsEqual, completionEvidenceGeneration, InvalidQueueStateError } from "../../store/queue-read.ts";
+import type { StoredDelivery } from "../../store/delivery.ts";
 import { AdmissionGate, DrainGateError } from "../../admission/drain-gate.ts";
 import type { AdmissionPermit } from "../../admission/drain-gate.ts";
 import { StateAccessFacade } from "../../store/state-access-facade.ts";
@@ -68,7 +70,7 @@ export function pendingRetryIsDue(count: bigint, error: string, updatedAt: numbe
 }
 
 type StartState = Pick<IStateAccessFacade, "asyncTargetDispatchHeld" | "deadTargetHeld" |
-  "listFiltered" | "eligibleJobs" | "recordPreflightFailure" | "tryBeginAttempt" |
+  "stageOwnedQueueCompletion" | "listFiltered" | "eligibleJobs" | "recordPreflightFailure" | "tryBeginAttempt" |
   "recordStartFailureIfClaimed" | "markRunningWithResidentIfClaimed" | "enqueue" | "enqueueIfMirrorMatches">;
 
 /** Direct/mirrored submission and starts; intake promotion/recovery/transport stay separate. */
@@ -99,6 +101,45 @@ export class QueueStartCoordinator {
       if (typeof generation !== "bigint" || generation < 0n || generation > I64_MAX)
         throw new QueueIntegerRangeError();
       await this.#start(target, generation);
+    });
+  }
+
+  stageTurnCompletion(target: string, turn: string, content: string, observedGeneration: bigint | null = null): Promise<StoredDelivery | null> {
+    return this.#stageCompletion(target, turn, content, null, observedGeneration);
+  }
+
+  stageOwnedTurnCompletion(expectedInput: StoredQueueJob, content: string, observedGeneration: bigint | null = null): Promise<StoredDelivery | null> {
+    const expected = snapshotStoredQueueJob(expectedInput);
+    if (expected.turnId === null) throw new InvalidQueueStateError("completion owner has no turn");
+    return this.#stageCompletion(expected.targetThreadId, expected.turnId, content, expected, observedGeneration);
+  }
+
+  async #stageCompletion(target: string, turn: string, content: string, expected: StoredQueueJob | null,
+    observedGeneration: bigint | null): Promise<StoredDelivery | null> {
+    for (const value of [target, turn, content])
+      if (typeof value !== "string" || /[\uD800-\uDFFF]/u.test(value)) throw new TypeError("Expected well-formed completion text");
+    if (observedGeneration !== null && (typeof observedGeneration !== "bigint" || observedGeneration < -(1n << 63n) || observedGeneration > I64_MAX))
+      throw new QueueIntegerRangeError();
+    return this.locks.run(target, async () => {
+      if (await this.#state.deadTargetHeld(this.#path, target)) return null;
+      const before = this.#backend.generation();
+      if (typeof before !== "bigint" || before < 0n || before > I64_MAX) throw new QueueIntegerRangeError();
+      const resident = this.#backend.residentInstanceId();
+      const jobs = await this.#state.listFiltered(this.#path, target, null);
+      const owners = jobs.filter(job => job.state === "Running" && job.turnId === turn);
+      const job = owners[0];
+      if (job === undefined) return null;
+      if (owners.length !== 1 || (expected !== null && !storedQueueJobsEqual(expected, job)))
+        throw new InvalidQueueStateError("completion ownership changed during observation");
+      const generation = this.#backend.generation();
+      if (typeof generation !== "bigint" || generation < 0n || generation > I64_MAX) throw new QueueIntegerRangeError();
+      const release = resident !== null && observedGeneration === generation && generation === before &&
+        this.#backend.residentInstanceId() === resident && completionEvidenceGeneration(job) === generation
+        ? {observer: resident, generation} : null;
+      const delivery = await this.#state.stageOwnedQueueCompletion(this.#path, job, content, this.#now(), release);
+      this.#notify();
+      await this.#start(target, generation);
+      return delivery;
     });
   }
 

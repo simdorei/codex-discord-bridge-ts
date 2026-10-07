@@ -1,6 +1,6 @@
 import { textDecoderFor, decodeTextField, decodeI64, decodeOptionalI64, decodeBool, decodeTimestamp } from "./sqlite-values.ts";
 import type { DatabaseSync } from "node:sqlite";
-import { types } from "node:util";
+import { types, isDeepStrictEqual } from "node:util";
 import { serializeSerdeValue } from "../core/serde-json.ts";
 import { parseSerdeValue } from "../core/serde-json-parse.ts";
 import { I64_MAX, I64_MIN } from "../protocol/ids.ts";
@@ -540,4 +540,35 @@ export function serializeStoredQueueJob(job: StoredQueueJob): string {
   ];
 
   return `{${pairs.join(",")}}`;
+}
+
+/** Owned snapshot before an asynchronous mutation opens its connection. */
+export function snapshotStoredQueueJob(claimed: StoredQueueJob): StoredQueueJob {
+  if (claimed === null || typeof claimed !== "object" || types.isProxy(claimed) || Array.isArray(claimed))
+    throw new TypeError("Expected a stored job data object");
+  const copy = Object.create(null) as Record<string, unknown>;
+  for (const key of Object.getOwnPropertyNames(claimed)) {
+    const field = Object.getOwnPropertyDescriptor(claimed, key)!;
+    if (!Object.hasOwn(field, "value") || !field.enumerable) throw new TypeError("Expected stored job data properties");
+    copy[key] = field.value;
+  }
+  const baseline = copy.baselineTurnIds;
+  if (!Array.isArray(baseline) || types.isProxy(baseline)) throw new TypeError("Expected baseline data array");
+  const items: string[] = [];
+  for (let i = 0; i < baseline.length; i++) {
+    const field = Object.getOwnPropertyDescriptor(baseline, String(i));
+    if (!field || !Object.hasOwn(field, "value") || typeof field.value !== "string" || !isWellFormedString(field.value))
+      throw new TypeError("Expected baseline string data elements");
+    items.push(field.value);
+  }
+  copy.baselineTurnIds = items;
+  const result = copy as unknown as StoredQueueJob;
+  serializeStoredQueueJob(result); // Reuse the exact full stored-job value validation.
+  return result;
+}
+
+/** Rust StoredQueueJob PartialEq, including f64 zero/NaN behavior. */
+export function storedQueueJobsEqual(a: StoredQueueJob, b: StoredQueueJob): boolean {
+  return a.createdAt === b.createdAt && a.updatedAt === b.updatedAt &&
+    isDeepStrictEqual({...a, createdAt: 0, updatedAt: 0}, {...b, createdAt: 0, updatedAt: 0});
 }
