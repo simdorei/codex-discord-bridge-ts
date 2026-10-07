@@ -1,3 +1,4 @@
+import * as PendingCancellation from "./queue-cancel-pending.ts";
 import * as RecoveryCustody from "./ingress-recovery-custody.ts";
 import * as IngressRecovery from "./ingress-recovery.ts";
 import * as IngressRead from "./ingress-read.ts";
@@ -59,6 +60,8 @@ export const listIngressesForOwner: typeof IngressRead.listIngressesForOwner = I
 
 export const claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery = RecoveryCustody.claimIngressRecovery;
 export const validateIngressRecovery: typeof RecoveryCustody.validateIngressRecovery = RecoveryCustody.validateIngressRecovery;
+
+export const cancelLatestPending: typeof PendingCancellation.cancelLatestPending = PendingCancellation.cancelLatestPending;
 
 export const admitIngress: typeof IngressAdmission.admitIngress = IngressAdmission.admitIngress;
 export const pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt = NewPromptArm.pendingNewPrompt;
@@ -162,6 +165,7 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly cancelLatestPending: typeof PendingCancellation.cancelLatestPending;
   readonly claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery;
   readonly validateIngressRecovery: typeof RecoveryCustody.validateIngressRecovery;
 
@@ -287,6 +291,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   listIngressesForOwner,
   claimIngressRecovery,
   validateIngressRecovery,
+  cancelLatestPending,
   admitIngress,
   pendingNewPrompt,
   newThreadOrigin,

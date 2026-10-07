@@ -887,3 +887,27 @@ claim, changed expected input, post-claim mutations, route drift, external selec
 precondition, borrowed rollback, all-owner conflict and cross-room creation checks.
 No native Rust execution, live backend, full restart/recovery controller, Windows,
 performance or deployment certification is claimed.
+
+## 2026-10-07 — Ordinary pending cancellation
+
+Migrated queue/cancel_pending.rs plus cancel_ingress.rs into one owned writer path.
+Candidate order combines queue, intake and unowned Ask/Interview ingress rows by
+the source ordering and chooses the latest ELIGIBLE row (an older pending request
+may be selected while newer started work remains intact). Only exact pure active-
+writer preflight evidence admits the source's attempted-but-unstarted exception.
+Room-route, unresolved/moved fork and dead-generation guards precede cancellation.
+
+Job/event ownership must be unambiguous and have no uncertain outbox. The immutable
+cancellation receipt, pending row deletion and all original ingress outcome updates
+share one IMMEDIATE transaction. Scalar/array prior results are preserved under
+prior_result for ordinary cancellation. Unstarted ingress updates use the exact
+original event/target/room/owner and state predicates. Claimed intake can be removed
+before promotion; existing cancellation triggers prevent resurrection. This does
+not interrupt a running Codex process or certify preparer resource reclamation.
+
+Evidence .runtime/cloud-cancel-pending-048: 9 new cases / 17 focused with facade,
+full **2,517 PASS, 0 fail/skip/cancel; strict TS exit 0**. Tests cover replay fencing,
+started-work refusal, precise preflight exception, intake withdrawal, unstarted
+custody, prior-result preservation, ownership/outbox ambiguity, routing/generation
+fences and failed-delete rollback. Full recovery cancellation and live command
+routing remain unfinished; no production or deployment change occurred.
