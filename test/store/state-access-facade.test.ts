@@ -1,3 +1,5 @@
+import * as NewOrigin from "../../src/store/new-thread-origin.ts";
+import * as StopRevision from "../../src/store/stop-revision-read.ts";
 import * as PromptIntakeLease from "../../src/store/prompt-intake.ts";
 import * as MirrorMapping from "../../src/store/busy-choice.ts";
 import * as ForkBegin from "../../src/store/fork-begin.ts";
@@ -60,6 +62,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.recordAndCancelDefiniteForkFailure, ForkFailure.recordAndCancelDefiniteForkFailure);
     assert.strictEqual(StateAccessFacade.completedAppServerForkTargetForSource, ForkCompleted.completedAppServerForkTargetForSource);
     assert.strictEqual(StateAccessFacade.isAppServerManagedTarget, ForkManaged.isAppServerManagedTarget);
+    assert.strictEqual(StateAccessFacade.newThreadOrigin, NewOrigin.newThreadOrigin);
+    assert.strictEqual(StateAccessFacade.captureStopOrigin, StopRevision.captureStopOrigin);
     assert.strictEqual(StateAccessFacade.mirroredThreadId, MirrorMapping.mirroredThreadId);
     assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimIfCurrent, PromptIntakeLease.renewPromptIntakeClaimIfCurrent);
     assert.strictEqual(StateAccessFacade.promptIntakeHasDurableOwner, PromptIntakeLease.promptIntakeHasDurableOwner);
@@ -154,6 +158,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "markRunningIfClaimed",
       "markRunningWithResidentIfClaimed",
       "mirroredThreadId",
+      "newThreadOrigin",
+      "captureStopOrigin",
       "openCheckedRead",
       "pendingGoalProgress",
       "pendingObservedCompletions",
@@ -183,8 +189,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "unresolvedAppServerForkHandoffForSource",
     ];
     const actual = Object.keys(StateAccessFacade).sort();
-    assert.deepStrictEqual(actual, expected);
-    assert.strictEqual(actual.length, 63);
+    assert.deepStrictEqual(actual, expected.sort());
+    assert.strictEqual(actual.length, 65);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

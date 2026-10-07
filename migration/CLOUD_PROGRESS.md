@@ -699,3 +699,28 @@ cloud-queue-bulk-039 (5 focused). Actual full target: **2,428 tests PASS,
 0 fail/skip/cancel; strict TS exit 0**. The pinned whole-inventory observation
 barrier/unbounded scan is retained; bounded incremental lanes and measured latency
 remain later work, not certified by this pass. No live service/backend operation.
+
+## 2026-10-07 — Original route and Stop revision snapshots
+
+Added the pinned mapping/new_origin.rs route snapshot and the ordinary two-field
+origin/read/validation subset of ingress/stop/revision.rs. Snapshots retain exact
+room/project/parent identities and sorted chat candidates, excluding mutable
+labels/timestamps. Stop capture requires an existing transaction; owned capture
+opens read-only and does not initialize a missing store. Legacy missing evidence
+stays revision zero; a current clock is never borrowed to authorize an old request.
+Per-target history and index must match, and global clock must equal receipt max.
+Archive subtree and Stop mutation/command orchestration remain separate unfinished
+scope. New public ordinary-origin arguments reject accessors/proxies without
+invoking them; this is a TS boundary constraint on top of Rust Value inputs.
+
+The existing late-ACK Stop path now shares revision and mirror lookup helpers;
+central StateAccessFacade exposes both owned snapshot reads. All 11 old late-ACK
+regressions pass. New tests cover route ambiguity, borrowed transactions, exact
+origin shape, stale/other-target revisions, corrupted histories, Unicode and
+read-only non-migration. Native SQLite/isolated filesystem tests only.
+
+Evidence: .runtime/cloud-origin-040. Final 30 focused tests PASS, full **2,439 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Earlier fixture column typo and facade
+signature/key-list integration failures were corrected without weakening guards.
+No full ingress admission, production startup, backend, Windows or performance
+certification is implied; frozen Rust authority and phase-2 ordering unchanged.

@@ -1,3 +1,5 @@
+import * as NewOrigin from "./new-thread-origin.ts";
+import * as StopRevision from "./stop-revision-read.ts";
 import * as PromptIntakeLease from "./prompt-intake.ts";
 import * as MirrorMapping from "./busy-choice.ts";
 import * as ForkBegin from "./fork-begin.ts";
@@ -27,6 +29,9 @@ import * as ExecutionHold from "./execution-hold.ts";
 import * as QueueClaims from "./queue-claims.ts";
 import * as DeadGeneration from "./dead-generation-admission.ts";
 import * as Preflight from "./queue-preflight-failure.ts";
+
+export const newThreadOrigin: typeof NewOrigin.newThreadOrigin = NewOrigin.newThreadOrigin;
+export const captureStopOrigin: typeof StopRevision.captureStopOrigin = StopRevision.captureStopOrigin;
 
 export const captureAsyncHistorySnapshot: typeof AsyncHistory.captureAsyncHistorySnapshot = AsyncHistory.captureAsyncHistorySnapshot;
 export const retainAsyncHistoryCandidate: typeof AsyncHistory.retainAsyncHistoryCandidate = AsyncHistory.retainAsyncHistoryCandidate;
@@ -124,6 +129,8 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly newThreadOrigin: typeof NewOrigin.newThreadOrigin;
+  readonly captureStopOrigin: typeof StopRevision.captureStopOrigin;
   readonly admitPromptIntake: typeof PromptIntakeWrite.admitPromptIntake;
   readonly getPromptIntake: typeof PromptIntakeLease.getPromptIntake;
   readonly tryClaimPromptIntake: typeof PromptIntakeLease.tryClaimPromptIntake;
@@ -206,6 +213,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   renewPromptIntakeClaimIfCurrent,
   promptIntakeHasDurableOwner,
 
+  newThreadOrigin,
+  captureStopOrigin,
   mirroredThreadId,
   beginAppServerForkHandoff,
   stageAppServerForkTarget,

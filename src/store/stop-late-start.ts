@@ -1,3 +1,5 @@
+import {latestStopScopeIn as latestScope} from "./stop-revision-read.ts";
+import {mirroredThreadIdIn as mirroredTarget} from "./busy-choice.ts";
 import { getPromptIntakeIn } from "./prompt-intake.ts";
 import type { DatabaseSync, SQLInputValue } from "node:sqlite";
 import { isDeepStrictEqual } from "node:util";
@@ -6,16 +8,13 @@ import { serializeSerdeValue } from "../core/serde-json.ts";
 import { selectJob, serializeStoredQueueJob } from "./queue-read.ts";
 import type { StoredQueueJob } from "./queue-read.ts";
 import { StoreIntegrityError } from "./schema-assembly.ts";
-import { decodeTextField, textDecoderFor, decodeI64, decodeOptionalI64, decodeTimestamp } from "./sqlite-values.ts";
+import { decodeTextField, textDecoderFor, decodeI64 } from "./sqlite-values.ts";
 import { asI64, getOwn, isJsonObject } from "./async-resolution-json-helpers.ts";
 import { trimUnicodeWhitespace as trim } from "./queue-preflight-failure.ts";
 
 type Row = Record<string, unknown>;
 const encoding = "(SELECT encoding FROM pragma_encoding) AS encoding";
 const raw = (name: string): string => `CAST(${name} AS BLOB) AS ${name}_raw`;
-function all(db: DatabaseSync, sql: string, ...values: SQLInputValue[]): Row[] {
-  const statement = db.prepare(sql); statement.setReadBigInts(true); return statement.all(...values);
-}
 function one(db: DatabaseSync, sql: string, ...values: SQLInputValue[]): Row | undefined {
   const statement = db.prepare(sql); statement.setReadBigInts(true); return statement.get(...values);
 }
@@ -24,38 +23,6 @@ function text(row: Row, name: string, optional = false): string | null {
 }
 function refused(): StoreIntegrityError {
   return new StoreIntegrityError("original stop control authority differs; no interrupt or replay");
-}
-function revisionRefused(): StoreIntegrityError {
-  return new StoreIntegrityError("original RPC predates stop or stop revision evidence differs; no dispatch");
-}
-
-function latestScope(db: DatabaseSync, target: string): readonly [string, string] | null {
-  if (!db.isTransaction) throw new StoreIntegrityError("Borrowed mutation requires an active transaction");
-  const clock = one(db, `SELECT count(*) AS n,COALESCE(max(revision),-1) AS current,
-    (SELECT COALESCE(max(revision),0) FROM cdr_stop_revision_receipts) AS maximum
-    FROM cdr_stop_clock WHERE singleton=1`)!;
-  const current = decodeI64(clock.current, "revision");
-  if (decodeI64(clock.n, "count") !== 1n || current < 0n || current !== decodeI64(clock.maximum, "maximum")) throw revisionRefused();
-  const columns = `revision,operation_id,${raw("operation_id")},${encoding}`;
-  const indexed = one(db, `SELECT ${columns} FROM cdr_stop_revisions WHERE target_thread_id=?`, target);
-  const history = one(db, `SELECT ${columns} FROM cdr_stop_revision_receipts WHERE target_thread_id=? ORDER BY revision DESC LIMIT 1`, target);
-  const pair = (row: Row | undefined): unknown => row === undefined ? null : [decodeI64(row.revision, "revision"), text(row, "operation_id")];
-  if (!isDeepStrictEqual(pair(indexed), pair(history))) throw revisionRefused();
-  const scope = one(db, `SELECT operation_id,scope_json,${raw("operation_id")},${raw("scope_json")},${encoding}
-    FROM cdr_stop_revision_receipts WHERE target_thread_id=? ORDER BY revision DESC LIMIT 1`, target);
-  return scope === undefined ? null : [text(scope, "operation_id")!, text(scope, "scope_json")!];
-}
-
-function mirroredTarget(db: DatabaseSync, channel: bigint): string | null {
-  if (channel === 0n) return null;
-  const count = one(db, "SELECT COUNT(*) AS n FROM mirror_threads WHERE discord_thread_id=?", channel)!;
-  if (decodeI64(count.n, "count") > 1n) throw new StoreIntegrityError(`Discord room ${channel} is mapped to multiple Codex threads; routing refused`);
-  const columns = `codex_thread_id,${raw("codex_thread_id")},${encoding}`;
-  const exact = one(db, `SELECT ${columns} FROM mirror_threads WHERE discord_thread_id=?`, channel);
-  if (exact !== undefined) return text(exact, "codex_thread_id");
-  const rows = all(db, `SELECT ${columns} FROM mirror_threads WHERE discord_channel_id=? ORDER BY updated_at DESC LIMIT 2`, channel);
-  const values = rows.map(row => text(row, "codex_thread_id"));
-  return values.length === 1 ? values[0]! : null;
 }
 
 function validateBinding(db: DatabaseSync, before: StoredQueueJob, binding: unknown): void {
