@@ -911,3 +911,31 @@ started-work refusal, precise preflight exception, intake withdrawal, unstarted
 custody, prior-result preservation, ownership/outbox ambiguity, routing/generation
 fences and failed-delete rollback. Full recovery cancellation and live command
 routing remain unfinished; no production or deployment change occurred.
+
+## 2026-10-07 — Explicit full-recovery cancellation and Stop revision revocation
+
+Migrated queue/cancel_recovery.rs and the recovery-cancellation branch of
+stop/revision.rs. All scoped queue/intake owners must match the original room and
+actor and stay within the combined 128-request bound. Queue/intake evidence is
+retained in execution holds before cancellation receipts and removal; started or
+uncertain requests are counted explicitly. Existing delivery outbox is retained.
+Unowned Ask/Interview preparations also lose replay authority with original payload
+and state preserved as evidence. Later actor/scope/check failures roll back the
+whole transaction, including earlier tentative cancellations.
+
+The trusted synchronous custody check runs before and after the sequence. Its
+TypeScript return type is undefined; direct async/generator/proxy callbacks are
+rejected before their body and non-undefined returns refuse. This is an INTERNAL
+trusted callback contract, not a sandbox for arbitrary or detached JavaScript work.
+The final original Stop revision is advanced by checked clock/receipt/index writes
+and reverified, even for an empty cancellation scope, so earlier ordinary RPC
+metadata cannot borrow the new state. No process-exit proof or interrupt grant is
+inferred: the external recovery controller must establish process termination.
+
+Evidence .runtime/cloud-cancel-recovery-049: 10 new cases / 18 focused with facade,
+full **2,527 PASS, 0 fail/skip/cancel; strict TS exit 0**. Source/test hash inventory
+was pinned before the resumed verification and unchanged afterward. Earlier saved
+logs retained separately. Tests cover dead-generation/outbox preservation, mixed
+queue/intake and unowned work, owner/128-bound rejection, final-check and ignored
+revision rollback, async-check rejection, empty/max revision and invalid UTF-8
+intake evidence. No live DB/backend/process or production deployment was touched.
