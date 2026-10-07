@@ -1780,3 +1780,20 @@ Evidence .runtime/cloud-request-client-090: focused 13 PASS, full **2,882 PASS,
 Clock/deadline precision is the documented finite millisecond profile. Native I/O errors
 and JS cleanup aggregates still need the complete central public-safe error dispatcher;
 these composed helpers are not full startup, native transport or runtime integration.
+
+## 2026-10-07 — Serialized response controls
+
+Connected normal/error/current incoming-request responses to outer lifecycle admission,
+owned writer and exact occurrence claims. Normal responses claim before writer wait;
+current responses run custom preflight then claim/check current turn only after acquiring
+the writer. Write failure explicitly disposes the claim into indeterminate state; only
+successful write+flush resolves and promotes deferred work. The shared synchronous-void
+hook validator was extracted without changing request-client behavior.
+
+Evidence .runtime/cloud-response-client-091: focused 21 PASS (8 response + 13 request),
+full **2,890 PASS, 0 fail/skip/cancel; strict TS exit 0**. Exact claim retention during
+write, typed error frames, current-turn change while queued, normal queued cancellation,
+post-success promotion and distinct normal/current preflight-failure ordering covered.
+This preserves the source's conservative normal-response indeterminate state even when
+its later preflight fails before any bytes. Required native ports remain unimplemented;
+these controlled adapters are integration evidence, not a live Codex session.

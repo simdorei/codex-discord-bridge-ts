@@ -1,0 +1,3 @@
+import {types} from "node:util";
+/** Trusted internal hook invocation: refuse async/proxy callbacks before executing them. */
+export function invokeSynchronousVoid(callback:Function,receiver:object,args:unknown[]=[]):void{if(typeof callback!=="function"||types.isProxy(callback)||types.isAsyncFunction(callback)||types.isGeneratorFunction(callback))throw new TypeError("Request hooks must be synchronous");const value=Reflect.apply(callback,receiver,args);if(value!==undefined){if(types.isPromise(value))void Promise.prototype.then.call(value,undefined,()=>undefined);throw new TypeError("Request hooks must return void synchronously");}}

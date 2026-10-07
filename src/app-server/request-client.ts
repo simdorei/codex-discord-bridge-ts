@@ -1,3 +1,4 @@
+import {invokeSynchronousVoid as syncVoid} from "../core/synchronous-void.ts";
 import {randomUUID} from "node:crypto";
 import {performance} from "node:perf_hooks";
 import {types} from "node:util";
@@ -18,7 +19,7 @@ export class AppServerRequestError extends Error{
   }
 }
 export interface RequestHooks{preflight(id:RequestId):void;writeStarted():void;writeComplete():void}
-function syncVoid(callback:Function,receiver:object,args:unknown[]=[]):void{if(typeof callback!=="function"||types.isProxy(callback)||types.isAsyncFunction(callback)||types.isGeneratorFunction(callback))throw new TypeError("Request hooks must be synchronous");const value=Reflect.apply(callback,receiver,args);if(value!==undefined){if(types.isPromise(value))void Promise.prototype.then.call(value,undefined,()=>undefined);throw new TypeError("Request hooks must return void synchronously");}}
+
 function awaitOwned<T>(result:Promise<T>,signal?:AbortSignal):Promise<T>{
   if(signal===undefined)return result;if(signal.aborted)return Promise.reject(signal.reason);
   return new Promise((resolve,reject)=>{
