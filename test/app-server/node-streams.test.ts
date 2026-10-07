@@ -31,3 +31,9 @@ test("byte source preserves native failure identity and refuses text-mode stream
 test("already aborted input never writes or destroys an otherwise healthy stream",async()=>{
   let writes=0;const stream=new Writable({write(_chunk,_encoding,callback){writes++;callback();}}),input=new NodeAppServerInput(stream),abort=new AbortController(),reason={};abort.abort(reason);await assert.rejects(input.writeAll(Buffer.from("x"),abort.signal),e=>e===reason);assert.equal(writes,0);assert.equal(stream.destroyed,false);await input.destroyAndJoin();
 });
+test("adapters retain errors emitted before their construction",async()=>{
+  const failure=new Error("early native error"),inputStream=new Writable({write(_chunk,_encoding,callback){callback();}});inputStream.on("error",()=>{});const inputClosed=new Promise<void>(resolve=>inputStream.once("close",resolve));inputStream.destroy(failure);await inputClosed;
+  const input=new NodeAppServerInput(inputStream);await assert.rejects(input.writeAll(Buffer.from("x")),e=>e===failure);
+  const outputStream=new PassThrough();outputStream.on("error",()=>{});const outputClosed=new Promise<void>(resolve=>outputStream.once("close",resolve));outputStream.destroy(failure);await outputClosed;
+  const output=new NodeAppServerByteSource(outputStream);await assert.rejects(output.readChunk(),e=>e===failure);await output.destroyAndJoin();assert.equal(outputStream.listenerCount("readable"),0);
+});

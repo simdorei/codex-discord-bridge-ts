@@ -9,6 +9,7 @@ export class AppServerStreamClosedError extends Error{constructor(){super("app-s
 export class NodeAppServerInput implements OwnedAppServerInput{
   readonly #stream:Writable;readonly #closed:Promise<void>;#error:unknown;#failed=false;
   constructor(stream:Writable){
+    if(stream.errored!==null){this.#failed=true;this.#error=stream.errored;}
     this.#stream=stream;this.#closed=stream.closed?Promise.resolve():new Promise(resolve=>stream.once("close",resolve));
     stream.on("error",error=>{if(!this.#failed){this.#failed=true;this.#error=error;}});
   }
@@ -42,12 +43,15 @@ export class NodeAppServerInput implements OwnedAppServerInput{
   async destroyAndJoin():Promise<void>{this.#stream.destroy();await this.#closed;}
 }
 export class NodeAppServerByteSource implements ByteChunkSource{
-  readonly #stream:Readable;readonly #iterator:AsyncIterator<unknown>;readonly #closed:Promise<void>;#disposed=false;#failed=false;#error:unknown;
-  constructor(stream:Readable){this.#stream=stream;this.#iterator=stream[Symbol.asyncIterator]();this.#closed=stream.closed?Promise.resolve():new Promise(resolve=>stream.once("close",resolve));stream.on("error",error=>{if(!this.#failed){this.#failed=true;this.#error=error;}});}
+  readonly #stream:Readable;#hold:(()=>void)|null=()=>{};readonly #iterator:AsyncIterator<unknown>;readonly #closed:Promise<void>;#disposed=false;#failed=false;#error:unknown;
+  constructor(stream:Readable){if(stream.errored!==null){this.#failed=true;this.#error=stream.errored;}this.#stream=stream;if(stream.closed)this.#hold=null;else{stream.on("readable",this.#hold!);stream.once("close",()=>{if(this.#hold!==null){stream.off("readable",this.#hold);this.#hold=null;}});}this.#iterator=stream[Symbol.asyncIterator]();this.#closed=stream.closed?Promise.resolve():new Promise(resolve=>stream.once("close",resolve));stream.on("error",error=>{if(!this.#failed){this.#failed=true;this.#error=error;}});}
   async readChunk():Promise<Uint8Array|null>{
     if(this.#disposed)throw new AppServerStreamClosedError();if(this.#failed)throw this.#error;
-    const item=await this.#iterator.next();if(item.done)return null;
+    // Node child exit resumes untouched stdio. Hold readable-mode from construction
+    // until the iterator installs its own readable listener, without eager consumption.
+    const next=this.#iterator.next();if(this.#hold!==null){this.#stream.off("readable",this.#hold);this.#hold=null;}
+    const item=await next;if(item.done)return null;
     if(types.isProxy(item.value)||!types.isUint8Array(item.value))throw new TypeError("Node app-server output must remain byte encoded");return item.value;
   }
-  async destroyAndJoin():Promise<void>{this.#disposed=true;this.#stream.destroy();await this.#closed;}
+  async destroyAndJoin():Promise<void>{this.#disposed=true;if(this.#hold!==null){this.#stream.off("readable",this.#hold);this.#hold=null;}this.#stream.destroy();await this.#closed;}
 }

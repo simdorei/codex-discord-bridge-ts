@@ -1859,3 +1859,31 @@ Evidence .runtime/cloud-node-streams-094: 7 focused PASS, full **2,916 PASS,
 exercise callback and close joining, write/read error identity, byte ownership, fatal
 UTF-8 connection, pending read destruction and already-aborted no-write behavior. Parent
 process lifecycle and serialized stdin take/shutdown integration remain separate work.
+
+## 2026-10-07 — Portable owned child process and real pipe verification
+
+Added a non-Windows direct-child Node profile matching the frozen portable spawn shape:
+no shell, explicit argv/environment snapshot, required piped stdio, spawn confirmation,
+separate process-exit vs stdio-close facts, owned SIGKILL and bounded explicit force
+cleanup. Canceling a wait does not kill the process. Nonzero exit confirms termination,
+not protocol success. An exit hook is best effort only and removed when owned children
+exit; explicit forceDispose must be awaited. It is not Windows Job Object/window parity,
+process-group/descendant termination, automatic Rust Drop, or the full graceful close API.
+
+Actual isolated local Node helper processes now test UTF-8 echo over native pipes, stdin
+shutdown, exit/pipe close, owned kill, missing executable, canceled wait, late output and
+exit-listener cleanup. No Codex/model CLI, network service, live bridge or user PC ran.
+Review reproduced Node's exit-time flushStdio resuming unread output before lazy async
+iterator consumption, losing stderr/stdout. A public readable-mode hold now protects the
+stream until its iterator installs its own listener. Exact Node v24.21.0 internal source
+was read; no private flags were modified. Final identical 15-test bytes produce old
+13 PASS/2 FAIL and fixed 15 PASS. Readable holds are removed on disposal, including
+already-closed streams; pre-construction stream errors retain their identity.
+
+Evidence .runtime/cloud-portable-process-095: full **2,924 PASS, 0 fail/skip/cancel;
+strict TS exit 0**. A separate injected-control-error case confirms later pipe cleanup
+timeout cannot replace the first error. Initial TS Record name collision and a test mock
+restore API error were retained separately; the latter's invalid RED run is not behavioral
+regression evidence. Real-process tests ran on this Linux VM only. Native graceful-close,
+complete session construction and Windows remain unfinished; force-cleanup timeout/error
+must not be treated as confirmed exit or successful recovery.
