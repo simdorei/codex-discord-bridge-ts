@@ -1,3 +1,5 @@
+import * as DeliveryReceipts from "./delivery-receipts.ts";
+import * as NewReplyClaims from "./new-reply-claims.ts";
 import * as RecoveryCancellation from "./queue-cancel-recovery.ts";
 import * as PendingCancellation from "./queue-cancel-pending.ts";
 import * as RecoveryCustody from "./ingress-recovery-custody.ts";
@@ -65,6 +67,16 @@ export const validateIngressRecovery: typeof RecoveryCustody.validateIngressReco
 export const cancelLatestPending: typeof PendingCancellation.cancelLatestPending = PendingCancellation.cancelLatestPending;
 
 export const cancelForRecovery: typeof RecoveryCancellation.cancelForRecovery = RecoveryCancellation.cancelForRecovery;
+
+export const beginDeliveryReceipt: typeof DeliveryReceipts.beginDeliveryReceipt = DeliveryReceipts.beginDeliveryReceipt;
+export const confirmDeliveryReceipt: typeof DeliveryReceipts.confirmDeliveryReceipt = DeliveryReceipts.confirmDeliveryReceipt;
+export const releaseRejectedDelivery: typeof DeliveryReceipts.releaseRejectedDelivery = DeliveryReceipts.releaseRejectedDelivery;
+export const blockRejectedDelivery: typeof DeliveryReceipts.blockRejectedDelivery = DeliveryReceipts.blockRejectedDelivery;
+export const unknownDeliveryReceiptCount: typeof DeliveryReceipts.unknownDeliveryReceiptCount = DeliveryReceipts.unknownDeliveryReceiptCount;
+export const blockedDeliveryReceiptCount: typeof DeliveryReceipts.blockedDeliveryReceiptCount = DeliveryReceipts.blockedDeliveryReceiptCount;
+export const newReplyOutputHold: typeof NewReplyClaims.newReplyOutputHold = NewReplyClaims.newReplyOutputHold;
+export const newReplyAcknowledgementSendable: typeof NewReplyClaims.newReplyAcknowledgementSendable = NewReplyClaims.newReplyAcknowledgementSendable;
+export const releaseNewReplyAcknowledgement: typeof NewReplyClaims.releaseNewReplyAcknowledgement = NewReplyClaims.releaseNewReplyAcknowledgement;
 
 export const admitIngress: typeof IngressAdmission.admitIngress = IngressAdmission.admitIngress;
 export const pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt = NewPromptArm.pendingNewPrompt;
@@ -168,6 +180,16 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly beginDeliveryReceipt: typeof DeliveryReceipts.beginDeliveryReceipt;
+  readonly confirmDeliveryReceipt: typeof DeliveryReceipts.confirmDeliveryReceipt;
+  readonly releaseRejectedDelivery: typeof DeliveryReceipts.releaseRejectedDelivery;
+  readonly blockRejectedDelivery: typeof DeliveryReceipts.blockRejectedDelivery;
+  readonly unknownDeliveryReceiptCount: typeof DeliveryReceipts.unknownDeliveryReceiptCount;
+  readonly blockedDeliveryReceiptCount: typeof DeliveryReceipts.blockedDeliveryReceiptCount;
+  readonly newReplyOutputHold: typeof NewReplyClaims.newReplyOutputHold;
+  readonly newReplyAcknowledgementSendable: typeof NewReplyClaims.newReplyAcknowledgementSendable;
+  readonly releaseNewReplyAcknowledgement: typeof NewReplyClaims.releaseNewReplyAcknowledgement;
+
   readonly cancelForRecovery: typeof RecoveryCancellation.cancelForRecovery;
   readonly cancelLatestPending: typeof PendingCancellation.cancelLatestPending;
   readonly claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery;
@@ -297,6 +319,15 @@ export const StateAccessFacade: IStateAccessFacade = {
   validateIngressRecovery,
   cancelLatestPending,
   cancelForRecovery,
+  beginDeliveryReceipt,
+  confirmDeliveryReceipt,
+  releaseRejectedDelivery,
+  blockRejectedDelivery,
+  unknownDeliveryReceiptCount,
+  blockedDeliveryReceiptCount,
+  newReplyOutputHold,
+  newReplyAcknowledgementSendable,
+  releaseNewReplyAcknowledgement,
   admitIngress,
   pendingNewPrompt,
   newThreadOrigin,

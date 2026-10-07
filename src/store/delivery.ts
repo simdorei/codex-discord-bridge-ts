@@ -33,7 +33,7 @@ function decodeDelivery(row: Record<string, unknown>): StoredDelivery {
     channelId:decodeI64(row.channel_id,"channel_id"),content:text("content"),attemptCount:decodeI64(row.attempt_count,"attempt_count"),
     lastError:text("last_error"),createdAt:decodeTimestamp(row.created_at,"created_at"),updatedAt:decodeTimestamp(row.updated_at,"updated_at")};
 }
-function readDelivery(db:DatabaseSync,id:string):StoredDelivery {
+export function selectDelivery(db:DatabaseSync,id:string):StoredDelivery {
   const stmt=db.prepare(DELIVERY_SELECT+" WHERE delivery_id=?");
   stmt.setReadBigInts(true);const row=stmt.get(id);if(!row) throw new DeliveryNotFoundError(id);
   return decodeDelivery(row);
@@ -73,7 +73,7 @@ export async function stageOwnedQueueCompletion(
     if(!retainAsyncTerminalJournalIn(db,job.targetThreadId,job.turnId))
       db.prepare("DELETE FROM codex_observed_completions WHERE thread_id=? AND turn_id=?").run(job.targetThreadId,job.turnId);
     db.prepare("DELETE FROM codex_observed_final_answers WHERE thread_id=? AND turn_id=?").run(job.targetThreadId,job.turnId);
-    const delivery=readDelivery(db,job.jobId);
+    const delivery=selectDelivery(db,job.jobId);
     if(release!==null&&job.appServerGeneration===release.generation) stageIdleReleaseCandidateIn(db,job,release.observer);
     db.exec("COMMIT");committed=true;return delivery;
   } finally {
@@ -100,7 +100,7 @@ export async function recordDeliveryFailure(path: string,id: string,error: strin
     db.exec("BEGIN IMMEDIATE");
     const changed=db.prepare("UPDATE codex_delivery_outbox SET attempt_count=attempt_count+1,last_error=?,updated_at=? WHERE delivery_id=?").run(bounded,now,id).changes;
     if(BigInt(changed)!==1n) throw new DeliveryNotFoundError(id);
-    const delivery=readDelivery(db,id);db.exec("COMMIT");committed=true;return delivery;
+    const delivery=selectDelivery(db,id);db.exec("COMMIT");committed=true;return delivery;
   } finally {
     if(!committed&&db.isTransaction) {try{db.exec("ROLLBACK");}catch{/* close rolls back */}}
     db.close();

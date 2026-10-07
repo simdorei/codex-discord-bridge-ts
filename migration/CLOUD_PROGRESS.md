@@ -1001,3 +1001,38 @@ not a fresh dependency build or full-crate hash/behavior certification.
 Evidence .runtime/cloud-discord-request-051: 18 new cases / 30 Discord-focused,
 full **2,557 PASS, 0 fail/skip/cancel; strict TS exit 0**. No real Discord message,
 credential configuration, component click or backend operation was performed.
+
+## 2026-10-07 — Durable message receipts and original delivery-claim guards
+
+Migrated delivery_receipt.rs intent/confirmation/rejection states with the complete
+claim-time dependencies used by this slice: new_reply claim/notice, legacy Reserve
+transition/start notice validation, and existing final_recovery grant validation.
+An unknown intent never becomes New on reopen. An authoritative no-message rejection
+may release one same-content retry; blocked rejection stays blocked. A confirmed
+message ID cannot be replaced. Intent and acknowledgement/warning state changes
+share the writer transaction and roll back together on identity or SQL failure.
+
+New acknowledgement keys/body hashes bind the original first-turn identity and room.
+Only its confirmed normal receipt opens the acknowledgement barrier; warning receipts
+do not. Generated output still needs verified first input and exact-turn custody.
+Historical Reserve notices validate recorded held/no-turn state and actual mapping,
+without entering or restoring automatic Reserve. Existing final-recovery grants
+recheck exact saved final identity/content, the original confirmed error receipt,
+one canonical ingress, current destination and absence of executable/progress custody,
+then bind each actual chunk hash and delivery guard. This slice READS existing grants;
+it does not implement the separate authorize operation or grant publication approval.
+
+Typed receipt keys preserve the original i64/String/String/usize profile, including
+large integer boundaries. Acknowledgement recovery permission alone cannot resend an
+unknown or operator-blocked intent. HTTP transport and full Twilight Message receipt
+decoding are still unfinished; no actual message was sent. Definite-rejection APIs
+require trusted authoritative failure classification from that future adapter.
+
+Evidence .runtime/cloud-delivery-receipts-052: 16 new cases / 24 focused with facade;
+full **2,573 PASS, 0 fail/skip/cancel; strict TS exit 0**. Covers reopen/no-replay,
+one retry, immutable confirmed ID, new ACK/warning isolation, drift rollback,
+continuation ownership, legacy notice predicates, final grant conflicts and atomic
+confirmation failure. One Reserve test fixture initially omitted the stored attempt/
+error setup; corrected fixture and original RED log retained, guards unchanged.
+Source-authority scope is pinned Rust 4e213aa; newer complete_confirmed optimization
+remains phase 2. No live HTTP, process, Windows or performance certification.

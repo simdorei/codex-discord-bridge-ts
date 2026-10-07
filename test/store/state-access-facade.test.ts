@@ -1,3 +1,5 @@
+import * as DeliveryReceipts from "../../src/store/delivery-receipts.ts";
+import * as NewReplyClaims from "../../src/store/new-reply-claims.ts";
 import * as RecoveryCancellation from "../../src/store/queue-cancel-recovery.ts";
 import * as PendingCancellation from "../../src/store/queue-cancel-pending.ts";
 import * as RecoveryCustody from "../../src/store/ingress-recovery-custody.ts";
@@ -91,6 +93,15 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.validateIngressRecovery, RecoveryCustody.validateIngressRecovery);
     assert.strictEqual(StateAccessFacade.cancelLatestPending, PendingCancellation.cancelLatestPending);
     assert.strictEqual(StateAccessFacade.cancelForRecovery, RecoveryCancellation.cancelForRecovery);
+    assert.strictEqual(StateAccessFacade.beginDeliveryReceipt, DeliveryReceipts.beginDeliveryReceipt);
+    assert.strictEqual(StateAccessFacade.confirmDeliveryReceipt, DeliveryReceipts.confirmDeliveryReceipt);
+    assert.strictEqual(StateAccessFacade.releaseRejectedDelivery, DeliveryReceipts.releaseRejectedDelivery);
+    assert.strictEqual(StateAccessFacade.blockRejectedDelivery, DeliveryReceipts.blockRejectedDelivery);
+    assert.strictEqual(StateAccessFacade.unknownDeliveryReceiptCount, DeliveryReceipts.unknownDeliveryReceiptCount);
+    assert.strictEqual(StateAccessFacade.blockedDeliveryReceiptCount, DeliveryReceipts.blockedDeliveryReceiptCount);
+    assert.strictEqual(StateAccessFacade.newReplyOutputHold, NewReplyClaims.newReplyOutputHold);
+    assert.strictEqual(StateAccessFacade.newReplyAcknowledgementSendable, NewReplyClaims.newReplyAcknowledgementSendable);
+    assert.strictEqual(StateAccessFacade.releaseNewReplyAcknowledgement, NewReplyClaims.releaseNewReplyAcknowledgement);
     assert.strictEqual(StateAccessFacade.admitIngress, IngressAdmission.admitIngress);
     assert.strictEqual(StateAccessFacade.pendingNewPrompt, NewPromptArm.pendingNewPrompt);
     assert.strictEqual(StateAccessFacade.newThreadOrigin, NewOrigin.newThreadOrigin);
@@ -210,6 +221,15 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "validateIngressRecovery",
       "cancelLatestPending",
       "cancelForRecovery",
+      "beginDeliveryReceipt",
+      "confirmDeliveryReceipt",
+      "releaseRejectedDelivery",
+      "blockRejectedDelivery",
+      "unknownDeliveryReceiptCount",
+      "blockedDeliveryReceiptCount",
+      "newReplyOutputHold",
+      "newReplyAcknowledgementSendable",
+      "releaseNewReplyAcknowledgement",
       "admitIngress",
       "pendingNewPrompt",
       "captureStopOrigin",
@@ -243,7 +263,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 87);
+    assert.strictEqual(actual.length, 96);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
