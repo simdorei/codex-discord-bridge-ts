@@ -1,3 +1,7 @@
+import * as ForkRepair from "./fork-legacy-repair.ts";
+import * as ForkRetirement from "./fork-retirement.ts";
+import * as ForkRead from "./fork-unresolved-read.ts";
+import * as Generation from "./queue-generation.ts";
 import * as AsyncHistory from "./async-history.ts";
 import * as ObservedCompletion from "./observed-completion.ts";
 import * as Delivery from "./delivery.ts";
@@ -64,7 +68,19 @@ export const finish: typeof MutationAttempt.finish =
 export const openCheckedRead: typeof CheckedRead.open =
   CheckedRead.open;
 
+export const adoptTargetGeneration: typeof Generation.adoptTargetGeneration = Generation.adoptTargetGeneration;
+
+export const unresolvedAppServerForkHandoffForSource: typeof ForkRead.unresolvedAppServerForkHandoffForSource = ForkRead.unresolvedAppServerForkHandoffForSource;
+
+export const retireCopyOnlyHandoffs: typeof ForkRetirement.retireCopyOnlyHandoffs = ForkRetirement.retireCopyOnlyHandoffs;
+
+export const repairLegacyDefiniteForkFailures: typeof ForkRepair.repairLegacyDefiniteForkFailures = ForkRepair.repairLegacyDefiniteForkFailures;
+
 export interface IStateAccessFacade {
+  readonly repairLegacyDefiniteForkFailures: typeof ForkRepair.repairLegacyDefiniteForkFailures;
+  readonly retireCopyOnlyHandoffs: typeof ForkRetirement.retireCopyOnlyHandoffs;
+  readonly unresolvedAppServerForkHandoffForSource: typeof ForkRead.unresolvedAppServerForkHandoffForSource;
+  readonly adoptTargetGeneration: typeof Generation.adoptTargetGeneration;
   readonly captureAsyncHistorySnapshot: typeof AsyncHistory.captureAsyncHistorySnapshot;
   readonly retainAsyncHistoryCandidate: typeof AsyncHistory.retainAsyncHistoryCandidate;
   readonly captureTerminalHistorySnapshot: typeof AsyncHistory.captureTerminalHistorySnapshot;
@@ -102,6 +118,10 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  repairLegacyDefiniteForkFailures,
+  retireCopyOnlyHandoffs,
+  unresolvedAppServerForkHandoffForSource,
+  adoptTargetGeneration,
   captureAsyncHistorySnapshot,
   retainAsyncHistoryCandidate,
   captureTerminalHistorySnapshot,

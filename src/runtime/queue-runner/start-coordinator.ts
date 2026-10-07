@@ -1,3 +1,9 @@
+import { QueueRecoveryCoordinator } from "./recovery-coordinator.ts";
+import type { RecoveryReport } from "./recovery-state.ts";
+import { BackendFailureError, AttemptClaimLostError, QueueIntegerRangeError } from "./errors.ts";
+export { BackendFailureError, AttemptClaimLostError, QueueIntegerRangeError };
+import { retryDelaySeconds, pendingRetryDueAt, pendingRetryIsDue } from "./retry-policy.ts";
+export { retryDelaySeconds, pendingRetryDueAt, pendingRetryIsDue };
 import { snapshotStoredQueueJob, storedQueueJobsEqual, completionEvidenceGeneration, InvalidQueueStateError } from "../../store/queue-read.ts";
 import type { StoredDelivery } from "../../store/delivery.ts";
 import { AdmissionGate, DrainGateError } from "../../admission/drain-gate.ts";
@@ -11,8 +17,6 @@ import { TargetLocks } from "./target-locks.ts";
 import { QueueReadCoordinator } from "./read-coordinator.ts";
 import type { QueueReadBackend } from "./read-coordinator.ts";
 import { EXECUTION_HOLD_PREFIX, legacyOrCurrentError } from "./saved-submission.ts";
-import type { BackendFailure } from "./saved-submission.ts";
-import { rustDebugString } from "../../core/rust-debug.ts";
 import { randomUUID } from "node:crypto";
 import { presentSavedSubmission, withTargetHold } from "./saved-submission-presentation.ts";
 import type { Submission } from "./saved-submission.ts";
@@ -25,57 +29,19 @@ export interface QueueStartBackend extends QueueReadBackend {
   generation(): bigint;
   residentInstanceId(): string | null;
   resumeThread(target: string): Promise<void>;
-  readTurns(target: string): Promise<readonly {readonly turnId: string}[]>;
+  readTurns(target: string): Promise<readonly {readonly turnId: string; readonly status?: "Completed" | "Interrupted" | "Failed" | "InProgress"}[]>;
   startClaimedTurn(claim: QueueAttemptClaim): Promise<string>;
+  requiresAppServerFork?(): boolean;
+  readAsyncHistory?(target: string, originals: readonly string[], signal: AbortSignal): Promise<unknown | null>;
+  readAsyncTerminal?(target: string, owners: readonly string[], signal: AbortSignal): Promise<unknown | null>;
 }
 
-/** Adapters wrap known backend outcomes; unknown exceptions stay unknown/held. */
-export class BackendFailureError extends Error {
-  readonly kind = "Backend";
-  readonly failure: BackendFailure;
-  constructor(failure: BackendFailure) {
-    super(`Codex turn backend failed: ${failure.message}`); this.name = "BackendFailureError";
-    this.failure = Object.freeze({...failure});
-  }
-}
-export class AttemptClaimLostError extends Error {
-  readonly kind = "AttemptClaimLost";
-  readonly jobId: string;
-  readonly observedTurnId: string | null;
-  constructor(jobId: string, observedTurnId: string | null) {
-    super(`durable queue attempt ownership changed for job ${jobId} after backend start observation ${observedTurnId === null ? "None" : `Some(${rustDebugString(observedTurnId)})`}; automatic replay is blocked`);
-    this.name = "AttemptClaimLostError";
-    this.jobId = jobId; this.observedTurnId = observedTurnId;
-  }
-}
-export class QueueIntegerRangeError extends RangeError {
-  readonly kind = "IntegerRange";
-  constructor() {
-    super("Discord or app-server generation does not fit the SQLite integer contract");
-    this.name = "QueueIntegerRangeError";
-  }
-}
+type StartState = IStateAccessFacade;
 
-export function retryDelaySeconds(count: bigint): number {
-  return count <= 0n ? 0 : count >= 6n ? 900 : [0, 30, 60, 120, 240, 480][Number(count)]!;
-}
-export function pendingRetryDueAt(count: bigint, error: string, updatedAt: number): number | null {
-  if (count <= 0n || error === "" || !Number.isFinite(updatedAt)) return null;
-  const due = updatedAt + retryDelaySeconds(count);
-  return Number.isFinite(due) ? due : null;
-}
-export function pendingRetryIsDue(count: bigint, error: string, updatedAt: number, now: number): boolean {
-  const due = pendingRetryDueAt(count, error, updatedAt);
-  return due === null || (Number.isFinite(now) && now >= due);
-}
-
-type StartState = Pick<IStateAccessFacade, "asyncTargetDispatchHeld" | "deadTargetHeld" |
-  "stageOwnedQueueCompletion" | "listFiltered" | "eligibleJobs" | "recordPreflightFailure" | "tryBeginAttempt" |
-  "recordStartFailureIfClaimed" | "markRunningWithResidentIfClaimed" | "enqueue" | "enqueueIfMirrorMatches">;
-
-/** Direct/mirrored submission and starts; intake promotion/recovery/transport stay separate. */
+/** Shared target ownership for submission, start, completion and selected-target recovery. */
 export class QueueStartCoordinator {
   readonly reads: QueueReadCoordinator;
+  readonly #recovery: QueueRecoveryCoordinator;
   readonly locks: TargetLocks;
   readonly #path: string;
   readonly #backend: QueueStartBackend;
@@ -93,7 +59,11 @@ export class QueueStartCoordinator {
     this.#clock = options.clock ?? (() => Date.now() / 1000);
     this.#notify = options.notifyDeliveryReady ?? (() => {});
     this.reads = new QueueReadCoordinator(path, backend, this.#state, this.locks);
+    this.#recovery = new QueueRecoveryCoordinator(path, backend, this.#state, this.locks, this.#gate,
+      () => this.#now(), (target, generation, turns) => this.#start(target, generation, turns));
   }
+
+  recoverTarget(target: string): Promise<RecoveryReport> { return this.#recovery.recoverTarget(target); }
 
   async kickTarget(target: string): Promise<void> {
     await this.locks.run(target, async () => {
@@ -200,7 +170,7 @@ export class QueueStartCoordinator {
     return now;
   }
 
-  async #start(target: string, generation: bigint): Promise<StoredQueueJob | null> {
+  async #start(target: string, generation: bigint, recoveredTurns?: readonly {readonly turnId: string}[]): Promise<StoredQueueJob | null> {
     const state = this.#state; const path = this.#path;
     if (await state.asyncTargetDispatchHeld(path, target)) return null;
     let permit: AdmissionPermit | undefined;
@@ -216,8 +186,11 @@ export class QueueStartCoordinator {
       if (await this.#backend.activeTurnId(target) !== null) return null;
       let baseline: string[];
       try {
-        await this.#backend.resumeThread(target);
-        baseline = (await this.#backend.readTurns(target)).map(turn => turn.turnId);
+        if (recoveredTurns !== undefined) baseline = recoveredTurns.map(turn => turn.turnId);
+        else {
+          await this.#backend.resumeThread(target);
+          baseline = (await this.#backend.readTurns(target)).map(turn => turn.turnId);
+        }
       } catch (error) {
         if (error instanceof BackendFailureError)
           await state.recordPreflightFailure(path, job.jobId, generation, error.failure.message);

@@ -90,6 +90,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
   it("contains only the supplied writes, CheckedRead.open and async admission reads", () => {
     const expected = [
       "activate",
+      "adoptTargetGeneration",
       "asyncAdmissionHeld",
       "asyncTargetDispatchHeld",
       "beginChecked",
@@ -117,14 +118,17 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "recordObservedCompletionForResident",
       "recordPreflightFailure",
       "recordStartFailureIfClaimed",
+      "repairLegacyDefiniteForkFailures",
       "retainAsyncHistoryCandidate",
+      "retireCopyOnlyHandoffs",
       "settleTerminalHistory",
       "stageOwnedQueueCompletion",
       "tryBeginAttempt",
+      "unresolvedAppServerForkHandoffForSource",
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected);
-    assert.strictEqual(actual.length, 32);
+    assert.strictEqual(actual.length, 36);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

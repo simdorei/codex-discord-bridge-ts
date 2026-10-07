@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **2,264 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **2,277 tests passed**, no failures/skips;
 strict TypeScript passed. Migration and Windows/live transport validation remain incomplete.
 
 ## Baseline
@@ -332,3 +332,33 @@ forgery, capacity/ignored writes, semantic-key corruption, conflicting answers,
 active/reappearing owners, changed revision, idle/Goal gates and post-write tamper
 rollback. Real backend observation adapters and full recovery scheduling remain
 unfinished, as do Windows/live validation and fresh Rust differential execution.
+
+
+## Selected-target authoritative recovery
+
+Connected recoverTarget to the same target-lock registry, state facade and
+start/complete coordinator. Observation and mutation are separate lock passes as
+in Rust. Starting attempts preserve lease/ambiguity; Running terminal history
+waits for final delivery; old Pending generations are adopted only after successful
+resume/read and start uses that captured baseline without a second resume/read.
+Read and mutation unavailability remain distinct and unknown untyped history is
+refused rather than inferred. Error types and retry policy are shared modules.
+
+Async-held targets use read-only historical APIs with one 10-second deadline,
+resident/generation rechecks and an optional control permit. Without a gate only
+review candidates are retained; settlement requires the control-gated second
+observation. A timeout aborts the adapter signal and releases its permit; actual
+transport cancellation still depends on the future adapter honoring AbortSignal.
+No backend support means no historical settlement, not a resume/start fallback.
+
+Recovery bootstrap ports legacy definite-fork repair: exact unobserved, nonambiguous
+handoffs get durable notices before retirement. Notice failure rolls back the
+marker and handoff together. Exact-routing mode reuses copy-only retirement.
+No new fork operation is performed by selected-target recovery.
+
+Full Linux suite: 2,277 PASS, zero failed/skipped; strict TypeScript PASS, including
+a real 10-second timeout/permit cleanup test. Logs `.runtime/cloud-target-recovery-017/`.
+Bulk recovery inventory/unmanaged-target and conflict-fork orchestration, Goal
+progress/handoff writer, intake promotion, real backend/Discord adapters, central
+runtime error dispatch, Windows and live validation remain incomplete. The
+recovery report/log callback is not a substitute for that final error-dispatch wiring.

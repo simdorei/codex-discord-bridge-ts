@@ -1,4 +1,4 @@
-import { retryDelaySeconds } from "./start-coordinator.ts";
+import { retryDelaySeconds } from "./retry-policy.ts";
 import type { StoredQueueJob } from "../../store/queue-read.ts";
 import type { BackendFailure } from "./saved-submission.ts";
 
