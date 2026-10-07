@@ -1701,3 +1701,19 @@ deferred requests, 500-entry saturation, notification ordering, throwing/async q
 ports and diagnostic-renderer noncoercion. Parsing error rendering is a required trusted
 public-safe adapter; exact Rust parser Display text is not claimed. UTF-8 byte framing,
 pipe reads/EOF, real broadcasters and native process ownership remain unimplemented.
+
+## 2026-10-07 — Owned logical stdout/stderr drain integration
+
+Ported transport.rs drain ordering over a required owned line-reader adapter. Stdout
+EOF/read failure awaits canonical logical close and pending cleanup. Stderr EOF/error
+ends only its diagnostics drain. Dispatch/close exceptions are not swallowed or
+misclassified as pipe I/O errors. The integration test processes one response and closes
+another pending request at EOF, clearing logical process flags and publishing closure.
+
+Evidence .runtime/cloud-transport-drain-087: 7 focused PASS, full **2,854 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Empty lines, diagnostic routing, exact read error
+identity, close cleanup ordering and failure propagation covered. No real pipe/process
+ran. Reader cancellation/disposal and fatal UTF-8 LF/CRLF decoding remain explicit adapter
+requirements. Cargo.lock pins Tokio 1.53.1; its exact line-reader dependency source was
+not locally available and versioned docs retrieval failed, so latest Tokio docs were
+not substituted as frozen source proof. No byte-framing parity claim is made here.
