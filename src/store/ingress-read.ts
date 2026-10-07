@@ -1,6 +1,6 @@
-import type {DatabaseSync,SQLInputValue} from "node:sqlite";
+import {DatabaseSync,type SQLInputValue} from "node:sqlite";
 import {openInitialized} from "./owned-driver.ts";
-import {StoreIntegrityError} from "./schema-assembly.ts";
+import {StoreIntegrityError,schemaVersion,LATEST_STORE_SCHEMA_VERSION} from "./schema-assembly.ts";
 import {decodeI64,decodeOptionalI64,decodeTimestamp,decodeTextField,textDecoderFor} from "./sqlite-values.ts";
 import {parseSerdeValue} from "../core/serde-json-parse.ts";
 export type IngressKind="message"|"interaction"|"action";
@@ -26,8 +26,8 @@ function decode(row:Record<string,unknown>):StoredIngress{
     createdAt=decodeTimestamp(row.created_at,"created_at"),updatedAt=decodeTimestamp(row.updated_at,"updated_at");
   return {ingressId,kind,eventId,applicationId,channelId,ownerUserId,sourceMessageId,payload,runtimeId,state,phase,targetThreadId,canonicalOwner,ownerKind,ownerId,outcome,confirmationDelivered,holdReason,createdAt,updatedAt};
 }
-function rows(db:DatabaseSync,where:string,arg:SQLInputValue):StoredIngress[]{
-  const query=db.prepare(SELECT+where);query.setReadBigInts(true);const result:StoredIngress[]=[];for(const row of query.iterate(arg))result.push(decode(row));return result;
+function rows(db:DatabaseSync,where:string,...args:SQLInputValue[]):StoredIngress[]{
+  const query=db.prepare(SELECT+where);query.setReadBigInts(true);const result:StoredIngress[]=[];for(const row of query.iterate(...args))result.push(decode(row));return result;
 }
 export function getIngressIn(db:DatabaseSync,key:string):StoredIngress|null{
   const query=db.prepare(SELECT+" WHERE ingress_id=?");query.setReadBigInts(true);const row=query.get(key);return row===undefined?null:decode(row);
@@ -37,4 +37,26 @@ export function ingressByOriginIn(db:DatabaseSync,eventId:bigint):StoredIngress|
 }
 export async function getIngress(path:string,key:string):Promise<StoredIngress|null>{
   const db=await openInitialized(path);try{return getIngressIn(db,key);}finally{db.close();}
+}
+
+export class ReadOnlySchemaVersionError extends Error{
+  readonly kind="ReadOnlySchemaVersion";readonly found:bigint;readonly expected:bigint;
+  constructor(found:bigint,expected:bigint){super(`read-only store inspection requires schema version ${expected}; found ${found}; no migration performed`);this.name="ReadOnlySchemaVersionError";this.found=found;this.expected=expected;}
+}
+function ownerScope(path:string,channel:bigint,owner:bigint,key?:string):void{
+  for(const v of key===undefined?[path]:[path,key])if(typeof v!=="string"||/[\uD800-\uDFFF]/u.test(v))throw new TypeError("Expected well-formed text");
+  for(const v of [channel,owner])if(typeof v!=="bigint"||v<-(1n<<63n)||v>=(1n<<63n))throw new TypeError("Expected i64 identity");
+}
+/** Filter actor/room before decoding; never initialize or inspect another actor's payload. */
+export function getIngressForOwnerReadonly(path:string,key:string,channel:bigint,owner:bigint):StoredIngress|null{
+  ownerScope(path,channel,owner,key);const db=new DatabaseSync(path,{readOnly:true});try{db.exec("PRAGMA busy_timeout=250");const found=schemaVersion(db);
+    if(found!==LATEST_STORE_SCHEMA_VERSION)throw new ReadOnlySchemaVersionError(found,LATEST_STORE_SCHEMA_VERSION);
+    return rows(db," WHERE ingress_id=? AND channel_id=? AND owner_user_id=?",key,channel,owner)[0]??null;
+  }finally{db.close();}
+}
+export function unfinishedPriorIngressesIn(db:DatabaseSync,runtime:string):StoredIngress[]{
+  return rows(db," WHERE runtime_id IS NOT ? AND owner_id IS NULL AND state IN ('staged','acknowledged','executing','completed') AND confirmation_delivered=0 ORDER BY created_at,ingress_id",runtime);
+}
+export async function listIngressesForOwner(path:string,channel:bigint,owner:bigint):Promise<StoredIngress[]>{
+  ownerScope(path,channel,owner);const db=await openInitialized(path);try{return rows(db," WHERE channel_id=? AND owner_user_id=? AND (state='held' OR (state='completed' AND confirmation_delivered=0)) ORDER BY created_at DESC,ingress_id LIMIT 20",channel,owner);}finally{db.close();}
 }

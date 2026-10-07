@@ -1,3 +1,5 @@
+import * as IngressRecovery from "../../src/store/ingress-recovery.ts";
+import * as IngressRead from "../../src/store/ingress-read.ts";
 import * as BusyIngress from "../../src/store/ingress-busy.ts";
 import * as IngressLifecycle from "../../src/store/ingress-lifecycle.ts";
 import * as IngressAdmission from "../../src/store/ingress-admission.ts";
@@ -77,6 +79,11 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.admitMappedSlashIngress, IngressAdmission.admitMappedSlashIngress);
     assert.strictEqual(StateAccessFacade.recordIngressNewCreation, IngressLifecycle.recordIngressNewCreation);
     assert.strictEqual(StateAccessFacade.admitBusyInteraction, BusyIngress.admitBusyInteraction);
+    assert.strictEqual(StateAccessFacade.holdIngress, IngressRecovery.holdIngress);
+    assert.strictEqual(StateAccessFacade.recoverPriorRuntimeIngress, IngressRecovery.recoverPriorRuntimeIngress);
+    assert.strictEqual(StateAccessFacade.getIngress, IngressRead.getIngress);
+    assert.strictEqual(StateAccessFacade.getIngressForOwnerReadonly, IngressRead.getIngressForOwnerReadonly);
+    assert.strictEqual(StateAccessFacade.listIngressesForOwner, IngressRead.listIngressesForOwner);
     assert.strictEqual(StateAccessFacade.admitIngress, IngressAdmission.admitIngress);
     assert.strictEqual(StateAccessFacade.pendingNewPrompt, NewPromptArm.pendingNewPrompt);
     assert.strictEqual(StateAccessFacade.newThreadOrigin, NewOrigin.newThreadOrigin);
@@ -187,6 +194,11 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "admitMappedSlashIngress",
       "recordIngressNewCreation",
       "admitBusyInteraction",
+      "holdIngress",
+      "recoverPriorRuntimeIngress",
+      "getIngress",
+      "getIngressForOwnerReadonly",
+      "listIngressesForOwner",
       "admitIngress",
       "pendingNewPrompt",
       "captureStopOrigin",
@@ -220,7 +232,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 78);
+    assert.strictEqual(actual.length, 83);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

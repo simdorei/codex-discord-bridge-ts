@@ -1,3 +1,5 @@
+import * as IngressRecovery from "./ingress-recovery.ts";
+import * as IngressRead from "./ingress-read.ts";
 import * as BusyIngress from "./ingress-busy.ts";
 import * as IngressLifecycle from "./ingress-lifecycle.ts";
 import * as IngressAdmission from "./ingress-admission.ts";
@@ -47,6 +49,12 @@ export const admitMappedSlashIngress: typeof IngressAdmission.admitMappedSlashIn
 export const recordIngressNewCreation: typeof IngressLifecycle.recordIngressNewCreation = IngressLifecycle.recordIngressNewCreation;
 
 export const admitBusyInteraction: typeof BusyIngress.admitBusyInteraction = BusyIngress.admitBusyInteraction;
+
+export const holdIngress: typeof IngressRecovery.holdIngress = IngressRecovery.holdIngress;
+export const recoverPriorRuntimeIngress: typeof IngressRecovery.recoverPriorRuntimeIngress = IngressRecovery.recoverPriorRuntimeIngress;
+export const getIngress: typeof IngressRead.getIngress = IngressRead.getIngress;
+export const getIngressForOwnerReadonly: typeof IngressRead.getIngressForOwnerReadonly = IngressRead.getIngressForOwnerReadonly;
+export const listIngressesForOwner: typeof IngressRead.listIngressesForOwner = IngressRead.listIngressesForOwner;
 
 export const admitIngress: typeof IngressAdmission.admitIngress = IngressAdmission.admitIngress;
 export const pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt = NewPromptArm.pendingNewPrompt;
@@ -150,6 +158,12 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly holdIngress: typeof IngressRecovery.holdIngress;
+  readonly recoverPriorRuntimeIngress: typeof IngressRecovery.recoverPriorRuntimeIngress;
+  readonly getIngress: typeof IngressRead.getIngress;
+  readonly getIngressForOwnerReadonly: typeof IngressRead.getIngressForOwnerReadonly;
+  readonly listIngressesForOwner: typeof IngressRead.listIngressesForOwner;
+
   readonly admitBusyInteraction: typeof BusyIngress.admitBusyInteraction;
   readonly admitMappedSlashIngress: typeof IngressAdmission.admitMappedSlashIngress;
   readonly recordIngressNewCreation: typeof IngressLifecycle.recordIngressNewCreation;
@@ -259,6 +273,11 @@ export const StateAccessFacade: IStateAccessFacade = {
   admitMappedSlashIngress,
   recordIngressNewCreation,
   admitBusyInteraction,
+  holdIngress,
+  recoverPriorRuntimeIngress,
+  getIngress,
+  getIngressForOwnerReadonly,
+  listIngressesForOwner,
   admitIngress,
   pendingNewPrompt,
   newThreadOrigin,

@@ -826,3 +826,39 @@ Evidence .runtime/cloud-ingress-busy-045: 10 new cases / 18 focused including fa
 full **2,486 PASS, 0 fail/skip/cancel; strict TS exit 0**. Existing typed-parser and
 queue/ingress regressions are included. No live control RPC, handler/startup,
 Windows, performance or deployment approval is established.
+
+## 2026-10-07 — Ingress hold/recovery and owner-scoped inspection
+
+Migrated the bounded hold/prior-runtime path from ingress/recovery.rs and the exact
+archived_rejections::preserves predicate, plus owner-scoped reads from ingress/read.rs.
+Recovery never dispatches Codex work. Owned requests retain their existing queue/
+intake authority; only missing acknowledgement recovery is marked. Known cleanup
+refusals preserve their original outcome and do not stage a new differently keyed
+Saved POST. Exact archived audit AND extant matching fence preserve the closed
+room without fabricating confirmation. Other unowned records receive one durable
+notice, with preserved known/not-executed/unknown outcome distinctions. Hold changes,
+notice staging and prior-runtime batches share a writer transaction and roll back
+on notice failure. Public-safe reasons are truncated by Unicode scalars without
+materializing the whole input as an array.
+
+Owner inspection opens read-only, checks the exact schema version, filters room/
+actor before decoding, and never initializes or migrates a file. Review lists retain
+the source 20-row cap. Prior-runtime recovery keeps the source unbounded inventory
+read, and explicitly REQUIRES the exclusive runtime guard before intake; it is not
+wired to startup yet. Legacy manual-reserve retirement and recovery-command claim/
+cancellation sequences remain separate unfinished work.
+
+Evidence .runtime/cloud-ingress-recovery-046: 10 new cases / 18 focused with facade;
+full **2,496 PASS, 0 fail/skip/cancel; strict TS exit 0**. Includes partial-batch rollback,
+closed-room evidence, one-notice behavior, malformed other-owner payload exclusion,
+read-only missing/old schema and owner pagination. No live effects or deployment.
+
+Remote refresh requested by the user: Git advertised TS main 47d0f7f unchanged and
+Rust main ed47c482420631447f0a38ef55a8d29acc1f6f6a unchanged from the prior latest
+observation; both repositories' branch heads were enumerated. Rust is 29 commits
+INCLUDING merges / 41 files beyond phase-1 pin. Selected new production diff was
+read: channel-scoped Final head ranking, one-transaction already-confirmed final
+retirement with ordinary fallback, current-catalog/receipt helpers, plus the listed
+Codex discovery/process changes. Raw immutable delta and inventory retained under
+.runtime/phase-2-contract. These are phase-2 obligations, not already-ported features;
+phase-1 authority was not changed and full 41-file review remains pending.
