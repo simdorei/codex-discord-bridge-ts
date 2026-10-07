@@ -1,3 +1,4 @@
+import * as StartNoticeOutbox from "./start-notice-outbox.ts";
 import * as CommentaryOutbox from "./commentary-outbox.ts";
 import * as DeliveryPreflight from "./delivery-preflight.ts";
 import * as DeliveryReceipts from "./delivery-receipts.ts";
@@ -84,6 +85,8 @@ export const stageCommentary: typeof CommentaryOutbox.stageCommentary = Commenta
 export const pendingCommentary: typeof CommentaryOutbox.pendingCommentary = CommentaryOutbox.pendingCommentary;
 export const hasPendingCommentary: typeof CommentaryOutbox.hasPendingCommentary = CommentaryOutbox.hasPendingCommentary;
 export const completeCommentary: typeof CommentaryOutbox.completeCommentary = CommentaryOutbox.completeCommentary;
+export const pendingStartNotices: typeof StartNoticeOutbox.pendingStartNotices = StartNoticeOutbox.pendingStartNotices;
+export const completeStartNotice: typeof StartNoticeOutbox.completeStartNotice = StartNoticeOutbox.completeStartNotice;
 export const finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight = DeliveryPreflight.finalDeliveryPreflight;
 export const pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply = DeliveryPreflight.pendingFirstReply;
 
@@ -193,6 +196,8 @@ export interface IStateAccessFacade {
   readonly pendingCommentary: typeof CommentaryOutbox.pendingCommentary;
   readonly hasPendingCommentary: typeof CommentaryOutbox.hasPendingCommentary;
   readonly completeCommentary: typeof CommentaryOutbox.completeCommentary;
+  readonly pendingStartNotices: typeof StartNoticeOutbox.pendingStartNotices;
+  readonly completeStartNotice: typeof StartNoticeOutbox.completeStartNotice;
   readonly finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight;
   readonly pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply;
 
@@ -348,6 +353,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   pendingCommentary,
   hasPendingCommentary,
   completeCommentary,
+  pendingStartNotices,
+  completeStartNotice,
   finalDeliveryPreflight,
   pendingFirstReply,
   admitIngress,

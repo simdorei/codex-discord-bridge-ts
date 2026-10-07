@@ -1191,3 +1191,20 @@ invalid channel, ambiguous no-resend, failed error record, confirmed-receipt rec
 after retirement failure and later-item recovery. Uses isolated SQLite and required
 injected transport; production scheduler, full response decoder and central Rust
 Display/Debug parity remain incomplete. No network POST or deployment occurred.
+
+## 2026-10-07 — Start rejection notices and pending delivery phases
+
+Added owned start-notice list/retirement through StateAccessFacade (104 functions),
+and connected the source no-turn rejection receipt domain. Delivery revalidates
+exact held no-turn job custody, never invents a turn, changes a model or reexecutes
+work. The pending-output utility attempts start notices, commentary and final batches
+in source order, retains the first batch error, and preserves the distinct immediate
+final-list decode-error precedence. It installs no scheduler or logger.
+
+Evidence .runtime/cloud-pending-delivery-061: 8 new cases / 16 focused, full
+**2,644 PASS, 0 fail/skip/cancel; strict TS exit 0**. Tests include stale start custody,
+confirmed-receipt retirement reentry, batch/first-error order, final barrier after
+commentary failure, final-list decoder precedence and timestamp/job ordering.
+All HTTP remains injected. These source inventory utilities are unbounded; the
+separate bounded scheduler/metadata discovery is not yet ported, and the utilities
+must not be presented as the completed production scheduling or latency contract.
