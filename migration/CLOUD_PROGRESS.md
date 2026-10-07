@@ -1645,3 +1645,26 @@ Evidence .runtime/cloud-app-requests-083: 7 new cases / 18 focused, full **2,826
 allowlist negatives, settings tri-state, text_elements, immutable inputs and actual
 pending read/mutation disposal are covered. Custom timeout API uses supported native
 integer milliseconds; no nanosecond equivalence, model switch, API call or RPC dispatch.
+
+## 2026-10-07 — Bounded diagnostics and explicit UTF-8 deviation
+
+Ported diagnostic retention at 512 lines / 64KiB with old-line eviction and a bigint
+drop count. Snapshots are immutable. Deliberate TS correction TS-PHASE2-DIAG-UTF8-001:
+pinned Rust diagnostics.rs calls String::truncate(65536) on an oversized line. The
+same file at recorded main ed47c482 is byte-identical (SHA256
+ e6d5a1ed6fee40c5f875ec9275dd02944110e98a3bb37508223bf4be399e9e04).
+For 21,846 repetitions of 한, length is 65,538 and offset 65,536 is a UTF-8 continuation
+byte. Rust's documented truncate contract panics at a non-character boundary:
+https://doc.rust-lang.org/std/string/struct.String.html#method.truncate
+This is source/API-based static evidence, not a fresh Rust execution or live incident.
+
+TS floors to a scalar boundary instead, retaining 65,535 valid bytes in that case.
+Ordinary ASCII/aligned cases and retention policy remain the same; the panic edge is
+NOT claimed as exact Rust parity. Rust source was not changed; the finding is retained
+for rechecking/fixing against the final phase-2 Rust pin. Diagnostic text is not authority.
+
+Evidence .runtime/cloud-diagnostics-084: 5 new cases, full **2,831 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Count/byte eviction, ASCII/emoji alignment,
+un-aligned Korean, zero-byte lines and immutable snapshots pass. Initial test used a
+runtime-supported String method absent from the configured TS library; corrected the
+test assertion without changing target settings. No diagnostic stream or process ran.
