@@ -1,4 +1,4 @@
-import {types} from "node:util";
+import {serdeObject as object,serdeField as get,rustTrim as trim,trimmedText as text} from "./value.ts";
 import {I64_MIN,I64_MAX} from "../protocol/ids.ts";
 export type TurnStatus="Completed"|"Interrupted"|"Failed"|"InProgress";
 export type InterruptOrigin="RemoteUserIntent"|"ExternalOrUnknown";
@@ -6,10 +6,6 @@ export interface TurnCompletion{readonly threadId:string;readonly turnId:string;
 export type OutcomeErrorKind="InvalidThread"|"DifferentThread"|"InvalidTurns"|"InvalidTurn"|"MissingThreadId"|"MissingTurnId"|"MissingStatus"|"UnknownStatus"|"InProgressCompletion"|"InvalidError"|"MissingErrorMessage"|"TurnNotFound"|"InvalidItems";
 const messages:Record<OutcomeErrorKind,string>={InvalidThread:"thread/read returned an invalid thread payload",DifferentThread:"thread/read returned a different thread",InvalidTurns:"thread/read returned invalid turns",InvalidTurn:"thread/read returned an invalid turn payload",MissingThreadId:"turn payload had no thread id",MissingTurnId:"turn payload had no turn id",MissingStatus:"turn payload had no status",UnknownStatus:"turn payload had an unknown status",InProgressCompletion:"turn/completed carried an inProgress turn",InvalidError:"turn payload had an invalid error",MissingErrorMessage:"turn payload error had no message",TurnNotFound:"thread/read did not contain the requested turn",InvalidItems:"thread/read returned invalid turn items"};
 export class TurnOutcomeError extends Error{readonly kind:OutcomeErrorKind;constructor(kind:OutcomeErrorKind,detail?:string){super(kind==="UnknownStatus"?`${messages[kind]}: ${detail}`:messages[kind]);this.name="TurnOutcomeError";this.kind=kind;}}
-function object(value:unknown):value is Record<string,unknown>{return value!==null&&typeof value==="object"&&!types.isProxy(value)&&!Array.isArray(value);}
-function get(value:unknown,key:string):unknown{if(!object(value))return undefined;const d=Object.getOwnPropertyDescriptor(value,key);return d&&Object.hasOwn(d,"value")?d.value:undefined;}
-const trim=(value:string)=>value.replace(/^\p{White_Space}+/u,"").replace(/\p{White_Space}+$/u,"");
-const text=(value:unknown)=>typeof value==="string"?trim(value):"";
 const token=(value:unknown)=>typeof value==="string"&&["usageLimitExceeded","UsageLimitExceeded","usage_limit_exceeded","usage_limit_reached","usage_limit"].includes(value);
 /** Structured metadata only; never a standalone permission to switch models or enter Reserve. */
 export function isUsageLimitError(data:unknown):boolean{

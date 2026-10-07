@@ -1390,3 +1390,16 @@ Evidence .runtime/cloud-final-text-070: 6 new cases / 14 focused, full **2,723 P
 Unicode trim, legacy fallback and async-not-Final cases are covered. These readers
 preserve evidence strength but do not themselves supersede a stored final journal,
 observe a live stream or authorize a send.
+
+## 2026-10-07 — Thread Goal parsing boundary
+
+Ported goal.rs statuses, get/update parsing and terminal predicate. Goal/get retains
+exact thread comparison, while updates trim both identities and optional turn ID.
+Only Blocked and Complete are terminal; paused/usage/budget-limited are not silently
+promoted. Shared Serde-value field/trim accessors now serve outcomes and Goal parsing,
+and completion presentation aliases the same ThreadGoalStatus type.
+
+Evidence .runtime/cloud-goal-status-071: 5 new cases / 24 focused, full **2,728 PASS,
+0 fail/skip/cancel; strict TS exit 0**. All status spellings, missing/null goal,
+validation precedence, get/update identity distinction, optional turn and NEL/BOM
+semantics pass. These pure parsers do not perform Goal RPC or change queue state.

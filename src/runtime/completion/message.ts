@@ -1,8 +1,9 @@
+import type {ThreadGoalStatus} from "../../app-server/goal.ts";
 import type {TurnStatus} from "../../app-server/outcomes.ts";
 import {parseSerdeValue} from "../../core/serde-json-parse.ts";
 import {requireDiscordText} from "../../discord/text.ts";
 export type CompletionStatus=TurnStatus;
-export type CompletionGoalStatus="Active"|"Paused"|"Blocked"|"UsageLimited"|"BudgetLimited"|"Complete";
+export type CompletionGoalStatus=ThreadGoalStatus;
 const trim=(text:string)=>text.replace(/^\p{White_Space}+/u,"").replace(/\p{White_Space}+$/u,"");
 function field(value:unknown,key:string):unknown{
   if(value===null||typeof value!=="object"||Array.isArray(value))return undefined;
