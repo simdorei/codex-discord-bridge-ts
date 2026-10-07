@@ -1797,3 +1797,23 @@ post-success promotion and distinct normal/current preflight-failure ordering co
 This preserves the source's conservative normal-response indeterminate state even when
 its later preflight fails before any bytes. Required native ports remain unimplemented;
 these controlled adapters are integration evidence, not a live Codex session.
+
+## 2026-10-07 — Observed initialization handshake
+
+Ported startup.rs handshake AFTER an already-owned spawn: install observer, initialize
+with experimental API capability and 30s request budget, send initialized, then commit
+generation one only inside the open lifecycle gate. Failure/cancellation awaits the
+required owned process/task cleanup and disposes observer resources; original and cleanup
+errors are retained together. The outer 45s startup budget is exported but not enforced
+by this handshake-only unit, and cannot justify abandoning cleanup. Explicit signal
+cancellation is supported; abandoning a Promise is not automatic Rust task cancellation.
+
+Review corrected metadata changing through an observer callback, invalid observer results
+reaching initialization, and a disposer being replaced during initialization. Metadata and
+the validated synchronous disposer are captured before later callbacks. Identical final
+9-test bytes yield old 6 PASS/3 FAIL and corrected 9 PASS. Evidence
+.runtime/cloud-startup-handshake-092: full **2,899 PASS, 0 fail/skip/cancel; strict TS exit 0**.
+Also covered close-after-initialized-before-commit, observer installation failure, explicit
+cancellation, cleanup/disposer failures and already-aborted ownership cleanup. No child
+process or actual pipe was spawned; cleanupOwned remains a mandatory native-owner contract,
+not a stubbed proof of process reaping or native background task termination.
