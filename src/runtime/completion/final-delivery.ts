@@ -1,8 +1,9 @@
+import type {DeliveryGuard} from "../../store/delivery-receipt-key.ts";
 import {StateAccessFacade as state} from "../../store/state-access-facade.ts";
 import {snapshotStoredDelivery,type StoredDelivery} from "../../store/delivery.ts";
 import {requireDiscordText} from "../../discord/text.ts";
 import {DeliveryFailure} from "../../discord/delivery.ts";
-import {deliverIdempotentChunks,outboxIdentity} from "./delivery-identity.ts";
+import {deliverIdempotentChunks,outboxIdentity,type CompletionDeliveryIdentity} from "./delivery-identity.ts";
 import {sendReceiptChunk,CompletionHeldError,CompletionDeliveryError,isCompletionHeld,type DiscordReceiptTransport} from "./receipt-sender.ts";
 
 export interface CompletionFailureContext {readonly deliveryId:string;readonly stage:"preflight-or-send"}
@@ -36,14 +37,8 @@ export async function deliverFinal(path:string,input:StoredDelivery,options:Fina
       case "GoalProgress":throw new CompletionDeliveryError("final saved behind undelivered goal progress; no final POST attempted");
       case "Ready":break;
     }
-    if(pending.channelId<=0n)throw new CompletionChannelIdError();
     const guard=Object.freeze({jobId:pending.jobId,threadId:pending.targetThreadId,turnId:pending.turnId});
-    try{
-      await deliverIdempotentChunks(pending.content,{retryDelaysMs:[],chunkMarkers:true},outboxIdentity(pending.deliveryId),chunk=>sendReceiptChunk(path,transport,pending.channelId,chunk,[],guard));
-    }catch(error){
-      if(error instanceof DeliveryFailure){if(isCompletionHeld(error.source))throw error.source;throw new CompletionChunkFailure(error);}
-      throw error;
-    }
+    await sendCompletionText(path,transport,pending.channelId,outboxIdentity(pending.deliveryId),pending.content,guard);
   }catch(error){
     if(isCompletionHeld(error))throw error;
     const timestamp=now();
@@ -60,4 +55,12 @@ export async function attemptAllFinals<T>(items:Iterable<T>,attempt:(item:T)=>Pr
   let failed=false,first:unknown;
   for(const item of items){try{await attempt(item);}catch(error){if(!failed){failed=true;first=error;}}}
   if(failed)throw first;
+}
+
+/** Shared source send_idempotent_text boundary for final and progress delivery. */
+export async function sendCompletionText(path:string,transport:DiscordReceiptTransport,channel:bigint,identity:CompletionDeliveryIdentity,text:string,guard:DeliveryGuard):Promise<void>{
+  if(typeof channel!=="bigint"||channel<=0n||channel>=(1n<<63n))throw new CompletionChannelIdError();
+  const fixedGuard=Object.freeze({jobId:guard.jobId,threadId:guard.threadId,turnId:guard.turnId});
+  try{await deliverIdempotentChunks(text,{retryDelaysMs:[],chunkMarkers:true},identity,chunk=>sendReceiptChunk(path,transport,channel,chunk,[],fixedGuard));}
+  catch(error){if(error instanceof DeliveryFailure){if(isCompletionHeld(error.source))throw error.source;throw new CompletionChunkFailure(error);}throw error;}
 }

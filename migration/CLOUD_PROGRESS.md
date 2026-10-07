@@ -1157,3 +1157,20 @@ hash/trim semantics, saved-owner retention, strict sequence barrier, held target
 failed insert rollback, borrowed transaction preservation and native missing-table
 errors. Empty source commentary is intentionally preserved. No HTTP or runtime
 commentary loop is connected by this storage slice.
+
+## 2026-10-07 — Ordered commentary receipt delivery
+
+Connected delivery_order.rs: New readiness, then original visible first reply,
+then earlier same-job commentary are checked through owned state entrypoints.
+The immutable commentary snapshot is sent with its source domain/trimmed digest,
+heading and New claim guard. The shared chunk sender now serves final and progress
+paths. Sequence retirement occurs only after confirmed chunks. A pending batch
+continues unrelated jobs after the first error; later same-job items remain held.
+
+Evidence .runtime/cloud-commentary-delivery-059: 6 new cases / 17 focused with
+final delivery, full **2,629 PASS, 0 fail/skip/cancel; strict TS exit 0**. Tests use
+isolated SQLite and mandatory fake transport, including original ACK/New barriers,
+retirement failure and confirmed-receipt reentry, failed-job isolation and zero-read
+caller accessors. Production scheduler/log dispatch, real HTTP/full decoder and
+native cancellation are still unfinished; separate owned reads are source behavior,
+not an atomic authorization snapshot or permission to bypass the receipt writer.
