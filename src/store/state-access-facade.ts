@@ -1,3 +1,4 @@
+import * as CompletionMetadata from "./completion-metadata.ts";
 import * as StartNoticeOutbox from "./start-notice-outbox.ts";
 import * as CommentaryOutbox from "./commentary-outbox.ts";
 import * as DeliveryPreflight from "./delivery-preflight.ts";
@@ -87,6 +88,8 @@ export const hasPendingCommentary: typeof CommentaryOutbox.hasPendingCommentary 
 export const completeCommentary: typeof CommentaryOutbox.completeCommentary = CommentaryOutbox.completeCommentary;
 export const pendingStartNotices: typeof StartNoticeOutbox.pendingStartNotices = StartNoticeOutbox.pendingStartNotices;
 export const completeStartNotice: typeof StartNoticeOutbox.completeStartNotice = StartNoticeOutbox.completeStartNotice;
+export const completionPage: typeof CompletionMetadata.completionPage = CompletionMetadata.completionPage;
+export const completionHeadsForTarget: typeof CompletionMetadata.completionHeadsForTarget = CompletionMetadata.completionHeadsForTarget;
 export const finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight = DeliveryPreflight.finalDeliveryPreflight;
 export const pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply = DeliveryPreflight.pendingFirstReply;
 
@@ -198,6 +201,8 @@ export interface IStateAccessFacade {
   readonly completeCommentary: typeof CommentaryOutbox.completeCommentary;
   readonly pendingStartNotices: typeof StartNoticeOutbox.pendingStartNotices;
   readonly completeStartNotice: typeof StartNoticeOutbox.completeStartNotice;
+  readonly completionPage: typeof CompletionMetadata.completionPage;
+  readonly completionHeadsForTarget: typeof CompletionMetadata.completionHeadsForTarget;
   readonly finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight;
   readonly pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply;
 
@@ -355,6 +360,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   completeCommentary,
   pendingStartNotices,
   completeStartNotice,
+  completionPage,
+  completionHeadsForTarget,
   finalDeliveryPreflight,
   pendingFirstReply,
   admitIngress,

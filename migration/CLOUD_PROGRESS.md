@@ -1208,3 +1208,30 @@ commentary failure, final-list decoder precedence and timestamp/job ordering.
 All HTTP remains injected. These source inventory utilities are unbounded; the
 separate bounded scheduler/metadata discovery is not yet ported, and the utilities
 must not be presented as the completed production scheduling or latency contract.
+
+## 2026-10-07 — Bounded completion metadata pages
+
+Ported completion_work.rs source selectors/receipt-head predicates (mechanically
+copied exact string values from pinned SHA 9652d8f9100b373108713dab5c4ac200cec7b572d38c1d8b2a6a4a1789033378),
+32-entry pages, one source/lane head, 4096-byte identity filter and fixed pass high-water.
+Payloads are represented only by byte lengths; over-budget bodies remain durable.
+Unknown/blocked receipts retain their source head instead of promoting a later sibling.
+The TS API returns a new opaque immutable cursor, leaving input untouched on failure;
+this is an explicit ownership adaptation of the source's mutable cursor.
+
+Owned inventory entrypoints join StateAccessFacade (106 functions). Borrowed page
+reads retain the caller transaction. Standalone page/target-head APIs preserve the
+source initialized read transaction. The bounded scheduler's lazy CheckedRead round,
+orphan negative-only preflight, payload revalidation/loading and lane scheduler are
+STILL UNFINISHED; these metadata hints grant no execution or send authority. Phase-1
+target lookup intentionally preserves ranking-before-target-filter; newer Rust's
+changed Final ranking is separately queued for phase 2.
+
+Evidence .runtime/cloud-completion-metadata-062: 14 new cases / 22 focused, full
+**2,658 PASS, 0 fail/skip/cancel; strict TS exit 0**. Covers every source, high-water
+append isolation, same-channel held heads, retry/blocked/confirmed receipts, invalid
+receipt JSON, oversized Unicode metadata/body, runtime/generation question filtering,
+orphan ownership, UTF-8 compound receipt prefixes, transaction/cursor preservation
+and phase-1 target ranking. Initial malformed-data fixture attempted a forbidden NULL;
+changed fixture to invalid non-NULL channel, retained original RED, no DDL relaxation.
+No SQL execution-cost, memory peak, Windows or fresh Rust executable certification.
