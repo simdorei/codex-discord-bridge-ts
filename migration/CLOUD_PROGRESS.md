@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **2,152 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **2,173 tests passed**, no failures/skips;
 strict TypeScript passed. Migration and Windows/live transport validation remain incomplete.
 
 ## Baseline
@@ -167,3 +167,38 @@ old-generation head blocking, shared-lock concurrency, restart drain occupancy a
 cross-thread progress. Full Linux suite: 2,152 passed; strict TS passed. No real
 Discord/Codex network call or process restart was performed.
 Latest logs: `.runtime/cloud-start-006/`.
+
+
+## Completion prerequisites: inbox ownership and typed proof decoding
+
+The completion-owned inbox reconciliation now preserves exact generation,
+attempt, channel, user and unique non-pending queue ownership before any job
+removal. Seven real SQLite tests verify rejection, legacy fallback, existing-row
+preservation and caller rollback. The caller must supply an active transaction.
+
+Typed evidence decoding preserves required-field Serde struct semantics: map or
+positional sequence, duplicate known-field rejection (including escaped aliases),
+exact i64, and nested Value semantics. Unknown values are lexically validated but
+not incorrectly subjected to Value numeric/Unicode/depth rules. Known values
+share the parent struct recursion budget. This is deliberately not a general
+Serde derive implementation (no Option/default/flatten/custom visitors).
+
+Authority: pinned Rust ownership.rs and terminal.rs; serde_json 1.0.151 source
+from the official crates.io archive, verified against Cargo.lock checksum
+`c841b55ecdae098c80dcae9cf767f6f8a0c2cdb3416bbef72181df4d0fe73f14`.
+Relevant functions: deserialize_struct, ignore_value/ignore_integer/ignore_escape,
+parse_number, check_recursion. These are source-based tests, not a new Rust
+executable differential run. Fresh Rust execution remains unavailable.
+
+The pure terminal-proof check binds canonical terminal identity/status, exact
+observer/generation/claim/revision, source, owner verification and canonical hash.
+Unknown metadata remains retained. Pure decoding does not establish live ownership
+or authorize settlement; transaction-level conflict/owner checks are still pending.
+Seven parser and seven proof tests were added. Full Linux suite: 2,173 PASS,
+zero failures/skips; strict TypeScript passed. Logs: `.runtime/cloud-proof-009/final/`.
+
+Review also corrected a misleading precondition error in late-start binding:
+a missing transaction now reports StoreIntegrityError requiring a transaction,
+not the opposite migration-only ActiveTransactionError. No guard was weakened.
+Completion/outbox settlement, recovery, intake promotion, transport integration,
+Windows and live deployment remain incomplete.

@@ -4,7 +4,7 @@ import type { DatabaseSync } from "node:sqlite";
 import { storeFixture } from "../helpers/store-fixture.ts";
 import { queueJob } from "../helpers/queue-job.ts";
 import { StateAccessFacade as state } from "../../src/store/state-access-facade.ts";
-import { openInitialized, ActiveTransactionError } from "../../src/store/owned-driver.ts";
+import { openInitialized } from "../../src/store/owned-driver.ts";
 import { selectJob } from "../../src/store/queue-read.ts";
 import type { StoredQueueJob } from "../../src/store/queue-read.ts";
 import { holdIn } from "../../src/store/execution-hold.ts";
@@ -129,7 +129,7 @@ test("an existing stop control is neither widened nor replaced", async () => {
 test("late binding requires an active writer transaction", async () => {
   await storeFixture(async path => {
     const before = await claimed(path); const db = await openInitialized(path);
-    try { assert.throws(() => bindLateStartIn(db, before, before, "resident"), ActiveTransactionError); }
+    try { assert.throws(() => bindLateStartIn(db, before, before, "resident"), /Borrowed mutation requires an active transaction/); }
     finally { db.close(); }
   });
 });

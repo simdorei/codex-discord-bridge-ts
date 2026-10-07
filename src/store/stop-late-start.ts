@@ -5,7 +5,6 @@ import { serializeSerdeValue } from "../core/serde-json.ts";
 import { selectJob, serializeStoredQueueJob } from "./queue-read.ts";
 import type { StoredQueueJob } from "./queue-read.ts";
 import { StoreIntegrityError } from "./schema-assembly.ts";
-import { ActiveTransactionError } from "./owned-driver.ts";
 import { decodeTextField, textDecoderFor, decodeI64, decodeOptionalI64, decodeTimestamp } from "./sqlite-values.ts";
 import { asI64, getOwn, isJsonObject } from "./async-resolution-json-helpers.ts";
 import { trimUnicodeWhitespace as trim } from "./queue-preflight-failure.ts";
@@ -30,7 +29,7 @@ function revisionRefused(): StoreIntegrityError {
 }
 
 function latestScope(db: DatabaseSync, target: string): readonly [string, string] | null {
-  if (!db.isTransaction) throw new ActiveTransactionError();
+  if (!db.isTransaction) throw new StoreIntegrityError("Borrowed mutation requires an active transaction");
   const clock = one(db, `SELECT count(*) AS n,COALESCE(max(revision),-1) AS current,
     (SELECT COALESCE(max(revision),0) FROM cdr_stop_revision_receipts) AS maximum
     FROM cdr_stop_clock WHERE singleton=1`)!;
