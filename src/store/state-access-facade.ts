@@ -10,6 +10,7 @@ import * as QueueClaims from "./queue-claims.ts";
 export const tryBeginAttempt: typeof QueueClaims.tryBeginAttempt = QueueClaims.tryBeginAttempt;
 export const recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed = QueueClaims.recordStartFailureIfClaimed;
 export const markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed = QueueClaims.markRunningIfClaimed;
+export const markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed = QueueClaims.markRunningWithResidentIfClaimed;
 
 export const listFiltered: typeof QueueRead.listFiltered = QueueRead.listFiltered;
 export const eligibleJobs: typeof ExecutionHold.eligibleJobs = ExecutionHold.eligibleJobs;
@@ -39,6 +40,7 @@ export interface IStateAccessFacade {
   readonly tryBeginAttempt: typeof QueueClaims.tryBeginAttempt;
   readonly recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed;
   readonly markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed;
+  readonly markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed;
   readonly listFiltered: typeof QueueRead.listFiltered;
   readonly eligibleJobs: typeof ExecutionHold.eligibleJobs;
   readonly asyncAdmissionHeld: typeof AsyncAdmission.asyncResolutionAdmissionHeld;
@@ -59,6 +61,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   tryBeginAttempt,
   recordStartFailureIfClaimed,
   markRunningIfClaimed,
+  markRunningWithResidentIfClaimed,
   listFiltered,
   eligibleJobs,
   asyncAdmissionHeld,

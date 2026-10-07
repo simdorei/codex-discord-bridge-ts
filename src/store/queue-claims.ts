@@ -15,6 +15,7 @@ import { matchingBaselineJsonIn } from "./queue-baseline.ts";
 import { trimUnicodeWhitespace, takeUnicodeScalarChars } from "./queue-preflight-failure.ts";
 import { stageStartNoticeIn } from "./start-notice-stage.ts";
 import { StoreIntegrityError } from "./schema-assembly.ts";
+import { bindLateStartIn } from "./stop-late-start.ts";
 
 interface Decision<T> { readonly value: T; readonly commit: boolean; }
 
@@ -142,7 +143,14 @@ export async function recordStartFailureIfClaimed(
 export async function markRunningIfClaimed(
   path: string, claimed: StoredQueueJob, turnId: string,
 ): Promise<StoredQueueJob | null> {
+  return markRunningWithResidentIfClaimed(path, claimed, turnId, null);
+}
+
+export async function markRunningWithResidentIfClaimed(
+  path: string, claimed: StoredQueueJob, turnId: string, resident: string | null,
+): Promise<StoredQueueJob | null> {
   text(path); text(turnId);
+  if (resident !== null) text(resident);
   const claim = claimSnapshot(claimed);
   return withWriter(path, db => {
     ensureForkHandoffTable(db);
@@ -153,8 +161,10 @@ export async function markRunningIfClaimed(
       turn_observation_generation=app_server_generation, goal_waiting=0,
       turn_id=?, updated_at=? ${CLAIMED_WHERE}`).run(turnId, now(), claim.jobId,
       claim.targetThreadId, claim.appServerGeneration, claim.attemptCount, claim.updatedAt, baseline);
-    if ((updated.changes === 1 || updated.changes === 1n) && selectJob(db, claim.jobId).turnId !== turnId) {
-      throw new StoreIntegrityError("queue ACK turn differs from backend response; original Starting preserved");
+    if (updated.changes === 1 || updated.changes === 1n) {
+      const running = selectJob(db, claim.jobId);
+      if (running.turnId !== turnId) throw new StoreIntegrityError("queue ACK turn differs from backend response; original Starting preserved");
+      if (resident !== null) bindLateStartIn(db, claim, running, resident);
     }
     return claimedResult(db, claim.jobId, updated.changes);
   });

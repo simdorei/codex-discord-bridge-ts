@@ -46,6 +46,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.tryBeginAttempt, QueueClaims.tryBeginAttempt);
     assert.strictEqual(StateAccessFacade.recordStartFailureIfClaimed, QueueClaims.recordStartFailureIfClaimed);
     assert.strictEqual(StateAccessFacade.markRunningIfClaimed, QueueClaims.markRunningIfClaimed);
+    assert.strictEqual(StateAccessFacade.markRunningWithResidentIfClaimed, QueueClaims.markRunningWithResidentIfClaimed);
   });
 
   it("exposes exact direct function references via named whole-function aliases", () => {
@@ -79,13 +80,14 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "listFiltered",
       "markRunning",
       "markRunningIfClaimed",
+      "markRunningWithResidentIfClaimed",
       "openCheckedRead",
       "recordStartFailureIfClaimed",
       "tryBeginAttempt",
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected);
-    assert.strictEqual(actual.length, 15);
+    assert.strictEqual(actual.length, 16);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

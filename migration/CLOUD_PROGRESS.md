@@ -119,3 +119,26 @@ or Windows run. Clock precision remains Date.now milliseconds, unlike Rust's
 submillisecond SystemTime. Typed AsyncResolutionHeld errors are defined here;
 complete central runtime error routing remains unfinished.
 Latest logs: `.runtime/cloud-claims-004/`.
+
+## Resident ACK and previously accepted Stop custody
+
+`markRunningWithResidentIfClaimed` now binds an exact late ACK within the same
+IMMEDIATE writer transaction. `stop-late-start.ts` follows the pinned Rust
+late-start helper and its revision, binding/mapping, hold-snapshot and intake-read
+dependencies. It verifies the global/per-target stop revision, original job and
+owner, accepted scope, existing hold, new turn and resident. Existing controls
+are not widened or replaced. Insertion is followed by checks of pristine control
+state, exact record retention, hold/job identity and unchanged latest scope.
+Any failure rolls back both ACK and control receipt. It performs no interrupt.
+
+StopControl JSON retains struct field order and opaque serialized job strings.
+Settlement eligibility is false for broad/missing scope evidence or queue/intake
+ID collision; the intake presence check decodes the full row rather than hiding
+corrupt data behind SELECT EXISTS.
+
+Full Linux suite: 2,130 passed, zero failed/skipped; strict TypeScript passed.
+11 new DB tests cover ownership/turn limits, revisions, mapped/selected routes,
+malformed scope/intake, collision, ignored inserts and hostile post-insert triggers.
+This does not implement Stop acceptance/dispatch/terminal recovery as a whole.
+Fresh Rust differential execution and Windows validation remain open.
+Latest logs: `.runtime/cloud-late-stop-005/`.
