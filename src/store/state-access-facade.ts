@@ -1,3 +1,4 @@
+import * as CompletionRound from "./completion-metadata-round.ts";
 import * as CompletionMetadata from "./completion-metadata.ts";
 import * as StartNoticeOutbox from "./start-notice-outbox.ts";
 import * as CommentaryOutbox from "./commentary-outbox.ts";
@@ -90,6 +91,7 @@ export const pendingStartNotices: typeof StartNoticeOutbox.pendingStartNotices =
 export const completeStartNotice: typeof StartNoticeOutbox.completeStartNotice = StartNoticeOutbox.completeStartNotice;
 export const completionPage: typeof CompletionMetadata.completionPage = CompletionMetadata.completionPage;
 export const completionHeadsForTarget: typeof CompletionMetadata.completionHeadsForTarget = CompletionMetadata.completionHeadsForTarget;
+export const readCompletionMetadataRound: typeof CompletionRound.readCompletionMetadataRound = CompletionRound.readCompletionMetadataRound;
 export const finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight = DeliveryPreflight.finalDeliveryPreflight;
 export const pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply = DeliveryPreflight.pendingFirstReply;
 
@@ -203,6 +205,7 @@ export interface IStateAccessFacade {
   readonly completeStartNotice: typeof StartNoticeOutbox.completeStartNotice;
   readonly completionPage: typeof CompletionMetadata.completionPage;
   readonly completionHeadsForTarget: typeof CompletionMetadata.completionHeadsForTarget;
+  readonly readCompletionMetadataRound: typeof CompletionRound.readCompletionMetadataRound;
   readonly finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight;
   readonly pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply;
 
@@ -362,6 +365,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   completeStartNotice,
   completionPage,
   completionHeadsForTarget,
+  readCompletionMetadataRound,
   finalDeliveryPreflight,
   pendingFirstReply,
   admitIngress,

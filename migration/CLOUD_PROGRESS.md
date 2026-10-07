@@ -1254,3 +1254,26 @@ byte preflight and cumulative budget, no evidence mutation and decode-error orig
 Initial corrupt fixtures tried to update immutable claims; replaced with initial
 malformed inserts, retained RED, no production trigger or validation weakened.
 The lazy metadata round/scheduler connection is still pending; no RPC is authorized.
+
+## 2026-10-07 — Lazy checked metadata read rounds
+
+Ported completion_work/round.rs: lazily open one CheckedRead, allow each of eight
+sources once, clone cursors, recheck snapshot liveness after every page/negative
+preflight, and finish before returning staged results. Open/liveness failure is
+sticky and the original failure wins at round completion. Orphan sidecar is bounded
+to one <=32-entry AsyncOrphan page and grants negative hints only. Retained readers
+expire after callback completion. No requested page means no connection or file.
+StateAccessFacade now exposes 107 owned entrypoints.
+
+The callback is trusted synchronous code and must stage, not publish, its changes
+until this function succeeds. Direct async/generator/proxy callbacks and native
+Promise returns are rejected and their rejection drained; this is not a sandbox or cancellation of arbitrary
+work launched by caller code. The scheduler's own ready-draft commit/rollback layer
+is still unfinished, as are payload loading and state/HTTP lanes.
+
+Evidence .runtime/cloud-metadata-round-064: 9 new cases / 17 focused, full
+**2,675 PASS, 0 fail/skip/cancel; strict TS exit 0**. Real read-only snapshots plus
+explicit test-only liveness/finish fault injection verify lazy opening, one snapshot,
+source caps, post-page invalidation, original failure precedence, no result return
+on finish failure, bounded orphan sidecar and expired readers. No runtime scheduler
+or live RPC/HTTP was started; no performance/Windows certification.

@@ -167,6 +167,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
   it("contains only the supplied writes, CheckedRead.open and async admission reads", () => {
     const expected = [
+      "readCompletionMetadataRound",
       "completionPage", "completionHeadsForTarget",
       "pendingStartNotices", "completeStartNotice",
       "stageCommentary", "pendingCommentary", "hasPendingCommentary", "completeCommentary",
@@ -271,7 +272,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 106);
+    assert.strictEqual(actual.length, 107);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
