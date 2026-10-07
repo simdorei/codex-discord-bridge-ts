@@ -459,3 +459,30 @@ Final combined target for this slice: **2,311 tests PASS, 0 fail/skip/cancel;
 strict TypeScript exit 0** on pinned Node 24.21.0. This is isolated SQLite/pure and
 injected-backend runtime evidence, not full bridge readiness. Existing hook hashes
 remain unchanged. Phase-2 contract registration above does not alter phase-1 pin.
+
+## 2026-10-07: new-thread intake admission and busy-choice receipts
+
+Implemented the source-backed atomic new-thread admission: original prepared input,
+actor/event identity and recorded creation generation are verified before managed
+ownership, intake handoff and optional acknowledgement seed are committed together.
+The existing Windows-native-path seed adapter is reused; this adds no Linux-native
+path certification. Optional reply data is snapshotted before asynchronous opens.
+
+Busy-choice creation/read/claim/release/count/cleanup and busy-queue admission now
+preserve the original route and exact displayed choice. Acceptance, intake and
+canonical owner receipt share a transaction. Receipt repeats return no intake
+preparation authority even after transient choice/intake removal; no automatic
+replay is inferred. Expired/corrupt rows are decoded before cleanup as in Rust.
+Exact-room mapping duplicates fail, while one project fallback is retained.
+
+Additional pinned Rust authorities: prompt_intake/{new_thread,busy_queue}.rs,
+claims.rs, claims/creation.rs, mapping/thread.rs, ingress/ownership.rs and
+new_reply/intent.rs. State implementations reuse the existing managed-target,
+intake writer and reply-seed primitives. End-to-end Discord component admission,
+control routing and intake preparation worker remain unfinished. Busy-choice
+receipt serialization preserves typed field order; no fresh Rust binary oracle
+was run. Evidence is in .runtime/cloud-intake-new-thread-022 and
+.runtime/cloud-intake-busy-023, including 17 focused tests.
+Final combined target: **2,328 tests PASS, 0 fail/skip/cancel; strict TS exit 0**.
+This is isolated SQLite/pure/injected-backend evidence; full bridge and deployment
+remain unfinished. No source, live service or configuration on 5060 was changed.
