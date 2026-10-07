@@ -1292,3 +1292,21 @@ Evidence .runtime/cloud-question-read-065: 5 new cases, full **2,680 PASS,
 0 fail/skip/cancel; strict TS exit 0**. Large integer/default/null fields, u16 limits,
 scalar-before-JSON failure order, duplicate body fields, exact optional strings,
 caller transaction and malformed BLOB/missing-row cases pass on isolated SQLite.
+
+## 2026-10-07 — Bounded completion payload loading
+
+Ported completion_work/payload.rs and current-entry lookup. A deferred read snapshot
+rechecks the full metadata entry against the current eligible source head before
+loading any selected body, rejects payloads above 2MiB, then uses typed readers for
+Observed/commentary/Goal/start notice/question/final records. Queue/orphan hints do
+not produce a delivery payload. Caller hints are captured before asynchronous open.
+Metadata equality deliberately does not certify content bytes or receipt authority;
+same-length edits are read as current content and still require later claim checks.
+
+Evidence .runtime/cloud-completion-payload-066: 9 new cases / 17 focused, reviewed
+full **2,689 PASS, 0 fail/skip/cancel; strict TS exit 0**. Covers stale identity/head,
+new unknown receipt suppression, inclusive byte bound, retained oversized evidence,
+all payload variants, runtime/generation scope and getter-free hint capture. Earlier
+test-file syntax errors and RED logs retained; corrected tests do not weaken source
+checks. Missing rows inside the read snapshot use an explicit TS integrity adapter;
+full native error-taxonomy parity, scheduler and real transports remain unfinished.

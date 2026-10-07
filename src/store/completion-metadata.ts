@@ -1,3 +1,4 @@
+import {types} from "node:util";
 import type {DatabaseSync} from "node:sqlite";
 import {openInitialized} from "./owned-driver.ts";
 import {receiptRow,receiptText,receiptTextColumns,receiptExists} from "./delivery-receipt-key.ts";
@@ -53,4 +54,27 @@ export async function completionHeadsForTarget(path:string,target:string,runtime
       if(row!==undefined)result.push(readEntry(source,row));
     }return result;
   }finally{if(db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close abandons read */}}db.close();}
+}
+
+/** Stable typed hint boundary; still no authority token. */
+export function snapshotCompletionEntry(input:CompletionEntry):CompletionEntry{
+  const field=(value:unknown,key:string):unknown=>{
+    if(value===null||typeof value!=="object"||types.isProxy(value))throw new TypeError("Expected metadata record");
+    const d=Object.getOwnPropertyDescriptor(value,key);if(!d||!Object.hasOwn(d,"value"))throw new TypeError("Expected own metadata field");return d.value;
+  };
+  const string=(value:unknown):string=>{text(value);return value;};
+  const integer=(value:unknown):bigint=>{generation(value);return value;};
+  const source=field(input,"source");requireCompletionSource(source);
+  const rawPosition=field(input,"position"),stamp=field(rawPosition,"stamp");if(typeof stamp!=="number")throw new TypeError("Expected metadata timestamp");
+  const position=Object.freeze({stamp,ordinal:integer(field(rawPosition,"ordinal")),id:string(field(rawPosition,"id"))});
+  const bytes=field(input,"bytes");if(typeof bytes!=="bigint"||bytes<0n||bytes>=(1n<<64n))throw new TypeError("Expected usize metadata bytes");
+  return Object.freeze({source,id:string(field(input,"id")),target:string(field(input,"target")),turn:string(field(input,"turn")),channel:integer(field(input,"channel")),bytes,position});
+}
+export function equalCompletionEntry(a:CompletionEntry,b:CompletionEntry):boolean{
+  return sameCompletionIdentity(a,b)&&a.channel===b.channel&&a.bytes===b.bytes&&a.position.stamp===b.position.stamp&&a.position.ordinal===b.position.ordinal&&a.position.id===b.position.id;
+}
+export function currentCompletionEntryIn(db:DatabaseSync,input:CompletionEntry,runtime:string,gen:bigint):CompletionEntry|null{
+  const entry=snapshotCompletionEntry(input);text(runtime);generation(gen);
+  const row=receiptRow(db,`${completionMetadataQuery(entry.source)} SELECT ${entryColumns} FROM candidates WHERE id=?3 AND target=?4 AND turn=?5`,runtime,gen,entry.id,entry.target,entry.turn);
+  return row===undefined?null:readEntry(entry.source,row);
 }
