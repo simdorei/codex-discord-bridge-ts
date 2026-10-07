@@ -1277,3 +1277,18 @@ explicit test-only liveness/finish fault injection verify lazy opening, one snap
 source caps, post-page invalidation, original failure precedence, no result return
 on finish failure, bounded orphan sidecar and expired readers. No runtime scheduler
 or live RPC/HTTP was started; no performance/Windows certification.
+
+## 2026-10-07 — Typed async-question occurrence reader
+
+Ported async_question.rs Question/read as a borrowed read-only leaf for the upcoming
+bounded payload loader. Scalar fields are decoded before body JSON, chosen is exact
+optional u16 (not arbitrary u64), and the existing strict Serde QuestionBody decoder
+preserves defaults/duplicate-field rules. This grants no ownership or dispatch right.
+Node's undefined-on-missing result is represented by AsyncQuestionNotFoundError with
+QueryReturnedNoRows kind; it is explicitly a TS adapter, not a native SQLite exception
+or completed cross-language error-taxonomy certification.
+
+Evidence .runtime/cloud-question-read-065: 5 new cases, full **2,680 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Large integer/default/null fields, u16 limits,
+scalar-before-JSON failure order, duplicate body fields, exact optional strings,
+caller transaction and malformed BLOB/missing-row cases pass on isolated SQLite.
