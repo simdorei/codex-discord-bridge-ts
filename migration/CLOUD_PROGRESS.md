@@ -1330,3 +1330,27 @@ Evidence .runtime/cloud-ready-queues-067: 10 new pure tests, full **2,699 PASS,
 0 fail/skip/cancel; strict TS exit 0**. Covers capacity/eviction, target FIFO,
 channel serialization, native-slot reservation, permit disposal, busy-hint removal,
 priority replacement and mutation-resistant routing. No network or live process.
+
+## 2026-10-07 — Transactional metadata discovery drafts
+
+Ported Scan discovery, rotated metadata rounds and ReadyDraft semantics. Existing
+pending hints are offered before reading; a full ready queue retains the complete
+unoffered page and blocks further reads. Finished Queue/orphan scans wait 30s and
+other sources 1s, unless explicitly woken; wake does not interrupt the current finite
+high-water pass. Per-source failures revert only that source's speculative tail;
+common snapshot/finish failure reverts all cursor/pending/rotation updates and tails.
+Existing live references/permits are never cloned, displaced or released by drafts.
+
+Orphan negatives are returned only for exact newly appended positions from that
+same page. Discard touches only matching durable orphan hints, never evidence or
+live work. Unoffered pending entries deliberately carry no negative facts into a
+later snapshot. Runtime must consume sidecars synchronously before await/dispatch.
+Append-only synchronous TS draft callbacks are required; they are not a sandbox for
+arbitrary caller code. No state/HTTP task launch, timers or server logger installed.
+
+Evidence .runtime/cloud-discovery-drafts-068: 10 new cases / 20 focused, full
+**2,709 PASS, 0 fail/skip/cancel; strict TS exit 0**. Actual SQLite plus a test-only
+finish fault verify rollback, lazy no-file rounds, duplicate-source isolation,
+backpressure, finite wake passes, rotation and orphan evidence retention. Initial
+tests assumed a nonexistent list alias and one-page restart; corrected to actual
+SQL count and bounded two-page behavior, original RED logs retained.
