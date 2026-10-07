@@ -1519,3 +1519,26 @@ indeterminate/stale rejection, capacity without eviction, ordered filtering, num
 metadata distinction, immutable copies, single-event-loop claim races and forged
 occurrence/accessor refusal. Initial alias-narrowing type error retained and corrected
 using the existing validator's returned RequestId, with no runtime guard weakening.
+
+## 2026-10-07 — Sequenced notification observations and settings
+
+Ported notification recording/active-turn tracking, idle_observation.rs,
+observation_window.rs and settings.rs into one transient notification owner. The
+1,000-occurrence ring never substitutes payload equality for source sequence.
+Legacy ACK must match the next exact item; skipped/evicted observations retain a gap.
+Source windows keep fixed upper bounds, cap at 32 entries/2MiB and retain the exact
+position of a payload that cannot fit. Settings expire on unload/close/eviction.
+
+Windows remain identity-unbound (empty owner, generation zero), matching the lower
+source layer: parent runtime must bind them before durable ledger use. Prefix
+certification is a TRUSTED internal transition requiring proven journal evidence,
+not permission provided by the window or raw input. Process lifecycle, exit proof,
+server replacement and actual observer/ledger integration remain unfinished. The
+ring count is not a total heap bound. Shared immutable Serde copies retain numeric
+representation without JSON stringify/parse roundtrip.
+
+Evidence .runtime/cloud-notification-state-078: 11 new cases / 21 focused, full
+**2,788 PASS, 0 fail/skip/cancel; strict TS exit 0**. Ordered ACK/gaps, active turns,
+fixed-window duplicate occurrences, eviction/oversize positions, settings invalidation,
+immutable copies and getter refusal pass. u64 exhaustion is tested at the pure checked
+increment boundary, not by generating 2^64 live events. No idle release or process action.

@@ -1,6 +1,6 @@
 import {types} from "node:util";
 import {ServerRequestOccurrence,requestIdKey,validateRequestId,type RequestId} from "../protocol/ids.ts";
-import {boundedSerdeByteCount} from "../core/serde-byte-count.ts";
+import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
 import {serdeValueEqual} from "../core/serde-value-equal.ts";
 import {rustDebugString} from "../core/rust-debug.ts";
 import {extractThreadId} from "./identity.ts";
@@ -12,13 +12,12 @@ export class ServerResponseStateError extends Error{
   constructor(kind:ServerResponseStateError["kind"],id:RequestId){const debug=typeof id==="string"?`String(${rustDebugString(id)})`:`Integer(${id})`;super(`app-server request ${debug} ${kind==="StaleServerRequest"?"is stale or no longer pending":kind==="ServerRequestResponseInFlight"?"already has a response in flight":"response delivery is indeterminate"}`);this.name="ServerResponseStateError";this.kind=kind;this.id=id;}
 }
 function occurrenceHex(value:ServerRequestOccurrence):string{return Buffer.from(ServerRequestOccurrence.prototype.asBytes.call(value)).toString("hex");}
-function freeze(value:unknown):void{if(value===null||typeof value!=="object")return;for(const name of Object.getOwnPropertyNames(value)){const d=Object.getOwnPropertyDescriptor(value,name)!;if(Object.hasOwn(d,"value"))freeze(d.value);}Object.freeze(value);}
 function copy(input:PendingServerRequest):PendingServerRequest{
   if(input===null||typeof input!=="object"||types.isProxy(input))throw new TypeError("Expected server request record");
   const field=(name:string):unknown=>{const d=Object.getOwnPropertyDescriptor(input,name);if(!d||!Object.hasOwn(d,"value"))throw new TypeError("Expected own request field");return d.value;};
   const id=validateRequestId(field("id")),method=field("method"),params=field("params"),occurrence=field("occurrence") as ServerRequestOccurrence;
-  if(typeof method!=="string"||/[\uD800-\uDFFF]/u.test(method)||boundedSerdeByteCount(params,Number.MAX_SAFE_INTEGER)===null)throw new TypeError("Expected decoded Serde request metadata");
-  const token=ServerRequestOccurrence.fromBytes(ServerRequestOccurrence.prototype.asBytes.call(occurrence));Object.freeze(token);const owned=structuredClone(params);freeze(owned);return Object.freeze({id,occurrence:token,method,params:owned});
+  if(typeof method!=="string"||/[\uD800-\uDFFF]/u.test(method))throw new TypeError("Expected decoded Serde request metadata");
+  const token=ServerRequestOccurrence.fromBytes(ServerRequestOccurrence.prototype.asBytes.call(occurrence));Object.freeze(token);const owned=cloneOwnedSerdeValue(params);return Object.freeze({id,occurrence:token,method,params:owned});
 }
 interface Key{idKey:string;occurrence:string;key:string}
 const key=(id:RequestId,occurrence:ServerRequestOccurrence):Key=>{const idKey=requestIdKey(id),hex=occurrenceHex(occurrence);return {idKey,occurrence:hex,key:JSON.stringify([idKey,hex])};};
