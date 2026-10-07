@@ -2,7 +2,7 @@ import {types} from "node:util";
 import {AppServerClosedError} from "./client-errors.ts";
 declare const permitBrand:unique symbol;
 export interface ClientAdmissionPermit{readonly [permitBrand]:true;release():void}
-interface PermitData{owner:ClientLifecycle;released:boolean}
+interface PermitData{owner:ClientLifecycle;released:boolean;moved:boolean}
 const permits=new WeakMap<object,PermitData>();
 export class ClientLifecyclePoisonedError extends Error{readonly kind="LifecyclePoisoned";constructor(){super("client lifecycle gate is poisoned");this.name="ClientLifecyclePoisonedError";}}
 export class ClientLifecycleReentryError extends Error{constructor(){super("client lifecycle callback must not reenter its gate");this.name="ClientLifecycleReentryError";}}
@@ -17,13 +17,18 @@ export class ClientLifecycle{
   get pendingCloseWaiters():number{return this.#waiters.size;}
   admit():ClientAdmissionPermit{
     this.#lock();if(this.#sealed)throw new AppServerClosedError();if(this.#inFlight===(1n<<64n)-1n)throw new RangeError("client admission count overflow");this.#inFlight++;
-    const data:PermitData={owner:this,released:false};const permit=Object.freeze({release:()=>{
-      if(data.released)return;if(this.#critical)throw new ClientLifecycleReentryError();
+    return this.#newPermit();
+  }
+  #newPermit():ClientAdmissionPermit{
+    const data:PermitData={owner:this,released:false,moved:false};const permit=Object.freeze({release:()=>{
+      if(data.released)return;if(data.moved)throw new TypeError("Client admission permit was transferred");if(this.#critical)throw new ClientLifecycleReentryError();
       if(this.#inFlight===0n)throw new RangeError("client admission count underflow");this.#inFlight--;data.released=true;
     }}) as ClientAdmissionPermit;permits.set(permit,data);return permit;
   }
   /** Ownership check only; sealed/poisoned permits are not new dispatch authority. */
-  requirePermit(permit:ClientAdmissionPermit):void{const data=permit!==null&&typeof permit==="object"?permits.get(permit):undefined;if(data?.owner!==this||data.released)throw new TypeError("Expected current owned client permit");}
+  requirePermit(permit:ClientAdmissionPermit):void{const data=permit!==null&&typeof permit==="object"?permits.get(permit):undefined;if(data?.owner!==this||data.released||data.moved)throw new TypeError("Expected current owned client permit");}
+  /** Transfer existing ownership without changing its count; old handle is revoked. */
+  transferPermit(permit:ClientAdmissionPermit):ClientAdmissionPermit{this.requirePermit(permit);const next=this.#newPermit();permits.get(permit)!.moved=true;return next;}
   seal():void{this.#lock();this.#sealed=true;}
   sealForClose(reason:string):void{text(reason);this.#lock();this.#sealed=true;if(this.#intent===null)this.#intent=reason;}
   sealAndResolveCloseReason(observed:string):string{text(observed);this.#lock();this.#sealed=true;return this.#intent??observed;}

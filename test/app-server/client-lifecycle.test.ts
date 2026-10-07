@@ -31,3 +31,6 @@ test("quiescence rejects async callbacks before launch and drains unsupported na
   let ran=false;const a=new ClientLifecycle();assert.throws(()=>a.sealIfQuiescent((async()=>{ran=true;throw new Error("must not launch");}) as unknown as ()=>boolean),TypeError);assert.equal(ran,false);assert.equal(a.snapshot().poisoned,true);
   const b=new ClientLifecycle();assert.throws(()=>b.sealIfQuiescent((()=>Promise.reject(new Error("unsupported"))) as unknown as ()=>boolean),TypeError);await Promise.resolve();assert.equal(b.snapshot().poisoned,true);
 });
+test("transferring a permit revokes the old handle without changing admission count",()=>{
+  const gate=new ClientLifecycle(),old=gate.admit(),next=gate.transferPermit(old);assert.equal(gate.snapshot().inFlight,1n);assert.throws(()=>old.release(),/transferred/);assert.throws(()=>gate.requirePermit(old),TypeError);gate.requirePermit(next);next.release();assert.equal(gate.snapshot().inFlight,0n);
+});

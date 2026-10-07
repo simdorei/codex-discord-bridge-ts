@@ -1588,3 +1588,29 @@ reconciled runtime snapshot tests, full **2,803 PASS, 0 fail/skip/cancel; strict
 exit 0**. Quiescence short-circuit, permit ownership/cleanup, poisoned admission,
 reentry, intent/publication separation, waiter abort cleanup and unsupported async
 checks pass. Native cross-thread lock and Rust Drop equivalence remain unverified.
+
+## 2026-10-07 — Outgoing pending responses and deadline ownership
+
+Ported client/pending.rs registration capacity 1024, exact internal occurrence cleanup,
+response/transport-close/timeout outcomes and read-versus-mutation cancellation.
+Read disposal removes its own entry immediately; mutation disposal retains the response
+lease until response/deadline/transport closure. Old registration/deadline cleanup
+cannot remove a newer same-ID entry. Producer must still use fresh wire IDs: replies
+carry ID only, and this registry cannot identify a late reply to deliberately reused IDs.
+
+JS ownership is explicit: registration transfers/revokes the caller's permit handle
+without changing the count. Registration rejection releases only verified owned permits.
+Deadline setup failure now rolls back both registry entry and lease (same-test RED/GREEN
+and original source retained). Result disposal uses a typed receiver-closed rejection;
+internal draining avoids unhandled rejection without hiding it from awaiting consumers.
+
+This is integer milliseconds up to Node's native timer ceiling, with zero scheduled as
+a microtask. Nanosecond timing, Rust weak/Drop lifetime and hard cancellation equivalence
+are not certified. Timers own pending state until settlement; callers must perform
+explicit lifecycle cleanup. finish() is trusted completed-operation cleanup, not a way
+to declare an uncertain mutation successful. No wire I/O, retry or process operation.
+
+Evidence .runtime/cloud-pending-responses-081: 11 pending cases plus one permit-transfer
+case / 21 focused, full **2,815 PASS, 0 fail/skip/cancel; strict TS exit 0**. Uses real
+Node timer mocks, exact occurrence races, capacity/duplicate rejection, cancelled-read
+and retained-mutation leases, timer fault injection and no-getter response refusal.
