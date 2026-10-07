@@ -1,3 +1,4 @@
+import * as RecoveryCustody from "../../src/store/ingress-recovery-custody.ts";
 import * as IngressRecovery from "../../src/store/ingress-recovery.ts";
 import * as IngressRead from "../../src/store/ingress-read.ts";
 import * as BusyIngress from "../../src/store/ingress-busy.ts";
@@ -84,6 +85,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.getIngress, IngressRead.getIngress);
     assert.strictEqual(StateAccessFacade.getIngressForOwnerReadonly, IngressRead.getIngressForOwnerReadonly);
     assert.strictEqual(StateAccessFacade.listIngressesForOwner, IngressRead.listIngressesForOwner);
+    assert.strictEqual(StateAccessFacade.claimIngressRecovery, RecoveryCustody.claimIngressRecovery);
+    assert.strictEqual(StateAccessFacade.validateIngressRecovery, RecoveryCustody.validateIngressRecovery);
     assert.strictEqual(StateAccessFacade.admitIngress, IngressAdmission.admitIngress);
     assert.strictEqual(StateAccessFacade.pendingNewPrompt, NewPromptArm.pendingNewPrompt);
     assert.strictEqual(StateAccessFacade.newThreadOrigin, NewOrigin.newThreadOrigin);
@@ -199,6 +202,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "getIngress",
       "getIngressForOwnerReadonly",
       "listIngressesForOwner",
+      "claimIngressRecovery",
+      "validateIngressRecovery",
       "admitIngress",
       "pendingNewPrompt",
       "captureStopOrigin",
@@ -232,7 +237,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 83);
+    assert.strictEqual(actual.length, 85);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

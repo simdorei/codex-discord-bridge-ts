@@ -1,3 +1,4 @@
+import * as RecoveryCustody from "./ingress-recovery-custody.ts";
 import * as IngressRecovery from "./ingress-recovery.ts";
 import * as IngressRead from "./ingress-read.ts";
 import * as BusyIngress from "./ingress-busy.ts";
@@ -55,6 +56,9 @@ export const recoverPriorRuntimeIngress: typeof IngressRecovery.recoverPriorRunt
 export const getIngress: typeof IngressRead.getIngress = IngressRead.getIngress;
 export const getIngressForOwnerReadonly: typeof IngressRead.getIngressForOwnerReadonly = IngressRead.getIngressForOwnerReadonly;
 export const listIngressesForOwner: typeof IngressRead.listIngressesForOwner = IngressRead.listIngressesForOwner;
+
+export const claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery = RecoveryCustody.claimIngressRecovery;
+export const validateIngressRecovery: typeof RecoveryCustody.validateIngressRecovery = RecoveryCustody.validateIngressRecovery;
 
 export const admitIngress: typeof IngressAdmission.admitIngress = IngressAdmission.admitIngress;
 export const pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt = NewPromptArm.pendingNewPrompt;
@@ -158,6 +162,9 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery;
+  readonly validateIngressRecovery: typeof RecoveryCustody.validateIngressRecovery;
+
   readonly holdIngress: typeof IngressRecovery.holdIngress;
   readonly recoverPriorRuntimeIngress: typeof IngressRecovery.recoverPriorRuntimeIngress;
   readonly getIngress: typeof IngressRead.getIngress;
@@ -278,6 +285,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   getIngress,
   getIngressForOwnerReadonly,
   listIngressesForOwner,
+  claimIngressRecovery,
+  validateIngressRecovery,
   admitIngress,
   pendingNewPrompt,
   newThreadOrigin,

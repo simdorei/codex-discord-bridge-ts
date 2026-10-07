@@ -862,3 +862,28 @@ retirement with ordinary fallback, current-catalog/receipt helpers, plus the lis
 Codex discovery/process changes. Raw immutable delta and inventory retained under
 .runtime/phase-2-contract. These are phase-2 obligations, not already-ported features;
 phase-1 authority was not changed and full 41-file review remains pending.
+
+## 2026-10-07 — Original recovery-command custody and cancellation owner validation
+
+Migrated ingress/recovery_custody.rs and ingress/cancellation.rs owner validation.
+A Recover/Repair claim compares every stored ingress field to the caller's original
+snapshot, requires the exact message/event/source identity and executing/processing
+phase, validates the persisted command/route, then records recovery_claimed once.
+The opaque claim keeps the original post-claim row privately; validation before each
+consequential step rejects changes, forged/cloned claims and current mapping drift.
+A Selected route still REQUIRES the runtime's separate exact selected-thread snapshot
+check; the store alone does not grant selected-target authority. No recovery RPC or
+request-cancellation sequence is wired by this slice.
+
+Cancellation owner lookup validates EVERY matching job/event ingress before returning
+keys. Same-room ordinary owners must match exactly; a New request originally admitted
+in another room additionally needs versioned creation evidence and the current exact
+new-room mirror. It never rewrites the original channel, mutates a queue or cancels a
+request. Caller-owned transaction lifetime is preserved.
+
+Evidence .runtime/cloud-recovery-custody-047: 12 new cases / 20 focused with facade;
+full **2,508 PASS, 0 fail/skip/cancel; strict TS exit 0**. Tests cover single original
+claim, changed expected input, post-claim mutations, route drift, external selected
+precondition, borrowed rollback, all-owner conflict and cross-room creation checks.
+No native Rust execution, live backend, full restart/recovery controller, Windows,
+performance or deployment certification is claimed.
