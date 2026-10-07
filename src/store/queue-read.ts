@@ -572,3 +572,5 @@ export function storedQueueJobsEqual(a: StoredQueueJob, b: StoredQueueJob): bool
   return a.createdAt === b.createdAt && a.updatedAt === b.updatedAt &&
     isDeepStrictEqual({...a, createdAt: 0, updatedAt: 0}, {...b, createdAt: 0, updatedAt: 0});
 }
+
+export const STARTING_CANDIDATE_HOLD_PREFIX = "[cdr-rust:turn-start-candidates-ambiguous:v1] ";

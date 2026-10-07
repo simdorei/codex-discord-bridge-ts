@@ -30,6 +30,9 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
     assert.strictEqual(StateAccessFacade.recordObservedCompletionForResident, ObservedCompletion.recordObservedCompletionForResident);
+    assert.strictEqual(StateAccessFacade.listPendingDeliveries, Delivery.listPendingDeliveries);
+    assert.strictEqual(StateAccessFacade.recordDeliveryFailure, Delivery.recordDeliveryFailure);
+    assert.strictEqual(StateAccessFacade.completeDelivery, Delivery.completeDelivery);
     assert.strictEqual(StateAccessFacade.stageOwnedQueueCompletion, Delivery.stageOwnedQueueCompletion);
     assert.strictEqual(StateAccessFacade.enqueue, QueueEnqueue.enqueue);
     assert.strictEqual(
@@ -49,6 +52,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.asyncTargetDispatchHeld, AsyncAdmission.asyncQuestionTargetDispatchHeld);
     assert.strictEqual(StateAccessFacade.listFiltered, QueueRead.listFiltered);
     assert.strictEqual(StateAccessFacade.eligibleJobs, ExecutionHold.eligibleJobs);
+    assert.strictEqual(StateAccessFacade.holdStartingForAmbiguousCandidatesIfClaimed, QueueClaims.holdStartingForAmbiguousCandidatesIfClaimed);
     assert.strictEqual(StateAccessFacade.tryBeginAttempt, QueueClaims.tryBeginAttempt);
     assert.strictEqual(StateAccessFacade.recordStartFailureIfClaimed, QueueClaims.recordStartFailureIfClaimed);
     assert.strictEqual(StateAccessFacade.markRunningIfClaimed, QueueClaims.markRunningIfClaimed);
@@ -80,17 +84,21 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "asyncAdmissionHeld",
       "asyncTargetDispatchHeld",
       "beginChecked",
+      "completeDelivery",
       "deadTargetHeld",
       "eligibleJobs",
       "enqueue",
       "enqueueIfMirrorMatches",
       "enqueueInTransaction",
       "finish",
+      "holdStartingForAmbiguousCandidatesIfClaimed",
       "listFiltered",
+      "listPendingDeliveries",
       "markRunning",
       "markRunningIfClaimed",
       "markRunningWithResidentIfClaimed",
       "openCheckedRead",
+      "recordDeliveryFailure",
       "recordObservedCompletionForResident",
       "recordPreflightFailure",
       "recordStartFailureIfClaimed",
@@ -99,7 +107,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected);
-    assert.strictEqual(actual.length, 20);
+    assert.strictEqual(actual.length, 24);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

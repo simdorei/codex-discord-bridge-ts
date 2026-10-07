@@ -1,3 +1,4 @@
+import { trimUnicodeWhitespace, takeUnicodeScalarChars } from "./queue-preflight-failure.ts";
 import type { DatabaseSync } from "node:sqlite";
 import { openInitialized } from "./owned-driver.ts";
 import { selectJob, snapshotStoredQueueJob, storedQueueJobsEqual, InvalidQueueStateError, type StoredQueueJob } from "./queue-read.ts";
@@ -21,16 +22,21 @@ export class DeliveryNotFoundError extends Error {
   readonly kind="DeliveryNotFound"; readonly deliveryId:string;
   constructor(id:string) { super(`durable Discord delivery not found: ${id}`);this.name="DeliveryNotFoundError";this.deliveryId=id; }
 }
-function readDelivery(db:DatabaseSync,id:string):StoredDelivery {
-  const columns=["delivery_id","job_id","target_thread_id","turn_id","content","last_error"];
-  const stmt=db.prepare(`SELECT *,${columns.map(c=>`CAST(${c} AS BLOB) AS b_${c}`).join(",")},
-    (SELECT encoding FROM pragma_encoding) AS encoding FROM codex_delivery_outbox WHERE delivery_id=?`);
-  stmt.setReadBigInts(true);const row=stmt.get(id);if(!row) throw new DeliveryNotFoundError(id);
+const DELIVERY_TEXT = ["delivery_id","job_id","target_thread_id","turn_id","content","last_error"];
+const DELIVERY_SELECT = `SELECT delivery_id,job_id,target_thread_id,turn_id,channel_id,content,attempt_count,last_error,created_at,updated_at,
+  ${DELIVERY_TEXT.map(c=>`CAST(${c} AS BLOB) AS b_${c}`).join(",")},
+  (SELECT encoding FROM pragma_encoding) AS encoding FROM codex_delivery_outbox`;
+function decodeDelivery(row: Record<string, unknown>): StoredDelivery {
   const decoder=textDecoderFor(row.encoding);
   const text=(c:string):string=>decodeTextField(row[c],row["b_"+c],c,false,decoder)!;
   return {deliveryId:text("delivery_id"),jobId:text("job_id"),targetThreadId:text("target_thread_id"),turnId:text("turn_id"),
     channelId:decodeI64(row.channel_id,"channel_id"),content:text("content"),attemptCount:decodeI64(row.attempt_count,"attempt_count"),
     lastError:text("last_error"),createdAt:decodeTimestamp(row.created_at,"created_at"),updatedAt:decodeTimestamp(row.updated_at,"updated_at")};
+}
+function readDelivery(db:DatabaseSync,id:string):StoredDelivery {
+  const stmt=db.prepare(DELIVERY_SELECT+" WHERE delivery_id=?");
+  stmt.setReadBigInts(true);const row=stmt.get(id);if(!row) throw new DeliveryNotFoundError(id);
+  return decodeDelivery(row);
 }
 function validText(text:unknown):asserts text is string {
   if(typeof text!=="string"||/[\uD800-\uDFFF]/u.test(text)) throw new TypeError("Expected well-formed text");
@@ -74,4 +80,34 @@ export async function stageOwnedQueueCompletion(
     if(!committed&&db.isTransaction) { try {db.exec("ROLLBACK");} catch { /* close abandons uncommitted work */ } }
     db.close();
   }
+}
+
+
+export async function listPendingDeliveries(path: string): Promise<StoredDelivery[]> {
+  const db=await openInitialized(path);
+  try {
+    const stmt=db.prepare(DELIVERY_SELECT+" ORDER BY created_at,delivery_id");stmt.setReadBigInts(true);
+    const result: StoredDelivery[]=[];
+    for(const row of stmt.iterate()) result.push(decodeDelivery(row));
+    return result;
+  } finally {db.close();}
+}
+export async function recordDeliveryFailure(path: string,id: string,error: string,now: number): Promise<StoredDelivery> {
+  validText(path);validText(id);validText(error);if(typeof now!=="number") throw new TypeError("Expected timestamp number");
+  const bounded=takeUnicodeScalarChars(trimUnicodeWhitespace(error),1000);
+  const db=await openInitialized(path);let committed=false;
+  try {
+    db.exec("BEGIN IMMEDIATE");
+    const changed=db.prepare("UPDATE codex_delivery_outbox SET attempt_count=attempt_count+1,last_error=?,updated_at=? WHERE delivery_id=?").run(bounded,now,id).changes;
+    if(BigInt(changed)!==1n) throw new DeliveryNotFoundError(id);
+    const delivery=readDelivery(db,id);db.exec("COMMIT");committed=true;return delivery;
+  } finally {
+    if(!committed&&db.isTransaction) {try{db.exec("ROLLBACK");}catch{/* close rolls back */}}
+    db.close();
+  }
+}
+export async function completeDelivery(path: string,id: string): Promise<boolean> {
+  validText(path);validText(id);const db=await openInitialized(path);
+  try {return BigInt(db.prepare("DELETE FROM codex_delivery_outbox WHERE delivery_id=?").run(id).changes)===1n;}
+  finally {db.close();}
 }

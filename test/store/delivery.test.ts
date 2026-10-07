@@ -155,3 +155,35 @@ test("existing raw journal cannot acquire resident authority from different payl
     await edit(path,db=>assert.equal(db.prepare("SELECT resident_owner FROM codex_observed_completions").get()?.resident_owner,"resident"));
   });
 });
+import { listPendingDeliveries,recordDeliveryFailure,completeDelivery,DeliveryNotFoundError } from "../../src/store/delivery.ts";
+test("durable outbox read/failure/completion preserve content and use Rust scalar trimming",async()=>{
+  await fixture(async(path,job)=>{
+    await stageOwnedQueueCompletion(path,job,"final",5);
+    const error="\u0085"+"😀".repeat(1001)+"\u0085";
+    const failed=await recordDeliveryFailure(path,"saved",error,6);
+    assert.equal(failed.attemptCount,1n);assert.equal(failed.lastError,"😀".repeat(1000));assert.equal(failed.content,"final");
+    const pending=await listPendingDeliveries(path);assert.equal(pending.length,1);assert.equal(pending[0]!.updatedAt,6);
+    assert.equal(await completeDelivery(path,"saved"),true);assert.equal(await completeDelivery(path,"saved"),false);
+    assert.deepEqual(await listPendingDeliveries(path),[]);
+    await assert.rejects(()=>recordDeliveryFailure(path,"saved","error",7),DeliveryNotFoundError);
+  });
+});
+test("failed outbox decode rolls back increment rather than silently coercing or overflowing counts",async()=>{
+  await fixture(async(path,job)=>{
+    await stageOwnedQueueCompletion(path,job,"final",5);
+    await edit(path,db=>db.exec("UPDATE codex_delivery_outbox SET attempt_count=9223372036854775807"));
+    await assert.rejects(()=>recordDeliveryFailure(path,"saved","error",7),/Expected integer bigint/);
+    assert.equal((await listPendingDeliveries(path))[0]!.attemptCount,9223372036854775807n);
+    await edit(path,db=>db.exec("UPDATE codex_delivery_outbox SET content=CAST(x'80' AS TEXT)"));
+    await assert.rejects(()=>listPendingDeliveries(path),/Invalid text encoding/);
+  });
+});
+test("pending deliveries are ordered by timestamp then ID without dropping old failures",async()=>{
+  await storeFixture(async path=>{
+    await edit(path,db=>{
+      const stmt=db.prepare("INSERT INTO codex_delivery_outbox(delivery_id,job_id,target_thread_id,turn_id,channel_id,content,created_at,updated_at) VALUES (?,?,'target','turn',1,'final',?,0)");
+      stmt.run("b","b",1);stmt.run("a","a",1);stmt.run("c","c",0);
+    });
+    assert.deepEqual((await listPendingDeliveries(path)).map(d=>d.deliveryId),["c","a","b"]);
+  });
+});

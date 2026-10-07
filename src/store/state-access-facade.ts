@@ -13,10 +13,16 @@ import * as Preflight from "./queue-preflight-failure.ts";
 
 export const recordObservedCompletionForResident: typeof ObservedCompletion.recordObservedCompletionForResident = ObservedCompletion.recordObservedCompletionForResident;
 
+export const listPendingDeliveries: typeof Delivery.listPendingDeliveries = Delivery.listPendingDeliveries;
+export const recordDeliveryFailure: typeof Delivery.recordDeliveryFailure = Delivery.recordDeliveryFailure;
+export const completeDelivery: typeof Delivery.completeDelivery = Delivery.completeDelivery;
+
 export const stageOwnedQueueCompletion: typeof Delivery.stageOwnedQueueCompletion = Delivery.stageOwnedQueueCompletion;
 
 export const deadTargetHeld: typeof DeadGeneration.targetIsHeld = DeadGeneration.targetIsHeld;
 export const recordPreflightFailure: typeof Preflight.recordPreflightFailure = Preflight.recordPreflightFailure;
+
+export const holdStartingForAmbiguousCandidatesIfClaimed: typeof QueueClaims.holdStartingForAmbiguousCandidatesIfClaimed = QueueClaims.holdStartingForAmbiguousCandidatesIfClaimed;
 
 export const tryBeginAttempt: typeof QueueClaims.tryBeginAttempt = QueueClaims.tryBeginAttempt;
 export const recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed = QueueClaims.recordStartFailureIfClaimed;
@@ -48,6 +54,10 @@ export const openCheckedRead: typeof CheckedRead.open =
   CheckedRead.open;
 
 export interface IStateAccessFacade {
+  readonly holdStartingForAmbiguousCandidatesIfClaimed: typeof QueueClaims.holdStartingForAmbiguousCandidatesIfClaimed;
+  readonly listPendingDeliveries: typeof Delivery.listPendingDeliveries;
+  readonly recordDeliveryFailure: typeof Delivery.recordDeliveryFailure;
+  readonly completeDelivery: typeof Delivery.completeDelivery;
   readonly recordObservedCompletionForResident: typeof ObservedCompletion.recordObservedCompletionForResident;
   readonly stageOwnedQueueCompletion: typeof Delivery.stageOwnedQueueCompletion;
   readonly deadTargetHeld: typeof DeadGeneration.targetIsHeld;
@@ -73,6 +83,10 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  holdStartingForAmbiguousCandidatesIfClaimed,
+  listPendingDeliveries,
+  recordDeliveryFailure,
+  completeDelivery,
   recordObservedCompletionForResident,
   stageOwnedQueueCompletion,
   deadTargetHeld,

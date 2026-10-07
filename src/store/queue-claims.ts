@@ -1,4 +1,4 @@
-import { snapshotStoredQueueJob } from "./queue-read.ts";
+import { snapshotStoredQueueJob, STARTING_CANDIDATE_HOLD_PREFIX } from "./queue-read.ts";
 import type { DatabaseSync } from "node:sqlite";
 import { types } from "node:util";
 import { I64_MIN, I64_MAX } from "../protocol/ids.ts";
@@ -154,5 +154,55 @@ export async function markRunningWithResidentIfClaimed(
       if (resident !== null) bindLateStartIn(db, claim, running, resident);
     }
     return claimedResult(db, claim.jobId, updated.changes);
+  });
+}
+
+
+const STARTING_SNAPSHOT = `job_id=? AND target_thread_id=? AND channel_id=? AND owner_user_id IS ?
+  AND discord_message_id IS ? AND app_server_generation=? AND prompt=? AND queued=? AND ack_sent=?
+  AND state='starting' AND attempt_count=? AND turn_id IS NULL AND baseline_turn_ids=? AND last_error=?
+  AND created_at=? AND updated_at=? AND goal_waiting=? AND NOT EXISTS(
+    SELECT 1 FROM codex_thread_fork_handoffs handoff WHERE handoff.source_thread_id=codex_turn_queue.target_thread_id
+      AND handoff.target_thread_id IS NULL)`;
+
+/** Durable ambiguous-start hold; a consumed notice is never recreated by refresh. */
+export async function holdStartingForAmbiguousCandidatesIfClaimed(path: string, input: StoredQueueJob, ids: readonly string[]): Promise<StoredQueueJob | null> {
+  text(path);
+  const claimed = snapshotStoredQueueJob(input);
+  const unique = [...new Set(baselineSnapshot(ids))].sort((a,b)=>Buffer.compare(Buffer.from(a),Buffer.from(b)));
+  const markerIds = unique.slice(0,4).map(id=>takeUnicodeScalarChars(id,80));
+  const noticeIds = unique.slice(0,8).map(id=>takeUnicodeScalarChars(id,120));
+  const noticeId = `turn-start-candidates-ambiguous:${claimed.jobId}`;
+  const noticeFor = (job: StoredQueueJob): string => takeUnicodeScalarChars(`Codex could not safely determine which turn belongs to queued job ${job.jobId} on thread ${job.targetThreadId}. The target queue is held, so later queued requests will not start until this is resolved. Candidate turns: count=${unique.length}, listed=${noticeIds.length} ${JSON.stringify(noticeIds)}`,1900);
+  return withWriter(path,db=>{
+    ensureForkHandoffTable(db);
+    const refreshing=claimed.lastError.startsWith(STARTING_CANDIDATE_HOLD_PREFIX);
+    if(refreshing&&(claimed.state!=="Starting"||claimed.turnId!==null)) return {value:null,commit:true};
+    const baseline=matchingBaselineJsonIn(db,claimed);
+    if(baseline===null) return {value:null,commit:refreshing};
+    const args=[claimed.jobId,claimed.targetThreadId,claimed.channelId,claimed.ownerUserId,claimed.discordMessageId,
+      claimed.appServerGeneration,claimed.prompt,Number(claimed.queued),Number(claimed.ackSent),claimed.attemptCount,
+      baseline,claimed.lastError,claimed.createdAt,claimed.updatedAt,Number(claimed.goalWaiting)];
+    if(refreshing) {
+      const notice=noticeFor(claimed);
+      const query=db.prepare(`SELECT EXISTS(SELECT 1 FROM codex_turn_queue WHERE ${STARTING_SNAPSHOT}) AS present`);
+      query.setReadBigInts(true);const row=query.get(...args);
+      if(typeof row?.present!=="bigint") throw new StoreIntegrityError("Expected integer starting snapshot result");
+      if(row.present===0n) return {value:null,commit:true};
+      db.prepare("UPDATE codex_delivery_outbox SET content=?,updated_at=? WHERE delivery_id=? AND job_id=? AND target_thread_id=? AND content!=?")
+        .run(notice,now(),noticeId,noticeId,claimed.targetThreadId,notice);
+    } else {
+      const prior=trimUnicodeWhitespace(claimed.lastError);
+      const previous=prior.startsWith("[cdr-rust:")?"":takeUnicodeScalarChars(prior,400);
+      const marker=takeUnicodeScalarChars(`${STARTING_CANDIDATE_HOLD_PREFIX}candidate_count=${unique.length}; candidate_turn_ids=${JSON.stringify(markerIds)}; candidate_ids_listed=${markerIds.length}${previous===""?"":`; previous_error=${previous}`}`,1000);
+      const changed=db.prepare(`UPDATE codex_turn_queue SET last_error=?,updated_at=? WHERE ${STARTING_SNAPSHOT}`)
+        .run(marker,now(),...args).changes;
+      if(BigInt(changed)!==1n) return {value:null,commit:true};
+      const held=selectJob(db,claimed.jobId),observedAt=now(),notice=noticeFor(held);
+      db.prepare(`INSERT INTO codex_delivery_outbox(delivery_id,job_id,target_thread_id,turn_id,channel_id,content,created_at,updated_at)
+        VALUES(?,?,?,?,?,?,?,?)`).run(noticeId,noticeId,held.targetThreadId,noticeId,held.channelId,notice,observedAt,observedAt);
+      return {value:held,commit:true};
+    }
+    return {value:selectJob(db,claimed.jobId),commit:true};
   });
 }

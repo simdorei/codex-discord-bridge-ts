@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **2,222 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **2,235 tests passed**, no failures/skips;
 strict TypeScript passed. Migration and Windows/live transport validation remain incomplete.
 
 ## Baseline
@@ -266,3 +266,28 @@ failure retry, Stop hold disposition, response custody and resident stamping of
 only byte-matching raw observations. Full Linux suite: 2,222 PASS, zero failed/
 skipped; strict TypeScript PASS. Logs: `.runtime/cloud-resident-proof-012/final/`.
 The live Codex notification adapter itself is not connected yet.
+
+
+## Outbox lifecycle and ambiguous-start recovery leaf
+
+Added pending-delivery reads, transactional failure bookkeeping with Rust trim/
+Unicode-scalar bounds, and idempotent completion. Integer overflow or corrupt
+stored data rolls back failure increments. No Discord send occurs in these APIs.
+
+The ambiguous-start writer now uses the original full claim predicate and raw
+baseline JSON, atomically creates its hold marker and bounded outbox notice,
+refreshes only a still-pending notice, and never recreates one already consumed.
+Candidate IDs are unique and sorted by UTF-8 bytes, with scalar-based truncation.
+The hold prefix now has one shared definition across store, restart snapshot and
+saved-submission classification.
+
+The recovery-attempt leaf preserves the 120-second lease, single-candidate
+claim-fenced attachment, permanent ambiguous-candidate hold and cold/changed-
+generation empty-history uncertainty. Empty history never authorizes redispatch.
+Terminal Running history remains unresolved until the completion writer stages
+its final. The caller must still supply authoritative history under the shared
+target lock; the full target recovery scheduler is not wired by this leaf.
+
+Full Linux suite: 2,235 PASS, zero failed/skipped; strict TypeScript PASS.
+Logs: `.runtime/cloud-recovery-attempt-014/`. Outbox checkpoint 2,225 PASS is
+retained in `.runtime/cloud-outbox-013/`. No service/network/deployment action.
