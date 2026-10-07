@@ -964,3 +964,40 @@ semantics and task-drop/abort/resource reclamation are not certified by this ada
 Evidence .runtime/cloud-discord-delivery-050: 12 focused, full **2,539 PASS,
 0 fail/skip/cancel; strict TS exit 0**. Pure formatting/golden and injected transport/
 sleep tests only; no live Discord request, publication or production startup.
+
+## 2026-10-07 — Nonce-enforced request construction and bound button protocol
+
+Added immutable CreateMessage request construction, preserving content, exact u64
+nonce JSON, the four-field no-components body and optional generated components.
+Default mention serialization is parse:[]; false replied_user and empty roles/users
+are omitted. This was checked against twilight-model 0.17.1's official source and
+its serializer, rather than inferred from Discord UI behavior.
+
+Migrated all helper button rows and custom-ID variants from components.rs and its
+six children: busy, legacy/bound approval/input, async options and publication/
+abandonment intent. Strict canonical fingerprints/revisions, bounded IDs and Unicode
+labels are retained. Thread/request fingerprints match FOUR pinned Rust goldens,
+including String versus Integer IDs and per-occurrence binding. Persistent claim
+keys retain their original domains and answer-independent scope; busy/recovery
+intents remain excluded from this generic claim mechanism.
+
+Only helper-produced immutable button/action-row objects serialize through this
+bridge profile. It is not a generic codec for every Twilight component variant.
+No copied/forged object can add arbitrary wire fields. Component parsing or rendering
+is not approval, execution or release authority; worker authorization is still needed.
+HTTP transport, full Message receipt decoding and permanent delivery receipt
+integration are NOT implemented by this pure request-construction slice.
+
+Dependency evidence: Cargo.lock pins twilight-model 0.17.1. Official tagged source
+https://github.com/twilight-rs/twilight/tree/twilight-0.17.1/twilight-model/src
+was read in relevant ranges: allowed_mentions.rs git blob
+63d66bad30591cc7fbd4d7910e9c8cce6ebe9cfe; component/mod.rs serializer
+be7ce26a07b4ae685811685498aef00809078a48; component/action_row.rs
+4399bb454a738b34968223cbf8d103405d4cf299; component/kind.rs
+edf64202f5a00388cda94c2f30b28e887731f1ce; http/interaction.rs
+c2d7416389e7c28f99e9517d375ddf525988165c. These are returned Git blob identities,
+not a fresh dependency build or full-crate hash/behavior certification.
+
+Evidence .runtime/cloud-discord-request-051: 18 new cases / 30 Discord-focused,
+full **2,557 PASS, 0 fail/skip/cancel; strict TS exit 0**. No real Discord message,
+credential configuration, component click or backend operation was performed.
