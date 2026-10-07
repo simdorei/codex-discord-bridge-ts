@@ -1839,3 +1839,23 @@ Evidence .runtime/cloud-line-reader-093: 10 focused PASS, full **2,909 PASS,
 surrogate/out-of-range/truncated UTF-8, CRLF vs lone EOF CR, I/O precedence, buffer reuse,
 empty/long input and an actual Node Readable stream covered. No child process or live
 pipe ran; native byte-source ownership/cancellation remains to be wired and tested.
+
+## 2026-10-07 — Node stream input/output adapters
+
+Added concrete Node stream adapters for the writer and byte reader. Writes wait their
+callback/backpressure, copy input bytes, preserve native errors and join actual close
+when interrupted. Owned read destruction settles pending iterator reads; string-mode
+output is rejected. Shutdown uses stream.finished with cleanup:true. These adapters
+require exclusive ordinary native stdio streams with close events; caller must not
+share consumers or disable emitClose. No child process is spawned by this unit.
+
+Exact Node v24.21.0 official API documents were retrieved read-only and relevant sections
+read under .runtime/authority-node-24.21.0 (stream.md and child_process.md). This resolved
+web-reader retrieval errors without installing or running another package. The installed
+Node version remains unchanged.
+
+Evidence .runtime/cloud-node-streams-094: 7 focused PASS, full **2,916 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Actual Node Writable/Readable/PassThrough streams
+exercise callback and close joining, write/read error identity, byte ownership, fatal
+UTF-8 connection, pending read destruction and already-aborted no-write behavior. Parent
+process lifecycle and serialized stdin take/shutdown integration remain separate work.
