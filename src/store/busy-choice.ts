@@ -1,3 +1,4 @@
+import {parseSerdeStruct,type StructShape} from "../core/serde-struct-json.ts";
 import {openInitialized} from "./owned-driver.ts";
 import type {DatabaseSync} from "node:sqlite";
 import {types} from "node:util";
@@ -46,4 +47,11 @@ export async function mirroredThreadId(path:string,channel:bigint|null):Promise<
   if(channel!==null&&(typeof channel!=="bigint"||channel<-(1n<<63n)||channel>=(1n<<63n)))throw new TypeError("Expected optional i64 channel");
   if(channel===null||channel===0n)return null;
   const db=await openInitialized(path);try{return mirroredThreadIdIn(db,channel);}finally{db.close();}
+}
+
+const BUSY_SHAPE:StructShape={fields:[["choice_id","string"],["owner_user_id","i64"],["channel_id","i64"],["target_thread_id","string?"],["prompt","string"],["allow_steer","bool"],["created_at","f64"],["expires_at","f64"]]};
+/** Typed serde::Deserialize boundary, including duplicate-field rejection and sequence input. */
+export function parseBusyChoice(raw:string):BusyChoice{
+  const v=parseSerdeStruct(raw,BUSY_SHAPE);return {choiceId:v.choice_id as string,ownerUserId:v.owner_user_id as bigint,channelId:v.channel_id as bigint,targetThreadId:v.target_thread_id as string|null,
+    prompt:v.prompt as string,allowSteer:v.allow_steer as boolean,createdAt:v.created_at as number,expiresAt:v.expires_at as number};
 }

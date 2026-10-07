@@ -801,3 +801,28 @@ by a retry or a later created-thread acknowledgement.
 Evidence .runtime/cloud-ingress-routing-044: 5 new cases, 23 focused with lifecycle
 and facade regressions; full **2,476 PASS, 0 fail/skip/cancel; strict TS exit 0**.
 No remote thread creation, live routing, full bridge startup or deployment occurred.
+
+## 2026-10-07 — Busy interaction original custody and canonical repeats
+
+Migrated ingress/busy.rs before-ACK custody: durable receipt first, then original
+non-duplicate parent, then active unclaimed/unexpired choice. Owner and room must
+match. The original choice and selected button action are persisted with admission.
+A new interaction ID can become a canonical duplicate linked to the durable prompt
+or parent ingress after transient choice expiry. Held rows do not acquire duplicate
+execution ownership. Explicit preflight rejection without control dispatch is
+excluded from parent selection. allow_steer remains only the source display snapshot,
+not permission to issue a Steer RPC; actual control verification remains downstream.
+
+Later custody UPDATE retains/reverifies the original admission proof, so injected
+identity mutation rolls the entire new admission back. Malformed durable receipts
+are not replaced with a fresh live choice. BusyChoice deserialization uses the
+existing raw typed-struct parser, extended narrowly for f64 and Option<String>:
+duplicate fields reject, missing map Option defaults to null, short sequences
+remain invalid, explicit defaults take precedence. No new Rust executable oracle
+was run for this extension; tests plus pinned Rust field/call-path inspection are
+the evidence, not universal Serde compatibility certification.
+
+Evidence .runtime/cloud-ingress-busy-045: 10 new cases / 18 focused including facade,
+full **2,486 PASS, 0 fail/skip/cancel; strict TS exit 0**. Existing typed-parser and
+queue/ingress regressions are included. No live control RPC, handler/startup,
+Windows, performance or deployment approval is established.

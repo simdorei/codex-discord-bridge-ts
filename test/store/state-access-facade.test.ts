@@ -1,3 +1,4 @@
+import * as BusyIngress from "../../src/store/ingress-busy.ts";
 import * as IngressLifecycle from "../../src/store/ingress-lifecycle.ts";
 import * as IngressAdmission from "../../src/store/ingress-admission.ts";
 import * as NewPromptArm from "../../src/store/ingress-new-prompt-arm.ts";
@@ -75,6 +76,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.recordIngressProcessingMode, IngressLifecycle.recordIngressProcessingMode);
     assert.strictEqual(StateAccessFacade.admitMappedSlashIngress, IngressAdmission.admitMappedSlashIngress);
     assert.strictEqual(StateAccessFacade.recordIngressNewCreation, IngressLifecycle.recordIngressNewCreation);
+    assert.strictEqual(StateAccessFacade.admitBusyInteraction, BusyIngress.admitBusyInteraction);
     assert.strictEqual(StateAccessFacade.admitIngress, IngressAdmission.admitIngress);
     assert.strictEqual(StateAccessFacade.pendingNewPrompt, NewPromptArm.pendingNewPrompt);
     assert.strictEqual(StateAccessFacade.newThreadOrigin, NewOrigin.newThreadOrigin);
@@ -184,6 +186,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "recordIngressProcessingMode",
       "admitMappedSlashIngress",
       "recordIngressNewCreation",
+      "admitBusyInteraction",
       "admitIngress",
       "pendingNewPrompt",
       "captureStopOrigin",
@@ -217,7 +220,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 77);
+    assert.strictEqual(actual.length, 78);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

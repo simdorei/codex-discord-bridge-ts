@@ -1,3 +1,4 @@
+import type {BusyChoice} from "./busy-choice.ts";
 import {isMappedSlashPrompt} from "./ingress-new-input.ts";
 import {mirroredThreadIdIn} from "./busy-choice.ts";
 import type {DatabaseSync} from "node:sqlite";
@@ -13,7 +14,7 @@ import {getOwn,isJsonObject,pointer} from "./async-resolution-json-helpers.ts";
 import {serializeSerdeValue} from "../core/serde-json.ts";
 import {StoreIntegrityError} from "./schema-assembly.ts";
 import {decodeI64,decodeTextField,textDecoderFor} from "./sqlite-values.ts";
-export interface IngressAdmission {created:boolean;canonicalRepeatCreated:false;record:StoredIngress|null;busyChoice:null}
+export interface IngressAdmission {created:boolean;canonicalRepeatCreated:boolean;record:StoredIngress|null;busyChoice:BusyChoice|null}
 function validate(r:NewIngress):void{
   if(trim(r.ingressId)===""||trim(r.ingressId)!==r.ingressId||r.channelId<=0n||r.ownerUserId<=0n||!Number.isFinite(r.now)||r.now<0||
     (r.eventId!==null&&r.eventId<=0n)||(r.kind!=="action"&&r.eventId===null)||!isJsonObject(r.payload))throw new StoreIntegrityError("invalid ingress custody identity");

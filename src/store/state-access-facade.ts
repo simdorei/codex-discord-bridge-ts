@@ -1,3 +1,4 @@
+import * as BusyIngress from "./ingress-busy.ts";
 import * as IngressLifecycle from "./ingress-lifecycle.ts";
 import * as IngressAdmission from "./ingress-admission.ts";
 import * as NewPromptArm from "./ingress-new-prompt-arm.ts";
@@ -44,6 +45,8 @@ export const recordIngressProcessingMode: typeof IngressLifecycle.recordIngressP
 
 export const admitMappedSlashIngress: typeof IngressAdmission.admitMappedSlashIngress = IngressAdmission.admitMappedSlashIngress;
 export const recordIngressNewCreation: typeof IngressLifecycle.recordIngressNewCreation = IngressLifecycle.recordIngressNewCreation;
+
+export const admitBusyInteraction: typeof BusyIngress.admitBusyInteraction = BusyIngress.admitBusyInteraction;
 
 export const admitIngress: typeof IngressAdmission.admitIngress = IngressAdmission.admitIngress;
 export const pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt = NewPromptArm.pendingNewPrompt;
@@ -147,6 +150,7 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly admitBusyInteraction: typeof BusyIngress.admitBusyInteraction;
   readonly admitMappedSlashIngress: typeof IngressAdmission.admitMappedSlashIngress;
   readonly recordIngressNewCreation: typeof IngressLifecycle.recordIngressNewCreation;
 
@@ -254,6 +258,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   recordIngressProcessingMode,
   admitMappedSlashIngress,
   recordIngressNewCreation,
+  admitBusyInteraction,
   admitIngress,
   pendingNewPrompt,
   newThreadOrigin,

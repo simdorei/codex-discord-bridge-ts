@@ -1,7 +1,7 @@
 import { parseSerdeValue } from "./serde-json-parse.ts";
 
-/** Required-field Serde structs only: optional explicit defaults; no flatten/Option/custom visitors. */
-export type StructField = "string" | "i64" | "u64" | "string[]" | "bool" | "value" | StructShape;
+/** Serde structs with explicit defaults, Option<String> and f64; no flatten/custom visitors. */
+export type StructField = "string" | "i64" | "u64" | "string[]" | "bool" | "value" | "string?" | "f64" | StructShape;
 export interface StructShape { readonly fields: readonly (readonly [string, StructField])[]; readonly defaults?: Readonly<Record<string, unknown>> }
 
 // JSON.parse checks grammar first. This scanner only finds raw value boundaries;
@@ -39,6 +39,8 @@ function decodeField(raw: string, kind: StructField, depth: number): unknown {
   let value: unknown = parseSerdeValue("[".repeat(depth) + raw + "]".repeat(depth));
   for (let i = 0; i < depth; i++) value = (value as unknown[])[0];
   if (kind === "value") return value;
+  if (kind === "string?" && (value === null || typeof value === "string")) return value;
+  if (kind === "f64" && (typeof value === "number" || typeof value === "bigint") && Number.isFinite(Number(value))) return Number(value);
   if (kind === "string" && typeof value === "string") return value;
   if (kind === "string[]" && Array.isArray(value) && value.every(item => typeof item === "string")) return value;
   if (kind === "u64" && typeof value === "bigint" && value >= 0n && value < (1n << 64n)) return value;
@@ -73,9 +75,10 @@ function decodeStruct(raw: string, shape: StructShape, depth: number): Record<st
     i = whitespace(text, end);
     if (text[i] === ",") i = whitespace(text, i + 1);
   }
-  for (const [key] of shape.fields) {
+  for (const [key, kind] of shape.fields) {
     if (!Object.hasOwn(result, key)) {
       if (shape.defaults !== undefined && Object.hasOwn(shape.defaults,key)) result[key] = shape.defaults[key];
+      else if (map && kind === "string?") result[key] = null;
       else throw new SyntaxError(`Missing Serde field: ${key}`);
     }
   }
