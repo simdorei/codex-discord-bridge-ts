@@ -1086,3 +1086,18 @@ and injected transport only. Tests include in-flight same-key concurrency, exact
 nonce retry, definitive versus ambiguous failures, zero-trap forged errors, no-file
 invalid input, commit failure, component identity changes, held New output, invalid
 IDs, beyond-IEEE754 confirmed ID preservation and caller mutation after entry.
+
+## 2026-10-07 — Completion logical delivery identities
+
+Ported pinned completion_worker/delivery_identity.rs: outbox, Goal progress and
+commentary have separate nonce domains; compound keys use UTF-8 byte lengths.
+Commentary hashes Rust White_Space-trimmed UTF-8 followed by one zero byte. The
+sequential chunk adapter preserves logical key, index and content across retries.
+Factory-owned immutable identities reject forged/accessor inputs before sending.
+This is identity construction and injected callback orchestration, not permission
+or a production completion worker. Full HTTP and response decoding remain absent.
+
+Evidence .runtime/cloud-completion-identity-055: 6 new tests, full **2,599 PASS,
+0 fail/skip/cancel; strict TS exit 0**. UTF-8 lengths, NEL/BOM distinction, source
+retry scenario, domain isolation, empty policy failure ownership and zero-trap
+forgeries are covered. No fresh Rust executable differential is claimed.
