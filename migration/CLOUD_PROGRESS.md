@@ -1476,3 +1476,22 @@ Evidence .runtime/cloud-http-work-075: 7 new real SQLite/fake transport cases / 
 focused, full **2,758 PASS, 0 fail/skip/cancel; strict TS exit 0**. Current/stale final,
 progress branches, legacy Goal refusal, no-turn custody, current-generation checked
 question delegation, Observed no-POST and pre-open integer bound are covered.
+
+## 2026-10-07 — Charged live event envelopes
+
+Ported lanes.rs event charging and state.rs thread-identity precedence. Notification
+method/target plus Serde JSON UTF-8 bytes share a 4MiB ownership budget; over-budget,
+missing/oversized target and Gap inputs cannot acquire it. The counter preserves
+scalar escaping/number encoding without building one full JSON string. Successful
+charge freezes transferred params and returns a disposal-owned immutable envelope;
+ready rejection/explicit shutdown release that ownership.
+
+This is serialized-byte accounting, not total V8 heap measurement: object/key
+enumeration and representation overhead remain outside the count. Callers must not
+retain/use payloads after disposal. JS does not enforce Rust moves/Drop, and production
+producer/lane lifetime wiring remains unfinished. No network or live event stream.
+
+Evidence .runtime/cloud-event-budget-076: 9 new tests, full **2,767 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Exact 4MiB/+1 and 4096-byte multibyte target
+boundaries, canonical count comparisons, getter/proxy refusal, immutable payloads,
+native hints and queue disposal are covered. No throughput or heap PASS is claimed.
