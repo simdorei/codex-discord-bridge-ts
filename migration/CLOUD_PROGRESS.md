@@ -1495,3 +1495,27 @@ Evidence .runtime/cloud-event-budget-076: 9 new tests, full **2,767 PASS,
 0 fail/skip/cancel; strict TS exit 0**. Exact 4MiB/+1 and 4096-byte multibyte target
 boundaries, canonical count comparisons, getter/proxy refusal, immutable payloads,
 native hints and queue disposal are covered. No throughput or heap PASS is claimed.
+
+## 2026-10-07 — Exact server-request response ownership
+
+Ported state/server_requests.rs pending/claimed/deferred transitions and 500-unsettled
+capacity. An exact (typed ID, 128-bit occurrence) detaches a response claim; identical
+redelivery while claimed is suppressed, changed ID reuse is deferred, and exact old
+resolution promotes only that deferred occurrence. Indeterminate responses remain
+unsettled and cannot be claimed again. Arrival order and original thread filtering
+are preserved; numeric and string request IDs remain distinct.
+
+Request metadata is copied without JSON numeric roundtrip, then exposed immutably.
+The module is one synchronous execution-context owner, not a cross-worker mutex or
+wire responder. Resolve is an internal trusted transition, not proof of a successful
+response. Source dead-generation bulk clearing is deliberately unavailable until its
+exact-match reconciliation parent is ported. Input occurrences must come from the
+wire decoder's fresh occurrence assignment. Record errors use explicit TS kinds;
+full native error-taxonomy/transport integration remain unfinished.
+
+Evidence .runtime/cloud-server-requests-077: 10 new cases / 19 focused, full
+**2,777 PASS, 0 fail/skip/cancel; strict TS exit 0**. Covers original source reuse,
+indeterminate/stale rejection, capacity without eviction, ordered filtering, numeric
+metadata distinction, immutable copies, single-event-loop claim races and forged
+occurrence/accessor refusal. Initial alias-narrowing type error retained and corrected
+using the existing validator's returned RequestId, with no runtime guard weakening.

@@ -1,14 +1,10 @@
-import {serdeField,trimmedText} from "../../../app-server/value.ts";
+import {extractThreadId as extractCompletionThreadId} from "../../../app-server/identity.ts";
+import {serdeField} from "../../../app-server/value.ts";
 import {boundedSerdeByteCount} from "../../../core/serde-byte-count.ts";
 import type {ReadyLive} from "./ready.ts";
 export const COMPLETION_EVENT_BYTES=4*1024*1024;
 export interface CompletionNotification{readonly kind:"Notification";readonly generation:bigint;readonly notification:{readonly method:string;readonly params:unknown}}
-/** Exact source target precedence, using trimmed nonempty identities. */
-export function extractCompletionThreadId(params:unknown):string|null{
-  for(const key of ["threadId","conversationId"]){const value=trimmedText(serdeField(params,key));if(value!=="")return value;}
-  const nested=trimmedText(serdeField(serdeField(params,"thread"),"id"));if(nested!=="")return nested;
-  const turn=serdeField(params,"turn");for(const key of ["threadId","conversationId"]){const value=trimmedText(serdeField(turn,key));if(value!=="")return value;}return null;
-}
+export {extractThreadId as extractCompletionThreadId} from "../../../app-server/identity.ts";
 function freezeOwned(value:unknown,seen=new Set<object>()):void{
   if(value===null||typeof value!=="object"||seen.has(value))return;seen.add(value);
   for(const name of Object.getOwnPropertyNames(value)){const d=Object.getOwnPropertyDescriptor(value,name)!;if(Object.hasOwn(d,"value"))freezeOwned(d.value,seen);}Object.freeze(value);
