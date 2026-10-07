@@ -1310,3 +1310,23 @@ all payload variants, runtime/generation scope and getter-free hint capture. Ear
 test-file syntax errors and RED logs retained; corrected tests do not weaken source
 checks. Missing rows inside the read snapshot use an explicit TS integrity adapter;
 full native error-taxonomy parity, scheduler and real transports remain unfinished.
+
+## 2026-10-07 — Bounded ready-queue selection
+
+Ported lanes.rs Ready selection: combined cap 128, live target cap 16, state FIFO
+per target, active-target exclusion, native saturation without same-target overtaking,
+and HTTP channel serialization. Live hints displace rediscoverable metadata before
+other payloads; durable HTTP hints deduplicate only exact source identities. Busy
+metadata is discardable, while live work remains queued. Target metadata is captured
+at insertion. Native-blocked admission releases its explicitly owned permit.
+
+The live envelope/byte-charge and state-admission adapters are REQUIRED trusted
+interfaces, not yet a production decoder or authority provider. JS disposal is
+explicit: queued/rejected live owners are disposed, selected owners transfer to
+caller, and shutdown must call dispose. This is not GC-based Rust Drop equivalence,
+4MiB accounting certification, detached-task cancellation or a running scheduler.
+
+Evidence .runtime/cloud-ready-queues-067: 10 new pure tests, full **2,699 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Covers capacity/eviction, target FIFO,
+channel serialization, native-slot reservation, permit disposal, busy-hint removal,
+priority replacement and mutation-resistant routing. No network or live process.
