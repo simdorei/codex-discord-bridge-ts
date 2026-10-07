@@ -1614,3 +1614,19 @@ Evidence .runtime/cloud-pending-responses-081: 11 pending cases plus one permit-
 case / 21 focused, full **2,815 PASS, 0 fail/skip/cancel; strict TS exit 0**. Uses real
 Node timer mocks, exact occurrence races, capacity/duplicate rejection, cancelled-read
 and retained-mutation leases, timer fault injection and no-getter response refusal.
+
+## 2026-10-07 — Winning transport-close coordination
+
+Connected transport.rs mark_closed ordering: seal/resolve close intent, publish logical
+closed flag and runtime first-closer claim (initialized false/PID None), then only the
+winner drains pending outgoing responses and publishes lifecycle close. A loser returns
+without waiting on or bypassing that cleanup. Incoming approvals/active turns are not
+settled. Cleanup failure leaves the close signal unpublished; a later loser cannot
+fabricate a successful close or native exit.
+
+Evidence .runtime/cloud-close-coordinator-082: 4 new cases / 21 focused, full
+**2,819 PASS, 0 fail/skip/cancel; strict TS exit 0**. Real in-memory permit/response
+owners and an explicit delayed-cleanup test barrier verify no early publication,
+first intent/reason, response settlement, cleanup-failure conservatism and retained
+dead-work evidence. This is a single execution-context coordinator, not a native
+multi-thread/child-exit/kill test or full transport integration.

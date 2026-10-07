@@ -20,7 +20,9 @@ export class ClientRuntimeState{
   snapshot():ClientLifecycleSnapshot{return Object.freeze({generation:this.#generation,healthy:this.#initialized&&this.#closedReason===null&&this.#processId!==null,initialized:this.#initialized,processId:this.#processId,closedReason:this.#closedReason});}
   /** Caller supplies the transport/lifecycle's already-resolved canonical close reason.
    * Mirrors transport.rs flag clearing, without claiming OS exit or publishing close watchers. */
-  publishClosedReason(reason:string):string{text(reason);this.#initialized=false;this.#processId=null;if(this.#closedReason===null){this.#closedReason=reason;this.#notifications.close();}return this.#closedReason;}
+  publishClosedReason(reason:string):string{return this.claimTransportClose(reason).reason;}
+  /** Atomic first-closer claim for the transport coordinator; no watcher publication. */
+  claimTransportClose(reason:string):Readonly<{reason:string;first:boolean}>{text(reason);this.#initialized=false;this.#processId=null;const first=this.#closedReason===null;if(first){this.#closedReason=reason;this.#notifications.close();}return Object.freeze({reason:this.#closedReason!,first});}
   recordNotification(notification:AppNotification):void{this.#notifications.record(notification);}
   activeTurnId(thread:string):string|null{return this.#notifications.activeTurnId(thread);}
   get hasActiveTurns():boolean{return this.#notifications.hasActiveTurns;}
