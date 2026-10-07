@@ -390,3 +390,72 @@ cross-generation exact successors, no-proof/ignored-CAS rollback, evidence-chain
 capacity/revision overflow, stale and delayed events, duplicate owners, immutable
 payload conflicts and continued terminal settlement. Logs `.runtime/cloud-goal-handoff-018/`.
 Actual notification/Discord adapters and bulk scheduling remain unfinished.
+
+
+## User-requested second phase (registered 2026-10-07)
+
+Complete the first implementation before changing its Rust authority. Then apply
+`ts-runtime-parity-pro-reviewed-20261007.md`, review ID
+`TS-RUNTIME-PARITY-20261007-R2`, together with the final Rust deployment-review
+changes. The original is retained privately in the user's Library, not published
+here. Whole-file SHA-256:
+`a0799cfa3d7419a45e7003e1f579167a05dcdca0a8709dc4f891e7b0ac04bb72`.
+Reviewed-body SHA-256 (UTF-8/LF):
+`b38ec59008b6a98955ca86b0e13034d05eda3b045152e8df1fa235e02c06f22a`.
+Both identities were independently checked. Its PASS is document/plan only.
+
+After freezing the phase-1 TS commit/evidence:
+1. Pin the final reviewed Rust commit and actual CI/release evidence. Current
+   observed review refs are integration/stabilization-pr2-20261007 at
+   `6c9b06b9b898918f7e3a28ad43203bbb789a06df` and fix/stabilization-ci-20261007 at
+   `57ad8c01ae4895a81858c728d8ab2511792c1d9e`; these are pending-review references,
+   not approved deployment baselines. Repin at phase-2 entry.
+2. Compare the new Rust delta against phase-1 authority
+   `4e213aa69dc89bed1552d8b83e12471d7664b7ae`, preserving changed durable semantics.
+3. Classify contract A-G as met/unmet/unverified using actual TS functions and
+   evidence. Cover durable admission/cursor responsibility, bounded work/queues/
+   bytes, event-loop isolation, DB ownership/concurrency, timeout versus real
+   resource reclamation, late-result fencing and old/new runtime ownership.
+4. Fix numerical latency/regression/capacity/recovery acceptance thresholds BEFORE
+   the G1-G7 stress/crash/compatibility tests; do not move thresholds after results.
+5. Implement and verify only evidenced gaps. Unit-test counts and document PASS
+   do not establish performance, 24-hour operation or deployment approval.
+
+The current DatabaseSync implementation is synchronous and its final isolated
+execution placement is still unfinished. AbortSignal timeout is not evidence of
+actual worker reclamation. These remain explicit second-phase evaluation items.
+The document adds no live DB, replay, deployment or main-merge authorization.
+
+## 2026-10-07: durable prompt intake and queue transfer
+
+Root implemented the pinned Rust prompt_intake read/write/lease/promotion flow,
+shared strict intake decoding with late Stop binding, and added ingress ownership
+and immutable attachment preparation. The original ingress envelope is retained;
+preparation fingerprints bind the exact original envelope and prepared prompt.
+The queue transfer validates current lease, stable identity, both queue identity
+lookups, held targets, mirror mapping and new-input evidence in one transaction.
+A renewed lease can be used by the original token's snapshot; transformed queue
+prompt intentionally need not equal raw input. Final intake deletion failure
+rolls back queue/evidence writes. Claim and new-job values are copied before waits.
+QueueStartCoordinator.submitPromptIntake uses the same target lock and central
+StateAccessFacade as ordinary submission, and commits transfer before dispatch.
+
+Authority remains Rust 4e213aa69dc89bed1552d8b83e12471d7664b7ae:
+crates/cdr-store/src/prompt_intake/{storage,read,write,lease,promotion}.rs,
+ingress/{read,ownership,new_command,new_input,new_evidence,mapped_slash}.rs,
+and crates/cdr-runtime/src/queue_runner/{submission,prompt_intake_submission}.rs.
+Existing queue/mirror/new-reply primitives are reused rather than duplicated.
+
+Evidence: .runtime/cloud-ingress-prompt-020 and cloud-intake-promotion-021.
+The first integration run found one stale facade key-list assertion after adding
+the promotion API; its original log is retained. The exact API list and direct
+function-identity checks were updated, without weakening product validation.
+No fresh Rust executable differential, Windows run, live transport or deployment
+is claimed. Typed decode-error taxonomy is not yet an exact rusqlite error mapping.
+The intake worker, new-thread admission and busy-choice routing remain unfinished;
+startup-only lease release is implemented but is not called by any live startup.
+
+Final combined target for this slice: **2,311 tests PASS, 0 fail/skip/cancel;
+strict TypeScript exit 0** on pinned Node 24.21.0. This is isolated SQLite/pure and
+injected-backend runtime evidence, not full bridge readiness. Existing hook hashes
+remain unchanged. Phase-2 contract registration above does not alter phase-1 pin.

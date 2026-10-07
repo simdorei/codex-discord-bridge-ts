@@ -1,3 +1,4 @@
+import { getPromptIntakeIn } from "./prompt-intake.ts";
 import type { DatabaseSync, SQLInputValue } from "node:sqlite";
 import { isDeepStrictEqual } from "node:util";
 import { parseSerdeValue } from "../core/serde-json-parse.ts";
@@ -78,22 +79,9 @@ function holdSnapshot(db: DatabaseSync, job: string): readonly string[] | null {
   return row === undefined ? null : names.map(name => text(row, name)!);
 }
 
-// Rust get_in decodes the full record even though this caller only needs presence.
+// The shared reader decodes the full intake before this presence decision.
 function hasDecodedIntake(db: DatabaseSync, job: string): boolean {
-  const names = ["job_id", "target_thread_id", "channel_id", "owner_user_id", "discord_message_id",
-    "raw_prompt", "auto_queue_when_busy", "require_current_mirror", "attempt_count", "last_error",
-    "retry_after", "claim_token", "claim_expires_at", "created_at", "updated_at"];
-  const strings = ["job_id", "target_thread_id", "raw_prompt", "last_error", "claim_token"];
-  const row = one(db, `SELECT ${names.join(",")},${strings.map(raw).join(",")},${encoding}
-    FROM codex_prompt_intakes WHERE job_id=?`, job);
-  if (row === undefined) return false;
-  for (const name of names) {
-    if (strings.includes(name)) text(row, name, name === "claim_token");
-    else if (name === "owner_user_id" || name === "discord_message_id") decodeOptionalI64(row[name], name);
-    else if (["retry_after", "claim_expires_at", "created_at", "updated_at"].includes(name)) decodeTimestamp(row[name], name);
-    else decodeI64(row[name], name);
-  }
-  return true;
+  return getPromptIntakeIn(db,job) !== null;
 }
 
 function sameOriginal(before: StoredQueueJob, after: StoredQueueJob): boolean {

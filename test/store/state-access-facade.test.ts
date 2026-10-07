@@ -1,3 +1,4 @@
+import * as PromptIntakePromotion from "../../src/store/prompt-intake-promotion.ts";
 import * as AsyncHistory from "../../src/store/async-history.ts";
 import * as ObservedCompletion from "../../src/store/observed-completion.ts";
 import * as Delivery from "../../src/store/delivery.ts";
@@ -43,6 +44,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.recordDeliveryFailure, Delivery.recordDeliveryFailure);
     assert.strictEqual(StateAccessFacade.completeDelivery, Delivery.completeDelivery);
     assert.strictEqual(StateAccessFacade.stageOwnedQueueCompletion, Delivery.stageOwnedQueueCompletion);
+    assert.strictEqual(StateAccessFacade.promotePromptIntakeToQueue, PromptIntakePromotion.promotePromptIntakeToQueue);
     assert.strictEqual(StateAccessFacade.enqueue, QueueEnqueue.enqueue);
     assert.strictEqual(
       StateAccessFacade.enqueueIfMirrorMatches,
@@ -118,6 +120,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "openCheckedRead",
       "pendingGoalProgress",
       "pendingObservedCompletions",
+      "promotePromptIntakeToQueue",
       "recordDeliveryFailure",
       "recordGoalProgressError",
       "recordObservedCompletionError",
@@ -135,7 +138,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected);
-    assert.strictEqual(actual.length, 43);
+    assert.strictEqual(actual.length, 44);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

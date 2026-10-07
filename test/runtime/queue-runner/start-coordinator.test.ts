@@ -424,3 +424,31 @@ test("Goal expected owner is copied before waits, and an already stale owner can
     waiting.attemptCount=99n;lease.release();assert.equal(await operation,true);
   });
 });
+
+test("claimed intake submission commits the transfer before backend dispatch, through shared state facade", async () => {
+  const {admitPromptIntake}=await import("../../../src/store/prompt-intake-write.ts");
+  const {tryClaimPromptIntake,getPromptIntake}=await import("../../../src/store/prompt-intake.ts");
+  await storeFixture(async path=>{
+    await admitPromptIntake(path,{jobId:"intake",targetThreadId:"target",channelId:1n,ownerUserId:2n,discordMessageId:3n,
+      rawPrompt:"raw",autoQueueWhenBusy:true,requireCurrentMirror:false,createdAt:1});
+    const claim=await tryClaimPromptIntake(path,"intake",10,100);assert.ok(claim);
+    let transfers=0,starts=0;
+    const b=backend({startClaimedTurn:async owned=>{starts++;assert.equal(await getPromptIntake(path,"intake"),null);assert.equal(owned.prompt,"prepared");return "ack";}});
+    const queue=new QueueStartCoordinator(path,b.value,{clock:()=>20,state:{...state,promotePromptIntakeToQueue:async(...args)=>{transfers++;return state.promotePromptIntakeToQueue(...args);}}});
+    const submission=await queue.submitPromptIntake(claim,"target","prepared");assert.equal(submission.turnId,"ack");assert.equal(transfers,1);assert.equal(starts,1);
+    await assert.rejects(()=>queue.submitPromptIntake(claim,"target","prepared"),/claim is no longer current/);assert.equal(starts,1);
+  });
+});
+
+test("failed intake lease validation never dispatches and releases the target lock", async () => {
+  const {admitPromptIntake}=await import("../../../src/store/prompt-intake-write.ts");
+  const {tryClaimPromptIntake,getPromptIntake}=await import("../../../src/store/prompt-intake.ts");
+  await storeFixture(async path=>{
+    await admitPromptIntake(path,{jobId:"intake",targetThreadId:"target",channelId:1n,ownerUserId:2n,discordMessageId:null,
+      rawPrompt:"raw",autoQueueWhenBusy:true,requireCurrentMirror:false,createdAt:1});
+    const claim=await tryClaimPromptIntake(path,"intake",10,20);assert.ok(claim);const b=backend();
+    const queue=new QueueStartCoordinator(path,b.value,{clock:()=>20});
+    await assert.rejects(()=>queue.submitPromptIntake(claim,"target","prepared"),/claim is no longer current/);
+    assert.equal(b.calls.includes("start"),false);assert.equal(queue.locks.activeTargetCount,0);assert.ok(await getPromptIntake(path,"intake"));
+  });
+});

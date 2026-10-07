@@ -147,3 +147,5 @@ export async function enqueue(path: string, input: NewQueueJob): Promise<QueueEn
 export async function enqueueIfMirrorMatches(path: string, input: NewQueueJob, mapping: ExpectedMirrorMapping): Promise<QueueEnqueueResult> {
   return ownedEnqueue(path,snapshotJob(input),snapshotMapping(mapping));
 }
+
+export {snapshotJob as snapshotNewQueueJob};

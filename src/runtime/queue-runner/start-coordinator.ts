@@ -1,3 +1,5 @@
+import type { PromptIntakeClaim } from "../../store/prompt-intake.ts";
+import { snapshotPromptIntakeClaim } from "../../store/prompt-intake-write.ts";
 import type { PendingGoalProgress } from "../../store/goal-progress.ts";
 import { QueueRecoveryCoordinator } from "./recovery-coordinator.ts";
 import type { RecoveryReport } from "./recovery-state.ts";
@@ -161,8 +163,15 @@ export class QueueStartCoordinator {
     return this.#submit(jobId, target, channel, owner, message, prompt, true);
   }
 
+  async submitPromptIntake(input: PromptIntakeClaim, target: string, prompt: string): Promise<Submission> {
+    const claim = snapshotPromptIntakeClaim(input), intake = claim.intake;
+    if (intake.ownerUserId === null) throw new QueueIntegerRangeError();
+    return this.#submit(intake.jobId, target, intake.channelId, intake.ownerUserId,
+      intake.discordMessageId, prompt, intake.requireCurrentMirror, claim);
+  }
+
   async #submit(jobId: string, target: string, channel: bigint, owner: bigint,
-    message: bigint | null, prompt: string, mirror: boolean): Promise<Submission> {
+    message: bigint | null, prompt: string, mirror: boolean, intakeClaim: PromptIntakeClaim | null = null): Promise<Submission> {
     for (const value of [jobId, target, prompt])
       if (typeof value !== "string" || /[\uD800-\uDFFF]/u.test(value)) throw new TypeError("Expected well-formed submission text");
     for (const value of [channel, owner, ...(message === null ? [] : [message])])
@@ -178,7 +187,9 @@ export class QueueStartCoordinator {
       const createdAt = this.#now();
       const input = {jobId, targetThreadId: target, channelId: channel, ownerUserId: owner,
         discordMessageId: message, appServerGeneration: generation, prompt, queued, ackSent: true, createdAt};
-      const enqueued = mirror
+      const enqueued = intakeClaim !== null
+        ? await state.promotePromptIntakeToQueue(path, intakeClaim, input, createdAt)
+        : mirror
         ? await state.enqueueIfMirrorMatches(path, input, {discordChannelId: channel, targetThreadId: target})
         : await state.enqueue(path, input);
       if (!enqueued.created) return presentSavedSubmission(path, enqueued.job, state);
