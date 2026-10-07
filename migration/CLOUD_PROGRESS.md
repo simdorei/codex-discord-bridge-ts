@@ -1057,3 +1057,32 @@ live data changes between read snapshots, exact ordering, legacy/foreign-job Goa
 scope, grant error precedence, missing-file read-only behavior and zero getter calls.
 No POST, grant creation, backend connection, worker-loop scheduling or performance
 certification is established by this preflight slice.
+
+## 2026-10-07 — Receipt-aware chunk send orchestration
+
+Connected completion_worker/receipt.rs ordering: validate immutable request before
+storage, claim the exact logical intent/body (including component tuple bytes),
+skip Delivered, refuse Unknown/conflict/blocked/Held without sending, then await a
+trusted transport's validated nonzero u64 message ID and commit its receipt. Input
+chunk/guard/component data is captured before storage awaits. Simultaneous same-key
+calls cannot both reach the transport in the tested SQLite ownership model.
+
+Failure classification follows the pinned typed categories/status list: only 429
+is retryable; authoritative local/selected 4xx rejections block; transport, receipt
+decode, 5xx and unclassified failures stay unknown. Registered fault metadata is
+private, so forged/proxy errors cannot create retry authority or trigger property
+inspection. After accepted-message receipt commit failure, no new send is permitted.
+
+The transport is a REQUIRED trusted interface. It must decode the COMPLETE provider
+response before returning an exact bigint ID; this slice validates that returned ID
+but DOES NOT implement or certify the HTTP/Twilight Message decoder. No production
+transport default, credentials or network POST is installed. Caller must own/await
+the whole Promise; detached work, task-drop equivalence and hard cancellation are
+not certified. Full completion-loop/error-dispatch integration remains unfinished.
+
+Evidence .runtime/cloud-receipt-sender-054: 12 new cases / 33 focused, full
+**2,593 PASS, 0 fail/skip/cancel; strict TS exit 0**. Uses real isolated receipt store
+and injected transport only. Tests include in-flight same-key concurrency, exact
+nonce retry, definitive versus ambiguous failures, zero-trap forged errors, no-file
+invalid input, commit failure, component identity changes, held New output, invalid
+IDs, beyond-IEEE754 confirmed ID preservation and caller mutation after entry.

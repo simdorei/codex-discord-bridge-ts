@@ -2,9 +2,11 @@ import {serializeDiscordComponent,type DiscordComponent} from "./components.ts";
 import {messageNonce} from "./message-nonce.ts";
 import {DISCORD_MAX_LEN,requireDiscordText} from "./text.ts";
 export type MessageContentFailure={readonly kind:"ContentEmpty"}|{readonly kind:"ContentTooLong";readonly actual:number;readonly maximum:number};
+const contentErrors=new WeakMap<object,string>();
+export function idempotentContentErrorMessage(value:unknown):string|null{return value!==null&&(typeof value==="object"||typeof value==="function")?contentErrors.get(value)??null:null;}
 export class IdempotentMessageContentError extends Error{
   readonly kind:MessageContentFailure["kind"];readonly failure:MessageContentFailure;
-  constructor(failure:MessageContentFailure){super(failure.kind==="ContentEmpty"?"Discord message content must not be empty":`Discord message content has ${failure.actual} characters; maximum is ${failure.maximum}`);this.name="IdempotentMessageContentError";this.kind=failure.kind;this.failure=Object.freeze({...failure});}
+  constructor(failure:MessageContentFailure){super(failure.kind==="ContentEmpty"?"Discord message content must not be empty":`Discord message content has ${failure.actual} characters; maximum is ${failure.maximum}`);this.name="IdempotentMessageContentError";this.kind=failure.kind;this.failure=Object.freeze({...failure});contentErrors.set(this,this.message);}
 }
 export interface IdempotentMessageRequest {readonly method:"POST";readonly path:string;readonly body:string}
 /** No-components CreateMessage profile. Authentication, HTTP and typed receipt decoding belong to the transport adapter. */
