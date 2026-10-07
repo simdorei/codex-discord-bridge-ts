@@ -3,6 +3,11 @@ import * as MutationAttempt from "./mutation-attempt.ts";
 import * as QueueEnqueue from "./queue-enqueue.ts";
 import * as QueueMarkRunning from "./queue-mark-running.ts";
 import * as AsyncAdmission from "./async-resolution-admission.ts";
+import * as QueueRead from "./queue-read.ts";
+import * as ExecutionHold from "./execution-hold.ts";
+
+export const listFiltered: typeof QueueRead.listFiltered = QueueRead.listFiltered;
+export const eligibleJobs: typeof ExecutionHold.eligibleJobs = ExecutionHold.eligibleJobs;
 
 export const asyncAdmissionHeld: typeof AsyncAdmission.asyncResolutionAdmissionHeld =
   AsyncAdmission.asyncResolutionAdmissionHeld;
@@ -26,6 +31,8 @@ export const openCheckedRead: typeof CheckedRead.open =
   CheckedRead.open;
 
 export interface IStateAccessFacade {
+  readonly listFiltered: typeof QueueRead.listFiltered;
+  readonly eligibleJobs: typeof ExecutionHold.eligibleJobs;
   readonly asyncAdmissionHeld: typeof AsyncAdmission.asyncResolutionAdmissionHeld;
   readonly asyncTargetDispatchHeld: typeof AsyncAdmission.asyncQuestionTargetDispatchHeld;
   readonly enqueue: typeof QueueEnqueue.enqueue;
@@ -41,6 +48,8 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  listFiltered,
+  eligibleJobs,
   asyncAdmissionHeld,
   asyncTargetDispatchHeld,
   enqueue,

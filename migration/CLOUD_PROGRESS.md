@@ -66,3 +66,31 @@ use the state interface to check masking, warning precedence, isolation and
 error identity. These are not live Discord execution or a complete queue
 coordinator. Existing runtime intake/start/recovery orchestration remains open.
 Latest local logs: `.runtime/cloud-admission-owned-002/`.
+
+## Target serialization and queue read coordinator
+
+`TargetLocks` implements shared normal/non-waiting target leases, FIFO waiting,
+queued cancellation, idempotent release and cleanup after the final owner.
+Unlike Rust RAII, JavaScript callers must release explicit leases or use `run`,
+which releases in `finally`. Aborting a granted lease does not release its owner.
+This is event-loop-local coordination, not a distributed/process-wide mutex.
+Authority: `queue_runner.rs::target_lock`, `target_lease.rs` and lock-cache tests.
+
+`QueueReadCoordinator.busyStatus` uses that shared lock and the exact backend →
+queue-list → durable-hold-filter sequence; even an active turn does not mask a
+later storage error. `controlBinding` preserves its unlocked read and exactly-one
+Starting/Running non-goal-waiting selection. Storage reads go through the facade.
+`eligibleJobs` excludes only held Pending records and does not mutate inputs.
+
+Full Linux suite: 2,101 passed, zero failed/skipped; strict TypeScript passed.
+New tests cover FIFO, cross-target progress, 1,000 historical target cleanups,
+cancelled waiters, stale releases, errors, real queue/hold filtering and unchanged
+attempt counts. A first test run caught unsupported TS parameter-property syntax;
+explicit field declarations fixed it without changing Node execution flags.
+Test job construction was shared rather than duplicated across runtime suites.
+Latest logs: `.runtime/cloud-target-locks-003/`.
+
+Still missing: claim-fenced start/ACK/failure transitions, resident late-stop
+binding, full submit/completion/recovery coordination and transport/restart wiring.
+The existing compatibility mutation helpers must not substitute for guarded
+`try_begin_attempt` / `*_if_claimed` APIs.

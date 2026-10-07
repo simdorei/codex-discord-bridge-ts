@@ -4,15 +4,8 @@ import {
   presentSavedSubmission, withTargetHold,
 } from "../../../src/runtime/queue-runner/saved-submission-presentation.ts";
 import { EXECUTION_HOLD_PREFIX, replayExisting } from "../../../src/runtime/queue-runner/saved-submission.ts";
-import type { SourceQueueJob, Submission, BackendFailureKind } from "../../../src/runtime/queue-runner/saved-submission.ts";
-
-function job(overrides: Partial<SourceQueueJob> = {}): SourceQueueJob {
-  return { jobId: "saved", targetThreadId: "target", channelId: 1n, ownerUserId: null,
-    discordMessageId: null, appServerGeneration: 1n, executionGeneration: null,
-    turnObservationGeneration: null, goalWaiting: false, prompt: "prompt", queued: true,
-    ackSent: true, state: "Pending", attemptCount: 2n, turnId: null, baselineTurnIds: [],
-    lastError: "", createdAt: 0, updatedAt: 0, ...overrides };
-}
+import type { Submission, BackendFailureKind } from "../../../src/runtime/queue-runner/saved-submission.ts";
+import { queueJob as job } from "../../helpers/queue-job.ts";
 
 test("pending hold overlays presentation without mutating the job or attempts", async () => {
   const original = job(); const before = structuredClone(original);

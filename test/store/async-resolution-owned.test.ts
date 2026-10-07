@@ -7,6 +7,9 @@ import { join, dirname } from "node:path";
 import { openInitialized } from "../../src/store/owned-driver.ts";
 import { StateAccessFacade } from "../../src/store/state-access-facade.ts";
 import { REVIEWED_INCIDENT_THREAD } from "../../src/store/async-resolution-policy.ts";
+import { eligibleJobsIn, holdIn } from "../../src/store/execution-hold.ts";
+import { queueJob } from "../helpers/queue-job.ts";
+import { QueueReadCoordinator } from "../../src/runtime/queue-runner/read-coordinator.ts";
 
 async function fixture(run: (path: string) => Promise<void>): Promise<void> {
   const parent = realpathSync(tmpdir());
@@ -77,5 +80,44 @@ test("invalid input does not create a database; native open errors reject", asyn
     assert.equal(existsSync(path), false);
     await assert.rejects(StateAccessFacade.asyncTargetDispatchHeld(join(path, "missing.sqlite"), "t"));
     assert.equal(existsSync(path), false);
+  });
+});
+
+test("execution hold filtering consults only Pending jobs and retains order/references", async () => {
+  const memory = new DatabaseSync(":memory:");
+  try {
+    const running = queueJob({state: "Running"});
+    assert.deepEqual(eligibleJobsIn(memory, [running]), [running]); // Missing hold table must stay unread.
+    assert.throws(() => eligibleJobsIn(memory, [queueJob()]), /no such table/);
+  } finally { memory.close(); }
+  await fixture(async path => {
+    const db = await openInitialized(path);
+    try { holdIn(db, "held", "t", "", "{}"); } finally { db.close(); }
+    const clear = queueJob({jobId: "clear"}); const blocked = queueJob({jobId: "held"});
+    const running = queueJob({jobId: "held", state: "Running"});
+    const original = [clear, blocked, running];
+    const result = await StateAccessFacade.eligibleJobs(path, original);
+    assert.deepEqual(result, [clear, running]);
+    assert.equal(result[0], clear); assert.equal(result[1], running);
+    assert.equal(original.length, 3);
+  });
+});
+
+test("busy coordinator uses real facade queue and durable execution holds", async () => {
+  await fixture(async path => {
+    let active: string | null = null;
+    const coordinator = new QueueReadCoordinator(path, {activeTurnId: async () => active});
+    await StateAccessFacade.enqueue(path, queueJob());
+    assert.deepEqual(await coordinator.busyStatus("target"), {busy: true, allowSteer: false});
+    assert.deepEqual(await coordinator.busyStatus("other"), {busy: false, allowSteer: false});
+    const db = await openInitialized(path);
+    try { holdIn(db, "saved", "target", "uncertain outcome", "{}"); } finally { db.close(); }
+    assert.deepEqual(await coordinator.busyStatus("target"), {busy: false, allowSteer: false});
+    active = "live";
+    assert.deepEqual(await coordinator.busyStatus("target"), {busy: true, allowSteer: true});
+    assert.deepEqual(await coordinator.controlBinding("target"), ["live", null]);
+    const jobs = await StateAccessFacade.listFiltered(path, "target", null);
+    assert.equal(jobs.length, 1); assert.equal(jobs[0]?.state, "Pending");
+    assert.equal(jobs[0]?.attemptCount, 0n);
   });
 });

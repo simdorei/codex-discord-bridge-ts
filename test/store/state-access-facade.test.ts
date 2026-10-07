@@ -19,6 +19,8 @@ import * as QueueMarkRunning from "../../src/store/queue-mark-running.ts";
 import * as MutationAttempt from "../../src/store/mutation-attempt.ts";
 import { CheckedRead } from "../../src/store/owned-driver.ts";
 import * as AsyncAdmission from "../../src/store/async-resolution-admission.ts";
+import * as QueueRead from "../../src/store/queue-read.ts";
+import * as ExecutionHold from "../../src/store/execution-hold.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
@@ -38,6 +40,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.openCheckedRead, CheckedRead.open);
     assert.strictEqual(StateAccessFacade.asyncAdmissionHeld, AsyncAdmission.asyncResolutionAdmissionHeld);
     assert.strictEqual(StateAccessFacade.asyncTargetDispatchHeld, AsyncAdmission.asyncQuestionTargetDispatchHeld);
+    assert.strictEqual(StateAccessFacade.listFiltered, QueueRead.listFiltered);
+    assert.strictEqual(StateAccessFacade.eligibleJobs, ExecutionHold.eligibleJobs);
   });
 
   it("exposes exact direct function references via named whole-function aliases", () => {
@@ -63,16 +67,18 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "asyncAdmissionHeld",
       "asyncTargetDispatchHeld",
       "beginChecked",
+      "eligibleJobs",
       "enqueue",
       "enqueueIfMirrorMatches",
       "enqueueInTransaction",
       "finish",
+      "listFiltered",
       "markRunning",
       "openCheckedRead",
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected);
-    assert.strictEqual(actual.length, 10);
+    assert.strictEqual(actual.length, 12);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
