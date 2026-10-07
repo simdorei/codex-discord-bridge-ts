@@ -1354,3 +1354,24 @@ finish fault verify rollback, lazy no-file rounds, duplicate-source isolation,
 backpressure, finite wake passes, rotation and orphan evidence retention. Initial
 tests assumed a nonexistent list alias and one-page restart; corrected to actual
 SQL count and bounded two-page behavior, original RED logs retained.
+
+## 2026-10-07 — Typed terminal outcomes and structured usage metadata
+
+Ported outcomes.rs terminal parsing/history-state map/journal payload and the bounded
+structured usage detector from error.rs. Invalid-turn/thread/id/status/error order,
+exact status spelling, interrupted origin, i64 duration classification, 1000-scalar
+failed-message bound and last-duplicate-turn sorted map behavior are preserved.
+A non-null codexErrorInfo takes precedence over incidental nested usage tokens;
+arrays/prose/429 alone do not match. Journal payloads omit arbitrary extra details.
+Completion message formatting now aliases this shared TurnStatus boundary.
+
+These functions expect already-decoded Serde Values, preserving bigint integer vs
+number float semantics. They neither run an app-server nor authorize model switching
+or automatic Reserve. Central registration of new errors and full cross-language
+error taxonomy are unfinished. Final-text extraction is a separate remaining leaf.
+
+Evidence .runtime/cloud-turn-outcomes-069: 8 new cases, full **2,717 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Covers exact error precedence, every terminal
+status, duration limits/exponents/-0, structured depth/priority, accessor-free own
+fields, Unicode bound, sorted history and sanitized journal roundtrip. No fresh Rust
+executable differential or live RPC.
