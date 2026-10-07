@@ -1717,3 +1717,18 @@ ran. Reader cancellation/disposal and fatal UTF-8 LF/CRLF decoding remain explic
 requirements. Cargo.lock pins Tokio 1.53.1; its exact line-reader dependency source was
 not locally available and versioned docs retrieval failed, so latest Tokio docs were
 not substituted as frozen source proof. No byte-framing parity claim is made here.
+
+## 2026-10-07 — Exact current-turn response claim ownership
+
+Centralized current-turn validation plus claim mutation in ClientRuntimeState. It checks
+canonical occurrence/state first, then the source's direct turnId field, Rust trim and
+exact active turn before claiming. Added explicit response claim resolution/disposal:
+unresolved disposal remains indeterminate, successful resolution promotes at most one
+deferred occurrence, and a queue adapter failure cannot replay an already committed
+resolution. Current-turn claims must begin inside serialized writer preflight; this
+helper alone does not provide write permission or confirm a wire response.
+
+Evidence .runtime/cloud-server-response-claim-088: 6 focused PASS, full **2,860 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Stale IDs/turns, direct-vs-nested turn field,
+NEL/BOM, already-claimed error precedence, indeterminate disposal and promotion failure
+covered. Explicit JS finally-disposal remains required instead of automatic Rust Drop.

@@ -1,8 +1,9 @@
 import {AppServerClosedError} from "./client-errors.ts";
 import {NotificationState,type AppNotification} from "./notification-state.ts";
-import {ServerRequestState,type PendingServerRequest,type ServerRequestRecordOutcome} from "./server-request-state.ts";
+import {ServerRequestState,ServerResponseStateError,type PendingServerRequest,type ServerRequestRecordOutcome} from "./server-request-state.ts";
 import {ServerRequestOccurrence,type RequestId} from "../protocol/ids.ts";
-import {serdeField} from "./value.ts";
+import {serdeField,rustTrim} from "./value.ts";
+import {extractThreadId} from "./identity.ts";
 export interface ClientLifecycleSnapshot{readonly generation:bigint;readonly healthy:boolean;readonly initialized:boolean;readonly processId:number|null;readonly closedReason:string|null}
 export interface DeadGenerationWork{readonly generation:bigint;readonly closedReason:string;readonly activeTurns:readonly {readonly threadId:string;readonly turnId:string}[];readonly serverRequests:readonly PendingServerRequest[]}
 export {AppServerClosedError} from "./client-errors.ts";
@@ -36,6 +37,12 @@ export class ClientRuntimeState{
   certifyObservationPrefix(through:bigint):boolean{return this.#notifications.certifyObservationPrefix(through);}
   recordServerRequest(request:PendingServerRequest):ServerRequestRecordOutcome{return this.#requests.record(request);}
   beginServerResponse(id:RequestId,occurrence:ServerRequestOccurrence):void{this.#requests.beginResponse(id,occurrence);}
+  /** Atomic source current-turn check and claim; call from writer preflight AFTER its lock. */
+  beginCurrentServerResponse(id:RequestId,occurrence:ServerRequestOccurrence):void{
+    const request=this.#requests.responseCandidate(id,occurrence),thread=extractThreadId(request.params),turn=serdeField(request.params,"turnId");
+    if(thread===null||typeof turn!=="string"||turn===""||rustTrim(turn)!==turn||this.#notifications.activeTurnId(thread)!==turn)throw new ServerResponseStateError("StaleServerRequest",id);
+    this.#requests.beginResponse(id,occurrence);
+  }
   serverResponseCandidate(id:RequestId,occurrence:ServerRequestOccurrence):PendingServerRequest{return this.#requests.responseCandidate(id,occurrence);}
   markServerResponseIndeterminate(id:RequestId,occurrence:ServerRequestOccurrence):void{this.#requests.markIndeterminate(id,occurrence);}
   resolveServerRequest(id:RequestId,occurrence:ServerRequestOccurrence):PendingServerRequest|null{return this.#requests.resolve(id,occurrence);}
