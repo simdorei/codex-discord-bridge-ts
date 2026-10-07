@@ -6,7 +6,7 @@ import {DeliveryFailure} from "../../discord/delivery.ts";
 import {deliverIdempotentChunks,outboxIdentity,type CompletionDeliveryIdentity} from "./delivery-identity.ts";
 import {sendReceiptChunk,CompletionHeldError,CompletionDeliveryError,isCompletionHeld,type DiscordReceiptTransport} from "./receipt-sender.ts";
 
-export interface CompletionFailureContext {readonly deliveryId:string;readonly stage:"preflight-or-send"}
+export interface CompletionFailureContext {readonly deliveryId:string;readonly stage:"preflight-or-send"|"goal-send"}
 /** Central diagnostic adapter is mandatory: it must be synchronous, passive and public-safe.
  * Exact Rust Display/Debug formatting is not implemented by this orchestration module. */
 export interface CompletionFailureRenderer {render(error:unknown,context:CompletionFailureContext):string}
@@ -59,8 +59,10 @@ export async function attemptAllFinals<T>(items:Iterable<T>,attempt:(item:T)=>Pr
 
 /** Shared source send_idempotent_text boundary for final and progress delivery. */
 export async function sendCompletionText(path:string,transport:DiscordReceiptTransport,channel:bigint,identity:CompletionDeliveryIdentity,text:string,guard:DeliveryGuard):Promise<void>{
-  if(typeof channel!=="bigint"||channel<=0n||channel>=(1n<<63n))throw new CompletionChannelIdError();
+  validateCompletionChannel(channel);
   const fixedGuard=Object.freeze({jobId:guard.jobId,threadId:guard.threadId,turnId:guard.turnId});
   try{await deliverIdempotentChunks(text,{retryDelaysMs:[],chunkMarkers:true},identity,chunk=>sendReceiptChunk(path,transport,channel,chunk,[],fixedGuard));}
   catch(error){if(error instanceof DeliveryFailure){if(isCompletionHeld(error.source))throw error.source;throw new CompletionChunkFailure(error);}throw error;}
 }
+
+export function validateCompletionChannel(channel:bigint):void{if(typeof channel!=="bigint"||channel<=0n||channel>=(1n<<63n))throw new CompletionChannelIdError();}

@@ -1174,3 +1174,20 @@ retirement failure and confirmed-receipt reentry, failed-job isolation and zero-
 caller accessors. Production scheduler/log dispatch, real HTTP/full decoder and
 native cancellation are still unfinished; separate owned reads are source behavior,
 not an atomic authorization snapshot or permission to bypass the receipt writer.
+
+## 2026-10-07 — Goal progress receipt delivery
+
+Ported goal_progress.rs delivery ordering: legacy missing-job evidence is retained;
+New/original first-reply readiness and signed channel conversion precede send-stage
+error recording. Goal identity uses thread/turn, the shared guarded chunk sender
+awaits confirmations, and only then retires progress. Send failures are recorded
+through the mandatory central diagnostic adapter; record failure takes precedence.
+Preflight and retirement failures do not rewrite saved error text. A late send-stage
+Held is recorded per the source, unlike final-outbox Held handling.
+
+Evidence .runtime/cloud-goal-delivery-060: 7 new cases / 24 focused, full
+**2,636 PASS, 0 fail/skip/cancel; strict TS exit 0**. Tests cover legacy/early Held,
+invalid channel, ambiguous no-resend, failed error record, confirmed-receipt recovery
+after retirement failure and later-item recovery. Uses isolated SQLite and required
+injected transport; production scheduler, full response decoder and central Rust
+Display/Debug parity remain incomplete. No network POST or deployment occurred.
