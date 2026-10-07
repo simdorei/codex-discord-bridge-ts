@@ -559,3 +559,20 @@ was not loosened. Focused begin/read tests 19 PASS; target tests 6 PASS. Actual
 full target **2,363 PASS, 0 fail/skip/cancel, strict TS exit 0**. Runtime RPC fork
 orchestration and recording failure wrappers remain unfinished. No actual Codex
 fork, live DB, Windows test or fresh Rust executable comparison was performed.
+
+## 2026-10-07: fork failure recording and definite cancellation
+
+Ported failure.rs and the exact-expected entrypoint of definite_failure.rs.
+Ambiguous failure and unresolved notices share one transaction; later definite
+reporting cannot clear sticky ambiguity. An observed target cannot be overwritten
+by a fork-outcome error. Finalization errors preserve the observed target and stage
+phase-specific notices. Definite cancellation compares all 12 expected handoff
+fields before writing notices and deleting the fence atomically. Expected input
+is copied before awaits through own-data fields; the field list is immutable.
+Existing notice format/staging and typed cancellation errors are reused.
+
+Evidence: .runtime/cloud-fork-failure-030. Six focused cases cover sticky ambiguity,
+notice/cancellation rollback, observed-target protection, complete expected
+identity and caller mutation. Runtime fork orchestration remains pending; no RPC
+was sent. Final combined target: **2,369 tests PASS, 0 fail/skip/cancel; strict TS
+exit 0** on pinned Node 24.21.0.
