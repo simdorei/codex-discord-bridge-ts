@@ -939,3 +939,28 @@ logs retained separately. Tests cover dead-generation/outbox preservation, mixed
 queue/intake and unowned work, owner/128-bound rejection, final-check and ignored
 revision rollback, async-check rejection, empty/max revision and invalid UTF-8
 intake evidence. No live DB/backend/process or production deployment was touched.
+
+## 2026-10-07 — Discord text chunks, logical nonce and sequential retry
+
+Migrated cdr-discord text.rs and delivery.rs's bounded millisecond policy profile,
+plus idempotent_message.rs::message_nonce. Text splitting preserves Rust Unicode
+scalar boundaries and whitespace behavior (NEL trimmed, BOM retained), preferred
+newlines, exact structured-payload whitespace and the 32-character marker budget.
+The source's short-limit truncation suffix behavior is deliberately retained.
+An independent simple scalar reference matches deterministic mixed-input cases.
+
+Nonce framing uses the exact context, UTF-8 byte-length prefixes and big-endian u64
+identities/index, then masks the SHA-256 prefix to signed i64 range. Both immutable
+Rust contract goldens match exactly (2340874901045434203 and 3227115366091472613).
+This is time-window server nonce support, not permanent exactly-once delivery.
+HTTP request building, mention/component policy and receipt handling remain next work.
+
+Retry owns snapshots of chunks/delays, waits for each actual send, retries only the
+same indexed failed chunk, and preserves exact failure part/attempt/raw source.
+Defaults are 750ms then 2000ms. Supported injected policies are nonnegative integer
+milliseconds within Node's native timer range; general Rust Duration/nanosecond
+semantics and task-drop/abort/resource reclamation are not certified by this adapter.
+
+Evidence .runtime/cloud-discord-delivery-050: 12 focused, full **2,539 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Pure formatting/golden and injected transport/
+sleep tests only; no live Discord request, publication or production startup.
