@@ -1,3 +1,4 @@
+import * as AsyncHistory from "./async-history.ts";
 import * as ObservedCompletion from "./observed-completion.ts";
 import * as Delivery from "./delivery.ts";
 import { CheckedRead } from "./owned-driver.ts";
@@ -10,6 +11,16 @@ import * as ExecutionHold from "./execution-hold.ts";
 import * as QueueClaims from "./queue-claims.ts";
 import * as DeadGeneration from "./dead-generation-admission.ts";
 import * as Preflight from "./queue-preflight-failure.ts";
+
+export const captureAsyncHistorySnapshot: typeof AsyncHistory.captureAsyncHistorySnapshot = AsyncHistory.captureAsyncHistorySnapshot;
+export const retainAsyncHistoryCandidate: typeof AsyncHistory.retainAsyncHistoryCandidate = AsyncHistory.retainAsyncHistoryCandidate;
+export const captureTerminalHistorySnapshot: typeof AsyncHistory.captureTerminalHistorySnapshot = AsyncHistory.captureTerminalHistorySnapshot;
+export const settleTerminalHistory: typeof AsyncHistory.settleTerminalHistory = AsyncHistory.settleTerminalHistory;
+
+export const pendingObservedCompletions: typeof ObservedCompletion.pendingObservedCompletions = ObservedCompletion.pendingObservedCompletions;
+export const hasObservedCompletion: typeof ObservedCompletion.hasObservedCompletion = ObservedCompletion.hasObservedCompletion;
+export const recordObservedCompletionError: typeof ObservedCompletion.recordObservedCompletionError = ObservedCompletion.recordObservedCompletionError;
+export const finishObservedCompletion: typeof ObservedCompletion.finishObservedCompletion = ObservedCompletion.finishObservedCompletion;
 
 export const recordObservedCompletionForResident: typeof ObservedCompletion.recordObservedCompletionForResident = ObservedCompletion.recordObservedCompletionForResident;
 
@@ -54,6 +65,14 @@ export const openCheckedRead: typeof CheckedRead.open =
   CheckedRead.open;
 
 export interface IStateAccessFacade {
+  readonly captureAsyncHistorySnapshot: typeof AsyncHistory.captureAsyncHistorySnapshot;
+  readonly retainAsyncHistoryCandidate: typeof AsyncHistory.retainAsyncHistoryCandidate;
+  readonly captureTerminalHistorySnapshot: typeof AsyncHistory.captureTerminalHistorySnapshot;
+  readonly settleTerminalHistory: typeof AsyncHistory.settleTerminalHistory;
+  readonly pendingObservedCompletions: typeof ObservedCompletion.pendingObservedCompletions;
+  readonly hasObservedCompletion: typeof ObservedCompletion.hasObservedCompletion;
+  readonly recordObservedCompletionError: typeof ObservedCompletion.recordObservedCompletionError;
+  readonly finishObservedCompletion: typeof ObservedCompletion.finishObservedCompletion;
   readonly holdStartingForAmbiguousCandidatesIfClaimed: typeof QueueClaims.holdStartingForAmbiguousCandidatesIfClaimed;
   readonly listPendingDeliveries: typeof Delivery.listPendingDeliveries;
   readonly recordDeliveryFailure: typeof Delivery.recordDeliveryFailure;
@@ -83,6 +102,14 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  captureAsyncHistorySnapshot,
+  retainAsyncHistoryCandidate,
+  captureTerminalHistorySnapshot,
+  settleTerminalHistory,
+  pendingObservedCompletions,
+  hasObservedCompletion,
+  recordObservedCompletionError,
+  finishObservedCompletion,
   holdStartingForAmbiguousCandidatesIfClaimed,
   listPendingDeliveries,
   recordDeliveryFailure,

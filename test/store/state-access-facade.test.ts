@@ -1,3 +1,4 @@
+import * as AsyncHistory from "../../src/store/async-history.ts";
 import * as ObservedCompletion from "../../src/store/observed-completion.ts";
 import * as Delivery from "../../src/store/delivery.ts";
 import { describe, it } from "node:test";
@@ -29,6 +30,14 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.captureAsyncHistorySnapshot, AsyncHistory.captureAsyncHistorySnapshot);
+    assert.strictEqual(StateAccessFacade.retainAsyncHistoryCandidate, AsyncHistory.retainAsyncHistoryCandidate);
+    assert.strictEqual(StateAccessFacade.captureTerminalHistorySnapshot, AsyncHistory.captureTerminalHistorySnapshot);
+    assert.strictEqual(StateAccessFacade.settleTerminalHistory, AsyncHistory.settleTerminalHistory);
+    assert.strictEqual(StateAccessFacade.pendingObservedCompletions, ObservedCompletion.pendingObservedCompletions);
+    assert.strictEqual(StateAccessFacade.hasObservedCompletion, ObservedCompletion.hasObservedCompletion);
+    assert.strictEqual(StateAccessFacade.recordObservedCompletionError, ObservedCompletion.recordObservedCompletionError);
+    assert.strictEqual(StateAccessFacade.finishObservedCompletion, ObservedCompletion.finishObservedCompletion);
     assert.strictEqual(StateAccessFacade.recordObservedCompletionForResident, ObservedCompletion.recordObservedCompletionForResident);
     assert.strictEqual(StateAccessFacade.listPendingDeliveries, Delivery.listPendingDeliveries);
     assert.strictEqual(StateAccessFacade.recordDeliveryFailure, Delivery.recordDeliveryFailure);
@@ -84,6 +93,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "asyncAdmissionHeld",
       "asyncTargetDispatchHeld",
       "beginChecked",
+      "captureAsyncHistorySnapshot",
+      "captureTerminalHistorySnapshot",
       "completeDelivery",
       "deadTargetHeld",
       "eligibleJobs",
@@ -91,6 +102,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "enqueueIfMirrorMatches",
       "enqueueInTransaction",
       "finish",
+      "finishObservedCompletion",
+      "hasObservedCompletion",
       "holdStartingForAmbiguousCandidatesIfClaimed",
       "listFiltered",
       "listPendingDeliveries",
@@ -98,16 +111,20 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "markRunningIfClaimed",
       "markRunningWithResidentIfClaimed",
       "openCheckedRead",
+      "pendingObservedCompletions",
       "recordDeliveryFailure",
+      "recordObservedCompletionError",
       "recordObservedCompletionForResident",
       "recordPreflightFailure",
       "recordStartFailureIfClaimed",
+      "retainAsyncHistoryCandidate",
+      "settleTerminalHistory",
       "stageOwnedQueueCompletion",
       "tryBeginAttempt",
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected);
-    assert.strictEqual(actual.length, 24);
+    assert.strictEqual(actual.length, 32);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

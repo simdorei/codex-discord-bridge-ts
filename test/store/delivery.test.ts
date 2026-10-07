@@ -187,3 +187,14 @@ test("pending deliveries are ordered by timestamp then ID without dropping old f
     assert.deepEqual((await listPendingDeliveries(path)).map(d=>d.deliveryId),["c","a","b"]);
   });
 });
+test("observed journal reads preserve order and generation, error text does not trim, finish removes only requested row",async()=>{
+  await fixture(async(path,job)=>{
+    await edit(path,db=>db.exec("INSERT INTO codex_observed_completions(thread_id,turn_id,generation,payload) VALUES ('other','second',9223372036854775807,'raw')"));
+    const pending=await state.pendingObservedCompletions(path);assert.deepEqual(pending.map(r=>r.threadId),["target","other"]);
+    assert.equal(pending[1]!.generation,9223372036854775807n);
+    await state.recordObservedCompletionError(path,"target","turn"," "+"😀".repeat(1000));
+    await edit(path,db=>assert.equal(db.prepare("SELECT last_error FROM codex_observed_completions WHERE thread_id='target'").get()?.last_error," "+"😀".repeat(999)));
+    await state.finishObservedCompletion(path,"target","turn");assert.equal(await state.hasObservedCompletion(path,"target","turn"),false);
+    assert.equal(await state.hasObservedCompletion(path,"other","second"),true);
+  });
+});

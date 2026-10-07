@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **2,235 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **2,264 tests passed**, no failures/skips;
 strict TypeScript passed. Migration and Windows/live transport validation remain incomplete.
 
 ## Baseline
@@ -291,3 +291,44 @@ target lock; the full target recovery scheduler is not wired by this leaf.
 Full Linux suite: 2,235 PASS, zero failed/skipped; strict TypeScript PASS.
 Logs: `.runtime/cloud-recovery-attempt-014/`. Outbox checkpoint 2,225 PASS is
 retained in `.runtime/cloud-outbox-013/`. No service/network/deployment action.
+
+
+## Recovery state, journal reads and historical evidence
+
+Added one coordinator-owned recovery state for cold targets, monotonic retry
+backoff and unavailable-error suppression. Read and mutation failures remain
+separate; clearing/pruning a target cannot clear another target's retry state.
+Nanosecond BigInt deadlines avoid wall-clock jumps; platform-specific Rust Instant
+maximum-overflow behavior is not independently reproduced. This state is prepared
+for the full recovery coordinator, not claimed wired to it yet.
+
+Observed-completion reads retain row order and lossless generations. Error
+bookkeeping bounds Unicode scalars without trimming. Finish retains unprovable
+async journals and preserves the source's separate read/delete opens; it is not
+an atomic ownership certificate. These APIs are exposed through StateAccessFacade.
+
+Historical review validates complete original question seals, exact answer prompt,
+64-bit question/selection indices and body defaults. The bounded Serde struct
+reader now additionally supports explicit defaults, u64 and string vectors for
+QuestionBody; it still does not implement general flatten/Option/custom visitors.
+Snapshots have private WeakMap custody and owned data. Caller observations are
+copied before awaits. History candidates preserve canonical hashes, exact input,
+conflicts and semantic keys, revalidate persisted bytes after insertion, and may
+confirm answer receipt but never execution authority. Saturated evidence storage
+or corrupted matching keys leave receipt state unchanged.
+
+Historical terminal snapshots require no active target owner or surviving
+original job, exact question/mapping/seal, supported policy and conflict-free
+prior evidence. Fresh observations must prove idle thread, ended/absent Goal,
+unique exact owner turns and terminal statuses. Settlement rechecks the snapshot,
+updates revisions/certificates/questions atomically, and verifies post-write
+source/certificate identity. Publishing recovery remains held. No prompt replay,
+resident notification provenance or delivery authority is fabricated.
+
+Verification: full Linux suite 2,264 PASS, zero failed/skipped; strict TS PASS.
+Logs `.runtime/cloud-history-016/final/`; earlier recovery-state/journal checkpoint
+2,242 PASS in `.runtime/cloud-recovery-state-015/`. Tests include snapshot mutation,
+forgery, capacity/ignored writes, semantic-key corruption, conflicting answers,
+active/reappearing owners, changed revision, idle/Goal gates and post-write tamper
+rollback. Real backend observation adapters and full recovery scheduling remain
+unfinished, as do Windows/live validation and fresh Rust differential execution.

@@ -1,8 +1,8 @@
 import { parseSerdeValue } from "./serde-json-parse.ts";
 
-/** Required-field Serde structs only: no flatten/default/Option/custom visitors. */
-export type StructField = "string" | "i64" | "bool" | "value" | StructShape;
-export interface StructShape { readonly fields: readonly (readonly [string, StructField])[] }
+/** Required-field Serde structs only: optional explicit defaults; no flatten/Option/custom visitors. */
+export type StructField = "string" | "i64" | "u64" | "string[]" | "bool" | "value" | StructShape;
+export interface StructShape { readonly fields: readonly (readonly [string, StructField])[]; readonly defaults?: Readonly<Record<string, unknown>> }
 
 // JSON.parse checks grammar first. This scanner only finds raw value boundaries;
 // ignored fields must not acquire Value's number, Unicode or recursion semantics.
@@ -40,6 +40,8 @@ function decodeField(raw: string, kind: StructField, depth: number): unknown {
   for (let i = 0; i < depth; i++) value = (value as unknown[])[0];
   if (kind === "value") return value;
   if (kind === "string" && typeof value === "string") return value;
+  if (kind === "string[]" && Array.isArray(value) && value.every(item => typeof item === "string")) return value;
+  if (kind === "u64" && typeof value === "bigint" && value >= 0n && value < (1n << 64n)) return value;
   if (kind === "bool" && typeof value === "boolean") return value;
   if (kind === "i64" && typeof value === "bigint" && value >= -(1n << 63n) && value < (1n << 63n)) return value;
   throw new SyntaxError(`Expected Serde ${kind}`);
@@ -72,7 +74,10 @@ function decodeStruct(raw: string, shape: StructShape, depth: number): Record<st
     if (text[i] === ",") i = whitespace(text, i + 1);
   }
   for (const [key] of shape.fields) {
-    if (!Object.hasOwn(result, key)) throw new SyntaxError(`Missing Serde field: ${key}`);
+    if (!Object.hasOwn(result, key)) {
+      if (shape.defaults !== undefined && Object.hasOwn(shape.defaults,key)) result[key] = shape.defaults[key];
+      else throw new SyntaxError(`Missing Serde field: ${key}`);
+    }
   }
   return result;
 }

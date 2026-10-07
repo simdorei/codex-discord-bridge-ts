@@ -314,3 +314,12 @@ test("foreign resident notification remains diagnostic and cannot enter the owne
     assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_async_terminal_candidates WHERE kind='unverified'").get()?.n,1);
   });
 });
+test("finishing unverified journal preserves unresolved async evidence instead of deleting it",async()=>{
+  await fixture(async(db,row,path)=>{
+    journal(db);await state.finishObservedCompletion(path,"target","turn");
+    assert.equal(await state.hasObservedCompletion(path,"target","turn"),true);
+    await recordAsyncTerminalNotification(path,"target","turn",1n,"resident",payload());
+    await state.finishObservedCompletion(path,"target","turn");
+    assert.equal(await state.hasObservedCompletion(path,"target","turn"),false);
+  });
+});

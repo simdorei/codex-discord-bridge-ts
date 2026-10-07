@@ -10,7 +10,7 @@ import { decodeI64, decodeTextField, textDecoderFor } from "./sqlite-values.ts";
 import { trimUnicodeWhitespace as trim } from "./queue-preflight-failure.ts";
 import { asI64, getOwn } from "./async-resolution-json-helpers.ts";
 
-const CLAIM = `json_object('id',q.id,'runtime_id',q.runtime_id,'generation',q.generation,
+export const ASYNC_QUESTION_CLAIM_SQL = `json_object('id',q.id,'runtime_id',q.runtime_id,'generation',q.generation,
  'thread_id',q.thread_id,'turn_id',q.turn_id,'item_id',q.item_id,'origin_job_id',q.origin_job_id,
  'channel_id',q.channel_id,'owner_user_id',q.owner_user_id,'body',q.body,'chosen',q.chosen,
  'message_id',q.message_id,'dispatch_mode',q.dispatch_mode)`;
@@ -60,7 +60,7 @@ export function asyncExecutionOwnerIn(db: DatabaseSync, row: AsyncObligation): E
   return owner;
 }
 export function exactAsyncOwnerIn(db: DatabaseSync, row: AsyncObligation): boolean {
-  const stmt = db.prepare(`SELECT ${CLAIM} AS claim,CAST(${CLAIM} AS BLOB) AS claim_raw,
+  const stmt = db.prepare(`SELECT ${ASYNC_QUESTION_CLAIM_SQL} AS claim,CAST(${ASYNC_QUESTION_CLAIM_SQL} AS BLOB) AS claim_raw,
     q.preparation_json AS seal,CAST(q.preparation_json AS BLOB) AS seal_raw
     FROM cdr_async_questions q WHERE q.id=? AND EXISTS(SELECT 1 FROM mirror_threads m
       WHERE m.codex_thread_id=q.thread_id AND (m.discord_thread_id=q.channel_id OR m.discord_channel_id=q.channel_id))`);

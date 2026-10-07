@@ -58,3 +58,45 @@ export async function recordObservedCompletionForResident(
     db.close();
   }
 }
+
+import { decodeI64, decodeTextField, textDecoderFor } from "./sqlite-values.ts";
+import { retainAsyncTerminalJournalIn } from "./async-resolution-terminal.ts";
+import { takeUnicodeScalarChars } from "./queue-preflight-failure.ts";
+export interface ObservedCompletion {threadId:string;turnId:string;generation:bigint;payload:string}
+export async function pendingObservedCompletions(path:string):Promise<ObservedCompletion[]> {
+  const db=await openInitialized(path);
+  try {
+    const stmt=db.prepare(`SELECT thread_id,turn_id,generation,payload,CAST(thread_id AS BLOB) AS thread_raw,
+      CAST(turn_id AS BLOB) AS turn_raw,CAST(payload AS BLOB) AS payload_raw,
+      (SELECT encoding FROM pragma_encoding) AS encoding FROM codex_observed_completions ORDER BY rowid`);
+    stmt.setReadBigInts(true);const result:ObservedCompletion[]=[];
+    for(const row of stmt.iterate()) {
+      const decoder=textDecoderFor(row.encoding);
+      result.push({threadId:decodeTextField(row.thread_id,row.thread_raw,"thread_id",false,decoder)!,
+        turnId:decodeTextField(row.turn_id,row.turn_raw,"turn_id",false,decoder)!,
+        generation:decodeI64(row.generation,"generation"),payload:decodeTextField(row.payload,row.payload_raw,"payload",false,decoder)!});
+    }
+    return result;
+  } finally {db.close();}
+}
+export async function hasObservedCompletion(path:string,thread:string,turn:string):Promise<boolean> {
+  const db=await openInitialized(path);
+  try {const stmt=db.prepare("SELECT EXISTS(SELECT 1 FROM codex_observed_completions WHERE thread_id=? AND turn_id=?) AS present");
+    stmt.setReadBigInts(true);return decodeI64(stmt.get(thread,turn)?.present,"present")!==0n;
+  } finally {db.close();}
+}
+export async function recordObservedCompletionError(path:string,thread:string,turn:string,error:string):Promise<void> {
+  if(typeof error!=="string"||/[\uD800-\uDFFF]/u.test(error)) throw new TypeError("Expected well-formed error text");
+  const bounded=takeUnicodeScalarChars(error,1000),db=await openInitialized(path);
+  try {db.prepare("UPDATE codex_observed_completions SET last_error=? WHERE thread_id=? AND turn_id=?").run(bounded,thread,turn);}
+  finally {db.close();}
+}
+export async function finishObservedCompletion(path:string,thread:string,turn:string):Promise<void> {
+  const read=await openInitialized(path);let retain:boolean;
+  try {retain=retainAsyncTerminalJournalIn(read,thread,turn);}finally{read.close();}
+  if(retain) return;
+  // Preserve the source's two separate opens; this is not an atomic ownership certificate.
+  const write=await openInitialized(path);
+  try{write.prepare("DELETE FROM codex_observed_completions WHERE thread_id=? AND turn_id=?").run(thread,turn);}
+  finally{write.close();}
+}

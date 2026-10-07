@@ -171,3 +171,8 @@ export function asyncJournalObservationAllowedIn(db: DatabaseSync,thread: string
   }
   return true;
 }
+
+// Shared internal bounded diagnostic storage; never grants execution authority.
+export { retainCandidate as retainAsyncTerminalCandidateIn };
+
+export { verified as verifiedAsyncTerminalProofIn };
