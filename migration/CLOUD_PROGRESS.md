@@ -1116,3 +1116,27 @@ Evidence .runtime/cloud-completion-message-056: 5 new tests, full **2,604 PASS,
 0 fail/skip/cancel; strict TS exit 0**. Covers all status/Goal labels, Unicode trim,
 known envelope precedence, nesting cap, malformed/range-invalid Serde input and
 last-duplicate-key semantics. No new runtime or deployment certification.
+
+## 2026-10-07 — Final outbox delivery orchestration
+
+Connected final preflight, immutable outbox identity, guarded receipt chunks and
+outbox retirement in pinned phase-1 order. There are no within-invocation retries.
+Held returns without a failure timestamp or attempt increment; other preflight/send
+failures record once, and a recording/clock failure takes precedence. Retirement
+runs only after all receipt confirmations and is outside failure recording. Later
+invocations skip confirmed earlier chunks; unknown sends remain unsent. Batch helper
+awaits every item and returns the first thrown value, including undefined.
+
+REQUIRED adapters remain: trusted full-response-validating transport, Unix clock,
+and one synchronous passive/public-safe failure renderer. This slice preserves raw
+errors and partial-chunk metadata but does not claim exact Rust Display/Debug text
+or install a production central error dispatcher. A validating finite timestamp
+check is the explicit TS clock boundary. Scheduler, start/commentary integration,
+HTTP, native cancellation and newer complete_confirmed optimization remain pending.
+
+Evidence .runtime/cloud-final-delivery-057: 11 new real SQLite/injected transport
+cases; full **2,615 PASS, 0 fail/skip/cancel; strict TS exit 0**. Covers partial 429
+retry, ambiguous no-resend, Held, commentary barrier, bad channel, failed receipt
+commit, failed retirement/reentry, clock/record error precedence, input mutation and
+sequential batch failure ownership. Initial commentary fixture used nonexistent
+columns; corrected fixture only, original RED retained, production guards unchanged.
