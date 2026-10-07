@@ -22,6 +22,8 @@ import * as AsyncAdmission from "../../src/store/async-resolution-admission.ts";
 import * as QueueRead from "../../src/store/queue-read.ts";
 import * as ExecutionHold from "../../src/store/execution-hold.ts";
 import * as QueueClaims from "../../src/store/queue-claims.ts";
+import * as DeadGeneration from "../../src/store/dead-generation-admission.ts";
+import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
@@ -47,6 +49,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.recordStartFailureIfClaimed, QueueClaims.recordStartFailureIfClaimed);
     assert.strictEqual(StateAccessFacade.markRunningIfClaimed, QueueClaims.markRunningIfClaimed);
     assert.strictEqual(StateAccessFacade.markRunningWithResidentIfClaimed, QueueClaims.markRunningWithResidentIfClaimed);
+    assert.strictEqual(StateAccessFacade.deadTargetHeld, DeadGeneration.targetIsHeld);
+    assert.strictEqual(StateAccessFacade.recordPreflightFailure, Preflight.recordPreflightFailure);
   });
 
   it("exposes exact direct function references via named whole-function aliases", () => {
@@ -72,6 +76,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "asyncAdmissionHeld",
       "asyncTargetDispatchHeld",
       "beginChecked",
+      "deadTargetHeld",
       "eligibleJobs",
       "enqueue",
       "enqueueIfMirrorMatches",
@@ -82,12 +87,13 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "markRunningIfClaimed",
       "markRunningWithResidentIfClaimed",
       "openCheckedRead",
+      "recordPreflightFailure",
       "recordStartFailureIfClaimed",
       "tryBeginAttempt",
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected);
-    assert.strictEqual(actual.length, 16);
+    assert.strictEqual(actual.length, 18);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

@@ -6,6 +6,11 @@ import * as AsyncAdmission from "./async-resolution-admission.ts";
 import * as QueueRead from "./queue-read.ts";
 import * as ExecutionHold from "./execution-hold.ts";
 import * as QueueClaims from "./queue-claims.ts";
+import * as DeadGeneration from "./dead-generation-admission.ts";
+import * as Preflight from "./queue-preflight-failure.ts";
+
+export const deadTargetHeld: typeof DeadGeneration.targetIsHeld = DeadGeneration.targetIsHeld;
+export const recordPreflightFailure: typeof Preflight.recordPreflightFailure = Preflight.recordPreflightFailure;
 
 export const tryBeginAttempt: typeof QueueClaims.tryBeginAttempt = QueueClaims.tryBeginAttempt;
 export const recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed = QueueClaims.recordStartFailureIfClaimed;
@@ -37,6 +42,8 @@ export const openCheckedRead: typeof CheckedRead.open =
   CheckedRead.open;
 
 export interface IStateAccessFacade {
+  readonly deadTargetHeld: typeof DeadGeneration.targetIsHeld;
+  readonly recordPreflightFailure: typeof Preflight.recordPreflightFailure;
   readonly tryBeginAttempt: typeof QueueClaims.tryBeginAttempt;
   readonly recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed;
   readonly markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed;
@@ -58,6 +65,8 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  deadTargetHeld,
+  recordPreflightFailure,
   tryBeginAttempt,
   recordStartFailureIfClaimed,
   markRunningIfClaimed,

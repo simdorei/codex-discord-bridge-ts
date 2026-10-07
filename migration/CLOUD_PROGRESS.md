@@ -1,5 +1,8 @@
 # Cloud migration checkpoint
 
+Latest verified Linux checkpoint: **2,152 tests passed**, no failures/skips;
+strict TypeScript passed. Migration and Windows/live transport validation remain incomplete.
+
 ## Baseline
 
 - TS snapshot: `47d0f7f9a3c75a6ec94b38833cd1992740efaeb3`.
@@ -142,3 +145,25 @@ malformed scope/intake, collision, ignored inserts and hostile post-insert trigg
 This does not implement Stop acceptance/dispatch/terminal recovery as a whole.
 Fresh Rust differential execution and Windows validation remain open.
 Latest logs: `.runtime/cloud-late-stop-005/`.
+
+## Direct submission and queued-start coordinator
+
+`QueueStartCoordinator` connects existing enqueue/mirror checks, shared target
+locks, async/dead-generation holds, restart admission permits, all-generation
+queue eligibility, retry delay, backend preflight, guarded claim, dispatch and
+claim-fenced ACK/failure. It implements direct and identified/mirrored submission;
+intake-claim promotion and authoritative recovery are not implemented here.
+
+Backend interfaces are explicit. Resident identity is captured before dispatch;
+the backend receives an owned, frozen claim copy rather than mutable CAS authority.
+Known backend failures retain typed context. Unknown exceptions are propagated;
+after an uncertain dispatch the durable Starting job is not automatically replayed.
+Usage-limit failure commits its hold/notice before notifying the delivery callback.
+The callback still needs actual message-worker wiring.
+
+22 coordinator tests exercise real initialized SQLite with a fake backend, including
+duplicate Discord-message admission, mirror refusal, delayed retry, stale claims,
+old-generation head blocking, shared-lock concurrency, restart drain occupancy and
+cross-thread progress. Full Linux suite: 2,152 passed; strict TS passed. No real
+Discord/Codex network call or process restart was performed.
+Latest logs: `.runtime/cloud-start-006/`.
