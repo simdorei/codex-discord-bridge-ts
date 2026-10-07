@@ -64,3 +64,10 @@ test("cancellation rejects sticky ambiguity and any observed target, then delete
   });
   await storeFixture(async path=>{await begin(path);assert.equal(await cancelAppServerForkHandoffAfterDefiniteFailure(path,"h"),true);assert.equal(await handoff(path),null);});
 });
+
+test("expected routing recheck prevents finalization under locks for a stale observed target",async()=>{
+  await storeFixture(async path=>{await begin(path);await stageAppServerForkTarget(path,"h","new");
+    await assert.rejects(()=>finalizeAppServerForkHandoff(path,"h",2n,{sourceThreadId:"source",targetThreadId:"wrong"}),/different fork handoff/);assert.equal((await handoff(path))?.targetThreadId,null);
+    assert.equal((await finalizeAppServerForkHandoff(path,"h",2n,{sourceThreadId:"source",targetThreadId:"new"})).applied,true);
+  });
+});

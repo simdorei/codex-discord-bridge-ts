@@ -576,3 +576,31 @@ notice/cancellation rollback, observed-target protection, complete expected
 identity and caller mutation. Runtime fork orchestration remains pending; no RPC
 was sent. Final combined target: **2,369 tests PASS, 0 fail/skip/cancel; strict TS
 exit 0** on pinned Node 24.21.0.
+
+## 2026-10-07: selected-target fork runtime and ordered finalization locks
+
+QueueForkCoordinator now drives the durable begin → RPC → response-stage →
+finalize flow through StateAccessFacade and the same TargetLocks as queue work.
+It follows completed chains, blocks unobserved unresolved intents, handles managed
+and forced targets, and preserves typed backend/recording/staging/finalization
+errors. Unknown JS backend exceptions retain the fence instead of authorizing
+cancellation. Generation is evaluated even when a Starting job supplies the stored
+generation, preserving Rust's eager map_or argument behavior. No actual RPC adapter
+is supplied; tests inject the backend. Bulk unmanaged recovery remains pending.
+
+TS-specific lock safety adaptation: after response staging is durably committed,
+the source lock is released and source/target locks are reacquired in deterministic
+order. Finalization rechecks the expected pair inside its transaction. This avoids
+self-lock and AB/BA waits while durable intent prevents repeat RPC. A fault-injected
+crossing-response test exposed a completed A→B→A cycle in the initial TS candidate.
+The runtime's expected-routing path now refuses a target already used as another
+fork source. The legacy store entrypoint without expected routing retains pinned
+SQL behavior. This is an explicit extra runtime refusal, not an exact Rust-runtime
+parity assertion or a demonstrated Rust executable defect.
+
+Same-test SHA RED→GREEN evidence is retained in
+.runtime/cloud-fork-coordinator-032/{red-tests.log,green-tests.log,same-test-sha.txt,
+before-crossing-guard/fork-target.ts}. 8 coordinator tests PASS; ordered-pair and
+store scope tests cover cancellation cleanup and stale routing. Actual full target:
+**2,381 tests PASS, 0 fail/skip/cancel; strict TS exit 0**. Source authority is pinned
+queue_runner/fork_handoff.rs and types.rs, with the lock/cycle adaptation above.

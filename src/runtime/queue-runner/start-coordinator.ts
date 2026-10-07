@@ -1,3 +1,4 @@
+import { QueueForkCoordinator, type AppServerTarget } from "./fork-coordinator.ts";
 import type { PromptIntakeClaim } from "../../store/prompt-intake.ts";
 import { snapshotPromptIntakeClaim } from "../../store/prompt-intake-write.ts";
 import type { PendingGoalProgress } from "../../store/goal-progress.ts";
@@ -35,6 +36,7 @@ export interface QueueStartBackend extends QueueReadBackend {
   readTurns(target: string): Promise<readonly {readonly turnId: string; readonly status?: "Completed" | "Interrupted" | "Failed" | "InProgress"}[]>;
   startClaimedTurn(claim: QueueAttemptClaim): Promise<string>;
   requiresAppServerFork?(): boolean;
+  forkThread?(source: string): Promise<string>;
   readAsyncHistory?(target: string, originals: readonly string[], signal: AbortSignal): Promise<unknown | null>;
   readAsyncTerminal?(target: string, owners: readonly string[], signal: AbortSignal): Promise<unknown | null>;
 }
@@ -45,6 +47,7 @@ type StartState = IStateAccessFacade;
 export class QueueStartCoordinator {
   readonly reads: QueueReadCoordinator;
   readonly #recovery: QueueRecoveryCoordinator;
+  readonly #fork: QueueForkCoordinator;
   readonly locks: TargetLocks;
   readonly #path: string;
   readonly #backend: QueueStartBackend;
@@ -61,10 +64,14 @@ export class QueueStartCoordinator {
     this.locks = options.locks ?? new TargetLocks(); this.#gate = options.admission ?? null;
     this.#clock = options.clock ?? (() => Date.now() / 1000);
     this.#notify = options.notifyDeliveryReady ?? (() => {});
+    this.#fork = new QueueForkCoordinator(path, backend, this.#state, this.locks);
     this.reads = new QueueReadCoordinator(path, backend, this.#state, this.locks);
     this.#recovery = new QueueRecoveryCoordinator(path, backend, this.#state, this.locks, this.#gate,
       () => this.#now(), (target, generation, turns) => this.#start(target, generation, turns));
   }
+
+  ensureAppServerOnlyTarget(source: string): Promise<AppServerTarget> { return this.#fork.ensureTarget(source); }
+  forceAppServerOnlyTarget(source: string): Promise<AppServerTarget> { return this.#fork.forceTarget(source); }
 
   recoverTarget(target: string): Promise<RecoveryReport> { return this.#recovery.recoverTarget(target); }
 

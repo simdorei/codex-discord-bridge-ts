@@ -1,3 +1,8 @@
+import * as ForkBegin from "../../src/store/fork-begin.ts";
+import * as ForkTarget from "../../src/store/fork-target.ts";
+import * as ForkFailure from "../../src/store/fork-failure.ts";
+import * as ForkCompleted from "../../src/store/fork-completed-target.ts";
+import * as ForkManaged from "../../src/store/fork-managed-query.ts";
 import * as PromptIntakeWrite from "../../src/store/prompt-intake-write.ts";
 import * as PromptIntakePromotion from "../../src/store/prompt-intake-promotion.ts";
 import * as AsyncHistory from "../../src/store/async-history.ts";
@@ -45,6 +50,14 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.recordDeliveryFailure, Delivery.recordDeliveryFailure);
     assert.strictEqual(StateAccessFacade.completeDelivery, Delivery.completeDelivery);
     assert.strictEqual(StateAccessFacade.stageOwnedQueueCompletion, Delivery.stageOwnedQueueCompletion);
+    assert.strictEqual(StateAccessFacade.beginAppServerForkHandoff, ForkBegin.beginAppServerForkHandoff);
+    assert.strictEqual(StateAccessFacade.stageAppServerForkTarget, ForkTarget.stageAppServerForkTarget);
+    assert.strictEqual(StateAccessFacade.finalizeAppServerForkHandoff, ForkTarget.finalizeAppServerForkHandoff);
+    assert.strictEqual(StateAccessFacade.recordAppServerForkFailure, ForkFailure.recordAppServerForkFailure);
+    assert.strictEqual(StateAccessFacade.recordAppServerForkFinalizeFailure, ForkFailure.recordAppServerForkFinalizeFailure);
+    assert.strictEqual(StateAccessFacade.recordAndCancelDefiniteForkFailure, ForkFailure.recordAndCancelDefiniteForkFailure);
+    assert.strictEqual(StateAccessFacade.completedAppServerForkTargetForSource, ForkCompleted.completedAppServerForkTargetForSource);
+    assert.strictEqual(StateAccessFacade.isAppServerManagedTarget, ForkManaged.isAppServerManagedTarget);
     assert.strictEqual(StateAccessFacade.canonicalizePromptIntakeTarget, PromptIntakeWrite.canonicalizePromptIntakeTarget);
     assert.strictEqual(StateAccessFacade.promotePromptIntakeToQueue, PromptIntakePromotion.promotePromptIntakeToQueue);
     assert.strictEqual(StateAccessFacade.enqueue, QueueEnqueue.enqueue);
@@ -98,22 +111,26 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "asyncAdmissionHeld",
       "asyncTargetDispatchHeld",
       "attachGoalTurnObservedIfOwned",
+      "beginAppServerForkHandoff",
       "beginChecked",
       "canonicalizePromptIntakeTarget",
       "captureAsyncHistorySnapshot",
       "captureTerminalHistorySnapshot",
       "completeDelivery",
       "completeGoalProgress",
+      "completedAppServerForkTargetForSource",
       "deadTargetHeld",
       "eligibleJobs",
       "enqueue",
       "enqueueIfMirrorMatches",
       "enqueueInTransaction",
+      "finalizeAppServerForkHandoff",
       "finish",
       "finishObservedCompletion",
       "hasObservedCompletion",
       "hasPendingGoalProgress",
       "holdStartingForAmbiguousCandidatesIfClaimed",
+      "isAppServerManagedTarget",
       "listFiltered",
       "listPendingDeliveries",
       "markGoalWaiting",
@@ -124,6 +141,9 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "pendingGoalProgress",
       "pendingObservedCompletions",
       "promotePromptIntakeToQueue",
+      "recordAndCancelDefiniteForkFailure",
+      "recordAppServerForkFailure",
+      "recordAppServerForkFinalizeFailure",
       "recordDeliveryFailure",
       "recordGoalProgressError",
       "recordObservedCompletionError",
@@ -134,6 +154,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "retainAsyncHistoryCandidate",
       "retireCopyOnlyHandoffs",
       "settleTerminalHistory",
+      "stageAppServerForkTarget",
       "stageOwnedGoalProgress",
       "stageOwnedQueueCompletion",
       "tryBeginAttempt",
@@ -141,7 +162,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected);
-    assert.strictEqual(actual.length, 45);
+    assert.strictEqual(actual.length, 53);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

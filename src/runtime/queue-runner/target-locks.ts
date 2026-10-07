@@ -69,6 +69,19 @@ export class TargetLocks {
     try { return await work(lease); } finally { lease.release(); }
   }
 
+  /** Acquire a pair in one global order. Caller must first release any separately held target lease. */
+  async runPair<T>(left: string, right: string, work: () => T | Promise<T>, signal?: AbortSignal): Promise<T> {
+    validateTarget(left); validateTarget(right);
+    const targets = [...new Set([left, right])].sort((a,b) => Buffer.compare(Buffer.from(a), Buffer.from(b)));
+    const leases: TargetLease[] = [];
+    try {
+      for (const target of targets) leases.push(await this.acquire(target, signal));
+      return await work();
+    } finally {
+      for (let index=leases.length-1; index>=0; index--) leases[index]!.release();
+    }
+  }
+
   #lease(target: string, entry: Entry): TargetLease {
     let released = false;
     return Object.freeze({

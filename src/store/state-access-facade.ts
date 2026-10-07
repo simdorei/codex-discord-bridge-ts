@@ -1,3 +1,8 @@
+import * as ForkBegin from "./fork-begin.ts";
+import * as ForkTarget from "./fork-target.ts";
+import * as ForkFailure from "./fork-failure.ts";
+import * as ForkCompleted from "./fork-completed-target.ts";
+import * as ForkManaged from "./fork-managed-query.ts";
 import * as PromptIntakeWrite from "./prompt-intake-write.ts";
 import * as PromptIntakePromotion from "./prompt-intake-promotion.ts";
 import * as GoalWaiting from "./queue-goal-waiting.ts";
@@ -57,6 +62,14 @@ export const asyncAdmissionHeld: typeof AsyncAdmission.asyncResolutionAdmissionH
 export const asyncTargetDispatchHeld: typeof AsyncAdmission.asyncQuestionTargetDispatchHeld =
   AsyncAdmission.asyncQuestionTargetDispatchHeld;
 
+export const beginAppServerForkHandoff: typeof ForkBegin.beginAppServerForkHandoff = ForkBegin.beginAppServerForkHandoff;
+export const stageAppServerForkTarget: typeof ForkTarget.stageAppServerForkTarget = ForkTarget.stageAppServerForkTarget;
+export const finalizeAppServerForkHandoff: typeof ForkTarget.finalizeAppServerForkHandoff = ForkTarget.finalizeAppServerForkHandoff;
+export const recordAppServerForkFailure: typeof ForkFailure.recordAppServerForkFailure = ForkFailure.recordAppServerForkFailure;
+export const recordAppServerForkFinalizeFailure: typeof ForkFailure.recordAppServerForkFinalizeFailure = ForkFailure.recordAppServerForkFinalizeFailure;
+export const recordAndCancelDefiniteForkFailure: typeof ForkFailure.recordAndCancelDefiniteForkFailure = ForkFailure.recordAndCancelDefiniteForkFailure;
+export const completedAppServerForkTargetForSource: typeof ForkCompleted.completedAppServerForkTargetForSource = ForkCompleted.completedAppServerForkTargetForSource;
+export const isAppServerManagedTarget: typeof ForkManaged.isAppServerManagedTarget = ForkManaged.isAppServerManagedTarget;
 export const canonicalizePromptIntakeTarget: typeof PromptIntakeWrite.canonicalizePromptIntakeTarget = PromptIntakeWrite.canonicalizePromptIntakeTarget;
 export const promotePromptIntakeToQueue: typeof PromptIntakePromotion.promotePromptIntakeToQueue = PromptIntakePromotion.promotePromptIntakeToQueue;
 
@@ -99,6 +112,15 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly beginAppServerForkHandoff: typeof ForkBegin.beginAppServerForkHandoff;
+  readonly stageAppServerForkTarget: typeof ForkTarget.stageAppServerForkTarget;
+  readonly finalizeAppServerForkHandoff: typeof ForkTarget.finalizeAppServerForkHandoff;
+  readonly recordAppServerForkFailure: typeof ForkFailure.recordAppServerForkFailure;
+  readonly recordAppServerForkFinalizeFailure: typeof ForkFailure.recordAppServerForkFinalizeFailure;
+  readonly recordAndCancelDefiniteForkFailure: typeof ForkFailure.recordAndCancelDefiniteForkFailure;
+  readonly completedAppServerForkTargetForSource: typeof ForkCompleted.completedAppServerForkTargetForSource;
+  readonly isAppServerManagedTarget: typeof ForkManaged.isAppServerManagedTarget;
+
   readonly markGoalWaiting: typeof GoalWaiting.markGoalWaiting;
   readonly attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObservedIfOwned;
   readonly hasPendingGoalProgress: typeof GoalProgress.hasPendingGoalProgress;
@@ -149,6 +171,15 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  beginAppServerForkHandoff,
+  stageAppServerForkTarget,
+  finalizeAppServerForkHandoff,
+  recordAppServerForkFailure,
+  recordAppServerForkFinalizeFailure,
+  recordAndCancelDefiniteForkFailure,
+  completedAppServerForkTargetForSource,
+  isAppServerManagedTarget,
+
   markGoalWaiting,
   attachGoalTurnObservedIfOwned,
   hasPendingGoalProgress,

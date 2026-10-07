@@ -48,14 +48,24 @@ function quarantine(db:DatabaseSync,h:AppServerForkHandoff,now:number):StoredQue
     VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(delivery_id) DO NOTHING`).run(`quarantine:${id}`,id,h.sourceThreadId,turn,before.channelId,content,now,now);
   return selectJob(db,id);
 }
-export async function finalizeAppServerForkHandoff(path:string,id:string,generation:bigint):Promise<CompletedAppServerForkHandoff>{
+export async function finalizeAppServerForkHandoff(path:string,id:string,generation:bigint,expectedRouting?:Readonly<{sourceThreadId:string;targetThreadId:string}>):Promise<CompletedAppServerForkHandoff>{
+  const routing=expectedRouting===undefined?undefined:{sourceThreadId:expectedRouting.sourceThreadId,targetThreadId:expectedRouting.targetThreadId};
+  if(routing!==undefined){validateForkIdentity(routing.sourceThreadId);validateForkIdentity(routing.targetThreadId);}
   validateForkIdentity(id);if(typeof generation!=="bigint"||generation<-(1n<<63n)||generation>=(1n<<63n))throw new TypeError("Expected i64 generation");
   return withPromptIntakeWriter<CompletedAppServerForkHandoff>(path,db=>{
     ensureForkHandoffTable(db);const h=required(db,id);
+    if(routing!==undefined&&(h.sourceThreadId!==routing.sourceThreadId||(h.targetThreadId??h.observedTargetThreadId)!==routing.targetThreadId))throw new ForkHandoffConflictingIntentError(id);
     if(h.targetThreadId!==null)return {value:{handoff:h,quarantinedJob:h.ambiguousJobId===null?null:selectJob(db,h.ambiguousJobId),retargetedJobs:[],applied:false},commit:true};
     const target=h.observedTargetThreadId;if(target===null)throw new ForkTransitionError({kind:"ForkTargetNotObserved",handoffId:id});
     for(const t of [h.sourceThreadId,target])if(targetIsHeldIn(db,t))throw new DeadGenerationTargetHeldError(t);
     if(h.sourceThreadId===target)throw new ForkTransitionError({kind:"InvalidIdentity"});validateCompletion(db,h,target);
+    // Runtime-only pair-lock safety extension: a returned fresh target cannot itself
+    // be another durable fork source. Otherwise crossing replies can form A -> B -> A.
+    // Legacy store entrypoints without expected routing retain the pinned SQL contract.
+    if(routing!==undefined){
+      const sourceUse=db.prepare("SELECT EXISTS(SELECT 1 FROM codex_thread_fork_handoffs WHERE handoff_id!=? AND source_thread_id=?) AS used");sourceUse.setReadBigInts(true);
+      if(decodeI64(sourceUse.get(id,target)?.used,"fork source target conflict")!==0n)throw new ForkTransitionError({kind:"TargetConflict",targetThreadId:target});
+    }
     const now=forkNow(),pending:string[]=[];
     for(const row of db.prepare(`SELECT job_id,CAST(job_id AS BLOB) AS raw,(SELECT encoding FROM pragma_encoding) AS encoding FROM codex_turn_queue
       WHERE target_thread_id=? AND state='pending' ORDER BY created_at,job_id`).iterate(h.sourceThreadId))pending.push(decodeTextField(row.job_id,row.raw,"job_id",false,textDecoderFor(row.encoding))!);
