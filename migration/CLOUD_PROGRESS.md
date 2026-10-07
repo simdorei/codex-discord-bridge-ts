@@ -1757,3 +1757,26 @@ Evidence .runtime/cloud-serialized-writer-089: focused 18 PASS (9 writer + 9 loc
 write cancellation and OS integration remain unverified. Adapter native errors propagate
 without claiming Rust Io Display parity. Caller must still hold the outer admission
 permit; this internal writer does not create new dispatch authority.
+
+## 2026-10-07 — Request/notify client composition
+
+Connected request UUID creation, outer admission plus independent pending-response permit,
+central observational-method profile, serialized write, preflight deadline checks before
+and after durable hooks, and typed response/remote/timeout/transport-close outcomes.
+Notifications use one permit and no response registration. Explicit caller cancellation
+after write removes observational entries but retains mutation response ownership until
+reply/deadline/close. Hooks are synchronous, and cancellation reasons are preserved.
+
+Review caught three TS boundary mistakes before publication: invalid initial clock left
+an unsent mutation lease, async preflight could execute before rejection, and an abort
+reason resembling the receiver-close class was misclassified. Frozen 10-test SHA
+ a715d8072e7e32b95e1541637c6939438a6ef1534714506d992710c10b34a239
+reproduces old 7 PASS/3 FAIL and corrected 10 PASS; separate final 13-test suite adds
+post-write timeout, actual write-error cleanup and invalid-deadline cleanup. The caller
+cancellation test waits for writeComplete explicitly (no conditional/vacuous assertion).
+
+Evidence .runtime/cloud-request-client-090: focused 13 PASS, full **2,882 PASS,
+0 fail/skip/cancel; strict TS exit 0**. No external request or process was started.
+Clock/deadline precision is the documented finite millisecond profile. Native I/O errors
+and JS cleanup aggregates still need the complete central public-safe error dispatcher;
+these composed helpers are not full startup, native transport or runtime integration.
