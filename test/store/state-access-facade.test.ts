@@ -1,3 +1,4 @@
+import * as IngressLifecycle from "../../src/store/ingress-lifecycle.ts";
 import * as IngressAdmission from "../../src/store/ingress-admission.ts";
 import * as NewPromptArm from "../../src/store/ingress-new-prompt-arm.ts";
 import * as NewOrigin from "../../src/store/new-thread-origin.ts";
@@ -64,6 +65,14 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.recordAndCancelDefiniteForkFailure, ForkFailure.recordAndCancelDefiniteForkFailure);
     assert.strictEqual(StateAccessFacade.completedAppServerForkTargetForSource, ForkCompleted.completedAppServerForkTargetForSource);
     assert.strictEqual(StateAccessFacade.isAppServerManagedTarget, ForkManaged.isAppServerManagedTarget);
+    assert.strictEqual(StateAccessFacade.acknowledgeIngress, IngressLifecycle.acknowledgeIngress);
+    assert.strictEqual(StateAccessFacade.beginIngressConfirmation, IngressLifecycle.beginIngressConfirmation);
+    assert.strictEqual(StateAccessFacade.beginIngressExecution, IngressLifecycle.beginIngressExecution);
+    assert.strictEqual(StateAccessFacade.beginIngressThreadStart, IngressLifecycle.beginIngressThreadStart);
+    assert.strictEqual(StateAccessFacade.recordIngressCreatedThread, IngressLifecycle.recordIngressCreatedThread);
+    assert.strictEqual(StateAccessFacade.recordIngressResult, IngressLifecycle.recordIngressResult);
+    assert.strictEqual(StateAccessFacade.confirmIngress, IngressLifecycle.confirmIngress);
+    assert.strictEqual(StateAccessFacade.recordIngressProcessingMode, IngressLifecycle.recordIngressProcessingMode);
     assert.strictEqual(StateAccessFacade.admitIngress, IngressAdmission.admitIngress);
     assert.strictEqual(StateAccessFacade.pendingNewPrompt, NewPromptArm.pendingNewPrompt);
     assert.strictEqual(StateAccessFacade.newThreadOrigin, NewOrigin.newThreadOrigin);
@@ -163,6 +172,14 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "markRunningWithResidentIfClaimed",
       "mirroredThreadId",
       "newThreadOrigin",
+      "acknowledgeIngress",
+      "beginIngressConfirmation",
+      "beginIngressExecution",
+      "beginIngressThreadStart",
+      "recordIngressCreatedThread",
+      "recordIngressResult",
+      "confirmIngress",
+      "recordIngressProcessingMode",
       "admitIngress",
       "pendingNewPrompt",
       "captureStopOrigin",
@@ -196,7 +213,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 67);
+    assert.strictEqual(actual.length, 75);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

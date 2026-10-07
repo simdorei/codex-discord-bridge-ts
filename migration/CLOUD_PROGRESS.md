@@ -758,3 +758,28 @@ Actual evidence: .runtime/cloud-admission-order-041 (9 focused) and
 post-receipt fault injection, stale/changed route, command/bot/old-event/non-owner
 reservation exclusions and unchanged ordinary Stop regressions. No live Discord
 or Codex call, fresh Rust executable comparison or operational/performance PASS.
+
+## 2026-10-07 — Ingress execution/result lifecycle
+
+Migrated the pinned ingress/lifecycle.rs transitions and exposed owned APIs through
+StateAccessFacade: acknowledge, bounded canonical confirmation retry, execution
+claim, generation-bound thread/start and created-thread recording, result recording,
+confirmation and staged processing-mode writes. Frozen slash targets recheck actual
+mirror ownership before a claim. New attachments require the existing durable input
+proof before thread/start. A matching original cancellation rejects a late result.
+Result writes preserve original Stop receipt and New creation/verification/input
+metadata even if a caller supplies conflicting fields; held records reject results.
+
+The existing new-reply decoder gates confirmation by the normal acknowledgement
+receipt (internal Action is the source exception). This retains the source's TWO
+separate opened connections for reply lookup and final confirmation UPDATE; no new
+atomic acknowledgement guarantee is claimed. Processing mode remains writable
+while staged, including repeated staged writes as in source, and freezes after
+that state transition. These behaviors are recorded rather than silently hardened.
+
+Evidence .runtime/cloud-ingress-lifecycle-043: 10 new lifecycle cases, 18 focused
+including facade identity checks, full **2,471 PASS / 0 fail/skip/cancel; strict
+TS exit 0**. Fixture syntax typo corrected before tests. No live backend calls,
+production message-handler integration, startup, fresh Rust executable differential,
+Windows or performance certification. Central error dispatch integration remains
+unfinished; RequestCancelled is a typed error, not an automatic replay signal.

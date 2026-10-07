@@ -1,3 +1,4 @@
+import * as IngressLifecycle from "./ingress-lifecycle.ts";
 import * as IngressAdmission from "./ingress-admission.ts";
 import * as NewPromptArm from "./ingress-new-prompt-arm.ts";
 import * as NewOrigin from "./new-thread-origin.ts";
@@ -31,6 +32,15 @@ import * as ExecutionHold from "./execution-hold.ts";
 import * as QueueClaims from "./queue-claims.ts";
 import * as DeadGeneration from "./dead-generation-admission.ts";
 import * as Preflight from "./queue-preflight-failure.ts";
+
+export const acknowledgeIngress: typeof IngressLifecycle.acknowledgeIngress = IngressLifecycle.acknowledgeIngress;
+export const beginIngressConfirmation: typeof IngressLifecycle.beginIngressConfirmation = IngressLifecycle.beginIngressConfirmation;
+export const beginIngressExecution: typeof IngressLifecycle.beginIngressExecution = IngressLifecycle.beginIngressExecution;
+export const beginIngressThreadStart: typeof IngressLifecycle.beginIngressThreadStart = IngressLifecycle.beginIngressThreadStart;
+export const recordIngressCreatedThread: typeof IngressLifecycle.recordIngressCreatedThread = IngressLifecycle.recordIngressCreatedThread;
+export const recordIngressResult: typeof IngressLifecycle.recordIngressResult = IngressLifecycle.recordIngressResult;
+export const confirmIngress: typeof IngressLifecycle.confirmIngress = IngressLifecycle.confirmIngress;
+export const recordIngressProcessingMode: typeof IngressLifecycle.recordIngressProcessingMode = IngressLifecycle.recordIngressProcessingMode;
 
 export const admitIngress: typeof IngressAdmission.admitIngress = IngressAdmission.admitIngress;
 export const pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt = NewPromptArm.pendingNewPrompt;
@@ -134,6 +144,14 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly acknowledgeIngress: typeof IngressLifecycle.acknowledgeIngress;
+  readonly beginIngressConfirmation: typeof IngressLifecycle.beginIngressConfirmation;
+  readonly beginIngressExecution: typeof IngressLifecycle.beginIngressExecution;
+  readonly beginIngressThreadStart: typeof IngressLifecycle.beginIngressThreadStart;
+  readonly recordIngressCreatedThread: typeof IngressLifecycle.recordIngressCreatedThread;
+  readonly recordIngressResult: typeof IngressLifecycle.recordIngressResult;
+  readonly confirmIngress: typeof IngressLifecycle.confirmIngress;
+  readonly recordIngressProcessingMode: typeof IngressLifecycle.recordIngressProcessingMode;
   readonly admitIngress: typeof IngressAdmission.admitIngress;
   readonly pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt;
   readonly newThreadOrigin: typeof NewOrigin.newThreadOrigin;
@@ -220,6 +238,14 @@ export const StateAccessFacade: IStateAccessFacade = {
   renewPromptIntakeClaimIfCurrent,
   promptIntakeHasDurableOwner,
 
+  acknowledgeIngress,
+  beginIngressConfirmation,
+  beginIngressExecution,
+  beginIngressThreadStart,
+  recordIngressCreatedThread,
+  recordIngressResult,
+  confirmIngress,
+  recordIngressProcessingMode,
   admitIngress,
   pendingNewPrompt,
   newThreadOrigin,
