@@ -73,6 +73,22 @@ export class QueueStartCoordinator {
   ensureAppServerOnlyTarget(source: string): Promise<AppServerTarget> { return this.#fork.ensureTarget(source); }
   forceAppServerOnlyTarget(source: string): Promise<AppServerTarget> { return this.#fork.forceTarget(source); }
 
+  requiresAppServerFork(): boolean { return this.#backend.requiresAppServerFork?.() ?? false; }
+
+  async replaySubmissionWithTargetForJob(jobId: string): Promise<readonly [string, Submission] | null> {
+    if (typeof jobId !== "string" || /[\uD800-\uDFFF]/u.test(jobId)) throw new TypeError("Expected well-formed job identity");
+    const job = (await this.#state.listFiltered(this.#path, null, null)).find(value => value.jobId === jobId);
+    return job === undefined ? null : [job.targetThreadId, await presentSavedSubmission(this.#path, job, this.#state)];
+  }
+  async replaySubmissionForJob(jobId: string): Promise<Submission | null> {
+    return (await this.replaySubmissionWithTargetForJob(jobId))?.[1] ?? null;
+  }
+  async replaySubmissionForMessage(messageId: bigint): Promise<Submission | null> {
+    if (typeof messageId !== "bigint" || messageId < 0n || messageId > I64_MAX) throw new QueueIntegerRangeError();
+    const job = (await this.#state.listFiltered(this.#path, null, null)).find(value => value.discordMessageId === messageId);
+    return job === undefined ? null : presentSavedSubmission(this.#path, job, this.#state);
+  }
+
   recoverTarget(target: string): Promise<RecoveryReport> { return this.#recovery.recoverTarget(target); }
 
   async kickTarget(target: string): Promise<void> {

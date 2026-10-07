@@ -1,3 +1,4 @@
+import {openInitialized} from "./owned-driver.ts";
 import type {DatabaseSync} from "node:sqlite";
 import {types} from "node:util";
 import {StoreIntegrityError} from "./schema-assembly.ts";
@@ -39,4 +40,10 @@ export function mirroredThreadIdIn(db:DatabaseSync,channel:bigint|null):string|n
 export function verifyBusyChoiceRouteIn(db:DatabaseSync,channel:bigint,target:string|null,mapped:boolean):void{
   const current=mirroredThreadIdIn(db,channel);
   if((mapped&&(target===null||current!==target))||(!mapped&&current!==null))throw new StoreIntegrityError("original busy prompt route changed; no request accepted");
+}
+
+export async function mirroredThreadId(path:string,channel:bigint|null):Promise<string|null>{
+  if(channel!==null&&(typeof channel!=="bigint"||channel<-(1n<<63n)||channel>=(1n<<63n)))throw new TypeError("Expected optional i64 channel");
+  if(channel===null||channel===0n)return null;
+  const db=await openInitialized(path);try{return mirroredThreadIdIn(db,channel);}finally{db.close();}
 }

@@ -604,3 +604,28 @@ before-crossing-guard/fork-target.ts}. 8 coordinator tests PASS; ordered-pair an
 store scope tests cover cancellation cleanup and stale routing. Actual full target:
 **2,381 tests PASS, 0 fail/skip/cancel; strict TS exit 0**. Source authority is pinned
 queue_runner/fork_handoff.rs and types.rs, with the lock/cycle adaptation above.
+
+## 2026-10-07: action target services and saved-submission replay
+
+ActionTargetServices connects actual queue fork/recovery, centralized store mapping
+reads and BridgeState inheritance. Completed target chains do not fork again;
+only ActiveWriter warnings on fork-capable backends trigger the source's one force
+handoff/recovery/replay sequence. The same durable job is resumed and then read for
+presentation; there is no new submission in this recovery path. Missing replay is
+an error. Queue replay APIs by job/message/target remain read/presentation-only.
+Mandatory prompt preparation and verified busy-control adapters are still separate.
+
+Authority: action_executor/app_server_target.rs and queue_runner/submission.rs.
+Real isolated SQLite + queue + filesystem integration covers completed-chain
+settings inheritance, active-writer failure → one fork → same-job start, explicit
+cycle failure, mirror lookup and no backend call on saved replay. Evidence:
+.runtime/cloud-action-target-033. Final combined target: **2,386 tests PASS,
+0 fail/skip/cancel; strict TS exit 0**. No live Codex, Discord or 5060 operation.
+
+Phase-2 source checkpoint, independently read at 14:45 UTC: Rust PR #2
+https://github.com/simdorei/codex-discord-remote-rust/pull/2 is merged, merge commit
+`786e18994477f681dae1c48a31121c9f410c48ae`, PR head
+`50a027209b38d1e0f9e1db0bfb64057f2281369f`. Separately, `git ls-remote` reports main
+`ed47c482420631447f0a38ef55a8d29acc1f6f6a`. These identities are distinct. This does
+not establish deployment approval or replace phase-1 authority `4e213aa...`.
+Repin final reviewed source/evidence when the registered second phase starts.

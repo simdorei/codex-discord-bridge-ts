@@ -1,3 +1,4 @@
+import * as MirrorMapping from "./busy-choice.ts";
 import * as ForkBegin from "./fork-begin.ts";
 import * as ForkTarget from "./fork-target.ts";
 import * as ForkFailure from "./fork-failure.ts";
@@ -70,6 +71,7 @@ export const recordAppServerForkFinalizeFailure: typeof ForkFailure.recordAppSer
 export const recordAndCancelDefiniteForkFailure: typeof ForkFailure.recordAndCancelDefiniteForkFailure = ForkFailure.recordAndCancelDefiniteForkFailure;
 export const completedAppServerForkTargetForSource: typeof ForkCompleted.completedAppServerForkTargetForSource = ForkCompleted.completedAppServerForkTargetForSource;
 export const isAppServerManagedTarget: typeof ForkManaged.isAppServerManagedTarget = ForkManaged.isAppServerManagedTarget;
+export const mirroredThreadId: typeof MirrorMapping.mirroredThreadId = MirrorMapping.mirroredThreadId;
 export const canonicalizePromptIntakeTarget: typeof PromptIntakeWrite.canonicalizePromptIntakeTarget = PromptIntakeWrite.canonicalizePromptIntakeTarget;
 export const promotePromptIntakeToQueue: typeof PromptIntakePromotion.promotePromptIntakeToQueue = PromptIntakePromotion.promotePromptIntakeToQueue;
 
@@ -112,6 +114,7 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly mirroredThreadId: typeof MirrorMapping.mirroredThreadId;
   readonly beginAppServerForkHandoff: typeof ForkBegin.beginAppServerForkHandoff;
   readonly stageAppServerForkTarget: typeof ForkTarget.stageAppServerForkTarget;
   readonly finalizeAppServerForkHandoff: typeof ForkTarget.finalizeAppServerForkHandoff;
@@ -171,6 +174,7 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  mirroredThreadId,
   beginAppServerForkHandoff,
   stageAppServerForkTarget,
   finalizeAppServerForkHandoff,

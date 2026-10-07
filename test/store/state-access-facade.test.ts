@@ -1,3 +1,4 @@
+import * as MirrorMapping from "../../src/store/busy-choice.ts";
 import * as ForkBegin from "../../src/store/fork-begin.ts";
 import * as ForkTarget from "../../src/store/fork-target.ts";
 import * as ForkFailure from "../../src/store/fork-failure.ts";
@@ -58,6 +59,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.recordAndCancelDefiniteForkFailure, ForkFailure.recordAndCancelDefiniteForkFailure);
     assert.strictEqual(StateAccessFacade.completedAppServerForkTargetForSource, ForkCompleted.completedAppServerForkTargetForSource);
     assert.strictEqual(StateAccessFacade.isAppServerManagedTarget, ForkManaged.isAppServerManagedTarget);
+    assert.strictEqual(StateAccessFacade.mirroredThreadId, MirrorMapping.mirroredThreadId);
     assert.strictEqual(StateAccessFacade.canonicalizePromptIntakeTarget, PromptIntakeWrite.canonicalizePromptIntakeTarget);
     assert.strictEqual(StateAccessFacade.promotePromptIntakeToQueue, PromptIntakePromotion.promotePromptIntakeToQueue);
     assert.strictEqual(StateAccessFacade.enqueue, QueueEnqueue.enqueue);
@@ -137,6 +139,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "markRunning",
       "markRunningIfClaimed",
       "markRunningWithResidentIfClaimed",
+      "mirroredThreadId",
       "openCheckedRead",
       "pendingGoalProgress",
       "pendingObservedCompletions",
@@ -162,7 +165,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected);
-    assert.strictEqual(actual.length, 53);
+    assert.strictEqual(actual.length, 54);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
