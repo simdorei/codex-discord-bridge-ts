@@ -1,7 +1,7 @@
 import {responseValue,errorValue,type RequestId,type RpcErrorPayload} from "../protocol/rpc.ts";
 import {ServerRequestOccurrence} from "../protocol/ids.ts";
 import {invokeSynchronousVoid} from "../core/synchronous-void.ts";
-import {ClientLifecycle} from "./client-lifecycle.ts";
+import {ClientLifecycle,type ClientAdmissionPermit} from "./client-lifecycle.ts";
 import {ClientRuntimeState} from "./runtime-state.ts";
 import {AppServerWriter} from "./writer.ts";
 import {beginServerResponseClaim,type ServerResponseClaim} from "./server-response-claim.ts";
@@ -16,8 +16,16 @@ export class AppServerResponseClient{
   respond(id:RequestId,occurrence:ServerRequestOccurrence,result:unknown,hooks:ResponseHooks=noHooks,signal?:AbortSignal):Promise<void>{return this.#run(id,occurrence,()=>responseValue(id,result),false,hooks,signal);}
   respondError(id:RequestId,occurrence:ServerRequestOccurrence,error:RpcErrorPayload,hooks:ResponseHooks=noHooks,signal?:AbortSignal):Promise<void>{return this.#run(id,occurrence,()=>errorValue(id,error),false,hooks,signal);}
   respondCurrent(id:RequestId,occurrence:ServerRequestOccurrence,result:unknown,hooks:ResponseHooks=noHooks,signal?:AbortSignal):Promise<void>{return this.#run(id,occurrence,()=>responseValue(id,result),true,hooks,signal);}
+  respondAdmitted(permit:ClientAdmissionPermit,id:RequestId,occurrence:ServerRequestOccurrence,result:unknown,hooks:ResponseHooks=noHooks,signal?:AbortSignal):Promise<void>{return this.#runAdmitted(permit,id,occurrence,()=>responseValue(id,result),false,hooks,signal);}
+  respondErrorAdmitted(permit:ClientAdmissionPermit,id:RequestId,occurrence:ServerRequestOccurrence,error:RpcErrorPayload,hooks:ResponseHooks=noHooks,signal?:AbortSignal):Promise<void>{return this.#runAdmitted(permit,id,occurrence,()=>errorValue(id,error),false,hooks,signal);}
+  respondCurrentAdmitted(permit:ClientAdmissionPermit,id:RequestId,occurrence:ServerRequestOccurrence,result:unknown,hooks:ResponseHooks=noHooks,signal?:AbortSignal):Promise<void>{return this.#runAdmitted(permit,id,occurrence,()=>responseValue(id,result),true,hooks,signal);}
   async #run(id:RequestId,occurrence:ServerRequestOccurrence,build:()=>unknown,current:boolean,hooks:ResponseHooks,signal?:AbortSignal):Promise<void>{
-    const permit=this.#gate.admit();let claim:ServerResponseClaim|undefined;
+    const permit=this.#gate.admit();
+    try{await this.#runAdmitted(permit,id,occurrence,build,current,hooks,signal);}finally{permit.release();}
+  }
+  /** Internal admitted response path. Caller owns and finally releases the permit. */
+  async #runAdmitted(permit:ClientAdmissionPermit,id:RequestId,occurrence:ServerRequestOccurrence,build:()=>unknown,current:boolean,hooks:ResponseHooks,signal?:AbortSignal):Promise<void>{
+    this.#gate.requirePermit(permit);let claim:ServerResponseClaim|undefined;
     try{
       signal?.throwIfAborted();
       if(current){
@@ -27,6 +35,6 @@ export class AppServerResponseClient{
         await this.#writer.write(build(),{check:()=>invokeSynchronousVoid(hooks.preflight,hooks),dispose(){}},()=>invokeSynchronousVoid(hooks.writeStarted,hooks),signal);
       }
       claim.resolve();
-    }finally{try{claim?.dispose();}finally{permit.release();}}
+    }finally{claim?.dispose();}
   }
 }

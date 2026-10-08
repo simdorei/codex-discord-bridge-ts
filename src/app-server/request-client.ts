@@ -3,7 +3,7 @@ import {randomUUID} from "node:crypto";
 import {performance} from "node:perf_hooks";
 import {types} from "node:util";
 import {requestValue,notificationValue,type RequestId} from "../protocol/rpc.ts";
-import {ClientLifecycle} from "./client-lifecycle.ts";
+import {ClientLifecycle,type ClientAdmissionPermit} from "./client-lifecycle.ts";
 import {PendingResponses,PendingReceiverClosedError,type PendingOutcome} from "./pending-responses.ts";
 import {AppServerWriter} from "./writer.ts";
 export type RequestFailure=
@@ -36,8 +36,13 @@ export class AppServerRequestClient{
   readonly #gate:ClientLifecycle;readonly #pending:PendingResponses;readonly #writer:AppServerWriter;readonly #now:()=>number;
   constructor(gate:ClientLifecycle,pending:PendingResponses,writer:AppServerWriter,monotonicNow:()=>number=()=>performance.now()){this.#gate=gate;this.#pending=pending;this.#writer=writer;this.#now=monotonicNow;}
   async request(method:string,params:unknown,waitMs:number,hooks:RequestHooks=noHooks,signal?:AbortSignal):Promise<unknown>{
-    const outer=this.#gate.admit();
-    try{
+    const permit=this.#gate.admit();
+    try{return await this.requestAdmitted(permit,method,params,waitMs,hooks,signal);}finally{permit.release();}
+  }
+  /** Internal resident caller retains this exact owned permit through its entire
+   * durable workflow. This method neither creates nor releases a second outer lease. */
+  async requestAdmitted(permit:ClientAdmissionPermit,method:string,params:unknown,waitMs:number,hooks:RequestHooks=noHooks,signal?:AbortSignal):Promise<unknown>{
+    this.#gate.requirePermit(permit);
       signal?.throwIfAborted();
       const id=randomUUID(),responsePermit=this.#gate.admit(),registration=this.#pending.registerForMethod(id,responsePermit,waitMs,method);
       try{
@@ -62,11 +67,13 @@ export class AppServerRequestClient{
         if(!outcome.result.ok)throw new AppServerRequestError({kind:"Remote",method,...outcome.result.error});
         return outcome.result.value;
       }finally{registration.dispose();}
-    }finally{outer.release();}
   }
   async notify(method:string,params:unknown,signal?:AbortSignal):Promise<void>{
     const permit=this.#gate.admit();
-    try{await this.#writer.write(notificationValue(method,params),{check(){},dispose(){}},()=>{},signal);}
-    finally{permit.release();}
+    try{await this.notifyAdmitted(permit,method,params,signal);}finally{permit.release();}
+  }
+  async notifyAdmitted(permit:ClientAdmissionPermit,method:string,params:unknown,signal?:AbortSignal):Promise<void>{
+    this.#gate.requirePermit(permit);
+    await this.#writer.write(notificationValue(method,params),{check(){},dispose(){}},()=>{},signal);
   }
 }

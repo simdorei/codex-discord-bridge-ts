@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **2,966 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **2,972 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2000,3 +2000,19 @@ borrow vs borrowAndUpdate, fresh subscriber vs clone, close, cancellation, recei
 concurrency and optional u64 boundaries. Publication version exhaustion fails closed
 before native wrap; no generic multi-sender/RwLock/rollover parity claim. This is a
 foundation for resident-generation/restart state, not an implemented restart controller.
+
+## 2026-10-08 — Exact pre-admitted client paths
+
+Refactored public request/notify/response calls to delegate through internal admitted
+paths using the same gate's verified live permit. A resident caller can retain one outer
+lease across its full durable workflow without allocating a duplicate outer admission
+inside the client. Requests still own an independent response lease; admitted methods
+never release the caller's permit. Foreign/released handles fail before dispatch or
+incoming-response claim mutation. Public APIs retain their existing finally-release.
+
+Evidence .runtime/cloud-admitted-client-102: focused 27 PASS (6 new + existing clients),
+full **2,972 PASS, 0 fail/skip/cancel; strict TS exit 0**. Covers exact permit counts,
+foreign/released refusal, admitted notification/normal/error/current response ownership,
+and canceled mutation response custody surviving caller release. These remain internal
+explicit-lifetime contracts: caller must release after its durable workflow, not early.
+Resident state, durable restart fencing and production manager integration remain pending.
