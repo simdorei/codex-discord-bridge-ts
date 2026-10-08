@@ -4204,3 +4204,30 @@ Strict TS exit0; real loopback focused **14 PASS**; full Linux **4,063 PASS /0 f
 0 skip/0 cancelled**. Evidence `.runtime/cloud-node-websocket-181/`. Actual production
 TLS/Discord, Gateway protocol/reconnect/identify/compression, Windows/performance/
 operational validation remain unfinished.
+
+
+## Checkpoint 182 — stateful native zstd Gateway decoding
+
+Added reusable asynchronous Node zstd decoding with the source 32KiB output chunk
+size and exact pinned Rust compressed fixture. Each input boundary returns currently
+produced bytes; partial-frame/reset behavior follows the source. Reset replaces a
+joined default context rather than calling an undocumented Node zstd reset API.
+Cancellation/disposal wait for native write completion before teardown; they do not
+claim immediate preemption. UTF8 errors differ from decompression errors, and BOM
+is preserved. Output is not capped, matching source Vec growth, so no memory bound
+is claimed. Public bytesWritten must remain a safe integer or decoding fails closed.
+
+Review found Node native errors skip the normal write callback. Pinned C++ source
+confirms the error follows completed worker work; handling that event closes the
+previously pending Promise. Also Node stops after a complete frame with unused input,
+where Rust continues. Completed contexts are retired and exact remaining bytes fed
+into fresh contexts, then one UTF8 check covers all output. Both defects have final
+identical-test RED1 -> GREEN evidence. Full tests cover concatenated/empty frames,
+UTF8 split across frames, corrupt suffix, reset/dispose races, cancellation and actual
+loopback WebSocket binary input. Initial syntax failure and early pending attempt
+are retained separately from the bounded final regression evidence.
+
+Strict TS exit0; focused **16 PASS**; full Linux **4,079 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-gateway-zstd-182/`. Node zstd is experimental and pinned to
+24.21.0. Actual Discord/session/reconnect/identify, Windows, performance and operational
+qualification remain pending.
