@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,282 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,295 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4565,3 +4565,30 @@ Strict TS exit0; focused17 PASS (6 new model tests plus11 retained limiter tests
 full Linux **4,282 PASS /0 fail/0 skip/0 cancelled**. Evidence
 `.runtime/cloud-gateway-rate-limited-199/`. Four dispatch models remain, as do
 complete event dispatch/adapter wiring and platform/operational qualification.
+
+
+## Checkpoint 200 — complete PartialGuild update model
+
+Added all35 PartialGuild fields with source-required/optional distinctions, nested
+roles/emojis, open-u8 enums, arbitrary u16 AFK timeout and six-bit system-channel
+flag truncation. The model name does not imply an arbitrary partial patch.
+Strict TS exit0; focused6 PASS; full4,288 PASS with zero failures/skips/cancellations.
+Evidence `.runtime/cloud-gateway-partial-guild-200/`.
+
+## Checkpoint 201 — Guild custom map and GuildCreate branches
+
+Added all51 Guild fields and its distinct defaults: fourteen required fields,
+default collections, large=false and premium tier0. Present null unavailable
+rejects the handwritten visitor, while absence remains None. All channel, presence,
+thread and voice-state guild IDs are replaced with the validated parent ID only
+after full child decoding. Child presence nick validates before being discarded.
+
+GuildCreate validates buffered content and tries Unavailable before Available,
+preserving duplicate fields in original map traversal. Unknown buffered values
+are checked even when Unavailable later ignores them. This remains a bounded
+untagged profile for the supplied no-f64/no-anonymizable-ID child closure, not a
+general Serde Content implementation or exact diagnostic-text equivalence.
+Strict TS exit0; focused13 PASS (7 new plus6 retained); full Linux **4,295 PASS /0
+fail/0 skip/0 cancelled**. Evidence `.runtime/cloud-gateway-guild-create-201/`.
+Audit-log and Resumed models, full dispatcher/adapter wiring and operational
+qualification remain unfinished.

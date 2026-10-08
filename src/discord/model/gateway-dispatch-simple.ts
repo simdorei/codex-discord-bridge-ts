@@ -12,11 +12,11 @@ const vote=struct(shape([['answer_id',unsigned(8)],['channel_id',id],['guild_id'
 const role=struct(shape([['guild_id',id],['role',discordRoleField]]));
 const scheduledUser=struct(shape([['guild_id',id],['guild_scheduled_event_id',id],['user_id',id]]));
 const stagePrivacy:StructFieldDecoder=(_raw,_depth,context)=>{const value=context.decode(unsigned(8));if(value!==2n)throw new SyntaxError('Unknown stage privacy level');return value;};
-const stage=struct(shape([['channel_id',id],['guild_id',id],['guild_scheduled_event_id',option(id)],['id',id],['privacy_level',stagePrivacy],['topic','string']],['guild_scheduled_event_id']));
+export const discordStageInstanceField=struct(shape([['channel_id',id],['guild_id',id],['guild_scheduled_event_id',option(id)],['id',id],['privacy_level',stagePrivacy],['topic','string']],['guild_scheduled_event_id']));
 const reaction=struct(shape([['burst','bool'],['burst_colors',vector(discordHexColorField)],['channel_id',id],['emoji',discordEmojiField],['guild_id',option(id)],['member',option(discordMemberField)],['message_author_id',option(id)],['message_id',id],['user_id',id]],['guild_id','member','message_author_id'],{burst_colors:[]}));
 // Private registry: callers cannot mutate its membership or install new schemas.
 const fields=new Map<string,StructField>([
- ['STAGE_INSTANCE_CREATE',stage],['STAGE_INSTANCE_UPDATE',stage],['STAGE_INSTANCE_DELETE',stage],
+ ['STAGE_INSTANCE_CREATE',discordStageInstanceField],['STAGE_INSTANCE_UPDATE',discordStageInstanceField],['STAGE_INSTANCE_DELETE',discordStageInstanceField],
  ['GUILD_MEMBER_REMOVE',ban],['PRESENCE_UPDATE',discordPresenceField],
  ['TYPING_START',struct(shape([['channel_id',id],['guild_id',option(id)],['member',option(discordMemberField)],['timestamp','u64'],['user_id',id]],['guild_id','member']))],
  ['THREAD_LIST_SYNC',struct(shape([['channel_ids',vector(id)],['guild_id',id],['members',vector(discordThreadMemberField)],['threads',vector(discordChannelField)]],[],{channel_ids:[]}))],
