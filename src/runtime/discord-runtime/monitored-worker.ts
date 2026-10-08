@@ -22,7 +22,7 @@ export class RuntimeMonitoredWorker{
   if(new.target!==RuntimeMonitoredWorker)throw new TypeError('Expected exact worker owner');if(typeof name!=='string'||/[\uD800-\uDFFF]/u.test(name))throw new TypeError('Expected worker name');if(typeof start!=='function'||types.isProxy(start)||types.isGeneratorFunction(start))throw new TypeError('Expected worker callback');
   const lease=RuntimeWorkerExitChannel.prototype.acquire.call(notifier);this.name=name;
   this.#join=Promise.resolve().then(async()=>{let entered=false;try{this.#abort.signal.throwIfAborted();entered=true;const work=start(this.#abort.signal);if(!types.isPromise(work))throw new TypeError('Worker callback must return Promise');const result=await work,ok=gatewayOwnField(result,'ok');if(ok!==true&&ok!==false)throw new TypeError('Expected worker result');const captured:RuntimeWorkerResult=ok?Object.freeze({ok:true}):Object.freeze({ok:false,error:gatewayOwnField(result,'error')});return Object.freeze({kind:'Returned' as const,result:captured});}catch(error){return Object.freeze({kind:'TaskFailure' as const,error,cancelled:this.#abort.signal.aborted&&error===this.#reason});}finally{lease.finish(name,entered);}}).then(result=>{this.#result=result;return result;});
-  owners.add(this);Object.freeze(this);
+  Object.freeze(this.#join);owners.add(this);Object.freeze(this);
  }
  abort():void{this.#abort.abort(this.#reason);}
  join():Promise<RuntimeWorkerJoin>{return this.#join;}

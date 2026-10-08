@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,430 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,431 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4747,3 +4747,18 @@ Evidence `.runtime/cloud-runtime-monitored-worker-208/` includes full pinned sou
 and test authority hashes and the retained earlier4,429 run before the empty-label
 boundary addition. No external service, live credentials or process-abort policy
 was exercised by this slice.
+
+
+## Checkpoint 209 — immutable exposed worker join Promise
+
+Direct ownership review found that208 froze the worker and result but not the
+exposed join Promise. A caller could replace that Promise's then property before
+a downstream consumer observed it. Freeze the actual retained Promise, matching
+the existing GatewayTask custody contract. The unchanged new regression fails on
+208 and passes after the one-line production correction. This is a JavaScript
+object-custody fix, not a new Rust feature or a claim against prototype replacement
+of global built-ins.
+
+Strict TS exit0, focused9 PASS, full Linux **4,431 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-runtime-worker-join-custody-209/` preserves RED/GREEN and
+full output. WorkerSet shutdown and typed consumer integration remain pending.
