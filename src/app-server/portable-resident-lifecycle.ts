@@ -1,9 +1,11 @@
+import {performance} from "node:perf_hooks";
+import {collectRecoveryObservation} from "./recovery-collector.ts";
 import {AppServerInvalidReplyError} from "./client-errors.ts";
 import {ResponseAttempt,type ResponseResult} from "./response-attempt.ts";
 import {responseValue,errorValue,type RpcErrorPayload,type RequestId,ServerRequestOccurrence} from "../protocol/rpc.ts";
 import {DispatchAttempt,type DispatchResult} from "./dispatch-attempt.ts";
 import {WrittenRequestGuard} from "./written-request-guard.ts";
-import {ownedRequestFailure} from "./request-client.ts";
+import {AppServerRequestError,ownedRequestFailure} from "./request-client.ts";
 import {isOwnedMutationOutcomeUnknown} from "./maintenance-attempt.ts";
 import {cloneAppRequest,isObservationalRequest,type AppRequest} from "./requests.ts";
 import {serdeField,rustTrim} from "./value.ts";
@@ -27,6 +29,28 @@ import {ResidentForwarders,type ResidentNotificationEvent,type ResidentServerReq
 import {GenerationWatch} from "./generation-watch.ts";
 import {BoundedBroadcast} from "./broadcast.ts";
 import type {DeadGenerationWork} from "./dead-generation-work.ts";
+const recoveryNow=performance.now.bind(performance),RECOVERY_BUDGET=10_000;
+const nativeRecoveryKey=Symbol("owned native recovery observation");
+interface RecoveryLifetime{readonly thread:string;readonly resident:string;readonly generation:bigint;current<T>(action:()=>T):T;release():void}
+function recoveryExpired():AppServerRequestError{return new AppServerRequestError({kind:"Timeout",method:"recovery/read-only-observation",timeoutMs:RECOVERY_BUDGET});}
+/** Opaque single-use native observation. JSON/snapshots cannot construct a live proof.
+ * Explicit dispose substitutes for Drop; this object is not user release consent. */
+export class NativeRecoveryObservation{
+  readonly #lifetime:RecoveryLifetime;readonly #observation:unknown;#used=false;
+  constructor(key:symbol,lifetime:RecoveryLifetime,observation:unknown){if(key!==nativeRecoveryKey)throw new TypeError("Native recovery proof requires its owning resident");this.#lifetime=lifetime;this.#observation=cloneOwnedSerdeValue(observation);Object.freeze(this);}
+  threadId():string{return this.#lifetime.thread;}
+  residentId():string{return this.#lifetime.resident;}
+  generation():bigint{return this.#lifetime.generation;}
+  observation():unknown{return this.#observation;}
+  checkCurrent():void{if(this.#used)throw new TypeError("Native recovery observation was consumed or disposed");this.#lifetime.current(()=>{});}
+  withCurrentConnection<T>(publish:()=>T):T{
+    if(this.#used)throw new TypeError("Native recovery observation was consumed or disposed");this.#used=true;
+    try{syncFunction(publish);return this.#lifetime.current(()=>{const value=publish();if(types.isPromise(value)){void Promise.prototype.then.call(value,undefined,()=>undefined);throw new TypeError("Native recovery publication must finish synchronously");}return value;});}finally{this.#lifetime.release();}
+  }
+  dispose():void{if(this.#used)return;this.#used=true;this.#lifetime.release();}
+}
+Object.freeze(NativeRecoveryObservation.prototype);
+Object.freeze(NativeRecoveryObservation);
 export type PreparedTargetMutation={readonly kind:"Ready";readonly permit:TargetMutationPermit|null}|{readonly kind:"Completed";readonly value:unknown};
 interface DispatchContext{readonly check:(()=>void)|null;readonly queueClaim:unknown|null;readonly stopClaim:unknown|null;readonly clientPin:PortableResidentClientPort|null}
 /** Cancel only the caller's wait, while disposing a late Ready permit if preparation
@@ -138,6 +162,28 @@ export class PortableResidentLifecycle{
     const allowed=method==="thread/read"||method==="mcpServerStatus/list"||(method==="mcpServer/tool/call"&&serdeField(params,"server")==="node_repl"&&["js","js_reset"].includes(serdeField(params,"tool") as string));
     if(!scoped||!allowed)throw new AppServerInvalidReplyError("tool repair requires a scoped node_repl request");syncFunction(check);
     return this.#requestScoped(method,params,waitMs,generation,true,{check,queueClaim:null,stopClaim:null,clientPin:null},signal);
+  }
+  /** Read-only 10-second native lifetime. Owners are original execution IDs, not
+   * target inventory discovery. Separate authenticated release consent is required. */
+  async observeRecoveryPrerequisites(thread:string,inputOwners:readonly string[],requestLimitMs:number,signal?:AbortSignal):Promise<NativeRecoveryObservation>{
+    signal?.throwIfAborted();const owners=cloneOwnedSerdeValue(inputOwners);
+    if(typeof thread!=="string"||/[\uD800-\uDFFF]/u.test(thread)||rustTrim(thread)===""||Buffer.byteLength(thread)>512||!Array.isArray(owners)||owners.length===0||owners.length>128||owners.some(id=>typeof id!=="string"||rustTrim(id)===""||Buffer.byteLength(id)>512)||new Set(owners).size!==owners.length||!Number.isSafeInteger(requestLimitMs)||requestLimitMs<=0)throw new AppServerInvalidReplyError("bounded exact target and original owners are required");
+    const admission=this.#state.admitRequest(),deadline=recoveryNow()+RECOVERY_BUDGET,limit=Math.min(requestLimitMs,2000),wanted=new Set(owners as string[]),controller=new AbortController();
+    const abort=()=>controller.abort(signal!.reason);signal?.addEventListener("abort",abort,{once:true});
+    const timer=setTimeout(()=>controller.abort(recoveryExpired()),Math.max(1,Math.ceil(deadline-recoveryNow())));
+    let transferred=false;
+    const lifetime:RecoveryLifetime=Object.freeze({thread,resident:this.instanceId,generation:admission.generation,
+      current:<T>(action:()=>T):T=>{admission.client.requireOwnedAdmission(admission.permit);return this.#state.withRecoveryCurrent(admission.client,admission.generation,()=>{if(recoveryNow()>=deadline)throw recoveryExpired();return action();});},
+      release:()=>admission.release(),
+    });
+    try{
+      lifetime.current(()=>{});
+      const observation=await collectRecoveryObservation(thread,wanted,async(method,params)=>{
+        lifetime.current(()=>{});controller.signal.throwIfAborted();const remaining=Math.min(limit,Math.ceil(deadline-recoveryNow()));if(remaining<=0)throw recoveryExpired();
+        const value=await this.requestForRecoveryObservation(admission,{method,params,timeoutMs:remaining},controller.signal);lifetime.current(()=>{});return value;
+      });
+      controller.signal.throwIfAborted();lifetime.current(()=>{});const proof=new NativeRecoveryObservation(nativeRecoveryKey,lifetime,observation);transferred=true;return proof;
+    }finally{clearTimeout(timer);signal?.removeEventListener("abort",abort);if(!transferred)admission.release();}
   }
   /** Internal native recovery collector only: exact currently-held client capability,
    * not a serialized DTO or permission to inspect arbitrary recovered targets. */

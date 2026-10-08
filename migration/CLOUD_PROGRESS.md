@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,217 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,234 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2618,3 +2618,37 @@ this entry point does not acquire that higher-level lock. Bounded recovery colle
 opaque observation lifetime/publication, actual SQL adapters, native Windows, Discord
 and production/performance qualification remain pending. Tests never execute a live
 node_repl tool; local helper children only exchange controlled protocol fixtures.
+
+
+## 2026-10-08 — Bounded native recovery observation and one-use lifetime
+
+Implemented the source recovery collector: exact initial/final idle thread probes,
+ended Goal, at most eight 16-turn history pages, duplicate/cursor rejection, original
+owner-set completeness and separate explicit history-exhaustion status. Both aggregate
+returned JSON and combined observation obey the 1 MiB logical byte bound. Owners/target
+respect source UTF-8 byte limits; native requests use a 10-second total lifetime and a
+maximum two-second individual budget within supported integer-millisecond resolution.
+
+The returned NativeRecoveryObservation can only be constructed with its owning resident's
+private key. It retains the exact live native admission, rechecks generation/currentness/
+deadline, and consumes once around a pre-acquired synchronous final commit. dispose is
+explicit Drop-equivalent cleanup. Copies/JSON/prototype-shaped objects cannot manufacture
+its private lifetime. Publication is not user consent or permission to execute a turn.
+
+Evidence .runtime/cloud-native-recovery-observation-125: 17 new tests, focused 17 PASS;
+full **3,234 PASS, 0 fail/skip/cancel; strict TS exit 0**. Includes actual helper-client
+collection, SQLite final commit, restart invalidation, cancellation, real ten-second
+expiry, proof forgery, history/Goal/target/cursor failures, eight-page edge and input/
+combined JSON byte boundaries. An initial fixture delimiter was corrected before tests.
+
+Direct review also found a consumed proof could receive an own method shadow. The same
+regression fails old isolated source and passes after freezing the instance, prototype
+and constructor; actual private lifetime state remains internally consumable. Evidence
+and hashes are in review-red-green.json. This is JS capability hardening rather than a
+new Rust executable differential test.
+
+The collector's public JSON helper alone confers no native proof. The JSON byte limit
+is not a process heap budget; decoded transport values may already be allocated. No
+nanosecond/Tokio scheduling equivalence, durable release-consent implementation, live
+production SQL binding, Windows or Discord validation is claimed. Production execution
+must still validate its original durable record at the actual writer after invalidation.
