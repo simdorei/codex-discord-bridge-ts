@@ -4088,3 +4088,21 @@ Strict TS exit0; focused channel plus new resolved models **32 PASS**; full Linu
 **3,987 PASS /0 fail/0 skip/0 cancelled**. Raw local evidence and pinned authorities:
 `.runtime/cloud-interaction-resolved-176/`. No Rust executable differential, live
 Gateway/Discord, Windows or performance qualification is claimed.
+
+
+## Checkpoint 177 — incoming modal and message-component data
+
+Added incoming modal data and recursive modal component visitor, separate from
+outgoing message Component. Every recognized field validates before selecting its
+variant. All component variants require an i32 id, including Unknown, which then
+discards it as the source does. Text select preserves strings; user/role/channel/
+mentionable/file selectors decode exact nonzero snowflakes. No invented minimum
+selection count is imposed. ActionRow and Label recurse with the shared parser
+budget. Optional resolved data reuses checkpoint 176. Incoming message-component
+data validates custom id, open component byte, optional resolved data and strings.
+
+Strict TS exit0; new focused **13 PASS**; full Linux **4,000 PASS /0 fail/0 skip/
+0 cancelled**. Local evidence: `.runtime/cloud-interaction-modal-177/`. These are
+source-derived validation projections, not serializers or real Gateway execution.
+Complete Interaction envelope/command option parsing, live integration and platform/
+performance/operational validation remain pending.
