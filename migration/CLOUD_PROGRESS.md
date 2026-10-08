@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,850 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,860 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3867,3 +3867,28 @@ the mock successful-message decoder from the receipt loopback integration, but d
 not claim real Discord authentication/network, full service composition, Windows,
 performance/operational validation, merge or deployment. Earlier profile limits and
 HexColor invalid-input panic difference remain.
+
+
+## Checkpoint 169 — Owned channel client and native-to-receipt integration
+
+DiscordChannelClient now owns one wire, one shared rate limiter and one response
+engine, with the complete Message decoder fixed internally. Construction sends no
+HTTP request and joins initialized owners on failure. Explicit close concurrently
+revokes/joins engine operations, queued rate admission, body streams, keep-alive
+sockets and timers; repeated close returns the same Promise. Credential-free
+literal loopback is the only test-origin profile. Unrelated clients/global agents
+are not destroyed. The production origin remains fixed Discord v10 with normal TLS.
+
+Nine owned-client tests cover send/typing, full-model enforcement, exact nonce on
+429 retry, shared global limit, cancellation/close, initialization failures and
+separate client isolation. One new actual Node helper -> completion pipeline ->
+owned HTTP client -> complete response model -> real SQLite receipt test confirms
+Final delivery/retirement, all target/event budgets released, socket cleanup and
+the caller's independently owned native resident remains healthy after pipeline
+and HTTP shutdown. No external AI invocation is involved.
+
+Strict TS exit 0; focused **30 PASS**; full Linux **3,860 PASS / 0 fail / 0 skip /
+0 cancelled**. Evidence `.runtime/cloud-owned-discord-client-169/`. Supported
+HTTP routes remain channel message creation and typing only. Gateway/interaction
+transport and full service startup, live Discord, Windows/performance/operational
+qualification remain unfinished; no merge or deployment.

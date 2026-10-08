@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import * as http from 'node:http';
+import {DiscordChannelClient} from '../../../src/discord/channel-client.ts';
+import {usingInitializedStore} from '../../../src/store/owned-scope.ts';
 import {setImmediate as tick} from 'node:timers/promises';
 import {storeFixture} from '../../helpers/store-fixture.ts';
 import {queueJob} from '../../helpers/queue-job.ts';
@@ -48,4 +51,26 @@ test('native terminal revokes blocked typing while independent Final processing 
   const pipeline=new CompletionPipeline(owner,queue,{commentaryEnabled:false,historyReadTimeoutMs:2000,render:()=> 'safe',report:e=>{errors.push(e);},typing:{createTyping:async(_channel,signal)=>{typing.resolve();await new Promise<void>(resolve=>{const stop=()=>{typingAborted=true;resolve();};if(signal.aborted)stop();else signal.addEventListener('abort',stop,{once:true});});}},delivery:{transport:{sendValidated:async request=>{bodies.push(JSON.parse(request.body).content);final.resolve();return 101n;}},failures:{render:()=> 'safe'},now:()=>1}});
   await call(owner,'begin',t.signal);running=pipeline.run(abort.signal);await typing.promise;await call(owner,'finish',t.signal);await final.promise;assert.equal(typingAborted,true);assert.deepEqual(bodies,['Final\nafter typing']);abort.abort();await running;assert.deepEqual(errors,[]);assert.equal(pipeline.availableEventBytes,4*1024*1024);assert.equal(queue.locks.activeTargetCount,0);
  }finally{abort.abort();if(running)await running;await owner.dispose();}
+}));
+
+test('native helper -> completion pipeline -> owned HTTP client -> full model -> durable receipt',{timeout:15000},async t=>storeFixture(async path=>{
+ await state.enqueue(path,queueJob({ownerUserId:2n}));const claim=(await state.tryBeginAttempt(path,'saved',[],1n))!;assert.ok(await state.markRunningIfClaimed(path,claim,'turn'));
+ const abort=new AbortController(),sent=deferred(),bodies:string[]=[],errors:unknown[]=[];
+ const response={attachments:[],author:{id:'1',username:'fixture',discriminator:'0'},channel_id:'1',content:'',embeds:[],id:'991',type:0,mention_everyone:false,mention_roles:[],mentions:[],pinned:false,timestamp:'2020-01-01T00:00:00+00:00',tts:false};
+ const server=http.createServer((request,res)=>{let body='';request.on('data',chunk=>{body+=String(chunk);});request.on('end',()=>{bodies.push(body);res.end(JSON.stringify(response));sent.resolve();});});
+ let owner:PortableResidentLifecycle|undefined,client:DiscordChannelClient|undefined,running:Promise<void>|undefined;
+ try{
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const address=server.address();assert.ok(address&&typeof address!=='string');
+  owner=await native(t.signal);const resident=owner;installRuntimeIdleJournal(resident,path,()=> 'safe');
+  client=await DiscordChannelClient.create({token:null,testOrigin:`http://127.0.0.1:${address.port}/api/v10/`,report:e=>{errors.push(e);}});
+  const queue=new QueueStartCoordinator(path,{...backend,residentInstanceId:()=>resident.instanceId,generation:()=>resident.generation(),activeTurnId:async target=>resident.activeTurnId(target),readTurns:async()=>[{turnId:'turn',status:'Completed'}]});
+  const pipeline=new CompletionPipeline(resident,queue,{typing:client,commentaryEnabled:false,historyReadTimeoutMs:2000,render:()=> 'safe',report:e=>{errors.push(e);},delivery:{transport:client,failures:{render:()=> 'safe'},now:()=>1}});
+  await call(resident,'read',t.signal);running=pipeline.run(abort.signal);await sent.promise;abort.abort(new Error('stop after response'));await running;
+  assert.equal(bodies.length,1);const payload=JSON.parse(bodies[0]!);assert.equal(payload.content,'Final\nnative pipeline final');assert.equal(payload.enforce_nonce,true);
+  const receipt=await usingInitializedStore(path,db=>db.prepare('SELECT message_id,retryable,blocked_reason FROM codex_delivery_receipts').get());assert.equal(receipt?.message_id,'991');assert.equal(receipt?.blocked_reason,null);
+  assert.deepEqual(await state.listPendingDeliveries(path),[]);assert.equal(queue.locks.activeTargetCount,0);assert.equal(pipeline.availableEventBytes,4*1024*1024);assert.deepEqual(errors,[]);
+  await client.close();assert.equal(client.activeRequests,0);assert.equal(client.ownedSockets,0);assert.deepEqual(await call(resident,'ping',t.signal),{ping:true});
+ }finally{
+  abort.abort();try{if(running)await running;}finally{try{if(client)await client.close();}finally{try{if(owner)await owner.dispose();}finally{server.closeAllConnections();if(server.listening)await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}}}
+ }
 }));
