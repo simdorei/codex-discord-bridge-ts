@@ -1,3 +1,5 @@
+import {interactionCallbackRequest} from './interaction-callback-request.ts';
+import type {InteractionResponse} from './interaction-response.ts';
 import {slashCommandRegistrationRequest} from './commands.ts';
 import {decodeDiscordGatewayBotInfoBytes,DiscordGatewayModelError,type DiscordGatewayBotInfo} from './model/gateway-info.ts';
 import {setImmediate as yieldToRuntime} from 'node:timers/promises';
@@ -59,12 +61,13 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
  createTyping(id:bigint,signal:AbortSignal):Promise<void>{return this.#run(async owned=>{await this.#request('POST',`channels/${channel(id)}/typing`,null,null,()=>new Error('unused typing decoder'),owned);},signal);}
  getGatewayBot(signal?:AbortSignal):Promise<DiscordGatewayBotInfo>{return this.#run(owned=>this.#request('GET','gateway/bot',null,decodeDiscordGatewayBotInfoBytes,()=>new DiscordGatewayModelError(),owned),signal) as Promise<DiscordGatewayBotInfo>;}
  registerSlashCommands(applicationId:bigint,guildId:bigint|null,qa:boolean,signal?:AbortSignal):Promise<void>{const request=slashCommandRegistrationRequest(applicationId,guildId,qa);return this.#run(async owned=>{await this.#request('PUT',request.path,request.body,null,()=>new Error('unused registration decoder'),owned);},signal);}
- async #request<T>(method:DiscordHttpMethod,path:string,body:string|null,decode:((bytes:Uint8Array)=>T)|null,decodeFailure:()=>Error,signal:AbortSignal):Promise<T|void>{
-  const request:DiscordWireRequest=Object.freeze({method,path,body,authorization:this.#authorization});
+ acknowledgeInteraction(id:bigint,token:string,response:InteractionResponse,signal?:AbortSignal):Promise<void>{const request=interactionCallbackRequest(id,token,response);return this.#run(async owned=>{await this.#request('POST',request.path,request.body,null,()=>new Error('unused callback decoder'),owned,false);},signal);}
+ async #request<T>(method:DiscordHttpMethod,path:string,body:string|null,decode:((bytes:Uint8Array)=>T)|null,decodeFailure:()=>Error,signal:AbortSignal,useAuthorization=true):Promise<T|void>{
+  const request:DiscordWireRequest=Object.freeze({method,path,body,authorization:useAuthorization?this.#authorization:null});
   for(;;){signal.throwIfAborted();let permit:DiscordRatePermit|undefined,response:DiscordWireResponse|undefined;
    try{
     try{permit=await this.#rate.acquire(method,path,signal);signal.throwIfAborted();response=await this.#wire.request(request,this.#timeout,signal);}catch(error){if(signal.aborted&&error===signal.reason)throw error;throw transport();}
-    const status=response.status;if(!Number.isInteger(status)||status<100||status>599)throw transport();if(status===401&&this.#authorization!==null)this.#invalid=true;
+    const status=response.status;if(!Number.isInteger(status)||status<100||status>599)throw transport();if(status===401&&useAuthorization&&this.#authorization!==null)this.#invalid=true;
     try{invokeSynchronousVoid(permit.complete,permit,[status,response.headers]);}catch{throw transport();}
     if(status>=200&&status<300){
      if(decode===null)return;

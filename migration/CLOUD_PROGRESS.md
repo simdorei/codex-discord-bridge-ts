@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,562 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,570 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5093,3 +5093,23 @@ Strict TS exit0, focused17 PASS (7 new plus10 rate-state regressions), full Linu
 `.runtime/cloud-discord-interaction-rate-224/` pins complete rate actor/resource
 logic and callback builder. Native wire/response-engine callback support is still
 pending, so no callback network endpoint was enabled by this slice.
+
+
+## Checkpoint 225 — native tokenless interaction callback HTTP
+
+Enabled exact supported callback POST through the shared native wire/rate/response
+owner. Callback requests carry no Bot authorization, success body is released
+without decoding,429 retries preserve the body while honoring provider buckets,
+and global-exempt permits still use the shared rate manager. Callback401 does not
+invalidate the configured bot token. Pinned Client preflight, however, rejects all
+requests once an earlier authenticated request invalidated that client; this source
+ordering is preserved rather than inventing a tokenless bypass.
+
+Strict TS exit0, focused28 PASS (8 new plus20 registration/discovery regressions),
+full Linux **4,570 PASS /0 fail/0 skip/0 cancelled**. Evidence
+`.runtime/cloud-discord-callback-http-225/`. Actual loopback tests verify exact
+callback body/path, absent auth header, global exemption with an unadvanced manual
+clock, stalled-body disposal and cancellation joins. Auth invalidation cases use
+a fake wire with an offline token. Unsupported token URI forms remain outside the
+224 ASCII-safe profile. Actual interaction dispatch/admission/worker integration and
+live Discord/Windows/operational qualification remain pending.

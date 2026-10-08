@@ -1,3 +1,4 @@
+import type {InteractionResponse} from './interaction-response.ts';
 import {types} from 'node:util';
 import {NodeDiscordHttpWire} from './node-http-wire.ts';
 import {DiscordChannelRateLimiter} from './rate-header-adapter.ts';
@@ -40,6 +41,7 @@ export class DiscordChannelClient implements DiscordReceiptTransport,TypingTrans
  sendValidated(request:IdempotentMessageRequest):Promise<bigint>{return this.#engine.sendValidated(request);}
  sendWithoutReceipt(request:IdempotentMessageRequest,signal?:AbortSignal):Promise<void>{return this.#engine.sendWithoutReceipt(request,signal);}
  createTyping(channel:bigint,signal:AbortSignal):Promise<void>{return this.#engine.createTyping(channel,signal);}
+ acknowledgeInteraction(id:bigint,token:string,response:InteractionResponse,signal?:AbortSignal):Promise<void>{return this.#engine.acknowledgeInteraction(id,token,response,signal);}
  getGatewayBot(signal?:AbortSignal){return this.#engine.getGatewayBot(signal);}
  get authorizationInvalidated():boolean{return this.#engine.authorizationInvalidated;}
  get activeRequests():number{return this.#wire.activeRequests;}
