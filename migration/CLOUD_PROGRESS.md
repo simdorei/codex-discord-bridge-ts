@@ -4067,3 +4067,24 @@ Strict TS exit0; focused **17 PASS**; full Linux **3,971 PASS /0 fail/0 skip/0 c
 Raw local evidence: `.runtime/cloud-gateway-runtime-175/`. Actual Gateway discovery,
 WebSocket protocol/reconnect/identify, complete Interaction decoding, service bootstrap,
 Windows, performance and operational validation remain unfinished.
+
+
+## Checkpoint 176 — resolved Interaction models and entitlement validation
+
+Added all six resolved resource maps with complete existing Message/User/Attachment
+validation and newly implemented Role, RoleColors, RoleTags, InteractionMember and
+InteractionChannel schemas. Thread metadata exports its existing decoder unchanged.
+Entitlement fields retain exact required/optional boundaries and open u8 type variants.
+Role flags truncate after u64 validation; positions stay lossless signed i64. Null role
+tags mean true, omitted means false, and literal booleans reject. Source comments do
+not replace serde rules: InteractionMember flags/pending/permissions remain required.
+
+Resolved ID map keys normalize nonzero u64 decimal strings. Repeated normalized keys
+replace earlier entries only after validating each earlier value. Known duplicate
+struct fields reject; unknown fields retain ignored-value semantics. These are
+validation projections, not serializers, role comparisons or full Interaction decoding.
+
+Strict TS exit0; focused channel plus new resolved models **32 PASS**; full Linux
+**3,987 PASS /0 fail/0 skip/0 cancelled**. Raw local evidence and pinned authorities:
+`.runtime/cloud-interaction-resolved-176/`. No Rust executable differential, live
+Gateway/Discord, Windows or performance qualification is claimed.
