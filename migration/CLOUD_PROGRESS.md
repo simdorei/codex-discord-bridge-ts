@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **2,992 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,001 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2057,3 +2057,24 @@ This exposes an internal owning capability, not a DTO-derived grant. The replace
 fixture explicitly closes the old native peer first; no automated resident supervisor,
 written-request guard, durable restart settlement or full bridge runtime is claimed.
 The existing portable-only/startup-budget/descendant-pipe limitations still apply.
+
+## 2026-10-08 — Explicit written-request ambiguity guard
+
+Ported the bounded WrittenRequestGuard state machine from manager/admission.rs. An
+uncompleted started write quarantines its captured generation on explicit disposal;
+confirmed isolated flush suppresses only that unfinished path. Explicit Io/Closed/
+TransportClosed/ResponseChannelClosed results still quarantine after isolated flush.
+Success, Timeout and other completed failures do not themselves quarantine, matching
+the guard; dispatch's separate timeout/mutation policy is not replaced by this leaf.
+
+The trusted caller supplies a closed completion classification. No arbitrary raw error
+message/shape or passive diagnostic classification grants authority. The future central
+error-to-completion adapter and durable mutation coordinator must provide that contract.
+This guard does not allocate or release the caller's admission lease. Explicit finally-
+dispose is required; abandoning a JS Promise does not implement Rust Drop.
+
+Evidence .runtime/cloud-written-guard-105: 9 focused PASS, full **3,001 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Tests cover each completion before/after start,
+isolated transport failure, replaced flush flags, disposal, retained caller lease,
+old-generation/terminal protection and retry after failed cancellation publication.
+No native dispatch integration, durable restart fence or whole-resident completion claim.
