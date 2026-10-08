@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,411 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,422 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4691,3 +4691,35 @@ Strict TS exit0; focused17 PASS (5 arithmetic/timing plus12 driver tests); full 
 **4,411 PASS /0 fail/0 skip/0 cancelled**. Evidence
 `.runtime/cloud-gateway-heartbeat-timing-206/`, including pinned Rust/Tokio source
 hashes and retained RED/GREEN logs. Recommended paused startup remains pending.
+
+
+## Checkpoint 207 — recommended paused Gateway ownership
+
+Added an explicit RecommendedGateway owner: shared native HTTP discovery, default
+single-bucket identify queue, complete raw-driver/typed-port construction and
+paused GatewayRuntime. It consumes only the validated recommended shard count,
+matching pinned Twilight create_recommended; discovery URL/session-limit fields
+do not silently override the endpoint or queue. Production uses the existing
+official WSS path. The test entry point accepts literal loopback only, sends no
+HTTP credentials and creates its own fake WebSocket token.
+
+HTTP request versus body/model failures retain the two source error stages and
+exact display strings. A private WeakSet identifies the model error without
+prototype traversal or attacker getters. Failed startup joins all created ports,
+queue and HTTP. Construction cooperatively yields each64 shards; no invented
+shard maximum is imposed. The Node allocation/event-loop profile is not Rust
+allocation parity or a hard real-time bound.
+
+The runtime remains paused until receivers transfer and typed consumers activate.
+Runtime shutdown leaves shared HTTP available for final consumers; outer close
+then joins queue and HTTP. Explicit close is required: GC does not implement Rust
+Drop. This wrapper captures its HTTP cleanup method; callers must honor ownership
+and must not concurrently shut down its borrowed resources.
+
+Strict TS exit0;11 new focused tests PASS; full Linux **4,422 PASS /0 fail/0 skip/0
+cancelled**. Tests use actual loopback HTTP/WebSocket: paused no-connect, two-shard
+five-second identify serialization, typed identity/interaction delivery, zero
+shards, request/model failures, abort cleanup, and separate HTTP lifetime. Evidence
+`.runtime/cloud-gateway-recommended-207/`. Production credentials/TLS, full service
+bootstrap and consumers, Windows, performance and operational qualification remain
+unverified. No live Discord/Codex traffic or deployment was performed.

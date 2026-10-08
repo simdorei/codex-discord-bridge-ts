@@ -7,5 +7,8 @@ export const discordGatewayBotInfoField=struct(shape([['session_start_limit',lim
  * shard count. Zero values and full integer widths retain source acceptance. */
 export function decodeDiscordGatewayBotInfo(text:string):DiscordGatewayBotInfo{const value=parseSerdeField(text,discordGatewayBotInfoField) as unknown as DiscordGatewayBotInfo;Object.freeze(value.session_start_limit);return Object.freeze(value);}
 export function decodeDiscordGatewayBotInfoBytes(bytes:Uint8Array):DiscordGatewayBotInfo{return decodeDiscordGatewayBotInfo(new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes));}
+const modelErrors=new WeakSet<object>();
 /** Body read/JSON/model stage, kept distinct from pre-response HTTP failures. */
-export class DiscordGatewayModelError extends Error{constructor(){super('Discord gateway discovery model could not be decoded');this.name='DiscordGatewayModelError';}}
+export class DiscordGatewayModelError extends Error{constructor(){super('Discord gateway discovery model could not be decoded');this.name='DiscordGatewayModelError';modelErrors.add(this);}}
+
+export function isDiscordGatewayModelError(value:unknown):boolean{return value!==null&&(typeof value==='object'||typeof value==='function')&&modelErrors.has(value);}
