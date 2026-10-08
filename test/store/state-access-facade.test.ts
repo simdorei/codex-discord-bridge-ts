@@ -1,3 +1,4 @@
+import * as DeadCapture from "../../src/store/dead-generation-capture.ts";
 import * as IdleReleaseStore from "../../src/store/idle-release-store.ts";
 import * as ObservationProof from "../../src/store/observation-proof.ts";
 import * as ObservationLedger from "../../src/store/observation-ledger.ts";
@@ -179,6 +180,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.recordStartFailureIfClaimed, QueueClaims.recordStartFailureIfClaimed);
     assert.strictEqual(StateAccessFacade.markRunningIfClaimed, QueueClaims.markRunningIfClaimed);
     assert.strictEqual(StateAccessFacade.markRunningWithResidentIfClaimed, QueueClaims.markRunningWithResidentIfClaimed);
+    assert.strictEqual(StateAccessFacade.activateDeadGenerationRuntime, DeadCapture.activateDeadGenerationRuntime);
+    assert.strictEqual(StateAccessFacade.captureDeadGeneration, DeadCapture.captureDeadGeneration);
     assert.strictEqual(StateAccessFacade.deadTargetHeld, DeadGeneration.targetIsHeld);
     assert.strictEqual(StateAccessFacade.recordPreflightFailure, Preflight.recordPreflightFailure);
   });
@@ -238,6 +241,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "completeDelivery",
       "completeGoalProgress",
       "completedAppServerForkTargetForSource",
+      "activateDeadGenerationRuntime",
+      "captureDeadGeneration",
       "deadTargetHeld",
       "eligibleJobs",
       "enqueue",
@@ -325,7 +330,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 122);
+    assert.strictEqual(actual.length, 124);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

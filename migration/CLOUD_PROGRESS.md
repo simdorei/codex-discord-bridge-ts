@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,234 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,247 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2652,3 +2652,29 @@ is not a process heap budget; decoded transport values may already be allocated.
 nanosecond/Tokio scheduling equivalence, durable release-consent implementation, live
 production SQL binding, Windows or Discord validation is claimed. Production execution
 must still validate its original durable record at the actual writer after invalidation.
+
+
+## 2026-10-08 — Atomic dead-generation capture and durable notice deduplication
+
+Added active-runtime publication and the owned IMMEDIATE capture transaction. It checks
+current runtime before an exact receipt retry, decodes all queue jobs before selecting
+Starting/Running jobs of the incident generation, stores their existing source-shaped
+serialization, and stages the UTF-8 ordered target union with holds and notices atomically.
+Existing target holds are preserved. Duplicate exact snapshots return false before queue/
+mapping reads and cannot restage delivered notices; changed snapshot bytes are refused.
+
+Channel precedence is first matching queue row, then mirror, then startup; positivity
+is checked only after selection. The mirror query still executes when a queue channel
+exists, preserving source errors. Unscoped requests add one separately indexed notice.
+Activation and capture are exposed through the central StateAccessFacade (124 methods).
+
+Evidence .runtime/cloud-dead-generation-capture-126: 13 new capture tests; focused21 PASS,
+full **3,247 PASS, zero fail/skip/cancel; strict TS exit0**. Actual initialized SQLite
+fixtures exercise transaction rollback, preserved caller transaction, exact replay after
+queue/mapping tables disappear, stale runtime, quarantine exclusion, multi-job ordering,
+recipient failure, async input snapshot, and UTF-8/UTF-16 receipt reads. No live DB used.
+
+The existing queue reader and serializer are reused, not newly certified for every Rust
+numeric/driver boundary. Native error classes remain TS/SQLite-specific. This owned async
+store path is not yet installed as the synchronous native resident persistence callback;
+production adapter and offload decisions remain pending. No automatic replay is added.

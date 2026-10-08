@@ -1,3 +1,4 @@
+import * as DeadCapture from "./dead-generation-capture.ts";
 import * as IdleReleaseStore from "./idle-release-store.ts";
 import * as ObservationProof from "./observation-proof.ts";
 import * as ObservationLedger from "./observation-ledger.ts";
@@ -138,6 +139,9 @@ export const recordDeliveryFailure: typeof Delivery.recordDeliveryFailure = Deli
 export const completeDelivery: typeof Delivery.completeDelivery = Delivery.completeDelivery;
 
 export const stageOwnedQueueCompletion: typeof Delivery.stageOwnedQueueCompletion = Delivery.stageOwnedQueueCompletion;
+
+export const activateDeadGenerationRuntime: typeof DeadCapture.activateDeadGenerationRuntime = DeadCapture.activateDeadGenerationRuntime;
+export const captureDeadGeneration: typeof DeadCapture.captureDeadGeneration = DeadCapture.captureDeadGeneration;
 
 export const deadTargetHeld: typeof DeadGeneration.targetIsHeld = DeadGeneration.targetIsHeld;
 export const recordPreflightFailure: typeof Preflight.recordPreflightFailure = Preflight.recordPreflightFailure;
@@ -330,6 +334,8 @@ export interface IStateAccessFacade {
   readonly completeDelivery: typeof Delivery.completeDelivery;
   readonly recordObservedCompletionForResident: typeof ObservedCompletion.recordObservedCompletionForResident;
   readonly stageOwnedQueueCompletion: typeof Delivery.stageOwnedQueueCompletion;
+  readonly activateDeadGenerationRuntime: typeof DeadCapture.activateDeadGenerationRuntime;
+  readonly captureDeadGeneration: typeof DeadCapture.captureDeadGeneration;
   readonly deadTargetHeld: typeof DeadGeneration.targetIsHeld;
   readonly recordPreflightFailure: typeof Preflight.recordPreflightFailure;
   readonly tryBeginAttempt: typeof QueueClaims.tryBeginAttempt;
@@ -463,6 +469,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   completeDelivery,
   recordObservedCompletionForResident,
   stageOwnedQueueCompletion,
+  activateDeadGenerationRuntime,
+  captureDeadGeneration,
   deadTargetHeld,
   recordPreflightFailure,
   tryBeginAttempt,
