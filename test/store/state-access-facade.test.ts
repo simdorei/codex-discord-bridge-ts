@@ -1,3 +1,4 @@
+import * as ResponseCustody from "../../src/store/response-custody.ts";
 import * as DeadCapture from "../../src/store/dead-generation-capture.ts";
 import * as IdleReleaseStore from "../../src/store/idle-release-store.ts";
 import * as ObservationProof from "../../src/store/observation-proof.ts";
@@ -182,6 +183,11 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.markRunningWithResidentIfClaimed, QueueClaims.markRunningWithResidentIfClaimed);
     assert.strictEqual(StateAccessFacade.activateDeadGenerationRuntime, DeadCapture.activateDeadGenerationRuntime);
     assert.strictEqual(StateAccessFacade.captureDeadGeneration, DeadCapture.captureDeadGeneration);
+    assert.strictEqual(StateAccessFacade.captureResponseCustody, ResponseCustody.captureResponseCustody);
+    assert.strictEqual(StateAccessFacade.beginResponseCustody, ResponseCustody.beginResponseCustody);
+    assert.strictEqual(StateAccessFacade.finishResponseCustody, ResponseCustody.finishResponseCustody);
+    assert.strictEqual(StateAccessFacade.checkResponseCustody, ResponseCustody.checkResponseCustody);
+    assert.strictEqual(StateAccessFacade.checkAllResponseCustody, ResponseCustody.checkAllResponseCustody);
     assert.strictEqual(StateAccessFacade.deadTargetHeld, DeadGeneration.targetIsHeld);
     assert.strictEqual(StateAccessFacade.recordPreflightFailure, Preflight.recordPreflightFailure);
   });
@@ -243,6 +249,11 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "completedAppServerForkTargetForSource",
       "activateDeadGenerationRuntime",
       "captureDeadGeneration",
+      "captureResponseCustody",
+      "beginResponseCustody",
+      "finishResponseCustody",
+      "checkResponseCustody",
+      "checkAllResponseCustody",
       "deadTargetHeld",
       "eligibleJobs",
       "enqueue",
@@ -330,7 +341,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 124);
+    assert.strictEqual(actual.length, 129);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

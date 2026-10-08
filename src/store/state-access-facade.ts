@@ -1,3 +1,4 @@
+import * as ResponseCustody from "./response-custody.ts";
 import * as DeadCapture from "./dead-generation-capture.ts";
 import * as IdleReleaseStore from "./idle-release-store.ts";
 import * as ObservationProof from "./observation-proof.ts";
@@ -142,6 +143,12 @@ export const stageOwnedQueueCompletion: typeof Delivery.stageOwnedQueueCompletio
 
 export const activateDeadGenerationRuntime: typeof DeadCapture.activateDeadGenerationRuntime = DeadCapture.activateDeadGenerationRuntime;
 export const captureDeadGeneration: typeof DeadCapture.captureDeadGeneration = DeadCapture.captureDeadGeneration;
+
+export const captureResponseCustody: typeof ResponseCustody.captureResponseCustody = ResponseCustody.captureResponseCustody;
+export const beginResponseCustody: typeof ResponseCustody.beginResponseCustody = ResponseCustody.beginResponseCustody;
+export const finishResponseCustody: typeof ResponseCustody.finishResponseCustody = ResponseCustody.finishResponseCustody;
+export const checkResponseCustody: typeof ResponseCustody.checkResponseCustody = ResponseCustody.checkResponseCustody;
+export const checkAllResponseCustody: typeof ResponseCustody.checkAllResponseCustody = ResponseCustody.checkAllResponseCustody;
 
 export const deadTargetHeld: typeof DeadGeneration.targetIsHeld = DeadGeneration.targetIsHeld;
 export const recordPreflightFailure: typeof Preflight.recordPreflightFailure = Preflight.recordPreflightFailure;
@@ -336,6 +343,11 @@ export interface IStateAccessFacade {
   readonly stageOwnedQueueCompletion: typeof Delivery.stageOwnedQueueCompletion;
   readonly activateDeadGenerationRuntime: typeof DeadCapture.activateDeadGenerationRuntime;
   readonly captureDeadGeneration: typeof DeadCapture.captureDeadGeneration;
+  readonly captureResponseCustody: typeof ResponseCustody.captureResponseCustody;
+  readonly beginResponseCustody: typeof ResponseCustody.beginResponseCustody;
+  readonly finishResponseCustody: typeof ResponseCustody.finishResponseCustody;
+  readonly checkResponseCustody: typeof ResponseCustody.checkResponseCustody;
+  readonly checkAllResponseCustody: typeof ResponseCustody.checkAllResponseCustody;
   readonly deadTargetHeld: typeof DeadGeneration.targetIsHeld;
   readonly recordPreflightFailure: typeof Preflight.recordPreflightFailure;
   readonly tryBeginAttempt: typeof QueueClaims.tryBeginAttempt;
@@ -471,6 +483,11 @@ export const StateAccessFacade: IStateAccessFacade = {
   stageOwnedQueueCompletion,
   activateDeadGenerationRuntime,
   captureDeadGeneration,
+  captureResponseCustody,
+  beginResponseCustody,
+  finishResponseCustody,
+  checkResponseCustody,
+  checkAllResponseCustody,
   deadTargetHeld,
   recordPreflightFailure,
   tryBeginAttempt,

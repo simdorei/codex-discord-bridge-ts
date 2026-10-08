@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,247 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,274 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2678,3 +2678,34 @@ The existing queue reader and serializer are reused, not newly certified for eve
 numeric/driver boundary. Native error classes remain TS/SQLite-specific. This owned async
 store path is not yet installed as the synchronous native resident persistence callback;
 production adapter and offload decisions remain pending. No automatic replay is added.
+
+
+## 2026-10-08 — Existing-only durable server-response custody
+
+Added response authority capture (DEFERRED), actual admission (IMMEDIATE), exact-payload
+finish, and thread/global admitted-response guards. Authority binds runtime/resident/
+generation, full original request including occurrence, immutable serialized queue job,
+original mapping and stop sequence. Admission checks original ownership and relevant
+holds both before and after insertion, including retained relational fields and payload
+hash. Only terminal history is pruned, retaining 256; the journal has a 1024-row cap.
+Flushed/not_sent are not terminal proof and do not grant another send for that occurrence.
+
+Finish preserves terminal evidence and intentionally does not revalidate a later queue
+or stop change: it checks original authority identity, runtime, retained payload and row
+before/after mutation. Failed/tampered finish leaves admitted evidence. Existing terminal
+notification production code is unchanged. Five owned operations join StateAccessFacade
+(129 methods). A central existing-only synchronous store scope shares cleanup with the
+initialized async scope; it neither creates nor migrates a missing database.
+
+Evidence .runtime/cloud-response-custody-127: 26 new response tests and one new central
+scope test; full **3,274 PASS, zero fail/skip/cancel; strict TS exit0**. Covers original
+owner/mapping/queue changes, duplicate occurrence, trigger-induced holds/row corruption,
+late stop, exact request hash goldens, opaque timestamp bytes, stale runtime, pruning,
+capacity, rollback, absent file and shared cleanup. Controlled terminal-row fixture is
+explicitly not an authenticated native terminal observation; that producer has separate
+existing tests. Rust test scenarios were ported, not newly executed in Rust.
+
+Actual native resident-to-store response callback binding remains next work. This module
+alone does not send wire bytes or answer user approvals. Native Windows, complete runtime,
+performance/offload and operational validation remain incomplete; existing serializer and
+SQLite error taxonomy limitations are unchanged.
