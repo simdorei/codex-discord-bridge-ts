@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,383 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,393 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4624,3 +4624,26 @@ Evidence `.runtime/cloud-gateway-event-decoder-203/`. All65 names now select sch
 implementations, but earlier bounded Content/valid-JSON limits persist. Raw-driver
 adapter integration, live Discord/Codex, Windows and operational qualification
 remain pending; no overall parity or deployment PASS is implied.
+
+
+## Checkpoint 204 — actual decoded shard adapter and runtime integration
+
+Connected the owned raw message driver and full event decoder to the existing
+GatewayShardPort/runtime. The adapter captures real driver methods, derives shard
+identity from its private-brand-checked snapshot, filters unknown traffic with a
+cancellable64-message yield, reports model errors without killing the connection,
+and joins both driver disposal and its pending read. Shared identify queue lifetime
+remains caller-owned; raw driver access must be relinquished after transfer.
+
+Real loopback tests exercise filtered bursts, valid typed Message/Interaction lanes,
+Ready identity, malformed known events followed by valid traffic, read cancellation,
+normal close/EOF and paused/runtime shutdown. Review found duplicate/disposed driver
+ownership was not rejected. Two same-test-SHA regressions failed before adding a
+one-time transfer guard, then all10 focused tests passed. Original failures remain.
+
+The VM returned to ready at20:35 UTC with files/logs retained. Source was reread and
+strict/focused/full checks resumed; intermediate full4,391 and final **4,393 PASS /0
+fail/0 skip/0 cancelled**, strict TS exit0, are separately saved under
+`.runtime/cloud-gateway-decoded-port-204/`. Loopback integration is not live Discord,
+TLS, Windows or operational qualification. Discovery/startup composition and full
+bridge consumer wiring remain unfinished.
