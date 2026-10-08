@@ -28,6 +28,7 @@ export class GatewaySessionMachine{
  resumeSession():GatewayResumeSession|null{return this.#session;}
  heartbeatSchedule():GatewayHeartbeatSchedule|null{return this.#schedule;}
  latencySnapshot(){return Object.freeze({sentAtNs:this.#sent,receivedAtNs:this.#received,lastLatencyNs:this.#latency,eventSeen:this.#eventSeen});}
+ connectionFailed():void{if(this.#phase!=='Disconnected')throw new TypeError('Gateway is not disconnected');this.#resumeUrl=null;}
  connected():void{if(this.#phase!=='Disconnected')throw new TypeError('Gateway is not disconnected');this.#phase='Identifying';}
  #disconnect():void{this.#schedule=null;this.#identify=null;this.#phase='Disconnected';}
  transportFailed():void{this.#idle();if(this.#phase==='FatallyClosed')throw new TypeError('Gateway fatally closed');this.#disconnect();}

@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,167 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,178 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4386,3 +4386,28 @@ Strict TS exit0; focused **29 PASS**; full Linux **4,167 PASS /0 fail/0 skip/0 c
 Evidence `.runtime/cloud-gateway-control-sender-189/`. Complete reconnect/timer/
 dispatch orchestration, live Discord and platform/performance qualification remain
 pending.
+
+
+## Checkpoint 190 — owned raw Gateway message driver
+
+Composed the pinned session machine, control sender, single-bucket identify queue,
+command limiter, actual WebSocket transport and native Zstd decoder. The owner
+retains losing reads and identify operations, joins cancelled timers, and disposes
+current/retiring sockets and decoder work before reporting completion. First receive
+starts connection lazily; cancellation of one consumer does not discard its future
+packet or kill the shared connection. One queued output item bounds prefetch.
+
+Real loopback tests cover Hello/Identify/Ready, Resume following a remote close,
+fatal close, source close reasons, scheduled heartbeat/ACK, missing-traffic zombie
+detection, compressed packets/corruption, failed resume URL fallback and backoff,
+and disposal while reading. The shared identify queue remains caller-owned.
+
+This is explicitly a bounded Node bridge profile: normal close ends this driver;
+Tokio's small-lateness heartbeat threshold, generic queue cancellation re-enqueue
+and reconnect-attempt overflow equivalence are not claimed. Full typed dispatch
+admission and runtime bootstrap remain pending. No live Discord, TLS, Windows,
+performance or production approval is implied.
+
+Strict TS exit0; focused **11 PASS**; full Linux **4,178 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-gateway-message-driver-190/`. Source-only, focused and full
+checks are separate saved runs; no executable Rust differential was performed.
