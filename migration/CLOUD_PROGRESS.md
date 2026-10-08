@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **2,972 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **2,987 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2016,3 +2016,23 @@ foreign/released refusal, admitted notification/normal/error/current response ow
 and canceled mutation response custody surviving caller release. These remain internal
 explicit-lifetime contracts: caller must release after its durable workflow, not early.
 Resident state, durable restart fencing and production manager integration remain pending.
+
+## 2026-10-08 — Resident admission and replacement state subset
+
+Added one synchronous resident state owner for exact generation admission, timeout/cancel
+quarantine, response draining while quarantined, restart requests, quiescent sealing,
+replacement cleanup debt, exact client identity and terminal close. Authority is frozen
+manager/admission.rs, admission_restart.rs, admission_replacement.rs,
+admission_terminal.rs and death.rs. Failed replacement installation retains cleanup
+debt; stale death/timeout from an old generation cannot disable its successor.
+
+Review caught async installation executing before refusal and Promise-shaped quiescence
+being treated as permission. The identical final 15-test file gives old source 13 PASS /
+2 FAIL, corrected source 15 PASS. Evidence .runtime/cloud-resident-state-103; full
+**2,987 PASS, 0 fail/skip/cancel; strict TS exit 0**. Callback failures are retained
+without poisoning the candidate; JavaScript callback errors do not distinguish Rust
+panics from Result errors, so native panic/unwind equivalence is not claimed.
+
+The frozen client port is a trusted owned capability requirement, not ownership proof
+from object shape. Native session binding, written-request guards, durable dead-generation
+settlement, restart orchestration and full manager integration remain unfinished.
