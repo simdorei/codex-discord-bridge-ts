@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,544 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,555 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5050,3 +5050,23 @@ Evidence `.runtime/cloud-discord-interaction-routing-222/`. Initial2 PASS/14 FAI
 was a fixture error: generic serde-Value serialization treats JS number as f64, so
 type2 became2.0. Fixtures now use bigint for integral tokens, preserving the strict
 u8/i64 production decoder rather than weakening it. No live interaction was sent.
+
+
+## Checkpoint 223 — access-first interaction envelope and owned responses
+
+Composed user/channel policy before Ping/command/component routing. Denials produce
+immediate ephemeral messages and no work; malformed routes preserve exact source
+rejection text. Transport identity/token are retained in the immutable internal
+envelope, never copied into denial content or logged by this module. Allowed work
+still requires downstream durable admission/execution.
+
+Added branded generated-response helpers for Pong, deferred channel/update, empty
+autocomplete and bounded messages. Serialization omits absent data/flags, preserves
+default allowed_mentions parse[], and uses existing Unicode-scalar fit semantics.
+Arbitrary caller response objects are rejected by the serializer. This profile
+does not claim arbitrary embeds/attachments/modal response support.
+
+Strict TS exit0, focused11 PASS, full Linux **4,555 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-discord-interaction-envelope-223/` pins policy/response
+source and response serialization model. HTTP acknowledgement/rate/auth rules and
+interaction worker wiring remain pending; no external response was sent.
