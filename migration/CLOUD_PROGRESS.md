@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,485 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,490 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4895,3 +4895,25 @@ Evidence `.runtime/cloud-runtime-ready-setup-215/` pins ready.rs/tests and notic
 authority. Command schema/HTTP adapter, remaining typed consumers and complete main
 service wiring are pending. Live credentials, Windows and operational qualification
 remain unverified.
+
+
+## Checkpoint 216 — pinned slash-command registration catalog
+
+Added all19 source command specifications (18 without QA), preserving order,
+descriptions, seven option groups and the conditional qa_buttons entry. Complete
+pinned Command/CommandOption serialization policy is applied: null default member
+permissions, omitted None optionals, empty options arrays, Unicode ellipsis option
+descriptions and string version Id(1). Global/guild PUT paths retain lossless u64
+identities. Returned catalogs/options are deeply immutable.
+
+An independent mechanical extractor reads pinned commands.rs into the test fixture;
+field serialization rules were read from Twilight0.17.1. This is source-backed
+static/golden evidence, not an executable Rust serializer comparison. The initial
+extractor mistakenly expected8 option groups rather than7 and failed before writing
+the fixture; the resulting missing-fixture test failure is preserved. Corrected
+exact group names and19-command completeness checks produced the final fixture.
+
+Strict TS exit0, focused5 PASS, full Linux **4,490 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-discord-command-catalog-216/` pins source/model/route/Id
+serialization authorities. Request data is implemented; actual PUT wire/rate/client
+registration composition remains the next unit. No commands were sent to Discord.
