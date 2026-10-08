@@ -4231,3 +4231,24 @@ Strict TS exit0; focused **16 PASS**; full Linux **4,079 PASS /0 fail/0 skip/0 c
 Evidence `.runtime/cloud-gateway-zstd-182/`. Node zstd is experimental and pinned to
 24.21.0. Actual Discord/session/reconnect/identify, Windows, performance and operational
 qualification remain pending.
+
+
+## Checkpoint 183 — minimal Gateway control decoding and reconnect policy
+
+Added exact literal-key metadata scanning from pinned GatewayEventDeserializer.
+It intentionally is not structural JSON validation: source first-substring search,
+Rust whitespace/unsigned spelling, unescaped event-type scan and nested first hits
+are tested. Owned metadata is bound to its original raw packet so copied headers
+cannot select a different payload. Minimal READY/HELLO/invalid-session payloads use
+typed parsing; other session-control branches preserve source processing behavior.
+
+This module is explicitly separate from full event admission. The future controller
+must record received activity after successful metadata scan and before minimal
+payload errors, and minimal READY is not proof that its full identity payload passed.
+Reconnect delays use u8 saturating powers (1s through255s). Fatal close code policy
+and local1000/1001 session invalidation are pinned and tested. Compressed source HELLO
+passes through native zstd and minimal decoding.
+
+Strict TS exit0; focused **14 PASS**; full Linux **4,093 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-gateway-packet-control-183/`. Timer/session controller and
+complete dispatch admission, real Discord/Windows/performance/operations remain pending.
