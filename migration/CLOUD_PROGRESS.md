@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,654 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,665 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3419,3 +3419,32 @@ Full-before-cross-owner-check3,653 is separate from final3,654.
 This is context for the still-unfinished completion handler/scheduler, not live Codex
 execution proof. Existing typed parser diagnostics, initialized-existing profile,
 native answer writer, Windows/offload and operational qualification limits remain.
+
+
+## Checkpoint 152 — staged completion handler and borrowed recovery lane
+
+Direct SSS implementation on the VM, frozen Rust authority unchanged. Connected live
+completion, Goal progress/handoff, commentary, durable observed replay, orphan and queue
+recovery to the previously tested admission/history/store units. Every state operation
+borrows the same target lease; captured terminal owners are rechecked. Durable JSON is
+never passed through the live terminal observer or treated as fresh resident evidence.
+Normal, failed and interrupted terminals remain distinct; missing exact replies stage an
+explicit error. Staged terminal writes do not send HTTP or start the next queued job.
+
+Added the Rust control-admission/draining snapshot as one synchronous gate operation,
+and exposed the queue-owned path/notification/background permit to this handler. The
+instrumentation mirror retains every assertion; its source identity pin was updated to
+the reviewed changed gate SHA. First full run rejected that old pin (12 cancelled tests),
+and remains saved. Test-only fake server types, process key and missing dispatch setup
+were corrected without weakening production guards or stored-message assertions.
+
+Validation: strict TypeScript exit 0, full Linux suite **3,665 PASS / 0 fail / 0 skip /
+0 cancelled**. Eleven new tests include an actual owned VM Node JSON-RPC helper flowing
+through indexed source intake and exact target admission to a persisted Final outbox.
+No live Codex or Discord service was used. Evidence:
+`.runtime/cloud-completion-handler-152/{source-authority.json,source-manifest.json,
+verification-result.json,typecheck-final.log,focused-final.log,full-tests.log}`.
+
+Remaining: scheduler task ownership/loop assembly, production transport/service and
+Windows qualification; existing malformed-question diagnostic parity and blocking SQLite
+limits remain. This is not a deployment or complete runtime parity approval.

@@ -70,6 +70,10 @@ export class QueueStartCoordinator {
       () => this.#now(), (target, generation, turns) => this.#start(target, generation, turns), {forks: this.#fork});
   }
 
+  get dbPath():string{return this.#path;}
+  notifyDeliveryReady():void{this.#notify();}
+  enterBackgroundRecovery():readonly [AdmissionPermit,boolean]|null{return this.#gate?.tryEnterControlObserved()??null;}
+
   ensureAppServerOnlyTarget(source: string): Promise<AppServerTarget> { return this.#fork.ensureTarget(source); }
   forceAppServerOnlyTarget(source: string): Promise<AppServerTarget> { return this.#fork.forceTarget(source); }
 

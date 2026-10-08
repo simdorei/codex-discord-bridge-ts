@@ -96,7 +96,10 @@ export class AdmissionGate {
     return new AdmissionPermit(PERMIT_TOKEN, this);
   }
 
-  tryEnterControl(): AdmissionPermit {
+  tryEnterControl(): AdmissionPermit {return this.tryEnterControlObserved()[0];}
+
+  /** One synchronous snapshot of control admission and restart-draining state. */
+  tryEnterControlObserved(): readonly [AdmissionPermit,boolean] {
     const state = getGateState(this);
     if (state.poisoned) {
       throw new DrainGateError("LockPoisoned");
@@ -108,7 +111,7 @@ export class AdmissionGate {
       throw new DrainGateError("LockPoisoned");
     }
     state.active += 1n;
-    return new AdmissionPermit(PERMIT_TOKEN, this);
+    return [new AdmissionPermit(PERMIT_TOKEN, this),state.sealedRecord!==null] as const;
   }
 
   seal(key: unknown): void {
