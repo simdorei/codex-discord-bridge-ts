@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,728 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,738 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3637,3 +3637,30 @@ Strict TS exit 0; focused response/error/receipt **34 PASS**; full Linux **3,728
 0 fail / 0 skip / 0 cancelled**. Evidence `.runtime/cloud-discord-response-engine-159/`.
 Production wire, rate manager, successful Message decoder and full service remain pending;
 this is not a live HTTP or complete client approval.
+
+
+## Checkpoint 160 — channel message/typing rate-state owner
+
+Ported the pinned rate actor's canonical POST channel profile with a shared default
+50-request/one-second global window, initial channel resource queue, learned bucket
+namespace, FIFO waiters, response-header completion, cancellation refunds and six-hour
+known-bucket cleanup. Identical bucket bytes on different channels stay independent.
+Bucket changes move only the matching endpoint's pending requests; an already in-flight
+incoming bucket is not overwritten by a stale response. Cancellation before grant takes
+no global slot. Granted cancellation refunds once; completed headers do not refund.
+
+Close rejects queued requests and waits for granted permits to complete/release before
+reclaiming state. No hard cancellation of another owner's HTTP is claimed. This scope
+accepts parsed headers, canonical channel paths and positive u16 global limits. It does
+not implement interaction exemptions, guild routes, acquire_if predicates, raw header
+decoding, arbitrary Rust hash collisions or nanosecond Instant equivalence.
+
+The rate crate archive SHA matches frozen Cargo.lock. Its source commit and checksum
+were added to migration/discord-http-authority.json, and the exact pinned ISC license
+was retained in THIRD_PARTY_NOTICES.md. Ten new deterministic-clock tests cover grants,
+refunds, resets, remapping, incoming-bucket contention, byte identity, GC and joined close.
+
+Strict TS exit 0; focused rate/response tests **23 PASS**; full Linux **3,738 PASS /
+0 fail / 0 skip / 0 cancelled**. Evidence .runtime/cloud-channel-rate-state-160/.
+Production wire, full Message decoder, remaining endpoint profiles and service/platform
+qualification remain incomplete.

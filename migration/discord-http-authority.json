@@ -10,5 +10,11 @@
     "registryUrl": "https://static.crates.io/crates/twilight-http/twilight-http-0.17.1.crate",
     "sha256": "05b868001d7bfb953732b3f1cd92f63cb88cd2ea902f590b1d084c66aea60e48"
   },
-  "integrity": "Both archive SHA256 values exactly match frozen Cargo.lock; extracted source read only, no crate executed"
+  "integrity": "All listed registry archive SHA256 values exactly match frozen Cargo.lock; source inspected, no crate executed",
+  "twilight-http-ratelimiting": {
+    "version": "0.17.1",
+    "registryUrl": "https://static.crates.io/crates/twilight-http-ratelimiting/twilight-http-ratelimiting-0.17.1.crate",
+    "sha256": "0515b0c30814068a7540fcb5f58b634259ca453fa335d42c3b2c8f2b06ac6a59",
+    "sourceCommit": "b4ce13b727e7731b917576ad977300ab6926bb6b"
+  }
 }
