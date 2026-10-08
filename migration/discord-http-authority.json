@@ -16,5 +16,11 @@
     "registryUrl": "https://static.crates.io/crates/twilight-http-ratelimiting/twilight-http-ratelimiting-0.17.1.crate",
     "sha256": "0515b0c30814068a7540fcb5f58b634259ca453fa335d42c3b2c8f2b06ac6a59",
     "sourceCommit": "b4ce13b727e7731b917576ad977300ab6926bb6b"
+  },
+  "time": {
+    "version": "0.3.55",
+    "registryUrl": "https://static.crates.io/crates/time/time-0.3.55.crate",
+    "sha256": "cdb87b95ec50ddfa440816d227a17b2ccbdda963a316a727fda0fc4334f7d134",
+    "sourceCommit": "857d9c404c5b6f6cb64d1bfa604c695be3369e12"
   }
 }

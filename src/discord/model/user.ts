@@ -1,12 +1,6 @@
 import {parseSerdeField,type StructField,type StructFieldDecoder,type StructShape} from '../../core/serde-struct-json.ts';
-export const modelOption=(field:StructField):StructFieldDecoder=>(raw,_depth,context)=>raw.trim()==='null'?null:context.decode(field);
-export const modelVector=(field:StructField):StructFieldDecoder=>(_raw,_depth,context)=>context.array(field);
-export const modelStruct=(shape:StructShape):StructFieldDecoder=>(_raw,_depth,context)=>context.struct(shape);
-export function modelUnsigned(bits:number):StructFieldDecoder{return (_raw,_depth,context)=>{const value=context.value();if(typeof value!=='bigint'||value<0n||value>=(1n<<BigInt(bits)))throw new SyntaxError(`Expected u${bits}`);return value;};}
-function unsignedText(value:string,bits:number):bigint{const m=/^\+?[0-9]+$/u.exec(value);if(m===null||m[0]!==value)throw new SyntaxError('Invalid unsigned decimal');const n=BigInt(value);if(n>=(1n<<BigInt(bits)))throw new SyntaxError('Unsigned decimal out of range');return n;}
-export const modelSnowflake:StructFieldDecoder=(_raw,_depth,context)=>{const value=context.value(),id=typeof value==='string'?unsignedText(value,64):typeof value==='bigint'?value:-1n;if(id<=0n||id>=(1n<<64n))throw new SyntaxError('Expected nonzero Discord snowflake');return id;};
-const CLYDE_HEX='a_'+Buffer.concat([Buffer.from('clyde'),Buffer.alloc(11)]).reverse().toString('hex');
-export const modelImageHash:StructFieldDecoder=(_raw,_depth,context)=>{const value=context.value();if(typeof value!=='string')throw new SyntaxError('Expected image hash');if(value.startsWith('clyde')||value===CLYDE_HEX)return 'clyde';const m=/^(?:a_)?[0-9a-f]{32}$/u.exec(value);if(m===null||m[0]!==value)throw new SyntaxError('Invalid Discord image hash');return value;};
+import {modelOption,modelStruct,modelUnsigned,modelSnowflake,modelImageHash,unsignedText} from "./fields.ts";
+export * from "./fields.ts";
 const discriminator:StructFieldDecoder=(_raw,_depth,context)=>{const value=context.value();if(typeof value==='string')return unsignedText(value,16);if(typeof value==='bigint'&&value>=0n&&value<=65535n)return value;throw new SyntaxError('Expected string or integer discriminator');};
 const USER_FLAGS=[0,1,2,3,6,7,8,9,10,14,16,17,18,19,22].reduce((mask,bit)=>mask|(1n<<BigInt(bit)),0n);
 const flags:StructFieldDecoder=(_raw,_depth,context)=>(context.decode(modelUnsigned(64)) as bigint)&USER_FLAGS;

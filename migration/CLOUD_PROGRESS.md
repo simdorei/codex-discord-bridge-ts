@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,772 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,786 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3740,3 +3740,26 @@ syntax errors are retained in raw draft logs. Strict TS exit 0; focused parser/U
 Evidence .runtime/cloud-discord-user-model-163/ includes dependency hashes and final logs.
 This validates the User leaf only; complete successful Message decoding remains unfinished.
 No live Discord or Rust differential executable proof is claimed.
+
+
+## Checkpoint 164 — Timestamp, Attachment and Embed model closure
+
+Added Timestamp validation from pinned Twilight/time source, preserving the 25-byte
+minimum, any single ASCII date/time separator, fractional truncation to nanoseconds,
+calendar/offset bounds and UTC month-end leap-second check. The source's subsequent
+PrimitiveDateTime wrapper discards the offset; the TS representation deliberately retains
+that naive local wall-time as exact bigint nanoseconds. It is not an ISO serializer or
+an invented Date.parse normalization.
+
+Added Attachment and all Embed child structures (author, fields, footer, image, provider,
+thumbnail and video). Preserved flags truncation, integer/f64 distinctions, option/default
+and sequence semantics. No extra URL/base64/text-length validation was invented from
+comments. Common typed-field helpers moved to one module, and container defaults are
+cloned per decode so one parsed empty vector cannot alter another result or the schema.
+
+The time 0.3.55 archive matched frozen Cargo.lock; dependency provenance and its MIT
+notice were recorded. Fourteen new tests cover these contracts. Strict TS exit 0;
+focused media/User/typed-parser **33 PASS**; full Linux **3,786 PASS / 0 fail / 0 skip /
+0 cancelled**. Evidence .runtime/cloud-discord-media-model-164/ contains authority hashes,
+manifest and raw logs. Complete Message decoding, live Discord, platform and operational
+qualification remain incomplete.

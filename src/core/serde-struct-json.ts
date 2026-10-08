@@ -80,8 +80,8 @@ function decodeStruct(raw: string, shape: StructShape, depth: number): Record<st
   }
   for (const [key, kind] of shape.fields) {
     if (!Object.hasOwn(result, key)) {
-      if (shape.defaults !== undefined && Object.hasOwn(shape.defaults,key)) result[key] = shape.defaults[key];
-      else if (map && shape.mapDefaults !== undefined && Object.hasOwn(shape.mapDefaults,key)) result[key] = shape.mapDefaults[key];
+      if (shape.defaults !== undefined && Object.hasOwn(shape.defaults,key)) result[key] = structuredClone(shape.defaults[key]);
+      else if (map && shape.mapDefaults !== undefined && Object.hasOwn(shape.mapDefaults,key)) result[key] = structuredClone(shape.mapDefaults[key]);
       else if (map && kind === "string?") result[key] = null;
       else throw new SyntaxError(`Missing Serde field: ${key}`);
     }
