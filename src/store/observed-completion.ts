@@ -100,3 +100,12 @@ export async function finishObservedCompletion(path:string,thread:string,turn:st
   try{write.prepare("DELETE FROM codex_observed_completions WHERE thread_id=? AND turn_id=?").run(thread,turn);}
   finally{write.close();}
 }
+
+import {usingInitializedStore} from "./owned-scope.ts";
+import {I64_MIN,I64_MAX} from "../protocol/ids.ts";
+/** Equal numeric generations in different resident lifetimes do not grant release. */
+export function hasObservedCompletionResidentEvidence(path:string,thread:string,turn:string,generation:bigint,resident:string):Promise<boolean>{
+  for(const value of [thread,turn,resident])if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed resident evidence identity");
+  if(typeof generation!=="bigint"||generation<I64_MIN||generation>I64_MAX)throw new RangeError("Expected i64 evidence generation");
+  return usingInitializedStore(path,db=>{const q=db.prepare("SELECT EXISTS(SELECT 1 FROM codex_observed_completions WHERE thread_id=?1 AND turn_id=?2 AND generation=?3 AND resident_owner=?4) AS present");q.setReadBigInts(true);return decodeI64(q.get(thread,turn,generation,resident)?.present,"present")!==0n;});
+}

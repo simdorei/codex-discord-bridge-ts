@@ -1,3 +1,4 @@
+import * as ObservedFinalAnswer from "./observed-final-answer.ts";
 import * as AsyncGuards from "./async-resolution-guards.ts";
 import * as QuestionGuard from "./async-question-guard.ts";
 import * as StopDispatch from "./stop-control-dispatch.ts";
@@ -133,6 +134,9 @@ export const retainAsyncHistoryCandidate: typeof AsyncHistory.retainAsyncHistory
 export const captureTerminalHistorySnapshot: typeof AsyncHistory.captureTerminalHistorySnapshot = AsyncHistory.captureTerminalHistorySnapshot;
 export const settleTerminalHistory: typeof AsyncHistory.settleTerminalHistory = AsyncHistory.settleTerminalHistory;
 
+export const recordObservedFinalAnswer: typeof ObservedFinalAnswer.recordObservedFinalAnswer = ObservedFinalAnswer.recordObservedFinalAnswer;
+export const getObservedFinalAnswer: typeof ObservedFinalAnswer.getObservedFinalAnswer = ObservedFinalAnswer.getObservedFinalAnswer;
+export const hasObservedCompletionResidentEvidence: typeof ObservedCompletion.hasObservedCompletionResidentEvidence = ObservedCompletion.hasObservedCompletionResidentEvidence;
 export const pendingObservedCompletions: typeof ObservedCompletion.pendingObservedCompletions = ObservedCompletion.pendingObservedCompletions;
 export const hasObservedCompletion: typeof ObservedCompletion.hasObservedCompletion = ObservedCompletion.hasObservedCompletion;
 export const recordObservedCompletionError: typeof ObservedCompletion.recordObservedCompletionError = ObservedCompletion.recordObservedCompletionError;
@@ -374,6 +378,9 @@ export interface IStateAccessFacade {
   readonly retainAsyncHistoryCandidate: typeof AsyncHistory.retainAsyncHistoryCandidate;
   readonly captureTerminalHistorySnapshot: typeof AsyncHistory.captureTerminalHistorySnapshot;
   readonly settleTerminalHistory: typeof AsyncHistory.settleTerminalHistory;
+  readonly recordObservedFinalAnswer: typeof ObservedFinalAnswer.recordObservedFinalAnswer;
+  readonly getObservedFinalAnswer: typeof ObservedFinalAnswer.getObservedFinalAnswer;
+  readonly hasObservedCompletionResidentEvidence: typeof ObservedCompletion.hasObservedCompletionResidentEvidence;
   readonly pendingObservedCompletions: typeof ObservedCompletion.pendingObservedCompletions;
   readonly hasObservedCompletion: typeof ObservedCompletion.hasObservedCompletion;
   readonly recordObservedCompletionError: typeof ObservedCompletion.recordObservedCompletionError;
@@ -546,6 +553,9 @@ export const StateAccessFacade: IStateAccessFacade = {
   retainAsyncHistoryCandidate,
   captureTerminalHistorySnapshot,
   settleTerminalHistory,
+  recordObservedFinalAnswer,
+  getObservedFinalAnswer,
+  hasObservedCompletionResidentEvidence,
   pendingObservedCompletions,
   hasObservedCompletion,
   recordObservedCompletionError,

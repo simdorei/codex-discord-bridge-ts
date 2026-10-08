@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,422 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,434 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2941,3 +2941,31 @@ Discord/service composition and the event worker, initial user-stop acceptance, 
 Windows, descendant pipe cleanup, 45-second startup envelope and performance/operational
 qualification remain unfinished. The frozen Rust authority and phase-2 newer Rust/Pro
 contract follow-up remain unchanged.
+
+
+## 2026-10-08 — Early final/terminal evidence producer
+
+Added exact observed-final answer record/get and resident-bound terminal evidence query
+through StateAccessFacade (164 explicit methods). First final evidence is INSERT OR IGNORE,
+restricted to exact Running thread/turn/effective observation generation. Reads preserve
+Unicode/NUL and SQLite UTF-16 behavior and reject invalid UTF-8/non-TEXT storage rather
+than accepting replacement text. Existing final/Goal delivery cleanup remains the owner
+of deletion. Numeric generation alone never substitutes for resident identity.
+
+The source observe_terminal producer now routes real received final-answer and terminal
+notifications through these shared store APIs. It journals only normalized terminal
+metadata, not conversation items/tools. Gap/unrelated/async delivery events do not invent
+final evidence. Journal failures propagate before any observation confirmation; replay
+of an event is not replay of the original user request or a new turn/start.
+
+Evidence .runtime/cloud-completion-observer-136: 12 new tests; focused20 PASS including
+facade identity/signature checks; full **3,434 PASS, zero fail/skip/cancel; strict TS0**.
+Includes actual native received events and isolated SQLite persistence before explicit
+confirmation, conflicting first finals, stale/missing owners, observed-generation priority,
+UTF-16, corrupted UTF-8/BLOB, initial write failure and unchanged original queue state.
+
+This is the live producer unit, not the complete source event driver or scheduler. It
+accepts a trusted producer event and resident identity; arbitrary recovered/history JSON
+must never be routed here to manufacture native provenance. Blocking DB offload, tracked
+source reconciliation, async-question observation, complete Discord/service composition
+and existing Windows/operational limits remain unfinished. No live service was changed.

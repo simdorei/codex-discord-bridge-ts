@@ -1,3 +1,4 @@
+import * as ObservedFinalAnswer from "../../src/store/observed-final-answer.ts";
 import * as AsyncGuards from "../../src/store/async-resolution-guards.ts";
 import * as QuestionGuard from "../../src/store/async-question-guard.ts";
 import * as StopDispatch from "../../src/store/stop-control-dispatch.ts";
@@ -99,6 +100,12 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.retainAsyncHistoryCandidate, AsyncHistory.retainAsyncHistoryCandidate);
     assert.strictEqual(StateAccessFacade.captureTerminalHistorySnapshot, AsyncHistory.captureTerminalHistorySnapshot);
     assert.strictEqual(StateAccessFacade.settleTerminalHistory, AsyncHistory.settleTerminalHistory);
+    assert.strictEqual(StateAccessFacade.recordObservedFinalAnswer, ObservedFinalAnswer.recordObservedFinalAnswer);
+    assert.strictEqual(FacadeExports.recordObservedFinalAnswer, ObservedFinalAnswer.recordObservedFinalAnswer);
+    assert.strictEqual(StateAccessFacade.getObservedFinalAnswer, ObservedFinalAnswer.getObservedFinalAnswer);
+    assert.strictEqual(FacadeExports.getObservedFinalAnswer, ObservedFinalAnswer.getObservedFinalAnswer);
+    assert.strictEqual(StateAccessFacade.hasObservedCompletionResidentEvidence, ObservedCompletion.hasObservedCompletionResidentEvidence);
+    assert.strictEqual(FacadeExports.hasObservedCompletionResidentEvidence, ObservedCompletion.hasObservedCompletionResidentEvidence);
     assert.strictEqual(StateAccessFacade.pendingObservedCompletions, ObservedCompletion.pendingObservedCompletions);
     assert.strictEqual(StateAccessFacade.hasObservedCompletion, ObservedCompletion.hasObservedCompletion);
     assert.strictEqual(StateAccessFacade.recordObservedCompletionError, ObservedCompletion.recordObservedCompletionError);
@@ -382,6 +389,9 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "captureStopOrigin",
       "openCheckedRead",
       "pendingGoalProgress",
+      "recordObservedFinalAnswer",
+      "getObservedFinalAnswer",
+      "hasObservedCompletionResidentEvidence",
       "pendingObservedCompletions",
       "promotePromptIntakeToQueue",
       "promptIntakeHasDurableOwner",
@@ -410,7 +420,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 161);
+    assert.strictEqual(actual.length, 164);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
