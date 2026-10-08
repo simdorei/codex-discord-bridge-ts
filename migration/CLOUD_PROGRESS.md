@@ -4106,3 +4106,27 @@ Strict TS exit0; new focused **13 PASS**; full Linux **4,000 PASS /0 fail/0 skip
 source-derived validation projections, not serializers or real Gateway execution.
 Complete Interaction envelope/command option parsing, live integration and platform/
 performance/operational validation remain pending.
+
+
+## Checkpoint 178 — command options and finite f64 Display
+
+Added all eleven closed CommandOption types and open parent CommandData type,
+recursive subcommands, strict string-only ID options, signed i64 Integer and f64
+Number envelope fallback. Focused values stringify their actual decoded scalar;
+null focused and repeated empty options preserve the custom visitor's unoccupied
+duplicate guards. Known unused fields still validate.
+
+Focused numeric display uses exact binary midpoint intervals and shortest decimal
+candidate distances, with the compiler-pinned Rust 1.97.1 shortest tie-up rule.
+The exact quarter 826959760524820.25 formats to .3, while JS chooses .2. Negative
+zero and fixed (non-exponent) output are preserved. Tests include 2,498 deterministic
+finite binary samples for roundtrip/minimal digits, not an executable Rust oracle.
+Initial option-test decimal spelling incorrectly assumed float_roundtrip; the pinned
+serde_json default parser rounds that spelling differently. Only the fixture spelling
+was corrected, raw failed test/log retained; no same-test RED/GREEN claim is made.
+
+Strict TS exit0; focused **17 PASS**; full Linux **4,017 PASS /0 fail/0 skip/0 cancelled**.
+Evidence: `.runtime/cloud-interaction-command-178/`, including fetched compiler source
+and MIT notice. This covers finite default Display only, not all formatting modes.
+Full Interaction buffered-value composition, live Gateway, Windows, performance and
+operational validation remain pending.
