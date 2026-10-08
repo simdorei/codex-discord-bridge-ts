@@ -14,6 +14,7 @@ import type {DiscordMessageDecoder} from '../response-engine.ts';
  * Malformed JSON is rejected at the root instead of emulating error-swallowing
  * acceptance of invalid JSON. This decoder is a valid-JSON response profile. */
 const anonymizableId:StructFieldDecoder=(input,_depth,context)=>{
+ if(context.bufferedSource){try{return context.decode(id);}catch(error){if(!(error instanceof SyntaxError)&&!(error instanceof RangeError))throw error;return 0n;}}
  const raw=input.trim();
  if(raw[0]==='['||raw[0]==='{'){
   if(!/^(?:\[[\x20\t\n\r]*\]|\{[\x20\t\n\r]*\})$/u.test(raw))throw new SyntaxError('Unconsumed anonymizable identity container');
@@ -48,10 +49,10 @@ const anonymizableId:StructFieldDecoder=(input,_depth,context)=>{
  }
  try{return context.decode(id);}catch(error){if(!(error instanceof SyntaxError)&&!(error instanceof RangeError))throw error;return 0n;}
 };
-const integrationOwners=struct(shape([['0',option(anonymizableId)],['1',option(id)]],['0','1']));
+export const discordIntegrationOwnersField=struct(shape([['0',option(anonymizableId)],['1',option(id)]],['0','1']));
 export const discordInteractionMetadataField:StructFieldDecoder=(_raw,_depth,context)=>context.struct(metadataShape);
 const metadataShape=shape([
- ['authorizing_integration_owners',integrationOwners],['id',id],['interacted_message_id',option(id)],['type',discordInteractionTypeField],['original_response_message_id',option(id)],['target_message_id',option(id)],['target_user',option(discordUserField)],['triggering_interaction_metadata',option(discordInteractionMetadataField)],['user',discordUserField],
+ ['authorizing_integration_owners',discordIntegrationOwnersField],['id',id],['interacted_message_id',option(id)],['type',discordInteractionTypeField],['original_response_message_id',option(id)],['target_message_id',option(id)],['target_user',option(discordUserField)],['triggering_interaction_metadata',option(discordInteractionMetadataField)],['user',discordUserField],
 ],['interacted_message_id','original_response_message_id','target_message_id','target_user','triggering_interaction_metadata']);
 export const discordMessageField:StructFieldDecoder=(_raw,_depth,context)=>context.struct(messageShape);
 const messageShape=shape([

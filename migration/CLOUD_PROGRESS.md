@@ -4130,3 +4130,29 @@ Evidence: `.runtime/cloud-interaction-command-178/`, including fetched compiler 
 and MIT notice. This covers finite default Display only, not all formatting modes.
 Full Interaction buffered-value composition, live Gateway, Windows, performance and
 operational validation remain pending.
+
+
+## Checkpoint 179 — complete Interaction envelope and buffered Value semantics
+
+Composed all five Interaction kinds with shared complete Channel/Message/User and
+resolved/command/modal schemas. Required fields, null-unoccupied duplicate guards,
+optional entitlement default, partial guild features, open context byte and ignored
+version fields follow the pinned custom visitor. Author selection checks member.user
+before direct user. Ping discards data only after Value-level validation.
+
+Added single-use captured Value decoding to the shared typed parser. Buffered maps
+collapse duplicate keys and iterate lexical BTree string order. Unknown buffered
+values are fully validated even if later typed fields ignore them. Integer/f64 types
+and already parsed f64 bits survive without a second JSON parse. Direct raw parsing
+retains its prior semantics. AnonymizableId under buffered input consumes its owned
+Value and suppresses invalid containers; raw JSON retains its prior cursor-boundary
+checks. Regression tests distinguish both paths and numeric/key-order consequences.
+
+Strict TS exit0; focused **36 PASS**; full Linux **4,038 PASS /0 fail/0 skip/0 cancelled**.
+Evidence: `.runtime/cloud-interaction-envelope-179/`. Two initial test assertions
+incorrectly expected SyntaxError for existing parser overflow; expected RangeError
+was corrected with raw failures retained, no product validation weakened.
+
+This is full pinned recognized-field validation within the valid-JSON profile, not
+serializer parity, a Rust executable differential, live Gateway packet/socket wiring
+or Windows/performance/operational approval. Those integration tasks remain pending.

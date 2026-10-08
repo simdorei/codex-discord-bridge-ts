@@ -1,9 +1,11 @@
 import { parseSerdeValue } from "./serde-json-parse.ts";
+import { serializeSerdeValue } from "./serde-json.ts";
 
 /** Serde structs with explicit defaults, Option<String> and f64; no flatten/custom visitors. */
 export type StructField = "string" | "i64" | "u64" | "string[]" | "bool" | "value" | "string?" | "f64" | StructShape | StructFieldDecoder;
 export interface StructShape { readonly fields: readonly (readonly [string, StructField])[]; readonly defaults?: Readonly<Record<string, unknown>>; readonly mapDefaults?: Readonly<Record<string, unknown>> }
-export interface StructDecodeContext {value():unknown;struct(shape:StructShape):Record<string,unknown>;array(field:StructField):unknown[];decode(field:StructField):unknown;map(visit:(key:string,decode:(field:StructField)=>unknown)=>void):void}
+export interface BufferedSerdeValue {decode(field:StructField):unknown}
+export interface StructDecodeContext {readonly bufferedSource:boolean;captureBuffered():BufferedSerdeValue;value():unknown;struct(shape:StructShape):Record<string,unknown>;array(field:StructField):unknown[];decode(field:StructField):unknown;map(visit:(key:string,decode:(field:StructField)=>unknown)=>void):void}
 export type StructFieldDecoder=(raw:string,depth:number,context:StructDecodeContext)=>unknown;
 
 // JSON.parse checks grammar first. This scanner only finds raw value boundaries;
@@ -36,7 +38,7 @@ function whitespace(text: string, start: number): number {
   return start;
 }
 function decodeField(raw: string, kind: StructField, depth: number): unknown {
-  if (typeof kind === "function") return kind(raw, depth, Object.freeze({value:()=>decodeField(raw,"value",depth),struct:(shape:StructShape)=>decodeStruct(raw,shape,depth),array:(field:StructField)=>decodeArray(raw,field,depth),decode:(field:StructField)=>decodeField(raw,field,depth),map:(visit:(key:string,decode:(field:StructField)=>unknown)=>void)=>decodeMap(raw,depth,visit)})); // Trusted code; raw JSON was checked by the root.
+  if (typeof kind === "function") return kind(raw, depth, Object.freeze({bufferedSource:false,captureBuffered:()=>captureBuffered(decodeField(raw,"value",depth)),value:()=>decodeField(raw,"value",depth),struct:(shape:StructShape)=>decodeStruct(raw,shape,depth),array:(field:StructField)=>decodeArray(raw,field,depth),decode:(field:StructField)=>decodeField(raw,field,depth),map:(visit:(key:string,decode:(field:StructField)=>unknown)=>void)=>decodeMap(raw,depth,visit)})); // Trusted code; raw JSON was checked by the root.
   if (typeof kind !== "string") return decodeStruct(raw, kind, depth);
   // Parent typed structs consume the same recursion budget as Value containers.
   let value: unknown = parseSerdeValue("[".repeat(depth) + raw + "]".repeat(depth));
@@ -128,4 +130,42 @@ export function parseSerdeStructArray(text: string, shape: StructShape): Record<
   const raw=text.trim(),result:Record<string,unknown>[]=[];let position=whitespace(raw,1);
   while(raw[position]!=="]"){const end=valueEnd(raw,position);result.push(decodeStruct(raw.slice(position,end),shape,1));position=whitespace(raw,end);if(raw[position]===",")position=whitespace(raw,position+1);}
   return result;
+}
+
+
+/** serde_value::Value moves an already parsed typed tree into a second decoder.
+ * Re-serializing and reparsing it would round f64 again and incorrectly preserve
+ * raw duplicate fields. Capture is single-use; only the JSON parser mints it.
+ * Map iteration follows the source BTreeMap string-key order, not JS integer-key
+ * enumeration. Raw text for trusted custom decoders is a descriptive serialization;
+ * all context operations consume the captured values without reparsing that text. */
+function captureBuffered(value:unknown):BufferedSerdeValue{
+ let used=false;const cache=new WeakMap<object,string>();return Object.freeze({decode:(field:StructField)=>{if(used)throw new TypeError('Buffered Serde value already moved');used=true;return decodeBuffered(value,field,0,cache);}});
+}
+function decodeBuffered(value:unknown,field:StructField,depth:number,cache:WeakMap<object,string>):unknown{
+ if(depth>=128)throw new SyntaxError('Buffered Serde recursion limit exceeded');
+ const object=value!==null&&typeof value==='object'&&!Array.isArray(value);
+ const array=(child:StructField):unknown[]=>{if(!Array.isArray(value))throw new SyntaxError('Expected buffered Serde vector');return value.map(item=>decodeBuffered(item,child,depth+1,cache));};
+ const map=(visit:(key:string,decode:(field:StructField)=>unknown)=>void):void=>{if(!object)throw new SyntaxError('Expected buffered Serde map');const entries=value as Record<string,unknown>;for(const key of Object.keys(entries).sort((a,b)=>Buffer.compare(Buffer.from(a),Buffer.from(b))))visit(key,child=>decodeBuffered(entries[key],child,depth+1,cache));};
+ const struct=(shape:StructShape):Record<string,unknown>=>{
+  if(!object&&!Array.isArray(value))throw new SyntaxError('Expected buffered Serde struct');const result:Record<string,unknown>=Object.create(null);
+  if(Array.isArray(value)){if(value.length>shape.fields.length)throw new SyntaxError('Unexpected buffered sequence length');for(let i=0;i<value.length;i++){const [key,child]=shape.fields[i]!;result[key]=decodeBuffered(value[i],child,depth+1,cache);}}
+  else{const known=new Map(shape.fields);map((key,decode)=>{const child=known.get(key);if(child!==undefined)result[key]=decode(child);});}
+  for(const [key,child] of shape.fields){if(Object.hasOwn(result,key))continue;if(shape.defaults!==undefined&&Object.hasOwn(shape.defaults,key))result[key]=structuredClone(shape.defaults[key]);else if(object&&shape.mapDefaults!==undefined&&Object.hasOwn(shape.mapDefaults,key))result[key]=structuredClone(shape.mapDefaults[key]);else if(object&&child==='string?')result[key]=null;else throw new SyntaxError('Missing buffered Serde field: '+key);}
+  return result;
+ };
+ if(typeof field==='function'){
+  let raw:string;if(value!==null&&typeof value==='object'){raw=cache.get(value)??serializeSerdeValue(value);cache.set(value,raw);}else raw=serializeSerdeValue(value);
+  return field(raw,depth,Object.freeze({bufferedSource:true,captureBuffered:()=>captureBuffered(value),value:()=>value,struct,array,map,decode:(child:StructField)=>decodeBuffered(value,child,depth,cache)}));
+ }
+ if(typeof field!=='string')return struct(field);
+ if(field==='value')return value;
+ if(field==='string?'&&(value===null||typeof value==='string'))return value;
+ if(field==='string'&&typeof value==='string')return value;
+ if(field==='bool'&&typeof value==='boolean')return value;
+ if(field==='string[]')return array('string');
+ if(field==='f64'&&(typeof value==='number'||typeof value==='bigint')&&Number.isFinite(Number(value)))return Number(value);
+ if(field==='i64'&&typeof value==='bigint'&&value>=-(1n<<63n)&&value<(1n<<63n))return value;
+ if(field==='u64'&&typeof value==='bigint'&&value>=0n&&value<(1n<<64n))return value;
+ throw new SyntaxError('Expected buffered Serde '+field);
 }
