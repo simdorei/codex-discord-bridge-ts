@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,555 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,567 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3178,3 +3178,30 @@ asserts rejection. No production guard/schema was weakened.
 
 Async-message decoding/UI/answer dispatch and full tracked completion/service wiring
 remain pending, as do existing Windows/offload/operational qualification limits.
+
+
+## 2026-10-08 — One-shot async answer claim/confirmation/rejection
+
+Checkpoint 144 adds durable async-question dispatch transitions: exact actor, channel,
+message, original connection, option and open-state admission; shared mapping guard;
+full queue decoding before target filtering; and original execution identity sealing.
+Steer retains exactly the original running job. Start requires a complete unique
+pre-start baseline and no existing target work, then reserves a backward-compatible
+quarantined reply job that cannot enter generic retry/adoption.
+
+Confirmation verifies the original preparation seal before accepting the exact steer
+turn or changing the reserved Start to a distinct turn. Unknown-error recording only
+records bounded 1,000-scalar diagnostics and leaves dispatch authority unresolved.
+Definite/usage-limit rejection is explicitly caller-preconditioned on pre-send failure
+or authoritative rejection, never timeout; it removes only the exact sealed reserved
+job and does not create policy or automatic Reserve state. Facade now has 185 exports.
+
+Evidence .runtime/cloud-question-dispatch-144: 12 new tests; focused45 PASS, strict TS0,
+full **3,567 PASS**, zero fail/skip/cancel. Actual SQLite tests cover no replay, immutable
+claim input, wrong actor/room/message/generation/options, unique baseline and pending
+work, global malformed-job decode order, failed-seal rollback, changed custody, unknown
+retention, exact rejection cleanup, usage-limit closure and original-turn confirmation.
+
+This is store authority, not proof that an answer was sent. Native writer integration,
+async UI/message parsing and production tracked completion/Discord/service ownership
+remain incomplete. Existing platform/offload/operational limitations still apply.

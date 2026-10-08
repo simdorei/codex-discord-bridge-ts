@@ -1,3 +1,4 @@
+import * as QuestionDispatch from "./async-question-dispatch.ts";
 import * as QuestionDelivery from "./async-question-delivery-state.ts";
 import * as QuestionRetention from "./async-question-retention.ts";
 import * as QuestionObservation from "./async-question-observation.ts";
@@ -75,6 +76,11 @@ export const pendingAsyncQuestions: typeof QuestionDelivery.pendingAsyncQuestion
 export const confirmAsyncQuestionOwner: typeof QuestionDelivery.confirmAsyncQuestionOwner = QuestionDelivery.confirmAsyncQuestionOwner;
 export const requireCurrentAsyncQuestionMapping: typeof QuestionDelivery.requireCurrentAsyncQuestionMapping = QuestionDelivery.requireCurrentAsyncQuestionMapping;
 export const bindAsyncQuestionReceipt: typeof QuestionDelivery.bindAsyncQuestionReceipt = QuestionDelivery.bindAsyncQuestionReceipt;
+export const beginAsyncQuestionDispatch: typeof QuestionDispatch.beginAsyncQuestionDispatch = QuestionDispatch.beginAsyncQuestionDispatch;
+export const confirmAsyncQuestionDispatch: typeof QuestionDispatch.confirmAsyncQuestionDispatch = QuestionDispatch.confirmAsyncQuestionDispatch;
+export const recordAsyncQuestionError: typeof QuestionDispatch.recordAsyncQuestionError = QuestionDispatch.recordAsyncQuestionError;
+export const rejectDefiniteAsyncQuestion: typeof QuestionDispatch.rejectDefiniteAsyncQuestion = QuestionDispatch.rejectDefiniteAsyncQuestion;
+export const rejectUsageLimitAsyncQuestion: typeof QuestionDispatch.rejectUsageLimitAsyncQuestion = QuestionDispatch.rejectUsageLimitAsyncQuestion;
 export const getIdleIntent: typeof IdleReleaseStore.getIdleIntent = IdleReleaseStore.getIdleIntent;
 export const pendingIdleIntents: typeof IdleReleaseStore.pendingIdleIntents = IdleReleaseStore.pendingIdleIntents;
 export const beforeIdleMutation: typeof IdleReleaseStore.beforeIdleMutation = IdleReleaseStore.beforeIdleMutation;
@@ -297,6 +303,12 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly beginAsyncQuestionDispatch: typeof QuestionDispatch.beginAsyncQuestionDispatch;
+  readonly confirmAsyncQuestionDispatch: typeof QuestionDispatch.confirmAsyncQuestionDispatch;
+  readonly recordAsyncQuestionError: typeof QuestionDispatch.recordAsyncQuestionError;
+  readonly rejectDefiniteAsyncQuestion: typeof QuestionDispatch.rejectDefiniteAsyncQuestion;
+  readonly rejectUsageLimitAsyncQuestion: typeof QuestionDispatch.rejectUsageLimitAsyncQuestion;
+
   readonly getAsyncQuestion: typeof QuestionDelivery.getAsyncQuestion;
   readonly pendingAsyncQuestions: typeof QuestionDelivery.pendingAsyncQuestions;
   readonly confirmAsyncQuestionOwner: typeof QuestionDelivery.confirmAsyncQuestionOwner;
@@ -496,6 +508,12 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  beginAsyncQuestionDispatch,
+  confirmAsyncQuestionDispatch,
+  recordAsyncQuestionError,
+  rejectDefiniteAsyncQuestion,
+  rejectUsageLimitAsyncQuestion,
+
   getAsyncQuestion,
   pendingAsyncQuestions,
   confirmAsyncQuestionOwner,
