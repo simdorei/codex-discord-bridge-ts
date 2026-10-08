@@ -1,5 +1,5 @@
+import {snapshotStoredIngress as snapshot,storedIngressEqual as equal} from "./ingress-snapshot.ts";
 import type {DatabaseSync} from "node:sqlite";
-import {types} from "node:util";
 import {openInitialized} from "./owned-driver.ts";
 import {getIngressIn,type StoredIngress} from "./ingress-read.ts";
 import {StoreIntegrityError} from "./schema-assembly.ts";
@@ -7,19 +7,8 @@ import {mirroredThreadIdIn} from "./busy-choice.ts";
 import {trimUnicodeWhitespace as trim} from "./queue-preflight-failure.ts";
 import {getOwn,isJsonObject,pointer} from "./async-resolution-json-helpers.ts";
 import {serdeValueEqual} from "../core/serde-value-equal.ts";
-import {serializeSerdeValue} from "../core/serde-json.ts";
-import {parseSerdeValue} from "../core/serde-json-parse.ts";
 import {SystemTimeError} from "./queue-mark-running.ts";
-const FIELDS=["ingressId","kind","eventId","applicationId","channelId","ownerUserId","sourceMessageId","payload","runtimeId","state","phase","targetThreadId","canonicalOwner","ownerKind","ownerId","outcome","confirmationDelivered","holdReason","createdAt","updatedAt"] as const;
 function refused():never{throw new StoreIntegrityError("recovery admission changed or was already used; no retarget or replay");}
-function snapshot(input:StoredIngress):StoredIngress{
-  if(input===null||typeof input!=="object"||types.isProxy(input))throw new TypeError("Expected stored ingress data");
-  const copied:Record<string,unknown>=Object.create(null);
-  for(const field of FIELDS){const d=Object.getOwnPropertyDescriptor(input,field);if(!d||!Object.hasOwn(d,"value"))throw new TypeError("Expected own stored ingress field");copied[field]=d.value;}
-  copied.payload=parseSerdeValue(serializeSerdeValue(copied.payload));if(copied.outcome!==undefined)copied.outcome=parseSerdeValue(serializeSerdeValue(copied.outcome));
-  return copied as unknown as StoredIngress;
-}
-function equal(a:StoredIngress,b:StoredIngress):boolean{return FIELDS.every(field=>field==="payload"||field==="outcome"?serdeValueEqual(a[field],b[field]):a[field]===b[field]);}
 export function validateRecoveryBindingIn(db:DatabaseSync,binding:unknown,channel:bigint):void{
   const target=getOwn(binding,"target"),command=getOwn(binding,"command");
   if(typeof target!=="string"||trim(target)===""||!isJsonObject(command)||Object.keys(command).length!==1||channel<=0n)refused();

@@ -1,3 +1,4 @@
+import * as StopAcceptance from "../../src/store/stop-acceptance.ts";
 import * as ObservedFinalAnswer from "../../src/store/observed-final-answer.ts";
 import * as AsyncGuards from "../../src/store/async-resolution-guards.ts";
 import * as QuestionGuard from "../../src/store/async-question-guard.ts";
@@ -157,6 +158,10 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.admitIngress, IngressAdmission.admitIngress);
     assert.strictEqual(StateAccessFacade.pendingNewPrompt, NewPromptArm.pendingNewPrompt);
     assert.strictEqual(StateAccessFacade.newThreadOrigin, NewOrigin.newThreadOrigin);
+    assert.strictEqual(StateAccessFacade.acceptNonrunningStop, StopAcceptance.acceptNonrunningStop);
+    assert.strictEqual(FacadeExports.acceptNonrunningStop, StopAcceptance.acceptNonrunningStop);
+    assert.strictEqual(StateAccessFacade.acceptUnresolvedStop, StopAcceptance.acceptUnresolvedStop);
+    assert.strictEqual(FacadeExports.acceptUnresolvedStop, StopAcceptance.acceptUnresolvedStop);
     assert.strictEqual(StateAccessFacade.captureStopOrigin, StopRevision.captureStopOrigin);
     assert.strictEqual(StateAccessFacade.mirroredThreadId, MirrorMapping.mirroredThreadId);
     assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimIfCurrent, PromptIntakeLease.renewPromptIntakeClaimIfCurrent);
@@ -386,6 +391,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "pendingFirstReply",
       "admitIngress",
       "pendingNewPrompt",
+      "acceptNonrunningStop",
+      "acceptUnresolvedStop",
       "captureStopOrigin",
       "openCheckedRead",
       "pendingGoalProgress",
@@ -420,7 +427,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 164);
+    assert.strictEqual(actual.length, 166);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

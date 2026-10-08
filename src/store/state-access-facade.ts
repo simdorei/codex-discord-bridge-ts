@@ -1,3 +1,4 @@
+import * as StopAcceptance from "./stop-acceptance.ts";
 import * as ObservedFinalAnswer from "./observed-final-answer.ts";
 import * as AsyncGuards from "./async-resolution-guards.ts";
 import * as QuestionGuard from "./async-question-guard.ts";
@@ -127,6 +128,8 @@ export const admitIngress: typeof IngressAdmission.admitIngress = IngressAdmissi
 export const pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt = NewPromptArm.pendingNewPrompt;
 
 export const newThreadOrigin: typeof NewOrigin.newThreadOrigin = NewOrigin.newThreadOrigin;
+export const acceptNonrunningStop: typeof StopAcceptance.acceptNonrunningStop = StopAcceptance.acceptNonrunningStop;
+export const acceptUnresolvedStop: typeof StopAcceptance.acceptUnresolvedStop = StopAcceptance.acceptUnresolvedStop;
 export const captureStopOrigin: typeof StopRevision.captureStopOrigin = StopRevision.captureStopOrigin;
 
 export const captureAsyncHistorySnapshot: typeof AsyncHistory.captureAsyncHistorySnapshot = AsyncHistory.captureAsyncHistorySnapshot;
@@ -341,6 +344,8 @@ export interface IStateAccessFacade {
   readonly admitIngress: typeof IngressAdmission.admitIngress;
   readonly pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt;
   readonly newThreadOrigin: typeof NewOrigin.newThreadOrigin;
+  readonly acceptNonrunningStop: typeof StopAcceptance.acceptNonrunningStop;
+  readonly acceptUnresolvedStop: typeof StopAcceptance.acceptUnresolvedStop;
   readonly captureStopOrigin: typeof StopRevision.captureStopOrigin;
   readonly admitPromptIntake: typeof PromptIntakeWrite.admitPromptIntake;
   readonly getPromptIntake: typeof PromptIntakeLease.getPromptIntake;
@@ -527,6 +532,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   admitIngress,
   pendingNewPrompt,
   newThreadOrigin,
+  acceptNonrunningStop,
+  acceptUnresolvedStop,
   captureStopOrigin,
   mirroredThreadId,
   beginAppServerForkHandoff,

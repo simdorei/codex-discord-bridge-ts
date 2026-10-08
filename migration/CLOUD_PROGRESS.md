@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,434 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,461 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2969,3 +2969,34 @@ accepts a trusted producer event and resident identity; arbitrary recovered/hist
 must never be routed here to manufacture native provenance. Blocking DB offload, tracked
 source reconciliation, async-question observation, complete Discord/service composition
 and existing Windows/operational limits remain unfinished. No live service was changed.
+
+
+## 2026-10-08 — Bounded original stop acceptance
+
+Added source accept_nonrunning/accept_unresolved transactions for exact queue, preparing
+intake and not-yet-owned ingress originals. They use an existing-only 500ms IMMEDIATE
+writer, preserve original requests/old holds and raw previous ingress JSON, claim exact
+processing ingress once, and advance/verify a monotonic stop receipt. No queue rewrite,
+RPC, process-exit claim, migration or target mutex occurs. Empty legacy missing DB yields
+no receipt; unresolved empty existing scope records intent but does not prove idle.
+
+Validation captures the bounded union before changes and rechecks original rows, holds,
+mapping, selected custody, exact key sets and revision receipt after writes. Existing
+ingress snapshot/equality and revision DML were extracted unchanged into shared helpers
+used by recovery cancellation too. StateAccessFacade now has166 explicit methods.
+
+Evidence .runtime/cloud-stop-acceptance-137: 27 new tests; focused35 PASS; full
+**3,461 PASS, zero fail/skip/cancel; strict TS0**. Real isolated SQLite covers mixed scopes,
+128/129 bounds, duplicated queue/intake identity, first evidence retention, large JSON
+integers/float token preservation, changed owner/route/selected state, stale processing
+record, trigger tampering/phantom intake, missing schema, overflow and passive input.
+One fixture used nonexistent SQL state quarantined; corrected to the source running
+state plus both quarantine prefixes. Original failure retained, product guards unchanged.
+
+Cloud execution disconnected during test creation (environment_offline); reconnect was
+verified before continuing. Published checkpoint136 remained intact, unpublished source
+was preserved and the failed creation command had not run.
+
+These are local stop acceptance receipts, not an interrupt or verified execution end.
+Running-turn control admission and actual user command/runtime stop wiring are next.
+Complete event/offload/Discord/service, native Windows and operational limits remain.
