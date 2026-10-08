@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,440 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,450 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4788,3 +4788,26 @@ the explicit deletion count fixed the signature and the final full run was repea
 Evidence `.runtime/cloud-runtime-worker-shutdown-210/` preserves both runs and
 pinned worker/error/deadline authorities. Full typed consumer/service wiring and
 Windows/operational validation remain incomplete.
+
+
+## Checkpoint 211 — receive-error typed consumer
+
+Implemented the actual receive-error lane consumer: unexpected closure is a domain
+error; shutdown begins a13-second drain that still accepts later diagnostics; the
+absolute deadline wins over simultaneously available items. Pending reads survive
+a shutdown race and are explicitly cancelled/joined on every exit before receiver
+disposal. Forced worker cancellation preserves its exact reason. Reporting failure
+cleans up the lane. A64-item cooperative yield prevents a continuously refilled
+lane from starving cancellation; it is not a hard wall-time guarantee against a
+blocking callback.
+
+The one-way Node shutdown signal represents source true/watch-sender closure, not
+a general mutable watch<bool>. Payload strings only reach the captured diagnostic
+callback; they are never interpreted as commands. Error display literals match the
+pinned runtime error enum. Other consumer lanes and full service startup remain
+unimplemented here.
+
+Strict TS exit0, focused10 PASS, full Linux **4,450 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-runtime-receive-error-consumer-211/` includes pinned source
+closure and real lane tests for late drain, exactly13s, closure/shutdown races,
+force cancellation, report/clock failure and continuously refilled-lane fairness.
