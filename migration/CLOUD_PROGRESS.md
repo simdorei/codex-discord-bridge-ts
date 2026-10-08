@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,245 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,262 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4489,3 +4489,29 @@ skip/0 cancelled**. Evidence `.runtime/cloud-gateway-dispatch-related-194/`.
 Model availability now covers47/65 source dispatch names; remaining18 and full
 event filtering/control parsing/runtime adapter stay pending. These counts do not
 certify overall migration parity, operational readiness or deployment.
+
+
+## Checkpoint 195 — auto moderation and member update models
+
+Added four auto-moderation event families and MemberUpdate using complete source
+child definitions. Numeric enum unknown variants remain open u8; actual u32/u64
+widths and optional fields remain enforced. Descriptive Discord business maxima
+(regex length, role/channel list length, mention limit, timeout policy) are not
+invented as serde decoding constraints. Member flags retain known-bit truncation.
+Strict TS exit0; focused9 PASS; full4,254 PASS, zero failures/skips/cancellations.
+Evidence `.runtime/cloud-gateway-dispatch-moderation-195/`, with intermediate hashes.
+
+## Checkpoint 196 — integration, invite and MessageUpdate models
+
+Added IntegrationCreate/Update, InviteCreate and the pinned full-Message update
+wrapper. Integration account IDs remain ordinary strings; integration types allow
+unknown strings; optional application/user children are fully decoded. Invite
+partial users use the actual discriminator decoder and uses is u8, not a forced
+zero. MessageUpdate is not treated as a permissive partial patch: this pinned Rust
+source wraps complete Message and its full validation is reused.
+
+Strict TS exit0; focused8 PASS; full Linux **4,262 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-gateway-dispatch-integration-196/`. An explicit source
+inventory records56/65 models available and9 remaining. This is a bounded model
+coverage count; full event dispatch/adapter, live services, Windows and operational
+qualification remain unfinished. AGY deny hook hash remains unchanged.
