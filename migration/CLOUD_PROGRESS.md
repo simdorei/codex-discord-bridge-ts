@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,934 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,954 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4005,3 +4005,34 @@ WebSocket/live Discord evidence. Strict TS exit0; focused **74 PASS**; full Linu
 `.runtime/cloud-gateway-shard-task-173/`. Actual WebSocket/discovery/complete
 Interaction decoding and the source hard abort/join deadline owner remain absent.
 No network or production readiness is inferred from mocked adapter tests.
+
+
+## Checkpoint 174 — Gateway task ownership and deadline-aware shutdown joins
+
+Added immutable exact GatewayTask owners with private cancellation identity and
+handled actual join Promises. Trigger selection/first join precedes remaining
+cleanup. Remaining tasks drain in original order until deadline minus one second;
+all remaining tasks are aborted before forced joins. Only privately owned forced
+cancellation is ignored. Real join errors override cleanup Timeout, and trigger
+and cleanup outcomes remain distinct. A diagnostic callback failure is reported
+only after the remaining tasks have actually joined, with the report preserved.
+
+Default fatal policy writes the fixed fatal marker and invokes process.abort when
+a trigger or forced join remains unconfirmed at the final deadline. Ordinary tests
+inject a nonreturning sentinel: the real abort path was NOT executed. Losing timers
+are cancelled/joined; task Promise losers stay owned until forced cleanup or fatal
+policy. A responsive Node event loop is still required; synchronous blocking can
+delay timer delivery, so this is not a hard wall-time/worker-isolation guarantee.
+
+Review corrected a process-relative clock-origin assumption: under one second of
+remaining budget clamps the grace deadline to now instead of spending the reserve.
+Same-test RED17/18 -> GREEN18/18 evidence is retained. Additional authority review
+blocked subclass completion overrides and mutation of the exposed join Promise;
+same-test RED18/20 -> GREEN20/20 evidence is retained. Exact task prototype/instance
+and join Promise are frozen; constructor rejects subclasses before starting work.
+
+Strict TS exit0; focused Gateway **94 PASS**; full Linux **3,954 PASS /0 fail/0 skip/
+0 cancelled**. Evidence `.runtime/cloud-gateway-shutdown-174/` includes both fixed
+test hashes and archived earlier test bytes, raw logs and authority manifests.
+Actual GatewayRuntime/WebSocket/discovery/Interaction decoding and platform/
+performance/operational qualification remain unfinished.
