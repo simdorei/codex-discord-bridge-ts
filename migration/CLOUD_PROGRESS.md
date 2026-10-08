@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,276 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,282 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4545,3 +4545,23 @@ Final strict TS exit0; focused6 PASS; full Linux **4,276 PASS /0 fail/0 skip/0
 cancelled**. Evidence `.runtime/cloud-gateway-dispatch-flatten-198/`.
 Model coverage is60/65 names; five remain, with the full dispatcher/runtime adapter
 and operational validation still pending.
+
+
+## Checkpoint 199 — RateLimited and direct binary32 integer conversion
+
+Added the pinned RateLimited model: closed opcode set, f32 retry_after and exact
+externally tagged RequestGuildMembers metadata. The existing command limiter's
+direct integer-to-binary32 algorithm is now shared, with signed i64/u64 guards.
+Tests distinguish direct casts from double rounding through JS Number for large
+positive/negative integers, ties-to-even, negative zero, underflow and finite f64
+values that cast to f32 infinity. Source model acceptance is not retry permission.
+
+Official serde_core/serde_json archives were checksum-verified against the pinned
+Rust lockfile. Review confirmed the non-float_roundtrip deserializer routes integer
+and f64 visitor inputs separately. Existing command-rate tests remain green after
+sharing the helper. No generic float-roundtrip feature parity is claimed.
+
+Strict TS exit0; focused17 PASS (6 new model tests plus11 retained limiter tests);
+full Linux **4,282 PASS /0 fail/0 skip/0 cancelled**. Evidence
+`.runtime/cloud-gateway-rate-limited-199/`. Four dispatch models remain, as do
+complete event dispatch/adapter wiring and platform/operational qualification.

@@ -1,9 +1,7 @@
+import {rustIntegerToF32 as integerF32} from '../../core/rust-f32.ts';
 import type {GatewayControlCommand} from './session-machine.ts';
 import {gatewayOwnField} from './values.ts';
 const SECOND=1000000000n,MILLISECOND=1000000n,PERIOD=60n*SECOND,MAX_DURATION=((1n<<64n)*SECOND)-1n;
-/** Direct integer -> binary32 rounding, avoiding bigint -> binary64 -> binary32
- * double rounding for a large Duration seconds component. */
-function integerF32(value:bigint):number{const bits=value.toString(2).length;if(bits<=24)return Number(value);const shift=BigInt(bits-24),half=1n<<(shift-1n);let mantissa=value>>shift;const rest=value-(mantissa<<shift);if(rest>half||rest===half&&(mantissa&1n)!==0n)mantissa++;return Number(mantissa)*2**Number(shift);}
 export function gatewayNonreservedCommands(heartbeatIntervalNs:bigint):number{
  if(typeof heartbeatIntervalNs!=='bigint'||heartbeatIntervalNs<0n||heartbeatIntervalNs>MAX_DURATION)throw new TypeError('Expected Rust Duration nanoseconds');
  const seconds=Math.fround(integerF32(heartbeatIntervalNs/SECOND)+Math.fround(integerF32(heartbeatIntervalNs%SECOND)/Math.fround(1000000000)));
