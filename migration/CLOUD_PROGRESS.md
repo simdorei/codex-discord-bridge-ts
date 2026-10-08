@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,760 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,772 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3716,3 +3716,27 @@ its correction are preserved.
 Strict TS exit 0; focused wire/response/receipt **37 PASS**; full Linux **3,760 PASS /
 0 fail / 0 skip / 0 cancelled**. Evidence .runtime/cloud-node-discord-wire-162/.
 No live Discord HTTPS, live Codex, Windows, full service or operational/performance PASS.
+
+
+## Checkpoint 163 — typed User/author model validation
+
+Added the pinned Twilight User model and its avatar-decoration/primary-guild children,
+with nonzero lossless snowflakes, u16 discriminator string/integer forms, u32/u8 bounds,
+source flag truncation, and image-hash rules. The inherited Clyde-prefix exception and
+packed animated Clyde equivalent are preserved instead of silently tightening source
+acceptance. Primary-guild tag comments are not turned into invented runtime constraints.
+The exported static User schema is frozen after construction.
+
+The shared typed-struct parser now supplies nested struct/vector/value context with the
+same recursion budget and raw recognized-field duplicate checks. Map-only Option defaults
+are distinct from defaults usable by sequences. Typed ignored values retain existing
+IgnoredAny behavior rather than acquiring Value parsing/Unicode/overflow semantics.
+No second ad-hoc JSON scanner was introduced.
+
+Twelve new tests cover ranges, aliases, nullable fields, duplicate keys, unknown values,
+sequence field positions, nested recursion and schema immutability. Initial typed-arrow
+syntax errors are retained in raw draft logs. Strict TS exit 0; focused parser/User/error
+**28 PASS**; full Linux **3,772 PASS / 0 fail / 0 skip / 0 cancelled**.
+Evidence .runtime/cloud-discord-user-model-163/ includes dependency hashes and final logs.
+This validates the User leaf only; complete successful Message decoding remains unfinished.
+No live Discord or Rust differential executable proof is claimed.

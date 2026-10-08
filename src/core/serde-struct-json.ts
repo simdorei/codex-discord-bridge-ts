@@ -1,8 +1,10 @@
 import { parseSerdeValue } from "./serde-json-parse.ts";
 
 /** Serde structs with explicit defaults, Option<String> and f64; no flatten/custom visitors. */
-export type StructField = "string" | "i64" | "u64" | "string[]" | "bool" | "value" | "string?" | "f64" | StructShape | ((raw: string, depth: number) => unknown);
-export interface StructShape { readonly fields: readonly (readonly [string, StructField])[]; readonly defaults?: Readonly<Record<string, unknown>> }
+export type StructField = "string" | "i64" | "u64" | "string[]" | "bool" | "value" | "string?" | "f64" | StructShape | StructFieldDecoder;
+export interface StructShape { readonly fields: readonly (readonly [string, StructField])[]; readonly defaults?: Readonly<Record<string, unknown>>; readonly mapDefaults?: Readonly<Record<string, unknown>> }
+export interface StructDecodeContext {value():unknown;struct(shape:StructShape):Record<string,unknown>;array(field:StructField):unknown[];decode(field:StructField):unknown}
+export type StructFieldDecoder=(raw:string,depth:number,context:StructDecodeContext)=>unknown;
 
 // JSON.parse checks grammar first. This scanner only finds raw value boundaries;
 // ignored fields must not acquire Value's number, Unicode or recursion semantics.
@@ -34,7 +36,7 @@ function whitespace(text: string, start: number): number {
   return start;
 }
 function decodeField(raw: string, kind: StructField, depth: number): unknown {
-  if (typeof kind === "function") return kind(raw, depth); // Trusted typed field decoder.
+  if (typeof kind === "function") return kind(raw, depth, Object.freeze({value:()=>decodeField(raw,"value",depth),struct:(shape:StructShape)=>decodeStruct(raw,shape,depth),array:(field:StructField)=>decodeArray(raw,field,depth),decode:(field:StructField)=>decodeField(raw,field,depth)})); // Trusted code; raw JSON was checked by the root.
   if (typeof kind !== "string") return decodeStruct(raw, kind, depth);
   // Parent typed structs consume the same recursion budget as Value containers.
   let value: unknown = parseSerdeValue("[".repeat(depth) + raw + "]".repeat(depth));
@@ -79,11 +81,21 @@ function decodeStruct(raw: string, shape: StructShape, depth: number): Record<st
   for (const [key, kind] of shape.fields) {
     if (!Object.hasOwn(result, key)) {
       if (shape.defaults !== undefined && Object.hasOwn(shape.defaults,key)) result[key] = shape.defaults[key];
+      else if (map && shape.mapDefaults !== undefined && Object.hasOwn(shape.mapDefaults,key)) result[key] = shape.mapDefaults[key];
       else if (map && kind === "string?") result[key] = null;
       else throw new SyntaxError(`Missing Serde field: ${key}`);
     }
   }
   return result;
+}
+
+function decodeArray(raw:string,field:StructField,depth:number):unknown[]{
+  if(++depth>=128)throw new SyntaxError("Serde recursion limit exceeded");const text=raw.trim();if(text[0]!=="[")throw new SyntaxError("Expected Serde vector");const result:unknown[]=[];let position=whitespace(text,1);
+  while(text[position]!=="]"){const end=valueEnd(text,position);result.push(decodeField(text.slice(position,end),field,depth));position=whitespace(text,end);if(text[position]===",")position=whitespace(text,position+1);}return result;
+}
+/** Entry point for a trusted typed field schema, sharing recursion and duplicate policy. */
+export function parseSerdeField(text:string,field:StructField):unknown{
+  if(typeof text!=="string"||/[\uD800-\uDFFF]/u.test(text))throw new SyntaxError("Expected well-formed JSON text");JSON.parse(text);return decodeField(text,field,0);
 }
 
 /** Shape is trusted code, never input. Returned records have no prototype. */
