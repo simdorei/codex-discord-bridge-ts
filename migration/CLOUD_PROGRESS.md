@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,528 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,546 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3119,3 +3119,35 @@ selected-regression-inputs.json. These are local helper sessions, not live Codex
 Complete tracked completion/event ownership, command routing/reference binding, Discord
 transport, production service assembly, offload/Windows and operational qualification
 remain incomplete. No merge, deployment, live database or 5060 changes.
+
+
+## 2026-10-08 — Original async-question observations and retention
+
+Checkpoint 142 adds immutable async-question occurrence recording, scoped reconciliation
+and an observe wrapper. It captures the sole non-pending original Discord job, including
+its historical generation/execution/attempt provenance. A quarantined job is a candidate
+only. New-generation events cannot rebind themselves to a replacement job or grant UI
+authority until exact running ownership is proven. Existing equal content is a no-op
+with no owner/clock revival; changed or malformed original content fails closed. Body
+serialization preserves derived-struct field order and the 32,768 UTF-8 byte limit.
+
+Completion-job reconciliation and observation reconciliation now share the exact frozen
+Rust SQL. Normalized PROMOTE/CONSUME SQL equality is mechanically recorded. Retention
+expires only never-dispatched selectable questions when owner/turn changes; terminal
+compaction preserves occurrence-ID tombstones and excludes unresolved dispatch. Two
+separate initialized/autocommit operations and their partial-success behavior are kept.
+State access remains centralized through the facade, now 175 direct exports.
+
+Evidence .runtime/cloud-question-observation-142: 18 new SQLite/identity tests; focused33
+PASS, final facade8 PASS, strict TS0, full **3,546 PASS**, zero fail/skip/cancel. Coverage
+includes conflicting original content, duplicate owners, ownerless/pending/quarantined
+jobs, exact new-generation handoff, replacement jobs, mutable caller capture, UTF-8
+bounds/Rust whitespace, insertion rollback, retention cutoffs and second-write failures.
+An initial test-only tuple spread type error is retained; corrected to explicit tuple
+positions without product changes. Observation-only full3,540 evidence is distinct from
+the later complete observation-plus-retention run.
+
+This installs store APIs, not raw async-message parsing, Discord question controls,
+answer dispatch, full tracked source-event certification or the production service.
+Existing Linux/native-helper, synchronous DB/offload, Windows and operational limits
+remain; full migration and Rust runtime parity are not claimed.
