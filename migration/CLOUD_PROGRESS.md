@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,189 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,221 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4436,3 +4436,25 @@ equivalence. No production behavior was enabled by this checkpoint.
 Strict TS exit0; focused **11 PASS**; full Linux **4,189 PASS /0 fail/0 skip/0 cancelled**.
 Evidence `.runtime/cloud-gateway-dispatch-envelope-191/`, including freshly fetched
 exact Rust commit 4e213aa69dc89bed1552d8b83e12471d7664b7ae authority hashes.
+
+
+## Checkpoint 192 — reuse complete models for 28 dispatch families
+
+Added a private partial schema registry covering Channel/Thread create/update/delete,
+channel pins, EntitlementCreate, CurrentUser update, bans, guild deletion/integrations,
+role create/update/delete, invite deletion, message deletion/bulk/poll votes, webhook
+updates, integration deletion, voice-server updates, reaction removal and scheduled
+event subscription changes. Complete previously decoded child models are reused.
+
+Source-specific distinctions are retained: InviteDelete guild_id is required;
+voice endpoint and last-pin timestamp are optional; poll answer_id is u8;
+UserUpdate requires CurrentUser MFA; unknown channel type stays open u8.
+Every family has a valid fixture, required-field removal, duplicate-field rejection
+and full-envelope test. The registry returns undefined for unsupported names;
+it explicitly does not treat unimplemented known events as safe to ignore.
+
+Strict TS exit0; final focused **32 PASS**; final full Linux **4,221 PASS /0 fail/0
+skip/0 cancelled**. Earlier 18-family/22-test and 4,211 full results are retained
+as intermediate runs, not the final source validation. Evidence
+`.runtime/cloud-gateway-dispatch-simple-192/`. All-event completion, adapter wiring
+and operational validation remain unfinished.
