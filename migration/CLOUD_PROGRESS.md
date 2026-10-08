@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,706 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,715 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3586,3 +3586,26 @@ Strict TS exit 0; focused watch/typing/pipeline **32 PASS**; full Linux **3,706 
 0 fail / 0 skip / 0 cancelled**. `.runtime/cloud-typing-driver-157/` retains source hashes,
 manifest, verification result and raw final logs. Production HTTP, service bootstrap,
 Windows, performance/operations and previous SQLite/diagnostic limitations remain open.
+
+
+## Checkpoint 158 — pinned Discord HTTP error-model boundary
+
+Retrieved official twilight-http/model 0.17.1 registry archives and verified BOTH SHA256
+values against the frozen Cargo.lock. Reproducible URLs/hashes are tracked in
+`migration/discord-http-authority.json`; no crate code was executed. The exact HTTP source
+shows that 429 is retried inside the client, 401 invalidates future requests, and malformed
+non-success error JSON is Parsing rather than a definite Response rejection. Those facts
+must be preserved by the upcoming transport; this checkpoint does not install it.
+
+Ported ApiError's ordered untagged General -> Ratelimited -> Message parser, reusing the
+lossless Value and duplicate-aware typed-struct parser. Added a trusted typed-field decoder
+hook rather than a parallel raw JSON parser. Preserved u64/f64 distinctions, fallthrough,
+struct sequences, duplicate recognized fields, unit embed variants and the valid empty
+Message error object. Untagged buffering validates ignored content too. Display wording
+and the full successful Message model remain separate work.
+
+Nine new tests. One test oracle expected SyntaxError for overflow; the existing parser
+correctly returns RangeError and that expectation was corrected without changing parsing.
+Strict TS exit 0, focused parser **16 PASS**, full Linux **3,715 PASS / 0 fail / 0 skip /
+0 cancelled**. Evidence `.runtime/cloud-discord-api-error-158/`. This is static-source and
+TS executable evidence, not a Rust differential run or full transport/receipt approval.

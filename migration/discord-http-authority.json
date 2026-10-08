@@ -1,0 +1,14 @@
+{
+  "frozenRust": "4e213aa69dc89bed1552d8b83e12471d7664b7ae",
+  "twilight-model": {
+    "version": "0.17.1",
+    "registryUrl": "https://static.crates.io/crates/twilight-model/twilight-model-0.17.1.crate",
+    "sha256": "2bf6bb7b93a7f765d89b3388cc710c0ae16104579e06bb30ea1ee6bd41420a8b"
+  },
+  "twilight-http": {
+    "version": "0.17.1",
+    "registryUrl": "https://static.crates.io/crates/twilight-http/twilight-http-0.17.1.crate",
+    "sha256": "05b868001d7bfb953732b3f1cd92f63cb88cd2ea902f590b1d084c66aea60e48"
+  },
+  "integrity": "Both archive SHA256 values exactly match frozen Cargo.lock; extracted source read only, no crate executed"
+}

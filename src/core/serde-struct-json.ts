@@ -1,7 +1,7 @@
 import { parseSerdeValue } from "./serde-json-parse.ts";
 
 /** Serde structs with explicit defaults, Option<String> and f64; no flatten/custom visitors. */
-export type StructField = "string" | "i64" | "u64" | "string[]" | "bool" | "value" | "string?" | "f64" | StructShape;
+export type StructField = "string" | "i64" | "u64" | "string[]" | "bool" | "value" | "string?" | "f64" | StructShape | ((raw: string, depth: number) => unknown);
 export interface StructShape { readonly fields: readonly (readonly [string, StructField])[]; readonly defaults?: Readonly<Record<string, unknown>> }
 
 // JSON.parse checks grammar first. This scanner only finds raw value boundaries;
@@ -34,6 +34,7 @@ function whitespace(text: string, start: number): number {
   return start;
 }
 function decodeField(raw: string, kind: StructField, depth: number): unknown {
+  if (typeof kind === "function") return kind(raw, depth); // Trusted typed field decoder.
   if (typeof kind !== "string") return decodeStruct(raw, kind, depth);
   // Parent typed structs consume the same recursion budget as Value containers.
   let value: unknown = parseSerdeValue("[".repeat(depth) + raw + "]".repeat(depth));
