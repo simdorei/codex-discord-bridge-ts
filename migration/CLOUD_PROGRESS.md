@@ -1906,3 +1906,21 @@ stdin shutdown without a kill. Wait adapters must honor cancellation of the obse
 this does not certify arbitrary adapters, descendant termination, Windows or full session
 startup/cleanup integration. Native shutdown/disposal callbacks remain explicit ownership
 contracts, and no Codex/model or operating bridge was launched.
+
+## 2026-10-08 — Native protocol-session integration evidence
+
+Added tests-only composition of the existing lifecycle/state, native process/streams,
+reader/drains, request/response clients, startup handshake and graceful closer. An actual
+isolated local Node helper speaks the bounded JSON-RPC fixture over real stdio. Verified:
+initialize/initialized and generation commit, thread/read round trip, incoming current-turn
+approval response observed by the helper, graceful close and retained final stderr; native
+initialize error cleanup; explicit cancellation after the helper receives initialize; and
+invalid UTF-8 closing transport, rejecting pending work and preventing subsequent reuse.
+Observer resources and caller/response permits are checked after cleanup.
+
+Evidence .runtime/cloud-native-session-097: 4 native integration PASS, full **2,935 PASS,
+0 fail/skip/cancel; strict TS exit 0**. This is stronger than isolated fake-port evidence,
+but the peer is generated test code, NOT Codex or Discord. No authentication/model calls,
+live bridge, services or user PC were used. Production session factory/runtime wiring,
+Windows/descendants, end-to-end Discord/store effects and phase-2 operational validation
+remain unfinished. No deployment or complete migration claim follows from this test count.
