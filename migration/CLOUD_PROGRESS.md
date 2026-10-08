@@ -1943,3 +1943,20 @@ Tokio channel: no sender cloning/weak senders, capacities above 2^20, u64 rollov
 Rust Clone/allocation parity. DTOs are shared immutable references; root freezing is only
 a guard and deep data validity remains the producer decoder's responsibility. Broadcast
 subscriptions are client-wide; routing by Codex/Discord thread remains a separate layer.
+
+## 2026-10-08 — Poisoned admission cannot block owned cleanup
+
+Found a TS-specific ownership gap: a callback failure permanently poisoned admission,
+but also prevented the close coordinator from sealing and releasing already-owned
+responses/process resources. Added a cleanup-only seal primitive. It never clears poison,
+reopens the gate, admits work, or reenters an active critical callback. Normal admission
+continues to reject the poisoned lifecycle after cleanup. This is an explicit JS ownership/
+unwind adaptation, not a claim of identical Rust Mutex panic/automatic Drop mechanics.
+No hook, permission, authorization or operating-system security setting was changed.
+
+Identical final test SHA 2c35f5ce6f4f856aae90489370937984fc814a75e7df1a107899dfd4ae8842bc:
+old 1 PASS/3 FAIL -> fixed 4 PASS, including actual owned local Node helper reaping. Also
+verified pending-response draining, logical failure publication, unchanged poison and
+critical-section reentry rejection. Evidence .runtime/cloud-poisoned-cleanup-099:
+full **2,951 PASS, 0 fail/skip/cancel; strict TS exit 0**. Rust/native-Windows sources and
+live services remain unchanged; this does not authorize recovery of unknown user work.

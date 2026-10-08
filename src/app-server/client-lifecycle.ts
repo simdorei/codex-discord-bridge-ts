@@ -29,6 +29,13 @@ export class ClientLifecycle{
   requirePermit(permit:ClientAdmissionPermit):void{const data=permit!==null&&typeof permit==="object"?permits.get(permit):undefined;if(data?.owner!==this||data.released||data.moved)throw new TypeError("Expected current owned client permit");}
   /** Transfer existing ownership without changing its count; old handle is revoked. */
   transferPermit(permit:ClientAdmissionPermit):ClientAdmissionPermit{this.requirePermit(permit);const next=this.#newPermit();permits.get(permit)!.moved=true;return next;}
+  /** Cleanup-only TS adaptation: poisoning remains permanent for admission, but
+   * cannot prevent sealing and releasing already-owned resources. Never reenters a
+   * critical callback, clears poison, admits work, or reopens a sealed gate. */
+  sealForCleanup(reason:string,asIntent=false):string{
+    text(reason);if(typeof asIntent!=="boolean")throw new TypeError("Expected close intent flag");if(this.#critical)throw new ClientLifecycleReentryError();
+    this.#sealed=true;if(asIntent&&this.#intent===null)this.#intent=reason;return this.#intent??reason;
+  }
   seal():void{this.#lock();this.#sealed=true;}
   sealForClose(reason:string):void{text(reason);this.#lock();this.#sealed=true;if(this.#intent===null)this.#intent=reason;}
   sealAndResolveCloseReason(observed:string):string{text(observed);this.#lock();this.#sealed=true;return this.#intent??observed;}

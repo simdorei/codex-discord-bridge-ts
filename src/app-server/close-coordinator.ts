@@ -8,9 +8,9 @@ export class ClientCloseCoordinator{
   constructor(lifecycle:ClientLifecycle,state:ClientRuntimeState,pending:PendingCloseCleanup){this.#lifecycle=lifecycle;this.#state=state;this.#pending=pending;}
   get closed():boolean{return this.#closed;}
   /** Seal/flag first while native shutdown/reaping is still pending. */
-  beginClientClose(reason:string):void{this.#lifecycle.sealForClose(reason);this.#closed=true;}
+  beginClientClose(reason:string):void{this.#lifecycle.sealForCleanup(reason,true);this.#closed=true;}
   async markClosed(observedReason:string):Promise<void>{
-    const proposed=this.#lifecycle.sealAndResolveCloseReason(observedReason);this.#closed=true;
+    const proposed=this.#lifecycle.sealForCleanup(observedReason);this.#closed=true;
     const claim=this.#state.claimTransportClose(proposed);
     if(!claim.first)return;
     // Only the winner can publish. A loser must neither wait for nor bypass cleanup.
