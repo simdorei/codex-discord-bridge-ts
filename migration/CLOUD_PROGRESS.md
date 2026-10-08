@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,125 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,135 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2334,3 +2334,26 @@ durable Attempt fencing and target permit ownership through task completion. Its
 are trusted owned capabilities, not evidence that arbitrary supplied callbacks performed
 those actions. Native wiring, synchronous durable adapter and production loop remain
 incomplete; no live Codex or Discord calls were made.
+
+
+## 2026-10-08 — Durable maintenance wire-attempt ownership
+
+Added a single-use maintenance attempt with frozen original owner/generation, method,
+params, captured origin, fresh attempt UUID and exact wire ID. Observational methods
+skip mutation claims. A committed non-observational claim can finish only as not_sent,
+reply_ok or an actual owned Remote request failure; partial/flushed unknown errors
+retain the attempt and produce MutationOutcomeUnknown with no replay permission.
+A failed completion commit overrides even a successful server reply with an unknown
+outcome. Explicit false legacy-fence results never invent durable isolation.
+
+Request error discrimination now uses module-owned immutable construction metadata,
+not name/message/prototype or mutable public detail fields. Existing request behavior
+is preserved. Required synchronous fence methods are pinned and promise-returning
+adapters cannot claim completion. Callback/JSON snapshots prevent changed inputs.
+
+Evidence .runtime/cloud-maintenance-attempt-115: 10 new tests, focused 23 PASS; full
+**3,135 PASS, 0 fail/skip/cancel; strict TS exit 0**. Includes real request error variants,
+forged prototypes/proxies/accessors, commit errors, all result dispositions, repeated
+attempt rejection, invalid phases and callback mutation. Persistence is a controlled
+port in this suite; durable SQL adapter, actual writer-hook composition and complete
+resident/Discord integration remain unfinished. No live service was called.

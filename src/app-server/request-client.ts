@@ -11,11 +11,14 @@ export type RequestFailure=
   |{readonly kind:"ResponseChannelClosed";readonly method:string}
   |{readonly kind:"TransportClosed";readonly method:string;readonly reason:string}
   |{readonly kind:"Remote";readonly method:string;readonly code:bigint;readonly message:string;readonly data:unknown};
+const ownedRequestFailures=new WeakMap<object,RequestFailure>();
+/** Only locally constructed request failures; never classify by mutable name/message. */
+export function ownedRequestFailure(error:unknown):RequestFailure|null{return error!==null&&(typeof error==="object"||typeof error==="function")?ownedRequestFailures.get(error)??null:null;}
 export class AppServerRequestError extends Error{
   readonly detail:RequestFailure;
   constructor(detail:RequestFailure){
     super(detail.kind==="Timeout"?`app-server request ${detail.method} timed out after ${detail.timeoutMs} ms`:detail.kind==="ResponseChannelClosed"?`app-server request channel closed for ${detail.method}`:detail.kind==="TransportClosed"?`app-server transport closed while awaiting ${detail.method}: ${detail.reason}`:`app-server returned error ${detail.code} for ${detail.method}: ${detail.message}`);
-    this.name="AppServerRequestError";this.detail=Object.freeze(detail);
+    this.name="AppServerRequestError";this.detail=Object.freeze(detail);ownedRequestFailures.set(this,this.detail);
   }
 }
 export interface RequestHooks{preflight(id:RequestId):void;writeStarted():void;writeComplete():void}
