@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,665 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,675 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3448,3 +3448,32 @@ verification-result.json,typecheck-final.log,focused-final.log,full-tests.log}`.
 Remaining: scheduler task ownership/loop assembly, production transport/service and
 Windows qualification; existing malformed-question diagnostic parity and blocking SQLite
 limits remain. This is not a deployment or complete runtime parity approval.
+
+
+## Checkpoint 153 — bounded owned completion execution
+
+Ported the scheduler's state/HTTP launch and completion ownership into
+`CompletionExecution`: four state tasks, three native-admission tasks, four HTTP tasks,
+one active state target and one active HTTP channel. Completed, unharvested results
+retain their slots and identities. Prepared admissions that cannot obtain a native slot
+are immediately released; selected permits and charged live envelopes are released on
+success, synchronous failure, asynchronous failure and shutdown. Callback adapters are
+trusted owned IO boundaries, not public arbitrary-code isolation.
+
+Shutdown cancels cooperatively and joins actual child promises; it does not race a timer
+and claim that a still-running send stopped. Already closed execution cannot launch,
+and closure before queued callbacks prevents new IO. A noncooperative transport can
+therefore delay shutdown and must be bounded by the final service adapter. Discovery,
+maintenance, fresh-head priority and run-loop timing are still separate pending assembly.
+
+Ten new tests, including actual SQLite state admission + staged handler integration,
+prove one blocked target does not block another target's Final. Bounded mock tasks prove
+same-channel serialization, caps, cancellation, release and unharvested result accounting.
+An initial test expectation missed the correct immediate release for native-slot rejection;
+that raw failure is retained and the exact release assertion was corrected.
+
+Final strict TypeScript exit 0; focused scheduler/handler **57 PASS**; complete Linux
+suite **3,675 PASS / 0 fail / 0 skip / 0 cancelled**. Evidence is in
+`.runtime/cloud-completion-execution-153/{source-authority.json,source-manifest.json,
+verification-result.json,typecheck-final.log,focused-final.log,full-tests.log}`.
+No production Discord send, Windows run, service deployment or complete parity claimed.
