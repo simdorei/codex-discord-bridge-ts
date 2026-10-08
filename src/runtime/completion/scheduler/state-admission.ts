@@ -13,6 +13,8 @@ export class CompletionStateAdmission{
  readonly #lease:TargetLease;readonly #owner:Owner;
  constructor(key:symbol,lease:TargetLease,owner:Owner){if(key!==token)throw new TypeError("Expected owned completion admission");this.#lease=lease;this.#owner=owner;}
  get target():string{return this.#lease.target;}
+ /** Trusted queue adapter borrows through its own registry; caller retains this admission. */
+ borrowLease():TargetLease{this.#lease.requireTarget(this.target);return this.#lease;}
  requireTarget(target:string):void{this.#lease.requireTarget(target);}
  validateOwner(input:StoredQueueJob):void{
   this.#lease.requireTarget(this.target);const current=snapshotStoredQueueJob(input);

@@ -1,3 +1,4 @@
+import type {TargetLease} from "../../core/keyed-locks.ts";
 import {isNonfatalForkRecoveryBlocker,type QueueForkCoordinator} from "./fork-coordinator.ts";
 import type {QueueStartBackend} from "./start-coordinator.ts";
 import {BackendFailureError,QueueIntegerRangeError} from "./errors.ts";
@@ -66,6 +67,11 @@ export class QueueRecoveryCoordinator {
     await this.#observeTargets(targets,g,recovered);await this.#mutateTargets(targets,g,recovered);
     for(const target of conflicts)recovered.activeWriterTargets.add(target);return recovered;
   }
+  /** Incremental lane does not initialize/prune global recovery inventory or backoff. */
+  recoverIncrementalUnderLease(lease:TargetLease):Promise<RecoveryReport>{
+    return this.#locks.runUnderLease(lease,async borrowed=>{await this.#repair();const g=generation(this.#backend.generation()),report=recoveryReport();await this.#observe(borrowed.target,g,report,true);await this.#mutate(borrowed.target,g,report);return report;});
+  }
+  reconcileOrphanHistoryUnderLease(lease:TargetLease):Promise<void>{return this.#locks.runUnderLease(lease,async borrowed=>{await this.#history(borrowed.target);});}
   async recoverTarget(target:string):Promise<RecoveryReport>{
     if(typeof target!=="string"||/[\uD800-\uDFFF]/u.test(target))throw new TypeError("Expected a well-formed target");
     await this.#repair();
@@ -87,7 +93,7 @@ export class QueueRecoveryCoordinator {
   #unavailable(jobs:readonly StoredQueueJob[],target:string,error:BackendFailureError,report:RecoveryReport,operation:"read"|"mutation"):void{
     const notice=this.#recovery.markUnavailable(jobs,target,error.failure,report,operation);if(notice)this.#log(target,notice);
   }
-  async #observe(target:string,g:bigint,report:RecoveryReport):Promise<void>{
+  async #observe(target:string,g:bigint,report:RecoveryReport,forceCold=false):Promise<void>{
     const state=this.#state,path=this.#path;
     if(await state.asyncTargetDispatchHeld(path,target)){
       try{report.unresolved+=await this.#history(target);}catch(error){report.unresolved++;report.readUnavailableTargets.add(target);report.unavailableTargets.add(target);
@@ -98,7 +104,7 @@ export class QueueRecoveryCoordinator {
     const jobs=await state.listFiltered(path,target,null);if(!jobs.some(j=>j.state==="Starting"||j.state==="Running"))return;
     let turns:readonly RecoveryTurn[];
     try{turns=await this.#readTurns(target);}catch(error){if(!(error instanceof BackendFailureError))throw error;this.#unavailable(jobs,target,error,report,"read");return;}
-    this.#recovery.clearUnavailable(target);const cold=this.#recovery.isCold(target);
+    this.#recovery.clearUnavailable(target);const cold=forceCold||this.#recovery.isCold(target);
     for(const job of jobs){
       if(job.state==="Starting"&&!await recoverStartingAttempt(path,job,g,cold,turns,report,state,this.#clock))return;
       if(job.state==="Running")observeRunningAttempt(job,turns,report);

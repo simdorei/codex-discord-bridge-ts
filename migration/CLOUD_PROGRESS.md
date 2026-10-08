@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,628 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,639 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3363,3 +3363,31 @@ This admission is not native or HTTP send permission. Full state work execution 
 completion scheduler/service assembly still must preserve its lease through their
 owned operations. Earlier malformed diagnostic, native answer writer, Windows/offload
 and operational qualification limits remain.
+
+
+## 2026-10-08 — Leased completion/progress and incremental recovery
+
+Checkpoint 150 connects scheduler-held target leases to existing queue operations
+without reacquiring the same mutex. Registry-owned private pins retain a target until
+borrowed async work settles, even if the outer owner requests release meanwhile.
+Foreign/forged/released capabilities are rejected; nested pins and failure cleanup
+preserve existing FIFO/pair-lock behavior. Explicit release is still required in JS.
+
+Leased final staging reuses original full-owner validation and delivery persistence,
+notifies delivery readiness, but preserves Rust start_next=false. Ordinary inline
+completion still starts the next job as before. Leased Goal progress and observed
+Goal handoff share existing store guards. Incremental leased recovery forces cold
+Starting treatment without pruning other targets' backoff/cold inventory; orphan
+history review remains observation-only under the held target.
+
+Evidence .runtime/cloud-leased-queue-150: 11 new tests, focused66 PASS, strict TS0,
+full **3,639 PASS**, zero fail/skip/cancel. Actual SQLite staging tests verify no
+reacquisition/no next automatic start, exact Goal handoff, no foreign target writes,
+private pin lifetime through an awaited store, failure cleanup, retained other-target
+backoff, unknown Starting no replay and empty orphan-review no mutation. Existing
+queue/coordinator and pair/FIFO lock tests remain green.
+
+These adapters enable staged processing; complete completion handler/scheduler and
+service assembly are still unfinished. Existing native answer writer, malformed
+question diagnostics, initialized-existing profile, Windows/offload and operational
+limits remain. Event-loop-local pins are not a distributed lock or Rust RAII guarantee.

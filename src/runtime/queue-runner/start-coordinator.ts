@@ -17,7 +17,7 @@ import type { IStateAccessFacade } from "../../store/state-access-facade.ts";
 import type { StoredQueueJob } from "../../store/queue-read.ts";
 import { I64_MAX } from "../../protocol/ids.ts";
 import { SystemTimeError, DeadGenerationTargetHeldError } from "../../store/queue-mark-running.ts";
-import { TargetLocks } from "./target-locks.ts";
+import { TargetLocks, type TargetLease } from "./target-locks.ts";
 import { QueueReadCoordinator } from "./read-coordinator.ts";
 import type { QueueReadBackend } from "./read-coordinator.ts";
 import { EXECUTION_HOLD_PREFIX, legacyOrCurrentError } from "./saved-submission.ts";
@@ -105,6 +105,17 @@ export class QueueStartCoordinator {
     });
   }
 
+  /** Scheduler already owns the target. Borrow its exact registry capability until settled. */
+  stageOwnedGoalProgressUnderLease(lease:TargetLease,expectedInput:StoredQueueJob,content:string):Promise<PendingGoalProgress|null>{
+    const expected=snapshotStoredQueueJob(expectedInput);return this.locks.runUnderLease(lease,borrowed=>{borrowed.requireTarget(expected.targetThreadId);return this.#state.stageOwnedGoalProgress(this.#path,expected,content);});
+  }
+  stageOwnedTurnCompletionUnderLease(lease:TargetLease,expectedInput:StoredQueueJob,content:string,observedGeneration:bigint|null=null):Promise<StoredDelivery|null>{
+    const expected=snapshotStoredQueueJob(expectedInput);if(expected.turnId===null)throw new InvalidQueueStateError("completion owner has no turn");
+    return this.#stageCompletion(expected.targetThreadId,expected.turnId,content,expected,observedGeneration,lease,false);
+  }
+  recoverIncrementalUnderLease(lease:TargetLease):Promise<RecoveryReport>{return this.#recovery.recoverIncrementalUnderLease(lease);}
+  reconcileOrphanHistoryUnderLease(lease:TargetLease):Promise<void>{return this.#recovery.reconcileOrphanHistoryUnderLease(lease);}
+
   stageOwnedGoalProgress(expectedInput: StoredQueueJob, content: string): Promise<PendingGoalProgress | null> {
     const expected = snapshotStoredQueueJob(expectedInput);
     return this.locks.run(expected.targetThreadId, () => this.#state.stageOwnedGoalProgress(this.#path, expected, content));
@@ -123,10 +134,16 @@ export class QueueStartCoordinator {
     return this.goalTurnStartedObserved(target, turn, this.#backend.generation());
   }
 
-  goalTurnStartedObserved(target: string, turn: string, observedGeneration: bigint, expectedInput: StoredQueueJob | null = null): Promise<boolean> {
-    if (typeof observedGeneration !== "bigint" || observedGeneration < 0n || observedGeneration > 18446744073709551615n) throw new QueueIntegerRangeError();
-    const expected = expectedInput === null ? null : snapshotStoredQueueJob(expectedInput);
-    return this.locks.run(target, async () => {
+  goalTurnStartedObserved(target:string,turn:string,observedGeneration:bigint,expectedInput:StoredQueueJob|null=null):Promise<boolean>{
+    this.#validateObservedGeneration(observedGeneration);const expected=expectedInput===null?null:snapshotStoredQueueJob(expectedInput);
+    return this.locks.run(target,()=>this.#goalTurnStartedLocked(target,turn,observedGeneration,expected));
+  }
+  goalTurnStartedObservedUnderLease(lease:TargetLease,turn:string,observedGeneration:bigint,expectedInput:StoredQueueJob|null=null):Promise<boolean>{
+    this.#validateObservedGeneration(observedGeneration);const expected=expectedInput===null?null:snapshotStoredQueueJob(expectedInput);
+    return this.locks.runUnderLease(lease,borrowed=>this.#goalTurnStartedLocked(borrowed.target,turn,observedGeneration,expected));
+  }
+  #validateObservedGeneration(observedGeneration:bigint):void{if(typeof observedGeneration!=="bigint"||observedGeneration<0n||observedGeneration>18446744073709551615n)throw new QueueIntegerRangeError();}
+  async #goalTurnStartedLocked(target:string,turn:string,observedGeneration:bigint,expected:StoredQueueJob|null):Promise<boolean>{
       if (observedGeneration !== this.#backend.generation() || await this.#state.deadTargetHeld(this.#path, target)) return false;
       const jobs = await this.#state.listFiltered(this.#path, target, null);
       const waiting = jobs.filter(job => job.state === "Running" && job.goalWaiting);
@@ -135,7 +152,6 @@ export class QueueStartCoordinator {
       if (expected !== null && !storedQueueJobsEqual(expected, job)) return false;
       if (observedGeneration > I64_MAX) throw new QueueIntegerRangeError();
       return this.#state.attachGoalTurnObservedIfOwned(this.#path, job, turn, observedGeneration);
-    });
   }
 
   stageTurnCompletion(target: string, turn: string, content: string, observedGeneration: bigint | null = null): Promise<StoredDelivery | null> {
@@ -149,12 +165,12 @@ export class QueueStartCoordinator {
   }
 
   async #stageCompletion(target: string, turn: string, content: string, expected: StoredQueueJob | null,
-    observedGeneration: bigint | null): Promise<StoredDelivery | null> {
+    observedGeneration: bigint | null, lease:TargetLease|null=null, startNext=true): Promise<StoredDelivery | null> {
     for (const value of [target, turn, content])
       if (typeof value !== "string" || /[\uD800-\uDFFF]/u.test(value)) throw new TypeError("Expected well-formed completion text");
     if (observedGeneration !== null && (typeof observedGeneration !== "bigint" || observedGeneration < -(1n << 63n) || observedGeneration > I64_MAX))
       throw new QueueIntegerRangeError();
-    return this.locks.run(target, async () => {
+    const execute=async () => {
       if (await this.#state.deadTargetHeld(this.#path, target)) return null;
       const before = this.#backend.generation();
       if (typeof before !== "bigint" || before < 0n || before > I64_MAX) throw new QueueIntegerRangeError();
@@ -172,9 +188,10 @@ export class QueueStartCoordinator {
         ? {observer: resident, generation} : null;
       const delivery = await this.#state.stageOwnedQueueCompletion(this.#path, job, content, this.#now(), release);
       this.#notify();
-      await this.#start(target, generation);
+      if(startNext)await this.#start(target, generation);
       return delivery;
-    });
+    };
+    return lease===null?this.locks.run(target,execute):this.locks.runUnderLease(lease,borrowed=>{borrowed.requireTarget(target);return execute();});
   }
 
   submit(target: string, channel: bigint, owner: bigint, message: bigint | null, prompt: string): Promise<Submission> {

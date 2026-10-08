@@ -22,6 +22,7 @@ function validateTarget(target: string): void {
 /** Event-loop-local FIFO mutexes, not cross-process or distributed locks. */
 export class TargetLocks {
   readonly #entries = new Map<string, Entry>();
+  readonly #leases = new WeakMap<TargetLease,{active():boolean;pin():TargetLease}>();
 
   get activeTargetCount(): number { return this.#entries.size; }
 
@@ -69,6 +70,13 @@ export class TargetLocks {
     try { return await work(lease); } finally { lease.release(); }
   }
 
+  /** Borrow only this registry's live capability. A private reference pins the mutex
+   * until the operation settles even if the outer owner requests release meanwhile. */
+  async runUnderLease<T>(lease:TargetLease,work:(borrowed:TargetLease)=>T|Promise<T>):Promise<T>{
+    const owned=this.#leases.get(lease);if(owned===undefined||!owned.active())throw new TargetLeaseMismatchError();
+    const borrowed=owned.pin();try{return await work(borrowed);}finally{borrowed.release();}
+  }
+
   /** Acquire a pair in one global order. Caller must first release any separately held target lease. */
   async runPair<T>(left: string, right: string, work: () => T | Promise<T>, signal?: AbortSignal): Promise<T> {
     validateTarget(left); validateTarget(right);
@@ -82,9 +90,9 @@ export class TargetLocks {
     }
   }
 
-  #lease(target: string, entry: Entry): TargetLease {
-    let released = false;
-    return Object.freeze({
+  #lease(target: string, entry: Entry, group={references:0}): TargetLease {
+    group.references++;let released = false;
+    const lease=Object.freeze({
       target,
       requireTarget(expected: string): void {
         if (released || expected !== target) throw new TargetLeaseMismatchError();
@@ -92,6 +100,7 @@ export class TargetLocks {
       release: (): void => {
         if (released) return;
         released = true;
+        if(--group.references!==0)return;
         const next = entry.waiters.shift();
         if (next !== undefined) next.grant();
         else {
@@ -100,5 +109,6 @@ export class TargetLocks {
         }
       },
     });
+    this.#leases.set(lease,{active:()=>!released,pin:()=>this.#lease(target,entry,group)});return lease;
   }
 }
