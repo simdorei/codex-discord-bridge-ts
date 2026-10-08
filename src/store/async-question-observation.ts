@@ -3,7 +3,7 @@ import {isDeepStrictEqual} from "node:util";
 import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
 import {serializeSerdeValue} from "../core/serde-json.ts";
 import {rustTrim} from "../app-server/value.ts";
-import {decodeQuestionBody,type QuestionBody} from "./async-question-body.ts";
+import {decodeQuestionBody,serializeQuestionBody,type QuestionBody} from "./async-question-body.ts";
 import {receiptRow,receiptText,receiptTextColumns} from "./delivery-receipt-key.ts";
 import {decodeI64,decodeOptionalI64} from "./sqlite-values.ts";
 import {StoreIntegrityError} from "./schema-assembly.ts";
@@ -20,7 +20,7 @@ function snapshot(input:NewAsyncQuestion):{n:NewAsyncQuestion;body:string;id:str
   const n=cloneOwnedSerdeValue(input) as NewAsyncQuestion;
   // Typed QuestionBody admission followed by exact derived-struct field order, not Value key order.
   const b=decodeQuestionBody(serializeSerdeValue(n.body));
-  const body=`{"index":${serializeSerdeValue(b.index)},"source_text":${serializeSerdeValue(b.source_text)},"title":${serializeSerdeValue(b.title)},"options":${serializeSerdeValue(b.options)}}`;
+  const body=serializeQuestionBody(b);
   if(Buffer.byteLength(body)>32768||!text(n.runtime_id)||n.runtime_id.length===0||typeof n.now!=="number"||!Number.isFinite(n.now)||typeof n.generation!=="bigint"||n.generation<0n||n.generation>=(1n<<63n)||![n.thread_id,n.turn_id,n.item_id].every(v=>text(v)&&rustTrim(v)!==""))throw new StoreIntegrityError("invalid or oversized async question");
   return {n:{...n,body:b},body,id:asyncQuestionOccurrenceId(n.thread_id,n.turn_id,n.item_id,b.index)};
 }

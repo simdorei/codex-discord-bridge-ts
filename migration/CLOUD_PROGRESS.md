@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,584 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,594 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3239,3 +3239,31 @@ not be presented as full malformed-message parity or production approval.
 The original live stream owner still must invoke observation; full indexed source
 certification, native answer writer and Discord/service bootstrap are unfinished.
 All existing synchronous offload, Windows and operational limits remain.
+
+
+## 2026-10-08 — Required source-event effects before observation certification
+
+Checkpoint 146 adds CompletionSourceCertifier for the owning resident's indexed
+source intake/reconciler. It first persists exact terminal/final/question journals,
+then rechecks resident generation and asks the central store to certify matching
+sequence effects. Started events need original running ownership. Goal updates and
+unpersisted commentary remain unconfirmed; they are never generic NoRequiredStore.
+The latter disposition is selected only by the frozen source method contract.
+
+Question proofs share exact derived-struct serialization with stored observations.
+More than 32 questions retain their observations but leave the sequence unconfirmed.
+Missing owners, conflicting existing content, journal failures and changed generation
+never gain a positive proof. The store's false certification result does not mean
+permission; only subsequent durable scope verification can clear source uncertainty.
+
+Evidence .runtime/cloud-source-certifier-146: 10 new SQLite/coordinator tests, focused34
+PASS, strict TS0, full **3,594 PASS**, zero fail/skip/cancel. Tests cover exact final and
+terminal evidence, conflicting final content, Started owner matching, commentary/Goal
+limits, indexed question bytes, over-limit question batches, wrong/changed generation,
+failed journals, captured caller input and post-journal sequence range errors.
+
+Trusted indexed stream ownership is a required caller contract, not cryptographically
+proven by arbitrary input objects. The production source receiver/page owner is the
+next integration boundary; no broadcast/history input may self-assert native proof.
+The checkpoint-145 malformed diagnostic compatibility gap and all existing offload,
+Windows, service and operational limits remain unresolved.

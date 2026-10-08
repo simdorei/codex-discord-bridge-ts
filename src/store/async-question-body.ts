@@ -18,3 +18,9 @@ export function answerPrompt(q:SealedQuestion,option:bigint):string {
     question_title:q.body.title,selected_option_index:option,selected_option:q.body.options[Number(option)]!};
   return ANSWER_PREFIX+"\n"+serializeSerdeValue(data);
 }
+
+/** Exact derived QuestionBody serialization used by observation storage and proof. */
+export function serializeQuestionBody(input:QuestionBody):string{
+  const b=decodeQuestionBody(serializeSerdeValue(input));
+  return `{"index":${serializeSerdeValue(b.index)},"source_text":${serializeSerdeValue(b.source_text)},"title":${serializeSerdeValue(b.title)},"options":${serializeSerdeValue(b.options)}}`;
+}
