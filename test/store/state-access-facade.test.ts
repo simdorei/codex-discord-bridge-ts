@@ -1,3 +1,4 @@
+import * as QuestionDelivery from "../../src/store/async-question-delivery-state.ts";
 import * as QuestionObservation from "../../src/store/async-question-observation.ts";
 import * as QuestionRetention from "../../src/store/async-question-retention.ts";
 import * as StopControlRead from "../../src/store/stop-control-read.ts";
@@ -82,6 +83,16 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.supersedeAsyncQuestions, QuestionRetention.supersedeAsyncQuestions);
     assert.strictEqual(StateAccessFacade.compactTerminalAsyncQuestions, QuestionRetention.compactTerminalAsyncQuestions);
     assert.strictEqual(FacadeExports.compactTerminalAsyncQuestions, QuestionRetention.compactTerminalAsyncQuestions);
+    assert.strictEqual(StateAccessFacade.getAsyncQuestion,QuestionDelivery.getAsyncQuestion);
+    assert.strictEqual(FacadeExports.getAsyncQuestion,QuestionDelivery.getAsyncQuestion);
+    assert.strictEqual(StateAccessFacade.pendingAsyncQuestions,QuestionDelivery.pendingAsyncQuestions);
+    assert.strictEqual(FacadeExports.pendingAsyncQuestions,QuestionDelivery.pendingAsyncQuestions);
+    assert.strictEqual(StateAccessFacade.confirmAsyncQuestionOwner,QuestionDelivery.confirmAsyncQuestionOwner);
+    assert.strictEqual(FacadeExports.confirmAsyncQuestionOwner,QuestionDelivery.confirmAsyncQuestionOwner);
+    assert.strictEqual(StateAccessFacade.requireCurrentAsyncQuestionMapping,QuestionDelivery.requireCurrentAsyncQuestionMapping);
+    assert.strictEqual(FacadeExports.requireCurrentAsyncQuestionMapping,QuestionDelivery.requireCurrentAsyncQuestionMapping);
+    assert.strictEqual(StateAccessFacade.bindAsyncQuestionReceipt,QuestionDelivery.bindAsyncQuestionReceipt);
+    assert.strictEqual(FacadeExports.bindAsyncQuestionReceipt,QuestionDelivery.bindAsyncQuestionReceipt);
     assert.strictEqual(StateAccessFacade.getIdleIntent, IdleReleaseStore.getIdleIntent);
     assert.strictEqual(FacadeExports.getIdleIntent, IdleReleaseStore.getIdleIntent);
     assert.strictEqual(StateAccessFacade.pendingIdleIntents, IdleReleaseStore.pendingIdleIntents);
@@ -427,6 +438,11 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "retireOldAsyncQuestionOwner",
       "supersedeAsyncQuestions",
       "compactTerminalAsyncQuestions",
+      "getAsyncQuestion",
+      "pendingAsyncQuestions",
+      "confirmAsyncQuestionOwner",
+      "requireCurrentAsyncQuestionMapping",
+      "bindAsyncQuestionReceipt",
       "recordObservedFinalAnswer",
       "getObservedFinalAnswer",
       "hasObservedCompletionResidentEvidence",
@@ -458,7 +474,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 175);
+    assert.strictEqual(actual.length, 180);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

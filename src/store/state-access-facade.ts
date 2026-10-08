@@ -1,3 +1,4 @@
+import * as QuestionDelivery from "./async-question-delivery-state.ts";
 import * as QuestionRetention from "./async-question-retention.ts";
 import * as QuestionObservation from "./async-question-observation.ts";
 import * as StopControlRead from "./stop-control-read.ts";
@@ -69,6 +70,11 @@ export const observeAsyncQuestion: typeof QuestionObservation.observeAsyncQuesti
 export const retireOldAsyncQuestionOwner: typeof QuestionRetention.retireOldAsyncQuestionOwner = QuestionRetention.retireOldAsyncQuestionOwner;
 export const supersedeAsyncQuestions: typeof QuestionRetention.supersedeAsyncQuestions = QuestionRetention.supersedeAsyncQuestions;
 export const compactTerminalAsyncQuestions: typeof QuestionRetention.compactTerminalAsyncQuestions = QuestionRetention.compactTerminalAsyncQuestions;
+export const getAsyncQuestion: typeof QuestionDelivery.getAsyncQuestion = QuestionDelivery.getAsyncQuestion;
+export const pendingAsyncQuestions: typeof QuestionDelivery.pendingAsyncQuestions = QuestionDelivery.pendingAsyncQuestions;
+export const confirmAsyncQuestionOwner: typeof QuestionDelivery.confirmAsyncQuestionOwner = QuestionDelivery.confirmAsyncQuestionOwner;
+export const requireCurrentAsyncQuestionMapping: typeof QuestionDelivery.requireCurrentAsyncQuestionMapping = QuestionDelivery.requireCurrentAsyncQuestionMapping;
+export const bindAsyncQuestionReceipt: typeof QuestionDelivery.bindAsyncQuestionReceipt = QuestionDelivery.bindAsyncQuestionReceipt;
 export const getIdleIntent: typeof IdleReleaseStore.getIdleIntent = IdleReleaseStore.getIdleIntent;
 export const pendingIdleIntents: typeof IdleReleaseStore.pendingIdleIntents = IdleReleaseStore.pendingIdleIntents;
 export const beforeIdleMutation: typeof IdleReleaseStore.beforeIdleMutation = IdleReleaseStore.beforeIdleMutation;
@@ -291,6 +297,12 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly getAsyncQuestion: typeof QuestionDelivery.getAsyncQuestion;
+  readonly pendingAsyncQuestions: typeof QuestionDelivery.pendingAsyncQuestions;
+  readonly confirmAsyncQuestionOwner: typeof QuestionDelivery.confirmAsyncQuestionOwner;
+  readonly requireCurrentAsyncQuestionMapping: typeof QuestionDelivery.requireCurrentAsyncQuestionMapping;
+  readonly bindAsyncQuestionReceipt: typeof QuestionDelivery.bindAsyncQuestionReceipt;
+
   readonly retireOldAsyncQuestionOwner: typeof QuestionRetention.retireOldAsyncQuestionOwner;
   readonly supersedeAsyncQuestions: typeof QuestionRetention.supersedeAsyncQuestions;
   readonly compactTerminalAsyncQuestions: typeof QuestionRetention.compactTerminalAsyncQuestions;
@@ -484,6 +496,12 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  getAsyncQuestion,
+  pendingAsyncQuestions,
+  confirmAsyncQuestionOwner,
+  requireCurrentAsyncQuestionMapping,
+  bindAsyncQuestionReceipt,
+
   retireOldAsyncQuestionOwner,
   supersedeAsyncQuestions,
   compactTerminalAsyncQuestions,

@@ -13,22 +13,22 @@ import {StoreIntegrityError} from "./schema-assembly.ts";
 import {withStoreTransaction,rollbackStore,usingInitializedStore,usingExistingStore} from "./owned-scope.ts";
 function invalid(message:string):never{throw new StoreIntegrityError(message);}
 function scalar(db:DatabaseSync,sql:string,...args:(string|bigint)[]):bigint{const q=db.prepare(sql);q.setReadBigInts(true);return decodeI64(q.get(...args)?.n,"async question guard scalar");}
-function mapping(db:DatabaseSync,q:StoredAsyncQuestion):void{
+export function validateAsyncQuestionMappingIn(db:DatabaseSync,q:StoredAsyncQuestion):void{
   const matches=scalar(db,"SELECT COUNT(*)=1 AND MIN(codex_thread_id)=?2 AS n FROM mirror_threads WHERE discord_thread_id=?1",q.channelId,q.threadId);
   const fenced=scalar(db,"SELECT EXISTS(SELECT 1 FROM cdr_cleanup_fences WHERE channel_id=?1) OR EXISTS(SELECT 1 FROM codex_dead_generation_holds WHERE target_thread_id=?2) OR EXISTS(SELECT 1 FROM codex_archive_fences WHERE target_thread_id=?2) AS n",q.channelId,q.threadId);
   if(matches===0n||fenced!==0n)invalid("question mapping changed or target is fenced; no answer sent");
 }
-function runningMatches(job:StoredQueueJob,q:StoredAsyncQuestion):boolean{return job.jobId===q.originJobId&&job.targetThreadId===q.threadId&&job.channelId===q.channelId&&job.ownerUserId===q.ownerUserId&&job.state==="Running"&&!job.goalWaiting&&job.turnId===q.turnId&&completionEvidenceGeneration(job)===q.generation;}
+export function asyncQuestionRunningMatches(job:StoredQueueJob,q:StoredAsyncQuestion):boolean{return job.jobId===q.originJobId&&job.targetThreadId===q.threadId&&job.channelId===q.channelId&&job.ownerUserId===q.ownerUserId&&job.state==="Running"&&!job.goalWaiting&&job.turnId===q.turnId&&completionEvidenceGeneration(job)===q.generation;}
 function ids(db:DatabaseSync,sql:string,...args:string[]):string[]{return db.prepare(sql).all(...args).map(r=>receiptText(r,"id")!);}
-function soleOwner(db:DatabaseSync,q:StoredAsyncQuestion):boolean{
+export function soleAsyncQuestionOwnerIn(db:DatabaseSync,q:StoredAsyncQuestion):boolean{
   const found=ids(db,`SELECT job_id AS id,CAST(job_id AS BLOB) AS raw_id,(SELECT encoding FROM pragma_encoding) AS encoding FROM codex_turn_queue WHERE target_thread_id=? AND state!='pending'`,q.threadId);
   return found.length===1&&found[0]===q.originJobId;
 }
 function identity(db:DatabaseSync,q:StoredAsyncQuestion):unknown{
-  mapping(db,q);const job=selectJob(db,q.replyJobId??q.originJobId);
+  validateAsyncQuestionMappingIn(db,q);const job=selectJob(db,q.replyJobId??q.originJobId);
   if(job.targetThreadId!==q.threadId||job.channelId!==q.channelId||job.ownerUserId!==q.ownerUserId)invalid("async reply exact job ownership changed");
   if(q.replyJobId!==null){if(scalar(db,"SELECT COUNT(*) AS n FROM codex_turn_queue WHERE target_thread_id=?",q.threadId)!==1n||job.state!=="Quarantined"||job.appServerGeneration!==q.generation)invalid("async reply reservation changed or successor appeared");}
-  else if(!runningMatches(job,q)||!soleOwner(db,q)||!runningMatches(selectJob(db,q.originJobId),q))invalid("async steer original turn changed");
+  else if(!asyncQuestionRunningMatches(job,q)||!soleAsyncQuestionOwnerIn(db,q)||!asyncQuestionRunningMatches(selectJob(db,q.originJobId),q))invalid("async steer original turn changed");
   return {question:[q.runtimeId,q.threadId,q.turnId,q.itemId,q.originJobId],generation:q.generation,channel:q.channelId,actor:q.ownerUserId,message:q.messageId,chosen:q.chosen,body:q.body,reply_job_id:q.replyJobId,job:executionOwnerJobValue(job)};
 }
 export function sealAsyncQuestionIn(db:DatabaseSync,id:string):void{
@@ -45,7 +45,7 @@ export function verifyAsyncQuestionIdentityIn(db:DatabaseSync,id:string):void{ve
 export function validateAsyncDispatchGuardsIn(db:DatabaseSync,thread:string):void{
   guardAsyncMutationIn(db,thread);
   const selected=ids(db,`SELECT q.id,CAST(q.id AS BLOB) AS raw_id,(SELECT encoding FROM pragma_encoding) AS encoding FROM cdr_async_questions q WHERE q.thread_id=? AND (q.state='dispatching' OR EXISTS(SELECT 1 FROM cdr_async_unsettled_obligations o WHERE o.thread_id=q.thread_id AND o.question_id=q.id))`,thread);
-  for(const id of selected){const q=readAsyncQuestionIn(db,id);if(certifiedAsyncSuccessorIn(db,thread,id)){mapping(db,q);if(!soleOwner(db,q))invalid("async successor current execution ownership is not unique");}else verify(db,q);}
+  for(const id of selected){const q=readAsyncQuestionIn(db,id);if(certifiedAsyncSuccessorIn(db,thread,id)){validateAsyncQuestionMappingIn(db,q);if(!soleAsyncQuestionOwnerIn(db,q))invalid("async successor current execution ownership is not unique");}else verify(db,q);}
 }
 /** Source read guard drops its Deferred transaction; it never commits mutations. */
 function on(db:DatabaseSync,thread:string):void{withStoreTransaction(db,"DEFERRED",()=>{validateAsyncDispatchGuardsIn(db,thread);return rollbackStore(undefined);});}

@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,546 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,555 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3151,3 +3151,30 @@ This installs store APIs, not raw async-message parsing, Discord question contro
 answer dispatch, full tracked source-event certification or the production service.
 Existing Linux/native-helper, synchronous DB/offload, Windows and operational limits
 remain; full migration and Rust runtime parity are not claimed.
+
+
+## 2026-10-08 — Async-question delivery ownership and receipt state
+
+Checkpoint 143 exposes pending/get, original-owner confirmation, current mapping guard
+and actual HTTP receipt binding through StateAccessFacade (180 direct exports). Existing
+async dispatch guard logic for mapping, sole non-pending owner and exact running match
+is reused rather than duplicated. A confirmed original question survives job removal;
+an unconfirmed question cannot acquire ownership from a generationless final outbox.
+Pending reads preserve runtime/state/order/100-row bound and decode whole original rows.
+
+Receipt binding retains the source's outer connection across its separate ownership
+transaction, requires a nonnull stored Discord message ID, and updates only observed
+questions to open or unsupported. Terminal rows are not revived. This is delivery
+state validation, not a network send or user answer authorization.
+
+Evidence .runtime/cloud-question-delivery-state-143: 9 new tests, focused42 PASS, final
+question9 PASS, strict TS0, full **3,555 PASS**, zero fail/skip/cancel. Tests cover owner
+retention, malformed-body short circuit, exact generation/turn/actor/channel, duplicate
+owners, proper quarantined encoding, invalid raw queue-state rejection, absent/null
+receipts, unsupported/terminal state preservation, bounded ordering and archive fencing.
+Initial tests used an invalid raw quarantined state and omitted required mirror columns;
+original failures are retained, fixtures corrected, and invalid raw state now explicitly
+asserts rejection. No production guard/schema was weakened.
+
+Async-message decoding/UI/answer dispatch and full tracked completion/service wiring
+remain pending, as do existing Windows/offload/operational qualification limits.
