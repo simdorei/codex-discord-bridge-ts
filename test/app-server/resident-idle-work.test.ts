@@ -1,3 +1,4 @@
+import {withStopOrigin} from "../../src/app-server/dispatch-origin.ts";
 import assert from "node:assert/strict";
 import {test,type TestContext} from "node:test";
 import {setTimeout as delay} from "node:timers/promises";
@@ -70,4 +71,7 @@ test("unexpected second resubscription is refused and its temporary exclusive pe
   f.db.exec("UPDATE cdr_idle_release SET state='AwaitUnload'; CREATE TRIGGER rehold_after_resume AFTER UPDATE ON cdr_idle_release WHEN NEW.state='Settled' AND NEW.detail='SupersededByConfirmedResubscribe' BEGIN UPDATE cdr_idle_release SET state='AwaitUnload' WHERE thread_id=NEW.thread_id; END");
   await assert.rejects(f.owner.prepareTargetMutation("turn/start",{threadId:"T"},1n),/unexpected second resubscription/);assert.equal(f.current().state,"Resubscribing");assert.equal(f.claims.length,2);
   f.db.exec("DROP TRIGGER rehold_after_resume; UPDATE cdr_idle_release SET state='Settled'");const next=await f.owner.prepareTargetMutation("turn/start",{threadId:"T"},1n);assert.equal(next.kind,"Ready");if(next.kind==="Ready")next.permit?.release();
+}));
+test("native nested resubscription keeps first task-local stop origin instead of refreshing explicit metadata",{timeout:15000},async t=>withOwner(t,"normal",async f=>{
+  f.db.exec("UPDATE cdr_idle_release SET state='AwaitUnload'");await withStopOrigin({target:"T",stopRevision:3n},async()=>withStopOrigin({target:"T",stopRevision:8n},async()=>{const result=await f.owner.prepareTargetMutation("thread/resume",{threadId:"T"},1n,{target:"T",stopRevision:99n});assert.equal(result.kind,"Completed");}));assert.deepEqual((f.claims[0] as {origin:unknown}).origin,{target:"T",stopRevision:3n});
 }));

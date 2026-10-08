@@ -1,3 +1,4 @@
+import {currentStopOrigin,hasStopOriginScope,withoutStopOriginScope} from "./dispatch-origin.ts";
 import {extractThreadId} from "./identity.ts";
 import {IdleMaintenanceWork} from "./idle-maintenance.ts";
 import {MaintenanceTransport,pinResidentMaintenanceOptions,type ResidentMaintenanceOptions} from "./maintenance-transport.ts";
@@ -71,7 +72,7 @@ export class PortableResidentLifecycle{
     return this.#runIdle(permit,token,origin,work=>work.release());
   }
   #runIdle<T>(permit:TargetExclusivePermit,token:IdleReleaseToken,origin:unknown|null,run:(work:IdleMaintenanceWork)=>Promise<T>,dispatchCheck:()=>void=()=>{}):Promise<T>{
-    const task=(async()=>{
+    const task=withoutStopOriginScope(async()=>{
       let admission;
       try{
         const options=this.#maintenance;if(options===null)throw new IdleObservationError("maintenance adapter is not installed");
@@ -80,15 +81,15 @@ export class PortableResidentLifecycle{
         const transport=new MaintenanceTransport(this.#state,admission,this.#targetGate,permit,token,options.fence,origin,options.renderError,dispatchCheck);
         return await run(new IdleMaintenanceWork(token,permit,transport.port()));
       }finally{try{admission?.release();}finally{permit.release();}}
-    })();
+    });
     this.#managedIdle.add(task);void task.then(()=>this.#managedIdle.delete(task),()=>this.#managedIdle.delete(task));return task;
   }
   /** Internal preparation only: caller retains/releases Ready.permit and invokes
    * checkActualTargetMutation at the actual writer. It is not permission to bypass
-   * original queue/stop authority. origin is the FIRST caller-captured snapshot. */
+   * original queue/stop authority. an existing task scope wins over an explicit origin; otherwise origin is the first captured snapshot. */
   async prepareTargetMutation(method:string,input:unknown,generation:bigint,origin:unknown|null=null,check:()=>void=()=>{}):Promise<PreparedTargetMutation>{
     if(typeof method!=="string"||/[\uD800-\uDFFF]/u.test(method)||typeof generation!=="bigint"||generation<0n||generation>=(1n<<64n))throw new TypeError("Expected target preparation identity");
-    const params=cloneOwnedSerdeValue(input),frozenOrigin=origin===null?null:cloneOwnedSerdeValue(origin);syncFunction(check);invokeSynchronousVoid(check,{},[]);
+    const params=cloneOwnedSerdeValue(input),frozenOrigin=hasStopOriginScope()?currentStopOrigin():origin===null?null:cloneOwnedSerdeValue(origin);syncFunction(check);invokeSynchronousVoid(check,{},[]);
     if(["thread/read","thread/turns/list","thread/goal/get","thread/list","thread/loaded/list","model/list","account/rateLimits/read","account/usage/read","thread/start"].includes(method))return Object.freeze({kind:"Ready",permit:null});
     const options=this.#maintenance;
     if(options===null&&this.#targetGate.journal()!==null)throw new IdleObservationError("maintenance adapter is not installed");

@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,165 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,175 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2468,3 +2468,31 @@ admission, use the actual-write check and release Ready.permit. The public full 
 coordinator, task-local original-origin scope, queue/stop claim adapters and native
 response authority binding remain unfinished. No live Codex, Discord or production DB
 was accessed. Initial return-literal typing was corrected before test execution.
+
+
+## 2026-10-08 — First-origin async request scopes and archive subtree binding
+
+Added request-local original stop scopes with immutable first-snapshot semantics.
+Explicit null is a set scope and cannot be refreshed by nested calls. Concurrent
+requests remain isolated. Target preparation uses an existing task scope rather than
+newer explicit metadata, and managed release/resume tasks leave the inherited ambient
+scope while carrying the already captured origin as owned data.
+
+Validated Archive expansion preserves the root/revision, accepts at most 100 unique
+children, rejects root inclusion/empty/trimmed IDs, and writes UTF-8 BTreeSet-ordered
+archiveTargets. Strict non-negative i64 parsing rejects floating/exponent JSON values.
+Nested archive expansion cannot reinterpret an already expanded scope as a fresh one.
+No scope creates no archive authority, preserving the source's explicit distinction.
+
+Evidence .runtime/cloud-dispatch-origin-120: 10 new tests (9 pure scope/archive and
+1 SQLite/native resubscription integration), full **3,175 PASS, 0 fail/skip/cancel;
+strict TS exit 0**. Tests include async isolation, exceptions, ignored nested refresh,
+null scopes, numeric boundaries, Unicode ordering/whitespace and original metadata
+preserved through actual native resume.
+
+Node AsyncLocalStorage propagates to newly created async resources unlike unrelated
+Tokio spawned tasks. withoutStopOriginScope is therefore explicit and used at the
+managed-work boundary; arbitrary external task schedulers are not certified. These
+scopes carry trusted server metadata, not user-supplied execution authority. Archive
+adapter subtree validation and full ordinary dispatch/queue/stop composition still
+must be implemented before treating this as end-to-end permission enforcement.
