@@ -52,5 +52,11 @@
     "registryUrl": "https://static.crates.io/crates/twilight-gateway/twilight-gateway-0.17.1.crate",
     "sha256": "59267541c31f888c1587da5e7cbab182ae6efd98faedd9ea2e35a4eef43ff204",
     "scope": "source-only; archive equals frozen Cargo.lock; not executed"
+  },
+  "twilight-gateway-queue": {
+    "version": "0.17.0",
+    "registryUrl": "https://static.crates.io/crates/twilight-gateway-queue/twilight-gateway-queue-0.17.0.crate",
+    "sha256": "366a73fe47f61a3d522c3aaf70475e60634b0ae59e7b94272ed7496fffa7ceb7",
+    "scope": "source-only; checksum equals frozen Cargo.lock"
   }
 }

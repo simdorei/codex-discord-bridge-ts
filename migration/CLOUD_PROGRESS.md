@@ -4274,3 +4274,25 @@ Evidence `.runtime/cloud-gateway-session-184/`. This is central state and last-l
 bookkeeping, not full aggregate metrics, timer scheduling, identify/rate queue, socket
 reconnection or full event admission. Real Discord/Windows/performance qualification
 remains pending.
+
+
+## Checkpoint 185 — shared default Gateway identify queue
+
+Added one shared single-bucket queue for the bridge's actual default configuration:
+one successful grant per5s,1000 grants per24h. FIFO shard requests share one timer
+owner. Cancelled requests remain tombstones until their bucket is visited; they do
+not consume quota, but an empty visited bucket still advances the interval. A grant
+already delivered is not refunded when subsequently discarded. Daily reset and
+initial partial budgets preserve source ordering. Explicit close rejects queued
+requests and cancels/joins the owned timer.
+
+Review caught an error-propagation defect where finally replaced a clock failure
+with a generic close error. Final same-test RED1 -> GREEN evidence proves original
+error identity now reaches pending requests, future enqueue and close.
+
+Strict TS exit0; focused **13 PASS**; full Linux **4,130 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-identify-queue-185/`. Daily timing uses deterministic manual
+clock tests, with native first grant/cleanup separately exercised. Dynamic settings,
+multi-bucket/disabled mode and pathological zero-total configuration are outside the
+active default profile. No real Discord, Windows, queue-memory/performance or
+operational approval is claimed.
