@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,883 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,903 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3919,3 +3919,37 @@ were not executed. Strict TS exit 0; focused **23 PASS**; full Linux **3,883 PAS
 0 fail / 0 skip / 0 cancelled**. Evidence `.runtime/cloud-gateway-gap-identity-170/`.
 Typed ingress queues, Gateway decoding/network and runtime integration remain next.
 No live Discord, platform/operational approval or deployment is claimed.
+
+
+## Checkpoint 171 — Bounded typed Gateway ingress and emergency routing
+
+Added bounded single-receiver FIFO lanes (normal interaction 64, reserved 4, messages
+1024, emergency messages 4, receive errors 16 by default). Offers are synchronous;
+close drains accepted data and dispose drops it. Cancellation consumes no item.
+Normal interaction Full/Closed falls back to Busy reserve; stopping uses Stopping
+reserve. Message failure/stopping records a recoverable gap. Emergency command
+routing preserves Rust whitespace/ASCII comparison and is a hint, never permission.
+
+Process-isolate sequence is shared across dispatchers and consumed on failed offers,
+not on ignored/READY events or pre-sequence stopped messages. READY identity remains
+observable with full lanes. Diagnostics retain authoritative saturating counters
+through notification lag. Full Message decoding mints an immutable payload brand;
+interaction payloads remain an explicitly required already-decoded deep-immutable
+DTO port. Copied Message brands and reused owned event envelopes are rejected.
+
+Review found that a successful Message enqueue could bypass a poisoned publication
+gate. An executable regression failed before the fix (19 PASS / 1 FAIL), then the
+same test SHA passed (20/20) after checking the gate before acceptance/sequence/offer.
+This preserves the source begin_publication ordering, including successful sends.
+Raw before-source, RED/GREEN logs and test SHA are retained. Initial ES2023 typings
+rejected String.isWellFormed; the established Unicode-scalar regex was used instead,
+without changing target libraries or weakening checks.
+
+Strict TS exit 0; focused Gateway **43 PASS**; full Linux **3,903 PASS / 0 fail /
+0 skip / 0 cancelled**. Evidence `.runtime/cloud-gateway-typed-ingress-171/`.
+Capacities use a <=2^20 supported profile and receive timestamps use milliseconds.
+Sequence arithmetic exhaustion is tested; the real process counter was not driven
+through u64::MAX events. Receive-error drop outcomes are explicit but central logging
+and aggregate publication counters are not composed yet. Full Gateway/Interaction
+wire decoding, network/runtime activation and prior platform/operational limits
+remain unfinished.

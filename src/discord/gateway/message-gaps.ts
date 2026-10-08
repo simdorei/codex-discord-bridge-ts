@@ -29,8 +29,10 @@ export interface MessageGapReceiver{
 export class MessageGapTracker{
  readonly #identity={};readonly #entries=new Map<bigint,Entry>();readonly #notifications=new BoundedBroadcast<void>(16);#locked=false;#poisoned=false;#closed=false;
  #available():void{if(this.#poisoned)throw new MessageGapStateError();if(this.#locked)throw new TypeError('Message gap API reentered a synchronous fence');}
+ /** Check before a synchronous enqueue decision as well as before recording a gap. */
+ assertPublicationReady():void{this.#available();if(this.#closed)throw new TypeError('Message gap tracker closed');}
  record(channelId:bigint,input:MessageGapPosition,reason:GatewayUnavailableReason):void{
-  this.#available();if(this.#closed)throw new TypeError('Message gap tracker closed');id(channelId);const messageId=id(gatewayOwnField(input,'messageId')),timestampMicros=gatewayOwnField(input,'timestampMicros');if(typeof timestampMicros!=='bigint'||timestampMicros<-(1n<<63n)||timestampMicros>=(1n<<63n))throw new TypeError('Expected i64 gap timestamp');if(typeof reason!=='string'||!Object.hasOwn(bits,reason))throw new TypeError('Invalid gateway gap reason');
+  this.assertPublicationReady();id(channelId);const messageId=id(gatewayOwnField(input,'messageId')),timestampMicros=gatewayOwnField(input,'timestampMicros');if(typeof timestampMicros!=='bigint'||timestampMicros<-(1n<<63n)||timestampMicros>=(1n<<63n))throw new TypeError('Expected i64 gap timestamp');if(typeof reason!=='string'||!Object.hasOwn(bits,reason))throw new TypeError('Invalid gateway gap reason');
   const position=Object.freeze({timestampMicros,messageId}),entry=this.#entries.get(channelId)??{revision:0n,active:null};entry.revision=saturatingGatewayIncrement(entry.revision);
   if(entry.active===null)entry.active={earliest:position,reasonBits:bits[reason],observationCount:1n};else{entry.active.earliest=earlier(entry.active.earliest,position);entry.active.reasonBits|=bits[reason];entry.active.observationCount=saturatingGatewayIncrement(entry.active.observationCount);}
   this.#entries.set(channelId,entry);this.#notifications.send();
