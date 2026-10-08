@@ -20,7 +20,7 @@ export interface GatewaySocketConnectOptions{readonly signal?:AbortSignal;readon
  * be arbitrarily large. This is not a total memory bound or a Discord session. */
 export class NodeGatewayWebSocket{
  readonly #agent:http.Agent;readonly #sockets=new Map<Duplex,Promise<void>>();readonly #operations=new Set<Promise<unknown>>();readonly #abort=new AbortController();
- #ws:WebSocket|undefined;#stream:Duplex|undefined;#wsClosed:Promise<void>=Promise.resolve();#streamClosed:Promise<void>=Promise.resolve();#closed=false;#ended=false;#failure=false;#failureReported=false;#closeDelivered=false;#closeCode=1006;#closeReason=new Uint8Array();#reading=false;#writing=false;#disposed=false;#disposePromise:Promise<void>|undefined;
+ #ws:WebSocket|undefined;#stream:Duplex|undefined;#wsClosed:Promise<void>=Promise.resolve();#streamClosed:Promise<void>=Promise.resolve();#closed=false;#ended=false;#failure=false;#failureReported=false;#closeDelivered=false;#closeCode=1006;#closeReason=new Uint8Array();#reading=false;#writing=false;#write:Promise<void>|undefined;#disposed=false;#disposePromise:Promise<void>|undefined;
  private constructor(secure:boolean){
   this.#agent=secure?new https.Agent({keepAlive:false}):new http.Agent({keepAlive:false});
   const original=this.#agent.createConnection.bind(this.#agent);
@@ -64,12 +64,14 @@ export class NodeGatewayWebSocket{
   if(this.#disposed||this.#ws?.readyState!==WebSocket.OPEN)return Promise.reject(sendFailure(new GatewaySocketError('Gateway socket not open'),'BeforePayload'));
   if(this.#writing)return Promise.reject(sendFailure(new TypeError('Concurrent Gateway socket write'),'BeforePayload'));
   this.#writing=true;
-  return this.#track(new Promise<void>((resolve,reject)=>{
+  const operation=this.#track(new Promise<void>((resolve,reject)=>{
    const failed=()=>{this.#writing=false;reject(sendFailure(new GatewaySocketError('Gateway socket send failed'),'AfterPayload'));};
    try{this.#ws!.send(data,{binary},error=>{if(error)failed();else{this.#writing=false;resolve();}});}catch{failed();}
-  }));
+  }));this.#write=operation;void operation.then(()=>{if(this.#write===operation)this.#write=undefined;},()=>{if(this.#write===operation)this.#write=undefined;});return operation;
  }
- requestClose(code=1000,reason=''):void{if(typeof reason!=='string'||/[\uD800-\uDFFF]/u.test(reason))throw new TypeError('Expected valid close reason');if(this.#disposed)throw new GatewaySocketError('Gateway socket disposed');this.#ws!.close(code,reason);}
+ /** Join any already-owned write without emitting another payload. */
+ flush():Promise<void>{if(this.#disposed||this.#ws?.readyState!==WebSocket.OPEN)return Promise.reject(sendFailure(new GatewaySocketError('Gateway socket not open'),'BeforePayload'));return this.#write??Promise.resolve();}
+ requestClose(code=1000,reason=''):void{if(typeof reason!=='string'||/[\uD800-\uDFFF]/u.test(reason))throw sendFailure(new TypeError('Expected valid close reason'),'BeforePayload');if(this.#disposed||this.#ws?.readyState!==WebSocket.OPEN)throw sendFailure(new GatewaySocketError('Gateway socket not open'),'BeforePayload');try{this.#ws.close(code,reason);}catch{throw sendFailure(new GatewaySocketError('Gateway close request failed'),'AfterPayload');}}
  /** ws can emit close before a cancelled upgrade's underlying socket closes.
   * Join our own agent sockets as well, then owned read/write operations. */
  dispose():Promise<void>{if(this.#disposePromise!==undefined)return this.#disposePromise;this.#disposed=true;this.#abort.abort(new GatewaySocketError('Gateway socket disposed'));this.#stream?.destroy();this.#ws?.terminate();this.#agent.destroy();this.#disposePromise=(async()=>{await Promise.allSettled([this.#wsClosed,this.#streamClosed]);this.#agent.destroy();await Promise.allSettled([...this.#sockets.values()]);await Promise.allSettled([...this.#operations]);})();return this.#disposePromise;}

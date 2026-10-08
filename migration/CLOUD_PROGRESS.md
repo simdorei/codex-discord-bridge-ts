@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,157 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,167 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4364,3 +4364,25 @@ remains pending; this is transport phase evidence only.
 Strict TS exit0; focused **19 PASS**; full Linux **4,157 PASS /0 fail/0 skip/0 cancelled**.
 Evidence `.runtime/cloud-gateway-send-failure-188/`. No live Discord acknowledgement,
 Windows/performance or operational approval is claimed.
+
+
+## Checkpoint 189 — control send and central session ownership
+
+Added one current-ticket effect executor with a per-machine concurrent-send guard.
+Foreign/completed tickets reject before IO. The caller exclusively owns the machine
+and obtains required rate permits/readiness. Actual local send completion records
+heartbeat time; pre-payload failures retain unsent commands, while attempted sends
+and post-send clock failures retain only FlushOnly. Unbranded failures after entering
+the send path are conservatively non-replayable. No cancellation race abandons IO.
+
+Wire flush joins an existing owned write without sending another payload. Closed
+transport rejects a close request before payload; accepted CloseRequested still
+requires the caller to drain/join its handshake. This intentionally does not claim
+that close acceptance or local text flush is remote acknowledgement.
+
+Real loopback tests cover Identify, interrupted16MiB Resume, duplicate execution,
+Heartbeat timing, FlushOnly non-replay, exact normal-close reason and clock failure.
+Strict TS exit0; focused **29 PASS**; full Linux **4,167 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-gateway-control-sender-189/`. Complete reconnect/timer/
+dispatch orchestration, live Discord and platform/performance qualification remain
+pending.

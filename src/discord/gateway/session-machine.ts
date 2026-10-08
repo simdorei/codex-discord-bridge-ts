@@ -35,6 +35,7 @@ export class GatewaySessionMachine{
   * cannot reinterpret a disconnected owner as a new fatal close. */
  gatewayClosed(code:number|null):void{this.#idle();if(this.#phase==='FatallyClosed')return;const allowed=gatewayCloseAllowsReconnect(code);if(this.#phase==='Disconnected')return;this.#disconnect();if(!allowed)this.#phase='FatallyClosed';}
  requestClose(code:number):void{this.#idle();if(this.#phase==='FatallyClosed')throw new TypeError('Gateway fatally closed');const retains=gatewayLocalCloseRetainsSession(code);this.#disconnect();if(!retains){this.#session=null;this.#resumeUrl=null;}this.#pending=Object.freeze({kind:'Close',code});}
+ isCurrentCommand(ticket:GatewayCommandTicket):boolean{return ticket===this.#inflight&&this.#inflight!==null;}
  takeCommand():GatewayCommandTicket|null{if(this.#inflight!==null)throw new TypeError('Gateway control command already in flight');if(this.#pending===null)return null;const ticket=Object.freeze({command:this.#pending});this.#pending=null;this.#inflight=ticket;return ticket;}
  commandFlushed(ticket:GatewayCommandTicket,now:bigint):void{if(ticket!==this.#inflight)throw new TypeError('Foreign or completed Gateway ticket');this.#time(now);if(ticket.command.kind==='Heartbeat'||ticket.command.kind==='FlushOnly'&&ticket.command.heartbeat){this.#sent=now;this.#received=null;}this.#inflight=null;}
  /** Source Pending retains its flush phase after a send/flush error but has
