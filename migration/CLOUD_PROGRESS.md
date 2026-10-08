@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,295 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,383 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4592,3 +4592,35 @@ Strict TS exit0; focused13 PASS (7 new plus6 retained); full Linux **4,295 PASS 
 fail/0 skip/0 cancelled**. Evidence `.runtime/cloud-gateway-guild-create-201/`.
 Audit-log and Resumed models, full dispatcher/adapter wiring and operational
 qualification remain unfinished.
+
+
+## Checkpoint 202 — audit entry and all73 change variants
+
+Added complete AuditLogEntry/options and all73 named AuditLogChange schemas,
+including required AfkTimeout values, default role-add/remove vectors, optional
+value pairs and Other. The source type inventory and fixture oracle retain the
+exact source hash and explicit dollar-prefixed renames. Internally tagged map and
+sequence forms preserve arity, defaults and duplicate fields; unknown variants
+become Other only after full buffered-content validation. The bounded existing
+no-f64/no-anonymizable-ID profile is retained, not generic Content equivalence.
+Strict TS exit0; focused79 PASS; full4,374 PASS with zero failures/skips/cancellations.
+Evidence `.runtime/cloud-gateway-audit-log-202/`.
+
+## Checkpoint 203 — all-event filtering and ingress projection
+
+Added a source-pinned65-name dispatch inventory and fail-closed startup schema
+coverage check. The full decoder filters unknown opcodes/names before JSON parsing
+as Twilight does; known ignored events still undergo complete model validation.
+Only Ready/MessageCreate/InteractionCreate produce admitted identity or branded
+payloads. Resumed requires d and u64 sequence but ignores d's value.
+
+Preserved the EventTypeFlags nuance: outbound opcodes with a recognized event
+name error, and UNAVAILABLE_GUILD is recognized by flags but rejected by the
+dispatch variant decoder. Control messages are map-only; Hello/InvalidSession
+validate repeated d values in order, while Heartbeat/Ack/Reconnect ignore values.
+
+Strict TS exit0; focused9 PASS; full Linux **4,383 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-gateway-event-decoder-203/`. All65 names now select schema
+implementations, but earlier bounded Content/valid-JSON limits persist. Raw-driver
+adapter integration, live Discord/Codex, Windows and operational qualification
+remain pending; no overall parity or deployment PASS is implied.
