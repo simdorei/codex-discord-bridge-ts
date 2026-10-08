@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,623 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,637 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5236,3 +5236,30 @@ remain incomplete. No external interaction was processed.
   final typecheck/focused/full logs and verification-result.json.
   Private branding and error records are Node ownership mechanisms. This does not prove
   Rust Mutex poisoning, cross-worker shared memory, Windows behavior or full service parity.
+
+
+## Interaction autocomplete catalogue and response selection (231)
+
+- Ported discord_dispatch/autocomplete.rs and response.rs against the frozen Rust
+  authority. Model/list JSON uses the existing Serde parser. Boolean hidden=true
+  excludes a row; cleaned model precedes id fallback; model insertion order and
+  per-model effort deduplication are preserved. Unknown/missing selected model falls
+  back to all efforts in Rust BTreeMap UTF-8 order; a known model with no efforts
+  returns empty. Selected model is not implicitly trimmed.
+- Search trims Rust Unicode White_Space and performs ASCII-only lowercase matching.
+  NEL/BOM and BMP/astral sorting tests distinguish JavaScript defaults. Filtering
+  stops after 25 matches. Source long labels/values are preserved rather than
+  silently truncated; this is not a claim that arbitrary labels satisfy Discord API
+  limits. New immutable string-choice response helper omits name_localizations.
+- Normal autocomplete gets catalogue choices. Busy/stopping autocomplete, including
+  denied/invalid autocomplete with no routed work, receives empty choices without
+  catalogue access. Non-autocomplete busy/stopping gets the exact source ephemeral
+  message only when work exists; no-work and Normal preserve the initial response.
+  Restart-admission sealed response override still belongs to the pending dispatcher.
+- Actual focused 14 PASS; full Linux Node 24.21.0 suite 4,637 PASS, zero
+  failures/cancellations/skips; strict TypeScript exit 0. No live model/list fetch,
+  Discord service call, seven-consumer bootstrap, full dispatcher or runtime completion.
+  JSON input is an explicit Node boundary; this catalogue is an immutable snapshot,
+  not a shared mutable remote cache.
+- Evidence: .runtime/cloud-runtime-interaction-autocomplete-231/source-inputs.json,
+  typecheck.log, focused-tests.log, full-tests.log and verification-result.json.
