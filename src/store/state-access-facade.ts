@@ -81,6 +81,7 @@ export const confirmAsyncQuestionDispatch: typeof QuestionDispatch.confirmAsyncQ
 export const recordAsyncQuestionError: typeof QuestionDispatch.recordAsyncQuestionError = QuestionDispatch.recordAsyncQuestionError;
 export const rejectDefiniteAsyncQuestion: typeof QuestionDispatch.rejectDefiniteAsyncQuestion = QuestionDispatch.rejectDefiniteAsyncQuestion;
 export const rejectUsageLimitAsyncQuestion: typeof QuestionDispatch.rejectUsageLimitAsyncQuestion = QuestionDispatch.rejectUsageLimitAsyncQuestion;
+export const listFilteredExisting: typeof QueueRead.listFilteredExisting = QueueRead.listFilteredExisting;
 export const getIdleIntent: typeof IdleReleaseStore.getIdleIntent = IdleReleaseStore.getIdleIntent;
 export const pendingIdleIntents: typeof IdleReleaseStore.pendingIdleIntents = IdleReleaseStore.pendingIdleIntents;
 export const beforeIdleMutation: typeof IdleReleaseStore.beforeIdleMutation = IdleReleaseStore.beforeIdleMutation;
@@ -303,6 +304,7 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly listFilteredExisting: typeof QueueRead.listFilteredExisting;
   readonly beginAsyncQuestionDispatch: typeof QuestionDispatch.beginAsyncQuestionDispatch;
   readonly confirmAsyncQuestionDispatch: typeof QuestionDispatch.confirmAsyncQuestionDispatch;
   readonly recordAsyncQuestionError: typeof QuestionDispatch.recordAsyncQuestionError;
@@ -508,6 +510,7 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  listFilteredExisting,
   beginAsyncQuestionDispatch,
   confirmAsyncQuestionDispatch,
   recordAsyncQuestionError,

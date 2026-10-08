@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,618 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,628 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3335,3 +3335,31 @@ lifecycle source bytes are unchanged.
 Complete completion processing/service assembly, native answer dispatch, malformed
 question diagnostic compatibility, Windows/offload and operational qualification remain
 incomplete. Synchronous work is not represented as cancellable blocking-worker offload.
+
+
+## 2026-10-08 — Completion state admission under the shared target lock
+
+Checkpoint 149 supplies synchronous nonwaiting state admission for CompletionReady.
+The mandatory shared TargetLocks registry captures a terminal's original running owner
+while holding the target lease. Missing owners cannot be adopted after admission;
+changed job identity/timestamps are refused. Nonterminal work retains its source
+NotTerminal mode. A failed/interrupted Goal terminal still consumes native capacity
+when the captured owner is goal-waiting. Over-capacity admission releases the lease
+without discarding its retained live event.
+
+Filtered queue SQL and typed decoding are now shared by initialized listFiltered and
+the new synchronous listFilteredExisting facade API (186 total exports). The latter
+is an explicit already-initialized-store profile: no create/migrate and no await
+escapes the admission snapshot. It is narrower than Rust's open_initialized call and
+is not a claim of fully offloaded or equivalent connection-initialization behavior.
+
+Evidence .runtime/cloud-completion-admission-149: 10 new tests; focused31 PASS, strict
+TS0, full **3,628 PASS**, zero fail/skip/cancel. Coverage includes missing-file safety,
+filter/transaction equivalence, busy target no-read, exact owner isolation, f64 zero
+equality, owner drift, released leases, Missing-owner no-adoption, Goal native-slot
+classification, durable/live modes and read-failure cleanup.
+
+This admission is not native or HTTP send permission. Full state work execution and
+completion scheduler/service assembly still must preserve its lease through their
+owned operations. Earlier malformed diagnostic, native answer writer, Windows/offload
+and operational qualification limits remain.

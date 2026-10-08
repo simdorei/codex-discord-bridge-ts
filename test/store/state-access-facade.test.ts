@@ -104,6 +104,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.rejectDefiniteAsyncQuestion,QuestionDispatch.rejectDefiniteAsyncQuestion);
     assert.strictEqual(StateAccessFacade.rejectUsageLimitAsyncQuestion,QuestionDispatch.rejectUsageLimitAsyncQuestion);
     assert.strictEqual(FacadeExports.rejectUsageLimitAsyncQuestion,QuestionDispatch.rejectUsageLimitAsyncQuestion);
+    assert.strictEqual(StateAccessFacade.listFilteredExisting, QueueRead.listFilteredExisting);
+    assert.strictEqual(FacadeExports.listFilteredExisting, QueueRead.listFilteredExisting);
     assert.strictEqual(StateAccessFacade.getIdleIntent, IdleReleaseStore.getIdleIntent);
     assert.strictEqual(FacadeExports.getIdleIntent, IdleReleaseStore.getIdleIntent);
     assert.strictEqual(StateAccessFacade.pendingIdleIntents, IdleReleaseStore.pendingIdleIntents);
@@ -459,6 +461,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "recordAsyncQuestionError",
       "rejectDefiniteAsyncQuestion",
       "rejectUsageLimitAsyncQuestion",
+      "listFilteredExisting",
       "recordObservedFinalAnswer",
       "getObservedFinalAnswer",
       "hasObservedCompletionResidentEvidence",
@@ -490,7 +493,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 185);
+    assert.strictEqual(actual.length, 186);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

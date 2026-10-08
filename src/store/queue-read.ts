@@ -1,3 +1,4 @@
+import {usingExistingStore} from "./owned-scope.ts";
 import { textDecoderFor, decodeTextField, decodeI64, decodeOptionalI64, decodeBool, decodeTimestamp } from "./sqlite-values.ts";
 import type { DatabaseSync } from "node:sqlite";
 import { types, isDeepStrictEqual } from "node:util";
@@ -247,57 +248,26 @@ export async function list(path: string): Promise<StoredQueueJob[]> {
   }
 }
 
-export async function listFiltered(
-  path: string,
-  target: string | null,
-  generation: bigint | null,
-): Promise<StoredQueueJob[]> {
-  if (typeof path !== "string" || !isWellFormedString(path)) {
-    throw new TypeError(`Invalid database path: ${String(path)}`);
-  }
-  if (target !== null && (typeof target !== "string" || !isWellFormedString(target))) {
-    throw new TypeError(`Invalid target: expected well-formed string or null`);
-  }
-  if (generation !== null) {
-    if (typeof generation !== "bigint") {
-      throw new TypeError(`Invalid generation: expected bigint or null`);
-    }
-    if (generation < I64_MIN || generation > I64_MAX) {
-      throw new RangeError(`Generation out of signed i64 range: ${generation.toString()}`);
-    }
-  }
-
-  const db = await openInitialized(path);
-  try {
-    if (target === null && generation === null) {
-      return allJobs(db);
-    }
-
-    let sql: string;
-    let params: Array<string | bigint>;
-
-    if (target !== null && generation !== null) {
-      sql = `SELECT ${SELECT_FIELDS} FROM codex_turn_queue WHERE target_thread_id = ? AND app_server_generation = ? ORDER BY created_at, job_id`;
-      params = [target, generation];
-    } else if (target !== null) {
-      sql = `SELECT ${SELECT_FIELDS} FROM codex_turn_queue WHERE target_thread_id = ? ORDER BY created_at, job_id`;
-      params = [target];
-    } else {
-      sql = `SELECT ${SELECT_FIELDS} FROM codex_turn_queue WHERE app_server_generation = ? ORDER BY created_at, job_id`;
-      params = [generation!];
-    }
-
-    const stmt = db.prepare(sql);
-    stmt.setReadBigInts(true);
-    const rows = stmt.all(...params) as Array<Record<string, unknown>>;
-    return rows.map(decodeRow);
-  } finally {
-    try {
-      db.close();
-    } catch {
-      // preserve primary error
-    }
-  }
+function validateQueueFilters(target:string|null,generation:bigint|null):void{
+  if(target!==null&&(typeof target!=="string"||!isWellFormedString(target)))throw new TypeError("Invalid target: expected well-formed string or null");
+  if(generation!==null){if(typeof generation!=="bigint")throw new TypeError("Invalid generation: expected bigint or null");if(generation<I64_MIN||generation>I64_MAX)throw new RangeError(`Generation out of signed i64 range: ${generation.toString()}`);}
+}
+/** Shared filtered SQL/typed decoding for initialized and already-initialized callers. */
+export function listFilteredIn(db:DatabaseSync,target:string|null,generation:bigint|null):StoredQueueJob[]{
+  validateQueueFilters(target,generation);if(target===null&&generation===null)return allJobs(db);
+  let sql:string,params:Array<string|bigint>;
+  if(target!==null&&generation!==null){sql=`SELECT ${SELECT_FIELDS} FROM codex_turn_queue WHERE target_thread_id = ? AND app_server_generation = ? ORDER BY created_at, job_id`;params=[target,generation];}
+  else if(target!==null){sql=`SELECT ${SELECT_FIELDS} FROM codex_turn_queue WHERE target_thread_id = ? ORDER BY created_at, job_id`;params=[target];}
+  else{sql=`SELECT ${SELECT_FIELDS} FROM codex_turn_queue WHERE app_server_generation = ? ORDER BY created_at, job_id`;params=[generation!];}
+  const stmt=db.prepare(sql);stmt.setReadBigInts(true);return (stmt.all(...params) as Array<Record<string,unknown>>).map(decodeRow);
+}
+export async function listFiltered(path:string,target:string|null,generation:bigint|null):Promise<StoredQueueJob[]>{
+  if(typeof path!=="string"||!isWellFormedString(path))throw new TypeError(`Invalid database path: ${String(path)}`);validateQueueFilters(target,generation);
+  const db=await openInitialized(path);try{return listFilteredIn(db,target,generation);}finally{try{db.close();}catch{/* preserve primary error */}}
+}
+/** Synchronous admission profile: store MUST already be initialized. No create/migrate. */
+export function listFilteredExisting(path:string,target:string|null,generation:bigint|null):StoredQueueJob[]{
+  if(typeof path!=="string"||!isWellFormedString(path))throw new TypeError(`Invalid database path: ${String(path)}`);validateQueueFilters(target,generation);return usingExistingStore(path,db=>listFilteredIn(db,target,generation));
 }
 
 const STORED_QUEUE_JOB_PROPERTIES = [
