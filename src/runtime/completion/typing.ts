@@ -18,26 +18,27 @@ type TypingStore=Pick<IStateAccessFacade,"listFiltered"|"pendingObservedCompleti
 interface HttpResult{kind:"http";ok:boolean;error?:unknown}
 /** Source ordering with explicit JS cancellation/join. Real transport, off-thread DB
  * execution, hard cancellation and exact native error formatting remain unfinished. */
-export async function sendTyping(path:string,server:TypingBackend,fence:TerminalFence,transport:TypingTransport,store:TypingStore=StateAccessFacade):Promise<void>{
-  const lifecycle=server.subscribeLifecycle();let failed=false,first:unknown;
+export async function sendTyping(path:string,server:TypingBackend,fence:TerminalFence,transport:TypingTransport,store:TypingStore=StateAccessFacade,signal?:AbortSignal):Promise<void>{
+  signal?.throwIfAborted();const lifecycle=server.subscribeLifecycle();let failed=false,first:unknown;
   const remember=(error:unknown)=>{if(!failed){failed=true;first=error;}};
   try{
     const generation=server.generation(),snapshot=await server.lifecycleSnapshot();
     if(!snapshot.healthy||snapshot.quarantined||snapshot.restartPending)return;
-    const version=fence.retentionVersion;
+    signal?.throwIfAborted();const version=fence.retentionVersion;
     const jobs=(await store.listFiltered(path,null,null)).map(snapshotStoredQueueJob);
     const terminals=await store.pendingObservedCompletions(path);
     fence.retain(generation,jobs,version);const channels=new Set<bigint>();
     for(const job of jobs){
-      const turn=job.turnId;if(turn===null||job.state!=="Running"||job.goalWaiting||channels.has(job.channelId)||terminals.some(t=>t.threadId===job.targetThreadId&&t.turnId===turn))continue;
+      signal?.throwIfAborted();const turn=job.turnId;if(turn===null||job.state!=="Running"||job.goalWaiting||channels.has(job.channelId)||terminals.some(t=>t.threadId===job.targetThreadId&&t.turnId===turn))continue;
       const revoked=fence.subscribe(),subscribedVersion=fence.retentionVersion;
       try{
         let active:string|null;try{active=await server.activeTurnId(job.targetThreadId);}catch(error){remember(error);continue;}
-        if(active!==turn||server.generation()!==generation||lifecycle.hasChanged()||fence.stopped(generation,job.targetThreadId,turn))continue;
+        signal?.throwIfAborted();if(active!==turn||server.generation()!==generation||lifecycle.hasChanged()||fence.stopped(generation,job.targetThreadId,turn))continue;
         channels.add(job.channelId);try{validateCompletionChannel(job.channelId);}catch(error){remember(error);continue;}
         // A watch already ready would win Rust's biased select before HTTP is polled.
         if(fence.retentionVersion!==subscribedVersion)continue;
-        const waits=new AbortController(),requestAbort=new AbortController();
+        const waits=new AbortController(),requestAbort=new AbortController(),externalAbort=()=>requestAbort.abort(signal?.reason);
+        signal?.addEventListener("abort",externalAbort,{once:true});if(signal?.aborted)externalAbort();
         const life=lifecycle.changed(waits.signal).then(()=>({kind:"life" as const}),()=>({kind:"life" as const}));
         const terminal=revoked.changed(waits.signal).then(()=>({kind:"terminal" as const}),()=>({kind:"terminal" as const}));
         let request:Promise<HttpResult>;
@@ -49,7 +50,8 @@ export async function sendTyping(path:string,server:TypingBackend,fence:Terminal
           if(lifecycle.hasChanged())result={kind:"life"};else if(fence.retentionVersion!==subscribedVersion)result={kind:"terminal"};
           if(result.kind!=="http")requestAbort.abort();
           await request; // Never leave transport work detached after revocation.
-        }finally{requestAbort.abort();waits.abort();await Promise.all([request,life,terminal]);}
+        }finally{signal?.removeEventListener("abort",externalAbort);requestAbort.abort();waits.abort();await Promise.all([request,life,terminal]);}
+        signal?.throwIfAborted();
         if(result.kind==="life")break;
         if(result.kind==="http"&&!result.ok)remember(new TypingDeliveryError(result.error));
       }finally{revoked.dispose();}

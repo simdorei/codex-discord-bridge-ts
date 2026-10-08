@@ -2,6 +2,8 @@ export class GenerationWatchClosedError extends Error{constructor(){super("lifec
 export interface GenerationWatchReceiver{
   borrow():bigint|null;borrowAndUpdate():bigint|null;changed(signal?:AbortSignal):Promise<void>;
   clone():GenerationWatchReceiver;dispose():void;
+  /** Non-consuming revocation check; sender/receiver closure counts as changed. */
+  hasChangedOrClosed():boolean;
 }
 interface Receiver{seen:bigint;disposed:boolean;busy:boolean;wake:(()=>void)|undefined}
 function generation(value:bigint|null):void{if(value!==null&&(typeof value!=="bigint"||value<0n||value>=(1n<<64n)))throw new TypeError("Expected optional u64 generation");}
@@ -24,6 +26,7 @@ export class GenerationWatch{
     const receiver:Receiver={seen,disposed:false,busy:false,wake:undefined};this.#receivers.add(receiver);
     const idle=()=>{if(receiver.disposed)throw new GenerationWatchClosedError();if(receiver.busy)throw new TypeError("Concurrent lifecycle receiver operation");};
     return Object.freeze({
+      hasChangedOrClosed:()=>receiver.disposed||this.#closed||receiver.seen!==this.#version,
       borrow:()=>{idle();return this.#value;},
       borrowAndUpdate:()=>{idle();receiver.seen=this.#version;return this.#value;},
       clone:()=>{idle();return this.#receiver(receiver.seen);},

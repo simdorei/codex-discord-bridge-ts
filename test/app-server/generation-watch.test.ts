@@ -29,3 +29,6 @@ test("concurrent receiver operations fail without stealing the active waiter",as
 test("last value is retained with no receivers and optional u64 boundaries are strict",async()=>{
   const watch=new GenerationWatch();assert.equal(watch.replace((1n<<64n)-1n),null);const r=watch.subscribe();assert.equal(r.borrow(),(1n<<64n)-1n);assert.throws(()=>watch.replace(1n<<64n),TypeError);assert.throws(()=>watch.replace(-1n),TypeError);assert.throws(()=>watch.replace(1 as never),TypeError);watch.replace(0n);await r.changed();assert.equal(r.borrow(),0n);r.dispose();
 });
+test('non-consuming revocation snapshot is safe during a waiter and includes closure',async()=>{
+ const watch=new GenerationWatch(1n),r=watch.subscribe();assert.equal(r.hasChangedOrClosed(),false);const waiting=r.changed();assert.equal(r.hasChangedOrClosed(),false);watch.replace(1n);assert.equal(r.hasChangedOrClosed(),true);await waiting;assert.equal(r.hasChangedOrClosed(),false);watch.close();assert.equal(r.hasChangedOrClosed(),true);r.dispose();assert.equal(r.hasChangedOrClosed(),true);assert.equal(watch.pendingWaiters,0);
+});

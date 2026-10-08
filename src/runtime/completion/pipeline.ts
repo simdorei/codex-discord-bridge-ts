@@ -9,6 +9,8 @@ import {deliverCheckedAsyncQuestion} from "../async-question-delivery.ts";
 import {CompletionSourceIntake} from "./source-intake.ts";
 import {CompletionSourceReconciler} from "./source-reconciler.ts";
 import {StagedCompletionHandler} from "./staged-handler.ts";
+import {CompletionTypingDriver,residentTypingBackend} from "./typing-driver.ts";
+import type {TypingTransport} from "./typing.ts";
 import {CompletionIdleRelease} from "./idle-release.ts";
 import {TerminalFence} from "./terminal-fence.ts";
 import {CompletionScheduler} from "./scheduler/run.ts";
@@ -31,7 +33,7 @@ export async function maintainCompletionPipeline(server:MaintenanceServer,queue:
 }
 export interface CompletionPipelineOptions{
  readonly commentaryEnabled:boolean;readonly historyReadTimeoutMs:number;
- readonly delivery:FinalDeliveryOptions;
+ readonly delivery:FinalDeliveryOptions;readonly typing:TypingTransport;
  /** Mandatory passive public-safe rendering/reporting; never inspect arbitrary getters. */
  readonly render:(error:unknown)=>string;readonly report:(error:unknown)=>void;
  readonly terminalFence?:TerminalFence;
@@ -39,9 +41,9 @@ export interface CompletionPipelineOptions{
 /** Composes indexed source -> owned target state -> guarded receipt delivery, plus
  * source-range reconciliation and scheduler maintenance. Caller supplies the SAME
  * resident/queue backend, installs its journal first, and owns native process lifetime.
- * Typing driver, production HTTP and service bootstrap remain separate. */
+ * Production HTTP and service bootstrap remain separate. */
 export class CompletionPipeline{
- readonly #idle:CompletionIdleRelease;readonly #server:PortableResidentLifecycle;readonly #scheduler:CompletionScheduler<CompletionStateAdmission>;readonly #intake:CompletionSourceIntake;readonly #reconciler:CompletionSourceReconciler;readonly terminalFence:TerminalFence;#used=false;
+ readonly #typing:CompletionTypingDriver;readonly #idle:CompletionIdleRelease;readonly #server:PortableResidentLifecycle;readonly #scheduler:CompletionScheduler<CompletionStateAdmission>;readonly #intake:CompletionSourceIntake;readonly #reconciler:CompletionSourceReconciler;readonly terminalFence:TerminalFence;#used=false;
  constructor(server:PortableResidentLifecycle,queue:QueueStartCoordinator,options:CompletionPipelineOptions){
   this.#server=server;const path=queue.dbPath,render=options.render,reportCallback=options.report,report=(error:unknown)=>invokeSynchronousVoid(reportCallback,options,[error]),handler=new StagedCompletionHandler(server,queue,{commentaryEnabled:options.commentaryEnabled,historyReadTimeoutMs:options.historyReadTimeoutMs,render}),delivery=options.delivery;
   this.terminalFence=options.terminalFence??new TerminalFence();
@@ -55,6 +57,7 @@ export class CompletionPipeline{
   this.#intake=new CompletionSourceIntake(path,server,this.terminalFence,options.commentaryEnabled,failure=>report(failure.error),undefined,state,event=>this.#scheduler.offer(event));
   this.#reconciler=new CompletionSourceReconciler(path,server,options.commentaryEnabled,failure=>report(failure.error));
   this.#idle=new CompletionIdleRelease(server,queue,render,failure=>report(failure.error));
+  this.#typing=new CompletionTypingDriver(path,residentTypingBackend(server),this.terminalFence,options.typing,report);
  }
  notifyDeliveryReady():void{this.#scheduler.notifyDeliveryReady();}
  get availableEventBytes():number{return this.#intake.availableBytes;}
@@ -67,8 +70,9 @@ export class CompletionPipeline{
    const intake=track(this.#intake.run(cancel.signal).finally(()=>this.#scheduler.finishInput()));
    const reconcile=track(this.#reconciler.run(cancel.signal));
    const idle=track(this.#idle.run(cancel.signal));
+   const typing=track(this.#typing.run(cancel.signal));
    const scheduler=track(this.#scheduler.run(cancel.signal).finally(()=>cancel.abort(new Error('Completion scheduler finished'))));
-   await Promise.all([intake,reconcile,idle,scheduler]);
+   await Promise.all([intake,reconcile,idle,typing,scheduler]);
   }finally{cancel.abort(new Error('Completion pipeline stopped'));signal.removeEventListener('abort',stop);}
   if(failures.length===1)throw failures[0];if(failures.length>1)throw new AggregateError(failures,'Completion pipeline failed');
  }

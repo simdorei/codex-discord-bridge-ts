@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,698 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,706 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3561,3 +3561,28 @@ source hashes, final manifests, verification result and complete logs.
 
 Typing driver and production transport/service wiring remain pending; earlier Windows,
 blocking SQLite, diagnostics and operational/performance limitations remain unchanged.
+
+
+## Checkpoint 157 — owned typing driver and native lifecycle revocation
+
+The pipeline now owns a mandatory typing transport and independent six-second delayed
+typing task. The native lifecycle adapter preserves a sticky revocation after its watch
+notification is consumed; equal-generation publications and sender/receiver closure count
+as changed. A non-consuming watch snapshot supports that check even during a pending
+wait, while a cancelled wait alone does not revoke the next channel.
+
+`sendTyping` accepts an optional outer abort signal in addition to the existing terminal/
+lifecycle watches. It aborts the trusted transport, awaits settlement, then preserves the
+original stop reason. No abandoned typing promise can outlive the worker. This requires
+cooperative bounded IO; it is not Rust Drop or forced JavaScript cancellation.
+
+Eight additional tests cover the watch snapshot, sticky/native adapter behavior, external
+abort identity and join, single-flight typing, terminal cancellation, pre-abort safety,
+and a real VM Node process that starts a turn, blocks typing, then emits Final/terminal.
+The terminal revokes typing while independent completion stages and sends the mocked Final.
+Both source-range and scheduler integration remain active; no actual Discord POST occurred.
+
+Strict TS exit 0; focused watch/typing/pipeline **32 PASS**; full Linux **3,706 PASS /
+0 fail / 0 skip / 0 cancelled**. `.runtime/cloud-typing-driver-157/` retains source hashes,
+manifest, verification result and raw final logs. Production HTTP, service bootstrap,
+Windows, performance/operations and previous SQLite/diagnostic limitations remain open.
