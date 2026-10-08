@@ -22,8 +22,14 @@ function sync<T>(callback:()=>T):T{
 /** Serialized source write ordering with explicit AbortSignal/owned join rather than
  * automatic future Drop. Merely abandoning its Promise does NOT cancel a write. */
 export class AppServerWriter{
-  readonly #locks=new TargetLocks();readonly #input:OwnedAppServerInput|null;readonly #close:Pick<ClientCloseCoordinator,"closed"|"markClosed">;
+  readonly #locks=new TargetLocks(); #input:OwnedAppServerInput|null;readonly #close:Pick<ClientCloseCoordinator,"closed"|"markClosed">;
   constructor(input:OwnedAppServerInput|null,close:Pick<ClientCloseCoordinator,"closed"|"markClosed">){this.#input=input;this.#close=close;}
+  /** Take stdin exactly once under the SAME writer lock. The owner callback must
+   * shutdown and dispose the taken pipe even if shutdown fails. No future writes
+   * can reuse this slot; the close coordinator must seal admission before calling. */
+  async shutdownInput(shutdown:(input:OwnedAppServerInput)=>Promise<void>):Promise<void>{
+    await this.#locks.run("stdin",async()=>{const input=this.#input;this.#input=null;if(input!==null)await shutdown(input);});
+  }
   async write<T>(value:unknown,preflight:WritePreflight<T>,writeStarted:()=>void,signal?:AbortSignal):Promise<T>{
     if(this.#close.closed)throw new AppServerClosedError();signal?.throwIfAborted();
     const encoded=Buffer.from(serializeSerdeValue(value)+"\n","utf8");

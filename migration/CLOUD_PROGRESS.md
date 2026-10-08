@@ -1887,3 +1887,22 @@ restore API error were retained separately; the latter's invalid RED run is not 
 regression evidence. Real-process tests ran on this Linux VM only. Native graceful-close,
 complete session construction and Windows remain unfinished; force-cleanup timeout/error
 must not be treated as confirmed exit or successful recovery.
+
+## 2026-10-08 — Serialized graceful/forced process close
+
+Ported close.rs ordering across the same writer lock and an owned child slot. Admission
+is sealed/flagged first; stdin is taken once under the writer lock and passed to required
+shutdown+disposal. Graceful wait defaults to 1,500ms, then owned kill and forced wait to
+5,000ms. The first error is retained. Exit confirmation is a separate internal fact;
+unknown exit retains the child for an explicit later close, not automatic success.
+Logical close/pending cleanup still publishes after child handling, preserving canonical
+close intent. Existing snapshot fields and dead-generation incoming work are unchanged.
+
+Evidence .runtime/cloud-process-close-096: focused 20 PASS (7 new + existing close/writer),
+full **2,931 PASS, 0 fail/skip/cancel; strict TS exit 0**. Tests cover ordered close,
+shutdown/wait/kill error precedence, forced timeout and retained-child retry, writer-lock
+exclusion, concurrent close, and an actual owned Node helper exiting gracefully after
+stdin shutdown without a kill. Wait adapters must honor cancellation of the observation;
+this does not certify arbitrary adapters, descendant termination, Windows or full session
+startup/cleanup integration. Native shutdown/disposal callbacks remain explicit ownership
+contracts, and no Codex/model or operating bridge was launched.

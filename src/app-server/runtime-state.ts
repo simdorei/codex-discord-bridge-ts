@@ -14,8 +14,11 @@ function compareId(a:RequestId,b:RequestId):number{if(typeof a==="bigint")return
  * Not resident replacement state, a live process handle, or an exit/fence proof. */
 export class ClientRuntimeState{
   readonly #notifications:NotificationState;readonly #requests=new ServerRequestState();#processId:number|null;
-  #initialized=false;#generation=0n;#closedReason:string|null=null;
+  #processExitConfirmed=false;#initialized=false;#generation=0n;#closedReason:string|null=null;
   constructor(processId:number|null=null,ledgerRequired=false){if(processId!==null&&(!Number.isInteger(processId)||processId<0||processId>0xffffffff))throw new TypeError("Expected optional u32 process ID");this.#processId=processId;this.#notifications=new NotificationState(ledgerRequired);}
+  get processExitConfirmed():boolean{return this.#processExitConfirmed;}
+  /** Trusted owned-child closer only, after wait/reap confirms actual termination. */
+  confirmOwnedProcessExit():void{this.#processExitConfirmed=true;}
   /** Trusted startup commit AFTER initialize ACK/initialized write and inside an open lifecycle gate. */
   commitInitialized():void{if(this.#closedReason!==null)throw new AppServerClosedError();this.#initialized=true;this.#generation=1n;}
   snapshot():ClientLifecycleSnapshot{return Object.freeze({generation:this.#generation,healthy:this.#initialized&&this.#closedReason===null&&this.#processId!==null,initialized:this.#initialized,processId:this.#processId,closedReason:this.#closedReason});}
