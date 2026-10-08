@@ -1,3 +1,4 @@
+import {pinDispatchMutationFence,type DispatchMutationFence} from "./dispatch-attempt.ts";
 import {types} from "node:util";
 import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
 import {invokeSynchronousVoid} from "../core/synchronous-void.ts";
@@ -73,7 +74,7 @@ export class MaintenanceTransport{
   }
 }
 
-export interface ResidentMaintenanceFence extends MaintenanceTransportFence{
+export interface ResidentMaintenanceFence extends MaintenanceTransportFence,DispatchMutationFence{
   requestOrigin(method:string,params:unknown):unknown|null;
 }
 export interface ResidentMaintenanceOptions{
@@ -88,6 +89,6 @@ export function pinResidentMaintenanceOptions(input:ResidentMaintenanceOptions):
   const renderError=(e:unknown):string=>{const r=Reflect.apply(render,undefined,[e]);if(types.isPromise(r))void Promise.prototype.then.call(r,undefined,()=>undefined);if(typeof r!=="string"||/[\uD800-\uDFFF]/u.test(r))throw new TypeError("Expected maintenance diagnostic text");return r;};
   if(source===null)return Object.freeze({fence:null,renderError});
   if(typeof source!=="object"||types.isProxy(source))throw new TypeError("Expected resident maintenance fence");
-  const origin=own(source,"requestOrigin");fn(origin);const base=pinFence(source as ResidentMaintenanceFence)!;
-  return Object.freeze({renderError,fence:Object.freeze({...base,requestOrigin:(method:string,params:unknown)=>{const result=Reflect.apply(origin,source,[method,cloneOwnedSerdeValue(params)]);if(types.isPromise(result))void Promise.prototype.then.call(result,undefined,()=>undefined);return result===null?null:cloneOwnedSerdeValue(result);}})});
+  const origin=own(source,"requestOrigin");fn(origin);const base=pinFence(source as ResidentMaintenanceFence)!,dispatch=pinDispatchMutationFence(source as ResidentMaintenanceFence);
+  return Object.freeze({renderError,fence:Object.freeze({...base,...dispatch,requestOrigin:(method:string,params:unknown)=>{const result=Reflect.apply(origin,source,[method,cloneOwnedSerdeValue(params)]);if(types.isPromise(result))void Promise.prototype.then.call(result,undefined,()=>undefined);return result===null?null:cloneOwnedSerdeValue(result);}})});
 }

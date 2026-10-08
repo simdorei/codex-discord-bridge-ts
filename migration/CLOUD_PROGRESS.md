@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,186 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,198 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2525,3 +2525,38 @@ completed queue/stop production dispatch. Outer claim validation, actual ordinar
 request/response wiring and the real SQL fence remain necessary. The shared mutation
 claim type now permits boolean scoped for ordinary operations; maintenance still
 always emits scoped:true as before. No live network service was called.
+
+
+## 2026-10-08 — Native ordinary resident request, queue and stop dispatch
+
+Connected ordinary resident requests to original stop scope, exact native admission,
+managed target preparation, actual writer checks, durable wire-attempt selection and
+owned completion. Queue/stop claims are validated locally and never copied into RPC
+params. Installed legacy adapters retain fail-closed queue/stop defaults; all optional
+methods are pinned when the owner is created. Mutation-unknown classification uses
+owned construction metadata, without arbitrary error prototype inspection.
+
+Caller cancellation abandons its wait without writing a fabricated completion. Managed
+resume still finishes; any late Ready target permit is released. Fully flushed scoped
+committed mutations remain target-isolated, while unscoped uncertain work quarantines
+its generation. A later native round-trip on the same serialized writer proves flush
+before the cancellation tests. No origin capture occurs for an already-aborted call.
+
+Evidence .runtime/cloud-resident-dispatch-122: 12 new tests, focused 33 PASS; full
+**3,198 PASS, 0 fail/skip/cancel; strict TS exit 0**. Real local child stdio plus temporary
+SQLite test ordinary requests, queue and stop metadata, unsupported legacy methods,
+Remote replies, timeout isolation, resume exactly once, early/late cancellation and
+resource cleanup. This implementation accepts native millisecond timeouts only within
+its existing safe-integer/2^31-1 bound, rejected before preparation effects.
+
+Direct review found repeated reads of a request DTO could change its method after queue
+validation. The identical regression test failed old isolated source (expected rejection
+missing) and passes after whole DTO snapshotting, with zero getter calls and no origin/
+claim effects. cloneAppRequest is the shared strict boundary for execute/queue/stop;
+raw logs, test/source SHA and old stage remain in review-red-green.json.
+
+The SQL idle journal is fixture-owned and mutation fences are controlled adapters here.
+Real fresh-open runtime adapters, exact response custody, repair/recovery entry points,
+Windows, Discord, process descendants and production/performance validation remain
+unfinished. JavaScript AbortSignal ownership is explicitly tested, not blanket Tokio
+future-drop equivalence. No live Codex/Discord or production database was used.

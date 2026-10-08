@@ -1,4 +1,11 @@
-import {currentStopOrigin,hasStopOriginScope,withoutStopOriginScope} from "./dispatch-origin.ts";
+import {DispatchAttempt,type DispatchResult} from "./dispatch-attempt.ts";
+import {WrittenRequestGuard} from "./written-request-guard.ts";
+import {ownedRequestFailure} from "./request-client.ts";
+import {isOwnedMutationOutcomeUnknown} from "./maintenance-attempt.ts";
+import {cloneAppRequest,isObservationalRequest,type AppRequest} from "./requests.ts";
+import {serdeField,rustTrim} from "./value.ts";
+import {serdeValueEqual} from "../core/serde-value-equal.ts";
+import {currentStopOrigin,hasStopOriginScope,withoutStopOriginScope,withStopOrigin} from "./dispatch-origin.ts";
 import {extractThreadId} from "./identity.ts";
 import {IdleMaintenanceWork} from "./idle-maintenance.ts";
 import {MaintenanceTransport,pinResidentMaintenanceOptions,type ResidentMaintenanceOptions} from "./maintenance-transport.ts";
@@ -18,6 +25,18 @@ import {GenerationWatch} from "./generation-watch.ts";
 import {BoundedBroadcast} from "./broadcast.ts";
 import type {DeadGenerationWork} from "./dead-generation-work.ts";
 export type PreparedTargetMutation={readonly kind:"Ready";readonly permit:TargetMutationPermit|null}|{readonly kind:"Completed";readonly value:unknown};
+interface DispatchContext{readonly check:(()=>void)|null;readonly queueClaim:unknown|null;readonly stopClaim:unknown|null}
+/** Cancel only the caller's wait, while disposing a late Ready permit if preparation
+ * was already handed to managed resume. The managed operation itself keeps running. */
+function awaitPrepared(task:Promise<PreparedTargetMutation>,signal?:AbortSignal):Promise<PreparedTargetMutation>{
+  if(signal===undefined)return task;
+  return new Promise((resolve,reject)=>{
+    let abandoned=false;
+    const abort=()=>{if(abandoned)return;abandoned=true;signal.removeEventListener("abort",abort);reject(signal.reason);};
+    if(signal.aborted)abort();else signal.addEventListener("abort",abort,{once:true});
+    void task.then(prepared=>{signal.removeEventListener("abort",abort);if(abandoned){if(prepared.kind==="Ready")prepared.permit?.release();}else resolve(prepared);},error=>{signal.removeEventListener("abort",abort);if(!abandoned)reject(error);});
+  });
+}
 export interface ResidentPersistence{
   /** Return only after exact work is durably captured for this resident instance. */
   persistDeadWork(instanceId:string,work:DeadGenerationWork):void;
@@ -102,6 +121,62 @@ export class PortableResidentLifecycle{
     const next=this.#targetGate.admit(this.instanceId,generation,target);
     if(next.kind==="Resubscribe"){next.permit.release();throw new IdleObservationError("unexpected second resubscription; target remains held");}
     return Object.freeze({kind:"Ready",permit:next.permit});
+  }
+  /** Ordinary resident dispatch, bound to this exact native admission and the
+   * first stop origin. Queue/stop metadata is local and never merged into RPC params. */
+  request(method:string,params:unknown,waitMs:number,expectedGeneration:bigint|null=null,signal?:AbortSignal):Promise<unknown>{
+    return this.#requestScoped(method,params,waitMs,expectedGeneration,false,{check:null,queueClaim:null,stopClaim:null},signal);
+  }
+  execute(request:AppRequest,expectedGeneration:bigint|null=null,signal?:AbortSignal):Promise<unknown>{const own=cloneAppRequest(request);return this.request(own.method,own.params,own.timeoutMs,expectedGeneration,signal);}
+  executeQueueTurn(request:AppRequest,generation:bigint,inputClaim:unknown,signal?:AbortSignal):Promise<unknown>{
+    request=cloneAppRequest(request);
+    const claim=cloneOwnedSerdeValue(inputClaim),params=cloneOwnedSerdeValue(request.params),target=serdeField(params,"threadId"),claimedGeneration=serdeField(claim,"app_server_generation");
+    if(request.method!=="turn/start"||typeof target!=="string"||rustTrim(target)===""||serdeField(claim,"target_thread_id")!==target||typeof claimedGeneration!=="bigint"||claimedGeneration<0n||claimedGeneration>=(1n<<64n)||claimedGeneration!==generation)throw new ResidentStateError({kind:"MutationHeld",message:"queue dispatch does not match its original claim"});
+    return this.#requestScoped(request.method,params,request.timeoutMs,generation,false,{check:null,queueClaim:claim,stopClaim:null},signal);
+  }
+  executeStopControl(request:AppRequest,generation:bigint,inputClaim:unknown,check:()=>void,signal?:AbortSignal):Promise<unknown>{
+    request=cloneAppRequest(request);
+    const claim=cloneOwnedSerdeValue(inputClaim),params=cloneOwnedSerdeValue(request.params),control=serdeField(claim,"control"),g=serdeField(control,"generation");
+    if(this.#maintenance?.fence==null||request.method!=="turn/interrupt"||!serdeValueEqual(serdeField(control,"target")??null,serdeField(params,"threadId")??null)||!serdeValueEqual(serdeField(control,"turn")??null,serdeField(params,"turnId")??null)||typeof g!=="bigint"||g<0n||g>=(1n<<64n)||g!==generation||serdeField(control,"resident")!==this.instanceId)throw new ResidentStateError({kind:"MutationHeld",message:"stop dispatch does not match original durable authority"});
+    syncFunction(check);return this.#requestScoped(request.method,params,request.timeoutMs,generation,false,{check,queueClaim:null,stopClaim:claim},signal);
+  }
+  #requestScoped(method:string,input:unknown,waitMs:number,expectedGeneration:bigint|null,isolate:boolean,context:DispatchContext,signal?:AbortSignal):Promise<unknown>{
+    signal?.throwIfAborted();
+    const params=cloneOwnedSerdeValue(input),options=this.#maintenance;
+    if(options===null)return Promise.reject(new ResidentStateError({kind:"MutationHeld",message:"resident dispatch adapter is not installed"}));
+    if(typeof method!=="string"||/[\uD800-\uDFFF]/u.test(method)||!Number.isSafeInteger(waitMs)||waitMs<0||waitMs>2147483647)throw new TypeError("Expected resident request fields");
+    if(hasStopOriginScope())return this.#requestInner(method,params,waitMs,expectedGeneration,isolate,context,signal);
+    const origin=options.fence?.requestOrigin(method,params)??null;
+    return withStopOrigin(origin,()=>this.#requestInner(method,params,waitMs,expectedGeneration,isolate,context,signal));
+  }
+  async #requestInner(method:string,params:unknown,waitMs:number,expectedGeneration:bigint|null,isolate:boolean,context:DispatchContext,signal:AbortSignal|undefined):Promise<unknown>{
+    signal?.throwIfAborted();const options=this.#maintenance!,check=context.check??(()=>{});invokeSynchronousVoid(check,{},[]);
+    const admission=this.#state.admitRequest(expectedGeneration);let target:TargetMutationPermit|null=null,written:WrittenRequestGuard|undefined;
+    try{
+      const prepared=await awaitPrepared(this.prepareTargetMutation(method,params,admission.generation,currentStopOrigin(),check),signal);
+      if(prepared.kind==="Completed")return prepared.value;target=prepared.permit;signal?.throwIfAborted();
+      options.fence?.checkRequest(admission.generation,method,params);
+      written=new WrittenRequestGuard(this.#state,admission.generation);const guard=written,flushed=guard.isolateAfterFlush(),observational=isObservationalRequest(method);
+      const attempt=new DispatchAttempt({ownerId:this.instanceId,generation:admission.generation,method,params,repair:isolate,queueClaim:context.queueClaim,stopClaim:context.stopClaim,origin:currentStopOrigin()},options.fence,options.renderError);
+      let result:DispatchResult;
+      try{
+        const value=await admission.client.requestAdmitted(admission.permit,method,params,waitMs,{
+          preflight:wire=>{invokeSynchronousVoid(check,{},[]);this.checkActualTargetMutation(target,admission.generation,method,params);attempt.begin(wire);invokeSynchronousVoid(check,{},[]);},
+          writeStarted:()=>{attempt.writeStarted();guard.confirmWriteStarted();},
+          writeComplete:()=>{if(isolate||observational||attempt.isolatesTarget())flushed.confirmFlushed();},
+        },signal);
+        guard.finish("Success");result={ok:true,value};
+      }catch(error){
+        // Future-drop equivalent: no completion write on caller cancellation.
+        if(signal?.aborted&&error===signal.reason)throw error;
+        const failure=ownedRequestFailure(error);
+        if(failure?.kind==="Timeout"&&!observational&&attempt.wasStarted()&&!guard.isIsolated())this.#state.markTimeout(admission.generation);
+        if(failure!==null)guard.finish(failure.kind==="Remote"?"OtherError":failure.kind);
+        result={ok:false,error};
+      }
+      const outcome=attempt.finish(result);
+      if(!outcome.ok){if(isOwnedMutationOutcomeUnknown(outcome.error)&&attempt.wasStarted()&&!guard.isIsolated())this.#state.markTimeout(admission.generation);throw outcome.error;}return outcome.value;
+    }finally{try{written?.dispose();}finally{try{target?.release();}finally{admission.release();}}}
   }
   checkActualTargetMutation(permit:TargetMutationPermit|null,generation:bigint,method:string,input:unknown):void{
     if(typeof generation!=="bigint"||generation<0n||generation>=(1n<<64n)||typeof method!=="string"||/[\uD800-\uDFFF]/u.test(method))throw new TypeError("Expected actual target mutation identity");

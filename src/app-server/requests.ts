@@ -8,7 +8,13 @@ export type ServiceTierUpdate={readonly kind:"Unchanged"|"Clear"}|{readonly kind
 export interface ThreadSettingsUpdate{readonly model:string|null;readonly effort:string|null;readonly effortClear:boolean;readonly serviceTier:ServiceTierUpdate}
 export const DEFAULT_THREAD_SETTINGS_UPDATE:ThreadSettingsUpdate=Object.freeze({model:null,effort:null,effortClear:false,serviceTier:Object.freeze({kind:"Unchanged"})});
 function text(value:unknown):asserts value is string{if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed request text");}
-function request(method:string,params:unknown,timeoutMs:number):AppRequest{if(!Number.isSafeInteger(timeoutMs)||timeoutMs<0||timeoutMs>2147483647)throw new RangeError("Unsupported native millisecond request timeout");return Object.freeze({method,params:cloneOwnedSerdeValue(params),timeoutMs});}
+function timeout(value:unknown):asserts value is number{if(typeof value!=="number"||!Number.isSafeInteger(value)||value<0||value>2147483647)throw new RangeError("Unsupported native millisecond request timeout");}
+function request(method:string,params:unknown,timeoutMs:number):AppRequest{timeout(timeoutMs);return Object.freeze({method,params:cloneOwnedSerdeValue(params),timeoutMs});}
+/** Capture an entire DTO before any method-dependent authority decision. */
+export function cloneAppRequest(input:unknown):AppRequest{
+  const v=cloneOwnedSerdeValue(input);if(v===null||typeof v!=="object"||Array.isArray(v)||Object.keys(v).length!==3||!["method","params","timeoutMs"].every(k=>Object.hasOwn(v,k)))throw new TypeError("Expected exact own AppRequest fields");
+  const r=v as AppRequest;text(r.method);timeout(r.timeoutMs);return r;
+}
 function threadRequest(method:string,threadId:string,timeoutMs:number):AppRequest{text(threadId);return request(method,{threadId},timeoutMs);}
 function turnInput(prompt:string):unknown[]{text(prompt);return [{type:"text",text:prompt,text_elements:[]}];}
 export function readThread(threadId:string,includeTurns:boolean):AppRequest{return readThreadWithTimeout(threadId,includeTurns,8000);}

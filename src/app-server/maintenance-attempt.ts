@@ -22,9 +22,11 @@ export interface MaintenanceMutationFence{
   beginMutationWithOrigin(claim:MaintenanceClaim):boolean;
   finishMutation(completion:MaintenanceCompletion):void;
 }
+const ownedUnknownOutcomes=new WeakSet<object>();
+export function isOwnedMutationOutcomeUnknown(error:unknown):boolean{return error!==null&&(typeof error==="object"||typeof error==="function")&&ownedUnknownOutcomes.has(error);}
 export class MutationOutcomeUnknownError extends Error{
   readonly method:string;readonly reason:string;
-  constructor(method:string,reason:string){super(`app-server mutation ${method} outcome remains unknown: ${reason}`);this.name="MutationOutcomeUnknownError";this.method=method;this.reason=reason;}
+  constructor(method:string,reason:string){super(`app-server mutation ${method} outcome remains unknown: ${reason}`);this.name="MutationOutcomeUnknownError";this.method=method;this.reason=reason;ownedUnknownOutcomes.add(this);}
 }
 function text(value:unknown):asserts value is string{if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed maintenance text");}
 function syncCall(f:Function,receiver:unknown,args:unknown[]):unknown{const result=Reflect.apply(f,receiver,args);if(types.isPromise(result)){void Promise.prototype.then.call(result,undefined,()=>undefined);throw new TypeError("Maintenance fence must commit synchronously");}return result;}
