@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,262 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,276 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4515,3 +4515,33 @@ Evidence `.runtime/cloud-gateway-dispatch-integration-196/`. An explicit source
 inventory records56/65 models available and9 remaining. This is a bounded model
 coverage count; full event dispatch/adapter, live services, Windows and operational
 qualification remain unfinished. AGY deny hook hash remains unchanged.
+
+
+## Checkpoint 197 — member chunks and thread-member intermediaries
+
+Added MemberChunk's handwritten map visitor and ThreadMembersUpdate's map-only
+intermediary conversion. MemberChunk overwrites all child presence guild IDs after
+validation; ThreadMembersUpdate fills only missing IDs and preserves explicit child
+IDs. Presence nick is validated before being discarded. A present null nonce is
+rejected by the actual custom MemberChunk visitor, despite its public Option field.
+Signed i32 member counts, required child fields and default vectors are tested.
+Strict TS exit0; focused8 PASS; full4,270 PASS with no failures/skips/cancellations.
+Evidence `.runtime/cloud-gateway-dispatch-members-197/`.
+
+## Checkpoint 198 — bounded flattened member payloads
+
+Added GuildMemberAdd and ThreadMemberUpdate with mandatory outer guild validation
+and generic validation of all buffered non-guild fragments, including ignored
+children. Original raw map traversal is retained for typed fields so duplicate
+member keys do not collapse. These two child schemas contain no f64 or raw-versus-
+buffered anonymizable-ID fields. This is a deliberately bounded flatten profile,
+not a general serde Content implementation or exact error-text parity claim.
+
+Pinned serde1.0.229 source was fetched from the official registry and archive hash
+checked against the Rust lockfile before reviewing Content/FlatMap behavior. Tests
+cover otherwise ignored invalid numbers/Unicode, duplicate nested User fields,
+null option duplicates and ThreadMemberUpdate's required child presence guild.
+Final strict TS exit0; focused6 PASS; full Linux **4,276 PASS /0 fail/0 skip/0
+cancelled**. Evidence `.runtime/cloud-gateway-dispatch-flatten-198/`.
+Model coverage is60/65 names; five remain, with the full dispatcher/runtime adapter
+and operational validation still pending.
