@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,477 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,485 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4874,3 +4874,24 @@ initial4476 run, and a TS control-flow-narrowing failure corrected with a typed
 post-await snapshot accessor. The first RED file had11 cases; the second RED and
 final GREEN use the same12-case file. Ready HTTP registration/retry and main service
 wiring remain pending; no real Discord traffic or process abort was executed.
+
+
+## Checkpoint 215 — Ready setup lifecycle over explicit effects
+
+Composed authoritative identity wait and guard with independent registration and
+startup-notice retry loops. Each loop has its own1/2/4/8/16/30-second saturated
+schedule. Guild/global scope and QA flag are preserved. Disabled/missing-channel
+notices generate no boot key; enabled notices reuse one logical key and the exact
+source startup text across retries. Successful setup remains under conflict watch.
+
+The required ReadySetupPort is an explicit effect boundary, not an implemented
+registration HTTP adapter. Tests use fake effect callbacks and real local ownership/
+identity/timer primitives; they do not prove production registration. Node sibling
+failure cancels and joins both operations before leaving the guard, including
+async finally cleanup. No Promise.all early rejection abandons another operation.
+
+Strict TS exit0, focused8 PASS, full Linux **4,485 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-runtime-ready-setup-215/` pins ready.rs/tests and notice
+authority. Command schema/HTTP adapter, remaining typed consumers and complete main
+service wiring are pending. Live credentials, Windows and operational qualification
+remain unverified.
