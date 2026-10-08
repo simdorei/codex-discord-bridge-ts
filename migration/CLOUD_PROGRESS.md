@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,691 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,698 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3536,3 +3536,28 @@ Strict TS exit 0; focused pipeline/source tests **29 PASS**; complete Linux **3,
 0 fail / 0 skip / 0 cancelled**. Evidence `.runtime/cloud-completion-pipeline-155/`
 contains source hashes, manifests, verification result and raw logs. No real Discord send,
 live Codex, Windows, deployment, complete Rust parity or performance approval.
+
+
+## Checkpoint 156 — owned idle-subscription release driver
+
+The completion pipeline now owns a five-second delayed idle-release maintenance loop.
+Only current owner/current nonnegative generation Candidate or AwaitUnload intents reach
+the managed native release API. It uses nonwaiting acquisition from the same target-lock
+registry and skips busy targets. The already bounded pending-intent store list is reused.
+
+Release errors retain durable effect custody and do not trigger replay/global restart.
+Only a byte/field-identical still-unsent Candidate gets a public-safe deferral update;
+advanced, foreign and AwaitUnload rows are not overwritten. Failure to record a deferral
+is reported separately, and independent later targets remain attempted. Shutdown waits
+for an already managed native operation before releasing its target lease; it does not
+claim hard cancellation or abandon native work.
+
+Seven new tests cover identity/state filters, busy-target independence, unchanged deferral,
+concurrent advancement, recording failure, shutdown ownership and pre-aborted missing-store
+safety. Fixture-only UUID typing corrections are preserved in the raw typecheck logs.
+Strict TS exit 0; focused idle/pipeline **13 PASS**; full Linux **3,698 PASS / 0 fail /
+0 skip / 0 cancelled**. Evidence `.runtime/cloud-idle-release-driver-156/` contains the
+source hashes, final manifests, verification result and complete logs.
+
+Typing driver and production transport/service wiring remain pending; earlier Windows,
+blocking SQLite, diagnostics and operational/performance limitations remain unchanged.

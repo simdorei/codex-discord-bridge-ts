@@ -9,6 +9,7 @@ import {deliverCheckedAsyncQuestion} from "../async-question-delivery.ts";
 import {CompletionSourceIntake} from "./source-intake.ts";
 import {CompletionSourceReconciler} from "./source-reconciler.ts";
 import {StagedCompletionHandler} from "./staged-handler.ts";
+import {CompletionIdleRelease} from "./idle-release.ts";
 import {TerminalFence} from "./terminal-fence.ts";
 import {CompletionScheduler} from "./scheduler/run.ts";
 import {CompletionStateAdmission,prepareCompletionState} from "./scheduler/state-admission.ts";
@@ -38,9 +39,9 @@ export interface CompletionPipelineOptions{
 /** Composes indexed source -> owned target state -> guarded receipt delivery, plus
  * source-range reconciliation and scheduler maintenance. Caller supplies the SAME
  * resident/queue backend, installs its journal first, and owns native process lifetime.
- * Idle-release and typing drivers, production HTTP and service bootstrap are separate. */
+ * Typing driver, production HTTP and service bootstrap remain separate. */
 export class CompletionPipeline{
- readonly #server:PortableResidentLifecycle;readonly #scheduler:CompletionScheduler<CompletionStateAdmission>;readonly #intake:CompletionSourceIntake;readonly #reconciler:CompletionSourceReconciler;readonly terminalFence:TerminalFence;#used=false;
+ readonly #idle:CompletionIdleRelease;readonly #server:PortableResidentLifecycle;readonly #scheduler:CompletionScheduler<CompletionStateAdmission>;readonly #intake:CompletionSourceIntake;readonly #reconciler:CompletionSourceReconciler;readonly terminalFence:TerminalFence;#used=false;
  constructor(server:PortableResidentLifecycle,queue:QueueStartCoordinator,options:CompletionPipelineOptions){
   this.#server=server;const path=queue.dbPath,render=options.render,reportCallback=options.report,report=(error:unknown)=>invokeSynchronousVoid(reportCallback,options,[error]),handler=new StagedCompletionHandler(server,queue,{commentaryEnabled:options.commentaryEnabled,historyReadTimeoutMs:options.historyReadTimeoutMs,render}),delivery=options.delivery;
   this.terminalFence=options.terminalFence??new TerminalFence();
@@ -53,6 +54,7 @@ export class CompletionPipeline{
   });
   this.#intake=new CompletionSourceIntake(path,server,this.terminalFence,options.commentaryEnabled,failure=>report(failure.error),undefined,state,event=>this.#scheduler.offer(event));
   this.#reconciler=new CompletionSourceReconciler(path,server,options.commentaryEnabled,failure=>report(failure.error));
+  this.#idle=new CompletionIdleRelease(server,queue,render,failure=>report(failure.error));
  }
  notifyDeliveryReady():void{this.#scheduler.notifyDeliveryReady();}
  get availableEventBytes():number{return this.#intake.availableBytes;}
@@ -64,8 +66,9 @@ export class CompletionPipeline{
   try{
    const intake=track(this.#intake.run(cancel.signal).finally(()=>this.#scheduler.finishInput()));
    const reconcile=track(this.#reconciler.run(cancel.signal));
+   const idle=track(this.#idle.run(cancel.signal));
    const scheduler=track(this.#scheduler.run(cancel.signal).finally(()=>cancel.abort(new Error('Completion scheduler finished'))));
-   await Promise.all([intake,reconcile,scheduler]);
+   await Promise.all([intake,reconcile,idle,scheduler]);
   }finally{cancel.abort(new Error('Completion pipeline stopped'));signal.removeEventListener('abort',stop);}
   if(failures.length===1)throw failures[0];if(failures.length>1)throw new AggregateError(failures,'Completion pipeline failed');
  }
