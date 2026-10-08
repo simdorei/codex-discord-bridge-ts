@@ -1924,3 +1924,22 @@ but the peer is generated test code, NOT Codex or Discord. No authentication/mod
 live bridge, services or user PC were used. Production session factory/runtime wiring,
 Windows/descendants, end-to-end Discord/store effects and phase-2 operational validation
 remain unfinished. No deployment or complete migration claim follows from this test count.
+
+## 2026-10-08 — Bounded owned event subscriptions
+
+Ported the required single-sender broadcast subset from exact Tokio 1.53.1 broadcast.rs
+(official crate checksum already verified). App-server capacities round 1000 to 1024 and
+500 to 512. New subscribers see future events; no receivers means no retained message;
+slow receivers report explicit missed counts then resume at the oldest retained event.
+Every subscriber has independent progress, and last consumption/disposal releases the
+slot. Sender close drains buffered events before Closed. Canceled receives unlink their
+waiter without stealing an event; explicit disposal replaces receiver Drop.
+
+Evidence .runtime/cloud-broadcast-098: 12 focused PASS, full **2,947 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Includes three deterministic 1,200-operation
+schedules checked against an independent per-receiver queue model, lifecycle-gate callback
+non-reentry, lag, cancellation, disposal and capacity behavior. This is not a generic full
+Tokio channel: no sender cloning/weak senders, capacities above 2^20, u64 rollover, or
+Rust Clone/allocation parity. DTOs are shared immutable references; root freezing is only
+a guard and deep data validity remains the producer decoder's responsibility. Broadcast
+subscriptions are client-wide; routing by Codex/Discord thread remains a separate layer.
