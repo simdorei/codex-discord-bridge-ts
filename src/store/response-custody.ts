@@ -11,6 +11,7 @@ import {requireUnheldIn as requireExecutionUnheldIn} from "./execution-hold.ts";
 import {decodeI64,decodeTextField,textDecoderFor} from "./sqlite-values.ts";
 import {StoreIntegrityError} from "./schema-assembly.ts";
 import {usingExistingStore,withStoreTransaction,commitStore} from "./owned-scope.ts";
+import {requireStopControlUnheldIn} from "./runtime-fence-reads.ts";
 
 export interface ResponseCustodyScope {readonly runtime:string;readonly resident:string;readonly generation:bigint;readonly request:unknown}
 interface Authority {
@@ -53,7 +54,7 @@ function checkIdentity(s:ResponseCustodyScope,a:Authority):void{
 }
 function validate(db:DatabaseSync,s:ResponseCustodyScope,a:Authority,own:string):void{
   checkIdentity(s,a);ownerIsCurrent(db,s.runtime);unblocked(db,a.thread);unheldExcept(db,a.thread,own);
-  if(scalar(db,"SELECT EXISTS(SELECT 1 FROM cdr_stop_controls WHERE target_thread_id=? AND phase<>'settled') AS n",a.thread)!==0n)throw new StoreIntegrityError("original stop control authority differs; no interrupt or replay");
+  requireStopControlUnheldIn(db,a.thread);
   requireExecutionUnheldIn(db,a.job);const job=selectJob(db,a.job);
   if(serializeStoredQueueJob(job)!==a.original_job||job.state!=="Running"||job.goalWaiting||job.appServerGeneration!==s.generation||job.channelId<=0n||job.ownerUserId===null||job.ownerUserId<=0n||mirroredThreadIdIn(db,job.channelId)!==a.mapping||(a.mapping!==null&&a.mapping!==a.thread)||stopSequence(db,a.thread)!==a.stop_sequence)refused();
   if(scalar(db,`SELECT

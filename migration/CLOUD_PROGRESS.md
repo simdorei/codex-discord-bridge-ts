@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,312 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,324 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2757,3 +2757,33 @@ a blanket query-only claim. Numeric serializer and parent guard limitations rema
 
 The complete runtime mutation/stop adapter is not installed yet. No user queue requests,
 real archive action, live Codex/Discord call or production database was touched.
+
+
+## 2026-10-08 — Native ordinary and queue dispatch with actual SQL custody
+
+Added the concrete ordinary/queue mutation fence, composed with the real response fence.
+Original stop origin, exact serialized wire ID, resident/generation and original queue
+claim are bound to mutation_attempt.beginChecked. Its same-transaction callbacks perform
+stop/response holds, original revision or queue custody checks, including the second
+post-insert validation. Finish records only supported actual dispatch outcomes. Native
+reads/interrupts preserve the source bypass paths rather than clearing unknown evidence.
+
+Centralized stop-control hold reads are reused by response and mutation validation.
+StateAccessFacade now has 138 explicitly enumerated methods. Existing-only store opens
+are used under an explicit already-initialized/activated runtime precondition. Unlike
+Rust's dead-generation open_initialized wrappers, these do not migrate/repair an absent
+or replaced database. No full parity beyond that precondition is claimed; startup must
+establish the schema. Original stop-control execution and dead-work persistence remain
+separate and missing stop callbacks retain fail-closed resident defaults.
+
+Evidence .runtime/cloud-native-mutation-custody-130: 12 new native-helper/SQLite tests;
+focused53 PASS; full **3,324 PASS, zero fail/skip/cancel; strict TS exit0**. Actual writer
+checks reject stale original queue, stop-after-origin and trigger-induced custody change
+before bytes. Remote errors settle reply_error. Scoped timeout/failed DB finish retain
+prepared intent, block the affected target and keep unrelated targets usable. Admitted
+response and nonsettled stop records block mutations while permitted read/control paths
+remain available. No live Codex, Discord or production store was used.
+
+Windows process ownership, complete runtime/Discord wiring, persistence callback open
+semantics and worker/offload/performance qualification remain incomplete. Checkpoint
+counts are bounded regression evidence, not deployment or whole-migration approval.

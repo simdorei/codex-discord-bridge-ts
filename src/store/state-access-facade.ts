@@ -1,3 +1,4 @@
+import * as RuntimeFenceReads from "./runtime-fence-reads.ts";
 import * as QueueStartAuthority from "./queue-start-authority.ts";
 import * as ResponseCustody from "./response-custody.ts";
 import * as DeadCapture from "./dead-generation-capture.ts";
@@ -153,6 +154,14 @@ export const checkAllResponseCustody: typeof ResponseCustody.checkAllResponseCus
 
 export const validateQueueStartAuthorityIn: typeof QueueStartAuthority.validateQueueStartAuthorityIn = QueueStartAuthority.validateQueueStartAuthorityIn;
 export const validateStopRequestIn: typeof StopRevision.validateStopRequestIn = StopRevision.validateStopRequestIn;
+
+export const checkMutationCustody: typeof MutationAttempt.check = MutationAttempt.check;
+export const requireResponseUnheldIn: typeof ResponseCustody.requireResponseUnheldIn = ResponseCustody.requireResponseUnheldIn;
+export const requireAllResponsesResolvedIn: typeof ResponseCustody.requireAllResponsesResolvedIn = ResponseCustody.requireAllResponsesResolvedIn;
+export const requireStopControlUnheldIn: typeof RuntimeFenceReads.requireStopControlUnheldIn = RuntimeFenceReads.requireStopControlUnheldIn;
+export const stopControlTargetHeldExisting: typeof RuntimeFenceReads.stopControlTargetHeldExisting = RuntimeFenceReads.stopControlTargetHeldExisting;
+export const deadGenerationTargetHeldExisting: typeof RuntimeFenceReads.deadGenerationTargetHeldExisting = RuntimeFenceReads.deadGenerationTargetHeldExisting;
+export const deadGenerationSealedExisting: typeof RuntimeFenceReads.deadGenerationSealedExisting = RuntimeFenceReads.deadGenerationSealedExisting;
 
 export const deadTargetHeld: typeof DeadGeneration.targetIsHeld = DeadGeneration.targetIsHeld;
 export const recordPreflightFailure: typeof Preflight.recordPreflightFailure = Preflight.recordPreflightFailure;
@@ -354,6 +363,13 @@ export interface IStateAccessFacade {
   readonly checkAllResponseCustody: typeof ResponseCustody.checkAllResponseCustody;
   readonly validateQueueStartAuthorityIn: typeof QueueStartAuthority.validateQueueStartAuthorityIn;
   readonly validateStopRequestIn: typeof StopRevision.validateStopRequestIn;
+  readonly checkMutationCustody: typeof MutationAttempt.check;
+  readonly requireResponseUnheldIn: typeof ResponseCustody.requireResponseUnheldIn;
+  readonly requireAllResponsesResolvedIn: typeof ResponseCustody.requireAllResponsesResolvedIn;
+  readonly requireStopControlUnheldIn: typeof RuntimeFenceReads.requireStopControlUnheldIn;
+  readonly stopControlTargetHeldExisting: typeof RuntimeFenceReads.stopControlTargetHeldExisting;
+  readonly deadGenerationTargetHeldExisting: typeof RuntimeFenceReads.deadGenerationTargetHeldExisting;
+  readonly deadGenerationSealedExisting: typeof RuntimeFenceReads.deadGenerationSealedExisting;
   readonly deadTargetHeld: typeof DeadGeneration.targetIsHeld;
   readonly recordPreflightFailure: typeof Preflight.recordPreflightFailure;
   readonly tryBeginAttempt: typeof QueueClaims.tryBeginAttempt;
@@ -496,6 +512,13 @@ export const StateAccessFacade: IStateAccessFacade = {
   checkAllResponseCustody,
   validateQueueStartAuthorityIn,
   validateStopRequestIn,
+  checkMutationCustody,
+  requireResponseUnheldIn,
+  requireAllResponsesResolvedIn,
+  requireStopControlUnheldIn,
+  stopControlTargetHeldExisting,
+  deadGenerationTargetHeldExisting,
+  deadGenerationSealedExisting,
   deadTargetHeld,
   recordPreflightFailure,
   tryBeginAttempt,

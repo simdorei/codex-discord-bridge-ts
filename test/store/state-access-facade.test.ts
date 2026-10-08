@@ -1,3 +1,4 @@
+import * as RuntimeFenceReads from "../../src/store/runtime-fence-reads.ts";
 import * as QueueStartAuthority from "../../src/store/queue-start-authority.ts";
 import * as ResponseCustody from "../../src/store/response-custody.ts";
 import * as DeadCapture from "../../src/store/dead-generation-capture.ts";
@@ -191,6 +192,13 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.checkAllResponseCustody, ResponseCustody.checkAllResponseCustody);
     assert.strictEqual(StateAccessFacade.validateQueueStartAuthorityIn, QueueStartAuthority.validateQueueStartAuthorityIn);
     assert.strictEqual(StateAccessFacade.validateStopRequestIn, StopRevision.validateStopRequestIn);
+    assert.strictEqual(StateAccessFacade.checkMutationCustody, MutationAttempt.check);
+    assert.strictEqual(StateAccessFacade.requireResponseUnheldIn, ResponseCustody.requireResponseUnheldIn);
+    assert.strictEqual(StateAccessFacade.requireAllResponsesResolvedIn, ResponseCustody.requireAllResponsesResolvedIn);
+    assert.strictEqual(StateAccessFacade.requireStopControlUnheldIn, RuntimeFenceReads.requireStopControlUnheldIn);
+    assert.strictEqual(StateAccessFacade.stopControlTargetHeldExisting, RuntimeFenceReads.stopControlTargetHeldExisting);
+    assert.strictEqual(StateAccessFacade.deadGenerationTargetHeldExisting, RuntimeFenceReads.deadGenerationTargetHeldExisting);
+    assert.strictEqual(StateAccessFacade.deadGenerationSealedExisting, RuntimeFenceReads.deadGenerationSealedExisting);
     assert.strictEqual(StateAccessFacade.deadTargetHeld, DeadGeneration.targetIsHeld);
     assert.strictEqual(StateAccessFacade.recordPreflightFailure, Preflight.recordPreflightFailure);
   });
@@ -259,6 +267,13 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "checkAllResponseCustody",
       "validateQueueStartAuthorityIn",
       "validateStopRequestIn",
+      "checkMutationCustody",
+      "requireResponseUnheldIn",
+      "requireAllResponsesResolvedIn",
+      "requireStopControlUnheldIn",
+      "stopControlTargetHeldExisting",
+      "deadGenerationTargetHeldExisting",
+      "deadGenerationSealedExisting",
       "deadTargetHeld",
       "eligibleJobs",
       "enqueue",
@@ -346,7 +361,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 131);
+    assert.strictEqual(actual.length, 138);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
