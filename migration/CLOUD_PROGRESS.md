@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,639 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,654 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3391,3 +3391,31 @@ These adapters enable staged processing; complete completion handler/scheduler a
 service assembly are still unfinished. Existing native answer writer, malformed
 question diagnostics, initialized-existing profile, Windows/offload and operational
 limits remain. Event-loop-local pins are not a distributed lock or Rust RAII guarantee.
+
+
+## 2026-10-08 — Exact completion history and Goal ownership context
+
+Checkpoint 151 adds the completion history/Goal context and exact bot mirror-event
+lookup through the facade (187 exports). Full-history requests keep the caller's exact
+timeout and original expected resident generation. At most three reads use 100ms retry
+spacing: explicit history Final wins, then exact stored final-answer evidence for the
+requested evidence generation, then retained legacy/commentary fallback. Missing turn
+is the only suppressed outcome parse error; RPC/other parse failures are not cache
+authority. The entire original Running owner is revalidated after history work.
+
+Waiting Goal completion rejects absent/active/duplicate prior identities and unfamiliar
+successors. Only known baseline turns or completed bot-marked predecessors may be
+skipped. A seen successor remains sticky across later sparse reads, while every later
+read is still validated; history never chooses the next owner. Cross-thread/turn owner
+inputs are explicitly refused before native requests at the public TS boundary.
+
+Evidence .runtime/cloud-completion-context-151: 15 new SQLite/mock-RPC tests; focused23
+PASS, strict TS0, full **3,654 PASS**, zero fail/skip/cancel. Tests cover exact timeout,
+Final/cache priority, wrong-generation cache refusal, three-read fallback/absence, no
+RPC-error masking, owner/generation drift, Goal predecessor/successor gates, sticky
+handoff with subsequent validation, original markers, cancellation and input snapshots.
+Full-before-cross-owner-check3,653 is separate from final3,654.
+
+This is context for the still-unfinished completion handler/scheduler, not live Codex
+execution proof. Existing typed parser diagnostics, initialized-existing profile,
+native answer writer, Windows/offload and operational qualification limits remain.

@@ -1,3 +1,4 @@
+import * as MirrorEventRead from "../../src/store/mirror-event-read.ts";
 import * as QuestionDispatch from "../../src/store/async-question-dispatch.ts";
 import * as QuestionDelivery from "../../src/store/async-question-delivery-state.ts";
 import * as QuestionObservation from "../../src/store/async-question-observation.ts";
@@ -106,6 +107,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.rejectUsageLimitAsyncQuestion,QuestionDispatch.rejectUsageLimitAsyncQuestion);
     assert.strictEqual(StateAccessFacade.listFilteredExisting, QueueRead.listFilteredExisting);
     assert.strictEqual(FacadeExports.listFilteredExisting, QueueRead.listFilteredExisting);
+    assert.strictEqual(StateAccessFacade.hasMirrorEvent, MirrorEventRead.hasMirrorEvent);
+    assert.strictEqual(FacadeExports.hasMirrorEvent, MirrorEventRead.hasMirrorEvent);
     assert.strictEqual(StateAccessFacade.getIdleIntent, IdleReleaseStore.getIdleIntent);
     assert.strictEqual(FacadeExports.getIdleIntent, IdleReleaseStore.getIdleIntent);
     assert.strictEqual(StateAccessFacade.pendingIdleIntents, IdleReleaseStore.pendingIdleIntents);
@@ -462,6 +465,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "rejectDefiniteAsyncQuestion",
       "rejectUsageLimitAsyncQuestion",
       "listFilteredExisting",
+      "hasMirrorEvent",
       "recordObservedFinalAnswer",
       "getObservedFinalAnswer",
       "hasObservedCompletionResidentEvidence",
@@ -493,7 +497,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 186);
+    assert.strictEqual(actual.length, 187);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

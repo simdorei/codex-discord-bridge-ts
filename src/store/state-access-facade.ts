@@ -1,3 +1,4 @@
+import * as MirrorEventRead from "./mirror-event-read.ts";
 import * as QuestionDispatch from "./async-question-dispatch.ts";
 import * as QuestionDelivery from "./async-question-delivery-state.ts";
 import * as QuestionRetention from "./async-question-retention.ts";
@@ -82,6 +83,7 @@ export const recordAsyncQuestionError: typeof QuestionDispatch.recordAsyncQuesti
 export const rejectDefiniteAsyncQuestion: typeof QuestionDispatch.rejectDefiniteAsyncQuestion = QuestionDispatch.rejectDefiniteAsyncQuestion;
 export const rejectUsageLimitAsyncQuestion: typeof QuestionDispatch.rejectUsageLimitAsyncQuestion = QuestionDispatch.rejectUsageLimitAsyncQuestion;
 export const listFilteredExisting: typeof QueueRead.listFilteredExisting = QueueRead.listFilteredExisting;
+export const hasMirrorEvent: typeof MirrorEventRead.hasMirrorEvent = MirrorEventRead.hasMirrorEvent;
 export const getIdleIntent: typeof IdleReleaseStore.getIdleIntent = IdleReleaseStore.getIdleIntent;
 export const pendingIdleIntents: typeof IdleReleaseStore.pendingIdleIntents = IdleReleaseStore.pendingIdleIntents;
 export const beforeIdleMutation: typeof IdleReleaseStore.beforeIdleMutation = IdleReleaseStore.beforeIdleMutation;
@@ -304,6 +306,7 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly hasMirrorEvent: typeof MirrorEventRead.hasMirrorEvent;
   readonly listFilteredExisting: typeof QueueRead.listFilteredExisting;
   readonly beginAsyncQuestionDispatch: typeof QuestionDispatch.beginAsyncQuestionDispatch;
   readonly confirmAsyncQuestionDispatch: typeof QuestionDispatch.confirmAsyncQuestionDispatch;
@@ -510,6 +513,7 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  hasMirrorEvent,
   listFilteredExisting,
   beginAsyncQuestionDispatch,
   confirmAsyncQuestionDispatch,
