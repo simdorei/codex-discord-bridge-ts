@@ -2,7 +2,7 @@ import {types} from "node:util";
 import {ServerRequestOccurrence,I64_MAX} from "../protocol/ids.ts";
 import {clonePendingServerRequest} from "../app-server/server-request-state.ts";
 import type {ResponseOwner,ResponseFence,DurableResponseClaim,DurableResponseCompletion} from "../app-server/response-attempt.ts";
-import {ResidentStateError} from "../app-server/resident-state.ts";
+import {createRuntimeFenceErrors} from "./fence-errors.ts";
 import {StateAccessFacade} from "../store/state-access-facade.ts";
 import type {ResponseCustodyScope} from "../store/response-custody.ts";
 
@@ -16,7 +16,7 @@ function text(value:unknown):value is string{return typeof value==="string"&&!/[
  * Caller must separately install original mutation/stop/persistence fences. */
 export function createResponseCustodyFence(path:string,runtime:string,renderError:(error:unknown)=>string):Required<ResponseFence>{
   if(!text(path)||!text(runtime)||runtime==="")throw new TypeError("Expected response store path and runtime identity");
-  if(typeof renderError!=="function"||types.isProxy(renderError)||types.isAsyncFunction(renderError)||types.isGeneratorFunction(renderError))throw new TypeError("Expected synchronous public-safe error renderer");
+  const errors=createRuntimeFenceErrors(renderError);
   const capture=StateAccessFacade.captureResponseCustody,begin=StateAccessFacade.beginResponseCustody,finish=StateAccessFacade.finishResponseCustody;
   const scope=(input:ResponseOwner):ResponseCustodyScope=>{
     const resident=own(input,"ownerId"),generation=own(input,"generation"),request=clonePendingServerRequest(own(input,"request") as ResponseOwner["request"]);
@@ -26,13 +26,7 @@ export function createResponseCustodyFence(path:string,runtime:string,renderErro
     const occurrence=Array.from(ServerRequestOccurrence.prototype.asBytes.call(request.occurrence),byte=>BigInt(byte));
     return {runtime,resident,generation,request:{id:request.id,occurrence,method:request.method,params:request.params}};
   };
-  const mapped=<T>(operation:()=>T):T=>{
-    try{return operation();}catch(error){
-      const message=renderError(error);if(types.isPromise(message))void Promise.prototype.then.call(message,undefined,()=>undefined);
-      if(!text(message))throw new TypeError("Expected public-safe response diagnostic");
-      throw new ResidentStateError({kind:"MutationHeld",message});
-    }
-  };
+  const mapped=<T>(operation:()=>T):T=>errors.run("MutationHeld",operation);
   return Object.freeze({
     responseAuthority:(request:ResponseOwner)=>mapped(()=>Object.freeze({value:capture(path,scope(request))})),
     beginResponse:(claim:DurableResponseClaim)=>mapped(()=>begin(path,scope(claim),own(claim,"authority"),own(claim,"payload"))),

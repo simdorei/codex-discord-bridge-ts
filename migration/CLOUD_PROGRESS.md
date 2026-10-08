@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,345 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,352 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2817,3 +2817,34 @@ product checks. Source finish postcondition is exact retained wire identity; it 
 re-run current queue validation after terminal handling. Source-compatible unknown serde
 fields are ignored for StopControl/StopClaim while mandatory primitive fields are checked.
 No live Codex/Discord, Windows or production-performance approval is claimed.
+
+
+## 2026-10-08 — Runtime activation and concrete native-death persistence
+
+Added ordered app-server-runtime then mutation-runtime activation and a concrete trusted
+resident persistence hook. It copies the native dead-work snapshot, uses Rust struct
+field order/transparent occurrence byte arrays, derives affected/unscoped targets and
+commits the actual incident/holds/outbox before resident replacement. Existing-only capture
+runs synchronously against an already initialized runtime store; missing/replaced schema
+fails rather than being silently recreated. StateAccessFacade now has 144 methods.
+
+Store-to-app-server errors for ordinary mutation, responses and dead-work persistence now
+share one runtime mapper and caller-provided public-safe renderer. It does not inspect
+arbitrary error fields. Ordered startup activation is not a single transaction: if the
+second step fails, the first remains committed, as in the source constructor. No resident
+is launched implicitly. Caller still owns the single-instance guard and actual owned-exit
+hook/idle-journal installation; this helper is not a proof or user-consent endpoint.
+
+Evidence .runtime/cloud-runtime-custody-persistence-132: 7 new tests; final focused50 PASS;
+full-final **3,352 PASS, zero fail/skip/cancel; strict TS exit0**. Actual local child death
+with active turn, scoped/unscoped approvals and running queue work creates the exact
+union of holds/notices before a new child is adopted. SQL failure prevents replacement
+and leaves no partial rows; explicit recovery retries the same snapshot once. Tests also
+cover immutable serializer goldens, overflow before DB creation, absent schema, partial
+activation and centralized diagnostic behavior. An intentionally invalid async callback
+fixture needed a TypeScript cast; its initial compile failure is retained separately.
+
+This closes the concrete dead-work callback for the documented initialized-store runtime
+contract, not Rust's implicit open_initialized migration behavior at every callback.
+Native Windows, descendant pipe cleanup, complete idle journal/Discord/service startup,
+initial user stop acceptance, and performance/offload/operational qualification remain.

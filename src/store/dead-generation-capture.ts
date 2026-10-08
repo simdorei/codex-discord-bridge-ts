@@ -6,7 +6,7 @@ import {rustTrim,compareUtf8Bytes} from "./restart-snapshot-pure.ts";
 import {StoreIntegrityError} from "./schema-assembly.ts";
 import {decodeTextField,textDecoderFor,decodeI64} from "./sqlite-values.ts";
 import {allJobs,serializeStoredQueueJob,type StoredQueueJob} from "./queue-read.ts";
-import {withStoreTransaction,commitStore,usingInitializedStore} from "./owned-scope.ts";
+import {withStoreTransaction,commitStore,usingInitializedStore,usingExistingStore} from "./owned-scope.ts";
 
 export interface DeadGenerationCapture {
   readonly runtimeId:string;
@@ -59,6 +59,9 @@ function captureOn(db:DatabaseSync,c:DeadGenerationCapture):boolean {
   });
 }
 export async function captureDeadGeneration(path:string,input:DeadGenerationCapture):Promise<boolean>{const c=snapshot(input);return usingInitializedStore(path,db=>captureOn(db,c));}
+/** Resident callback on an already initialized runtime store: synchronously commits
+ * before replacement, refuses missing/replaced schema instead of implicit repair. */
+export function captureDeadGenerationExisting(path:string,input:DeadGenerationCapture):boolean{const c=snapshot(input);return usingExistingStore(path,db=>captureOn(db,c));}
 
 function stageNotice(db:DatabaseSync,c:DeadGenerationCapture,target:string,index:number,jobs:readonly StoredQueueJob[]):void {
   const queued=jobs.find(j=>j.targetThreadId===target)?.channelId;

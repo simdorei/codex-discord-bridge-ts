@@ -1,10 +1,9 @@
-import {types} from "node:util";
 import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
 import {serializeSerdeValue} from "../core/serde-json.ts";
 import {validateRequestId,I64_MAX} from "../protocol/ids.ts";
 import {extractThreadId} from "../app-server/identity.ts";
 import {isObservationalRequest} from "../app-server/requests.ts";
-import {ResidentStateError} from "../app-server/resident-state.ts";
+import {createRuntimeFenceErrors} from "./fence-errors.ts";
 import type {MaintenanceClaim,MaintenanceCompletion} from "../app-server/maintenance-attempt.ts";
 import type {QueueMutationClaim,StopMutationClaim,StopMutationCompletion} from "../app-server/dispatch-attempt.ts";
 import type {ResidentMaintenanceFence} from "../app-server/maintenance-transport.ts";
@@ -19,10 +18,10 @@ function generation(g:unknown):asserts g is bigint{if(typeof g!=="bigint"||g<0n|
  * consumes an already accepted/claimed stop and never creates user consent. */
 export function createMutationCustodyFence(path:string,runtime:string,renderError:(error:unknown)=>string):ResidentMaintenanceFence{
   if(!text(path)||!text(runtime)||runtime==="")throw new TypeError("Expected mutation store and runtime identity");
-  if(typeof renderError!=="function"||types.isProxy(renderError)||types.isAsyncFunction(renderError)||types.isGeneratorFunction(renderError))throw new TypeError("Expected synchronous public-safe diagnostic renderer");
+  const errors=createRuntimeFenceErrors(renderError);
   // Pin the central operation references once; no caller can change an installed callback.
   const s={beginStop:state.beginStopWire,finishStop:state.finishStopWire,capture:state.captureStopOrigin,begin:state.beginChecked,finish:state.finish,validateQueue:state.validateQueueStartAuthorityIn,validateStop:state.validateStopRequestIn,checkMutation:state.checkMutationCustody,checkResponse:state.checkResponseCustody,checkResponses:state.checkAllResponseCustody,requireResponse:state.requireResponseUnheldIn,requireResponses:state.requireAllResponsesResolvedIn,requireStop:state.requireStopControlUnheldIn,stopHeld:state.stopControlTargetHeldExisting,targetHeld:state.deadGenerationTargetHeldExisting,sealed:state.deadGenerationSealedExisting};
-  const mapped=<T>(kind:"MutationHeld"|"DeadGenerationFence",operation:()=>T):T=>{try{return operation();}catch(error){const message=renderError(error);if(types.isPromise(message))void Promise.prototype.then.call(message,undefined,()=>undefined);if(!text(message))throw new TypeError("Expected public-safe mutation diagnostic");throw new ResidentStateError({kind,message});}};
+  const mapped=<T>(kind:"MutationHeld"|"DeadGenerationFence",operation:()=>T):T=>errors.run(kind,operation);
   const claim=(raw:MaintenanceClaim|QueueMutationClaim,queued:boolean):boolean=>mapped("MutationHeld",()=>{
     const c=cloneOwnedSerdeValue(raw) as MaintenanceClaim&QueueMutationClaim;generation(c.generation);
     if(!text(c.ownerId)||!text(c.attemptId)||!text(c.method)||(!queued&&typeof c.scoped!=="boolean"))throw new TypeError("Expected exact mutation claim");

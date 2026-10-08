@@ -170,6 +170,8 @@ export const beginStopWire: typeof StopDispatch.beginStopWire = StopDispatch.beg
 export const finishStopWire: typeof StopDispatch.finishStopWire = StopDispatch.finishStopWire;
 export const recordStopControlError: typeof StopDispatch.recordStopControlError = StopDispatch.recordStopControlError;
 
+export const captureDeadGenerationExisting: typeof DeadCapture.captureDeadGenerationExisting = DeadCapture.captureDeadGenerationExisting;
+
 export const deadTargetHeld: typeof DeadGeneration.targetIsHeld = DeadGeneration.targetIsHeld;
 export const recordPreflightFailure: typeof Preflight.recordPreflightFailure = Preflight.recordPreflightFailure;
 
@@ -382,6 +384,7 @@ export interface IStateAccessFacade {
   readonly beginStopWire: typeof StopDispatch.beginStopWire;
   readonly finishStopWire: typeof StopDispatch.finishStopWire;
   readonly recordStopControlError: typeof StopDispatch.recordStopControlError;
+  readonly captureDeadGenerationExisting: typeof DeadCapture.captureDeadGenerationExisting;
   readonly deadTargetHeld: typeof DeadGeneration.targetIsHeld;
   readonly recordPreflightFailure: typeof Preflight.recordPreflightFailure;
   readonly tryBeginAttempt: typeof QueueClaims.tryBeginAttempt;
@@ -536,6 +539,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   beginStopWire,
   finishStopWire,
   recordStopControlError,
+  captureDeadGenerationExisting,
   deadTargetHeld,
   recordPreflightFailure,
   tryBeginAttempt,

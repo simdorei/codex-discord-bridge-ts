@@ -205,6 +205,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.beginStopWire, StopDispatch.beginStopWire);
     assert.strictEqual(StateAccessFacade.finishStopWire, StopDispatch.finishStopWire);
     assert.strictEqual(StateAccessFacade.recordStopControlError, StopDispatch.recordStopControlError);
+    assert.strictEqual(StateAccessFacade.captureDeadGenerationExisting, DeadCapture.captureDeadGenerationExisting);
     assert.strictEqual(StateAccessFacade.deadTargetHeld, DeadGeneration.targetIsHeld);
     assert.strictEqual(StateAccessFacade.recordPreflightFailure, Preflight.recordPreflightFailure);
   });
@@ -285,6 +286,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "beginStopWire",
       "finishStopWire",
       "recordStopControlError",
+      "captureDeadGenerationExisting",
       "deadTargetHeld",
       "eligibleJobs",
       "enqueue",
@@ -372,7 +374,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 143);
+    assert.strictEqual(actual.length, 144);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

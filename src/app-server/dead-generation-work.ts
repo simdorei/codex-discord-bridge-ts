@@ -3,6 +3,7 @@ import {ServerRequestOccurrence,validateRequestId} from "../protocol/ids.ts";
 import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
 import {serdeValueEqual} from "../core/serde-value-equal.ts";
 import type {PendingServerRequest} from "./server-request-state.ts";
+import {serializeSerdeValue} from "../core/serde-json.ts";
 export interface DeadGenerationWork{readonly generation:bigint;readonly closedReason:string;readonly activeTurns:readonly {readonly threadId:string;readonly turnId:string}[];readonly serverRequests:readonly PendingServerRequest[]}
 export type DeadGenerationSettleResult="Settled"|"AlreadySettled"|"NotEligible"|"SnapshotChanged";
 function record(value:unknown,keys:readonly string[]):Record<string,unknown>{
@@ -30,3 +31,11 @@ export function deadGenerationWorkEqual(a:DeadGenerationWork,b:DeadGenerationWor
   return a.generation===b.generation&&a.closedReason===b.closedReason&&a.activeTurns.length===b.activeTurns.length&&a.activeTurns.every((t,i)=>t.threadId===b.activeTurns[i]!.threadId&&t.turnId===b.activeTurns[i]!.turnId)&&a.serverRequests.length===b.serverRequests.length&&a.serverRequests.every((q,i)=>{const r=b.serverRequests[i]!;return q.id===r.id&&Buffer.compare(ServerRequestOccurrence.prototype.asBytes.call(q.occurrence),ServerRequestOccurrence.prototype.asBytes.call(r.occurrence))===0&&q.method===r.method&&serdeValueEqual(q.params,r.params);});
 }
 export function deadGenerationWorkIsEmpty(work:DeadGenerationWork):boolean{return work.activeTurns.length===0&&work.serverRequests.length===0;}
+/** Rust Serialize struct order and transparent occurrence bytes. This is a receipt
+ * representation, never independent evidence of native exit or current ownership. */
+export function serializeDeadGenerationWork(input:DeadGenerationWork):string{
+  const w=cloneDeadGenerationWork(input),s=serializeSerdeValue;
+  const turns=w.activeTurns.map(t=>`{"threadId":${s(t.threadId)},"turnId":${s(t.turnId)}}`).join(",");
+  const requests=w.serverRequests.map(r=>`{"id":${s(r.id)},"occurrence":${s(Array.from(ServerRequestOccurrence.prototype.asBytes.call(r.occurrence),v=>BigInt(v)))},"method":${s(r.method)},"params":${s(r.params)}}`).join(",");
+  return `{"generation":${s(w.generation)},"closedReason":${s(w.closedReason)},"activeTurns":[${turns}],"serverRequests":[${requests}]}`;
+}
