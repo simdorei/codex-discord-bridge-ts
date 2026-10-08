@@ -25,6 +25,7 @@ export interface PortableSessionConfig{readonly process:PortableProcessConfig;re
  * Receiving this port grants admission/sealing access to this owned connection. */
 export interface PortableResidentClientPort extends ResidentDeadClientPort{
   admissionSnapshot():ReturnType<ClientLifecycle["snapshot"]>;
+  requireOwnedAdmission(permit:ClientAdmissionPermit):void;
   idleMaintenanceSnapshot(thread:string,turn:string):ReturnType<ClientRuntimeState["idleMaintenanceSnapshot"]>;
   serverResponseCandidate(id:RequestId,occurrence:ServerRequestOccurrence):PendingServerRequest;
   requireObservationLedger():void;
@@ -37,6 +38,9 @@ export interface PortableResidentClientPort extends ResidentDeadClientPort{
   respondErrorAdmitted(permit:ClientAdmissionPermit,id:RequestId,occurrence:ServerRequestOccurrence,error:RpcErrorPayload,hooks?:ResponseHooks,signal?:AbortSignal):Promise<void>;
   respondCurrentAdmitted(permit:ClientAdmissionPermit,id:RequestId,occurrence:ServerRequestOccurrence,result:unknown,hooks?:ResponseHooks,signal?:AbortSignal):Promise<void>;
 }
+const ownedResidentPorts=new WeakSet<object>();
+/** Native session provenance only; snapshots/shape-compatible objects are not pins. */
+export function isOwnedPortableResidentClientPort(value:unknown):value is PortableResidentClientPort{return value!==null&&typeof value==="object"&&ownedResidentPorts.has(value);}
 export type SessionDiagnosticRenderer=(stage:"json"|"rpc"|"stdout"|"stderr",error:unknown)=>string;
 export class PortableSessionCleanupPendingError extends Error{
   readonly session:PortableAppServerSession;
@@ -71,6 +75,7 @@ export class PortableAppServerSession{
         return this.#state.settleDeadGenerationAfterExactMatch(expected);
       },
       admissionSnapshot:()=>this.#gate.snapshot(),
+      requireOwnedAdmission:permit=>this.#gate.requirePermit(permit),
       idleMaintenanceSnapshot:(thread,turn)=>this.#gate.withOpen(()=>this.#state.idleMaintenanceSnapshot(thread,turn)),
       serverResponseCandidate:(id,occurrence)=>this.#readStateResult(()=>this.#state.serverResponseCandidate(id,occurrence)),
       requireObservationLedger:()=>this.#gate.withOpen(()=>this.#state.requireObservationLedger()),
@@ -83,6 +88,7 @@ export class PortableAppServerSession{
       respondErrorAdmitted:(permit,id,occurrence,error,hooks,signal)=>this.#responses.respondErrorAdmitted(permit,id,occurrence,error,hooks,signal),
       respondCurrentAdmitted:(permit,id,occurrence,result,hooks,signal)=>this.#responses.respondCurrentAdmitted(permit,id,occurrence,result,hooks,signal),
     });
+    ownedResidentPorts.add(this.#resident);
     this.#closer=new ClientProcessCloser(this.#logical,this.#state,this.#writer,native,async input=>{if(!(input instanceof NodeAppServerInput))throw new TypeError("Expected this session's native input");try{await input.shutdown();}finally{await input.destroyAndJoin();}});
     const dispatcher=new TransportLineDispatcher(this.#gate,this.#state,this.#pending,this.#diagnostics,{enqueueServerRequest:publishRequest,enqueueNotification:notification=>{this.#notifications.send(notification);},renderParseError:render});
     this.#tasks=[this.#supervise(drainStdout(new FatalUtf8LineReader(native.stdout),dispatcher,this.#logical,this.#diagnostics,render),"stdout"),this.#supervise(drainStderr(new FatalUtf8LineReader(native.stderr),this.#diagnostics,render),"stderr")];

@@ -1,3 +1,4 @@
+import {AppServerInvalidReplyError} from "./client-errors.ts";
 import {ResponseAttempt,type ResponseResult} from "./response-attempt.ts";
 import {responseValue,errorValue,type RpcErrorPayload,type RequestId,ServerRequestOccurrence} from "../protocol/rpc.ts";
 import {DispatchAttempt,type DispatchResult} from "./dispatch-attempt.ts";
@@ -20,14 +21,14 @@ import {types} from "node:util";
 import {TargetLocks} from "../core/keyed-locks.ts";
 import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
 import {invokeSynchronousVoid} from "../core/synchronous-void.ts";
-import {PortableAppServerSession,PortableSessionCleanupPendingError,type PortableResidentClientPort,type PortableSessionConfig,type SessionDiagnosticRenderer} from "./portable-session.ts";
-import {ResidentAdmissionState,ResidentStateError,type ReplacementCleanup} from "./resident-state.ts";
+import {PortableAppServerSession,PortableSessionCleanupPendingError,isOwnedPortableResidentClientPort,type PortableResidentClientPort,type PortableSessionConfig,type SessionDiagnosticRenderer} from "./portable-session.ts";
+import {ResidentAdmissionState,ResidentStateError,type ResidentAdmission,type ReplacementCleanup} from "./resident-state.ts";
 import {ResidentForwarders,type ResidentNotificationEvent,type ResidentServerRequestEvent} from "./resident-forwarders.ts";
 import {GenerationWatch} from "./generation-watch.ts";
 import {BoundedBroadcast} from "./broadcast.ts";
 import type {DeadGenerationWork} from "./dead-generation-work.ts";
 export type PreparedTargetMutation={readonly kind:"Ready";readonly permit:TargetMutationPermit|null}|{readonly kind:"Completed";readonly value:unknown};
-interface DispatchContext{readonly check:(()=>void)|null;readonly queueClaim:unknown|null;readonly stopClaim:unknown|null}
+interface DispatchContext{readonly check:(()=>void)|null;readonly queueClaim:unknown|null;readonly stopClaim:unknown|null;readonly clientPin:PortableResidentClientPort|null}
 /** Cancel only the caller's wait, while disposing a late Ready permit if preparation
  * was already handed to managed resume. The managed operation itself keeps running. */
 function awaitPrepared(task:Promise<PreparedTargetMutation>,signal?:AbortSignal):Promise<PreparedTargetMutation>{
@@ -127,20 +128,42 @@ export class PortableResidentLifecycle{
   /** Ordinary resident dispatch, bound to this exact native admission and the
    * first stop origin. Queue/stop metadata is local and never merged into RPC params. */
   request(method:string,params:unknown,waitMs:number,expectedGeneration:bigint|null=null,signal?:AbortSignal):Promise<unknown>{
-    return this.#requestScoped(method,params,waitMs,expectedGeneration,false,{check:null,queueClaim:null,stopClaim:null},signal);
+    return this.#requestScoped(method,params,waitMs,expectedGeneration,false,{check:null,queueClaim:null,stopClaim:null,clientPin:null},signal);
+  }
+  /** Caller must hold its exact target queue lock through an indeterminate repair.
+   * A fully flushed scoped tool timeout cannot fence an unrelated target. */
+  requestForToolRepair(method:string,params:unknown,waitMs:number,generation:bigint,signal?:AbortSignal):Promise<unknown>{return this.requestForToolRepairChecked(method,params,waitMs,generation,()=>{},signal);}
+  requestForToolRepairChecked(method:string,input:unknown,waitMs:number,generation:bigint,check:()=>void,signal?:AbortSignal):Promise<unknown>{
+    const params=cloneOwnedSerdeValue(input),thread=serdeField(params,"threadId"),scoped=typeof thread==="string"&&thread!=="";
+    const allowed=method==="thread/read"||method==="mcpServerStatus/list"||(method==="mcpServer/tool/call"&&serdeField(params,"server")==="node_repl"&&["js","js_reset"].includes(serdeField(params,"tool") as string));
+    if(!scoped||!allowed)throw new AppServerInvalidReplyError("tool repair requires a scoped node_repl request");syncFunction(check);
+    return this.#requestScoped(method,params,waitMs,generation,true,{check,queueClaim:null,stopClaim:null,clientPin:null},signal);
+  }
+  /** Internal native recovery collector only: exact currently-held client capability,
+   * not a serialized DTO or permission to inspect arbitrary recovered targets. */
+  requestForRecoveryObservation(pinned:ResidentAdmission<PortableResidentClientPort>,request:AppRequest,signal?:AbortSignal):Promise<unknown>{
+    const own=cloneAppRequest(request),thread=serdeField(own.params,"threadId");
+    if(!["thread/read","thread/turns/list","thread/goal/get"].includes(own.method)||typeof thread!=="string"||thread==="")throw new AppServerInvalidReplyError("recovery observation only supports exact read-only requests");
+    if(pinned===null||typeof pinned!=="object"||types.isProxy(pinned)||!Object.isFrozen(pinned))throw new TypeError("Expected frozen recovery admission");
+    const field=(key:string):unknown=>{const d=Object.getOwnPropertyDescriptor(pinned,key);if(!d||!Object.hasOwn(d,"value"))throw new TypeError("Expected own recovery admission field");return d.value;};
+    const client=field("client"),generation=field("generation"),permit=field("permit") as ResidentAdmission<PortableResidentClientPort>["permit"];
+    if(!isOwnedPortableResidentClientPort(client)||typeof generation!=="bigint"||generation<0n||generation>=(1n<<64n))throw new TypeError("Expected native recovery client and generation");
+    client.requireOwnedAdmission(permit);
+    const check=()=>{client.requireOwnedAdmission(permit);this.#state.withRecoveryCurrent(client,generation,()=>{});};
+    return this.#requestScoped(own.method,own.params,own.timeoutMs,generation,false,{check,queueClaim:null,stopClaim:null,clientPin:client},signal);
   }
   execute(request:AppRequest,expectedGeneration:bigint|null=null,signal?:AbortSignal):Promise<unknown>{const own=cloneAppRequest(request);return this.request(own.method,own.params,own.timeoutMs,expectedGeneration,signal);}
   executeQueueTurn(request:AppRequest,generation:bigint,inputClaim:unknown,signal?:AbortSignal):Promise<unknown>{
     request=cloneAppRequest(request);
     const claim=cloneOwnedSerdeValue(inputClaim),params=cloneOwnedSerdeValue(request.params),target=serdeField(params,"threadId"),claimedGeneration=serdeField(claim,"app_server_generation");
     if(request.method!=="turn/start"||typeof target!=="string"||rustTrim(target)===""||serdeField(claim,"target_thread_id")!==target||typeof claimedGeneration!=="bigint"||claimedGeneration<0n||claimedGeneration>=(1n<<64n)||claimedGeneration!==generation)throw new ResidentStateError({kind:"MutationHeld",message:"queue dispatch does not match its original claim"});
-    return this.#requestScoped(request.method,params,request.timeoutMs,generation,false,{check:null,queueClaim:claim,stopClaim:null},signal);
+    return this.#requestScoped(request.method,params,request.timeoutMs,generation,false,{check:null,queueClaim:claim,stopClaim:null,clientPin:null},signal);
   }
   executeStopControl(request:AppRequest,generation:bigint,inputClaim:unknown,check:()=>void,signal?:AbortSignal):Promise<unknown>{
     request=cloneAppRequest(request);
     const claim=cloneOwnedSerdeValue(inputClaim),params=cloneOwnedSerdeValue(request.params),control=serdeField(claim,"control"),g=serdeField(control,"generation");
     if(this.#maintenance?.fence==null||request.method!=="turn/interrupt"||!serdeValueEqual(serdeField(control,"target")??null,serdeField(params,"threadId")??null)||!serdeValueEqual(serdeField(control,"turn")??null,serdeField(params,"turnId")??null)||typeof g!=="bigint"||g<0n||g>=(1n<<64n)||g!==generation||serdeField(control,"resident")!==this.instanceId)throw new ResidentStateError({kind:"MutationHeld",message:"stop dispatch does not match original durable authority"});
-    syncFunction(check);return this.#requestScoped(request.method,params,request.timeoutMs,generation,false,{check,queueClaim:null,stopClaim:claim},signal);
+    syncFunction(check);return this.#requestScoped(request.method,params,request.timeoutMs,generation,false,{check,queueClaim:null,stopClaim:claim,clientPin:null},signal);
   }
   respond(id:RequestId,occurrence:ServerRequestOccurrence,result:unknown,generation:bigint,signal?:AbortSignal):Promise<void>{
     const payload=responseValue(id,result);return this.#respond(payload.id,occurrence,payload,false,generation,signal);
@@ -181,6 +204,7 @@ export class PortableResidentLifecycle{
     signal?.throwIfAborted();const options=this.#maintenance!,check=context.check??(()=>{});invokeSynchronousVoid(check,{},[]);
     const admission=this.#state.admitRequest(expectedGeneration);let target:TargetMutationPermit|null=null,written:WrittenRequestGuard|undefined;
     try{
+      if(context.clientPin!==null&&context.clientPin.identity!==admission.client.identity)throw new ResidentStateError({kind:"MutationHeld",message:"recovery observation admission changed client identity"});
       const prepared=await awaitPrepared(this.prepareTargetMutation(method,params,admission.generation,currentStopOrigin(),check),signal);
       if(prepared.kind==="Completed")return prepared.value;target=prepared.permit;signal?.throwIfAborted();
       options.fence?.checkRequest(admission.generation,method,params);

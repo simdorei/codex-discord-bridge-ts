@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,212 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,217 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2592,3 +2592,29 @@ Durable response fence callbacks remain controlled test adapters; production SQL
 binding, repair/recovery APIs, native Windows, Discord and operational/performance
 qualification are not complete. No live approval, Codex request or production store was
 used. Existing JavaScript cancellation/drop and inherited-pipe limitations remain.
+
+
+## 2026-10-08 — Scoped repair dispatch and pinned native recovery reads
+
+Added source-bounded node_repl repair dispatch and recovery-observation request entry
+points. Repairs allow only exact scoped read/status requests or node_repl js/js_reset;
+original custody is rechecked around actual preflight and the durable wire claim.
+Fully flushed repair timeout remains target-isolated under the existing caller contract.
+
+Recovery reads accept only exact read/turn-list/goal requests with a nonempty target,
+a genuine native-session client capability and its still-live owned admission. The
+same client identity, generation, healthy/open state and absence of pending restart
+are checked through the existing resident guard, including actual writer preflight.
+Native client provenance uses a private WeakSet; copying a port shape or proxying it
+cannot turn injected methods into recovery authority.
+
+Evidence .runtime/cloud-repair-recovery-dispatch-124: 5 new native/SQLite fixture tests,
+focused 39 PASS; full **3,217 PASS, 0 fail/skip/cancel; strict TS exit 0**. Covers bounded
+repair methods, custody denial after claim but before bytes, exact not_sent completion,
+released pins, cross-owner pins, pending restart and zero proxy/injected method calls.
+
+Repair callers still must retain their target queue lock through uncertain outcomes;
+this entry point does not acquire that higher-level lock. Bounded recovery collection,
+opaque observation lifetime/publication, actual SQL adapters, native Windows, Discord
+and production/performance qualification remain pending. Tests never execute a live
+node_repl tool; local helper children only exchange controlled protocol fixtures.
