@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,860 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,883 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3892,3 +3892,30 @@ Strict TS exit 0; focused **30 PASS**; full Linux **3,860 PASS / 0 fail / 0 skip
 HTTP routes remain channel message creation and typing only. Gateway/interaction
 transport and full service startup, live Discord, Windows/performance/operational
 qualification remain unfinished; no merge or deployment.
+
+
+## Checkpoint 170 — Gateway identity and message-gap authority
+
+Added sticky READY identity/first-conflict state with capacity-4 change hints and
+authoritative snapshots. Added per-channel gap state with earliest (timestamp,id),
+merged reason bits, saturating observation/revision counters and capacity-16 hints.
+A lagged hint never replaces the authoritative snapshot. Opaque notices and fences
+are authenticated by private WeakMaps: copied/foreign/stale/consumed tokens cannot
+clear later observations. Clearing retains revision history; another channel's gap
+does not invalidate a clean channel fence.
+
+The TS barrier is synchronous and single-event-loop, not a cross-worker mutex. A
+fenced action cannot reenter gap APIs, be async/generator/proxy, or return Promise/
+thenable authority. Throwing work poisons future claims while close still cleans
+waiters. Native Rust panic and implicit Drop are not claimed equivalent; explicit
+close/dispose and fail-closed callback handling are the supported Node profile.
+Input records reject accessors/proxies/coercion without hooks.
+
+Twenty-three new tests cover sticky/late identity, lag/cancellation/close, earliest
+ordering, stale/foreign/copied notices, revision-bound fences, channel isolation,
+poisoning and data barriers. Counter arithmetic is tested at u64::MAX; an actual
+tracker advanced u64::MAX times and the resulting exhausted acknowledgement path
+were not executed. Strict TS exit 0; focused **23 PASS**; full Linux **3,883 PASS /
+0 fail / 0 skip / 0 cancelled**. Evidence `.runtime/cloud-gateway-gap-identity-170/`.
+Typed ingress queues, Gateway decoding/network and runtime integration remain next.
+No live Discord, platform/operational approval or deployment is claimed.
