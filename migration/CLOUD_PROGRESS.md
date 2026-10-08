@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,096 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,109 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2277,3 +2277,31 @@ Effect inputs are trusted owned-producer instructions, never user-selected proof
 API cannot authenticate an arbitrary caller's NoRequiredStore assertion. Production
 notification-to-effect binding, durable idle journal integration and complete bridge
 operation are still unfinished. No live store or external transport was touched.
+
+
+## 2026-10-08 — Durable idle intent state transitions
+
+Centralized idle intent selection/decoding and added owner/generation/revision-bound
+mutation, transition, verification, pending and exited-owner operations. AwaitUnload
+permits exactly one matching-owner resubscription; uncertain states never auto-resume.
+The source distinction between returned prior detail and updated stored detail is
+preserved. Transition CAS includes every identity plus state; diagnostic text is not
+an authority field. Diagnostics retain at most 512 Unicode scalars.
+
+Observation-aware verification reads the token, bot obligations and durable coverage
+in one deferred transaction. Borrowed cleanup preserves the caller transaction and
+cancels only unsent candidates. StateAccessFacade is the owned-path entry point; its
+explicit API allowlist/reference assertions now cover 122 methods.
+
+Evidence .runtime/cloud-idle-release-store-113: focused 36 PASS (13 new), full
+**3,109 PASS, 0 fail/skip/cancel; strict TS exit 0**. Actual isolated SQLite tests
+cover UTF-8/UTF-16, large exact generations, stale identity CAS, trigger-induced
+ignored/deleted writes, pending capacity/order, transaction rollback, owner isolation,
+input snapshotting and unresolved observation coverage.
+
+Exited-owner storage requires upstream proof from the exact old child; this leaf
+cannot establish native exit. Revision arithmetic exhaustion fails closed in the
+returned-value path; equivalence with native build-dependent Rust overflow is not
+claimed. The synchronous app-server journal still needs a source-backed adapter to
+the asynchronous initialized-store owner, and complete runtime/Discord/Windows
+integration and performance qualification remain unfinished. No live DB was used.

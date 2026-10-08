@@ -1,3 +1,4 @@
+import * as IdleReleaseStore from "./idle-release-store.ts";
 import * as ObservationProof from "./observation-proof.ts";
 import * as ObservationLedger from "./observation-ledger.ts";
 import * as CompletionPayload from "./completion-payload.ts";
@@ -49,6 +50,13 @@ import * as QueueClaims from "./queue-claims.ts";
 import * as DeadGeneration from "./dead-generation-admission.ts";
 import * as Preflight from "./queue-preflight-failure.ts";
 
+export const getIdleIntent: typeof IdleReleaseStore.getIdleIntent = IdleReleaseStore.getIdleIntent;
+export const pendingIdleIntents: typeof IdleReleaseStore.pendingIdleIntents = IdleReleaseStore.pendingIdleIntents;
+export const beforeIdleMutation: typeof IdleReleaseStore.beforeIdleMutation = IdleReleaseStore.beforeIdleMutation;
+export const transitionIdleIntent: typeof IdleReleaseStore.transitionIdleIntent = IdleReleaseStore.transitionIdleIntent;
+export const verifyIdleIntent: typeof IdleReleaseStore.verifyIdleIntent = IdleReleaseStore.verifyIdleIntent;
+export const verifyIdleIntentWithObservations: typeof IdleReleaseStore.verifyIdleIntentWithObservations = IdleReleaseStore.verifyIdleIntentWithObservations;
+export const settleExitedIdleOwner: typeof IdleReleaseStore.settleExitedIdleOwner = IdleReleaseStore.settleExitedIdleOwner;
 export const certifyObservation: typeof ObservationProof.certifyObservation = ObservationProof.certifyObservation;
 export const finishObservationPage: typeof ObservationProof.finishObservationPage = ObservationProof.finishObservationPage;
 export const activateObservation: typeof ObservationLedger.activateObservation = ObservationLedger.activateObservation;
@@ -209,6 +217,14 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly getIdleIntent: typeof IdleReleaseStore.getIdleIntent;
+  readonly pendingIdleIntents: typeof IdleReleaseStore.pendingIdleIntents;
+  readonly beforeIdleMutation: typeof IdleReleaseStore.beforeIdleMutation;
+  readonly transitionIdleIntent: typeof IdleReleaseStore.transitionIdleIntent;
+  readonly verifyIdleIntent: typeof IdleReleaseStore.verifyIdleIntent;
+  readonly verifyIdleIntentWithObservations: typeof IdleReleaseStore.verifyIdleIntentWithObservations;
+  readonly settleExitedIdleOwner: typeof IdleReleaseStore.settleExitedIdleOwner;
+
   readonly certifyObservation: typeof ObservationProof.certifyObservation;
   readonly finishObservationPage: typeof ObservationProof.finishObservationPage;
 
@@ -339,6 +355,14 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  getIdleIntent,
+  pendingIdleIntents,
+  beforeIdleMutation,
+  transitionIdleIntent,
+  verifyIdleIntent,
+  verifyIdleIntentWithObservations,
+  settleExitedIdleOwner,
+
   certifyObservation,
   finishObservationPage,
 

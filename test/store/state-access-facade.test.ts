@@ -1,3 +1,4 @@
+import * as IdleReleaseStore from "../../src/store/idle-release-store.ts";
 import * as ObservationProof from "../../src/store/observation-proof.ts";
 import * as ObservationLedger from "../../src/store/observation-ledger.ts";
 import * as FacadeExports from "../../src/store/state-access-facade.ts";
@@ -56,6 +57,21 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.getIdleIntent, IdleReleaseStore.getIdleIntent);
+    assert.strictEqual(FacadeExports.getIdleIntent, IdleReleaseStore.getIdleIntent);
+    assert.strictEqual(StateAccessFacade.pendingIdleIntents, IdleReleaseStore.pendingIdleIntents);
+    assert.strictEqual(FacadeExports.pendingIdleIntents, IdleReleaseStore.pendingIdleIntents);
+    assert.strictEqual(StateAccessFacade.beforeIdleMutation, IdleReleaseStore.beforeIdleMutation);
+    assert.strictEqual(FacadeExports.beforeIdleMutation, IdleReleaseStore.beforeIdleMutation);
+    assert.strictEqual(StateAccessFacade.transitionIdleIntent, IdleReleaseStore.transitionIdleIntent);
+    assert.strictEqual(FacadeExports.transitionIdleIntent, IdleReleaseStore.transitionIdleIntent);
+    assert.strictEqual(StateAccessFacade.verifyIdleIntent, IdleReleaseStore.verifyIdleIntent);
+    assert.strictEqual(FacadeExports.verifyIdleIntent, IdleReleaseStore.verifyIdleIntent);
+    assert.strictEqual(StateAccessFacade.verifyIdleIntentWithObservations, IdleReleaseStore.verifyIdleIntentWithObservations);
+    assert.strictEqual(FacadeExports.verifyIdleIntentWithObservations, IdleReleaseStore.verifyIdleIntentWithObservations);
+    assert.strictEqual(StateAccessFacade.settleExitedIdleOwner, IdleReleaseStore.settleExitedIdleOwner);
+    assert.strictEqual(FacadeExports.settleExitedIdleOwner, IdleReleaseStore.settleExitedIdleOwner);
+
     assert.strictEqual(StateAccessFacade.certifyObservation, ObservationProof.certifyObservation);
     assert.strictEqual(FacadeExports.certifyObservation, ObservationProof.certifyObservation);
     assert.strictEqual(StateAccessFacade.finishObservationPage, ObservationProof.finishObservationPage);
@@ -186,6 +202,14 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
   it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
+      "getIdleIntent",
+      "pendingIdleIntents",
+      "beforeIdleMutation",
+      "transitionIdleIntent",
+      "verifyIdleIntent",
+      "verifyIdleIntentWithObservations",
+      "settleExitedIdleOwner",
+
       "certifyObservation",
       "finishObservationPage",
 
@@ -301,7 +325,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 115);
+    assert.strictEqual(actual.length, 122);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
