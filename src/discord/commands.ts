@@ -22,3 +22,6 @@ export function slashCommands(qa:boolean):readonly DiscordSlashCommand[]{return 
 export function slashCommandRegistrationRequest(applicationId:bigint,guildId:bigint|null,qa:boolean):{readonly method:'PUT';readonly path:string;readonly body:string}{
  const valid=(v:bigint)=>{if(typeof v!=='bigint'||v<=0n||v>(1n<<64n)-1n)throw new TypeError('Expected nonzero u64 Discord ID');};valid(applicationId);if(guildId!==null)valid(guildId);return Object.freeze({method:'PUT',path:`applications/${applicationId}/${guildId===null?'':`guilds/${guildId}/`}commands`,body:JSON.stringify(slashCommands(qa))});
 }
+
+/** Exact supported registration route, shared by wire and rate namespace checks. */
+export function isCommandRegistrationPath(path:unknown):path is string{if(typeof path!=='string')return false;const match=/^applications\/([1-9][0-9]{0,19})\/(?:guilds\/([1-9][0-9]{0,19})\/)?commands$/u.exec(path);return match!==null&&match[0]===path&&BigInt(match[1]!)<(1n<<64n)&&(match[2]===undefined||BigInt(match[2])<(1n<<64n));}

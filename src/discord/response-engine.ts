@@ -1,3 +1,4 @@
+import {slashCommandRegistrationRequest} from './commands.ts';
 import {decodeDiscordGatewayBotInfoBytes,DiscordGatewayModelError,type DiscordGatewayBotInfo} from './model/gateway-info.ts';
 import {setImmediate as yieldToRuntime} from 'node:timers/promises';
 import {types} from 'node:util';
@@ -7,7 +8,8 @@ import type {IdempotentMessageRequest} from './idempotent-message.ts';
 import {DiscordTransportFault} from './transport-fault.ts';
 import type {DiscordReceiptTransport} from '../runtime/completion/receipt-sender.ts';
 import type {TypingTransport} from '../runtime/completion/typing.ts';
-export interface DiscordWireRequest{readonly method:'POST'|'GET';readonly path:string;readonly body:string|null;readonly authorization:string|null}
+export type DiscordHttpMethod='POST'|'GET'|'PUT';
+export interface DiscordWireRequest{readonly method:DiscordHttpMethod;readonly path:string;readonly body:string|null;readonly authorization:string|null}
 /** Response/body/decompression/socket custody belongs to this trusted adapter. release
  * must cancel/drain and settle owned IO, even when the caller did not read the body. */
 export interface DiscordWireResponse{readonly status:number;readonly headers:ReadonlyMap<string,Uint8Array>;bytes():Promise<Uint8Array>;release():Promise<void>}
@@ -16,7 +18,7 @@ export interface DiscordHttpWire{request(input:DiscordWireRequest,headerTimeoutM
  * header update and permits further queued work; release is idempotent fallback for
  * pre-response failures, not a second grant or a delay until body decoding finishes. */
 export interface DiscordRatePermit{complete(status:number,headers:ReadonlyMap<string,Uint8Array>):void;release():void}
-export interface DiscordRateLimiter{acquire(method:'POST'|'GET',path:string,signal:AbortSignal):Promise<DiscordRatePermit>}
+export interface DiscordRateLimiter{acquire(method:DiscordHttpMethod,path:string,signal:AbortSignal):Promise<DiscordRatePermit>}
 /** Mandatory complete twilight Message-compatible decoder, not an id-only JSON probe.
  * Its full implementation/qualification is separate; there is no permissive default. */
 export interface DiscordMessageDecoder{decode(body:Uint8Array):bigint}
@@ -49,7 +51,8 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
  }
  createTyping(id:bigint,signal:AbortSignal):Promise<void>{return this.#run(async owned=>{await this.#request('POST',`channels/${channel(id)}/typing`,null,null,()=>new Error('unused typing decoder'),owned);},signal);}
  getGatewayBot(signal?:AbortSignal):Promise<DiscordGatewayBotInfo>{return this.#run(owned=>this.#request('GET','gateway/bot',null,decodeDiscordGatewayBotInfoBytes,()=>new DiscordGatewayModelError(),owned),signal) as Promise<DiscordGatewayBotInfo>;}
- async #request<T>(method:'POST'|'GET',path:string,body:string|null,decode:((bytes:Uint8Array)=>T)|null,decodeFailure:()=>Error,signal:AbortSignal):Promise<T|void>{
+ registerSlashCommands(applicationId:bigint,guildId:bigint|null,qa:boolean,signal?:AbortSignal):Promise<void>{const request=slashCommandRegistrationRequest(applicationId,guildId,qa);return this.#run(async owned=>{await this.#request('PUT',request.path,request.body,null,()=>new Error('unused registration decoder'),owned);},signal);}
+ async #request<T>(method:DiscordHttpMethod,path:string,body:string|null,decode:((bytes:Uint8Array)=>T)|null,decodeFailure:()=>Error,signal:AbortSignal):Promise<T|void>{
   const request:DiscordWireRequest=Object.freeze({method,path,body,authorization:this.#authorization});
   for(;;){signal.throwIfAborted();let permit:DiscordRatePermit|undefined,response:DiscordWireResponse|undefined;
    try{

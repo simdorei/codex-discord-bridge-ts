@@ -1,5 +1,6 @@
+import {isCommandRegistrationPath} from './commands.ts';
 import {DiscordChannelRateState,type ChannelRateHeaders,type RateClock} from './channel-rate-state.ts';
-import type {DiscordRateLimiter,DiscordRatePermit} from './response-engine.ts';
+import type {DiscordRateLimiter,DiscordRatePermit,DiscordHttpMethod} from './response-engine.ts';
 import {invokeSynchronousVoid} from '../core/synchronous-void.ts';
 export class UnsupportedRateResetError extends RangeError{constructor(){super('Rate reset duration is outside the supported nonnegative finite profile');this.name='UnsupportedRateResetError';}}
 function ascii(value:Uint8Array|undefined):string{if(value===undefined||value.some(n=>n<32||n>126))throw new SyntaxError('Missing or non-ASCII rate header');return Buffer.from(value).toString('ascii');}
@@ -38,7 +39,7 @@ export function parseChannelRateHeaders(input:ReadonlyMap<string,Uint8Array>,now
 export class DiscordChannelRateLimiter implements DiscordRateLimiter{
  readonly #state:DiscordChannelRateState;readonly #now:()=>number;readonly #report:(error:unknown)=>void;
  constructor(options:{globalLimit?:number;clock?:RateClock;report:(error:unknown)=>void}){this.#state=new DiscordChannelRateState(options.globalLimit,options.clock);this.#now=options.clock===undefined?()=>performance.now():options.clock.now.bind(options.clock);this.#report=options.report;}
- async acquire(method:'POST'|'GET',path:string,signal:AbortSignal):Promise<DiscordRatePermit>{if(!(method==='GET'&&path==='gateway/bot')&&!(method==='POST'&&path!=='gateway/bot'))throw new TypeError('Unsupported Discord rate endpoint method');const permit=await this.#state.acquire(path,signal);return Object.freeze({complete:(_status:number,values:ReadonlyMap<string,Uint8Array>)=>{
+ async acquire(method:DiscordHttpMethod,path:string,signal:AbortSignal):Promise<DiscordRatePermit>{if(!(method==='GET'&&path==='gateway/bot')&&!(method==='POST'&&path.startsWith('channels/'))&&!(method==='PUT'&&isCommandRegistrationPath(path)))throw new TypeError('Unsupported Discord rate endpoint method');const permit=await this.#state.acquire(path,signal);return Object.freeze({complete:(_status:number,values:ReadonlyMap<string,Uint8Array>)=>{
   let parsed:ChannelRateHeaders|null;try{parsed=parseChannelRateHeaders(values,this.#now());}catch(error){invokeSynchronousVoid(this.#report,{},[error]);if(!(error instanceof SyntaxError))throw error;parsed=null;}permit.complete(parsed);
  },release:()=>permit.release()});}
  close(reason?:unknown):Promise<void>{return this.#state.close(reason);}

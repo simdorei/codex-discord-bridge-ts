@@ -16,7 +16,7 @@ export interface DiscordChannelClientOptions{
 }
 /** One owned channel-profile client shares wire, rate state and token invalidation
  * across typing/messages. It supplies the complete response decoder internally.
- * Gateway discovery shares this owner; interaction routes and service bootstrap
+ * Gateway discovery and command registration share this owner; interaction callbacks and service bootstrap
  * remain separate scopes. */
 export class DiscordChannelClient implements DiscordReceiptTransport,TypingTransport{
  readonly #wire:NodeDiscordHttpWire;readonly #rate:DiscordChannelRateLimiter;readonly #engine:DiscordResponseEngine;#closing:Promise<void>|null=null;
@@ -45,6 +45,7 @@ export class DiscordChannelClient implements DiscordReceiptTransport,TypingTrans
  get ownedSockets():number{return this.#wire.ownedSockets;}
  /** Abort all three owners together, then join them. Waiting for just the engine
   * would not by itself prove keep-alive sockets and rate timers were reclaimed. */
+ registerSlashCommands(applicationId:bigint,guildId:bigint|null,qa:boolean,signal?:AbortSignal):Promise<void>{return this.#engine.registerSlashCommands(applicationId,guildId,qa,signal);}
  close(reason:unknown=new Error('Discord channel client stopped')):Promise<void>{
   if(this.#closing!==null)return this.#closing;
   this.#closing=(async()=>{const results=await Promise.allSettled([this.#engine.close(reason),this.#rate.close(reason),this.#wire.close()]);const errors=results.flatMap(r=>r.status==='rejected'?[r.reason]:[]);if(errors.length===1)throw errors[0];if(errors.length>1)throw new AggregateError(errors,'Discord channel client cleanup failed');})();return this.#closing;
