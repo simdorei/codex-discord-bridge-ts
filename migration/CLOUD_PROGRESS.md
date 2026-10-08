@@ -4252,3 +4252,25 @@ passes through native zstd and minimal decoding.
 Strict TS exit0; focused **14 PASS**; full Linux **4,093 PASS /0 fail/0 skip/0 cancelled**.
 Evidence `.runtime/cloud-gateway-packet-control-183/`. Timer/session controller and
 complete dispatch admission, real Discord/Windows/performance/operations remain pending.
+
+
+## Checkpoint 184 — central Gateway session and control-send state
+
+Added a single pure owner for phases, resume session/URL, heartbeat receipt/flush
+state, minimal session packet processing and pending control sends. Received activity
+is recorded before minimal payload failure, and any event prevents the source zombie
+check. ACKs are recognized once and only after actual send completion. Times use
+integer nanoseconds with an explicit trusted jitter supplier; real scheduling remains
+external. Zero heartbeat intervals fail instead of starting an invalid timer.
+
+Pending command tickets distinguish pre-payload failure (retain unsent data) from
+post-consumption failure (retain only the source empty-flush phase, never replay
+old payload bytes). Identify grants bind to the current Hello/connection ticket;
+stale or copied grants cannot mutate the next connection. Fatal closure stays terminal.
+Normal local close clears session; resumable/transport close retains it.
+
+Strict TS exit0; focused **24 PASS**; full Linux **4,117 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-gateway-session-184/`. This is central state and last-latency
+bookkeeping, not full aggregate metrics, timer scheduling, identify/rate queue, socket
+reconnection or full event admission. Real Discord/Windows/performance qualification
+remains pending.
