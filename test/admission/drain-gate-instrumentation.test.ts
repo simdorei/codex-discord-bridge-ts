@@ -9,7 +9,7 @@ import { AdmissionGate } from "../../src/admission/drain-gate.ts";
 import type { DrainFenceKeyRecord } from "../../src/admission/owned-key.ts";
 
 const BASE_GATE_SHA256 = "48c3752547ac9da9a938c39694051d26362b2cb9e0fcd03505cfe711b84eb8df";
-const BASE_KEY_SHA256 = "41e1fd6125b9ae1efd2587895c2f8b2cf942896c76fd9e8fc6cfdaff77de7f72";
+const BASE_KEY_SHA256 = "864fa8ed7d51888503868e8ee0e07f4b3a4017f39d665b88dcaca762b9a7e6a8";
 
 export const INSTRUMENTATION_INSERTION = `
 // __AGY_INSTRUMENTATION_APPENDED_INSERTION__

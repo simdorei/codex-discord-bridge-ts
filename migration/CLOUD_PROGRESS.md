@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,613 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,623 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5206,3 +5206,33 @@ deadline priority, wrong tags, HTTP versus invariant failure, forced cancellatio
 lazy-handler closure, receiver cleanup errors and real awaited async cleanup.
 Full dispatcher custody, seven-consumer startup and live/Windows qualification
 remain incomplete. No external interaction was processed.
+
+
+## Interaction restart-drain admission (230)
+
+- Direct source-backed port of pinned Rust discord_dispatch/admission.rs. A shared gate
+  admits ordinary work while unsealed; after sealing, only Approval, BoundApproval,
+  Input, BoundInput and Busy/Stop components remain eligible while controls are open.
+  Autocomplete, Busy/Steer/Queue/Ignore, AsyncChoice and recovery decisions stay ordinary.
+  Closing controls rejects all five controls. A successful control returns sealed=false
+  even while the gate is sealed: this result flag means admission was rejected.
+- Borrowed gate entry retains the actual AdmissionPermit. Caller must release on all
+  early exits or transfer with queued work; this helper does not implement that complete
+  dispatcher lifecycle, Discord acknowledgement, durable custody or queue delivery.
+  Missing gate/work preserves the original no-admission short circuit.
+- Routed work is now privately branded without changing its serialized fields. Gate
+  entry captures owned methods. Private DrainGateError records support safe transparent
+  Admission error text and original cause retention without executing mutable fields.
+  Admission failures remain fatal under the existing lane error policy.
+- Actual Linux Node 24.21.0: ten new tests; focused admission+instrumented gate 22 PASS;
+  full 4,623 PASS, zero failures/cancellations/skips; strict TypeScript exit 0.
+  The initial new test incorrectly assumed a slash stop command exists in the source
+  catalogue; corrected to actual ordinary slash/autocomplete, with the original retained.
+  The initial full run stopped its instrumented gate suite on the prior owned-key SHA:
+  4,611 passed and 12 cancelled. After reading the metadata-only delta, refreshed the
+  exact source pin; all instrumentation and behavioral assertions remain intact.
+- Evidence: .runtime/cloud-runtime-interaction-admission-230/source-inputs.json,
+  instrumentation-pin-review.json, initial-focused-tests.log, initial-full-tests.log,
+  final typecheck/focused/full logs and verification-result.json.
+  Private branding and error records are Node ownership mechanisms. This does not prove
+  Rust Mutex poisoning, cross-worker shared memory, Windows behavior or full service parity.
