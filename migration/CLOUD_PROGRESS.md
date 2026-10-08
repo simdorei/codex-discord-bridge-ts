@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,504 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,507 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4965,3 +4965,23 @@ Strict TS exit0, focused15 PASS (6 new plus9 owned-client regressions), full Lin
 setup through actual PUT+POST, verify stable nonce/allowed mentions, cancellation,
 method capture and shared-client lifetime. This is not live Discord registration,
 full seven-consumer service startup or Windows/operational approval.
+
+
+## Checkpoint 219 — real loopback Gateway-to-Ready chain
+
+Added three integration regressions without production source changes. Actual
+HTTP discovery creates paused recommended ownership; real WebSocket HELLO/Identify/
+READY traverses the full decoder and sticky identity into Ready setup, which sends
+actual shared-client PUT registration and nonce-enforced startup POST. Explicit
+shutdown joins Ready, receive-error consumer, shard tasks, queue and HTTP sockets.
+
+A raw-session-parseable but incomplete full READY produces a receive-error and
+cannot authorize registration until a valid READY arrives. A later conflicting
+READY fails the actual Ready consumer without another registration or notice.
+Remaining interaction/message receivers are explicitly disposed by the fixture;
+this is not a claim that all seven production consumer lanes are wired.
+
+Strict TS exit0, focused3 PASS, full Linux **4,507 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-gateway-ready-integration-219/`. All endpoints are literal
+loopback with fake/no credentials. Live Discord/Codex, main service bootstrap,
+Windows, performance and operational qualification remain unverified.
