@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,517 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,528 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5006,3 +5006,24 @@ Evidence `.runtime/cloud-runtime-message-consumer-220/` pins message/spawn/ident
 source. Tests cover buffered-before-Ready, serial processing, distinct lane progress,
 active async cleanup, conflict, closed lane, handler errors and forced cancellation.
 No claim of complete production consumer or live Discord/Codex integration.
+
+
+## Checkpoint 221 — interaction user/channel access gate
+
+Added a privately copied immutable policy snapshot and pure access decision over
+fully decoded branded interactions. User denial precedes channel denial, including
+Ping inputs. Empty user allowlist means unrestricted users, but even allow-all
+channels requires an actual channel identity. Explicit and mirrored channels are
+combined; structured channel wins over deprecated channel_id. member.user precedes
+direct user, with null/missing member user falling back exactly as source author().
+
+Source u64 policy sets may contain zero (which no decoded Discord Id can match);
+full-width IDs stay bigint. Input array mutation, accessor entries, forged payloads
+and policy subclass overrides cannot broaden the stored policy. Decisions retain
+channel/user/source-message IDs but do not copy the interaction token. Allowed is
+only this access gate, not command validity, durable runtime admission or execution.
+Command/component routing and actual response effects remain separate work.
+
+Strict TS exit0, focused11 PASS, full Linux **4,528 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-discord-interaction-access-221/` pins source access policy,
+its contract tests and Twilight author precedence. No live permissions were changed.
