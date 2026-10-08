@@ -25,6 +25,7 @@ export interface PortableSessionConfig{readonly process:PortableProcessConfig;re
  * Receiving this port grants admission/sealing access to this owned connection. */
 export interface PortableResidentClientPort extends ResidentDeadClientPort{
   admissionSnapshot():ReturnType<ClientLifecycle["snapshot"]>;
+  idleMaintenanceSnapshot(thread:string,turn:string):ReturnType<ClientRuntimeState["idleMaintenanceSnapshot"]>;
   requestAdmitted(permit:ClientAdmissionPermit,method:string,params:unknown,waitMs:number,hooks?:RequestHooks,signal?:AbortSignal):Promise<unknown>;
   notifyAdmitted(permit:ClientAdmissionPermit,method:string,params:unknown,signal?:AbortSignal):Promise<void>;
   respondAdmitted(permit:ClientAdmissionPermit,id:RequestId,occurrence:ServerRequestOccurrence,result:unknown,hooks?:ResponseHooks,signal?:AbortSignal):Promise<void>;
@@ -65,6 +66,7 @@ export class PortableAppServerSession{
         return this.#state.settleDeadGenerationAfterExactMatch(expected);
       },
       admissionSnapshot:()=>this.#gate.snapshot(),
+      idleMaintenanceSnapshot:(thread,turn)=>this.#gate.withOpen(()=>this.#state.idleMaintenanceSnapshot(thread,turn)),
       requestAdmitted:(permit,method,params,waitMs,hooks,signal)=>this.#requests.requestAdmitted(permit,method,params,waitMs,hooks,signal),
       notifyAdmitted:(permit,method,params,signal)=>this.#requests.notifyAdmitted(permit,method,params,signal),
       respondAdmitted:(permit,id,occurrence,result,hooks,signal)=>this.#responses.respondAdmitted(permit,id,occurrence,result,hooks,signal),

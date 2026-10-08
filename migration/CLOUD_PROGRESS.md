@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,135 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,145 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2357,3 +2357,32 @@ forged prototypes/proxies/accessors, commit errors, all result dispositions, rep
 attempt rejection, invalid phases and callback mutation. Persistence is a controlled
 port in this suite; durable SQL adapter, actual writer-hook composition and complete
 resident/Discord integration remain unfinished. No live service was called.
+
+
+## 2026-10-08 — Native maintenance request-writer binding
+
+Bound maintenance RPCs to one existing resident admission and the exact session's
+serialized native writer. Preflight preserves dispatch check, resident generation/
+identity/health, exclusive target and journal verification, durable fence check,
+local-idle checks and exact wire claim ordering before bytes. Actual write hooks
+supply NotStarted/Partial/Flushed; no caller cancellation is passed to the managed RPC.
+
+Central ClientRuntimeState now produces a synchronous read-only maintenance snapshot
+for notification progress, exact terminal witness, active turn and blocking requests.
+The session's frozen internal capability binds that snapshot to its private lifecycle
+gate. Unattributed and responding requests block; unrelated thread requests do not.
+Maintenance transport accepts only the four source maintenance method names.
+
+Evidence .runtime/cloud-maintenance-transport-116: 10 new tests, full **3,145 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Actual locally spawned Node helper children and
+stdio test resume settlement, fresh unload read, Remote replies, fully-flushed timeout,
+transport loss, poisoned generation, released admission, no bytes after denied preflight
+and missing terminal witness. These are real local pipes, not a live Codex service.
+
+Healthy fully-flushed owned Timeout does not quarantine. Unknown native/adapter failures
+after write start conservatively trigger unfinished-guard quarantine, without guessing
+an error kind from its message. Complete native error taxonomy equivalence is still
+unverified. Durable fence/journal are controlled synchronous ports here; owned resident
+entry points, real SQL adapters and complete production lifecycle remain unfinished.
+Initial contextual function typing and fixture occurrence-constructor diagnostics were
+corrected before tests; no product assertions were weakened.

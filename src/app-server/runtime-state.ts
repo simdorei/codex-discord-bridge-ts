@@ -30,6 +30,16 @@ export class ClientRuntimeState{
   claimTransportClose(reason:string):Readonly<{reason:string;first:boolean}>{text(reason);this.#initialized=false;this.#processId=null;const first=this.#closedReason===null;if(first){this.#closedReason=reason;this.#notifications.close();}return Object.freeze({reason:this.#closedReason!,first});}
   recordNotification(notification:AppNotification):void{this.#notifications.record(notification);}
   activeTurnId(thread:string):string|null{return this.#notifications.activeTurnId(thread);}
+  /** One synchronous snapshot for subscription-maintenance checks. It is transient
+   * evidence only; durable observation coverage is checked independently by the journal. */
+  idleMaintenanceSnapshot(thread:string,turn:string){
+    text(thread);text(turn);
+    return Object.freeze({caughtUp:this.#notifications.idleObservationsCaughtUp,revision:this.#notifications.notificationRevision,
+      activeTurn:this.#notifications.activeTurnId(thread)!==null,
+      blockingRequest:this.#requests.unsettled().some(request=>{const target=extractThreadId(request.params);return target===null||target===thread;}),
+      witnessedTerminal:this.#notifications.witnessedIdleTerminal(thread,turn)});
+  }
+
   get hasActiveTurns():boolean{return this.#notifications.hasActiveTurns;}
   get notificationRevision():bigint{return this.#notifications.notificationRevision;}
   observedThreadSettings(thread:string):readonly [bigint,unknown]|null{return this.#notifications.observedThreadSettings(thread);}
