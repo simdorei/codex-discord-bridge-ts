@@ -77,3 +77,7 @@ export function finishStopWire(path:string,value:unknown,inputOwner:StopWireOwne
   }));
 }
 export function recordStopControlError(path:string,value:unknown,error:string):void{const c=claimValue(value);if(!text(error))refused();const bounded=Array.from(error).slice(0,1000).join("");existing(path,db=>{db.prepare("UPDATE cdr_stop_controls SET phase='unknown',last_error=? WHERE operation_id=? AND claim_token=? AND phase='dispatching'").run(bounded,c.control.operation_id,c.token);});}
+
+/** Shared exact source struct serialization and retained receipt check. */
+export function serializeStopControl(input:unknown):string{return original(control(input));}
+export function retainedStopControlIn(db:DatabaseSync,input:unknown):boolean{return retained(db,control(input));}

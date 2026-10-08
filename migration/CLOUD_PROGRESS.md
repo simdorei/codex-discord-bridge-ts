@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,461 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,481 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3000,3 +3000,33 @@ was preserved and the failed creation command had not run.
 These are local stop acceptance receipts, not an interrupt or verified execution end.
 Running-turn control admission and actual user command/runtime stop wiring are next.
 Complete event/offload/Discord/service, native Windows and operational limits remain.
+
+
+## 2026-10-08 — Original Running-stop admission and native one-use integration
+
+Running-stop admission now requires exactly one Running original, correct room/user,
+no mixed quarantine and no prior terminal event for its turn. It preserves opaque
+serialized original jobs and first holds, prepares intake/unowned holds, claims ingress,
+and advances the exact stop revision in one existing-only transaction. Shared snapshots,
+revision advance and final readback are reused with nonrunning acceptance. The extracted
+revision helper explicitly retains its active-transaction/nonblank-operation preconditions.
+StateAccessFacade has167 explicit methods.
+
+The can_settle flag retains the source Running-admission job-only meaning; it is not
+expanded into a new guarantee that preparing/unowned originals have ended. Their holds
+remain separate. A Goal-waiting, generation-mismatched or started sibling keeps uncertain
+intent without settlement permission. No Running owner returns None before later intake
+decoding, preserving source masking order.
+
+Evidence .runtime/cloud-running-stop-138: 20 new tests; focused55 PASS with stop137/facade
+regressions; full **3,481 PASS, zero fail/skip/cancel; strict TS0**. Tests cover exact opaque
+receipt bytes, stale/ambiguous/multiple owners, prior terminals, bounds, trigger tampering,
+selected-custody rollback and shared helper preconditions. Native local helper plus real
+SQLite connects acceptance -> one-use claim -> exact interrupt -> acknowledged. Duplicate
+claim/writer attempts send no second interrupt; only the exact received terminal evidence
+settles the original receipt, without modifying the queue's attempt count or replaying it.
+
+This is not complete production stop routing: settings binding, verified active-control
+checks and bounded polling worker composition remain separate. No live Codex/Discord or
+Windows service was operated. Existing offload/complete event/service/operational limits
+remain in force; source authority and phase-two newer Rust/Pro work remain unchanged.

@@ -1,3 +1,4 @@
+import * as StopControlAdmission from "../../src/store/stop-control-admission.ts";
 import * as StopAcceptance from "../../src/store/stop-acceptance.ts";
 import * as ObservedFinalAnswer from "../../src/store/observed-final-answer.ts";
 import * as AsyncGuards from "../../src/store/async-resolution-guards.ts";
@@ -158,6 +159,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.admitIngress, IngressAdmission.admitIngress);
     assert.strictEqual(StateAccessFacade.pendingNewPrompt, NewPromptArm.pendingNewPrompt);
     assert.strictEqual(StateAccessFacade.newThreadOrigin, NewOrigin.newThreadOrigin);
+    assert.strictEqual(StateAccessFacade.acceptRunningStop, StopControlAdmission.acceptRunningStop);
+    assert.strictEqual(FacadeExports.acceptRunningStop, StopControlAdmission.acceptRunningStop);
     assert.strictEqual(StateAccessFacade.acceptNonrunningStop, StopAcceptance.acceptNonrunningStop);
     assert.strictEqual(FacadeExports.acceptNonrunningStop, StopAcceptance.acceptNonrunningStop);
     assert.strictEqual(StateAccessFacade.acceptUnresolvedStop, StopAcceptance.acceptUnresolvedStop);
@@ -391,6 +394,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "pendingFirstReply",
       "admitIngress",
       "pendingNewPrompt",
+      "acceptRunningStop",
       "acceptNonrunningStop",
       "acceptUnresolvedStop",
       "captureStopOrigin",
@@ -427,7 +431,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 166);
+    assert.strictEqual(actual.length, 167);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
