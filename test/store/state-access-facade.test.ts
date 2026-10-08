@@ -1,3 +1,4 @@
+import * as QueueStartAuthority from "../../src/store/queue-start-authority.ts";
 import * as ResponseCustody from "../../src/store/response-custody.ts";
 import * as DeadCapture from "../../src/store/dead-generation-capture.ts";
 import * as IdleReleaseStore from "../../src/store/idle-release-store.ts";
@@ -188,6 +189,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.finishResponseCustody, ResponseCustody.finishResponseCustody);
     assert.strictEqual(StateAccessFacade.checkResponseCustody, ResponseCustody.checkResponseCustody);
     assert.strictEqual(StateAccessFacade.checkAllResponseCustody, ResponseCustody.checkAllResponseCustody);
+    assert.strictEqual(StateAccessFacade.validateQueueStartAuthorityIn, QueueStartAuthority.validateQueueStartAuthorityIn);
+    assert.strictEqual(StateAccessFacade.validateStopRequestIn, StopRevision.validateStopRequestIn);
     assert.strictEqual(StateAccessFacade.deadTargetHeld, DeadGeneration.targetIsHeld);
     assert.strictEqual(StateAccessFacade.recordPreflightFailure, Preflight.recordPreflightFailure);
   });
@@ -254,6 +257,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "finishResponseCustody",
       "checkResponseCustody",
       "checkAllResponseCustody",
+      "validateQueueStartAuthorityIn",
+      "validateStopRequestIn",
       "deadTargetHeld",
       "eligibleJobs",
       "enqueue",
@@ -341,7 +346,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 129);
+    assert.strictEqual(actual.length, 131);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

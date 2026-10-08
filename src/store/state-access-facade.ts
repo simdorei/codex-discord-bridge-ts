@@ -1,3 +1,4 @@
+import * as QueueStartAuthority from "./queue-start-authority.ts";
 import * as ResponseCustody from "./response-custody.ts";
 import * as DeadCapture from "./dead-generation-capture.ts";
 import * as IdleReleaseStore from "./idle-release-store.ts";
@@ -149,6 +150,9 @@ export const beginResponseCustody: typeof ResponseCustody.beginResponseCustody =
 export const finishResponseCustody: typeof ResponseCustody.finishResponseCustody = ResponseCustody.finishResponseCustody;
 export const checkResponseCustody: typeof ResponseCustody.checkResponseCustody = ResponseCustody.checkResponseCustody;
 export const checkAllResponseCustody: typeof ResponseCustody.checkAllResponseCustody = ResponseCustody.checkAllResponseCustody;
+
+export const validateQueueStartAuthorityIn: typeof QueueStartAuthority.validateQueueStartAuthorityIn = QueueStartAuthority.validateQueueStartAuthorityIn;
+export const validateStopRequestIn: typeof StopRevision.validateStopRequestIn = StopRevision.validateStopRequestIn;
 
 export const deadTargetHeld: typeof DeadGeneration.targetIsHeld = DeadGeneration.targetIsHeld;
 export const recordPreflightFailure: typeof Preflight.recordPreflightFailure = Preflight.recordPreflightFailure;
@@ -348,6 +352,8 @@ export interface IStateAccessFacade {
   readonly finishResponseCustody: typeof ResponseCustody.finishResponseCustody;
   readonly checkResponseCustody: typeof ResponseCustody.checkResponseCustody;
   readonly checkAllResponseCustody: typeof ResponseCustody.checkAllResponseCustody;
+  readonly validateQueueStartAuthorityIn: typeof QueueStartAuthority.validateQueueStartAuthorityIn;
+  readonly validateStopRequestIn: typeof StopRevision.validateStopRequestIn;
   readonly deadTargetHeld: typeof DeadGeneration.targetIsHeld;
   readonly recordPreflightFailure: typeof Preflight.recordPreflightFailure;
   readonly tryBeginAttempt: typeof QueueClaims.tryBeginAttempt;
@@ -488,6 +494,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   finishResponseCustody,
   checkResponseCustody,
   checkAllResponseCustody,
+  validateQueueStartAuthorityIn,
+  validateStopRequestIn,
   deadTargetHeld,
   recordPreflightFailure,
   tryBeginAttempt,

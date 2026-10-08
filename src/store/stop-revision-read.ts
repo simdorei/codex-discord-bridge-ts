@@ -4,6 +4,8 @@ import {StoreIntegrityError} from "./schema-assembly.ts";
 import {decodeI64,decodeTextField,textDecoderFor} from "./sqlite-values.ts";
 import {asI64,getOwn} from "./async-resolution-json-helpers.ts";
 import type {StoredIngress} from "./ingress-read.ts";
+import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
+import {rustTrim,compareUtf8Bytes} from "./restart-snapshot-pure.ts";
 const refused=()=>new StoreIntegrityError("original RPC predates stop or stop revision evidence differs; no dispatch");
 function requireText(value:unknown):asserts value is string{
   if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed text");
@@ -47,6 +49,20 @@ export function stopOriginForIngress(record:StoredIngress):unknown|undefined{
 export function validateStopRevisionIn(db:DatabaseSync,target:string|null,origin:unknown=undefined):void{
   requireTarget(target);const revision=origin===undefined?0n:originRevision(origin,target);
   if(revision<0n||revision>currentStopRevisionIn(db))throw refused();if(target!==null&&targetStopRevisionIn(db,target)>revision)throw refused();
+}
+/** Archive scope is derived from the original root revision. It can resume members,
+ * but only archive the root; every child's intervening stop revokes the final archive. */
+export function validateStopRequestIn(db:DatabaseSync,method:string,target:string|null,input:unknown=undefined):void{
+  requireText(method);requireTarget(target);
+  const origin=input===undefined?undefined:cloneOwnedSerdeValue(input);
+  if(getOwn(origin,"archiveTargets")===undefined){validateStopRevisionIn(db,target,origin);return;}
+  requireTransaction(db);
+  const root=getOwn(origin,"target"),revision=asI64(getOwn(origin,"stopRevision")),scope=getOwn(origin,"archiveTargets");
+  if(typeof root!=="string"||root===""||rustTrim(root)!==root||revision===undefined||!Array.isArray(scope)||scope.length<1||scope.length>101||origin===null||typeof origin!=="object"||Array.isArray(origin)||Object.keys(origin).length!==3)throw refused();
+  const members=new Set<string>();
+  for(const member of scope){if(typeof member!=="string"||member===""||rustTrim(member)!==member||members.has(member))throw refused();members.add(member);}
+  if(!members.has(root)||target===null||!members.has(target)||(method!=="thread/resume"&&method!=="thread/archive")||(method==="thread/archive"&&target!==root))throw refused();
+  for(const member of [...members].sort(compareUtf8Bytes))validateStopRevisionIn(db,member,{target:member,stopRevision:revision});
 }
 /** Read-only open: never initializes or migrates the database. */
 export function captureStopOrigin(path:string,target:string|null):{target:string|null;stopRevision:bigint}{

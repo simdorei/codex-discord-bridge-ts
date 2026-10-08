@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,281 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,312 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2732,3 +2732,28 @@ This is a concrete response adapter, not the complete RuntimeDeadGenerationFence
 ordinary mutation/stop methods explicitly reject rather than granting permission, and
 persistence callbacks remain controlled fixtures. Whole-runtime startup/activation,
 production Discord, Windows and performance/offload qualifications are still pending.
+
+
+## 2026-10-08 — Original queue and archive authority inside the final writer
+
+Added the queue start validator against the original full claim: 17 execution fields,
+Starting state, exact assigned/execution generation, no turn or goal-waiting state, and
+existing dead-generation/execution/cancellation/archive/fork/async admission guards.
+Delivery-only queued/ack_sent fields are deliberately excluded, matching Rust. It uses
+the supplied writer connection and never substitutes a refreshed claim.
+
+Added the archive-only stop-scope dispatcher. Ordinary exact-target validation remains
+unchanged. Derived scope requires an active transaction, 1–101 unique trimmed members,
+root membership and only member resume/root archive. Every member is checked against
+the original revision, so a child stop revokes the final root archive. Both validators
+are exposed through StateAccessFacade (131 methods).
+
+Evidence .runtime/cloud-final-writer-authority-129: 31 new tests; focused45 PASS; full
+**3,312 PASS, zero fail/skip/cancel; strict TS exit0**. Actual SQLite tests cover each
+execution field, matching-but-ineligible states, all durable hold classes, queue trigger
+changes rolled back by actual beginChecked, original revision, scope bounds and zero
+accessor calls. Existing fork helpers retain their schema-check/DDL behavior; this is not
+a blanket query-only claim. Numeric serializer and parent guard limitations remain.
+
+The complete runtime mutation/stop adapter is not installed yet. No user queue requests,
+real archive action, live Codex/Discord call or production database was touched.
