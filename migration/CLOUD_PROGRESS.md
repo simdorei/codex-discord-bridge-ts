@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,920 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,934 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3979,3 +3979,29 @@ callback refusal. Strict TS exit 0; focused **60 PASS**; full Linux **3,920 PASS
 or its WebSocket/discovery/shard shutdown implementation. The source ten-second
 abort-and-join/process-abort deadline remains unimplemented, not satisfied by
 cooperative cancellation or Promise.race. Earlier profile limits remain.
+
+
+## Checkpoint 173 — Owned shard read loop, normal close and forced cleanup
+
+Added runGatewayShard with mandatory owned transport/decoder adapter. Paused tasks
+do not poll before activation; stopped entry still disposes the adapter and emits
+a bounded best-effort shard exit. Normal shutdown requests protocol NORMAL once,
+retains its losing pending read and drains until terminal GatewayClose/EOF. An
+unsolicited GatewayClose while running is published and does not by itself stop
+reading. Receive errors stay in their own publication lane.
+
+Force cancellation wakes the loop independently of a blocked read, starts actual
+adapter disposal, then joins both disposal and the retained read. Primary and
+cleanup errors are retained without inspecting raw exception properties. A caller
+requesting shutdown is not reported complete while its task remains unsettled.
+Every64 immediately ready items yields to Node IO to avoid timer starvation; this
+is a scheduling profile, not a Tokio performance-equivalence claim.
+
+Fourteen new tests use explicit mock Gateway adapters to verify these ownership
+contracts, including disposal-needed-to-unblock-read, normal-drain errors, bounded
+exit saturation, cancellation identity and separate cleanup errors. They are not
+WebSocket/live Discord evidence. Strict TS exit0; focused **74 PASS**; full Linux
+**3,934 PASS /0 fail/0 skip/0 cancelled**. Evidence:
+`.runtime/cloud-gateway-shard-task-173/`. Actual WebSocket/discovery/complete
+Interaction decoding and the source hard abort/join deadline owner remain absent.
+No network or production readiness is inferred from mocked adapter tests.

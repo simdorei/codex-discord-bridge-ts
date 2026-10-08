@@ -9,7 +9,7 @@ import {isDecodedGatewayMessage,type DecodedGatewayMessage} from './decoded-mess
 export interface GatewayIngressConfig{readonly interactionCapacity:number;readonly reservedInteractionCapacity:number;readonly messageCapacity:number;readonly receiveErrorCapacity:number}
 export const DEFAULT_GATEWAY_INGRESS_CONFIG:GatewayIngressConfig=Object.freeze({interactionCapacity:64,reservedInteractionCapacity:4,messageCapacity:1024,receiveErrorCapacity:16});
 export type GatewayInteractionTag='Normal'|'Busy'|'Stopping';
-export type DecodedGatewayEvent<I extends object>={readonly kind:'Ready';readonly identity:GatewayIdentity}|{readonly kind:'Interaction';readonly event:I}|{readonly kind:'Message';readonly event:DecodedGatewayMessage}|{readonly kind:'Ignored'};
+export type DecodedGatewayEvent<I extends object>={readonly kind:'Ready';readonly identity:GatewayIdentity}|{readonly kind:'Interaction';readonly event:I}|{readonly kind:'Message';readonly event:DecodedGatewayMessage}|{readonly kind:'Ignored'|'GatewayClose'};
 export interface InteractionIngress<I>{readonly sequence:bigint;readonly receivedAtMs:number;readonly tag:GatewayInteractionTag;readonly event:I}
 export interface MessageIngress{readonly sequence:bigint;readonly event:DecodedGatewayMessage}
 export interface GatewayReceiveError{readonly shard:number;readonly message:string}
@@ -53,7 +53,7 @@ export class GatewayIngress<I extends object>{
   if(this.#closed)throw new TypeError('Gateway ingress closed');if(!Number.isFinite(receivedAtMs)||receivedAtMs<0)throw new TypeError('Expected monotonic receive time');
   const kind=gatewayOwnField(input,'kind');if(consumedEvents.has(input))throw new TypeError('Gateway event already moved');
   if(kind==='Ready'){const identity=gatewayOwnField(input,'identity') as GatewayIdentity;this.#identity.observe(identity);consumedEvents.add(input);invokeSynchronousVoid(observer,{});return Object.freeze({kind:'Ignored'});}
-  if(kind==='Ignored'){consumedEvents.add(input);invokeSynchronousVoid(observer,{});return Object.freeze({kind:'Ignored'});}
+  if(kind==='Ignored'||kind==='GatewayClose'){consumedEvents.add(input);invokeSynchronousVoid(observer,{});return Object.freeze({kind:'Ignored'});}
   const event=gatewayOwnField(input,'event');
   if(kind==='Interaction'){
    if(event===null||typeof event!=='object')throw new TypeError('Expected immutable decoded interaction DTO');gatewayImmutableData(event);consumedEvents.add(input);invokeSynchronousVoid(observer,{});
