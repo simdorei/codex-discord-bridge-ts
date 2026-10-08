@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,738 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,748 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3664,3 +3664,25 @@ Strict TS exit 0; focused rate/response tests **23 PASS**; full Linux **3,738 PA
 0 fail / 0 skip / 0 cancelled**. Evidence .runtime/cloud-channel-rate-state-160/.
 Production wire, full Message decoder, remaining endpoint profiles and service/platform
 qualification remain incomplete.
+
+
+## Checkpoint 161 — response-header to channel-rate adapter
+
+Connected byte-exact scope/bucket headers, u16 limits/remaining/shared Retry-After, and
+binary32 reset-after to the published channel rate owner. Global/missing/unknown scopes
+produce no local bucket update. Ordinary parse failures warn and complete(None), matching
+the source path. Nonfinite, negative or Duration-overflow values are held as errors rather
+than silently disabling a limit or reproducing a Rust panic.
+
+Decimal-to-f32 parsing checks exact decimal ratios around the adjacent binary32 midpoint,
+avoiding a binary64-to-binary32 double-rounding error. Normal and subnormal tie cases are
+tested. Scheduling remains the explicit monotonic-millisecond profile, not exact Rust
+Duration nanosecond quantization. Raw bucket bytes are copied, not normalized as text.
+
+Ten new tests include the real response engine plus real channel manager under a
+controlled clock: a shared 429 response cannot repeat the unchanged request body before
+the advertised reset. Unsupported reset values make no unrestricted retry.
+Strict TS exit 0; focused rate/header/response **33 PASS**; full Linux **3,748 PASS /
+0 fail / 0 skip / 0 cancelled**. Evidence .runtime/cloud-rate-header-adapter-161/.
+Production wire, complete successful Message decoding, other endpoint profiles and service/
+platform qualification remain open. No live Discord/credential transmission occurred.
