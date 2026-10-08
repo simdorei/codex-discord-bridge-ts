@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,570 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,579 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5113,3 +5113,25 @@ clock, stalled-body disposal and cancellation joins. Auth invalidation cases use
 a fake wire with an offline token. Unsupported token URI forms remain outside the
 224 ASCII-safe profile. Actual interaction dispatch/admission/worker integration and
 live Discord/Windows/operational qualification remain pending.
+
+
+## Checkpoint 226 — process-local interaction claim custody
+
+Added a shared single-event-loop claim cache with source default4096 capacity and
+zero→one normalization. Pending claims never evict; oldest committed claims may
+evict in commit order. Duplicate pending/committed checks precede saturation.
+Generation-bound single-use commit/release handles prevent an old guard from
+erasing a replacement claim. Explicit release in finally replaces Rust Drop.
+
+Committed-order storage uses a head cursor and periodic compaction, avoiding a
+shift per eviction. Tests include5000 commit/eviction cycles and32 concurrent async
+claim attempts sharing one owner. This is process-local suppression, not durable
+exactly-once execution: evicted committed IDs may be claimed again, so durable
+custody remains required. Safe-integer capacity and nonoverflow u128 generations
+are the supported profile; Rust mutex poisoning, cross-worker synchronization and
+build-dependent generation overflow are not emulated.
+
+Strict TS exit0, focused9 PASS, full Linux **4,579 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-interaction-claim-cache-226/` pins complete claims.rs with
+its tests. Dispatcher acknowledgement deadline/claim commit integration remains
+pending. No live DB, network or runtime configuration was changed.
