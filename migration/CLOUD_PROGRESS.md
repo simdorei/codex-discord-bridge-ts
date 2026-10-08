@@ -4036,3 +4036,34 @@ Strict TS exit0; focused Gateway **94 PASS**; full Linux **3,954 PASS /0 fail/0 
 test hashes and archived earlier test bytes, raw logs and authority manifests.
 Actual GatewayRuntime/WebSocket/discovery/Interaction decoding and platform/
 performance/operational qualification remain unfinished.
+
+
+## Checkpoint 175 — owned Gateway runtime composition (2026-10-08 UTC)
+
+Added GatewayRuntime.fromOwnedPorts over the already reviewed ingress, activation,
+publication, shard task and shutdown modules. This requires explicit owned adapters;
+it does not discover shards or open a Discord WebSocket. All adapters/configuration
+are validated before ownership transfer; method snapshots prevent later replacement
+of a port's polling/close/disposal functions. Invalid construction retains ports with
+the caller. HTTP remains separately caller-owned.
+
+Receivers transfer once; activation remains explicit. Shutdown first stops ingress,
+stops the activation gate, signals normal close, then joins actual tasks through the
+trigger-first/abort-reserve policy. Repeated shutdown returns the same Promise and
+cannot change its first cause/deadline. A separate retained task set confirms actual
+settlement even after the join helper consumes its task vector. Senders close after
+settled cleanup; transferred receivers can drain queued values. Untaken receivers
+are disposed. Diagnostic failure still waits for sibling cleanup. An injected fatal
+sentinel with live work cannot mark resources closed.
+
+Tests cover paused cleanup, activation/transfer, idempotence, accepted-value draining,
+stopping lane routing, primary failure, diagnostic failure, captured methods, invalid
+construction, empty runtime, forced cooperative cancellation, delayed disposal, exit
+receive cancellation and disposal failure. These are mock-adapter composition tests,
+not live Gateway or whole-service tests. JavaScript GC is not Rust Drop: callers must
+explicitly shut down this owner.
+
+Strict TS exit0; focused **17 PASS**; full Linux **3,971 PASS /0 fail/0 skip/0 cancelled**.
+Raw local evidence: `.runtime/cloud-gateway-runtime-175/`. Actual Gateway discovery,
+WebSocket protocol/reconnect/identify, complete Interaction decoding, service bootstrap,
+Windows, performance and operational validation remain unfinished.
