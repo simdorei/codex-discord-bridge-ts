@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,903 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,920 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3953,3 +3953,29 @@ through u64::MAX events. Receive-error drop outcomes are explicit but central lo
 and aggregate publication counters are not composed yet. Full Gateway/Interaction
 wire decoding, network/runtime activation and prior platform/operational limits
 remain unfinished.
+
+
+## Checkpoint 172 — Receiver transfer, paused activation and publication accounting
+
+Added one-time typed receiver transfer and an explicit paused/activated/stopped
+gate. Activation before transfer, duplicate activation and activation after stop
+retain distinct errors and source precedence. A stop that wins before a paused
+waiter resumes prevents active entry. Multiple waiters/cancellation clean up their
+registrations. Stop after active entry does not pretend the caller-owned shard
+Promise has settled; the caller must still own/join that work.
+
+Added all seven sticky publication counters. Source order is preserved: READY
+identity -> synchronous typed observer -> lane publication -> outcome accounting.
+A typed observer can change stopping state before routing; a throwing observer
+consumes the event without routing or counting a success. Receive-error drops
+reach one explicit synchronous diagnostic sink before outcome accounting, replacing
+the owner's raw stderr side effect with a central reporting dependency.
+
+Seventeen new tests cover transfer/activation races, no lost wake, cancellation,
+active-task join ownership, exact publication ordering, counters and diagnostic
+callback refusal. Strict TS exit 0; focused **60 PASS**; full Linux **3,920 PASS /
+0 fail / 0 skip / 0 cancelled**. Evidence:
+`.runtime/cloud-gateway-activation-publication-172/`. This is not full GatewayRuntime
+or its WebSocket/discovery/shard shutdown implementation. The source ten-second
+abort-and-join/process-abort deadline remains unimplemented, not satisfied by
+cooperative cancellation or Promise.race. Earlier profile limits remain.

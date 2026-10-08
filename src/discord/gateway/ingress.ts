@@ -1,4 +1,5 @@
 import {BoundedBroadcast,type BroadcastPoll} from '../../app-server/broadcast.ts';
+import {invokeSynchronousVoid} from '../../core/synchronous-void.ts';
 import {GatewayIdentityTracker,type GatewayIdentity,type GatewayStateReceiver} from './identity.ts';
 import {MessageGapTracker,MessageGapStateError,saturatingGatewayIncrement,type GatewayUnavailableReason} from './message-gaps.ts';
 import {GatewayIngressLane,type IngressLaneReceiver} from './lane.ts';
@@ -48,20 +49,20 @@ export class GatewayIngress<I extends object>{
   try{this.#gaps.record(event.channel_id,{messageId:event.id,timestampMicros:event.timestamp.unixNanoseconds/1000n},reason);}catch(error){if(!(error instanceof MessageGapStateError))throw error;tracking=Object.freeze({ok:false,error});}
   this.#recoverable=saturatingGatewayIncrement(this.#recoverable);this.#hints.send();return Object.freeze({kind:'MessageRecoverableGap',reason,tracking});
  }
- publish(input:DecodedGatewayEvent<I>,receivedAtMs:number):GatewayPublishOutcome{
+ publish(input:DecodedGatewayEvent<I>,receivedAtMs:number,observer:()=>void=()=>{}):GatewayPublishOutcome{
   if(this.#closed)throw new TypeError('Gateway ingress closed');if(!Number.isFinite(receivedAtMs)||receivedAtMs<0)throw new TypeError('Expected monotonic receive time');
   const kind=gatewayOwnField(input,'kind');if(consumedEvents.has(input))throw new TypeError('Gateway event already moved');
-  if(kind==='Ready'){const identity=gatewayOwnField(input,'identity') as GatewayIdentity;this.#identity.observe(identity);consumedEvents.add(input);return Object.freeze({kind:'Ignored'});}
-  if(kind==='Ignored'){consumedEvents.add(input);return Object.freeze({kind:'Ignored'});}
+  if(kind==='Ready'){const identity=gatewayOwnField(input,'identity') as GatewayIdentity;this.#identity.observe(identity);consumedEvents.add(input);invokeSynchronousVoid(observer,{});return Object.freeze({kind:'Ignored'});}
+  if(kind==='Ignored'){consumedEvents.add(input);invokeSynchronousVoid(observer,{});return Object.freeze({kind:'Ignored'});}
   const event=gatewayOwnField(input,'event');
   if(kind==='Interaction'){
-   if(event===null||typeof event!=='object')throw new TypeError('Expected immutable decoded interaction DTO');gatewayImmutableData(event);consumedEvents.add(input);
+   if(event===null||typeof event!=='object')throw new TypeError('Expected immutable decoded interaction DTO');gatewayImmutableData(event);consumedEvents.add(input);invokeSynchronousVoid(observer,{});
    const sequence=nextProcessSequence();if(sequence===null)return this.#hardDrop('SequenceExhausted');let tag:GatewayInteractionTag=this.#accepting?'Normal':'Stopping';
    if(tag==='Normal'){const offered=this.#normal.trySend(Object.freeze({sequence,receivedAtMs,tag,event:event as I}));if(offered==='Accepted')return Object.freeze({kind:'InteractionAccepted',sequence,tag});tag='Busy';}
    const offered=this.#reserved.trySend(Object.freeze({sequence,receivedAtMs,tag,event:event as I}));return offered==='Accepted'?Object.freeze({kind:'InteractionAccepted',sequence,tag}):this.#hardDrop(offered);
   }
   if(kind==='Message'){
-   if(!isDecodedGatewayMessage(event))throw new TypeError('Expected owned complete Gateway Message');consumedEvents.add(input);this.#gaps.assertPublicationReady();
+   if(!isDecodedGatewayMessage(event))throw new TypeError('Expected owned complete Gateway Message');consumedEvents.add(input);invokeSynchronousVoid(observer,{});this.#gaps.assertPublicationReady();
    if(!this.#accepting)return this.#gap(event,'Stopping');const sequence=nextProcessSequence();if(sequence===null)return this.#gap(event,'SequenceExhausted');
    const offered=(isEmergencyMessage(event.content)?this.#emergency:this.#messages).trySend(Object.freeze({sequence,event}));return offered==='Accepted'?Object.freeze({kind:'MessageAccepted',sequence}):this.#gap(event,offered);
   }
