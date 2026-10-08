@@ -215,6 +215,16 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.validateAsyncDispatchGuardsIn, QuestionGuard.validateAsyncDispatchGuardsIn);
     assert.strictEqual(StateAccessFacade.validateAsyncDispatchGuardsExisting, QuestionGuard.validateAsyncDispatchGuardsExisting);
     assert.strictEqual(StateAccessFacade.validateAsyncDispatchGuards, QuestionGuard.validateAsyncDispatchGuards);
+    assert.strictEqual(StateAccessFacade.activateObservationExisting, ObservationLedger.activateObservationExisting);
+    assert.strictEqual(StateAccessFacade.discoverObservationExisting, ObservationLedger.discoverObservationExisting);
+    assert.strictEqual(StateAccessFacade.markUnknownObservationExisting, ObservationLedger.markUnknownObservationExisting);
+    assert.strictEqual(StateAccessFacade.observationScopeVerifiedExisting, ObservationLedger.observationScopeVerifiedExisting);
+    assert.strictEqual(StateAccessFacade.getIdleIntentExisting, IdleReleaseStore.getIdleIntentExisting);
+    assert.strictEqual(StateAccessFacade.pendingIdleIntentsExisting, IdleReleaseStore.pendingIdleIntentsExisting);
+    assert.strictEqual(StateAccessFacade.beforeIdleMutationExisting, IdleReleaseStore.beforeIdleMutationExisting);
+    assert.strictEqual(StateAccessFacade.transitionIdleIntentExisting, IdleReleaseStore.transitionIdleIntentExisting);
+    assert.strictEqual(StateAccessFacade.verifyIdleIntentWithObservationsExisting, IdleReleaseStore.verifyIdleIntentWithObservationsExisting);
+    assert.strictEqual(StateAccessFacade.settleExitedIdleOwnerExisting, IdleReleaseStore.settleExitedIdleOwnerExisting);
     assert.strictEqual(StateAccessFacade.deadTargetHeld, DeadGeneration.targetIsHeld);
     assert.strictEqual(StateAccessFacade.recordPreflightFailure, Preflight.recordPreflightFailure);
   });
@@ -303,6 +313,16 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "validateAsyncDispatchGuardsIn",
       "validateAsyncDispatchGuardsExisting",
       "validateAsyncDispatchGuards",
+      "activateObservationExisting",
+      "discoverObservationExisting",
+      "markUnknownObservationExisting",
+      "observationScopeVerifiedExisting",
+      "getIdleIntentExisting",
+      "pendingIdleIntentsExisting",
+      "beforeIdleMutationExisting",
+      "transitionIdleIntentExisting",
+      "verifyIdleIntentWithObservationsExisting",
+      "settleExitedIdleOwnerExisting",
       "deadTargetHeld",
       "eligibleJobs",
       "enqueue",
@@ -390,7 +410,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 151);
+    assert.strictEqual(actual.length, 161);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

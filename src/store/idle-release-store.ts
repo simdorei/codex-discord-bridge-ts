@@ -5,7 +5,7 @@ import {decodeI64} from "./sqlite-values.ts";
 import {IDLE_COLUMNS,selectIdleIntentIn,decodeIdleIntentRow,type IdleIntent} from "./idle-release-row.ts";
 import {botIdleIn} from "./idle-release-admission.ts";
 import {observationScopeVerifiedIn} from "./observation-ledger.ts";
-import {withStoreTransaction,usingInitializedStore,commitStore,rollbackStore} from "./owned-scope.ts";
+import {withStoreTransaction,usingInitializedStore,usingExistingStore,commitStore,rollbackStore} from "./owned-scope.ts";
 export type {IdleIntent} from "./idle-release-row.ts";
 function text(value:string):void{if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed idle text");}
 function integer(value:bigint):void{if(typeof value!=="bigint"||value<-(1n<<63n)||value>=(1n<<63n))throw new TypeError("Expected signed idle integer");}
@@ -64,3 +64,11 @@ export function transitionIdleIntent(path:string,input:IdleIntent,state:string,d
 export function verifyIdleIntent(path:string,input:IdleIntent,requireIdle:boolean):Promise<void>{const old=snapshotIdleIntent(input);if(typeof requireIdle!=="boolean")throw new TypeError("Expected idle requirement");return usingInitializedStore(path,db=>verifyIdleIntentIn(db,old,requireIdle));}
 export function verifyIdleIntentWithObservations(path:string,input:IdleIntent,requireIdle:boolean):Promise<void>{const old=snapshotIdleIntent(input);if(typeof requireIdle!=="boolean")throw new TypeError("Expected idle requirement");return usingInitializedStore(path,db=>verifyIdleIntentWithObservationsOn(db,old,requireIdle));}
 export function settleExitedIdleOwner(path:string,owner:string,generation:bigint):Promise<void>{text(owner);integer(generation);return usingInitializedStore(path,db=>settleExitedIdleOwnerIn(db,owner,generation));}
+
+// Initialized-store runtime profile, never silently migrates/recreates missing schema.
+export function getIdleIntentExisting(path:string,thread:string):IdleIntent|null{text(thread);return usingExistingStore(path,db=>selectIdleIntentIn(db,thread));}
+export function pendingIdleIntentsExisting(path:string):IdleIntent[]{return usingExistingStore(path,pendingIdleIntentsIn);}
+export function beforeIdleMutationExisting(path:string,owner:string,generation:bigint,thread:string):IdleIntent|null{text(owner);integer(generation);text(thread);return usingExistingStore(path,db=>beforeIdleMutationOn(db,owner,generation,thread));}
+export function transitionIdleIntentExisting(path:string,input:IdleIntent,state:string,detail:string):IdleIntent{const old=snapshotIdleIntent(input);text(state);text(detail);return usingExistingStore(path,db=>transitionIdleIntentOn(db,old,state,detail));}
+export function verifyIdleIntentWithObservationsExisting(path:string,input:IdleIntent,requireIdle:boolean):void{const old=snapshotIdleIntent(input);if(typeof requireIdle!=="boolean")throw new TypeError("Expected idle requirement");usingExistingStore(path,db=>verifyIdleIntentWithObservationsOn(db,old,requireIdle));}
+export function settleExitedIdleOwnerExisting(path:string,owner:string,generation:bigint):void{text(owner);integer(generation);usingExistingStore(path,db=>settleExitedIdleOwnerIn(db,owner,generation));}

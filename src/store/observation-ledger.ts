@@ -1,7 +1,7 @@
 import type {DatabaseSync} from "node:sqlite";
 import {StoreIntegrityError} from "./schema-assembly.ts";
 import {decodeBool,decodeI64} from "./sqlite-values.ts";
-import {commitStore,rollbackStore,withStoreTransaction,usingInitializedStore} from "./owned-scope.ts";
+import {commitStore,rollbackStore,withStoreTransaction,usingInitializedStore,usingExistingStore} from "./owned-scope.ts";
 import {type ObservationScope,type ObservationGap,scope,integer,text,I64_MAX,active,scalar,GAP_COLUMNS,readGapRow,gapComplete,requiredTransaction} from "./observation-gap-model.ts";
 export type {ObservationScope,ObservationGap} from "./observation-gap-model.ts";
 export function activateObservationOn(db:DatabaseSync,input:ObservationScope):void{
@@ -76,3 +76,9 @@ export function discoverObservation(path:string,input:ObservationScope,upper:big
 export function markUnknownObservation(path:string,input:ObservationScope,detail:string):Promise<void>{const s=scope(input);text(detail);return usingInitializedStore(path,db=>markUnknownObservationOn(db,s,detail));}
 export function nextObservationGap(path:string,input:ObservationScope):Promise<ObservationGap|null>{const s=scope(input);return usingInitializedStore(path,db=>nextObservationGapOn(db,s));}
 export function observationScopeVerified(path:string,input:ObservationScope,through:bigint):Promise<boolean>{const s=scope(input);integer(through);return usingInitializedStore(path,db=>observationScopeVerifiedOn(db,s,through));}
+
+// Existing-only runtime adapters: startup establishes schema before synchronous callbacks.
+export function activateObservationExisting(path:string,input:ObservationScope):void{const s=scope(input);usingExistingStore(path,db=>activateObservationOn(db,s));}
+export function discoverObservationExisting(path:string,input:ObservationScope,upper:bigint):void{const s=scope(input);integer(upper);usingExistingStore(path,db=>discoverObservationOn(db,s,upper));}
+export function markUnknownObservationExisting(path:string,input:ObservationScope,detail:string):void{const s=scope(input);text(detail);usingExistingStore(path,db=>markUnknownObservationOn(db,s,detail));}
+export function observationScopeVerifiedExisting(path:string,input:ObservationScope,through:bigint):boolean{const s=scope(input);integer(through);return usingExistingStore(path,db=>observationScopeVerifiedOn(db,s,through));}

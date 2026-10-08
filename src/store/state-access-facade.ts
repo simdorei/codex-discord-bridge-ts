@@ -182,6 +182,17 @@ export const validateAsyncDispatchGuardsIn: typeof QuestionGuard.validateAsyncDi
 export const validateAsyncDispatchGuardsExisting: typeof QuestionGuard.validateAsyncDispatchGuardsExisting = QuestionGuard.validateAsyncDispatchGuardsExisting;
 export const validateAsyncDispatchGuards: typeof QuestionGuard.validateAsyncDispatchGuards = QuestionGuard.validateAsyncDispatchGuards;
 
+export const activateObservationExisting: typeof ObservationLedger.activateObservationExisting = ObservationLedger.activateObservationExisting;
+export const discoverObservationExisting: typeof ObservationLedger.discoverObservationExisting = ObservationLedger.discoverObservationExisting;
+export const markUnknownObservationExisting: typeof ObservationLedger.markUnknownObservationExisting = ObservationLedger.markUnknownObservationExisting;
+export const observationScopeVerifiedExisting: typeof ObservationLedger.observationScopeVerifiedExisting = ObservationLedger.observationScopeVerifiedExisting;
+export const getIdleIntentExisting: typeof IdleReleaseStore.getIdleIntentExisting = IdleReleaseStore.getIdleIntentExisting;
+export const pendingIdleIntentsExisting: typeof IdleReleaseStore.pendingIdleIntentsExisting = IdleReleaseStore.pendingIdleIntentsExisting;
+export const beforeIdleMutationExisting: typeof IdleReleaseStore.beforeIdleMutationExisting = IdleReleaseStore.beforeIdleMutationExisting;
+export const transitionIdleIntentExisting: typeof IdleReleaseStore.transitionIdleIntentExisting = IdleReleaseStore.transitionIdleIntentExisting;
+export const verifyIdleIntentWithObservationsExisting: typeof IdleReleaseStore.verifyIdleIntentWithObservationsExisting = IdleReleaseStore.verifyIdleIntentWithObservationsExisting;
+export const settleExitedIdleOwnerExisting: typeof IdleReleaseStore.settleExitedIdleOwnerExisting = IdleReleaseStore.settleExitedIdleOwnerExisting;
+
 export const deadTargetHeld: typeof DeadGeneration.targetIsHeld = DeadGeneration.targetIsHeld;
 export const recordPreflightFailure: typeof Preflight.recordPreflightFailure = Preflight.recordPreflightFailure;
 
@@ -402,6 +413,16 @@ export interface IStateAccessFacade {
   readonly validateAsyncDispatchGuardsIn: typeof QuestionGuard.validateAsyncDispatchGuardsIn;
   readonly validateAsyncDispatchGuardsExisting: typeof QuestionGuard.validateAsyncDispatchGuardsExisting;
   readonly validateAsyncDispatchGuards: typeof QuestionGuard.validateAsyncDispatchGuards;
+  readonly activateObservationExisting: typeof ObservationLedger.activateObservationExisting;
+  readonly discoverObservationExisting: typeof ObservationLedger.discoverObservationExisting;
+  readonly markUnknownObservationExisting: typeof ObservationLedger.markUnknownObservationExisting;
+  readonly observationScopeVerifiedExisting: typeof ObservationLedger.observationScopeVerifiedExisting;
+  readonly getIdleIntentExisting: typeof IdleReleaseStore.getIdleIntentExisting;
+  readonly pendingIdleIntentsExisting: typeof IdleReleaseStore.pendingIdleIntentsExisting;
+  readonly beforeIdleMutationExisting: typeof IdleReleaseStore.beforeIdleMutationExisting;
+  readonly transitionIdleIntentExisting: typeof IdleReleaseStore.transitionIdleIntentExisting;
+  readonly verifyIdleIntentWithObservationsExisting: typeof IdleReleaseStore.verifyIdleIntentWithObservationsExisting;
+  readonly settleExitedIdleOwnerExisting: typeof IdleReleaseStore.settleExitedIdleOwnerExisting;
   readonly deadTargetHeld: typeof DeadGeneration.targetIsHeld;
   readonly recordPreflightFailure: typeof Preflight.recordPreflightFailure;
   readonly tryBeginAttempt: typeof QueueClaims.tryBeginAttempt;
@@ -564,6 +585,16 @@ export const StateAccessFacade: IStateAccessFacade = {
   validateAsyncDispatchGuardsIn,
   validateAsyncDispatchGuardsExisting,
   validateAsyncDispatchGuards,
+  activateObservationExisting,
+  discoverObservationExisting,
+  markUnknownObservationExisting,
+  observationScopeVerifiedExisting,
+  getIdleIntentExisting,
+  pendingIdleIntentsExisting,
+  beforeIdleMutationExisting,
+  transitionIdleIntentExisting,
+  verifyIdleIntentWithObservationsExisting,
+  settleExitedIdleOwnerExisting,
   deadTargetHeld,
   recordPreflightFailure,
   tryBeginAttempt,

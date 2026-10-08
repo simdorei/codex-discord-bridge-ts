@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,377 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,384 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2877,3 +2877,33 @@ variants use an explicit no-dispatch-mode fixture. No schema guard was weakened.
 The concrete idle journal still needs installation, and this guard does not implement
 initial question dispatch/user-stop acceptance or the complete Discord/service path.
 Existing owned-proof/parser/driver boundaries and Windows/performance limits remain.
+
+
+## 2026-10-08 — Concrete runtime idle journal and native observation barrier
+
+Installed the real synchronous idle journal adapter on the established initialized-store
+runtime profile. Cold installation reads existing pending intents, activates the exact
+owner/generation observation scope, then attaches the tracked journal. It does not clear
+old owners' holds or unknown tails. Existing-only wrappers reuse the same observation and
+idle transaction code through StateAccessFacade (161 explicit methods). IdleRelease errors
+now share the central runtime mapper with mutation and dead-generation boundaries.
+
+Runtime check_mutation first validates current async dispatch custody, then subscription
+state; resume_required retains the source AwaitUnload shortcut. Exact tokens and signed
+integer bounds are checked for verification, transitions and confirmed old-child exit.
+No elapsed-time or newly allocated owner identity is treated as exit/observation proof.
+
+Evidence .runtime/cloud-runtime-idle-journal-134: 7 new adapter/native tests; focused22 PASS;
+full **3,384 PASS, zero fail/skip/cancel; strict TS exit0**. Real local pipe requests and
+SQLite records cover exact received-terminal persistence/certification before unload,
+fresh unload read, one real resubscribe, sticky unknown gaps, native confirmed-owner exit,
+policy-first guard, cold old-tail preservation and missing-schema/overflow refusal.
+Terminal persistence in this fixture explicitly writes the exact received event; the
+complete production event-processing worker is not claimed by this test alone.
+
+One initial assertion expected an asynchronous rejection for a deliberately synchronous
+preflight refusal; the test callback was corrected without changing product behavior.
+The initialized-store contract remains narrower than Rust's implicit schema initialization
+on every callback. Existing replacement-generation observation-mode nuance remains as
+recorded earlier; no new automatic scope certification was added. Initial stop acceptance,
+Discord/service bootstrap, Windows and performance/operational work remain incomplete.
