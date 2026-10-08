@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,038 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,050 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2169,3 +2169,29 @@ No automatic restart supervisor/backoff, durable DB implementation, mutation dis
 full Discord bridge, Windows, outer startup envelope or descendant-pipe cleanup is
 complete. Unknown-cleanup startup errors retain the concrete session owner; end-to-end
 production recovery and sustained operation remain unverified.
+
+## 2026-10-08 — Owned restart supervisor and bounded retry schedule
+
+Added supervisor.rs control flow and bound it to PortableResidentLifecycle through an
+explicit owner-started/joined Promise. It subscribes before reading, coalesces duplicate
+requests, maintains a settled-generation watermark, resets on a different/cleared
+request and uses exact 250/500/1000/2000/4000/5000ms capped backoff. Same-generation
+notifications cannot reset, shorten or extend the absolute retry deadline. The native
+timer rounds upward and rechecks monotonic time before reporting a reached deadline.
+
+AbortSignal is the one-way true/closed shutdown subset of the Rust bool watch. Shutdown
+wakes an idle/backoff wait, but deliberately joins an already-running restart attempt
+instead of dropping native cleanup. False shutdown-watch updates are not exposed.
+Failure reporting is a required synchronous public-safe adapter receiving the original
+error reference; invalid truthy attempt results cannot mark a generation settled.
+
+Evidence .runtime/cloud-restart-supervisor-109: focused 23 PASS, full **3,050 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Includes deterministic virtual-clock deadline
+checks, stale/duplicate/new-generation behavior, shutdown during backoff and active
+attempt, preserved reporting failure, invalid clock/result refusal, a real >=250ms
+native timer test, and actual native replacement driven by the supervisor. Stopping
+that supervisor leaves its healthy successor running until explicit owner disposal.
+
+This is library integration, not a started production service. Actual durable store
+ports, guarded mutation dispatch, Discord runtime, Windows, startup/descendant cleanup
+limits, performance and sustained-operation certification remain outstanding.

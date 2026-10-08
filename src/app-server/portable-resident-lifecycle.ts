@@ -1,3 +1,4 @@
+import {runRestartSupervisor,type RestartFailureReporter} from "./restart-supervisor.ts";
 import {randomUUID} from "node:crypto";
 import {types} from "node:util";
 import {TargetLocks} from "../core/keyed-locks.ts";
@@ -25,7 +26,7 @@ function throwErrors(errors:unknown[],message:string):void{if(errors.length===1)
 /** Non-Windows owned lifecycle/replacement coordinator. NOT mutation dispatch authority:
  * admission capabilities are internal and require the later durable dispatch coordinator.
  * Persistence ports are mandatory, explicit and trusted; no no-op default exists.
- * No automatic restart supervisor, 45s startup envelope or descendant-pipe cleanup. */
+ * Supervisor is explicit owner-started/joined; no 45s startup envelope or descendant-pipe cleanup. */
 export class PortableResidentLifecycle{
   readonly instanceId=randomUUID();readonly #config:PortableSessionConfig;readonly #render:SessionDiagnosticRenderer;readonly #persistence:ResidentPersistence;
   readonly #lock=new TargetLocks();readonly #generation=new GenerationWatch(1n);
@@ -49,6 +50,8 @@ export class PortableResidentLifecycle{
   /** Internal owner capability; does not supply durable mutation/queue/stop authorization. */
   admitRequest(expected:bigint|null=null){return this.#state.admitRequest(expected);}
   admitResponse(expected:bigint){return this.#state.admitResponse(expected);}
+  /** Caller owns and joins this supervisor; shutdown waits for any active restart. */
+  runRestartSupervisor(shutdown:AbortSignal,report:RestartFailureReporter):Promise<void>{return runRestartSupervisor(this.#state.subscribeLifecycleChanges(),shutdown,generation=>this.restartGenerationIfQuiescent(generation),report);}
   requestRestart():void{this.#state.requestRestart();}
   markTimeout(generation:bigint):void{this.#state.markTimeout(generation);}
   async #stopForwarders():Promise<void>{this.#generation.replace(0n);const forwarders=this.#forwarders;this.#forwarders=null;if(forwarders)await forwarders.join();}

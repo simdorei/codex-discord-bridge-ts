@@ -60,3 +60,7 @@ test("fully reaped session reports first shutdown failure but permits an explici
 test("terminal owner disposal closes lifecycle watchers after their last unseen value",{timeout:15000},async t=>{
   const owner=await start(t),watch=owner.subscribeLifecycleChanges();await owner.dispose();await watch.changed(t.signal);assert.equal(watch.borrow(),null);await assert.rejects(watch.changed(AbortSignal.timeout(100)),GenerationWatchClosedError);watch.dispose();
 });
+test("owned supervisor replaces one native generation and shuts down without closing its successor",{timeout:15000},async t=>{
+  const owner=await start(t),shutdown=new AbortController(),reports:unknown[]=[];const supervisor=owner.runRestartSupervisor(shutdown.signal,(_g,error)=>{reports.push(error);});t.after(async()=>{shutdown.abort();await supervisor;});owner.requestRestart();
+  while(owner.generation()===1n)await delay(1,undefined,{signal:t.signal});assert.equal(owner.generation(),2n);shutdown.abort();await supervisor;assert.equal(owner.lifecycleSnapshot().healthy,true);assert.equal(await call(owner,"read",t.signal),"ok");assert.deepEqual(reports,[]);
+});
