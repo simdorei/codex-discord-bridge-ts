@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,050 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,064 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2195,3 +2195,30 @@ that supervisor leaves its healthy successor running until explicit owner dispos
 This is library integration, not a started production service. Actual durable store
 ports, guarded mutation dispatch, Discord runtime, Windows, startup/descendant cleanup
 limits, performance and sustained-operation certification remain outstanding.
+
+## 2026-10-08 — Idle-release target mutation/exclusive gate
+
+Implemented idle_release.rs journal/token contracts and idle_release/gate.rs state:
+counted ordinary mutations, target-specific exclusive subscription work, global mutation
+conflicts, before-mutation resubscription admission, exact Candidate idle verification,
+preflight durable hold checks and explicit permit release. Unrelated targets continue
+while one target is exclusively maintained. Journal installation is once with no active
+gate work, matching the source's actual condition rather than inventing a history flag.
+
+Own-data journal callbacks are pinned synchronous adapters. Tokens are immutable copies
+with exact fields/u64 generation/i64 revision. Observation defaults return false or held
+errors. Gap epochs use the source odd/even protocol, reject stale proofs, saturate without
+ABA and latch unattributed loss permanently; that gap does not stop ordinary admission.
+The existing IdleObservationError is reused for the same Rust IdleRelease discriminator
+and display prefix rather than introducing another duplicate error kind.
+
+Evidence .runtime/cloud-idle-target-gate-110: 14 focused PASS; full **3,064 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Includes independent/global targets, multiple
+leases, stale release, resubscription conflict, immutable tokens, journal errors, pinned
+callbacks, async/getter refusal, malformed outputs, scope boundaries and sticky gaps.
+Synchronous callback reentry is rejected rather than emulating native deadlock/panic;
+explicit release replaces Drop and the counter fails before u64 overflow.
+
+No actual database journal adapter or idle unsubscribe/resubscribe RPC sequence is
+installed by this change. This gate remains distinct from the queue's FIFO target lock;
+durable dispatch/maintenance integration is still required before production use.
