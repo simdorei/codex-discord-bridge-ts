@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,502 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,515 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3059,3 +3059,32 @@ The verifier returns a read snapshot, not durable interrupt permission. A caller
 the shared lock and the final writer still rechecks original custody/generation. Complete
 settings-reference resolution, stop polling worker, event/offload/Discord/service and
 Windows/operational work remain pending. No live service or external reviewer was used.
+
+
+## 2026-10-08 — One bounded owned stop worker
+
+StopControlWorker connects typed accepted-control keysets, shared target locks, current
+owned-turn verification, exact selected-snapshot checks, one-use SQL claim and native
+execute_stop_control. The cursor advances past a busy or stale target, so independent
+work is not blocked. Stored invalid binding/custody errors propagate; unconfirmed active
+turns are skipped. RPC errors record bounded original unknown state through the shared
+facade and central diagnostic callback; accepted/claimed authority is never refreshed.
+
+One owned loop uses immediate-first, phase-aligned 250ms skipping and a cooperative
+2-second cycle signal. Shutdown cancels and joins its only cycle before releasing owned
+work and tick resources. No per-command detached tasks or catch-up bursts are spawned.
+This is NOT a hard deadline for synchronous SQLite/FS, nor exact Tokio submillisecond
+tolerance/future-Drop semantics; offload/operational qualification remains necessary.
+
+Evidence .runtime/cloud-stop-worker-140: 13 new tests; focused13 PASS; full
+**3,515 PASS, zero fail/skip/cancel; strict TS0**. Native local helper/real SQLite tests
+verify busy-target bypass, original interrupt once each, cancellation after actual bytes
+retaining dispatching authority, and no replay. Deterministic coordinator tests verify
+selected change at final dispatch, wrong owner/generation, request failures, single-cycle
+ownership, deadline reports, shutdown during outstanding verification and resource joins.
+Initial mock UUID typing and number-returning diagnostic fixtures were corrected without
+weakening the product's UUID or synchronous-void contracts; original failures retained.
+
+The worker is explicit-owner started, not installed into a live Discord or Windows service.
+Frozen settings/reference admission, complete stop command routing, tracked completion
+event driver, offload/Discord/service bootstrap and existing platform limits remain.
