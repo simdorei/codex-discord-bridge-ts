@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,801 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,817 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3789,3 +3789,28 @@ and nested recursion boundaries. Strict TS exit 0; focused **41 PASS**; full Lin
 `.runtime/cloud-discord-component-model-165/` (source hashes, manifests and raw logs).
 Full Message response decoding, live Discord and platform/operational qualification
 remain incomplete. No Rust executable differential run is claimed.
+
+
+## Checkpoint 166 — Remaining simple Message model families
+
+Added PartialMember, permissions, user/channel mentions, activity/application/call,
+legacy interaction, references, role subscriptions, stickers, message snapshots,
+reactions and complete Poll child schemas. Existing User discriminator/flags/avatar
+decoration decoders are shared rather than copied. Required flags, booleans and
+vectors remain required; Option values and explicit vector defaults retain source
+map/sequence distinctions. Closed interaction enums reject unknown variants while
+open channel/message/poll/sticker enums retain unknown byte values.
+
+Permissions accept unsigned decimal strings or integer tokens and truncate the
+exact pinned mask. HexColor preserves inherited repeated-hash removal, short RGB
+digits as 0..15 (not CSS nibble duplication), and positive radix pairs. Non-ASCII
+invalid byte slices are rejected with SyntaxError rather than reproducing a Rust
+panic; this is an explicit invalid-input failure-mode difference.
+
+Sixteen new model tests passed. Initial test-only assert.throws overload incorrectly
+supplied undefined as a predicate; corrected to the message overload, with the
+original compiler log retained. Strict TS exit 0; focused **57 PASS**; full Linux
+**3,817 PASS / 0 fail / 0 skip / 0 cancelled**. Evidence is in
+`.runtime/cloud-discord-message-parts-166/`. Complete Message decoding still awaits
+Channel/thread and interaction metadata closure. No live Discord or Rust executable
+differential verification, merge or deployment is claimed.
