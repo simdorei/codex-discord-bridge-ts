@@ -1,3 +1,5 @@
+import * as ObservationLedger from "../../src/store/observation-ledger.ts";
+import * as FacadeExports from "../../src/store/state-access-facade.ts";
 import * as DeliveryPreflight from "../../src/store/delivery-preflight.ts";
 import * as DeliveryReceipts from "../../src/store/delivery-receipts.ts";
 import * as NewReplyClaims from "../../src/store/new-reply-claims.ts";
@@ -53,6 +55,17 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.activateObservation, ObservationLedger.activateObservation);
+    assert.strictEqual(FacadeExports.activateObservation, ObservationLedger.activateObservation);
+    assert.strictEqual(StateAccessFacade.discoverObservation, ObservationLedger.discoverObservation);
+    assert.strictEqual(FacadeExports.discoverObservation, ObservationLedger.discoverObservation);
+    assert.strictEqual(StateAccessFacade.markUnknownObservation, ObservationLedger.markUnknownObservation);
+    assert.strictEqual(FacadeExports.markUnknownObservation, ObservationLedger.markUnknownObservation);
+    assert.strictEqual(StateAccessFacade.nextObservationGap, ObservationLedger.nextObservationGap);
+    assert.strictEqual(FacadeExports.nextObservationGap, ObservationLedger.nextObservationGap);
+    assert.strictEqual(StateAccessFacade.observationScopeVerified, ObservationLedger.observationScopeVerified);
+    assert.strictEqual(FacadeExports.observationScopeVerified, ObservationLedger.observationScopeVerified);
+
     assert.strictEqual(StateAccessFacade.captureAsyncHistorySnapshot, AsyncHistory.captureAsyncHistorySnapshot);
     assert.strictEqual(StateAccessFacade.retainAsyncHistoryCandidate, AsyncHistory.retainAsyncHistoryCandidate);
     assert.strictEqual(StateAccessFacade.captureTerminalHistorySnapshot, AsyncHistory.captureTerminalHistorySnapshot);
@@ -165,8 +178,14 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(openCheckedRead, CheckedRead.open);
   });
 
-  it("contains only the supplied writes, CheckedRead.open and async admission reads", () => {
+  it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
+      "activateObservation",
+      "discoverObservation",
+      "markUnknownObservation",
+      "nextObservationGap",
+      "observationScopeVerified",
+
       "loadCompletionPayload",
       "readCompletionMetadataRound",
       "completionPage", "completionHeadsForTarget",
@@ -273,7 +292,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 108);
+    assert.strictEqual(actual.length, 113);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

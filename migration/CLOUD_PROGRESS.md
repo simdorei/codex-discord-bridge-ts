@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,064 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,084 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2222,3 +2222,32 @@ explicit release replaces Drop and the counter fails before u64 overflow.
 No actual database journal adapter or idle unsubscribe/resubscribe RPC sequence is
 installed by this change. This gate remains distinct from the queue's FIFO target lock;
 durable dispatch/maintenance integration is still required before production use.
+
+## 2026-10-08 — Durable observation-range ledger and central store scopes
+
+Added source observation_gap ledger activation, finite original-range discovery, unknown
+loss preservation, persisted keyset cycle selection and positive complete-range checking.
+Activation cannot erase an old unsealed tail; ignored INSERT/UPDATE or changed range
+identity rolls the whole transaction back. Scope verification reads one transaction and
+rejects any old unsealed stream, global unresolved gap, missing positive range or incomplete
+span evidence. Five owned-path APIs are exposed through StateAccessFacade.
+
+Owned open/close and commit/rollback cleanup are centralized in owned-scope.ts. Caller
+transactions are never rolled back by nested scope refusal; an owned callback leaving a
+transaction open or closing its own handle cannot return false success. Added typed
+Vec<struct> decoding to the existing Serde helper, preserving duplicate recognized-field
+rejection, ignored fields and struct sequence forms instead of JSON.parse last-wins.
+
+Evidence .runtime/cloud-observation-ledger-111: focused 28 PASS (20 new + existing facade
+coverage); full **3,084 PASS, 0 fail/skip/cancel; strict TS exit 0**. Includes UTF-8/UTF-16,
+actual temporary-file reopen/persistence/close checks, IDs above 2^53, original unknown
+evidence, rollback sabotage, incomplete/missing coverage, typed JSON corruption, owned
+scope failures and explicit public API identity/allowlist checks. An initial fixture
+inserted a duplicate sqlite_sequence row; its corrected UPDATE and the expanded facade
+allowlist/count are test corrections, not product-check weakening or code-defect RED/GREEN.
+
+At exhausted signed cursor revision, reset fails closed before changing the row; native
+Rust build-profile-dependent arithmetic overflow is not claimed equivalent. The 4096
+merged-span limit is preserved but is not a general heap/input-size bound. Proof-effect
+certification and scan-page commit still need their source-backed implementation before
+this ledger can drive production idle-release decisions. No live DB was used.

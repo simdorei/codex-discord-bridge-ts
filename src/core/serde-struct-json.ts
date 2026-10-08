@@ -91,3 +91,13 @@ export function parseSerdeStruct(text: string, shape: StructShape): Record<strin
   JSON.parse(text); // lexical validity; ignored values deliberately remain untyped
   return decodeStruct(text, shape, 0);
 }
+
+/** Vec<derived struct>: retain raw element text so duplicate recognized fields are
+ * rejected and ignored fields keep the existing typed-struct semantics. */
+export function parseSerdeStructArray(text: string, shape: StructShape): Record<string, unknown>[] {
+  if(typeof text!=="string"||/[\uD800-\uDFFF]/u.test(text))throw new SyntaxError("Expected well-formed JSON text");
+  const lexical:unknown=JSON.parse(text);if(!Array.isArray(lexical))throw new SyntaxError("Expected Serde struct vector");
+  const raw=text.trim(),result:Record<string,unknown>[]=[];let position=whitespace(raw,1);
+  while(raw[position]!=="]"){const end=valueEnd(raw,position);result.push(decodeStruct(raw.slice(position,end),shape,1));position=whitespace(raw,end);if(raw[position]===",")position=whitespace(raw,position+1);}
+  return result;
+}

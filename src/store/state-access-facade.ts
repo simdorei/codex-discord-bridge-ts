@@ -1,3 +1,4 @@
+import * as ObservationLedger from "./observation-ledger.ts";
 import * as CompletionPayload from "./completion-payload.ts";
 import * as CompletionRound from "./completion-metadata-round.ts";
 import * as CompletionMetadata from "./completion-metadata.ts";
@@ -46,6 +47,12 @@ import * as ExecutionHold from "./execution-hold.ts";
 import * as QueueClaims from "./queue-claims.ts";
 import * as DeadGeneration from "./dead-generation-admission.ts";
 import * as Preflight from "./queue-preflight-failure.ts";
+
+export const activateObservation: typeof ObservationLedger.activateObservation = ObservationLedger.activateObservation;
+export const discoverObservation: typeof ObservationLedger.discoverObservation = ObservationLedger.discoverObservation;
+export const markUnknownObservation: typeof ObservationLedger.markUnknownObservation = ObservationLedger.markUnknownObservation;
+export const nextObservationGap: typeof ObservationLedger.nextObservationGap = ObservationLedger.nextObservationGap;
+export const observationScopeVerified: typeof ObservationLedger.observationScopeVerified = ObservationLedger.observationScopeVerified;
 
 export const acknowledgeIngress: typeof IngressLifecycle.acknowledgeIngress = IngressLifecycle.acknowledgeIngress;
 export const beginIngressConfirmation: typeof IngressLifecycle.beginIngressConfirmation = IngressLifecycle.beginIngressConfirmation;
@@ -199,6 +206,12 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly activateObservation: typeof ObservationLedger.activateObservation;
+  readonly discoverObservation: typeof ObservationLedger.discoverObservation;
+  readonly markUnknownObservation: typeof ObservationLedger.markUnknownObservation;
+  readonly nextObservationGap: typeof ObservationLedger.nextObservationGap;
+  readonly observationScopeVerified: typeof ObservationLedger.observationScopeVerified;
+
   readonly stageCommentary: typeof CommentaryOutbox.stageCommentary;
   readonly pendingCommentary: typeof CommentaryOutbox.pendingCommentary;
   readonly hasPendingCommentary: typeof CommentaryOutbox.hasPendingCommentary;
@@ -320,6 +333,12 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  activateObservation,
+  discoverObservation,
+  markUnknownObservation,
+  nextObservationGap,
+  observationScopeVerified,
+
   admitPromptIntake,
   getPromptIntake,
   tryClaimPromptIntake,
