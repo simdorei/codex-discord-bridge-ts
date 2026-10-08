@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,152 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,157 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2416,3 +2416,28 @@ replacement. This is NOT a fresh Rust executable differential test or a confirme
 production vulnerability. Track whether mode transfer should change in phase 2; do not
 silently claim every replacement requires the same ledger mode as initial installation.
 Durable SQL adapters, full maintenance owner entry points and production remain pending.
+
+
+## 2026-10-08 — Owned resident idle-release entry point and managed shutdown
+
+The native resident now owns releaseIdleSubscription end-to-end: original stop-origin
+capture, target reservation, exact resident UUID/generation admission, maintenance
+transport and Work, and deterministic release of both permits. Maintenance options
+and fence callbacks are pinned at resident creation. An unconfigured owner refuses
+maintenance rather than creating an implicit permissive adapter. Managed promises
+remain owned when the original caller stops observing them; terminal close joins
+native-request completion before committing exact-child idle exit settlement.
+
+Evidence .runtime/cloud-resident-idle-work-118: 5 new combined tests; full **3,157 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Full initialized isolated SQLite stores use the
+actual idle-intent store transitions together with locally spawned helper child/stdio.
+Tests cover candidate/ACK/fresh unload, foreign owner and generation, pending admission
+preventing restart, terminal shutdown during in-flight unsubscribe and pinned options.
+
+SQLite journal callbacks in these tests borrow the fixture-owned initialized handle
+and intentionally use legacy (untracked) observation mode. They are not the production
+fresh-open durable adapter, nor full observation-effect certification. Mutation fence
+claims are controlled test ports. Ordinary mutation preparation/resubscription, real
+runtime store binding, Windows, Discord and operational qualification remain incomplete.
+The extra shutdown join is explicit JavaScript ownership; it does not certify all Rust
+Tokio cancellation/drop timing or inherited-descendant-pipe behavior.

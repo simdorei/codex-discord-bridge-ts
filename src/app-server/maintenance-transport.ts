@@ -72,3 +72,22 @@ export class MaintenanceTransport{
     }finally{written.dispose();}
   }
 }
+
+export interface ResidentMaintenanceFence extends MaintenanceTransportFence{
+  requestOrigin(method:string,params:unknown):unknown|null;
+}
+export interface ResidentMaintenanceOptions{
+  readonly fence:ResidentMaintenanceFence|null;
+  readonly renderError:(error:unknown)=>string;
+}
+/** Pin once at owner creation, including the original-origin capture callback. */
+export function pinResidentMaintenanceOptions(input:ResidentMaintenanceOptions):ResidentMaintenanceOptions{
+  if(input===null||typeof input!=="object"||types.isProxy(input))throw new TypeError("Expected resident maintenance options");
+  const own=(o:object,k:string):unknown=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))throw new TypeError("Expected own maintenance option");return d.value;};
+  const source=own(input,"fence"),render=own(input,"renderError");fn(render);
+  const renderError=(e:unknown):string=>{const r=Reflect.apply(render,undefined,[e]);if(types.isPromise(r))void Promise.prototype.then.call(r,undefined,()=>undefined);if(typeof r!=="string"||/[\uD800-\uDFFF]/u.test(r))throw new TypeError("Expected maintenance diagnostic text");return r;};
+  if(source===null)return Object.freeze({fence:null,renderError});
+  if(typeof source!=="object"||types.isProxy(source))throw new TypeError("Expected resident maintenance fence");
+  const origin=own(source,"requestOrigin");fn(origin);const base=pinFence(source as ResidentMaintenanceFence)!;
+  return Object.freeze({renderError,fence:Object.freeze({...base,requestOrigin:(method:string,params:unknown)=>{const result=Reflect.apply(origin,source,[method,cloneOwnedSerdeValue(params)]);if(types.isPromise(result))void Promise.prototype.then.call(result,undefined,()=>undefined);return result===null?null:cloneOwnedSerdeValue(result);}})});
+}

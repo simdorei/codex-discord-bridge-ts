@@ -1,5 +1,7 @@
+import {IdleMaintenanceWork} from "./idle-maintenance.ts";
+import {MaintenanceTransport,pinResidentMaintenanceOptions,type ResidentMaintenanceOptions} from "./maintenance-transport.ts";
 import {IdleTargetGate} from "./idle-target-gate.ts";
-import {pinIdleReleaseJournal,type IdleReleaseJournal} from "./idle-release-journal.ts";
+import {cloneIdleReleaseToken,pinIdleReleaseJournal,type IdleReleaseToken,type IdleReleaseJournal} from "./idle-release-journal.ts";
 import {IdleObservationError,type AppNotification} from "./notification-state.ts";
 import {runRestartSupervisor,type RestartFailureReporter} from "./restart-supervisor.ts";
 import {randomUUID} from "node:crypto";
@@ -26,19 +28,20 @@ function pinPersistence(input:ResidentPersistence):ResidentPersistence{
   const persist=get("persistDeadWork"),exited=get("oldChildExited");return Object.freeze({persistDeadWork:(id:string,work:DeadGenerationWork)=>invokeSynchronousVoid(persist,input,[id,work]),oldChildExited:(id:string,generation:bigint)=>invokeSynchronousVoid(exited,input,[id,generation])});
 }
 function throwErrors(errors:unknown[],message:string):void{if(errors.length===1)throw errors[0];if(errors.length>1)throw new AggregateError(errors,message);}
-/** Non-Windows owned lifecycle/replacement coordinator. NOT mutation dispatch authority:
- * admission capabilities are internal and require the later durable dispatch coordinator.
+/** Non-Windows owned lifecycle/replacement and bounded idle-maintenance coordinator.
+ * Raw admission is internal; ordinary queue/mutation dispatch still needs its durable coordinator.
  * Persistence ports are mandatory, explicit and trusted; no no-op default exists.
  * Supervisor is explicit owner-started/joined; no 45s startup envelope or descendant-pipe cleanup. */
 export class PortableResidentLifecycle{
   readonly #targetGate=new IdleTargetGate();
+  readonly #maintenance:ResidentMaintenanceOptions|null;readonly #managedIdle=new Set<Promise<void>>();
   readonly instanceId=randomUUID();readonly #config:PortableSessionConfig;readonly #render:SessionDiagnosticRenderer;readonly #persistence:ResidentPersistence;
   readonly #lock=new TargetLocks();readonly #generation=new GenerationWatch(1n);
   readonly #notifications=new BoundedBroadcast<ResidentNotificationEvent>(1000);readonly #requests=new BoundedBroadcast<ResidentServerRequestEvent>(500);
   readonly #sessions=new Map<PortableResidentClientPort,PortableAppServerSession>();#state!:ResidentAdmissionState<PortableResidentClientPort>;#forwarders:ResidentForwarders|null=null;#disposed=false;
-  private constructor(config:PortableSessionConfig,render:SessionDiagnosticRenderer,persistence:ResidentPersistence){syncFunction(render);this.#config=cloneOwnedSerdeValue(config) as PortableSessionConfig;this.#render=render;this.#persistence=pinPersistence(persistence);}
-  static async start(config:PortableSessionConfig,render:SessionDiagnosticRenderer,persistence:ResidentPersistence,signal?:AbortSignal):Promise<PortableResidentLifecycle>{
-    const owner=new PortableResidentLifecycle(config,render,persistence);let staged:ResidentForwarders|undefined,ready:PortableAppServerSession|undefined;
+  private constructor(config:PortableSessionConfig,render:SessionDiagnosticRenderer,persistence:ResidentPersistence,maintenance:ResidentMaintenanceOptions|null){this.#maintenance=maintenance===null?null:pinResidentMaintenanceOptions(maintenance);syncFunction(render);this.#config=cloneOwnedSerdeValue(config) as PortableSessionConfig;this.#render=render;this.#persistence=pinPersistence(persistence);}
+  static async start(config:PortableSessionConfig,render:SessionDiagnosticRenderer,persistence:ResidentPersistence,signal?:AbortSignal,maintenance:ResidentMaintenanceOptions|null=null):Promise<PortableResidentLifecycle>{
+    const owner=new PortableResidentLifecycle(config,render,persistence,maintenance);let staged:ResidentForwarders|undefined,ready:PortableAppServerSession|undefined;
     try{
       const started=await PortableAppServerSession.startObserved(owner.#config,session=>{owner.#sessions.set(session.residentClient(),session);staged=owner.#prepare(session,1n);return {value:staged,dispose(){}};},render,signal);
       ready=started.session;signal?.throwIfAborted();owner.#state=new ResidentAdmissionState(started.session.residentClient());owner.#forwarders=started.observer.value;owner.#forwarders.activate();return owner;
@@ -55,6 +58,26 @@ export class PortableResidentLifecycle{
     if(tracked){const admission=this.#state.admitResponse(this.generation());try{admission.client.requireObservationLedger();}finally{admission.release();}}
   }
   observationTrackingEnabled():boolean{return this.#targetGate.journal()?.tracksObservations()??false;}
+  /** Managed promise retains exact resident + target ownership until completion.
+   * No caller AbortSignal may cancel a request after durable permission is recorded. */
+  releaseIdleSubscription(input:IdleReleaseToken):Promise<void>{
+    const token=cloneIdleReleaseToken(input),options=this.#maintenance;
+    if(options===null)return Promise.reject(new IdleObservationError("maintenance adapter is not installed"));
+    if(token.state!=="Candidate"&&token.state!=="AwaitUnload")return Promise.reject(new IdleObservationError("only Candidate or known-ACK AwaitUnload may run maintenance"));
+    const origin=options.fence?.requestOrigin("thread/unsubscribe",{threadId:token.threadId})??null;
+    const permit=this.#targetGate.reserve(token);
+    const task=(async()=>{
+      let admission;
+      try{
+        if(token.ownerId!==this.instanceId)throw new IdleObservationError("idle release owner mismatch");
+        admission=this.#state.admitRequest(token.generation);
+        const transport=new MaintenanceTransport(this.#state,admission,this.#targetGate,permit,token,options.fence,origin,options.renderError);
+        await new IdleMaintenanceWork(token,permit,transport.port()).release();
+      }finally{try{admission?.release();}finally{permit.release();}}
+    })();
+    this.#managedIdle.add(task);void task.then(()=>this.#managedIdle.delete(task),()=>this.#managedIdle.delete(task));return task;
+  }
+
   observationWindow(generation:bigint,after:bigint,upper:bigint|null=null){
     const admission=this.#state.admitResponse(generation);try{
       const page=admission.client.observationWindow(after,upper);return Object.freeze({...page,ownerId:this.instanceId,generation});
@@ -138,6 +161,7 @@ export class PortableResidentLifecycle{
     if(plan.replacement)try{await this.#cleanupDebt(plan.replacement);}catch(error){errors.push(error);}
     if(plan.current){const session=this.#session(plan.current),generation=this.generation();let cleaned=false,journaled=false;
       try{await session.dispose();cleaned=true;}catch(error){errors.push(error);}
+      await Promise.allSettled([...this.#managedIdle]);
       try{this.#journalExit(session,generation);journaled=true;}catch(error){errors.push(error);}
       if(cleaned&&journaled)try{this.#state.finishCurrentClose(plan.current);this.#sessions.delete(plan.current);}catch(error){errors.push(error);}
     }
