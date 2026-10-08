@@ -1,3 +1,4 @@
+import {decodeDiscordGatewayBotInfoBytes,DiscordGatewayModelError,type DiscordGatewayBotInfo} from './model/gateway-info.ts';
 import {setImmediate as yieldToRuntime} from 'node:timers/promises';
 import {types} from 'node:util';
 import {invokeSynchronousVoid} from '../core/synchronous-void.ts';
@@ -6,7 +7,7 @@ import type {IdempotentMessageRequest} from './idempotent-message.ts';
 import {DiscordTransportFault} from './transport-fault.ts';
 import type {DiscordReceiptTransport} from '../runtime/completion/receipt-sender.ts';
 import type {TypingTransport} from '../runtime/completion/typing.ts';
-export interface DiscordWireRequest{readonly method:'POST';readonly path:string;readonly body:string|null;readonly authorization:string|null}
+export interface DiscordWireRequest{readonly method:'POST'|'GET';readonly path:string;readonly body:string|null;readonly authorization:string|null}
 /** Response/body/decompression/socket custody belongs to this trusted adapter. release
  * must cancel/drain and settle owned IO, even when the caller did not read the body. */
 export interface DiscordWireResponse{readonly status:number;readonly headers:ReadonlyMap<string,Uint8Array>;bytes():Promise<Uint8Array>;release():Promise<void>}
@@ -15,7 +16,7 @@ export interface DiscordHttpWire{request(input:DiscordWireRequest,headerTimeoutM
  * header update and permits further queued work; release is idempotent fallback for
  * pre-response failures, not a second grant or a delay until body decoding finishes. */
 export interface DiscordRatePermit{complete(status:number,headers:ReadonlyMap<string,Uint8Array>):void;release():void}
-export interface DiscordRateLimiter{acquire(method:'POST',path:string,signal:AbortSignal):Promise<DiscordRatePermit>}
+export interface DiscordRateLimiter{acquire(method:'POST'|'GET',path:string,signal:AbortSignal):Promise<DiscordRatePermit>}
 /** Mandatory complete twilight Message-compatible decoder, not an id-only JSON probe.
  * Its full implementation/qualification is separate; there is no permissive default. */
 export interface DiscordMessageDecoder{decode(body:Uint8Array):bigint}
@@ -44,19 +45,20 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
  sendValidated(input:IdempotentMessageRequest):Promise<bigint>{
   const method=own(input,'method'),path=own(input,'path'),body=own(input,'body');if(method!=='POST'||typeof path!=='string'||typeof body!=='string')throw new DiscordTransportFault('BuildingRequest','invalid message route');
   const route=/^channels\/([1-9][0-9]{0,19})\/messages$/u.exec(path);if(route===null||route[0]!==path)throw new DiscordTransportFault('BuildingRequest','invalid message route');channel(BigInt(route[1]!));
-  return this.#run(signal=>this.#request(path,body,true,signal)) as Promise<bigint>;
+  return this.#run(signal=>this.#request('POST',path,body,bytes=>{const id=this.#decoder.decode(bytes);if(types.isPromise(id))void Promise.prototype.then.call(id,undefined,()=>undefined);if(typeof id!=='bigint'||id<=0n||id>=(1n<<64n))throw new Error('invalid identity');return id;},()=>new DiscordTransportFault('Receipt','response model could not be decoded'),signal)) as Promise<bigint>;
  }
- createTyping(id:bigint,signal:AbortSignal):Promise<void>{return this.#run(async owned=>{await this.#request(`channels/${channel(id)}/typing`,null,false,owned);},signal);}
- async #request(path:string,body:string|null,message:boolean,signal:AbortSignal):Promise<bigint|void>{
-  const request:DiscordWireRequest=Object.freeze({method:'POST',path,body,authorization:this.#authorization});
+ createTyping(id:bigint,signal:AbortSignal):Promise<void>{return this.#run(async owned=>{await this.#request('POST',`channels/${channel(id)}/typing`,null,null,()=>new Error('unused typing decoder'),owned);},signal);}
+ getGatewayBot(signal?:AbortSignal):Promise<DiscordGatewayBotInfo>{return this.#run(owned=>this.#request('GET','gateway/bot',null,decodeDiscordGatewayBotInfoBytes,()=>new DiscordGatewayModelError(),owned),signal) as Promise<DiscordGatewayBotInfo>;}
+ async #request<T>(method:'POST'|'GET',path:string,body:string|null,decode:((bytes:Uint8Array)=>T)|null,decodeFailure:()=>Error,signal:AbortSignal):Promise<T|void>{
+  const request:DiscordWireRequest=Object.freeze({method,path,body,authorization:this.#authorization});
   for(;;){signal.throwIfAborted();let permit:DiscordRatePermit|undefined,response:DiscordWireResponse|undefined;
    try{
-    try{permit=await this.#rate.acquire('POST',path,signal);signal.throwIfAborted();response=await this.#wire.request(request,this.#timeout,signal);}catch(error){if(signal.aborted&&error===signal.reason)throw error;throw transport();}
+    try{permit=await this.#rate.acquire(method,path,signal);signal.throwIfAborted();response=await this.#wire.request(request,this.#timeout,signal);}catch(error){if(signal.aborted&&error===signal.reason)throw error;throw transport();}
     const status=response.status;if(!Number.isInteger(status)||status<100||status>599)throw transport();if(status===401&&this.#authorization!==null)this.#invalid=true;
     try{invokeSynchronousVoid(permit.complete,permit,[status,response.headers]);}catch{throw transport();}
     if(status>=200&&status<300){
-     if(!message)return;
-     try{const bytes=await response.bytes(),id=this.#decoder.decode(bytes);if(types.isPromise(id))void Promise.prototype.then.call(id,undefined,()=>undefined);if(typeof id!=='bigint'||id<=0n||id>=(1n<<64n))throw new Error('invalid identity');return id;}catch{throw new DiscordTransportFault('Receipt','response model could not be decoded');}
+     if(decode===null)return;
+     try{return decode(await response.bytes());}catch{throw decodeFailure();}
     }
     if(status!==429){
      try{const bytes=await response.bytes(),text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);parseDiscordApiError(text);}catch{throw transport();}

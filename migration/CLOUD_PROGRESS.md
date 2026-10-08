@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,393 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,405 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4647,3 +4647,27 @@ fail/0 skip/0 cancelled**, strict TS exit0, are separately saved under
 `.runtime/cloud-gateway-decoded-port-204/`. Loopback integration is not live Discord,
 TLS, Windows or operational qualification. Discovery/startup composition and full
 bridge consumer wiring remain unfinished.
+
+
+## Checkpoint 205 — authenticated Gateway discovery HTTP profile
+
+Added complete BotConnectionInfo/SessionStartLimit decoding with exact u16/u32/u64
+widths and a frozen result. Model URL/shard values are not network/allocation
+authority. GET gateway/bot now reuses the existing owned HTTP wire, response state
+machine, authorization invalidation and global rate manager; other GET paths and
+method/path mismatches remain rejected. Gateway's no-resource bucket namespace
+stays separate from channel buckets even when provider bucket bytes match.
+
+Discovery body/model failure has its own safe error type; existing message receipt
+classification is unchanged. Tests exercise real loopback GET/body,429 retry,
+shared global budget, bucket separation, cancellation and socket cleanup; fake-wire
+tests verify authorization header and cross-method401 invalidation without sending
+credentials to a server. Initial focused66 PASS/1 FAIL was a fixture phase race:
+a server write did not prove client body-read entry. A restored-in-finally observer
+of the actual native bytes() call fixed the test without weakening its expected
+model-stage error or changing production behavior for that correction.
+
+Final strict TS exit0; focused67 PASS (12 new plus55 retained); full Linux **4,405
+PASS /0 fail/0 skip/0 cancelled**. Evidence `.runtime/cloud-gateway-discovery-205/`.
+Recommended paused-runtime startup composition, live auth/TLS, Windows and
+operational qualification remain pending.

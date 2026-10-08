@@ -16,7 +16,8 @@ export interface DiscordChannelClientOptions{
 }
 /** One owned channel-profile client shares wire, rate state and token invalidation
  * across typing/messages. It supplies the complete response decoder internally.
- * Gateway discovery, interaction routes and service bootstrap are separate scopes. */
+ * Gateway discovery shares this owner; interaction routes and service bootstrap
+ * remain separate scopes. */
 export class DiscordChannelClient implements DiscordReceiptTransport,TypingTransport{
  readonly #wire:NodeDiscordHttpWire;readonly #rate:DiscordChannelRateLimiter;readonly #engine:DiscordResponseEngine;#closing:Promise<void>|null=null;
  private constructor(wire:NodeDiscordHttpWire,rate:DiscordChannelRateLimiter,engine:DiscordResponseEngine){this.#wire=wire;this.#rate=rate;this.#engine=engine;}
@@ -38,6 +39,7 @@ export class DiscordChannelClient implements DiscordReceiptTransport,TypingTrans
  }
  sendValidated(request:IdempotentMessageRequest):Promise<bigint>{return this.#engine.sendValidated(request);}
  createTyping(channel:bigint,signal:AbortSignal):Promise<void>{return this.#engine.createTyping(channel,signal);}
+ getGatewayBot(signal?:AbortSignal){return this.#engine.getGatewayBot(signal);}
  get authorizationInvalidated():boolean{return this.#engine.authorizationInvalidated;}
  get activeRequests():number{return this.#wire.activeRequests;}
  get ownedSockets():number{return this.#wire.ownedSockets;}
