@@ -6,7 +6,9 @@ import {extractThreadId,extractTurnId} from "./identity.ts";
 const MAX_U64=(1n<<64n)-1n;
 export interface AppNotification{readonly method:string;readonly params:unknown}
 export interface ObservationWindow{readonly ownerId:string;readonly generation:bigint;readonly firstAvailable:bigint;readonly sourceUpper:bigint;readonly upper:bigint;readonly scannedThrough:bigint;readonly events:readonly {readonly sequence:bigint;readonly notification:AppNotification|null}[]}
-export class IdleObservationError extends Error{readonly kind="IdleRelease";constructor(detail:string){super(`idle subscription release: ${detail}`);this.name="IdleObservationError";}}
+const ownedIdleFailures=new WeakMap<object,string>();
+export function ownedIdleObservationFailure(error:unknown):string|null{return error!==null&&(typeof error==="object"||typeof error==="function")?ownedIdleFailures.get(error)??null:null;}
+export class IdleObservationError extends Error{readonly kind="IdleRelease";constructor(detail:string){super(`idle subscription release: ${detail}`);this.name="IdleObservationError";ownedIdleFailures.set(this,detail);}}
 function u64(value:bigint):void{if(typeof value!=="bigint"||value<0n||value>MAX_U64)throw new TypeError("Expected u64 observation sequence");}
 export function nextNotificationRevision(current:bigint):{revision:bigint;exhausted:boolean}{u64(current);return current===MAX_U64?{revision:current,exhausted:true}:{revision:current+1n,exhausted:false};}
 function copy(input:AppNotification):AppNotification{const method=serdeField(input,"method");if(typeof method!=="string"||/[\uD800-\uDFFF]/u.test(method))throw new TypeError("Expected notification method");return Object.freeze({method,params:cloneOwnedSerdeValue(serdeField(input,"params"))});}

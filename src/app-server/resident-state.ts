@@ -20,9 +20,11 @@ export type ResidentFailure=
   |{readonly kind:"GenerationMismatch";readonly expected:bigint;readonly actual:bigint}
   |{readonly kind:"GenerationQuarantined";readonly generation:bigint}
   |{readonly kind:"ReplacementState"|"MutationHeld"|"DeadGenerationFence";readonly message:string};
+const ownedResidentFailures=new WeakMap<object,ResidentFailure>();
+export function ownedResidentFailure(error:unknown):ResidentFailure|null{return error!==null&&(typeof error==="object"||typeof error==="function")?ownedResidentFailures.get(error)??null:null;}
 export class ResidentStateError extends Error{
   readonly detail:ResidentFailure;
-  constructor(detail:ResidentFailure){super(detail.kind==="GenerationMismatch"?`app-server generation mismatch: expected ${detail.expected}, current ${detail.actual}`:detail.kind==="GenerationQuarantined"?`app-server generation ${detail.generation} is quarantined after an ambiguous timeout`:detail.kind==="ReplacementState"?`resident app-server replacement state invalid: ${detail.message}`:detail.kind==="DeadGenerationFence"?`dead app-server work could not be durably fenced: ${detail.message}`:`mutation execution held: ${detail.message}`);this.name="ResidentStateError";this.detail=Object.freeze(detail);}
+  constructor(detail:ResidentFailure){super(detail.kind==="GenerationMismatch"?`app-server generation mismatch: expected ${detail.expected}, current ${detail.actual}`:detail.kind==="GenerationQuarantined"?`app-server generation ${detail.generation} is quarantined after an ambiguous timeout`:detail.kind==="ReplacementState"?`resident app-server replacement state invalid: ${detail.message}`:detail.kind==="DeadGenerationFence"?`dead app-server work could not be durably fenced: ${detail.message}`:`mutation execution held: ${detail.message}`);this.name="ResidentStateError";this.detail=Object.freeze(detail);ownedResidentFailures.set(this,this.detail);}
 }
 export interface ResidentAdmission<C extends ResidentClientPort>{readonly client:C;readonly generation:bigint;readonly permit:ClientAdmissionPermit;release():void}
 export interface ReplacementCleanup<C extends ResidentClientPort>{readonly client:C;readonly generation:bigint}

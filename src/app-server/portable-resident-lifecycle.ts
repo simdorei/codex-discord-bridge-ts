@@ -99,6 +99,8 @@ export class PortableResidentLifecycle{
   #prepare(session:PortableAppServerSession,generation:bigint):ResidentForwarders{return new ResidentForwarders(session,generation,this.#notifications,this.#requests,this.#generation.subscribe(),{waitClosed:signal=>session.waitClosed(signal),onClosed:()=>this.#state.markCurrentClosed(session.residentClient(),generation)});}
   #session(port:PortableResidentClientPort):PortableAppServerSession{const session=this.#sessions.get(port);if(!session)throw new ResidentStateError({kind:"ReplacementState",message:"owned native session is missing"});return session;}
   generation():bigint{return this.#state.generation();}
+  /** Same current-client snapshot read as the source resident: no RPC, restart or new admission. */
+  activeTurnId(thread:string):string|null{if(typeof thread!=="string"||/[\uD800-\uDFFF]/u.test(thread))throw new TypeError("Expected well-formed target");return this.#session(this.#state.currentClient()).activeTurnId(thread);}
   /** Install once before target intake. The native client capability is internal;
    * callers must not use its raw prefix setter as substitute for this journal proof. */
   installIdleReleaseJournal(input:IdleReleaseJournal):void{

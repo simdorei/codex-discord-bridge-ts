@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,384 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,422 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2907,3 +2907,37 @@ The initialized-store contract remains narrower than Rust's implicit schema init
 on every callback. Existing replacement-generation observation-mode nuance remains as
 recorded earlier; no new automatic scope certification was added. Initial stop acceptance,
 Discord/service bootstrap, Windows and performance/operational work remain incomplete.
+
+
+## 2026-10-08 — Real resident queue backend and bounded async history
+
+AppServerTurnBackend now binds QueueStartCoordinator to the owned native resident. It
+implements current-client active-turn reads, generation-local fresh-thread skip/consume,
+exact resume identity, sorted turn states, persistent distinct fork, original claimed
+queue dispatch, Rust-whitespace turn identity and optional data-only skill input shaping.
+All application backend error conversion is centralized. Owned provenance maps prevent
+forged prototypes or changed public fields from changing retry classification. A revoked
+claimed start remains ambiguous and does not grant rewind of Starting or replay. Unknown
+JavaScript mutation failures are conservatively ambiguous beyond Rust's closed enum.
+
+Historical async reads preserve the source eight-page/16-turn/1-MiB bounds, exact target
+metadata, all-turn duplicate detection, UTF-8 identity/cursor limits, generation pinning
+and selected arrival order. Missing cursor means exhausted in this legacy contract; it
+is intentionally not substituted for the stricter owned recovery collector. Terminal
+evidence adds raw Goal and current-thread observations within the combined byte bound.
+It is JSON evidence, not a native release proof. Recovery prerequisite calls delegate to
+the actual resident's distinct opaque single-use proof path.
+
+Evidence .runtime/cloud-runtime-app-backend-135: 38 new tests, focused38 PASS, full
+**3,422 PASS, zero fail/skip/cancel; strict TS exit0**. Native local helper + real SQLite
+exercise resume/read/claim/start/Running through the existing queue coordinator, stale
+original-owner rejection before any bytes, fresh knowledge consumption on failed reply,
+raw historical evidence and structured remote errors. Pure boundary tests cover byte
+limits, pagination, cursor cycles, identity changes, and passive error provenance. One
+initial test syntax error was corrected; raw compiler/loader failure logs are retained.
+
+No live Codex/Discord request or external reviewer was invoked for these tests. Complete
+Discord/service composition and the event worker, initial user-stop acceptance, native
+Windows, descendant pipe cleanup, 45-second startup envelope and performance/operational
+qualification remain unfinished. The frozen Rust authority and phase-2 newer Rust/Pro
+contract follow-up remain unchanged.
