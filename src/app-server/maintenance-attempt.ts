@@ -10,7 +10,7 @@ import type {IdleRpcResult} from "./idle-maintenance.ts";
 export interface MaintenanceClaim{
   readonly ownerId:string;readonly generation:bigint;readonly attemptId:string;
   readonly wire:RequestId;readonly method:string;readonly params:unknown;
-  readonly scoped:true;readonly origin:unknown|null;
+  readonly scoped:boolean;readonly origin:unknown|null;
 }
 export interface MaintenanceCompletion{
   readonly ownerId:string;readonly generation:bigint;readonly attemptId:string;

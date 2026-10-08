@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,175 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,186 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2496,3 +2496,32 @@ managed-work boundary; arbitrary external task schedulers are not certified. The
 scopes carry trusted server metadata, not user-supplied execution authority. Archive
 adapter subtree validation and full ordinary dispatch/queue/stop composition still
 must be implemented before treating this as end-to-end permission enforcement.
+
+
+## 2026-10-08 — Ordinary dispatch intent and original queue/stop claim selection
+
+Added ordinary DispatchAttempt with exact owner, generation, attempt UUID, wire,
+original metadata and write-start evidence. Only identified known operations (or the
+source's explicit repair/control cases) can claim target isolation, and only after
+successful durable commit. Observations and ordinary unclaimed interrupt do not create
+new mutation claims. Original stop claims take precedence, queue claims retain their
+own callback, and installed legacy adapters fail closed when those APIs are absent.
+
+Completion writes not_sent, reply_ok or owned Remote reply_error to the exact appropriate
+adapter; a stop completion cannot fall back to generic finish. Ambiguous started results
+and failed evidence commits retain the intent as MutationOutcomeUnknown. Original input
+snapshots and callback pins prevent later caller mutation, and attempts are single-use.
+
+Evidence .runtime/cloud-dispatch-attempt-121: 11 new tests; focused 21 PASS; full
+**3,186 PASS, 0 fail/skip/cancel; strict TS exit 0**. Before publication, direct review
+found that a missing own ownerId could read an inherited Object.prototype getter.
+The same test SHA fails old staged source (10 pass/1 fail, getter count 1) and passes
+the corrected exact-own-field gate (11 pass). Raw logs, source hashes and isolated old
+stage are retained in review-red-green.json and its named artifacts. No accessor code
+runs for missing own identity after the correction.
+
+These are durable intent/coordinator primitives with controlled fence adapters, not
+completed queue/stop production dispatch. Outer claim validation, actual ordinary
+request/response wiring and the real SQL fence remain necessary. The shared mutation
+claim type now permits boolean scoped for ordinary operations; maintenance still
+always emits scoped:true as before. No live network service was called.
