@@ -3,7 +3,7 @@ import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
 import {OwnedPortableAppServerProcess,type PortableProcessConfig} from "./portable-process.ts";
 import {NodeAppServerInput} from "./node-streams.ts";
 import {ClientLifecycle,type ClientAdmissionPermit} from "./client-lifecycle.ts";
-import type {ResidentClientPort} from "./resident-state.ts";
+import type {ResidentDeadClientPort} from "./resident-state.ts";
 import {ClientRuntimeState} from "./runtime-state.ts";
 import {PendingResponses} from "./pending-responses.ts";
 import {ClientCloseCoordinator} from "./close-coordinator.ts";
@@ -23,7 +23,7 @@ import type {RequestId,ServerRequestOccurrence,RpcErrorPayload} from "../protoco
 export interface PortableSessionConfig{readonly process:PortableProcessConfig;readonly clientInfo:StartupClientInfo}
 /** Internal resident-owner capability, bound once to this session's private gate.
  * Receiving this port grants admission/sealing access to this owned connection. */
-export interface PortableResidentClientPort extends ResidentClientPort{
+export interface PortableResidentClientPort extends ResidentDeadClientPort{
   admissionSnapshot():ReturnType<ClientLifecycle["snapshot"]>;
   requestAdmitted(permit:ClientAdmissionPermit,method:string,params:unknown,waitMs:number,hooks?:RequestHooks,signal?:AbortSignal):Promise<unknown>;
   notifyAdmitted(permit:ClientAdmissionPermit,method:string,params:unknown,signal?:AbortSignal):Promise<void>;
@@ -56,6 +56,14 @@ export class PortableAppServerSession{
       sealAdmissions:()=>{this.#gate.sealForCleanup("resident admissions sealed");},
       sealIfQuiescent:()=>this.#gate.sealIfQuiescent(()=>!this.#state.hasActiveTurns&&!this.#state.hasUnsettledServerRequests),
       withOpen:<T>(operation:()=>T):T=>this.#gate.withOpen(operation),
+      hasOwnedChildExited:()=>this.#native.exitConfirmed,
+      isTransportClosed:()=>this.#state.snapshot().closedReason!==null,
+      sealIfNoAdmissions:()=>this.#gate.sealIfQuiescent(()=>true),
+      deadGenerationWork:generation=>this.#state.deadGenerationWork(generation),
+      settleDeadGenerationExact:expected=>{
+        const gate=this.#gate.snapshot();if(!this.#native.exitConfirmed||!gate.sealed||gate.inFlight!==0n||this.#state.snapshot().closedReason===null)return false;
+        return this.#state.settleDeadGenerationAfterExactMatch(expected);
+      },
       admissionSnapshot:()=>this.#gate.snapshot(),
       requestAdmitted:(permit,method,params,waitMs,hooks,signal)=>this.#requests.requestAdmitted(permit,method,params,waitMs,hooks,signal),
       notifyAdmitted:(permit,method,params,signal)=>this.#requests.notifyAdmitted(permit,method,params,signal),

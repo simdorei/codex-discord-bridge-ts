@@ -22,10 +22,12 @@ function copy(input:PendingServerRequest):PendingServerRequest{
 interface Key{idKey:string;occurrence:string;key:string}
 const key=(id:RequestId,occurrence:ServerRequestOccurrence):Key=>{const idKey=requestIdKey(id),hex=occurrenceHex(occurrence);return {idKey,occurrence:hex,key:JSON.stringify([idKey,hex])};};
 const same=(a:PendingServerRequest,b:PendingServerRequest)=>a.method===b.method&&serdeValueEqual(a.params,b.params);
-/** One execution-context owner. No wire response or dead-generation clear authority.
+/** One execution-context owner. No wire response or independent durable-settlement authority.
  * Reads return immutable snapshots; unknown/in-flight responses remain unsettled. */
 export class ServerRequestState{
   readonly #order:Key[]=[];readonly #pending=new Map<string,PendingServerRequest>();readonly #claimed=new Map<string,{request:PendingServerRequest;status:"Responding"|"Indeterminate"}>();readonly #deferred=new Map<string,PendingServerRequest>();
+  /** Internal runtime owner only after exact persisted dead-generation match. */
+  clearDeadGeneration():void{this.#order.length=0;this.#pending.clear();this.#claimed.clear();this.#deferred.clear();}
   get unsettledCount():number{return this.#order.length;}
   get hasUnsettled():boolean{return this.#pending.size>0||this.#claimed.size>0||this.#deferred.size>0;}
   #capacity(id:RequestId):void{if(this.#order.length>=500)throw new ServerRequestRecordError("Saturated",id);}

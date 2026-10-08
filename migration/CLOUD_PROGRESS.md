@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,001 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,015 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2078,3 +2078,33 @@ Evidence .runtime/cloud-written-guard-105: 9 focused PASS, full **3,001 PASS,
 isolated transport failure, replaced flush flags, disposal, retained caller lease,
 old-generation/terminal protection and retry after failed cancellation publication.
 No native dispatch integration, durable restart fence or whole-resident completion claim.
+
+## 2026-10-08 — Exact dead-generation capture and settlement binding
+
+Connected the source-backed resident dead-work sequence to private native/runtime owners:
+actual owned exit observation, final transport closure and zero admitted operations are
+required before the normal fence path invokes its mandatory synchronous persistence port.
+Live timeout quarantine may drain; EOF alone is not native-exit evidence. Empty work is
+still captured on the fence path. Exact immutable work is compared again before clearing
+active turns and all pending/claimed/indeterminate/deferred incoming occurrences.
+Notification history is preserved. Stored exact settlement is idempotent even after a
+later generation, while changed old work cannot settle a new generation.
+
+The persistence callback remains a REQUIRED trusted adapter: it must return only after
+durable capture. Tests use in-memory receipts, not a real durable store. Internal explicit
+settlement APIs are not proof of persistence. The native port adds fail-closed exit/sealed/
+zero-admission checks to explicit settlement. It retains the exact owned process object
+and confirmed-exit observation even after disposal; an arbitrary missing handle/PID is
+never accepted as death. The encompassing restart workflow still needs serialization.
+
+Evidence .runtime/cloud-dead-generation-106: 40 focused PASS (14 new + existing state/native
+cases), full **3,015 PASS, 0 fail/skip/cancel; strict TS exit 0**. Includes actual local
+helper exit with unresolved work, failed/async persistence, mutation or terminal close
+during capture, wrong occurrence/method/payload/order, exact empty/idempotent capture,
+closed-but-live refusal, preserved history, hostile snapshot getters/proxies, and u64
+payload preservation. Review aligned the failure discriminator and display prefix with
+source DeadGenerationFence. Five complete frozen Rust authority hashes are recorded.
+
+This is a bounded library fence with native observation, not an installed production DB
+fence or complete restart supervisor. Automatic replacement/forwarder activation, durable
+mutation dispatch, Windows, sustained operation and deployment remain unfinished.

@@ -1,3 +1,5 @@
+import {invokeSynchronousVoid} from "../core/synchronous-void.ts";
+import {cloneDeadGenerationWork,deadGenerationWorkEqual,deadGenerationWorkIsEmpty,type DeadGenerationWork,type DeadGenerationSettleResult} from "./dead-generation-work.ts";
 import {types} from "node:util";
 import type {ClientAdmissionPermit} from "./client-lifecycle.ts";
 import {AppServerClosedError} from "./client-errors.ts";
@@ -7,13 +9,20 @@ export interface ResidentClientPort{
   admitOperation():ClientAdmissionPermit;sealAdmissions():void;sealIfQuiescent():boolean;
   withOpen<T>(operation:()=>T):T;
 }
+export interface ResidentDeadClientPort extends ResidentClientPort{
+  hasOwnedChildExited():boolean;
+  isTransportClosed():boolean;
+  sealIfNoAdmissions():boolean;
+  deadGenerationWork(generation:bigint):DeadGenerationWork|null;
+  settleDeadGenerationExact(expected:DeadGenerationWork):boolean;
+}
 export type ResidentFailure=
   |{readonly kind:"GenerationMismatch";readonly expected:bigint;readonly actual:bigint}
   |{readonly kind:"GenerationQuarantined";readonly generation:bigint}
-  |{readonly kind:"ReplacementState"|"MutationHeld";readonly message:string};
+  |{readonly kind:"ReplacementState"|"MutationHeld"|"DeadGenerationFence";readonly message:string};
 export class ResidentStateError extends Error{
   readonly detail:ResidentFailure;
-  constructor(detail:ResidentFailure){super(detail.kind==="GenerationMismatch"?`app-server generation mismatch: expected ${detail.expected}, current ${detail.actual}`:detail.kind==="GenerationQuarantined"?`app-server generation ${detail.generation} is quarantined after an ambiguous timeout`:detail.kind==="ReplacementState"?`resident app-server replacement state invalid: ${detail.message}`:`mutation execution held: ${detail.message}`);this.name="ResidentStateError";this.detail=Object.freeze(detail);}
+  constructor(detail:ResidentFailure){super(detail.kind==="GenerationMismatch"?`app-server generation mismatch: expected ${detail.expected}, current ${detail.actual}`:detail.kind==="GenerationQuarantined"?`app-server generation ${detail.generation} is quarantined after an ambiguous timeout`:detail.kind==="ReplacementState"?`resident app-server replacement state invalid: ${detail.message}`:detail.kind==="DeadGenerationFence"?`dead app-server work could not be durably fenced: ${detail.message}`:`mutation execution held: ${detail.message}`);this.name="ResidentStateError";this.detail=Object.freeze(detail);}
 }
 export interface ResidentAdmission<C extends ResidentClientPort>{readonly client:C;readonly generation:bigint;readonly permit:ClientAdmissionPermit;release():void}
 export interface ReplacementCleanup<C extends ResidentClientPort>{readonly client:C;readonly generation:bigint}
@@ -33,6 +42,7 @@ const replacement=(message:string)=>new ResidentStateError({kind:"ReplacementSta
  * Callbacks must be bounded synchronous publication, never DB acquisition or RPC. */
 export class ResidentAdmissionState<C extends ResidentClientPort>{
   #client:C|null;#replacement:ReplacementCleanup<C>|null=null;#generation=1n;#quarantined=false;#restartPending=false;#accepting=true;#terminal=false;#cleanupAuthorized:bigint|null=null;#critical=false;
+  #settledDeadWork:DeadGenerationWork|null=null;
   readonly #changes=new GenerationWatch(null);
   constructor(client:C){port(client);this.#client=client;}
   #locked<T>(operation:()=>T):T{if(this.#critical)throw new TypeError("Resident state callback must not reenter");this.#critical=true;try{return operation();}finally{this.#critical=false;}}
@@ -104,6 +114,52 @@ export class ResidentAdmissionState<C extends ResidentClientPort>{
     });
   }
   markCurrentClosed(expected:C,generation:bigint):void{port(expected);u64(generation);this.#locked(()=>{if(!this.#terminal&&this.#generation===generation&&this.#client!==null&&same(this.#client,expected)){this.#accepting=false;this.#pending(true);}});}
+  #deadClient():ResidentDeadClientPort{
+    const client=this.#client;if(client===null)throw new AppServerClosedError();
+    for(const key of ["hasOwnedChildExited","isTransportClosed","sealIfNoAdmissions","deadGenerationWork","settleDeadGenerationExact"]){const d=Object.getOwnPropertyDescriptor(client,key);if(!d||!Object.hasOwn(d,"value")||typeof d.value!=="function"||types.isProxy(d.value)||types.isAsyncFunction(d.value)||types.isGeneratorFunction(d.value))throw new TypeError("Missing synchronous owned dead-generation port");}
+    return client as unknown as ResidentDeadClientPort;
+  }
+  #eligibleDead():boolean{return !this.#terminal&&this.#restartPending&&!this.#accepting&&this.#client!==null&&this.#deadClient().isTransportClosed()===true;}
+  deadGenerationWork(expected:bigint):DeadGenerationWork|null{
+    u64(expected);return this.#locked(()=>{this.#generationMatches(expected);if(!this.#eligibleDead())return null;const work=this.#deadClient().deadGenerationWork(expected);if(work===null)return null;const owned=cloneDeadGenerationWork(work);return deadGenerationWorkIsEmpty(owned)?null:owned;});
+  }
+  #captureDeadForFence(generation:bigint):DeadGenerationWork|null{
+    return this.#locked(()=>{this.#generationMatches(generation);if(this.#terminal||!this.#restartPending)return null;
+      if(this.#settledDeadWork?.generation===generation)return this.#settledDeadWork;
+      const work=this.#deadClient().deadGenerationWork(generation);if(work===null)return null;const owned=cloneDeadGenerationWork(work);this.#accepting=false;return owned;
+    });
+  }
+  /** Internal explicit settlement after durable capture. Snapshot identity is necessary,
+   * not proof of persistence; the normal owner entry below requires a persist callback. */
+  settleDeadGeneration(expectedGeneration:bigint,expected:DeadGenerationWork):DeadGenerationSettleResult{
+    u64(expectedGeneration);const owned=cloneDeadGenerationWork(expected);return this.#locked(()=>{
+      if(owned.generation!==expectedGeneration)return "SnapshotChanged";
+      if(this.#settledDeadWork!==null&&deadGenerationWorkEqual(this.#settledDeadWork,owned))return "AlreadySettled";
+      this.#generationMatches(expectedGeneration);if(!this.#eligibleDead())return "NotEligible";
+      const client=this.#deadClient(),raw=client.deadGenerationWork(expectedGeneration);if(raw===null)return "NotEligible";
+      if(!deadGenerationWorkEqual(cloneDeadGenerationWork(raw),owned))return "SnapshotChanged";
+      if(client.settleDeadGenerationExact(owned)!==true)return "NotEligible";
+      this.#settledDeadWork=owned;return "Settled";
+    });
+  }
+  /** Synchronous subset of source restart fencing. Actual owned exit observation, final
+   * transport closure and zero admissions precede persistence. The native port retains
+   * its owned process object/confirmed-exit receipt; no missing PID/handle infers death.
+   * Caller must serialize the encompassing restart workflow. Persistence must return
+   * only once durable and must not reenter the client's lifecycle gate. */
+  fenceDeadGenerationBeforeRestart(persist:(work:DeadGenerationWork)=>void):boolean{
+    const snapshot=this.snapshot(),generation=snapshot.generation;if(!snapshot.restartPending)return true;
+    if(snapshot.client===null)throw new AppServerClosedError();if(this.restartCleanupAuthorized(generation))return true;
+    const client=this.#locked(()=>{this.#generationMatches(generation);return this.#deadClient();});
+    const exited:unknown=client.hasOwnedChildExited(),closed:unknown=client.isTransportClosed();
+    if(typeof exited!=="boolean"||typeof closed!=="boolean")throw new TypeError("Expected synchronous native exit/closure observations");
+    if(!exited)return !closed;if(!closed)return false;
+    const sealed:unknown=client.sealIfNoAdmissions();if(typeof sealed!=="boolean")throw new TypeError("Expected synchronous admission sealing");if(!sealed)return false;
+    const work=this.#captureDeadForFence(generation);if(work===null)return true;
+    invokeSynchronousVoid(persist,this,[work]);const result=this.settleDeadGeneration(generation,work);
+    if(result==="Settled"||result==="AlreadySettled")return true;
+    throw new ResidentStateError({kind:"DeadGenerationFence",message:"dead-generation snapshot changed after durable capture"});
+  }
   prepareClose(){return this.#locked(()=>{this.#accepting=false;this.#terminal=true;this.#pending(false);const current=this.#client,replacement=this.#replacement;current?.sealAdmissions();replacement?.client.sealAdmissions();return Object.freeze({current,replacement});});}
   finishCurrentClose(expected:C):void{port(expected);this.#locked(()=>{if(!this.#terminal)throw replacement("resident close is no longer terminal");if(this.#client===null)return;if(!same(this.#client,expected))throw replacement("resident close target changed identity");this.#client=null;});}
 }

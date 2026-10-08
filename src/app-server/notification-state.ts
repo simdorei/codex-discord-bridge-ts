@@ -21,6 +21,8 @@ export class NotificationState{
   get hasActiveTurns():boolean{return this.#active.size>0;}
   activeTurnId(thread:string):string|null{return this.#active.get(thread)??null;}
   activeTurnIdentities():readonly {readonly threadId:string;readonly turnId:string}[]{return Object.freeze([...this.#active].map(([threadId,turnId])=>Object.freeze({threadId,turnId})).sort((a,b)=>Buffer.compare(Buffer.from(a.threadId),Buffer.from(b.threadId))||Buffer.compare(Buffer.from(a.turnId),Buffer.from(b.turnId))));}
+  /** Internal runtime owner after exact persisted dead-work match; history stays intact. */
+  clearDeadActiveTurns():void{this.#active.clear();}
   close():void{this.#closed=true;}
   record(input:AppNotification):void{
     const notification=copy(input),next=nextNotificationRevision(this.#revision);this.#revision=next.revision;this.#exhausted||=next.exhausted;

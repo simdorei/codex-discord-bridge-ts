@@ -1,3 +1,5 @@
+import {cloneDeadGenerationWork,deadGenerationWorkEqual,type DeadGenerationWork} from "./dead-generation-work.ts";
+export {deadGenerationWorkIsEmpty,type DeadGenerationWork} from "./dead-generation-work.ts";
 import {AppServerClosedError} from "./client-errors.ts";
 import {NotificationState,type AppNotification} from "./notification-state.ts";
 import {ServerRequestState,ServerResponseStateError,type PendingServerRequest,type ServerRequestRecordOutcome} from "./server-request-state.ts";
@@ -5,7 +7,6 @@ import {ServerRequestOccurrence,type RequestId} from "../protocol/ids.ts";
 import {serdeField,rustTrim} from "./value.ts";
 import {extractThreadId} from "./identity.ts";
 export interface ClientLifecycleSnapshot{readonly generation:bigint;readonly healthy:boolean;readonly initialized:boolean;readonly processId:number|null;readonly closedReason:string|null}
-export interface DeadGenerationWork{readonly generation:bigint;readonly closedReason:string;readonly activeTurns:readonly {readonly threadId:string;readonly turnId:string}[];readonly serverRequests:readonly PendingServerRequest[]}
 export {AppServerClosedError} from "./client-errors.ts";
 const APPROVAL_METHODS=new Set(["item/commandExecution/requestApproval","item/fileChange/requestApproval","item/permissions/requestApproval","execCommandApproval","applyPatchApproval"]);
 function text(value:unknown):asserts value is string{if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed client state text");}
@@ -54,12 +55,17 @@ export class ClientRuntimeState{
   get hasUnsettledServerRequests():boolean{return this.#requests.hasUnsettled;}
   latestApprovalRequest(thread:string):PendingServerRequest|null{return this.pendingServerRequests(thread).reverse().find(r=>APPROVAL_METHODS.has(r.method)||(r.method==="mcpServer/elicitation/request"&&serdeField(r.params,"mode")==="url"))??null;}
   latestInputRequest(thread:string):PendingServerRequest|null{return this.pendingServerRequests(thread).reverse().find(r=>r.method==="item/tool/requestUserInput")??null;}
-  /** Read-only sorted snapshot, including claimed/indeterminate/deferred requests.
-   * No bulk clear or settlement API is exposed without the future exact durable fence. */
+  /** Read-only sorted snapshot, including claimed/indeterminate/deferred requests. */
   deadGenerationWork(generation:bigint):DeadGenerationWork|null{
     if(typeof generation!=="bigint"||generation<0n||generation>=(1n<<64n))throw new TypeError("Expected u64 dead generation");if(this.#closedReason===null)return null;
     const requests=this.#requests.unsettled().sort((a,b)=>compareId(a.id,b.id)||Buffer.compare(ServerRequestOccurrence.prototype.asBytes.call(a.occurrence),ServerRequestOccurrence.prototype.asBytes.call(b.occurrence)));
     return Object.freeze({generation,closedReason:this.#closedReason,activeTurns:this.#notifications.activeTurnIdentities(),serverRequests:Object.freeze(requests)});
   }
+  /** Internal owner only AFTER durable persistence and native eligibility. Rechecks the
+   * whole exact snapshot synchronously before either transient collection is cleared. */
+  settleDeadGenerationAfterExactMatch(expected:DeadGenerationWork):boolean{
+    const owned=cloneDeadGenerationWork(expected),actual=this.deadGenerationWork(owned.generation);
+    if(actual===null||!deadGenerationWorkEqual(actual,owned))return false;
+    this.#notifications.clearDeadActiveTurns();this.#requests.clearDeadGeneration();return true;
+  }
 }
-export function deadGenerationWorkIsEmpty(work:DeadGenerationWork):boolean{return work.activeTurns.length===0&&work.serverRequests.length===0;}

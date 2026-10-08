@@ -3,7 +3,7 @@ import {test,type TestContext} from "node:test";
 import {PortableAppServerSession,type PortableSessionConfig} from "../../src/app-server/portable-session.ts";
 import {ResidentAdmissionState} from "../../src/app-server/resident-state.ts";
 function config():PortableSessionConfig{
-  const code=`import readline from 'node:readline';const emit=v=>process.stdout.write(JSON.stringify(v)+'\\n');const lines=readline.createInterface({input:process.stdin,crlfDelay:Infinity});lines.on('line',line=>{const m=JSON.parse(line);if(m.method==='initialize')emit({id:m.id,result:{}});else if(m.method==='read')emit({id:m.id,result:'ok'});else if(m.method==='start'){emit({method:'turn/started',params:{threadId:'t',turnId:'v'}});emit({id:m.id,result:{}});}else if(m.method==='finish'){emit({method:'turn/completed',params:{threadId:'t',turnId:'v'}});emit({id:m.id,result:{}});}else if(m.method==='approval'){emit({id:'approval',method:'approval',params:{threadId:'t',turnId:'v'}});emit({id:m.id,result:{}});}else if(m.method==='note')emit({method:'noted'});});`;
+  const code=`import readline from 'node:readline';const emit=v=>process.stdout.write(JSON.stringify(v)+'\\n');const lines=readline.createInterface({input:process.stdin,crlfDelay:Infinity});lines.on('line',line=>{const m=JSON.parse(line);if(m.method==='initialize')emit({id:m.id,result:{}});else if(m.method==='read')emit({id:m.id,result:'ok'});else if(m.method==='start'){emit({method:'turn/started',params:{threadId:'t',turnId:'v'}});emit({id:m.id,result:{}});}else if(m.method==='finish'){emit({method:'turn/completed',params:{threadId:'t',turnId:'v'}});emit({id:m.id,result:{}});}else if(m.method==='approval'){emit({id:'approval',method:'approval',params:{threadId:'t',turnId:'v'}});emit({id:m.id,result:{}});}else if(m.method==='note')emit({method:'noted'});else if(m.method==='die')process.exit(0);});`;
   return {process:{executable:process.execPath,arguments:["--input-type=module","-e",code],environment:{}},clientInfo:{name:"resident-fixture",title:"Resident fixture",version:"0.1.0"}};
 }
 async function start(t:TestContext){
@@ -42,4 +42,13 @@ test("native current response drains quarantined generation and replacement keep
 });
 test("native cleanup remains possible after trusted publication poisons admission",{timeout:10000},async t=>{
   const {session}=await start(t),port=session.residentClient(),sentinel={};assert.throws(()=>port.withOpen(()=>{throw sentinel;}),e=>e===sentinel);assert.equal(port.admissionSnapshot().poisoned,true);port.sealAdmissions();assert.equal(port.admissionSnapshot().sealed,true);assert.throws(()=>port.admitOperation(),/poisoned/);await session.dispose();assert.equal(session.resourcesClosed,true);assert.equal(port.admissionSnapshot().poisoned,true);
+});
+
+test("actual native exit fences exact unfinished work before clearing transient state",{timeout:10000},async t=>{
+  const {session,observer}=await start(t),port=session.residentClient(),state=new ResidentAdmissionState(port);
+  await session.request("start",{},1000);await session.request("approval",{},1000);const request=await observer.value.requests.receive(t.signal);
+  await assert.rejects(session.request("die",{},1000));await session.dispose();assert.equal(session.resourcesClosed,true);assert.equal(port.hasOwnedChildExited(),true);assert.equal(port.isTransportClosed(),true);
+  state.markCurrentClosed(port,1n);let persisted=0;
+  assert.equal(state.fenceDeadGenerationBeforeRestart(work=>{persisted++;assert.equal(work.generation,1n);assert.deepEqual(work.activeTurns,[{threadId:"t",turnId:"v"}]);assert.equal(work.serverRequests.length,1);assert.equal(work.serverRequests[0]!.occurrence.equals(request.occurrence),true);assert.equal(session.activeTurnId("t"),"v");assert.equal(session.pendingServerRequests().length,1);}),true);
+  assert.equal(persisted,1);assert.equal(session.activeTurnId("t"),null);assert.equal(session.pendingServerRequests().length,0);assert.equal(state.deadGenerationWork(1n),null);
 });
