@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **2,987 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **2,992 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2036,3 +2036,24 @@ panics from Result errors, so native panic/unwind equivalence is not claimed.
 The frozen client port is a trusted owned capability requirement, not ownership proof
 from object shape. Native session binding, written-request guards, durable dead-generation
 settlement, restart orchestration and full manager integration remain unfinished.
+
+## 2026-10-08 — Owned native resident-client binding
+
+PortableAppServerSession now creates one stable frozen resident capability against its
+private lifecycle, runtime state, writer and admitted clients. Quiescent sealing requires
+zero permits, no active turns and no unsettled incoming requests; the binding never
+substitutes a lifecycle snapshot or process ID for actual owner identity. Sealing does
+not invent a close intent. Existing cleanup-only poisoning handling is preserved.
+
+Evidence .runtime/cloud-resident-binding-104: 11 focused PASS (5 new native helper tests
+plus the 6 existing session tests); full **2,992 PASS, 0 fail/skip/cancel; strict TS exit 0**.
+New cases cover exact outer/response permit counts, foreign and released permit refusal
+before native write or response claim, separate active-turn and unresolved-request
+quiescence, current responses while quarantined, replacement generation 2 with native
+client generation 1, old-generation isolation, and cleanup after a poisoned callback.
+Initial test-only type errors were corrected without weakening production checks.
+
+This exposes an internal owning capability, not a DTO-derived grant. The replacement
+fixture explicitly closes the old native peer first; no automated resident supervisor,
+written-request guard, durable restart settlement or full bridge runtime is claimed.
+The existing portable-only/startup-budget/descendant-pipe limitations still apply.
