@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,589 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,600 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5158,3 +5158,25 @@ Evidence `.runtime/cloud-interaction-ack-deadline-227/` pins dispatch/response/t
 authorities. Tests cover expired, successful, error, simultaneous completion/deadline,
 forced cancellation, real pending cleanup and clock failure using controlled clocks.
 No real Discord interaction or process-abort policy was exercised.
+
+
+## Checkpoint 228 — no-work response claim commit and event-local errors
+
+Composed a consumed live claim with bounded ephemeral response generation and
+deadline-qualified acknowledgement. Only confirmed acknowledgement commits the
+claim; timeout, transport failure and response validation release it in finally.
+The same guard cannot enter two response operations, and a stale guard cannot
+commit over a replacement generation. This path creates no executable work and
+does not replace durable custody.
+
+Added central event-result reporting: owned Acknowledge/Update errors are local to
+one interaction and all literal token occurrences are redacted before diagnostics.
+Claim/custody/unknown failures retain the original fatal result. Unknown error
+getters/toString are not inspected; reporter failures are not silently swallowed.
+
+Strict TS exit0, focused11 PASS, full Linux **4,600 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-interaction-response-custody-228/`. Initial focused/full
+runs had one fixture failure from JSON.stringify on a bigint interaction ID; the
+corrected test checks the ID separately and inspects the actual redacted text.
+Production serialization/ID semantics were not weakened. Lane concurrency/drain
+and full executable dispatcher custody remain pending.

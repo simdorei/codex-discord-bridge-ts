@@ -1,5 +1,7 @@
 export interface InteractionClaim{commit():boolean;release():boolean}
 export type InteractionClaimAttempt={readonly kind:'Claimed';readonly claim:InteractionClaim}|{readonly kind:'DuplicatePending'|'DuplicateCommitted'|'Saturated'};
+const liveHandles=new WeakMap<object,()=>boolean>();
+export function isPendingInteractionClaim(value:unknown):value is InteractionClaim{return value!==null&&typeof value==='object'&&(liveHandles.get(value)?.()??false);}
 interface Token{readonly id:bigint;readonly generation:bigint}
 interface Entry{readonly generation:bigint;state:'Pending'|'Committed'}
 /** Process-local single-event-loop claim custody. Share this owner between
@@ -17,7 +19,7 @@ export class InteractionClaimCache{
   if(this.#generation>=(1n<<128n)-1n)throw new RangeError('Interaction claim generation exhausted');
   const token=Object.freeze({id,generation:this.#generation++});this.#claims.set(id,{generation:token.generation,state:'Pending'});let active=true;
   const claim:InteractionClaim=Object.freeze({commit:()=>{if(!active)return false;const committed=this.#commit(token);active=false;if(!committed)this.#release(token);return committed;},release:()=>{if(!active)return false;active=false;return this.#release(token);}});
-  return Object.freeze({kind:'Claimed',claim});
+  liveHandles.set(claim,()=>active);return Object.freeze({kind:'Claimed',claim});
  }
  #commit(token:Token):boolean{const entry=this.#claims.get(token.id);if(entry===undefined||entry.generation!==token.generation||entry.state!=='Pending')return false;entry.state='Committed';this.#committed.push(token);return true;}
  #release(token:Token):boolean{const entry=this.#claims.get(token.id);if(entry===undefined||entry.generation!==token.generation||entry.state!=='Pending')return false;this.#claims.delete(token.id);return true;}
