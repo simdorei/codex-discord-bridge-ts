@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,450 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,459 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4811,3 +4811,23 @@ Strict TS exit0, focused10 PASS, full Linux **4,450 PASS /0 fail/0 skip/0 cancel
 Evidence `.runtime/cloud-runtime-receive-error-consumer-211/` includes pinned source
 closure and real lane tests for late drain, exactly13s, closure/shutdown races,
 force cancellation, report/clock failure and continuously refilled-lane fairness.
+
+
+## Checkpoint 212 — borrowed Gateway identity wait
+
+Added source-backed wait_for_identity over the existing sticky identity/conflict
+receivers. Shutdown precedes conflict, and conflict precedes returning a stale
+identity. Pending identity/conflict hint reads are cancelled and joined on each
+selection; borrowed subscriptions remain usable afterward. Lagged hints retry
+against authoritative snapshots; identity and conflict channel closures remain
+distinct errors. Simultaneous READY/conflict and shutdown/closure races have
+explicit tests. Forced cancellation preserves its exact reason.
+
+The conflict error retains both immutable authoritative identities; its text is a
+Node diagnostic, not an assertion of Rust Debug formatting for twilight Id. The
+shutdown signal models one-way true/watch sender closure. guard(future), ready
+registration/notice and remaining service-consumer wiring remain pending.
+
+Strict TS exit0, focused9 PASS, full Linux **4,459 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-runtime-identity-wait-212/` includes pinned identity helper
+and tracker/test authorities. No production network or credentials were used.
