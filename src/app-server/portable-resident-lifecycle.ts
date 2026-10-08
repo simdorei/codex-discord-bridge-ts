@@ -1,3 +1,5 @@
+import {ResponseAttempt,type ResponseResult} from "./response-attempt.ts";
+import {responseValue,errorValue,type RpcErrorPayload,type RequestId,ServerRequestOccurrence} from "../protocol/rpc.ts";
 import {DispatchAttempt,type DispatchResult} from "./dispatch-attempt.ts";
 import {WrittenRequestGuard} from "./written-request-guard.ts";
 import {ownedRequestFailure} from "./request-client.ts";
@@ -139,6 +141,32 @@ export class PortableResidentLifecycle{
     const claim=cloneOwnedSerdeValue(inputClaim),params=cloneOwnedSerdeValue(request.params),control=serdeField(claim,"control"),g=serdeField(control,"generation");
     if(this.#maintenance?.fence==null||request.method!=="turn/interrupt"||!serdeValueEqual(serdeField(control,"target")??null,serdeField(params,"threadId")??null)||!serdeValueEqual(serdeField(control,"turn")??null,serdeField(params,"turnId")??null)||typeof g!=="bigint"||g<0n||g>=(1n<<64n)||g!==generation||serdeField(control,"resident")!==this.instanceId)throw new ResidentStateError({kind:"MutationHeld",message:"stop dispatch does not match original durable authority"});
     syncFunction(check);return this.#requestScoped(request.method,params,request.timeoutMs,generation,false,{check,queueClaim:null,stopClaim:claim},signal);
+  }
+  respond(id:RequestId,occurrence:ServerRequestOccurrence,result:unknown,generation:bigint,signal?:AbortSignal):Promise<void>{
+    const payload=responseValue(id,result);return this.#respond(payload.id,occurrence,payload,false,generation,signal);
+  }
+  respondError(id:RequestId,occurrence:ServerRequestOccurrence,error:RpcErrorPayload,generation:bigint,signal?:AbortSignal):Promise<void>{
+    const payload=errorValue(id,error);return this.#respond(payload.id,occurrence,payload,true,generation,signal);
+  }
+  async #respond(id:RequestId,occurrence:ServerRequestOccurrence,input:unknown,isError:boolean,generation:bigint,signal:AbortSignal|undefined):Promise<void>{
+    signal?.throwIfAborted();const options=this.#maintenance;if(options===null)throw new ResidentStateError({kind:"MutationHeld",message:"resident response adapter is not installed"});
+    const payload=cloneOwnedSerdeValue(input),ownedOccurrence=ServerRequestOccurrence.fromBytes(ServerRequestOccurrence.prototype.asBytes.call(occurrence));
+    const admission=this.#state.admitResponse(generation);let target:TargetMutationPermit|null=null,written:WrittenRequestGuard|undefined;
+    try{
+      const original=admission.client.serverResponseCandidate(id,ownedOccurrence);
+      const authority=options.fence?.responseAuthority?.(Object.freeze({ownerId:this.instanceId,generation:admission.generation,request:original}))??null;
+      const prepared=await awaitPrepared(this.prepareTargetMutation("server/response",original.params,admission.generation),signal);
+      if(prepared.kind!=="Ready")throw new IdleObservationError("unexpected response admission");target=prepared.permit;signal?.throwIfAborted();
+      const attempt=new ResponseAttempt(this.instanceId,admission.generation,original,authority,payload,options.fence,()=>this.checkActualTargetMutation(target,admission.generation,"server/response",original.params),options.renderError);
+      written=new WrittenRequestGuard(this.#state,admission.generation);const guard=written;let result:ResponseResult;
+      try{
+        const hooks={preflight:()=>attempt.begin(),writeStarted:()=>{attempt.writeStarted();guard.confirmWriteStarted();}};
+        if(isError)await admission.client.respondErrorAdmitted(admission.permit,id,ownedOccurrence,serdeField(payload,"error") as RpcErrorPayload,hooks,signal);
+        else await admission.client.respondAdmitted(admission.permit,id,ownedOccurrence,serdeField(payload,"result"),hooks,signal);
+        guard.finish("Success");result={ok:true};
+      }catch(error){if(signal?.aborted&&error===signal.reason)throw error;const failure=ownedRequestFailure(error);if(failure!==null)guard.finish(failure.kind==="Remote"?"OtherError":failure.kind);result={ok:false,error};}
+      const finished=attempt.finish(result);if(!finished.ok)throw finished.error;
+    }finally{try{written?.dispose();}finally{try{target?.release();}finally{admission.release();}}}
   }
   #requestScoped(method:string,input:unknown,waitMs:number,expectedGeneration:bigint|null,isolate:boolean,context:DispatchContext,signal?:AbortSignal):Promise<unknown>{
     signal?.throwIfAborted();

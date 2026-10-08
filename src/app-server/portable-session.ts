@@ -17,8 +17,8 @@ import {TransportLineDispatcher} from "./transport-dispatch.ts";
 import {FatalUtf8LineReader} from "./line-reader.ts";
 import {drainStdout,drainStderr} from "./transport-drain.ts";
 import {initializeObserved,type StartupClientInfo,type StartupObserver} from "./startup-handshake.ts";
-import type {AppNotification} from "./notification-state.ts";
-import type {PendingServerRequest} from "./server-request-state.ts";
+import {IdleObservationError,type AppNotification} from "./notification-state.ts";
+import {ServerResponseStateError,type PendingServerRequest} from "./server-request-state.ts";
 import type {RequestId,ServerRequestOccurrence,RpcErrorPayload} from "../protocol/rpc.ts";
 export interface PortableSessionConfig{readonly process:PortableProcessConfig;readonly clientInfo:StartupClientInfo}
 /** Internal resident-owner capability, bound once to this session's private gate.
@@ -26,6 +26,7 @@ export interface PortableSessionConfig{readonly process:PortableProcessConfig;re
 export interface PortableResidentClientPort extends ResidentDeadClientPort{
   admissionSnapshot():ReturnType<ClientLifecycle["snapshot"]>;
   idleMaintenanceSnapshot(thread:string,turn:string):ReturnType<ClientRuntimeState["idleMaintenanceSnapshot"]>;
+  serverResponseCandidate(id:RequestId,occurrence:ServerRequestOccurrence):PendingServerRequest;
   requireObservationLedger():void;
   confirmIdleObservation(notification:AppNotification):boolean;
   observationWindow(after:bigint,upper:bigint|null):ReturnType<ClientRuntimeState["observationWindow"]>;
@@ -71,9 +72,10 @@ export class PortableAppServerSession{
       },
       admissionSnapshot:()=>this.#gate.snapshot(),
       idleMaintenanceSnapshot:(thread,turn)=>this.#gate.withOpen(()=>this.#state.idleMaintenanceSnapshot(thread,turn)),
+      serverResponseCandidate:(id,occurrence)=>this.#readStateResult(()=>this.#state.serverResponseCandidate(id,occurrence)),
       requireObservationLedger:()=>this.#gate.withOpen(()=>this.#state.requireObservationLedger()),
       confirmIdleObservation:notification=>this.#gate.withOpen(()=>this.#state.confirmIdleObservation(notification)),
-      observationWindow:(after,upper)=>this.#gate.withOpen(()=>this.#state.observationWindow(after,upper)),
+      observationWindow:(after,upper)=>this.#readStateResult(()=>this.#state.observationWindow(after,upper)),
       certifyObservationPrefix:through=>this.#gate.withOpen(()=>this.#state.certifyObservationPrefix(through)),
       requestAdmitted:(permit,method,params,waitMs,hooks,signal)=>this.#requests.requestAdmitted(permit,method,params,waitMs,hooks,signal),
       notifyAdmitted:(permit,method,params,signal)=>this.#requests.notifyAdmitted(permit,method,params,signal),
@@ -84,6 +86,16 @@ export class PortableAppServerSession{
     this.#closer=new ClientProcessCloser(this.#logical,this.#state,this.#writer,native,async input=>{if(!(input instanceof NodeAppServerInput))throw new TypeError("Expected this session's native input");try{await input.shutdown();}finally{await input.destroyAndJoin();}});
     const dispatcher=new TransportLineDispatcher(this.#gate,this.#state,this.#pending,this.#diagnostics,{enqueueServerRequest:publishRequest,enqueueNotification:notification=>{this.#notifications.send(notification);},renderParseError:render});
     this.#tasks=[this.#supervise(drainStdout(new FatalUtf8LineReader(native.stdout),dispatcher,this.#logical,this.#diagnostics,render),"stdout"),this.#supervise(drainStderr(new FatalUtf8LineReader(native.stderr),this.#diagnostics,render),"stderr")];
+  }
+  /** Rust Result errors leave its state mutex normally; only a panic poisons it.
+   * Carry these concrete expected results out of our synchronous lifecycle gate
+   * before throwing. Unexpected exceptions still poison the gate as before. */
+  #readStateResult<T>(operation:()=>T):T{
+    const result=this.#gate.withOpen(()=>{
+      try{return {ok:true as const,value:operation()};}
+      catch(error){if(error!==null&&typeof error==="object"&&!types.isProxy(error)&&(error instanceof ServerResponseStateError||error instanceof IdleObservationError))return {ok:false as const,error};throw error;}
+    });
+    if(!result.ok)throw result.error;return result.value;
   }
   #supervise(task:Promise<void>,stream:"stdout"|"stderr"):Promise<void>{
     const monitored=task.catch(async primary=>{try{await this.#logical.markClosed(`app-server ${stream} handler failed`);}catch(cleanup){throw new AggregateError([primary,cleanup],"App-server drain supervision failed");}throw primary;});void monitored.catch(()=>undefined);return monitored;

@@ -12,7 +12,7 @@ export class ServerResponseStateError extends Error{
   constructor(kind:ServerResponseStateError["kind"],id:RequestId){const debug=typeof id==="string"?`String(${rustDebugString(id)})`:`Integer(${id})`;super(`app-server request ${debug} ${kind==="StaleServerRequest"?"is stale or no longer pending":kind==="ServerRequestResponseInFlight"?"already has a response in flight":"response delivery is indeterminate"}`);this.name="ServerResponseStateError";this.kind=kind;this.id=id;}
 }
 function occurrenceHex(value:ServerRequestOccurrence):string{return Buffer.from(ServerRequestOccurrence.prototype.asBytes.call(value)).toString("hex");}
-function copy(input:PendingServerRequest):PendingServerRequest{
+export function clonePendingServerRequest(input:PendingServerRequest):PendingServerRequest{
   if(input===null||typeof input!=="object"||types.isProxy(input))throw new TypeError("Expected server request record");
   const field=(name:string):unknown=>{const d=Object.getOwnPropertyDescriptor(input,name);if(!d||!Object.hasOwn(d,"value"))throw new TypeError("Expected own request field");return d.value;};
   const id=validateRequestId(field("id")),method=field("method"),params=field("params"),occurrence=field("occurrence") as ServerRequestOccurrence;
@@ -32,7 +32,7 @@ export class ServerRequestState{
   get hasUnsettled():boolean{return this.#pending.size>0||this.#claimed.size>0||this.#deferred.size>0;}
   #capacity(id:RequestId):void{if(this.#order.length>=500)throw new ServerRequestRecordError("Saturated",id);}
   record(input:PendingServerRequest):ServerRequestRecordOutcome{
-    const request=copy(input),k=key(request.id,request.occurrence),existing=this.#pending.get(k.idKey);
+    const request=clonePendingServerRequest(input),k=key(request.id,request.occurrence),existing=this.#pending.get(k.idKey);
     if(existing!==undefined){if(same(existing,request))return {kind:"Duplicate"};throw new ServerRequestRecordError("Conflict",request.id);}
     const claimed=[...this.#claimed.values()].find(c=>requestIdKey(c.request.id)===k.idKey);
     if(claimed!==undefined){

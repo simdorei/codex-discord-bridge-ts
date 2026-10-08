@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,198 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,212 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2560,3 +2560,35 @@ Real fresh-open runtime adapters, exact response custody, repair/recovery entry 
 Windows, Discord, process descendants and production/performance validation remain
 unfinished. JavaScript AbortSignal ownership is explicitly tested, not blanket Tokio
 future-drop equivalence. No live Codex/Discord or production database was used.
+
+
+## 2026-10-08 — Exact original response authority and native response completion
+
+Resident respond/respondError now capture the exact pending occurrence, original params
+and durable authority before target/resume waits. Actual writer preflight checks the
+original target and commits response admission; confirmed flush records completion.
+Started ambiguity or failed final commit retains original response admission with no
+automatic replay. Shared immutable pending-request copies prevent caller metadata drift.
+
+Response authority uses an explicit optional wrapper: null means absent, {value:null}
+means present JSON null. It therefore cannot silently drop Some(null) admission. Installed
+legacy callbacks default to no authority, but a declared authority with unsupported
+begin/finish methods fails closed. Captured payloads remain exact for success/error replies.
+
+Evidence .runtime/cloud-resident-response-123: 14 new tests, focused 46 PASS; full
+**3,212 PASS, 0 fail/skip/cancel; strict TS exit 0**. Local native helper pipes and full
+temporary SQLite fixtures cover original occurrence, stale/crossed custody during waits,
+resubscription payload freeze, explicit nullable authority, legacy refusal and failed
+commit after actual flush. ResponseResult getters are never used as success authority.
+
+A real Result-vs-panic translation defect was caught: expected stale-response and invalid
+observation-window errors thrown inside withOpen poisoned the healthy client gate.
+Identical tests fail old isolated source (2/2) and pass the corrected state-read Result
+boundary (2/2); unexpected exceptions still poison. Raw source/test hashes and logs are
+in review-red-green.json. This is executable TS/native-helper evidence plus frozen Rust
+mutex/Result source reading, not a new Rust executable oracle.
+
+Durable response fence callbacks remain controlled test adapters; production SQL custody
+binding, repair/recovery APIs, native Windows, Discord and operational/performance
+qualification are not complete. No live approval, Codex request or production store was
+used. Existing JavaScript cancellation/drop and inherited-pipe limitations remain.
