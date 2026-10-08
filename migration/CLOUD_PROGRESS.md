@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,274 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,281 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2709,3 +2709,26 @@ Actual native resident-to-store response callback binding remains next work. Thi
 alone does not send wire bytes or answer user approvals. Native Windows, complete runtime,
 performance/offload and operational validation remain incomplete; existing serializer and
 SQLite error taxonomy limitations are unchanged.
+
+
+## 2026-10-08 — Native response writer bound to the actual custody store
+
+Added a response-only runtime fence adapter using the central StateAccessFacade. It
+serializes the genuine request occurrence's 16 bytes as JSON integers, preserves exact
+request/payload data, checks generation fits i64, and opens an existing store afresh for
+capture, writer admission and completion. Errors map to the existing MutationHeld type
+through a pinned caller-provided public-safe renderer. Adapter methods and facade function
+references are pinned; it does not initialize or activate a runtime implicitly.
+
+Evidence .runtime/cloud-native-response-custody-128: 7 native/SQLite adapter tests;
+full **3,281 PASS, zero fail/skip/cancel; strict TS exit0**. Controlled native helper
+processes receive real result/error bytes only after durable admission. Actual SQL
+triggers and changes prove stop-after-capture, stale runtime and failed insertion send
+zero response bytes. A native flush followed by failed final DB update retains admitted
+evidence and does not replay the occurrence. Tests verify private occurrence conversion,
+forgery/overflow/accessor rejection and exact resident ownership.
+
+This is a concrete response adapter, not the complete RuntimeDeadGenerationFence. Test
+ordinary mutation/stop methods explicitly reject rather than granting permission, and
+persistence callbacks remain controlled fixtures. Whole-runtime startup/activation,
+production Discord, Windows and performance/offload qualifications are still pending.
