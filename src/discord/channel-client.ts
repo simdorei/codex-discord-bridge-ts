@@ -38,14 +38,15 @@ export class DiscordChannelClient implements DiscordReceiptTransport,TypingTrans
   }
  }
  sendValidated(request:IdempotentMessageRequest):Promise<bigint>{return this.#engine.sendValidated(request);}
+ sendWithoutReceipt(request:IdempotentMessageRequest,signal?:AbortSignal):Promise<void>{return this.#engine.sendWithoutReceipt(request,signal);}
  createTyping(channel:bigint,signal:AbortSignal):Promise<void>{return this.#engine.createTyping(channel,signal);}
  getGatewayBot(signal?:AbortSignal){return this.#engine.getGatewayBot(signal);}
  get authorizationInvalidated():boolean{return this.#engine.authorizationInvalidated;}
  get activeRequests():number{return this.#wire.activeRequests;}
  get ownedSockets():number{return this.#wire.ownedSockets;}
+ registerSlashCommands(applicationId:bigint,guildId:bigint|null,qa:boolean,signal?:AbortSignal):Promise<void>{return this.#engine.registerSlashCommands(applicationId,guildId,qa,signal);}
  /** Abort all three owners together, then join them. Waiting for just the engine
   * would not by itself prove keep-alive sockets and rate timers were reclaimed. */
- registerSlashCommands(applicationId:bigint,guildId:bigint|null,qa:boolean,signal?:AbortSignal):Promise<void>{return this.#engine.registerSlashCommands(applicationId,guildId,qa,signal);}
  close(reason:unknown=new Error('Discord channel client stopped')):Promise<void>{
   if(this.#closing!==null)return this.#closing;
   this.#closing=(async()=>{const results=await Promise.allSettled([this.#engine.close(reason),this.#rate.close(reason),this.#wire.close()]);const errors=results.flatMap(r=>r.status==='rejected'?[r.reason]:[]);if(errors.length===1)throw errors[0];if(errors.length>1)throw new AggregateError(errors,'Discord channel client cleanup failed');})();return this.#closing;

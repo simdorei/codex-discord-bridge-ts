@@ -25,6 +25,11 @@ export interface DiscordMessageDecoder{decode(body:Uint8Array):bigint}
 const transport=()=>new DiscordTransportFault('Transport','request outcome is unconfirmed');
 function channel(value:bigint):string{if(typeof value!=='bigint'||value<=0n||value>=(1n<<64n))throw new DiscordTransportFault('Validation','invalid channel identity');return value.toString();}
 function own(input:IdempotentMessageRequest,key:string):unknown{if(input===null||typeof input!=='object'||types.isProxy(input))throw new DiscordTransportFault('BuildingRequest','invalid request snapshot');const d=Object.getOwnPropertyDescriptor(input,key);if(!d||!Object.hasOwn(d,'value'))throw new DiscordTransportFault('BuildingRequest','invalid request field');return d.value;}
+function messageRequest(input:IdempotentMessageRequest):IdempotentMessageRequest{
+  const method=own(input,'method'),path=own(input,'path'),body=own(input,'body');if(method!=='POST'||typeof path!=='string'||typeof body!=='string')throw new DiscordTransportFault('BuildingRequest','invalid message route');
+  const route=/^channels\/([1-9][0-9]{0,19})\/messages$/u.exec(path);if(route===null||route[0]!==path)throw new DiscordTransportFault('BuildingRequest','invalid message route');channel(BigInt(route[1]!));
+ return Object.freeze({method:'POST',path,body});
+}
 /** Pinned Twilight response-state behavior, with required wire/rate/model adapters.
  * This is NOT a complete production HTTP client until those adapters are qualified.
  * 429 retries reacquire a rate permit and reuse the exact request; other failures never
@@ -45,10 +50,12 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
   const signal=input===undefined?this.#shutdown.signal:AbortSignal.any([this.#shutdown.signal,input]);const task=Promise.resolve().then(()=>{signal.throwIfAborted();if(this.#invalid)throw new DiscordTransportFault('Unauthorized','authorization was invalidated');return operation(signal);});this.#tasks.add(task);void task.then(()=>this.#tasks.delete(task),()=>this.#tasks.delete(task));return task;
  }
  sendValidated(input:IdempotentMessageRequest):Promise<bigint>{
-  const method=own(input,'method'),path=own(input,'path'),body=own(input,'body');if(method!=='POST'||typeof path!=='string'||typeof body!=='string')throw new DiscordTransportFault('BuildingRequest','invalid message route');
-  const route=/^channels\/([1-9][0-9]{0,19})\/messages$/u.exec(path);if(route===null||route[0]!==path)throw new DiscordTransportFault('BuildingRequest','invalid message route');channel(BigInt(route[1]!));
+  const {path,body}=messageRequest(input);
   return this.#run(signal=>this.#request('POST',path,body,bytes=>{const id=this.#decoder.decode(bytes);if(types.isPromise(id))void Promise.prototype.then.call(id,undefined,()=>undefined);if(typeof id!=='bigint'||id<=0n||id>=(1n<<64n))throw new Error('invalid identity');return id;},()=>new DiscordTransportFault('Receipt','response model could not be decoded'),signal)) as Promise<bigint>;
  }
+ /** Source send_idempotent_message awaits response headers, unlike the separate
+  * durable receipt API. Success body is released without decoding. */
+ sendWithoutReceipt(input:IdempotentMessageRequest,signal?:AbortSignal):Promise<void>{const {path,body}=messageRequest(input);return this.#run(async owned=>{await this.#request('POST',path,body,null,()=>new Error('unused no-receipt decoder'),owned);},signal);}
  createTyping(id:bigint,signal:AbortSignal):Promise<void>{return this.#run(async owned=>{await this.#request('POST',`channels/${channel(id)}/typing`,null,null,()=>new Error('unused typing decoder'),owned);},signal);}
  getGatewayBot(signal?:AbortSignal):Promise<DiscordGatewayBotInfo>{return this.#run(owned=>this.#request('GET','gateway/bot',null,decodeDiscordGatewayBotInfoBytes,()=>new DiscordGatewayModelError(),owned),signal) as Promise<DiscordGatewayBotInfo>;}
  registerSlashCommands(applicationId:bigint,guildId:bigint|null,qa:boolean,signal?:AbortSignal):Promise<void>{const request=slashCommandRegistrationRequest(applicationId,guildId,qa);return this.#run(async owned=>{await this.#request('PUT',request.path,request.body,null,()=>new Error('unused registration decoder'),owned);},signal);}

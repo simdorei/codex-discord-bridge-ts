@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,498 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,504 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4940,3 +4940,28 @@ PUT requests, verify exact bodies/routes, discard stalled success bodies and joi
 cancelled requests. Authentication invalidation uses a fake wire only. No commands
 were registered on Discord; Ready notice/client composition and other service
 consumers remain pending.
+
+
+## Checkpoint 218 — actual shared Ready HTTP port
+
+Wired Ready setup to the actual shared HTTP owner for PUT command registration and
+nonce-enforced startup POST. Captured owner methods retain client identity; the
+port borrows the client and leaves close responsibility with the outer owner.
+Caller cancellation is supported for the no-receipt send and joins actual native
+requests without closing the shared client. Durable receipt sending is unchanged.
+
+Source review rejected the first green candidate: pinned
+send_idempotent_message_with_components awaits the response but does NOT call
+model(), whereas the separate receipt helper does. Reusing full-receipt sending
+for startup notices incorrectly strengthened success acceptance. The unpublished
+initial candidate/test/full4503 log are retained under rejected-receipt-profile.
+A source-profile regression failed before the correction. The final no-receipt
+path releases an unread/stalled success body; id-only receipt responses still fail
+in the durable receipt API.
+
+Strict TS exit0, focused15 PASS (6 new plus9 owned-client regressions), full Linux
+**4,504 PASS /0 fail/0 skip/0 cancelled**. Evidence
+`.runtime/cloud-runtime-ready-http-port-218/`. Real loopback tests run Ready identity
+setup through actual PUT+POST, verify stable nonce/allowed mentions, cancellation,
+method capture and shared-client lifetime. This is not live Discord registration,
+full seven-consumer service startup or Windows/operational approval.
