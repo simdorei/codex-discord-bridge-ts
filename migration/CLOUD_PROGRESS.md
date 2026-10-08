@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,157 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,165 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2441,3 +2441,30 @@ claims are controlled test ports. Ordinary mutation preparation/resubscription, 
 runtime store binding, Windows, Discord and operational qualification remain incomplete.
 The extra shutdown join is explicit JavaScript ownership; it does not certify all Rust
 Tokio cancellation/drop timing or inherited-descendant-pipe behavior.
+
+
+## 2026-10-08 — Existing-target preparation and managed resubscription
+
+Added the source target-mutation preparation path to the same resident owner. Its exact
+read-only/new-thread allowlist bypasses existing-target maintenance; unknown methods
+remain conservative. An AwaitUnload target commits Resubscribing, performs exactly one
+native resume under managed ownership, then reacquires ordinary target admission.
+An original thread/resume returns Completed instead of being replayed. A second
+resubscription is refused and its temporary exclusive permit is deterministically freed.
+
+Original parameters and explicitly supplied first stop-origin snapshot are frozen before
+waits. Eligibility runs before preparation and again in actual maintenance preflight.
+The actual-mutation check preserves generation, target permit and durable fence order.
+Both release and resume use one shared managed-work owner; terminal close joins them.
+
+Evidence .runtime/cloud-target-mutation-preparation-119: 8 new tests, focused 13 PASS;
+full **3,165 PASS, 0 fail/skip/cancel; strict TS exit 0**. Combined real temporary SQLite
+and local child pipes cover original settings/origin, exactly-one resume, wrong reply
+identity, held unknown methods, concurrency, generation change and trigger-induced
+second-resubscription refusal without a leaked target reservation.
+
+These are internal preparation capabilities. The caller still must own ordinary resident
+admission, use the actual-write check and release Ready.permit. The public full dispatch
+coordinator, task-local original-origin scope, queue/stop claim adapters and native
+response authority binding remain unfinished. No live Codex, Discord or production DB
+was accessed. Initial return-literal typing was corrected before test execution.

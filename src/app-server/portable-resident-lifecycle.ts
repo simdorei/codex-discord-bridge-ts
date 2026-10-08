@@ -1,6 +1,7 @@
+import {extractThreadId} from "./identity.ts";
 import {IdleMaintenanceWork} from "./idle-maintenance.ts";
 import {MaintenanceTransport,pinResidentMaintenanceOptions,type ResidentMaintenanceOptions} from "./maintenance-transport.ts";
-import {IdleTargetGate} from "./idle-target-gate.ts";
+import {IdleTargetGate,type TargetExclusivePermit,type TargetMutationPermit} from "./idle-target-gate.ts";
 import {cloneIdleReleaseToken,pinIdleReleaseJournal,type IdleReleaseToken,type IdleReleaseJournal} from "./idle-release-journal.ts";
 import {IdleObservationError,type AppNotification} from "./notification-state.ts";
 import {runRestartSupervisor,type RestartFailureReporter} from "./restart-supervisor.ts";
@@ -15,6 +16,7 @@ import {ResidentForwarders,type ResidentNotificationEvent,type ResidentServerReq
 import {GenerationWatch} from "./generation-watch.ts";
 import {BoundedBroadcast} from "./broadcast.ts";
 import type {DeadGenerationWork} from "./dead-generation-work.ts";
+export type PreparedTargetMutation={readonly kind:"Ready";readonly permit:TargetMutationPermit|null}|{readonly kind:"Completed";readonly value:unknown};
 export interface ResidentPersistence{
   /** Return only after exact work is durably captured for this resident instance. */
   persistDeadWork(instanceId:string,work:DeadGenerationWork):void;
@@ -34,7 +36,7 @@ function throwErrors(errors:unknown[],message:string):void{if(errors.length===1)
  * Supervisor is explicit owner-started/joined; no 45s startup envelope or descendant-pipe cleanup. */
 export class PortableResidentLifecycle{
   readonly #targetGate=new IdleTargetGate();
-  readonly #maintenance:ResidentMaintenanceOptions|null;readonly #managedIdle=new Set<Promise<void>>();
+  readonly #maintenance:ResidentMaintenanceOptions|null;readonly #managedIdle=new Set<Promise<unknown>>();
   readonly instanceId=randomUUID();readonly #config:PortableSessionConfig;readonly #render:SessionDiagnosticRenderer;readonly #persistence:ResidentPersistence;
   readonly #lock=new TargetLocks();readonly #generation=new GenerationWatch(1n);
   readonly #notifications=new BoundedBroadcast<ResidentNotificationEvent>(1000);readonly #requests=new BoundedBroadcast<ResidentServerRequestEvent>(500);
@@ -66,16 +68,45 @@ export class PortableResidentLifecycle{
     if(token.state!=="Candidate"&&token.state!=="AwaitUnload")return Promise.reject(new IdleObservationError("only Candidate or known-ACK AwaitUnload may run maintenance"));
     const origin=options.fence?.requestOrigin("thread/unsubscribe",{threadId:token.threadId})??null;
     const permit=this.#targetGate.reserve(token);
+    return this.#runIdle(permit,token,origin,work=>work.release());
+  }
+  #runIdle<T>(permit:TargetExclusivePermit,token:IdleReleaseToken,origin:unknown|null,run:(work:IdleMaintenanceWork)=>Promise<T>,dispatchCheck:()=>void=()=>{}):Promise<T>{
     const task=(async()=>{
       let admission;
       try{
+        const options=this.#maintenance;if(options===null)throw new IdleObservationError("maintenance adapter is not installed");
         if(token.ownerId!==this.instanceId)throw new IdleObservationError("idle release owner mismatch");
         admission=this.#state.admitRequest(token.generation);
-        const transport=new MaintenanceTransport(this.#state,admission,this.#targetGate,permit,token,options.fence,origin,options.renderError);
-        await new IdleMaintenanceWork(token,permit,transport.port()).release();
+        const transport=new MaintenanceTransport(this.#state,admission,this.#targetGate,permit,token,options.fence,origin,options.renderError,dispatchCheck);
+        return await run(new IdleMaintenanceWork(token,permit,transport.port()));
       }finally{try{admission?.release();}finally{permit.release();}}
     })();
     this.#managedIdle.add(task);void task.then(()=>this.#managedIdle.delete(task),()=>this.#managedIdle.delete(task));return task;
+  }
+  /** Internal preparation only: caller retains/releases Ready.permit and invokes
+   * checkActualTargetMutation at the actual writer. It is not permission to bypass
+   * original queue/stop authority. origin is the FIRST caller-captured snapshot. */
+  async prepareTargetMutation(method:string,input:unknown,generation:bigint,origin:unknown|null=null,check:()=>void=()=>{}):Promise<PreparedTargetMutation>{
+    if(typeof method!=="string"||/[\uD800-\uDFFF]/u.test(method)||typeof generation!=="bigint"||generation<0n||generation>=(1n<<64n))throw new TypeError("Expected target preparation identity");
+    const params=cloneOwnedSerdeValue(input),frozenOrigin=origin===null?null:cloneOwnedSerdeValue(origin);syncFunction(check);invokeSynchronousVoid(check,{},[]);
+    if(["thread/read","thread/turns/list","thread/goal/get","thread/list","thread/loaded/list","model/list","account/rateLimits/read","account/usage/read","thread/start"].includes(method))return Object.freeze({kind:"Ready",permit:null});
+    const options=this.#maintenance;
+    if(options===null&&this.#targetGate.journal()!==null)throw new IdleObservationError("maintenance adapter is not installed");
+    options?.fence?.checkRequest(generation,method,params);
+    const target=extractThreadId(params),admitted=this.#targetGate.admit(this.instanceId,generation,target);
+    if(admitted.kind==="Ordinary")return Object.freeze({kind:"Ready",permit:admitted.permit});
+    const resume=method==="thread/resume"?params:{threadId:admitted.token.threadId};
+    const value=await this.#runIdle(admitted.permit,admitted.token,frozenOrigin,work=>work.resubscribe(resume),check);
+    if(method==="thread/resume")return Object.freeze({kind:"Completed" as const,value});
+    const next=this.#targetGate.admit(this.instanceId,generation,target);
+    if(next.kind==="Resubscribe"){next.permit.release();throw new IdleObservationError("unexpected second resubscription; target remains held");}
+    return Object.freeze({kind:"Ready",permit:next.permit});
+  }
+  checkActualTargetMutation(permit:TargetMutationPermit|null,generation:bigint,method:string,input:unknown):void{
+    if(typeof generation!=="bigint"||generation<0n||generation>=(1n<<64n)||typeof method!=="string"||/[\uD800-\uDFFF]/u.test(method))throw new TypeError("Expected actual target mutation identity");
+    const params=cloneOwnedSerdeValue(input),actual=this.generation();
+    if(actual!==generation)throw new ResidentStateError({kind:"GenerationMismatch",expected:generation,actual});
+    permit?.preflight();this.#maintenance?.fence?.checkRequest(generation,method,params);
   }
 
   observationWindow(generation:bigint,after:bigint,upper:bigint|null=null){
