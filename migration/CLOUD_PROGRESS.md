@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,141 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,152 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4324,3 +4324,23 @@ Recovered candidate strict TS exit0; focused **11 PASS**; full Linux **4,141 PAS
 0 fail/0 skip/0 cancelled**. New evidence `.runtime/recovery-20261008/` and
 `.runtime/cloud-gateway-command-rate-186-recovered/`. No Rust executable differential,
 real Discord, Windows, performance or operational approval is claimed.
+
+
+## Checkpoint 187 — default Gateway control-command encoding
+
+Added source-default Identify, Resume and Heartbeat encoding with lossless u64
+sequences. Config::new's exact Bot-prefix rule is retained, including its behavior
+for differently cased or other prefixes. Identify includes compress=false, threshold50,
+presence=null, shard tuple and twilight.rs properties. SecretToken's private slot is
+read once; debug/string/JSON representations redact it. Only explicit encoding emits
+a wire payload. No credentials or network requests were used in testing.
+
+Close and consumed FlushOnly produce distinct instructions without authenticated
+text replay. Source review found omitted NORMAL/RESUME reason strings; final same
+test RED2 -> GREEN evidence preserves closing connection/resuming connection exactly.
+An initial test-only override return annotation was corrected without product change.
+
+Strict TS exit0; focused **11 PASS**; full Linux **4,152 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-gateway-control-encoder-187/`. Scope is default encoding and
+session-ticket composition, not actual authenticated sending, custom presence/config,
+complete Gateway orchestration or Windows/performance/operational approval.
