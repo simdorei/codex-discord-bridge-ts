@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,608 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,618 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3302,3 +3302,36 @@ assembly. Synchronous SQLite/FS still cannot be preempted or treated as offloade
 serialized-byte accounting is not a V8 heap bound or exact Tokio scheduling equivalence.
 Malformed diagnostic compatibility, native answer dispatch, Windows and operations
 remain incomplete. No live Discord/Codex service or external reviewer was invoked.
+
+
+## 2026-10-08 — Bounded retained-source reconciliation
+
+Checkpoint 148 adds one owned local source-reconciliation pass/loop. It checks tracking
+is installed before starting, activates exact original scope, discovers the current
+source head, reads one retained gap page, skips already verified spans and journals
+only original retained events through CompletionSourceCertifier. No generic event
+handler, RPC, history inference or HTTP is replayed. Missing retained payloads and
+journal failures remain unconfirmed. Stale proof/page CAS is not acknowledged as success.
+
+Only a verified durable scope may request native prefix reconciliation, which rechecks
+current generation/source state. Cancellation checks precede page work and final
+acknowledgement; an already-running synchronous DB operation must settle. The delayed
+250ms loop owns and closes its pending tick and reports pass failures through the
+central boundary while retaining idle uncertainty. Existing observationTrackingEnabled
+is reused; no new lifecycle getter is required.
+
+Evidence .runtime/cloud-source-reconciler-148: 10 new tests, focused10 PASS, strict TS0,
+full **3,618 PASS**, zero fail/skip/cancel. Tests cover exact final journaling, oversized
+missing occurrence, multi-page proof/CAS progress, journal failure, foreign window,
+cancellation after journal, native generation change, loop error/shutdown and disabled
+tracking. Actual owned helper events also traverse the installed runtime idle journal
+and verify the native prefix. The helper is closed before the fixture database is removed.
+
+Initial fixture lifetime ordering and UUID window typing failures are retained. A
+redundant already-existing tracking getter introduced during inspection was caught by
+strict TS, removed before publication, and its failed typecheck is retained. Final
+lifecycle source bytes are unchanged.
+
+Complete completion processing/service assembly, native answer dispatch, malformed
+question diagnostic compatibility, Windows/offload and operational qualification remain
+incomplete. Synchronous work is not represented as cancellable blocking-worker offload.
