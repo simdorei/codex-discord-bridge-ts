@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,027 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,038 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2133,3 +2133,39 @@ closure, and unchanged callback identity. Unexpected task errors remain observab
 
 These are explicit-lifetime library components. Whole replacement orchestration, durable
 idle/dead-work store bindings, mutation dispatch and automatic supervisor remain pending.
+
+## 2026-10-08 — Portable resident restart and terminal-close orchestration
+
+Added PortableResidentLifecycle: one restart/close mutex, stable resident instance ID,
+owned session registry, quiescent replacement, old forwarder stop/join, exact child
+cleanup, exit journaling, observed replacement startup, cleanup debt and atomic
+generation/forwarder installation. Concurrent force requests captured for one generation
+create only one replacement. Terminal close retains the exact owner until cleanup and
+exit journaling both succeed; it cannot revive admission or spawn a replacement.
+
+Dead-work persistence and old-child-exit journaling are mandatory pinned synchronous
+trusted adapters, with no default no-op. They must be durable and idempotent by exact
+instance/generation; tests deliberately use memory receipts. Raw admission capabilities
+are internal only and do NOT replace durable queue/stop/target mutation authorization.
+Active cancellation joins startup cleanup and keeps retry state. Signals are also checked
+after startup before owner/installation publication; this is explicit JS cancellation,
+not automatic Rust future Drop. Multiple cleanup errors are retained in AggregateError
+rather than discarded; exact multi-error Rust display behavior is not claimed.
+
+Native testing found a real retry defect: a first shutdown error after confirmed exit
+was permanently memoized by the session, preventing ordinary cleanup/restart retry.
+The first error is still returned, but failed disposal now permits explicit same-owner
+reconciliation without reusing already-taken stdin/child slots. Review also closed
+lifecycle watch senders only after terminal cleanup has released every owned client.
+The same final 11-test file gives old code 8 PASS / 3 FAIL and corrected 11 PASS.
+
+Evidence .runtime/cloud-resident-lifecycle-108: focused 17 PASS including existing native
+session coverage; full **3,038 PASS, 0 fail/skip/cancel; strict TS exit 0**. Covers actual
+replacement, force concurrency, busy deferral, child death capture, journal failure and
+retry, replacement observer failure, startup cancellation, terminal close retry, pinned
+adapters, reaped-session retry and lifecycle-watch completion.
+
+No automatic restart supervisor/backoff, durable DB implementation, mutation dispatch,
+full Discord bridge, Windows, outer startup envelope or descendant-pipe cleanup is
+complete. Unknown-cleanup startup errors retain the concrete session owner; end-to-end
+production recovery and sustained operation remain unverified.

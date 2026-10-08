@@ -161,5 +161,7 @@ export class ResidentAdmissionState<C extends ResidentClientPort>{
     throw new ResidentStateError({kind:"DeadGenerationFence",message:"dead-generation snapshot changed after durable capture"});
   }
   prepareClose(){return this.#locked(()=>{this.#accepting=false;this.#terminal=true;this.#pending(false);const current=this.#client,replacement=this.#replacement;current?.sealAdmissions();replacement?.client.sealAdmissions();return Object.freeze({current,replacement});});}
+  /** Explicit owner Drop-equivalent only after terminal cleanup has released all clients. */
+  closeLifecycleChanges():void{this.#locked(()=>{if(!this.#terminal||this.#client!==null||this.#replacement!==null)throw replacement("lifecycle watch still has owned client cleanup");this.#changes.close();});}
   finishCurrentClose(expected:C):void{port(expected);this.#locked(()=>{if(!this.#terminal)throw replacement("resident close is no longer terminal");if(this.#client===null)return;if(!same(this.#client,expected))throw replacement("resident close target changed identity");this.#client=null;});}
 }

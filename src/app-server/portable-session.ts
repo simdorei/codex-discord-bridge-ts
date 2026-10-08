@@ -106,9 +106,10 @@ export class PortableAppServerSession{
   waitClosed(signal?:AbortSignal):Promise<string>{return this.#gate.waitClosed(signal);}
   close():Promise<void>{return this.#closer.close();}
   /** Explicit owner disposal joins direct-child drains, then closes producers. A failed
-   * incomplete cleanup retains this owner; a later explicit dispose may retry it. */
+   * cleanup retains its error for the caller; a later explicit dispose may retry the
+   * same owner even after native exit. Taken stdin/child slots must not be replayed. */
   dispose():Promise<void>{
-    if(this.#disposal!==undefined)return this.#disposal;const task=this.#disposeOwned();this.#disposal=task;void task.catch(()=>{if(!this.resourcesClosed&&this.#disposal===task)this.#disposal=undefined;});return task;
+    if(this.#disposal!==undefined)return this.#disposal;const task=this.#disposeOwned();this.#disposal=task;void task.catch(()=>{if(this.#disposal===task)this.#disposal=undefined;});return task;
   }
   async #disposeOwned():Promise<void>{
     const errors:unknown[]=[];
