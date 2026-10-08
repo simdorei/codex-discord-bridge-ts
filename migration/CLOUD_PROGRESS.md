@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,954 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,141 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4296,3 +4296,31 @@ clock tests, with native first grant/cleanup separately exercised. Dynamic setti
 multi-bucket/disabled mode and pathological zero-total configuration are outside the
 active default profile. No real Discord, Windows, queue-memory/performance or
 operational approval is claimed.
+
+
+## Checkpoint 186 recovered — command quota and execution-workspace recovery
+
+The previous execution filesystem stopped exposing the working checkout after an
+initial status read. GitHub branch head185 was independently confirmed as
+40cea12cee2b7e1ec866ed0846436c29d6260525, then cloned into a new recovery folder.
+Checksum-verified Node24.21.0 and lockfile dependencies were restored with install
+scripts disabled. Fresh baseline strict TS exit0 and **4,130 PASS** were rerun.
+The reason the previous checkout became unavailable is not established. Its local
+raw evidence and unpublished186 source bytes were not available for transfer; no
+identity claim is made for that unpublished candidate. Historical evidence paths
+in prior entries still refer to their original execution workspace.
+
+Reimplemented the missing command limiter directly from checksum-pinned Twilight
+gateway0.17.1 and compiler-pinned Rust1.97.1 Duration source. This recovered candidate
+has new hashes and independently executed tests. Sixty-second quota preserves the
+110..118 permit range, binary32 heartbeat reservation, nanosecond base deadline and
+u16 relative-millisecond quantization. Direct integer-to-f32 conversion avoids a
+large-integer double-rounding shortcut. Acquisition alone rebases; availability and
+informational next delay remain distinct. Frozen exposed ownership still permits
+private quota updates. Identify/Resume consume permits; Heartbeat/Close/FlushOnly
+bypass them. Actual waiting/socket scheduling remains caller-owned.
+
+Recovered candidate strict TS exit0; focused **11 PASS**; full Linux **4,141 PASS /
+0 fail/0 skip/0 cancelled**. New evidence `.runtime/recovery-20261008/` and
+`.runtime/cloud-gateway-command-rate-186-recovered/`. No Rust executable differential,
+real Discord, Windows, performance or operational approval is claimed.
