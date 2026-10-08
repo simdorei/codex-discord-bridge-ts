@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,431 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,440 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4762,3 +4762,29 @@ of global built-ins.
 Strict TS exit0, focused9 PASS, full Linux **4,431 PASS /0 fail/0 skip/0 cancelled**.
 Evidence `.runtime/cloud-runtime-worker-join-custody-209/` preserves RED/GREEN and
 full output. WorkerSet shutdown and typed consumer integration remain pending.
+
+
+## Checkpoint 210 — common-deadline service-worker shutdown
+
+Added ordered worker shutdown over exact monitored task owners. The triggering
+worker's result is separate from cleanup; returned domain errors preserve identity,
+while thrown task failures carry the worker name and original cause. Remaining
+workers drain in order until the one-second abort/join reserve, then all receive
+abort before any forced join. Reaching forced cleanup remains visible as timeout
+even if cancellation succeeds; an earlier real error wins without skipping joins.
+
+The source's outer runtime deadline is folded into trigger joining in this Node
+composition. Actual task/timer ownership is retained; timers are cancelled/joined
+and abort-resistant work reaches a nonreturning fatal policy. Tests inject a
+throwing sentinel and subsequently release/join the still-owned task. Production
+process.abort was not run. Synchronous diagnostic failures are deferred until
+cleanup completes. JavaScript thrown errors have structured cause identity, not
+Tokio JoinError formatting/panic parity. A responsive event loop and cooperative
+callbacks remain required; this is not arbitrary synchronous-code preemption.
+
+Strict TS exit0, focused9 PASS, full Linux **4,440 PASS /0 fail/0 skip/0 cancelled**.
+Initial full run passed but TypeScript rejected a two-argument native splice.call;
+the explicit deletion count fixed the signature and the final full run was repeated.
+Evidence `.runtime/cloud-runtime-worker-shutdown-210/` preserves both runs and
+pinned worker/error/deadline authorities. Full typed consumer/service wiring and
+Windows/operational validation remain incomplete.
