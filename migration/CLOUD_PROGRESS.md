@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,109 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,125 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2305,3 +2305,32 @@ returned-value path; equivalence with native build-dependent Rust overflow is no
 claimed. The synchronous app-server journal still needs a source-backed adapter to
 the asynchronous initialized-store owner, and complete runtime/Discord/Windows
 integration and performance qualification remain unfinished. No live DB was used.
+
+
+## 2026-10-08 — Managed idle release/resubscribe state coordinator
+
+Added the source-backed maintenance Work sequence: exact locally witnessed terminal,
+explicit goal absence/completion, fresh exact latest terminal turn, stable observation
+watermark, committed Dispatching permission, then unsubscribe. All three accepted ACK
+statuses remain AwaitUnload until a separate fresh exact-thread notLoaded read.
+Resubscribe settlement requires an exact returned thread and unchanged generation.
+
+NotStarted errors cancel release or restore AwaitUnload for resume; partial/flushed
+uncertainty becomes Unknown. Recording failures preserve a durable hold and report
+both causes. Missing transport phase or unexpected adapter rejection cannot be
+classified as not sent. Port callbacks are pinned before asynchronous work, supplied
+JSON is isolated, and a consumed work object cannot replay. Target exclusion remains
+held until the owning coordinator releases its existing exclusive permit.
+
+Evidence .runtime/cloud-idle-maintenance-114: 16 new coordinator tests PASS; full
+**3,125 PASS, 0 fail/skip/cancel; strict TS exit 0**. Tests include blocked goals,
+latest-turn/identity mismatch, watermark races, persistence failures, each write phase,
+late completion while caller stops observing, duplicate invocation and callback mutation.
+An initial contextual return-type widening diagnostic was corrected before execution.
+
+This is the state coordinator with controlled RPC/journal ports, not a completed native
+maintenance transport. The caller must retain resident admission, actual write hooks,
+durable Attempt fencing and target permit ownership through task completion. Its ports
+are trusted owned capabilities, not evidence that arbitrary supplied callbacks performed
+those actions. Native wiring, synchronous durable adapter and production loop remain
+incomplete; no live Codex or Discord calls were made.
