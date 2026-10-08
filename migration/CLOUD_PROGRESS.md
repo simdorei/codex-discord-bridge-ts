@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,567 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,584 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3205,3 +3205,37 @@ retention, exact rejection cleanup, usage-limit closure and original-turn confir
 This is store authority, not proof that an answer was sent. Native writer integration,
 async UI/message parsing and production tracked completion/Discord/service ownership
 remain incomplete. Existing platform/offload/operational limitations still apply.
+
+
+## 2026-10-08 — Async question event and receipt-backed UI orchestration
+
+Checkpoint 145 connects decoded async-message classification, question-body parsing,
+immutable per-index observation, ordered prepare and bounded pending delivery. Missing
+or null options are free text; malformed question vectors preserve original text and
+metadata with an explicit unsupported-format warning, never a Final answer. A no-question
+message becomes one retained free-text question. All observations use one clock sample;
+a later oversized question preserves earlier inbox data without promoting a partial batch.
+
+Runtime delivery checks original ownership and current mapping, shares one item-context
+receipt, uses distinct question-body/control receipt domains, and binds only the recorded
+controls message. Unrenderable choices retain body and a separate unsupported notice.
+Unknown transport outcome is not resent. A failed question retains its error while later
+independent questions can complete. Trusted HTTP transport/receipt validation remains an
+explicit adapter; the tests do not contact Discord.
+
+Evidence .runtime/cloud-question-event-145: 17 new parser, SQLite and fake-transport
+tests; focused17 PASS, strict TS0, full **3,584 PASS**, zero fail/skip/cancel. Initial
+observation-only full3,579 run is separately retained. Ownership, duplicate context,
+separate button receipts, no unknown resend, mapping/generation rejection, free text,
+26-option retention, exact whitespace, zero accessor/proxy hooks and partial batch
+behavior are covered.
+
+Known compatibility limit: malformed derived-question diagnostics use the shared TS
+Serde adapter wording, not byte-identical Rust serde Display. The outer warning/raw
+metadata are preserved, but exact malformed fallback content/identity replay across
+Rust and TS remains unverified and may be safely held as changed content. This must
+not be presented as full malformed-message parity or production approval.
+
+The original live stream owner still must invoke observation; full indexed source
+certification, native answer writer and Discord/service bootstrap are unfinished.
+All existing synchronous offload, Windows and operational limits remain.
