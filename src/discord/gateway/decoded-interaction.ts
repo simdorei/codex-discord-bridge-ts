@@ -1,3 +1,6 @@
+import {decodeGatewayDispatchPayload} from './dispatch-envelope.ts';
+import {discordInteractionField} from '../model/interaction.ts';
+import {discordReadyField} from '../model/gateway-ready.ts';
 import {decodeDiscordInteraction} from '../model/interaction.ts';
 import {decodeDiscordReady} from '../model/gateway-ready.ts';
 import type {GatewayIdentity} from './identity.ts';
@@ -10,3 +13,8 @@ export function decodeGatewayInteraction(text:string):DecodedGatewayInteraction{
 export function isDecodedGatewayInteraction(value:unknown):value is DecodedGatewayInteraction{return value!==null&&typeof value==='object'&&interactions.has(value);}
 /** Validate all Ready fields before allowing its identity into sticky runtime state. */
 export function decodeGatewayReadyIdentity(text:string):GatewayIdentity{const ready=decodeDiscordReady(text);return Object.freeze({userId:(ready.user as Record<string,unknown>).id as bigint,applicationId:(ready.application as Record<string,unknown>).id as bigint});}
+
+/** Full INTERACTION_CREATE envelope, sharing the parent's Serde context. */
+export function decodeGatewayInteractionDispatch(text:string):DecodedGatewayInteraction{const result=decodeGatewayDispatchPayload(text,'INTERACTION_CREATE',discordInteractionField) as Record<string,unknown>;freezeOwned(result);interactions.add(result);return result as unknown as DecodedGatewayInteraction;}
+/** Minimal session READY processing alone must never establish runtime identity. */
+export function decodeGatewayReadyDispatchIdentity(text:string):GatewayIdentity{const ready=decodeGatewayDispatchPayload(text,'READY',discordReadyField) as Record<string,unknown>;return Object.freeze({userId:(ready.user as Record<string,unknown>).id as bigint,applicationId:(ready.application as Record<string,unknown>).id as bigint});}

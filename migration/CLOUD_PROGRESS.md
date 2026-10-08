@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,178 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,189 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4411,3 +4411,28 @@ performance or production approval is implied.
 Strict TS exit0; focused **11 PASS**; full Linux **4,178 PASS /0 fail/0 skip/0 cancelled**.
 Evidence `.runtime/cloud-gateway-message-driver-190/`. Source-only, focused and full
 checks are separate saved runs; no executable Rust differential was performed.
+
+
+## Checkpoint 191 — full admitted dispatch envelopes
+
+Added full MESSAGE_CREATE, INTERACTION_CREATE and READY envelope entry points.
+The pinned metadata scanner selects the type; the actual top-level s is validated
+as u64. Duplicate d/s fields reject; ignored op/t/unknown values retain source
+IgnoredAny behavior. Payloads decode in the parent's existing raw Serde context,
+without a separate parse, depth reset, numeric serialization or duplicate collapse.
+Only complete typed payloads mint deep-frozen Message/Interaction ownership, and
+full Ready validation precedes sticky identity publication.
+
+Tests cover envelope duplicates, null/float/overflow sequence rejection, first
+metadata-scan behavior, large buffered f64 preservation, recursion boundary,
+malformed children and delivery into existing bounded ingress lanes.
+
+The exact pinned Rust config requests EventTypeFlags::all(), including models
+ignored after decoding. These three entry points are therefore not an all-event
+dispatcher; remaining model validation and the raw-driver adapter stay pending.
+The existing valid-JSON profile does not claim malformed/trailing-data acceptance
+equivalence. No production behavior was enabled by this checkpoint.
+
+Strict TS exit0; focused **11 PASS**; full Linux **4,189 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-gateway-dispatch-envelope-191/`, including freshly fetched
+exact Rust commit 4e213aa69dc89bed1552d8b83e12471d7664b7ae authority hashes.
