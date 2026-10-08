@@ -1,3 +1,4 @@
+import * as ObservationProof from "./observation-proof.ts";
 import * as ObservationLedger from "./observation-ledger.ts";
 import * as CompletionPayload from "./completion-payload.ts";
 import * as CompletionRound from "./completion-metadata-round.ts";
@@ -48,6 +49,8 @@ import * as QueueClaims from "./queue-claims.ts";
 import * as DeadGeneration from "./dead-generation-admission.ts";
 import * as Preflight from "./queue-preflight-failure.ts";
 
+export const certifyObservation: typeof ObservationProof.certifyObservation = ObservationProof.certifyObservation;
+export const finishObservationPage: typeof ObservationProof.finishObservationPage = ObservationProof.finishObservationPage;
 export const activateObservation: typeof ObservationLedger.activateObservation = ObservationLedger.activateObservation;
 export const discoverObservation: typeof ObservationLedger.discoverObservation = ObservationLedger.discoverObservation;
 export const markUnknownObservation: typeof ObservationLedger.markUnknownObservation = ObservationLedger.markUnknownObservation;
@@ -206,6 +209,9 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly certifyObservation: typeof ObservationProof.certifyObservation;
+  readonly finishObservationPage: typeof ObservationProof.finishObservationPage;
+
   readonly activateObservation: typeof ObservationLedger.activateObservation;
   readonly discoverObservation: typeof ObservationLedger.discoverObservation;
   readonly markUnknownObservation: typeof ObservationLedger.markUnknownObservation;
@@ -333,6 +339,9 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  certifyObservation,
+  finishObservationPage,
+
   activateObservation,
   discoverObservation,
   markUnknownObservation,

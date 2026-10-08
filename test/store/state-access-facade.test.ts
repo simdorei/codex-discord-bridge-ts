@@ -1,3 +1,4 @@
+import * as ObservationProof from "../../src/store/observation-proof.ts";
 import * as ObservationLedger from "../../src/store/observation-ledger.ts";
 import * as FacadeExports from "../../src/store/state-access-facade.ts";
 import * as DeliveryPreflight from "../../src/store/delivery-preflight.ts";
@@ -55,6 +56,11 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.certifyObservation, ObservationProof.certifyObservation);
+    assert.strictEqual(FacadeExports.certifyObservation, ObservationProof.certifyObservation);
+    assert.strictEqual(StateAccessFacade.finishObservationPage, ObservationProof.finishObservationPage);
+    assert.strictEqual(FacadeExports.finishObservationPage, ObservationProof.finishObservationPage);
+
     assert.strictEqual(StateAccessFacade.activateObservation, ObservationLedger.activateObservation);
     assert.strictEqual(FacadeExports.activateObservation, ObservationLedger.activateObservation);
     assert.strictEqual(StateAccessFacade.discoverObservation, ObservationLedger.discoverObservation);
@@ -180,6 +186,9 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
   it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
+      "certifyObservation",
+      "finishObservationPage",
+
       "activateObservation",
       "discoverObservation",
       "markUnknownObservation",
@@ -292,7 +301,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 113);
+    assert.strictEqual(actual.length, 115);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,084 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,096 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2251,3 +2251,29 @@ Rust build-profile-dependent arithmetic overflow is not claimed equivalent. The 
 merged-span limit is preserved but is not a general heap/input-size bound. Proof-effect
 certification and scan-page commit still need their source-backed implementation before
 this ledger can drive production idle-release decisions. No live DB was used.
+
+## 2026-10-08 — Required-effect observation proofs and exact scan-page commits
+
+Added observation_gap/proof.rs certification for NoRequiredStore, Unconfirmed, Started,
+Terminal, Final and Question effects. Required-effect checks and span persistence share
+one IMMEDIATE transaction; even an already-proven sequence must recheck all supplied
+effects. Terminal identity includes resident and raw payload; question inbox proof
+compares the complete queue binding including nullable execution generation. Source
+Final proof's generation/content rule and completed-origin marker are preserved.
+
+Scan-page progress compares the whole captured gap before CAS and never substitutes
+scanning for verified effects. Newer ranges cannot indefinitely postpone the original
+finite range with a middle hole. The two owned APIs join StateAccessFacade; explicit
+allowlist/reference checks now include them. Owned-store tests reuse the existing
+identity-guarded temporary fixture rather than duplicating cleanup logic.
+
+Evidence .runtime/cloud-observation-proof-112: focused 40 PASS (12 new + related tests);
+full **3,096 PASS, 0 fail/skip/cancel; strict TS exit 0**. Uses actual full initialized
+temporary SQLite stores for every proof variant, both question proof branches, failed
+or ignored writes, stale page snapshots, changed queue identities, input snapshotting,
+unknown effect refusal and the source G1/G2/G3 progress scenario.
+
+Effect inputs are trusted owned-producer instructions, never user-selected proof: this
+API cannot authenticate an arbitrary caller's NoRequiredStore assertion. Production
+notification-to-effect binding, durable idle journal integration and complete bridge
+operation are still unfinished. No live store or external transport was touched.

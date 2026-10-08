@@ -32,3 +32,11 @@ export function gapEqual(a:ObservationGap,b:ObservationGap):boolean{return a.id=
 /** Internal proof writer only after effect checks in the same owned transaction. */
 export function saveGap(db:DatabaseSync,expected:ObservationGap,next:ObservationGap):boolean{requiredTransaction(db);return BigInt(db.prepare(`UPDATE cdr_observation_gaps SET scan_cursor=?1,revision=revision+1,state=?2,verified_json=?3
  WHERE gap_id=?4 AND owner_id=?5 AND generation=?6 AND first_seq=?7 AND last_seq=?8 AND scan_cursor=?9 AND revision=?10`).run(next.cursor,gapComplete(next)?"Verified":"Open",serializeSerdeValue(next.verified),expected.id,expected.scope.ownerId,expected.scope.generation,expected.first,expected.last,expected.cursor,expected.revision).changes)===1n;}
+
+/** Snapshot an internal typed Gap before asynchronous opening; not a durable proof. */
+export function cloneObservationGap(value:ObservationGap):ObservationGap{
+  const owned=cloneOwnedSerdeValue(value);const keys=["id","scope","first","last","cursor","revision","verified"];
+  if(owned===null||typeof owned!=="object"||Array.isArray(owned)||Object.keys(owned).length!==keys.length||keys.some(k=>!Object.hasOwn(owned,k)))throw new TypeError("Expected exact observation gap");const g=owned as ObservationGap;
+  scope(g.scope);for(const v of [g.id,g.first,g.last,g.cursor,g.revision])integer(v);if(!Array.isArray(g.verified))throw new TypeError("Expected observation span vector");
+  for(const s of g.verified){if(s===null||typeof s!=="object"||Array.isArray(s)||Object.keys(s).length!==2||!Object.hasOwn(s,"first")||!Object.hasOwn(s,"last"))throw new TypeError("Expected exact observation span");integer(s.first);integer(s.last);}return g;
+}
