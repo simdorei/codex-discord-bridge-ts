@@ -5,6 +5,13 @@ import {types} from 'node:util';
 import WebSocket,{createWebSocketStream} from 'ws';
 export type GatewaySocketMessage={readonly kind:'Text';readonly text:string}|{readonly kind:'Binary';readonly bytes:Uint8Array}|{readonly kind:'Close';readonly code:number;readonly reason:Uint8Array};
 export class GatewaySocketError extends Error{constructor(message:string){super(message);this.name='GatewaySocketError';}}
+export type GatewaySendFailureStage='BeforePayload'|'AfterPayload';
+const sendFailures=new WeakMap<object,GatewaySendFailureStage>();
+function sendFailure<T extends Error>(error:T,stage:GatewaySendFailureStage):T{sendFailures.set(error,stage);return error;}
+/** Passive identity lookup: public fields, prototype copies and proxies cannot
+ * forge a send-stage classification. AfterPayload means replay is unsafe, not
+ * that Discord acknowledged the bytes. */
+export function gatewaySendFailureStage(error:unknown):GatewaySendFailureStage|null{return error!==null&&typeof error==='object'?sendFailures.get(error)??null:null;}
 export interface GatewaySocketConnectOptions{readonly signal?:AbortSignal;readonly timeoutMs?:number}
 /** One WebSocket/agent/stream owner. HTTP upgrade has a ten-second default
  * deadline; all cancellation/disposal paths join actual tracked socket close.
@@ -51,9 +58,17 @@ export class NodeGatewayWebSocket{
    await new Promise<void>((resolve,reject)=>{const cleanup=()=>{stream.off('readable',wake);stream.off('end',wake);stream.off('error',wake);stream.off('close',wake);this.#ws!.off('close',wake);signal.removeEventListener('abort',abort);};const wake=()=>{cleanup();resolve();};const abort=()=>{cleanup();reject(signal.reason);};stream.once('readable',wake);stream.once('end',wake);stream.once('error',wake);stream.once('close',wake);this.#ws!.once('close',wake);signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();else if(stream.readableLength>0||this.#closed||this.#ended||this.#failure&&!this.#failureReported)wake();});
   }}finally{this.#reading=false;}
  }
- sendText(text:string):Promise<void>{if(typeof text!=='string'||/[\uD800-\uDFFF]/u.test(text))return Promise.reject(new TypeError('Expected valid Gateway text'));return this.#send(text,false);}
- sendBinary(bytes:Uint8Array):Promise<void>{if(!types.isUint8Array(bytes))return Promise.reject(new TypeError('Expected owned Gateway bytes'));return this.#send(Buffer.from(bytes),true);}
- #send(data:string|Buffer,binary:boolean):Promise<void>{if(this.#disposed||this.#ws?.readyState!==WebSocket.OPEN)return Promise.reject(new GatewaySocketError('Gateway socket not open'));if(this.#writing)return Promise.reject(new TypeError('Concurrent Gateway socket write'));this.#writing=true;return this.#track(new Promise<void>((resolve,reject)=>{this.#ws!.send(data,{binary},error=>{this.#writing=false;if(error)reject(new GatewaySocketError('Gateway socket send failed'));else resolve();});}));}
+ sendText(text:string):Promise<void>{if(typeof text!=='string'||/[\uD800-\uDFFF]/u.test(text))return Promise.reject(sendFailure(new TypeError('Expected valid Gateway text'),'BeforePayload'));return this.#send(text,false);}
+ sendBinary(bytes:Uint8Array):Promise<void>{if(!types.isUint8Array(bytes))return Promise.reject(sendFailure(new TypeError('Expected owned Gateway bytes'),'BeforePayload'));return this.#send(Buffer.from(bytes),true);}
+ #send(data:string|Buffer,binary:boolean):Promise<void>{
+  if(this.#disposed||this.#ws?.readyState!==WebSocket.OPEN)return Promise.reject(sendFailure(new GatewaySocketError('Gateway socket not open'),'BeforePayload'));
+  if(this.#writing)return Promise.reject(sendFailure(new TypeError('Concurrent Gateway socket write'),'BeforePayload'));
+  this.#writing=true;
+  return this.#track(new Promise<void>((resolve,reject)=>{
+   const failed=()=>{this.#writing=false;reject(sendFailure(new GatewaySocketError('Gateway socket send failed'),'AfterPayload'));};
+   try{this.#ws!.send(data,{binary},error=>{if(error)failed();else{this.#writing=false;resolve();}});}catch{failed();}
+  }));
+ }
  requestClose(code=1000,reason=''):void{if(typeof reason!=='string'||/[\uD800-\uDFFF]/u.test(reason))throw new TypeError('Expected valid close reason');if(this.#disposed)throw new GatewaySocketError('Gateway socket disposed');this.#ws!.close(code,reason);}
  /** ws can emit close before a cancelled upgrade's underlying socket closes.
   * Join our own agent sockets as well, then owned read/write operations. */

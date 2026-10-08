@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,152 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,157 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4344,3 +4344,23 @@ Strict TS exit0; focused **11 PASS**; full Linux **4,152 PASS /0 fail/0 skip/0 c
 Evidence `.runtime/cloud-gateway-control-encoder-187/`. Scope is default encoding and
 session-ticket composition, not actual authenticated sending, custom presence/config,
 complete Gateway orchestration or Windows/performance/operational approval.
+
+
+## Checkpoint 188 — authentic Gateway send-failure phase
+
+Socket send failures now carry private WeakMap-backed BeforePayload/AfterPayload
+identity. Invalid input, closed transport and rejected concurrent sends are before
+payload. Native callback failures and synchronous exceptions after entering send
+are conservatively after payload: bytes must not be replayed, but acknowledgement
+is NOT claimed. Passive lookup never reads attacker-controlled error properties
+and rejects copies, lookalikes and proxies. Synchronous failure also releases the
+owned write slot rather than leaving subsequent operations blocked.
+
+Tests include an actual interrupted32MiB loopback write, concurrent second-send
+rejection, disposed/invalid-input sends, field spoofing and isolated synchronous
+fault injection with prototype restoration. Full source-control effect integration
+remains pending; this is transport phase evidence only.
+
+Strict TS exit0; focused **19 PASS**; full Linux **4,157 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-gateway-send-failure-188/`. No live Discord acknowledgement,
+Windows/performance or operational approval is claimed.
