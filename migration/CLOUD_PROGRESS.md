@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,685 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,691 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3505,3 +3505,34 @@ Strict TS exit 0; focused scheduler 56 PASS; full Linux **3,685 PASS / 0 fail / 
 0 cancelled**. Evidence `.runtime/cloud-completion-loop-154/{source-authority.json,
 source-manifest.json,verification-result.json,typecheck-final.log,focused-final.log,
 full-tests.log}`. No production HTTP, live Codex, Windows, operational or performance PASS.
+
+
+## Checkpoint 155 — indexed completion pipeline integration
+
+Composed the existing source intake, source-range reconciler, staged handler, scheduler,
+checked question UI and guarded receipt delivery. Source intake can transfer each charged
+envelope directly into the bounded scheduler instead of requiring an external queue pump.
+The default standalone intake FIFO is preserved. A real installed observation journal is
+required before starting this integrated pipeline; native process ownership stays with
+its caller, not the completion worker.
+
+Global maintenance now performs source-ordered question retirement/reconciliation/
+compaction, acquires background control admission, and stabilizes only quarantined native
+transport. Busy quarantine remains a generation-specific failure; sealed controls skip
+stabilization and permits always release. No automatic Reserve policy was added.
+
+The pipeline owns and joins its intake, source reconciliation and scheduler promises.
+An already-started HTTP receipt operation is awaited through completion on shutdown;
+no detached send or fake timeout success. The final bounded transport adapter remains
+mandatory. Idle-release and typing drivers and production service startup remain pending.
+
+Six tests cover maintenance modes and an actual VM Node JSON-RPC process emitting Final
+and terminal events through indexed intake, scheduling, SQLite and guarded mocked HTTP
+receipt retirement. Stopping while the mocked send is pending waits for its actual
+settlement, releases all event bytes/target locks, and leaves the caller-owned native
+process healthy. Diagnostic errors in that successful integration are asserted absent.
+
+Strict TS exit 0; focused pipeline/source tests **29 PASS**; complete Linux **3,691 PASS /
+0 fail / 0 skip / 0 cancelled**. Evidence `.runtime/cloud-completion-pipeline-155/`
+contains source hashes, manifests, verification result and raw logs. No real Discord send,
+live Codex, Windows, deployment, complete Rust parity or performance approval.

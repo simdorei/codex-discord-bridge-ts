@@ -1,3 +1,4 @@
+import {types} from "node:util";
 import {setImmediate as yieldToRuntime} from "node:timers/promises";
 import type {PortableResidentLifecycle} from "../../app-server/portable-resident-lifecycle.ts";
 import type {ResidentNotificationEvent} from "../../app-server/resident-forwarders.ts";
@@ -29,9 +30,9 @@ export class CompletionSourceQueue{
 /** Indexed pages are authority; current broadcast events are only wakeups. One owner
  * retains the cursor, bounded byte permits, FIFO and resident subscription. */
 export class CompletionSourceIntake{
- readonly queue=new CompletionSourceQueue();readonly #budget:CompletionEventBudget;readonly #path:string;readonly #server:Server;readonly #fence:TerminalFence;readonly #certifier:CompletionSourceCertifier;readonly #report:(failure:SourceIntakeFailure)=>void;readonly #state:Store;
+ readonly queue=new CompletionSourceQueue();readonly #sink:(event:ReadyLive<CompletionNotification>)=>boolean;readonly #budget:CompletionEventBudget;readonly #path:string;readonly #server:Server;readonly #fence:TerminalFence;readonly #certifier:CompletionSourceCertifier;readonly #report:(failure:SourceIntakeFailure)=>void;readonly #state:Store;
  #current:ObservationScope|null=null;#forwarded=0n;#busy=false;#running=false;#closed=false;
- constructor(path:string,server:Server,fence:TerminalFence,commentaryEnabled:boolean,report:(failure:SourceIntakeFailure)=>void,budget=new CompletionEventBudget(),state:Store=StateAccessFacade){this.#path=path;this.#server=server;this.#fence=fence;this.#report=report;this.#budget=budget;this.#state=state;this.#certifier=new CompletionSourceCertifier(path,server,commentaryEnabled);}
+ constructor(path:string,server:Server,fence:TerminalFence,commentaryEnabled:boolean,report:(failure:SourceIntakeFailure)=>void,budget=new CompletionEventBudget(),state:Store=StateAccessFacade,sink?:(event:ReadyLive<CompletionNotification>)=>boolean){if(sink!==undefined&&(typeof sink!=="function"||types.isProxy(sink)||types.isAsyncFunction(sink)||types.isGeneratorFunction(sink)))throw new TypeError("Expected synchronous owned source sink");this.#sink=sink??(event=>this.queue.offer(event));this.#path=path;this.#server=server;this.#fence=fence;this.#report=report;this.#budget=budget;this.#state=state;this.#certifier=new CompletionSourceCertifier(path,server,commentaryEnabled);}
  close():void{if(this.#running||this.#busy)throw new TypeError("Source intake still owned");this.queue.close();this.#closed=true;}
  get forwarded():bigint{return this.#forwarded;}
  get availableBytes():number{return this.#budget.availableBytes;}
@@ -53,7 +54,8 @@ export class CompletionSourceIntake{
   if(event.kind==="Notification"&&extractThreadId(event.notification.params)===null)return;
   const charged=this.#budget.chargeOwned(event);
   if(charged===null){this.#server.markSourceObservationGap(this.#server.generation(),this.#gapError);this.#notify("bytes",new Error("completion event budget gap"));return;}
-  if(!this.queue.offer(charged)){charged.dispose();this.#server.markSourceObservationGap(this.#server.generation(),this.#gapError);this.#notify("queue",new Error("completion processing queue gap; original ranges retained"));}
+  let accepted:boolean;try{accepted=this.#sink(charged);if(typeof accepted!=="boolean")throw new TypeError("Source sink must return a synchronous boolean");}catch(error){charged.dispose();throw error;}
+  if(!accepted){charged.dispose();this.#server.markSourceObservationGap(this.#server.generation(),this.#gapError);this.#notify("queue",new Error("completion processing queue gap; original ranges retained"));}
  }
  async #scan(signal?:AbortSignal):Promise<void>{
   signal?.throwIfAborted();let scope:ObservationScope;
