@@ -4156,3 +4156,23 @@ was corrected with raw failures retained, no product validation weakened.
 This is full pinned recognized-field validation within the valid-JSON profile, not
 serializer parity, a Rust executable differential, live Gateway packet/socket wiring
 or Windows/performance/operational approval. Those integration tasks remain pending.
+
+
+## Checkpoint 180 — Ready identity boundary and immutable Interaction ingress
+
+Added full Ready and CurrentUser validation, exact application flags, mandatory-true
+UnavailableGuild, checked two-u32 shard tuple and u64 Hello interval. Full Ready
+validation precedes identity extraction. CurrentUser correctly requires mfa_enabled,
+unlike general User. The resume URL remains a model string, not network permission;
+Hello accepting zero/full-u64 values does not authorize their use as Node timers.
+
+Added complete-decoder-minted immutable Interaction payloads with unforgeable
+WeakSet ownership and exact source intent selection. Tests feed validated Ready and
+Interaction into the existing bounded ingress, without network IO.
+
+Pinned twilight-gateway 0.17.1 source archive downloaded and SHA-verified against
+frozen Cargo.lock for upcoming wire/protocol work; source-only, not executed.
+Strict TS exit0; new focused **11 PASS**; full Linux **4,049 PASS /0 fail/0 skip/
+0 cancelled**. Evidence `.runtime/cloud-gateway-ready-180/`; gateway source archive
+`.runtime/cloud-gateway-wire-authority-180/`. Actual WebSocket protocol/discovery,
+remaining dispatch validation, Windows/performance/operations remain unfinished.
