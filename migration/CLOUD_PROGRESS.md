@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,555 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,562 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5070,3 +5070,26 @@ Strict TS exit0, focused11 PASS, full Linux **4,555 PASS /0 fail/0 skip/0 cancel
 Evidence `.runtime/cloud-discord-interaction-envelope-223/` pins policy/response
 source and response serialization model. HTTP acknowledgement/rate/auth rules and
 interaction worker wiring remain pending; no external response was sent.
+
+
+## Checkpoint 224 — interaction callback request/rate eligibility
+
+Added owned callback request construction with no Bot authorization and strict
+canonical path checks. Supported token profile is nonempty opaque ASCII URL-safe
+letters/digits/dot/underscore/hyphen, excluding dot path segments; arbitrary token
+URI acceptance is not claimed equivalent to Rust hyper::Uri. Unsupported path,
+query, fragment, escape or normalization forms fail before IO.
+
+Extended shared rate state with source interaction global exemption while retaining
+learned bucket limits. Fresh exempt requests can start in an otherwise idle queue
+past older global-blocked requests; queued requests retain source FIFO eligibility.
+Cancelled tombstones therefore remain until eligible popping, while pendingCount
+reports live requests. Pinned actor also unconditionally refunds a cancelled active
+permit up to the global cap, even if that permit was exempt; this inherited quirk
+is explicitly preserved and tested rather than silently corrected.
+
+Strict TS exit0, focused17 PASS (7 new plus10 rate-state regressions), full Linux
+**4,562 PASS /0 fail/0 skip/0 cancelled**. Evidence
+`.runtime/cloud-discord-interaction-rate-224/` pins complete rate actor/resource
+logic and callback builder. Native wire/response-engine callback support is still
+pending, so no callback network endpoint was enabled by this slice.
