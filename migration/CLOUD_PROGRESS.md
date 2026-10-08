@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,675 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,685 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3477,3 +3477,31 @@ suite **3,675 PASS / 0 fail / 0 skip / 0 cancelled**. Evidence is in
 `.runtime/cloud-completion-execution-153/{source-authority.json,source-manifest.json,
 verification-result.json,typecheck-final.log,focused-final.log,full-tests.log}`.
 No production Discord send, Windows run, service deployment or complete parity claimed.
+
+
+## Checkpoint 154 — staged scheduler loop
+
+Added the single-owner completion loop around the published ready/discovery/execution
+units. Input retains at most 128 charged envelopes; ready-lane rejection releases ownership
+and marks an observation gap. Metadata discovery consumes negative orphan sidecars before
+any await/dispatch. State completion prioritizes fresh heads unless their exact identity is
+already active; successful HTTP wakes its source. Coalesced wakes retain one waiter and
+one remembered wake, not a growing queue. Each scheduling batch explicitly yields to IO.
+
+Discovery uses delayed 50 ms ticks; maintenance is single-flight with a 30 second cadence.
+Input finish drains buffered work, with a five-second boundary that REQUESTS cancellation
+and then JOINS actual tasks. It is not a guarantee of hard termination at five seconds:
+bounded cooperative transport adapters remain required. Pending tick/wake waits are closed
+and joined. Upstream intake, maintenance implementation and native service assembly remain
+separate mandatory adapters; no fake default sender is supplied.
+
+Ten additional tests cover continuous-ready fairness, input/target caps, cross-channel
+progress, same-channel exclusion, failure handling, maintenance single-flight, pre-abort,
+and joined drain. Real SQLite discovery + guarded mocked receipt delivery retires the
+Final and completes a rescan. An actual negative orphan metadata row never reaches state
+dispatch and remains in its evidence table.
+
+Strict TS exit 0; focused scheduler 56 PASS; full Linux **3,685 PASS / 0 fail / 0 skip /
+0 cancelled**. Evidence `.runtime/cloud-completion-loop-154/{source-authority.json,
+source-manifest.json,verification-result.json,typecheck-final.log,focused-final.log,
+full-tests.log}`. No production HTTP, live Codex, Windows, operational or performance PASS.

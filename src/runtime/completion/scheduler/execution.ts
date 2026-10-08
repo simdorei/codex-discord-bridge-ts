@@ -20,9 +20,9 @@ const wake=(work:ReadyStateWork<CompletionNotification>)=>work.kind==="Durable"|
  * prioritization remain the enclosing loop's responsibility. Completed but unharvested
  * tasks retain their slot and lane identity; no unbounded result queue is created. */
 export class CompletionExecution<P>{
- readonly #ready:CompletionReady<CompletionNotification>;readonly #ports:CompletionExecutionPorts<P>;readonly #abort=new AbortController();
+ readonly #notify:()=>void;readonly #ready:CompletionReady<CompletionNotification>;readonly #ports:CompletionExecutionPorts<P>;readonly #abort=new AbortController();
  readonly #targets=new Set<string>();readonly #channels=new Map<bigint,CompletionEntry>();readonly #states=new Set<Task>();readonly #http=new Set<Task>();#native=0;#closed=false;#closing:Promise<void>|null=null;#pumping=false;
- constructor(ready:CompletionReady<CompletionNotification>,ports:CompletionExecutionPorts<P>){this.#ready=ready;this.#ports={prepare:ports.prepare.bind(ports),state:ports.state.bind(ports),http:ports.http.bind(ports),prepareFailed:ports.prepareFailed.bind(ports)};}
+ constructor(ready:CompletionReady<CompletionNotification>,ports:CompletionExecutionPorts<P>,notify:()=>void=()=>{}){this.#notify=notify;this.#ready=ready;this.#ports={prepare:ports.prepare.bind(ports),state:ports.state.bind(ports),http:ports.http.bind(ports),prepareFailed:ports.prepareFailed.bind(ports)};}
  get stateCount():number{return this.#states.size;}
  get httpCount():number{return this.#http.size;}
  get nativeCount():number{return this.#native;}
@@ -45,12 +45,12 @@ export class CompletionExecution<P>{
      let outcome:CompletionWorkOutcome={ok:true};try{this.#abort.signal.throwIfAborted();await this.#ports.state(chosen.work,chosen.permit,this.#abort.signal);}catch(error){outcome={ok:false,error};}
      const cleanupErrors:unknown[]=[];try{releaseSelected();}catch(error){cleanupErrors.push(error);}try{if(chosen.work.kind==="Live")chosen.work.live.dispose();}catch(error){cleanupErrors.push(error);}
      if(cleanupErrors.length)outcome={ok:false,error:new AggregateError(outcome.ok?cleanupErrors:[outcome.error,...cleanupErrors],"Completion state cleanup failed")};
-     task.result={kind:"State",target:key,native:chosen.needsNative,wake:wake(chosen.work),outcome};
+     task.result={kind:"State",target:key,native:chosen.needsNative,wake:wake(chosen.work),outcome};this.#notify();
     });
     task.promise=promise;this.#states.add(task);
    }
    while(this.#http.size<COMPLETION_HTTP_SLOTS){const entry=this.#ready.takeHttp(this.#channels);if(entry===null)break;this.#channels.set(entry.channel,entry);
-    const task:Task={promise:Promise.resolve(),result:null};const promise=Promise.resolve().then(async()=>{let outcome:CompletionWorkOutcome={ok:true};try{this.#abort.signal.throwIfAborted();await this.#ports.http(entry,this.#abort.signal);}catch(error){outcome={ok:false,error};}task.result={kind:"Http",entry,outcome};});task.promise=promise;this.#http.add(task);
+    const task:Task={promise:Promise.resolve(),result:null};const promise=Promise.resolve().then(async()=>{let outcome:CompletionWorkOutcome={ok:true};try{this.#abort.signal.throwIfAborted();await this.#ports.http(entry,this.#abort.signal);}catch(error){outcome={ok:false,error};}task.result={kind:"Http",entry,outcome};this.#notify();});task.promise=promise;this.#http.add(task);
    }
   }finally{this.#pumping=false;}
  }
