@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,579 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,589 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5135,3 +5135,26 @@ Strict TS exit0, focused9 PASS, full Linux **4,579 PASS /0 fail/0 skip/0 cancell
 Evidence `.runtime/cloud-interaction-claim-cache-226/` pins complete claims.rs with
 its tests. Dispatcher acknowledgement deadline/claim commit integration remains
 pending. No live DB, network or runtime configuration was changed.
+
+
+## Checkpoint 227 — deadline-first acknowledgement acceptance
+
+Added the pinned2500ms budget and absolute-deadline acknowledgement helper. Expired
+operations never start IO; deadline wins over same-turn completion. Node cancellation
+joins the actual operation and timer, including asynchronous cleanup, rather than
+returning while a losing request remains live. Completed operations are not aborted
+spuriously. A noncooperative request stays pending for its outer runtime deadline
+owner, so this is not a hard2.5s wall-time return guarantee.
+
+Central dispatcher error kinds preserve trusted String transport error text and
+retain unknown native causes without invoking arbitrary getters/toString. Distinct
+late cleanup errors surface instead of being silently dropped; that explicit Node
+cleanup behavior is not Rust future Drop equivalence. Passive error metadata does
+not accept forged prototypes. Claim commit and durable custody composition remain
+separate pending work.
+
+Strict TS exit0, focused10 PASS, full Linux **4,589 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-interaction-ack-deadline-227/` pins dispatch/response/transport
+authorities. Tests cover expired, successful, error, simultaneous completion/deadline,
+forced cancellation, real pending cleanup and clock failure using controlled clocks.
+No real Discord interaction or process-abort policy was exercised.
