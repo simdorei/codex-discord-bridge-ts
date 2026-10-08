@@ -1,5 +1,5 @@
 import {latestStopScopeIn as latestScope} from "./stop-revision-read.ts";
-import {mirroredThreadIdIn as mirroredTarget} from "./busy-choice.ts";
+import {validateStopBindingIn,stopHoldSnapshotIn as holdSnapshot} from "./stop-custody-common.ts";
 import { getPromptIntakeIn } from "./prompt-intake.ts";
 import type { DatabaseSync, SQLInputValue } from "node:sqlite";
 import { isDeepStrictEqual } from "node:util";
@@ -8,42 +8,16 @@ import { serializeSerdeValue } from "../core/serde-json.ts";
 import { selectJob, serializeStoredQueueJob } from "./queue-read.ts";
 import type { StoredQueueJob } from "./queue-read.ts";
 import { StoreIntegrityError } from "./schema-assembly.ts";
-import { decodeTextField, textDecoderFor, decodeI64 } from "./sqlite-values.ts";
-import { asI64, getOwn, isJsonObject } from "./async-resolution-json-helpers.ts";
+import { decodeI64 } from "./sqlite-values.ts";
+import { asI64, getOwn } from "./async-resolution-json-helpers.ts";
 import { trimUnicodeWhitespace as trim } from "./queue-preflight-failure.ts";
 
 type Row = Record<string, unknown>;
-const encoding = "(SELECT encoding FROM pragma_encoding) AS encoding";
-const raw = (name: string): string => `CAST(${name} AS BLOB) AS ${name}_raw`;
 function one(db: DatabaseSync, sql: string, ...values: SQLInputValue[]): Row | undefined {
   const statement = db.prepare(sql); statement.setReadBigInts(true); return statement.get(...values);
 }
-function text(row: Row, name: string, optional = false): string | null {
-  return decodeTextField(row[name], row[`${name}_raw`], name, optional, textDecoderFor(row.encoding));
-}
 function refused(): StoreIntegrityError {
   return new StoreIntegrityError("original stop control authority differs; no interrupt or replay");
-}
-
-function validateBinding(db: DatabaseSync, before: StoredQueueJob, binding: unknown): void {
-  const command = getOwn(binding, "command"); const fields = getOwn(command, "Stop");
-  const reference = getOwn(fields, "reference");
-  const explicit = typeof reference === "string" && trim(reference) !== "";
-  if (!isJsonObject(command) || Object.keys(command).length !== 1 || !isJsonObject(fields)
-    || Object.keys(fields).length !== 1 || (!explicit && reference !== null)
-    || getOwn(binding, "target") !== before.targetThreadId) throw new StoreIntegrityError("stop custody differs or could not be preserved; no stop acceptance");
-  const route = getOwn(binding, "route");
-  const valid = route === "Explicit" ? explicit : !explicit && (
-    route === "Mapped" ? mirroredTarget(db, before.channelId) === before.targetThreadId
-      : route === "Selected" && mirroredTarget(db, before.channelId) === null);
-  if (!valid) throw new StoreIntegrityError("stop custody differs or could not be preserved; no stop acceptance");
-}
-
-function holdSnapshot(db: DatabaseSync, job: string): readonly string[] | null {
-  const names = ["target_thread_id", "reason", "evidence_json"];
-  const row = one(db, `SELECT ${names.join(",")},${names.map(raw).join(",")},${encoding}
-    FROM cdr_execution_holds WHERE job_id=?`, job);
-  return row === undefined ? null : names.map(name => text(row, name)!);
 }
 
 // The shared reader decodes the full intake before this presence decision.
@@ -78,7 +52,7 @@ export function bindLateStartIn(db: DatabaseSync, before: StoredQueueJob, runnin
   if (before.ownerUserId === null) throw refused();
   const binding = getOwn(scope, "binding");
   if (binding === undefined) throw refused();
-  validateBinding(db, before, binding);
+  validateStopBindingIn(db, before.targetThreadId, before.channelId, binding);
   const hold = holdSnapshot(db, before.jobId);
   if (hold === null || hold[0] !== before.targetThreadId) throw refused();
   const turn = running.turnId;

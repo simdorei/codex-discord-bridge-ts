@@ -1,3 +1,4 @@
+import * as StopDispatch from "../../src/store/stop-control-dispatch.ts";
 import * as RuntimeFenceReads from "../../src/store/runtime-fence-reads.ts";
 import * as QueueStartAuthority from "../../src/store/queue-start-authority.ts";
 import * as ResponseCustody from "../../src/store/response-custody.ts";
@@ -199,6 +200,11 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.stopControlTargetHeldExisting, RuntimeFenceReads.stopControlTargetHeldExisting);
     assert.strictEqual(StateAccessFacade.deadGenerationTargetHeldExisting, RuntimeFenceReads.deadGenerationTargetHeldExisting);
     assert.strictEqual(StateAccessFacade.deadGenerationSealedExisting, RuntimeFenceReads.deadGenerationSealedExisting);
+    assert.strictEqual(StateAccessFacade.claimStopControl, StopDispatch.claimStopControl);
+    assert.strictEqual(StateAccessFacade.validateStopClaimIn, StopDispatch.validateStopClaimIn);
+    assert.strictEqual(StateAccessFacade.beginStopWire, StopDispatch.beginStopWire);
+    assert.strictEqual(StateAccessFacade.finishStopWire, StopDispatch.finishStopWire);
+    assert.strictEqual(StateAccessFacade.recordStopControlError, StopDispatch.recordStopControlError);
     assert.strictEqual(StateAccessFacade.deadTargetHeld, DeadGeneration.targetIsHeld);
     assert.strictEqual(StateAccessFacade.recordPreflightFailure, Preflight.recordPreflightFailure);
   });
@@ -274,6 +280,11 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "stopControlTargetHeldExisting",
       "deadGenerationTargetHeldExisting",
       "deadGenerationSealedExisting",
+      "claimStopControl",
+      "validateStopClaimIn",
+      "beginStopWire",
+      "finishStopWire",
+      "recordStopControlError",
       "deadTargetHeld",
       "eligibleJobs",
       "enqueue",
@@ -361,7 +372,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 138);
+    assert.strictEqual(actual.length, 143);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

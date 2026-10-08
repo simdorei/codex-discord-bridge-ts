@@ -9,6 +9,8 @@ import {parseSerdeValue} from "../../src/core/serde-json-parse.ts";
 import {selectJob,serializeStoredQueueJob} from "../../src/store/queue-read.ts";
 import {ResidentStateError} from "../../src/app-server/resident-state.ts";
 import {existsSync} from "node:fs";
+import {serializeSerdeValue} from "../../src/core/serde-json.ts";
+import {claimStopControl} from "../../src/store/stop-control-dispatch.ts";
 const render=(e:unknown)=>e instanceof Error?e.message:"unavailable";
 interface Fixture{db:DatabaseSync;path:string;owner:PortableResidentLifecycle;count():Promise<unknown>;claim():unknown}
 function stop(db:DatabaseSync,target:string){db.exec("UPDATE cdr_stop_clock SET revision=1");db.prepare("INSERT INTO cdr_stop_revision_receipts VALUES('stop',?,1,'{}')").run(target);db.prepare("INSERT INTO cdr_stop_revisions VALUES(?,1,'stop')").run(target);}
@@ -59,7 +61,7 @@ test("durable dead-generation fence applies only to the source method set",{time
 }));
 test("existing-only adapter does not initialize absent stores, while source read-only bypass requires no DB",async()=>storeFixture(async path=>{
   const f=createMutationCustodyFence(path,"runtime",render);assert.equal(f.requestOrigin("thread/read",{threadId:"T"}),null);f.checkRequest(1n,"thread/read",{threadId:"T"});assert.equal(existsSync(path),false);
-  assert.throws(()=>f.requestOrigin("turn/start",{threadId:"T"}));assert.throws(()=>f.checkRequest(1n,"turn/start",{threadId:"T"}));assert.equal(existsSync(path),false);assert.equal(f.beginStopMutation,undefined);assert.equal(f.finishStopMutation,undefined);
+  assert.throws(()=>f.requestOrigin("turn/start",{threadId:"T"}));assert.throws(()=>f.checkRequest(1n,"turn/start",{threadId:"T"}));assert.equal(existsSync(path),false);assert.equal(typeof f.beginStopMutation,"function");assert.equal(typeof f.finishStopMutation,"function");
 }));
 test("durable unresolved response blocks its target and unscoped changes, while reads and unrelated target remain available",{timeout:15000},async t=>fixture(t,async f=>{
   f.db.exec("INSERT INTO cdr_server_responses VALUES('old','runtime','resident',1,'T','V','job','{}','hash','admitted',0,0,NULL)");
@@ -72,4 +74,24 @@ test("nonsettled stop receipt blocks mutations without blocking explicit interru
   await assert.rejects(f.owner.request("thread/settings/update",{threadId:"T"},1000,1n),/stop execution end/);
   await f.owner.request("turn/interrupt",{threadId:"T",turnId:"V"},1000,1n);await f.owner.request("thread/read",{threadId:"T"},1000,1n);
   assert.equal(f.db.prepare("SELECT count(*) AS n FROM codex_mutation_attempts").get()!.n,0);assert.equal(await f.count(),2n);
+}));
+function acceptedStop(f:Fixture){
+  f.db.exec("UPDATE codex_turn_queue SET state='running',turn_id='V',turn_observation_generation=1; INSERT INTO cdr_execution_holds VALUES('job','T','stop','{}',0)");
+  const control={operation_id:"stop-original",target:"T",channel:42n,owner:3n,resident:f.owner.instanceId,generation:1n,turn:"V",binding:{target:"T",route:"Selected",command:{Stop:{reference:null}}},jobs:[serializeStoredQueueJob(selectJob(f.db,"job"))],can_settle:true};
+  const json=`{${Object.entries(control).map(([k,v])=>`${JSON.stringify(k)}:${serializeSerdeValue(v)}`).join(",")}}`;
+  f.db.prepare("INSERT INTO cdr_stop_controls(operation_id,target_thread_id,resident_owner,generation,turn_id,record_json,phase) VALUES('stop-original','T',?,1,'V',?,'accepted')").run(f.owner.instanceId,json);
+  return claimStopControl(f.path,control,()=>{})!;
+}
+test("already accepted stop reaches native interrupt once and acknowledgment preserves execution hold",{timeout:15000},async t=>fixture(t,async f=>{
+  const claim=acceptedStop(f),request={method:"turn/interrupt",params:{threadId:"T",turnId:"V"},timeoutMs:1000};
+  await f.owner.executeStopControl(request,1n,claim,()=>{});assert.equal(await f.count(),1n);assert.equal(f.db.prepare("SELECT phase FROM cdr_stop_controls").get()!.phase,"acknowledged");assert.equal(f.db.prepare("SELECT count(*) AS n FROM cdr_execution_holds").get()!.n,1);
+  assert.equal(f.db.prepare("SELECT count(*) AS n FROM codex_mutation_attempts").get()!.n,0);await assert.rejects(f.owner.executeStopControl(request,1n,claim,()=>{}));assert.equal(await f.count(),1n);
+}));
+test("stale accepted stop cannot interrupt another original queue owner",{timeout:15000},async t=>fixture(t,async f=>{
+  const claim=acceptedStop(f);f.db.exec("UPDATE codex_turn_queue SET owner_user_id=99");await assert.rejects(f.owner.executeStopControl({method:"turn/interrupt",params:{threadId:"T",turnId:"V"},timeoutMs:1000},1n,claim,()=>{}),/original stop control/);assert.equal(await f.count(),0n);assert.equal(f.db.prepare("SELECT wire_attempt FROM cdr_stop_controls").get()!.wire_attempt,null);
+}));
+test("stop wire timeout retains dispatched original receipt and does not grant another interrupt",{timeout:15000},async t=>fixture(t,async f=>{
+  const claim=acceptedStop(f);await assert.rejects(f.owner.executeStopControl({method:"turn/interrupt",params:{threadId:"T",turnId:"V",hang:true},timeoutMs:40},1n,claim,()=>{}),/outcome remains unknown/);
+  const row=f.db.prepare("SELECT phase,wire_attempt FROM cdr_stop_controls").get()!;assert.equal(row.phase,"dispatching");assert.equal(typeof row.wire_attempt,"string");assert.equal(f.owner.lifecycleSnapshot().quarantined,false);
+  await assert.rejects(f.owner.executeStopControl({method:"turn/interrupt",params:{threadId:"T",turnId:"V"},timeoutMs:1000},1n,claim,()=>{}));assert.equal(await f.count(),1n);
 }));

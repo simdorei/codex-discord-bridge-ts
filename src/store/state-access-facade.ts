@@ -1,3 +1,4 @@
+import * as StopDispatch from "./stop-control-dispatch.ts";
 import * as RuntimeFenceReads from "./runtime-fence-reads.ts";
 import * as QueueStartAuthority from "./queue-start-authority.ts";
 import * as ResponseCustody from "./response-custody.ts";
@@ -162,6 +163,12 @@ export const requireStopControlUnheldIn: typeof RuntimeFenceReads.requireStopCon
 export const stopControlTargetHeldExisting: typeof RuntimeFenceReads.stopControlTargetHeldExisting = RuntimeFenceReads.stopControlTargetHeldExisting;
 export const deadGenerationTargetHeldExisting: typeof RuntimeFenceReads.deadGenerationTargetHeldExisting = RuntimeFenceReads.deadGenerationTargetHeldExisting;
 export const deadGenerationSealedExisting: typeof RuntimeFenceReads.deadGenerationSealedExisting = RuntimeFenceReads.deadGenerationSealedExisting;
+
+export const claimStopControl: typeof StopDispatch.claimStopControl = StopDispatch.claimStopControl;
+export const validateStopClaimIn: typeof StopDispatch.validateStopClaimIn = StopDispatch.validateStopClaimIn;
+export const beginStopWire: typeof StopDispatch.beginStopWire = StopDispatch.beginStopWire;
+export const finishStopWire: typeof StopDispatch.finishStopWire = StopDispatch.finishStopWire;
+export const recordStopControlError: typeof StopDispatch.recordStopControlError = StopDispatch.recordStopControlError;
 
 export const deadTargetHeld: typeof DeadGeneration.targetIsHeld = DeadGeneration.targetIsHeld;
 export const recordPreflightFailure: typeof Preflight.recordPreflightFailure = Preflight.recordPreflightFailure;
@@ -370,6 +377,11 @@ export interface IStateAccessFacade {
   readonly stopControlTargetHeldExisting: typeof RuntimeFenceReads.stopControlTargetHeldExisting;
   readonly deadGenerationTargetHeldExisting: typeof RuntimeFenceReads.deadGenerationTargetHeldExisting;
   readonly deadGenerationSealedExisting: typeof RuntimeFenceReads.deadGenerationSealedExisting;
+  readonly claimStopControl: typeof StopDispatch.claimStopControl;
+  readonly validateStopClaimIn: typeof StopDispatch.validateStopClaimIn;
+  readonly beginStopWire: typeof StopDispatch.beginStopWire;
+  readonly finishStopWire: typeof StopDispatch.finishStopWire;
+  readonly recordStopControlError: typeof StopDispatch.recordStopControlError;
   readonly deadTargetHeld: typeof DeadGeneration.targetIsHeld;
   readonly recordPreflightFailure: typeof Preflight.recordPreflightFailure;
   readonly tryBeginAttempt: typeof QueueClaims.tryBeginAttempt;
@@ -519,6 +531,11 @@ export const StateAccessFacade: IStateAccessFacade = {
   stopControlTargetHeldExisting,
   deadGenerationTargetHeldExisting,
   deadGenerationSealedExisting,
+  claimStopControl,
+  validateStopClaimIn,
+  beginStopWire,
+  finishStopWire,
+  recordStopControlError,
   deadTargetHeld,
   recordPreflightFailure,
   tryBeginAttempt,

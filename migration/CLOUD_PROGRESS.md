@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,324 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,345 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2787,3 +2787,33 @@ remain available. No live Codex, Discord or production store was used.
 Windows process ownership, complete runtime/Discord wiring, persistence callback open
 semantics and worker/offload/performance qualification remain incomplete. Checkpoint
 counts are bounded regression evidence, not deployment or whole-migration approval.
+
+
+## 2026-10-08 — One-use original stop claim and native interrupt evidence
+
+Ported already-accepted StopControl claim, exact wire admission/finish and bounded error
+recording. Claim preserves the opaque original queue-job serialization, route binding,
+all original job holds, exact running owner/turn/evidence generation and accepted receipt.
+Selector checks occur before and after the atomic token change. Wire identity may be
+written only once; uncertain/failed outcomes never rearm the receipt. reply_ok means
+acknowledged, not execution ended; settled terminal evidence and execution holds survive.
+
+Shared stop route/hold readers now serve both late-start binding and stop dispatch,
+removing duplicate query/validation logic. Five operations join StateAccessFacade
+(143 methods). The concrete runtime mutation fence now supplies stop wire callbacks;
+initial user stop acceptance and dead-work persistence are still separate.
+
+Evidence .runtime/cloud-stop-control-dispatch-131: 18 new store tests and 3 native helper
+interrupt tests, focused52 PASS; full **3,345 PASS, zero fail/skip/cancel; strict TS exit0**.
+Covers double claim/send, selector failure rollback, stale owner/turn/token, changed queue/
+holds/mapping, trigger races, terminal-preserving finish and 1000-Unicode-scalar diagnostics.
+Actual native interrupt bytes are sent once; stale custody sends zero; timeout retains
+wire identity without another interrupt. Accepted controls in these tests are explicit
+fixtures, not evidence of implemented user-command acceptance.
+
+Initial typecheck caught a callback receiver type mismatch and one test fixture used an
+outdated column-count INSERT; both raw failures are preserved, corrected without weakening
+product checks. Source finish postcondition is exact retained wire identity; it does not
+re-run current queue validation after terminal handling. Source-compatible unknown serde
+fields are ignored for StopControl/StopClaim while mandatory primitive fields are checked.
+No live Codex/Discord, Windows or production-performance approval is claimed.
