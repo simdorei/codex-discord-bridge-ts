@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,515 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,528 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3088,3 +3088,34 @@ weakening the product's UUID or synchronous-void contracts; original failures re
 The worker is explicit-owner started, not installed into a live Discord or Windows service.
 Frozen settings/reference admission, complete stop command routing, tracked completion
 event driver, offload/Discord/service bootstrap and existing platform limits remain.
+
+
+## 2026-10-08 — Frozen stop action and custody-error correction
+
+Checkpoint 141 adds StopActionExecutor for an already-admitted settings binding. It
+accepts durable running or unresolved local intent before waiting for a target lock or
+querying an active turn, and explicitly reports execution end as unconfirmed. With no
+local receipt it locks the original target, validates its frozen route, verifies the
+exact owned/control turn and generation, and submits interrupt without resume or fork.
+Settings snapshots and route checks are shared with the stop worker. Full raw command
+parsing, authorization and Codex thread-reference resolution are not supplied here.
+
+Review found a checkpoint-140 discrepancy: a selected-target change inside the SQL
+claim callback propagated InvalidActionRequestError rather than Rust's Store Integrity
+classification. The central storeActionCheck boundary now maps this custody failure
+through the supplied public-safe diagnostic renderer. Initial input rejection and final
+native writer MutationHeld mapping remain distinct. Identical regression test bytes
+fail against the old worker and pass against the corrected worker, with zero claims
+or native sends when selection changes during verification.
+
+Evidence .runtime/cloud-stop-action-141: strict TS0, focused26 PASS, full **3,528 PASS**,
+zero fail/skip/cancel. New coverage includes native owned helper + SQLite accept while
+the target is locked, later single worker dispatch, acknowledged-not-settled receipt,
+missing resident with local intent, exact legacy fallback, mapping changes after lock
+wait, immutable binding capture, store rollback, integer and enum decoding boundaries.
+Selected regression old RED1/new GREEN1 uses the same SHA recorded in
+selected-regression-inputs.json. These are local helper sessions, not live Codex.
+
+Complete tracked completion/event ownership, command routing/reference binding, Discord
+transport, production service assembly, offload/Windows and operational qualification
+remain incomplete. No merge, deployment, live database or 5060 changes.
