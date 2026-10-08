@@ -3,7 +3,8 @@ import {types} from 'node:util';
 import {invokeSynchronousVoid} from '../core/synchronous-void.ts';
 import {parseDiscordApiError} from './api-error.ts';
 import type {IdempotentMessageRequest} from './idempotent-message.ts';
-import {DiscordTransportFault,type DiscordReceiptTransport} from '../runtime/completion/receipt-sender.ts';
+import {DiscordTransportFault} from './transport-fault.ts';
+import type {DiscordReceiptTransport} from '../runtime/completion/receipt-sender.ts';
 import type {TypingTransport} from '../runtime/completion/typing.ts';
 export interface DiscordWireRequest{readonly method:'POST';readonly path:string;readonly body:string|null;readonly authorization:string|null}
 /** Response/body/decompression/socket custody belongs to this trusted adapter. release

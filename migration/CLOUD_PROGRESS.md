@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,748 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,760 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3686,3 +3686,33 @@ Strict TS exit 0; focused rate/header/response **33 PASS**; full Linux **3,748 P
 0 fail / 0 skip / 0 cancelled**. Evidence .runtime/cloud-rate-header-adapter-161/.
 Production wire, complete successful Message decoding, other endpoint profiles and service/
 platform qualification remain open. No live Discord/credential transmission occurred.
+
+
+## Checkpoint 162 — actual owned Node HTTP wire and shared fault boundary
+
+Implemented an owned HTTP/1.1 agent/request/response/socket adapter. Production origin is
+fixed to https://discord.com/api/v10/ with normal TLS verification; arbitrary origins,
+redirect following and TLS bypass are not supplied. A literal 127.0.0.1 HTTP test origin
+rejects any authorization header. No production credentials were read or transmitted.
+
+The wire preserves relative paths, UTF8 body lengths, first raw duplicate-header values
+and raw Latin1 header bytes; requests negotiate Brotli and response bytes are decoded
+through the owned async body operation. The deadline covers response headers as in source.
+Responses are consumed once, explicitly released, and aborted/closed requests and owned
+sockets are joined. It does not destroy Node's global agent. Response body buffering/size
+limits and exact TLS/platform qualification remain separate outstanding work.
+
+Moved the shared Discord transport fault class/brand into the Discord boundary module;
+legacy runtime imports re-export the same identity. Brand metadata is immutable and
+passively queried without getters/proxy hooks. No duplicate classification registry added.
+
+Twelve new tests use actual credential-free VM loopback sockets: exact path/body/headers,
+Brotli, raw/duplicate headers, no redirects or credential forwarding, stalled headers,
+stream cancellation, unread/immediate close, malformed body, and full rate/receipt-store
+integration sending once. The successful Message decoder in that integration is mocked,
+NOT proof of complete response-model validation. Initial raw-header fixture failure and
+its correction are preserved.
+
+Strict TS exit 0; focused wire/response/receipt **37 PASS**; full Linux **3,760 PASS /
+0 fail / 0 skip / 0 cancelled**. Evidence .runtime/cloud-node-discord-wire-162/.
+No live Discord HTTPS, live Codex, Windows, full service or operational/performance PASS.

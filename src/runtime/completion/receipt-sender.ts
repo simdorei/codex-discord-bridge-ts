@@ -8,17 +8,8 @@ import {requireDiscordText} from "../../discord/text.ts";
 export interface IdempotentChunk {readonly domain:string;readonly logicalKey:string;readonly chunkIndex:bigint|number;readonly content:string}
 /** Trusted adapter must validate the complete provider response before returning its nonzero u64 message ID. No production HTTP decoder is supplied here. */
 export interface DiscordReceiptTransport {sendValidated(request:IdempotentMessageRequest):Promise<bigint>}
-export type DiscordFaultKind="BuildingRequest"|"CreatingHeader"|"Json"|"Unauthorized"|"Validation"|"Response"|"Receipt"|"Transport";
-interface FaultData {kind:DiscordFaultKind;status:number|null;display:string}
-const faults=new WeakMap<object,FaultData>();
-/** Only trusted transport code may classify these failures. Detail must be public-safe and contain no credentials. */
-export class DiscordTransportFault extends Error{
-  constructor(kind:DiscordFaultKind,detail:string,status:number|null=null){
-    requireDiscordText(detail);if(!["BuildingRequest","CreatingHeader","Json","Unauthorized","Validation","Response","Receipt","Transport"].includes(kind))throw new TypeError("Unknown Discord fault kind");
-    if(kind==="Response"&&(!Number.isInteger(status)||status===null||status<100||status>999))throw new TypeError("Expected HTTP response status");
-    const display=kind==="Receipt"?`Discord message receipt decode failed: ${detail}`:`Discord HTTP request failed: ${detail}`;super(display);this.name="DiscordTransportFault";faults.set(this,{kind,status,display});
-  }
-}
+import {DiscordTransportFault,ownedDiscordTransportFault} from "../../discord/transport-fault.ts";
+export {DiscordTransportFault,type DiscordFaultKind} from "../../discord/transport-fault.ts";
 const heldErrors=new WeakSet<object>();
 export class CompletionHeldError extends Error{readonly kind="Held";constructor(reason:string){super(`output held without HTTP attempt: ${reason}`);this.name="CompletionHeldError";heldErrors.add(this);}}
 export function isCompletionHeld(error:unknown):boolean{return error!==null&&(typeof error==="object"||typeof error==="function")&&heldErrors.has(error);}
@@ -55,7 +46,7 @@ export async function sendReceiptChunk(path:string,transport:DiscordReceiptTrans
     message=await transport.sendValidated(request);
     if(typeof message!=="bigint"||message<=0n||message>=(1n<<64n))throw new DiscordTransportFault("Receipt","transport returned an invalid message identity");
   }catch(error){
-    const fault=error!==null&&(typeof error==="object"||typeof error==="function")?faults.get(error):undefined;
+    const fault=ownedDiscordTransportFault(error);
     const definite=fault!==undefined&&(["BuildingRequest","CreatingHeader","Json","Unauthorized","Validation"].includes(fault.kind)||(fault.kind==="Response"&&[400,401,403,404,405,413,415,422,429].includes(fault.status!)));
     const display=fault?.display??"unclassified Discord transport failure";
     if(definite){if(fault!.kind==="Response"&&fault!.status===429)await state.releaseRejectedDelivery(path,key);else await state.blockRejectedDelivery(path,key,display);
