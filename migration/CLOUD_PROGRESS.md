@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,422 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,430 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4723,3 +4723,27 @@ shards, request/model failures, abort cleanup, and separate HTTP lifetime. Evide
 `.runtime/cloud-gateway-recommended-207/`. Production credentials/TLS, full service
 bootstrap and consumers, Windows, performance and operational qualification remain
 unverified. No live Discord/Codex traffic or deployment was performed.
+
+
+## Checkpoint 208 — monitored service-task custody
+
+Added the bounded runtime MonitoredWorker/exit-channel foundation from pinned
+worker_supervision.rs. Each actual Promise outcome is retained; returned domain
+errors and thrown task failures remain distinct and preserve object identity. A
+capacity-one exit notice never waits, so concurrent notices may be dropped while
+all actual joins remain available. Explicit root sender close and per-worker
+leases drain/close the notice channel without claiming JavaScript GC is Rust Drop.
+
+Abort uses a private cancellation identity and joins actual finally cleanup; an
+unrelated cleanup error after abort is not relabelled cancellation. Pre-poll abort
+does not run the callback or construct/announce its exit guard. Empty/Unicode
+static-string labels retain source acceptance. WorkerSet deadlines, primary-cause
+selection and complete service wiring remain the next layer. Unlike Tokio abort,
+Node cancellation requires a cooperative callback; no arbitrary future or blocked
+event loop is claimed forcibly stopped.
+
+Strict TS exit0, focused8 PASS, full Linux **4,430 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-runtime-monitored-worker-208/` includes full pinned source
+and test authority hashes and the retained earlier4,429 run before the empty-label
+boundary addition. No external service, live credentials or process-abort policy
+was exercised by this slice.
