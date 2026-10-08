@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,507 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,517 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4985,3 +4985,24 @@ Strict TS exit0, focused3 PASS, full Linux **4,507 PASS /0 fail/0 skip/0 cancell
 Evidence `.runtime/cloud-gateway-ready-integration-219/`. All endpoints are literal
 loopback with fake/no credentials. Live Discord/Codex, main service bootstrap,
 Windows, performance and operational qualification remain unverified.
+
+
+## Checkpoint 220 — normal/emergency message consumer custody
+
+Added the shared source message-consumer loop over separate lane owners. Buffered
+messages wait for authoritative Ready identity, then each lane processes one handler
+at a time under conflict/shutdown guard. Normal and emergency consumers remain
+independent. Shutdown does not drain message backlog: it cancels/joins active work
+and disposes the lane, matching the source distinction from receive-error drain.
+Full decoded-message branding is required before invoking the mandatory handler.
+
+Identity subscriptions are borrowed and must be disposed by their parent after
+join. Business message classification, durable admission and execution remain the
+required handler boundary, not implemented by this loop. A64-message cooperative
+yield prevents a continuously refilled lane from starving cancellation.
+
+Strict TS exit0, focused10 PASS, full Linux **4,517 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-runtime-message-consumer-220/` pins message/spawn/identity
+source. Tests cover buffered-before-Ready, serial processing, distinct lane progress,
+active async cleanup, conflict, closed lane, handler errors and forced cancellation.
+No claim of complete production consumer or live Discord/Codex integration.
