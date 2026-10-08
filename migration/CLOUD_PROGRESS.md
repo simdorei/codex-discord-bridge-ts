@@ -1,7 +1,9 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **2,289 tests passed**, no failures/skips;
-strict TypeScript passed. Migration and Windows/live transport validation remain incomplete.
+Latest verified Linux checkpoint: **2,957 tests passed**, no failures/skips;
+strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
+Migration, Windows and production validation remain incomplete. See the chronological
+sections below for exact scope and evidence; counts are not a full Rust-parity claim.
 
 ## Baseline
 
@@ -1960,3 +1962,26 @@ verified pending-response draining, logical failure publication, unchanged poiso
 critical-section reentry rejection. Evidence .runtime/cloud-poisoned-cleanup-099:
 full **2,951 PASS, 0 fail/skip/cancel; strict TS exit 0**. Rust/native-Windows sources and
 live services remain unchanged; this does not authorize recovery of unknown user work.
+
+## 2026-10-08 — Single owned portable session factory
+
+Added PortableAppServerSession: one private lifecycle/state/pending/writer/response owner,
+owned native child, fatal line readers and supervised drains, bounded event subscriptions,
+startup handshake and explicit disposal. Callers cannot cross-wire raw state or lifecycle
+owners. Startup cleanup that remains unconfirmed returns the session owner for explicit
+reconciliation; it is not discarded or treated as a successful startup. Unexpected drain
+handler errors seal transport and remain visible after cleanup. Disposal joins direct-child
+drains before closing producers and does not erase unknown incoming work.
+
+Evidence .runtime/cloud-portable-session-100: 6 actual native helper scenarios PASS,
+full **2,957 PASS, 0 fail/skip/cancel; strict TS exit 0**. Covers successful owned startup,
+subscriptions/request/current-response/close, native initialization failure, invalid UTF-8,
+diagnostic-renderer failure supervision, startup cancellation through observer+process
+cleanup, and two independent sessions with identical incoming IDs rejecting each other's
+occurrence tokens. Closing one session leaves the other healthy and operational.
+
+This is a non-Windows direct-child library session using generated local peers, not Codex
+or Discord. Descendant-inherited pipe cleanup and the outer 45s startup envelope remain
+unsupported: drain joining can wait on an inherited open pipe. No generic resident manager,
+end-to-end Discord/store scheduling, Windows/native-window parity, sustained operation or
+deployment claim is made. Diagnostic rendering remains a required public-safe adapter.
