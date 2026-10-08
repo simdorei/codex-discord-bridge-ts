@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,145 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,152 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2386,3 +2386,33 @@ unverified. Durable fence/journal are controlled synchronous ports here; owned r
 entry points, real SQL adapters and complete production lifecycle remain unfinished.
 Initial contextual function typing and fixture occurrence-constructor diagnostics were
 corrected before tests; no product assertions were weakened.
+
+
+## 2026-10-08 — Native resident observation ownership and journal lifecycle
+
+Connected install-once idle journals to the native resident owner. Tracked installation
+requires the existing client's durable observation ledger. Observation windows carry
+that resident UUID/generation; stale generations cannot read or certify another stream.
+Prefix reconciliation first verifies the exact durable scope and then conditionally
+clears the captured gap epoch. Unattributed gaps remain sticky. Source-discovery failure
+records the conservative fallback and reports errors through the supplied central handler.
+
+Native cleanup now invokes an installed idle journal only after the exact session's
+wait/reap confirms child exit. Failed journal completion retains that sealed owner for
+explicit cleanup retry. Existing required resident persistence runs before the idle
+journal; both adapters must tolerate repeated exact-owner exit reconciliation.
+
+Evidence .runtime/cloud-resident-observations-117: 7 new native-owner tests, full
+**3,152 PASS, 0 fail/skip/cancel; strict TS exit 0**. Real helper children exercise
+installation, prefix/gap races, source-discovery failure, generation isolation and
+exit-journal retry. No live service or store was used.
+
+A source behavior was exposed by one incorrect initial test expectation: frozen Rust
+sets idle_ledger_required only on the client present at installation; replacement
+RuntimeState defaults to legacy acknowledgement mode. Certifying a prefix alone does
+not advance that mode's idle_observed_revision. The corrected test preserves this
+behavior and explicitly requires the current-generation legacy acknowledgement after
+replacement. This is NOT a fresh Rust executable differential test or a confirmed
+production vulnerability. Track whether mode transfer should change in phase 2; do not
+silently claim every replacement requires the same ledger mode as initial installation.
+Durable SQL adapters, full maintenance owner entry points and production remain pending.

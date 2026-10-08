@@ -16,6 +16,8 @@ export class NotificationState{
   readonly #active=new Map<string,string>();readonly #notifications:AppNotification[]=[];
   #revision=0n;#exhausted=false;#observed=0n;#gap=false;#ledger:bigint|null=null;#ledgerRequired:boolean;#closed=false;
   constructor(ledgerRequired=false){if(typeof ledgerRequired!=="boolean")throw new TypeError("Expected ledger installation flag");this.#ledgerRequired=ledgerRequired;}
+  /** One-way owner transition after installing a tracked durable journal. */
+  requireObservationLedger():void{this.#ledgerRequired=true;}
   get notificationRevision():bigint{return this.#revision;}
   get retainedCount():number{return this.#notifications.length;}
   get hasActiveTurns():boolean{return this.#active.size>0;}

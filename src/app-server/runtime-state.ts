@@ -43,6 +43,7 @@ export class ClientRuntimeState{
   get hasActiveTurns():boolean{return this.#notifications.hasActiveTurns;}
   get notificationRevision():bigint{return this.#notifications.notificationRevision;}
   observedThreadSettings(thread:string):readonly [bigint,unknown]|null{return this.#notifications.observedThreadSettings(thread);}
+  requireObservationLedger():void{this.#notifications.requireObservationLedger();}
   confirmIdleObservation(notification:AppNotification):boolean{return this.#notifications.confirmIdleObservation(notification);}
   get idleObservationsCaughtUp():boolean{return this.#notifications.idleObservationsCaughtUp;}
   witnessedIdleTerminal(thread:string,turn:string):boolean{return this.#notifications.witnessedIdleTerminal(thread,turn);}

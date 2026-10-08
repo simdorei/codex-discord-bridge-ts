@@ -1,3 +1,6 @@
+import {IdleTargetGate} from "./idle-target-gate.ts";
+import {pinIdleReleaseJournal,type IdleReleaseJournal} from "./idle-release-journal.ts";
+import {IdleObservationError,type AppNotification} from "./notification-state.ts";
 import {runRestartSupervisor,type RestartFailureReporter} from "./restart-supervisor.ts";
 import {randomUUID} from "node:crypto";
 import {types} from "node:util";
@@ -28,6 +31,7 @@ function throwErrors(errors:unknown[],message:string):void{if(errors.length===1)
  * Persistence ports are mandatory, explicit and trusted; no no-op default exists.
  * Supervisor is explicit owner-started/joined; no 45s startup envelope or descendant-pipe cleanup. */
 export class PortableResidentLifecycle{
+  readonly #targetGate=new IdleTargetGate();
   readonly instanceId=randomUUID();readonly #config:PortableSessionConfig;readonly #render:SessionDiagnosticRenderer;readonly #persistence:ResidentPersistence;
   readonly #lock=new TargetLocks();readonly #generation=new GenerationWatch(1n);
   readonly #notifications=new BoundedBroadcast<ResidentNotificationEvent>(1000);readonly #requests=new BoundedBroadcast<ResidentServerRequestEvent>(500);
@@ -43,6 +47,43 @@ export class PortableResidentLifecycle{
   #prepare(session:PortableAppServerSession,generation:bigint):ResidentForwarders{return new ResidentForwarders(session,generation,this.#notifications,this.#requests,this.#generation.subscribe(),{waitClosed:signal=>session.waitClosed(signal),onClosed:()=>this.#state.markCurrentClosed(session.residentClient(),generation)});}
   #session(port:PortableResidentClientPort):PortableAppServerSession{const session=this.#sessions.get(port);if(!session)throw new ResidentStateError({kind:"ReplacementState",message:"owned native session is missing"});return session;}
   generation():bigint{return this.#state.generation();}
+  /** Install once before target intake. The native client capability is internal;
+   * callers must not use its raw prefix setter as substitute for this journal proof. */
+  installIdleReleaseJournal(input:IdleReleaseJournal):void{
+    const journal=pinIdleReleaseJournal(input),tracked=journal.tracksObservations();
+    this.#targetGate.install(journal);
+    if(tracked){const admission=this.#state.admitResponse(this.generation());try{admission.client.requireObservationLedger();}finally{admission.release();}}
+  }
+  observationTrackingEnabled():boolean{return this.#targetGate.journal()?.tracksObservations()??false;}
+  observationWindow(generation:bigint,after:bigint,upper:bigint|null=null){
+    const admission=this.#state.admitResponse(generation);try{
+      const page=admission.client.observationWindow(after,upper);return Object.freeze({...page,ownerId:this.instanceId,generation});
+    }finally{admission.release();}
+  }
+  confirmIdleObservation(generation:bigint,notification:AppNotification):void{
+    const own=cloneOwnedSerdeValue(notification) as unknown as AppNotification;
+    let admission;try{admission=this.#state.admitResponse(generation);}catch{return;}
+    try{admission.client.confirmIdleObservation(own);}finally{admission.release();}
+  }
+  /** Gap-report failures do not authorize release and are reported through the
+   * caller's central handler; source treats these as nonfatal observation failures. */
+  markIdleObservationGap(report:(error:unknown)=>void):void{
+    syncFunction(report);this.#targetGate.markGap();const journal=this.#targetGate.journal();
+    if(journal?.tracksObservations())this.#targetGate.holdUnattributedGap();
+    if(journal?.tracksObservations())try{journal.recordObservationGap(this.instanceId,this.generation());}catch(error){invokeSynchronousVoid(report,{},[error]);}
+  }
+  markSourceObservationGap(generation:bigint,report:(error:unknown)=>void):void{
+    syncFunction(report);this.#targetGate.markGap();try{
+      const journal=this.#targetGate.journal();if(journal===null)throw new IdleObservationError("observation journal absent");
+      const upper=this.observationWindow(generation,0n,0n).sourceUpper;journal.observeSourceUpper(this.instanceId,generation,upper);
+    }catch(error){this.markIdleObservationGap(report);invokeSynchronousVoid(report,{},[error]);}
+  }
+  reconcileIdleObservationPrefix(generation:bigint,through:bigint):boolean{
+    const epoch=this.#targetGate.gapEpoch(),journal=this.#targetGate.journal();if(journal===null)return false;
+    if(!journal.observationScopeVerified(this.instanceId,generation,through))return false;
+    const admission=this.#state.admitResponse(generation);try{return admission.client.certifyObservationPrefix(through)&&this.#targetGate.clearGap(epoch);}finally{admission.release();}
+  }
+
   lifecycleSnapshot(){const state=this.#state.snapshot(),child=state.client===null?null:this.#session(state.client).lifecycleSnapshot();return Object.freeze({generation:state.generation,healthy:state.accepting&&child?.healthy===true&&!state.quarantined,quarantined:state.quarantined,restartPending:state.restartPending,processId:child?.processId??null});}
   subscribeNotifications(){return this.#notifications.subscribe();}
   subscribeServerRequests(){return this.#requests.subscribe();}
@@ -55,7 +96,7 @@ export class PortableResidentLifecycle{
   requestRestart():void{this.#state.requestRestart();}
   markTimeout(generation:bigint):void{this.#state.markTimeout(generation);}
   async #stopForwarders():Promise<void>{this.#generation.replace(0n);const forwarders=this.#forwarders;this.#forwarders=null;if(forwarders)await forwarders.join();}
-  #journalExit(session:PortableAppServerSession,generation:bigint):void{if(session.processExitConfirmed)this.#persistence.oldChildExited(this.instanceId,generation);}
+  #journalExit(session:PortableAppServerSession,generation:bigint):void{if(session.processExitConfirmed){this.#persistence.oldChildExited(this.instanceId,generation);this.#targetGate.journal()?.oldChildExited(this.instanceId,generation);}}
   async #cleanupDebt(debt:ReplacementCleanup<PortableResidentClientPort>):Promise<void>{await this.#session(debt.client).dispose();this.#state.finishReplacementCleanup(debt);this.#sessions.delete(debt.client);}
   restartIfQuiescent(signal?:AbortSignal,observe:(session:PortableAppServerSession)=>void=()=>{}):Promise<boolean>{return this.#restart(null,null,signal,observe).then(value=>value==="Restarted");}
   forceRestartIfQuiescent(signal?:AbortSignal):Promise<boolean>{const generation=this.generation();return this.#restart(generation,generation,signal,()=>{}).then(value=>value==="Restarted");}

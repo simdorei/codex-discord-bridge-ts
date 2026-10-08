@@ -26,6 +26,10 @@ export interface PortableSessionConfig{readonly process:PortableProcessConfig;re
 export interface PortableResidentClientPort extends ResidentDeadClientPort{
   admissionSnapshot():ReturnType<ClientLifecycle["snapshot"]>;
   idleMaintenanceSnapshot(thread:string,turn:string):ReturnType<ClientRuntimeState["idleMaintenanceSnapshot"]>;
+  requireObservationLedger():void;
+  confirmIdleObservation(notification:AppNotification):boolean;
+  observationWindow(after:bigint,upper:bigint|null):ReturnType<ClientRuntimeState["observationWindow"]>;
+  certifyObservationPrefix(through:bigint):boolean;
   requestAdmitted(permit:ClientAdmissionPermit,method:string,params:unknown,waitMs:number,hooks?:RequestHooks,signal?:AbortSignal):Promise<unknown>;
   notifyAdmitted(permit:ClientAdmissionPermit,method:string,params:unknown,signal?:AbortSignal):Promise<void>;
   respondAdmitted(permit:ClientAdmissionPermit,id:RequestId,occurrence:ServerRequestOccurrence,result:unknown,hooks?:ResponseHooks,signal?:AbortSignal):Promise<void>;
@@ -67,6 +71,10 @@ export class PortableAppServerSession{
       },
       admissionSnapshot:()=>this.#gate.snapshot(),
       idleMaintenanceSnapshot:(thread,turn)=>this.#gate.withOpen(()=>this.#state.idleMaintenanceSnapshot(thread,turn)),
+      requireObservationLedger:()=>this.#gate.withOpen(()=>this.#state.requireObservationLedger()),
+      confirmIdleObservation:notification=>this.#gate.withOpen(()=>this.#state.confirmIdleObservation(notification)),
+      observationWindow:(after,upper)=>this.#gate.withOpen(()=>this.#state.observationWindow(after,upper)),
+      certifyObservationPrefix:through=>this.#gate.withOpen(()=>this.#state.certifyObservationPrefix(through)),
       requestAdmitted:(permit,method,params,waitMs,hooks,signal)=>this.#requests.requestAdmitted(permit,method,params,waitMs,hooks,signal),
       notifyAdmitted:(permit,method,params,signal)=>this.#requests.notifyAdmitted(permit,method,params,signal),
       respondAdmitted:(permit,id,occurrence,result,hooks,signal)=>this.#responses.respondAdmitted(permit,id,occurrence,result,hooks,signal),
