@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,405 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,411 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4671,3 +4671,23 @@ Final strict TS exit0; focused67 PASS (12 new plus55 retained); full Linux **4,4
 PASS /0 fail/0 skip/0 cancelled**. Evidence `.runtime/cloud-gateway-discovery-205/`.
 Recommended paused-runtime startup composition, live auth/TLS, Windows and
 operational qualification remain pending.
+
+
+## Checkpoint 206 — heartbeat jitter and Tokio small-lateness threshold
+
+Added exact IEEE-bit scaling for Rust Duration::from_secs_f64 nanosecond rounding
+and source as_secs_f64 multiplication. Documentation fixtures exercise ties-to-even,
+subnanosecond rounding, carry, signed zero and overflow. Native Node jitter uses
+this arithmetic with a [0,1) draw; its PRNG sequence is not fastrand's sequence.
+
+Corrected the raw driver's Delay interval: Tokio1.53.1 preserves the original phase
+when lateness is at most5ms and resets from now only above5ms. A real loopback
+4ms-late heartbeat regression failed under the prior unconditional-now formula
+and passed with the same test hash after correction. This closes the specific
+small-lateness limitation recorded in190; platform Instant overflow and actual OS
+scheduling precision remain unqualified.
+
+Strict TS exit0; focused17 PASS (5 arithmetic/timing plus12 driver tests); full Linux
+**4,411 PASS /0 fail/0 skip/0 cancelled**. Evidence
+`.runtime/cloud-gateway-heartbeat-timing-206/`, including pinned Rust/Tokio source
+hashes and retained RED/GREEN logs. Recommended paused startup remains pending.

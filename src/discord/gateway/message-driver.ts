@@ -1,3 +1,4 @@
+import {nextGatewayHeartbeatDeadline} from './heartbeat-timing.ts';
 import {types} from 'node:util';
 import {SecretToken} from '../../config/remote.ts';
 import {GatewaySessionMachine,type GatewayResumeSession,type GatewayIdentifyTicket} from './session-machine.ts';
@@ -76,7 +77,7 @@ export class GatewayMessageDriver{
     continue;
    }
    if(this.#closeRequested&&this.#machine.phase!=='Disconnected'){this.#closeRequested=false;this.#normalClosing=true;this.#machine.requestClose(1000);continue;}
-   const now=this.#clock.nowNs();if(this.#heartbeatAt!==null&&now>=this.#heartbeatAt){const outcome=this.#machine.heartbeatTick();if(outcome==='Zombie'){await this.#abnormal();continue;}this.#heartbeatAt=now+this.#schedule!.intervalNs;continue;}
+   const now=this.#clock.nowNs();if(this.#heartbeatAt!==null&&now>=this.#heartbeatAt){const outcome=this.#machine.heartbeatTick();if(outcome==='Zombie'){await this.#abnormal();continue;}this.#heartbeatAt=nextGatewayHeartbeatDeadline(this.#heartbeatAt,now,this.#schedule!.intervalNs);continue;}
    if(this.#identify?.ready){const identify=this.#identify;if(identify.failed)throw identify.error;if(this.#rate===null||this.#rate.readyAtNs(now)<=now){this.#identify=null;this.#machine.identifyGranted(identify.ticket);continue;}}
    this.#beginRead();const read=this.#read!;
    if(!read.ready){await this.#idleWait();continue;}
