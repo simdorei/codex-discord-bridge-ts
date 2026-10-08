@@ -4,10 +4,13 @@ import * as http from 'node:http';
 import {brotliCompressSync} from 'node:zlib';
 import {NodeDiscordHttpWire} from '../../src/discord/node-http-wire.ts';
 import {DiscordResponseEngine} from '../../src/discord/response-engine.ts';
+import {discordMessageDecoder} from '../../src/discord/model/message.ts';
+import {usingInitializedStore} from '../../src/store/owned-scope.ts';
 import {DiscordChannelRateLimiter} from '../../src/discord/rate-header-adapter.ts';
 import {sendReceiptChunk} from '../../src/runtime/completion/receipt-sender.ts';
 import {storeFixture} from '../helpers/store-fixture.ts';
 import type {DiscordWireRequest} from '../../src/discord/response-engine.ts';
+const completeMessage={attachments:[],author:{id:'1',username:'fixture',discriminator:'0'},channel_id:'1',content:'',embeds:[],id:'123',type:0,mention_everyone:false,mention_roles:[],mentions:[],pinned:false,timestamp:'2020-01-01T00:00:00+00:00',tts:false};
 const request=(body='{}'):DiscordWireRequest=>({method:'POST',path:'channels/1/messages',body,authorization:null});
 async function fixture(handler:http.RequestListener,run:(wire:NodeDiscordHttpWire,server:http.Server)=>Promise<void>){
  const server=http.createServer(handler);await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const address=server.address();if(address===null||typeof address==='string')throw new Error('No listener');const wire=new NodeDiscordHttpWire(`http://127.0.0.1:${address.port}/api/v10/`);
@@ -41,11 +44,22 @@ test('wire close reclaims an unread response and is idempotent',{timeout:5000},a
 test('pre-abort sends nothing and invalid Brotli remains a body failure',{timeout:5000},async()=>{
  let calls=0;await fixture((_q,res)=>{calls++;res.setHeader('content-encoding','br');res.end('not-brotli');},async wire=>{const abort=new AbortController(),reason=new Error('pre-stop');abort.abort(reason);await assert.rejects(wire.request(request(),10,abort.signal),e=>e===reason);assert.equal(calls,0);const r=await wire.request(request(),2000,new AbortController().signal);await assert.rejects(r.bytes(),/body could not be read/);await r.release();assert.equal(wire.activeRequests,0);});
 });
-test('real loopback HTTP + rate manager + receipt store sends once and confirms durable identity',{timeout:10000},async()=>storeFixture(async path=>{
- let calls=0;await fixture((_q,res)=>{calls++;res.setHeader('content-type','application/json');res.end('{"id":"123"}');},async wire=>{const rate=new DiscordChannelRateLimiter({report:()=>{throw new Error('No warning');}}),engine=new DiscordResponseEngine({token:null,wire,rateLimiter:rate,decoder:{decode:body=>BigInt(JSON.parse(Buffer.from(body).toString()).id)}}),chunk={domain:'native-test',logicalKey:'one',chunkIndex:0,content:'content'};
- try{await sendReceiptChunk(path,engine,1n,chunk);await sendReceiptChunk(path,engine,1n,chunk);assert.equal(calls,1);assert.equal(wire.activeRequests,0);}finally{await engine.close();await rate.close();}
+test('real loopback HTTP + rate manager + complete Message decoder + receipt store sends once',{timeout:10000},async()=>storeFixture(async path=>{
+ let calls=0;await fixture((_q,res)=>{calls++;res.setHeader('content-type','application/json');res.end(JSON.stringify(completeMessage));},async wire=>{const rate=new DiscordChannelRateLimiter({report:()=>{throw new Error('No warning');}}),engine=new DiscordResponseEngine({token:null,wire,rateLimiter:rate,decoder:discordMessageDecoder}),chunk={domain:'native-test',logicalKey:'one',chunkIndex:0,content:'content'};
+ try{await sendReceiptChunk(path,engine,1n,chunk);await sendReceiptChunk(path,engine,1n,chunk);const row=await usingInitializedStore(path,db=>db.prepare('SELECT message_id FROM codex_delivery_receipts').get());assert.equal(row?.message_id,'123');assert.equal(calls,1);assert.equal(wire.activeRequests,0);}finally{await engine.close();await rate.close();}
  });
 }));
 test('immediate close joins requests before socket assignment without leaking its agent',{timeout:5000},async()=>{
  for(let i=0;i<12;i++)await fixture(()=>{},async wire=>{const pending=wire.request(request(),2000,new AbortController().signal),rejected=assert.rejects(pending);await Promise.all([wire.close(),rejected]);assert.equal(wire.activeRequests,0);assert.equal(wire.ownedSockets,0);});
 });
+
+for(const [name,body] of [['id-only',{id:'123'}],['nested malformed',{...completeMessage,thread:{id:'1',type:11,member:{flags:0,join_timestamp:'bad'}}}]] as const)test(`real wire ${name} success body remains unknown and cannot resend`,{timeout:10000},async()=>storeFixture(async path=>{
+ let calls=0;await fixture((_q,res)=>{calls++;res.end(JSON.stringify(body));},async wire=>{
+  const rate=new DiscordChannelRateLimiter({report:()=>{throw new Error('No warning');}}),engine=new DiscordResponseEngine({token:null,wire,rateLimiter:rate,decoder:discordMessageDecoder}),chunk={domain:'full-model',logicalKey:name,chunkIndex:0,content:'message'};
+  try{
+   await assert.rejects(sendReceiptChunk(path,engine,1n,chunk),/unconfirmed/);
+   const row=await usingInitializedStore(path,db=>db.prepare('SELECT * FROM codex_delivery_receipts').get());assert.ok(row);assert.equal(row.retryable,0);assert.equal(row.blocked_reason,null);assert.equal(row.message_id,null);
+   await assert.rejects(sendReceiptChunk(path,engine,1n,chunk),/unknown/);assert.equal(calls,1);assert.equal(wire.activeRequests,0);
+  }finally{await engine.close();await rate.close();}
+ });
+}));

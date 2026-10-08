@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,833 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,850 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3837,3 +3837,33 @@ sequence order and source defaults. Strict TS exit 0; focused **73 PASS**; full 
 interaction metadata and final response composition. No Gateway subscription, live
 Discord, Rust executable differential run, operational qualification or deployment
 is claimed.
+
+
+## Checkpoint 168 — Complete Message response validation and receipt integration
+
+Composed all 34 pinned Message fields with the previously implemented transitive
+models, recursive referenced messages, and recursive interaction metadata. The
+immutable byte decoder uses fatal UTF-8 decoding and retains BOM for JSON rejection.
+It returns a message ID only after all recognized fields have been validated.
+
+Interaction owners retain the source distinction between strict user IDs and
+AnonymizableId guild IDs. The source swallows Id errors without rewinding the
+stream; tests distinguish consumed scalar/empty-container errors from unread
+nonempty containers, final leading-surrogate quote consumption and exponent-overflow
+remaining digits. These are source-informed static-contract tests, not a Rust
+executable differential run. The supported input profile requires valid JSON; it
+does not reproduce any source acceptance of malformed JSON through swallowed errors.
+
+Replaced the loopback receipt integration's id-only mock with this complete decoder
+and a full valid Message fixture. Real local HTTP + shared rate state + SQLite
+confirms exactly one send and stored message identity. Two new real-wire negatives
+(id-only and nested malformed model) preserve unknown receipt state, never record
+a success identity and refuse a second send. Fifteen additional model tests cover
+required fields, every model family, recursive/sequence contracts and byte failures.
+
+Strict TS exit 0; focused **114 PASS**; full Linux **3,850 PASS / 0 fail / 0 skip /
+0 cancelled**. Evidence `.runtime/cloud-discord-message-decoder-168/`. This removes
+the mock successful-message decoder from the receipt loopback integration, but does
+not claim real Discord authentication/network, full service composition, Windows,
+performance/operational validation, merge or deployment. Earlier profile limits and
+HexColor invalid-input panic difference remain.
