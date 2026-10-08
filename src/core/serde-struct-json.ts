@@ -3,7 +3,7 @@ import { parseSerdeValue } from "./serde-json-parse.ts";
 /** Serde structs with explicit defaults, Option<String> and f64; no flatten/custom visitors. */
 export type StructField = "string" | "i64" | "u64" | "string[]" | "bool" | "value" | "string?" | "f64" | StructShape | StructFieldDecoder;
 export interface StructShape { readonly fields: readonly (readonly [string, StructField])[]; readonly defaults?: Readonly<Record<string, unknown>>; readonly mapDefaults?: Readonly<Record<string, unknown>> }
-export interface StructDecodeContext {value():unknown;struct(shape:StructShape):Record<string,unknown>;array(field:StructField):unknown[];decode(field:StructField):unknown}
+export interface StructDecodeContext {value():unknown;struct(shape:StructShape):Record<string,unknown>;array(field:StructField):unknown[];decode(field:StructField):unknown;map(visit:(key:string,decode:(field:StructField)=>unknown)=>void):void}
 export type StructFieldDecoder=(raw:string,depth:number,context:StructDecodeContext)=>unknown;
 
 // JSON.parse checks grammar first. This scanner only finds raw value boundaries;
@@ -36,7 +36,7 @@ function whitespace(text: string, start: number): number {
   return start;
 }
 function decodeField(raw: string, kind: StructField, depth: number): unknown {
-  if (typeof kind === "function") return kind(raw, depth, Object.freeze({value:()=>decodeField(raw,"value",depth),struct:(shape:StructShape)=>decodeStruct(raw,shape,depth),array:(field:StructField)=>decodeArray(raw,field,depth),decode:(field:StructField)=>decodeField(raw,field,depth)})); // Trusted code; raw JSON was checked by the root.
+  if (typeof kind === "function") return kind(raw, depth, Object.freeze({value:()=>decodeField(raw,"value",depth),struct:(shape:StructShape)=>decodeStruct(raw,shape,depth),array:(field:StructField)=>decodeArray(raw,field,depth),decode:(field:StructField)=>decodeField(raw,field,depth),map:(visit:(key:string,decode:(field:StructField)=>unknown)=>void)=>decodeMap(raw,depth,visit)})); // Trusted code; raw JSON was checked by the root.
   if (typeof kind !== "string") return decodeStruct(raw, kind, depth);
   // Parent typed structs consume the same recursion budget as Value containers.
   let value: unknown = parseSerdeValue("[".repeat(depth) + raw + "]".repeat(depth));
@@ -87,6 +87,21 @@ function decodeStruct(raw: string, shape: StructShape, depth: number): Record<st
     }
   }
   return result;
+}
+
+/** Custom map visitors decide which values to decode and which duplicate slots
+ * count as occupied. In particular, a nullable slot need not be occupied by null. */
+function decodeMap(raw:string,depth:number,visit:(key:string,decode:(field:StructField)=>unknown)=>void):void{
+  if(++depth>=128)throw new SyntaxError("Serde recursion limit exceeded");
+  const text=raw.trim();if(text[0]!=="{")throw new SyntaxError("Expected Serde map");
+  let position=whitespace(text,1);
+  while(text[position]!=="}"){
+    const keyEnd=stringEnd(text,position),key=parseSerdeValue<string>(text.slice(position,keyEnd));
+    position=whitespace(text,whitespace(text,keyEnd)+1);
+    const end=valueEnd(text,position),value=text.slice(position,end);
+    visit(key,(field)=>decodeField(value,field,depth));
+    position=whitespace(text,end);if(text[position]===",")position=whitespace(text,position+1);
+  }
 }
 
 function decodeArray(raw:string,field:StructField,depth:number):unknown[]{

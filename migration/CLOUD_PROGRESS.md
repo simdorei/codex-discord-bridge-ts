@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,786 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,801 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3763,3 +3763,29 @@ focused media/User/typed-parser **33 PASS**; full Linux **3,786 PASS / 0 fail / 
 0 cancelled**. Evidence .runtime/cloud-discord-media-model-164/ contains authority hashes,
 manifest and raw logs. Complete Message decoding, live Discord, platform and operational
 qualification remain incomplete.
+
+
+## Checkpoint 165 — Complete pinned Component visitor and child validation
+
+Ported the pinned Component map visitor, all 17 known type values plus Unknown,
+recursive row/section/container/label children, select options/default values, emoji
+untagged alternatives and unfurled/gallery media. Every recognized field is decoded
+before variant selection, including fields unused by Unknown. Source nullable
+`sku_id` and `default_values` permit repeated null until a non-null value occupies
+the slot; other nullable duplicate fields remain errors. Buffered style/custom ID
+values, strict input styles, unknown button styles and source UI-default optionality
+are preserved. No comment-only request limits were invented.
+
+Added a trusted custom-map callback to the shared typed JSON scanner, preserving
+raw duplicates, ignored unknown values and one recursion budget. Serde's exact
+Cargo.lock archives were verified to resolve map/sequence/tag and untagged visitor
+semantics; the matching MIT notices are retained. Model results are validation
+projections, not a serializer or a claim to preserve every nested Option wrapper.
+
+Fifteen new regression tests cover all variants, malformed unused fields, nullable
+duplicates, unknown-field buffering, enum fallback, adjacent tags, complete sequences
+and nested recursion boundaries. Strict TS exit 0; focused **41 PASS**; full Linux
+**3,801 PASS / 0 fail / 0 skip / 0 cancelled**. Evidence:
+`.runtime/cloud-discord-component-model-165/` (source hashes, manifests and raw logs).
+Full Message response decoding, live Discord and platform/operational qualification
+remain incomplete. No Rust executable differential run is claimed.
