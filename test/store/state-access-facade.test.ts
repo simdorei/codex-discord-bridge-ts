@@ -1,3 +1,4 @@
+import * as StopControlRead from "../../src/store/stop-control-read.ts";
 import * as StopControlAdmission from "../../src/store/stop-control-admission.ts";
 import * as StopAcceptance from "../../src/store/stop-acceptance.ts";
 import * as ObservedFinalAnswer from "../../src/store/observed-final-answer.ts";
@@ -159,6 +160,10 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.admitIngress, IngressAdmission.admitIngress);
     assert.strictEqual(StateAccessFacade.pendingNewPrompt, NewPromptArm.pendingNewPrompt);
     assert.strictEqual(StateAccessFacade.newThreadOrigin, NewOrigin.newThreadOrigin);
+    assert.strictEqual(StateAccessFacade.pendingStopControlsAfter, StopControlRead.pendingStopControlsAfter);
+    assert.strictEqual(FacadeExports.pendingStopControlsAfter, StopControlRead.pendingStopControlsAfter);
+    assert.strictEqual(StateAccessFacade.stopControlPhase, StopControlRead.stopControlPhase);
+    assert.strictEqual(FacadeExports.stopControlPhase, StopControlRead.stopControlPhase);
     assert.strictEqual(StateAccessFacade.acceptRunningStop, StopControlAdmission.acceptRunningStop);
     assert.strictEqual(FacadeExports.acceptRunningStop, StopControlAdmission.acceptRunningStop);
     assert.strictEqual(StateAccessFacade.acceptNonrunningStop, StopAcceptance.acceptNonrunningStop);
@@ -394,6 +399,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "pendingFirstReply",
       "admitIngress",
       "pendingNewPrompt",
+      "pendingStopControlsAfter",
+      "stopControlPhase",
       "acceptRunningStop",
       "acceptNonrunningStop",
       "acceptUnresolvedStop",
@@ -431,7 +438,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 167);
+    assert.strictEqual(actual.length, 169);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

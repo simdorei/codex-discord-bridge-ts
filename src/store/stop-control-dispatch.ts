@@ -1,3 +1,4 @@
+import {parseSerdeStruct,type StructShape} from "../core/serde-struct-json.ts";
 import {randomUUID} from "node:crypto";
 import type {DatabaseSync,SQLInputValue} from "node:sqlite";
 import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
@@ -81,3 +82,7 @@ export function recordStopControlError(path:string,value:unknown,error:string):v
 /** Shared exact source struct serialization and retained receipt check. */
 export function serializeStopControl(input:unknown):string{return original(control(input));}
 export function retainedStopControlIn(db:DatabaseSync,input:unknown):boolean{return retained(db,control(input));}
+
+const CONTROL_SHAPE:StructShape={fields:fields.map(key=>[key,key==="binding"?"value":key==="jobs"?"string[]":key==="can_settle"?"bool":["channel","owner","generation"].includes(key)?"i64":"string"] as const)};
+/** Decode the raw derived struct, not a lossy Value intermediary. */
+export function parseStopControlJson(raw:string):StopControl{return control(parseSerdeStruct(raw,CONTROL_SHAPE));}

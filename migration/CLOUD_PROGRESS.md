@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,481 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,502 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3030,3 +3030,32 @@ This is not complete production stop routing: settings binding, verified active-
 checks and bounded polling worker composition remain separate. No live Codex/Discord or
 Windows service was operated. Existing offload/complete event/service/operational limits
 remain in force; source authority and phase-two newer Rust/Pro work remain unchanged.
+
+
+## 2026-10-08 — Bounded stop reads and current active-control verification
+
+Added existing-only accepted-control keysets (16 records) and phase reads. Native SQLite
+row decoding completes before raw JSON struct decoding, retaining source error order.
+The original struct decoder rejects duplicate recognized fields, wrong integer/bool/vector
+types and missing fields; it preserves supported sequence input and ignored-field behavior.
+Opaque original job strings are not parsed/reformatted at this read boundary.
+
+ControlTurnVerifier uses the actual resident's lifecycle and current active-turn cache,
+checks the exact expected original turn, generation stability and terminal evidence.
+Unhealthy/quarantined/restart-pending/cache-empty state never triggers a resume or fork.
+Current mirror mapping wins over selection and changed targets fail before active lookup.
+It shares the coordinator's existing target lock registry. Command error definitions are
+centralized with the old InvalidActionRequestError export retaining constructor identity.
+StateAccessFacade has169 explicit methods.
+
+Evidence .runtime/cloud-stop-read-control-139: 21 new tests; focused29 PASS; full
+**3,502 PASS, zero fail/skip/cancel; strict TS0**. Covers typed raw decoder, pagination,
+row-error ordering, missing/partial schema, shared locks, lifecycle/turn/target changes and
+actual native active cache with SQLite terminal fencing. A corrupt-phase fixture initially
+hit the real schema CHECK; tests now assert that guard and separately exercise an explicitly
+diagnostic legacy table. No schema guard or product behavior was weakened.
+
+The verifier returns a read snapshot, not durable interrupt permission. A caller must retain
+the shared lock and the final writer still rechecks original custody/generation. Complete
+settings-reference resolution, stop polling worker, event/offload/Discord/service and
+Windows/operational work remain pending. No live service or external reviewer was used.

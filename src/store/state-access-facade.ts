@@ -1,3 +1,4 @@
+import * as StopControlRead from "./stop-control-read.ts";
 import * as StopControlAdmission from "./stop-control-admission.ts";
 import * as StopAcceptance from "./stop-acceptance.ts";
 import * as ObservedFinalAnswer from "./observed-final-answer.ts";
@@ -129,6 +130,8 @@ export const admitIngress: typeof IngressAdmission.admitIngress = IngressAdmissi
 export const pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt = NewPromptArm.pendingNewPrompt;
 
 export const newThreadOrigin: typeof NewOrigin.newThreadOrigin = NewOrigin.newThreadOrigin;
+export const pendingStopControlsAfter: typeof StopControlRead.pendingStopControlsAfter = StopControlRead.pendingStopControlsAfter;
+export const stopControlPhase: typeof StopControlRead.stopControlPhase = StopControlRead.stopControlPhase;
 export const acceptRunningStop: typeof StopControlAdmission.acceptRunningStop = StopControlAdmission.acceptRunningStop;
 export const acceptNonrunningStop: typeof StopAcceptance.acceptNonrunningStop = StopAcceptance.acceptNonrunningStop;
 export const acceptUnresolvedStop: typeof StopAcceptance.acceptUnresolvedStop = StopAcceptance.acceptUnresolvedStop;
@@ -346,6 +349,8 @@ export interface IStateAccessFacade {
   readonly admitIngress: typeof IngressAdmission.admitIngress;
   readonly pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt;
   readonly newThreadOrigin: typeof NewOrigin.newThreadOrigin;
+  readonly pendingStopControlsAfter: typeof StopControlRead.pendingStopControlsAfter;
+  readonly stopControlPhase: typeof StopControlRead.stopControlPhase;
   readonly acceptRunningStop: typeof StopControlAdmission.acceptRunningStop;
   readonly acceptNonrunningStop: typeof StopAcceptance.acceptNonrunningStop;
   readonly acceptUnresolvedStop: typeof StopAcceptance.acceptUnresolvedStop;
@@ -535,6 +540,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   admitIngress,
   pendingNewPrompt,
   newThreadOrigin,
+  pendingStopControlsAfter,
+  stopControlPhase,
   acceptRunningStop,
   acceptNonrunningStop,
   acceptUnresolvedStop,

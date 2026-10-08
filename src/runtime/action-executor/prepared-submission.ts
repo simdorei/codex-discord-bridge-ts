@@ -1,3 +1,5 @@
+import {InvalidActionRequestError} from "./errors.ts";
+export {InvalidActionRequestError} from "./errors.ts";
 import {randomUUID} from "node:crypto";
 import type {QueueStartCoordinator} from "../queue-runner/start-coordinator.ts";
 import type {Submission} from "../queue-runner/saved-submission.ts";
@@ -22,10 +24,6 @@ export interface PreparedTargetServices {
   currentMirrorTarget(channel:bigint,fallback:string):Promise<readonly [string,string]>;
   prepareActionTarget(target:string,source:string):Promise<ActionTarget>;
   recoverActiveWriterSubmission(target:ActionTarget,submission:Submission):Promise<readonly [ActionTarget,Submission]>;
-}
-export class InvalidActionRequestError extends Error {
-  readonly kind="InvalidActionRequest";
-  constructor(reason:string){super(`invalid command request: ${reason}`);this.name="InvalidActionRequestError";}
 }
 type QueuePort=Pick<QueueStartCoordinator,"submit"|"submitMirrorIdentified"|"submitPromptIntake"> & {reads:Pick<QueueStartCoordinator["reads"],"busyStatus">};
 const detail=(error:Error)=>error.message;
