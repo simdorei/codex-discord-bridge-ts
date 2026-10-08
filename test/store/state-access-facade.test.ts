@@ -1,3 +1,5 @@
+import * as AsyncGuards from "../../src/store/async-resolution-guards.ts";
+import * as QuestionGuard from "../../src/store/async-question-guard.ts";
 import * as StopDispatch from "../../src/store/stop-control-dispatch.ts";
 import * as RuntimeFenceReads from "../../src/store/runtime-fence-reads.ts";
 import * as QueueStartAuthority from "../../src/store/queue-start-authority.ts";
@@ -206,6 +208,13 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.finishStopWire, StopDispatch.finishStopWire);
     assert.strictEqual(StateAccessFacade.recordStopControlError, StopDispatch.recordStopControlError);
     assert.strictEqual(StateAccessFacade.captureDeadGenerationExisting, DeadCapture.captureDeadGenerationExisting);
+    assert.strictEqual(StateAccessFacade.guardAsyncMutationIn, AsyncGuards.guardAsyncMutationIn);
+    assert.strictEqual(StateAccessFacade.certifiedAsyncSuccessorIn, AsyncGuards.certifiedAsyncSuccessorIn);
+    assert.strictEqual(StateAccessFacade.sealAsyncQuestionIn, QuestionGuard.sealAsyncQuestionIn);
+    assert.strictEqual(StateAccessFacade.verifyAsyncQuestionIdentityIn, QuestionGuard.verifyAsyncQuestionIdentityIn);
+    assert.strictEqual(StateAccessFacade.validateAsyncDispatchGuardsIn, QuestionGuard.validateAsyncDispatchGuardsIn);
+    assert.strictEqual(StateAccessFacade.validateAsyncDispatchGuardsExisting, QuestionGuard.validateAsyncDispatchGuardsExisting);
+    assert.strictEqual(StateAccessFacade.validateAsyncDispatchGuards, QuestionGuard.validateAsyncDispatchGuards);
     assert.strictEqual(StateAccessFacade.deadTargetHeld, DeadGeneration.targetIsHeld);
     assert.strictEqual(StateAccessFacade.recordPreflightFailure, Preflight.recordPreflightFailure);
   });
@@ -287,6 +296,13 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "finishStopWire",
       "recordStopControlError",
       "captureDeadGenerationExisting",
+      "guardAsyncMutationIn",
+      "certifiedAsyncSuccessorIn",
+      "sealAsyncQuestionIn",
+      "verifyAsyncQuestionIdentityIn",
+      "validateAsyncDispatchGuardsIn",
+      "validateAsyncDispatchGuardsExisting",
+      "validateAsyncDispatchGuards",
       "deadTargetHeld",
       "eligibleJobs",
       "enqueue",
@@ -374,7 +390,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 144);
+    assert.strictEqual(actual.length, 151);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,352 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,377 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2848,3 +2848,32 @@ This closes the concrete dead-work callback for the documented initialized-store
 contract, not Rust's implicit open_initialized migration behavior at every callback.
 Native Windows, descendant pipe cleanup, complete idle journal/Discord/service startup,
 initial user stop acceptance, and performance/offload/operational qualification remain.
+
+
+## 2026-10-08 — Original async preparation and current-successor mutation guards
+
+Added original question preparation sealing/verification with exact current queue owner,
+route/fences, chosen option/message/body and IEEE-754 timestamp bit identities. Added
+policy-first current-execution mutation guard and exact certified-successor recognition.
+The general current-execution guard can recognize a valid successor but original answer
+verification still requires the original turn. Historical submitted questions without
+live obligations are not treated as active preparation authority. StateAccessFacade now
+exposes151 explicit methods, including initialized and existing-only snapshot wrappers.
+
+Direct review found Value parsing accepted duplicate Seal.identity fields and rejected
+valid source struct-sequence encodings. The unchanged regression fails the old candidate
+and passes with the existing typed Serde struct decoder; ignored unknown fields retain
+source semantics. Guard mutation's separate nonempty-Value evidence check remains distinct.
+
+Evidence .runtime/cloud-async-dispatch-guards-133: 25 new tests; full **3,377 PASS, zero
+fail/skip/cancel; strict TS exit0**. Covers exact timestamp evidence, changed ownership,
+legacy preparation, quarantined reply reservation, policy masking, malformed/versioned
+original evidence, current successor versus original-answer separation and typed Seal.
+Initial fixture failures came from re-inserting automatically captured obligations and
+attempting a queue change the real schema already blocks. Corrected fixtures keep all
+product triggers enabled: normal cases exercise automatic capture, while manual legacy
+variants use an explicit no-dispatch-mode fixture. No schema guard was weakened.
+
+The concrete idle journal still needs installation, and this guard does not implement
+initial question dispatch/user-stop acceptance or the complete Discord/service path.
+Existing owned-proof/parser/driver boundaries and Windows/performance limits remain.

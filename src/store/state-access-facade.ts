@@ -1,3 +1,5 @@
+import * as AsyncGuards from "./async-resolution-guards.ts";
+import * as QuestionGuard from "./async-question-guard.ts";
 import * as StopDispatch from "./stop-control-dispatch.ts";
 import * as RuntimeFenceReads from "./runtime-fence-reads.ts";
 import * as QueueStartAuthority from "./queue-start-authority.ts";
@@ -171,6 +173,14 @@ export const finishStopWire: typeof StopDispatch.finishStopWire = StopDispatch.f
 export const recordStopControlError: typeof StopDispatch.recordStopControlError = StopDispatch.recordStopControlError;
 
 export const captureDeadGenerationExisting: typeof DeadCapture.captureDeadGenerationExisting = DeadCapture.captureDeadGenerationExisting;
+
+export const guardAsyncMutationIn: typeof AsyncGuards.guardAsyncMutationIn = AsyncGuards.guardAsyncMutationIn;
+export const certifiedAsyncSuccessorIn: typeof AsyncGuards.certifiedAsyncSuccessorIn = AsyncGuards.certifiedAsyncSuccessorIn;
+export const sealAsyncQuestionIn: typeof QuestionGuard.sealAsyncQuestionIn = QuestionGuard.sealAsyncQuestionIn;
+export const verifyAsyncQuestionIdentityIn: typeof QuestionGuard.verifyAsyncQuestionIdentityIn = QuestionGuard.verifyAsyncQuestionIdentityIn;
+export const validateAsyncDispatchGuardsIn: typeof QuestionGuard.validateAsyncDispatchGuardsIn = QuestionGuard.validateAsyncDispatchGuardsIn;
+export const validateAsyncDispatchGuardsExisting: typeof QuestionGuard.validateAsyncDispatchGuardsExisting = QuestionGuard.validateAsyncDispatchGuardsExisting;
+export const validateAsyncDispatchGuards: typeof QuestionGuard.validateAsyncDispatchGuards = QuestionGuard.validateAsyncDispatchGuards;
 
 export const deadTargetHeld: typeof DeadGeneration.targetIsHeld = DeadGeneration.targetIsHeld;
 export const recordPreflightFailure: typeof Preflight.recordPreflightFailure = Preflight.recordPreflightFailure;
@@ -385,6 +395,13 @@ export interface IStateAccessFacade {
   readonly finishStopWire: typeof StopDispatch.finishStopWire;
   readonly recordStopControlError: typeof StopDispatch.recordStopControlError;
   readonly captureDeadGenerationExisting: typeof DeadCapture.captureDeadGenerationExisting;
+  readonly guardAsyncMutationIn: typeof AsyncGuards.guardAsyncMutationIn;
+  readonly certifiedAsyncSuccessorIn: typeof AsyncGuards.certifiedAsyncSuccessorIn;
+  readonly sealAsyncQuestionIn: typeof QuestionGuard.sealAsyncQuestionIn;
+  readonly verifyAsyncQuestionIdentityIn: typeof QuestionGuard.verifyAsyncQuestionIdentityIn;
+  readonly validateAsyncDispatchGuardsIn: typeof QuestionGuard.validateAsyncDispatchGuardsIn;
+  readonly validateAsyncDispatchGuardsExisting: typeof QuestionGuard.validateAsyncDispatchGuardsExisting;
+  readonly validateAsyncDispatchGuards: typeof QuestionGuard.validateAsyncDispatchGuards;
   readonly deadTargetHeld: typeof DeadGeneration.targetIsHeld;
   readonly recordPreflightFailure: typeof Preflight.recordPreflightFailure;
   readonly tryBeginAttempt: typeof QueueClaims.tryBeginAttempt;
@@ -540,6 +557,13 @@ export const StateAccessFacade: IStateAccessFacade = {
   finishStopWire,
   recordStopControlError,
   captureDeadGenerationExisting,
+  guardAsyncMutationIn,
+  certifiedAsyncSuccessorIn,
+  sealAsyncQuestionIn,
+  verifyAsyncQuestionIdentityIn,
+  validateAsyncDispatchGuardsIn,
+  validateAsyncDispatchGuardsExisting,
+  validateAsyncDispatchGuards,
   deadTargetHeld,
   recordPreflightFailure,
   tryBeginAttempt,
