@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,528 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,544 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5027,3 +5027,26 @@ Command/component routing and actual response effects remain separate work.
 Strict TS exit0, focused11 PASS, full Linux **4,528 PASS /0 fail/0 skip/0 cancelled**.
 Evidence `.runtime/cloud-discord-interaction-access-221/` pins source access policy,
 its contract tests and Twilight author precedence. No live permissions were changed.
+
+
+## Checkpoint 222 — typed slash/autocomplete/component routing
+
+Added pure work routing over full branded interactions using the pinned command
+catalog. Wrong interaction/command type, unknown command, duplicate/invalid/missing
+options and removed auto_reserve preserve source ordering and display text. Values
+retain false/zero/empty strings and full i64 integers without invented positivity
+limits. Focused autocomplete is restricted to schema-enabled fields, has exactly
+one focus and retains a separately supplied selected model. QA commands route only
+when enabled. Persistent components reuse the existing exact custom-ID parser and
+produce deferred-update responses.
+
+Work uses source external-tagged enum shapes and sorted known ASCII option keys;
+this is not a new general serializer or arbitrary JSON authorization surface. Access
+policy, full response envelope and HTTP acknowledgement remain separate scopes.
+Initial response data omission/empty choices follow pinned Twilight response types.
+
+Strict TS exit0, focused16 PASS, full Linux **4,544 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-discord-interaction-routing-222/`. Initial2 PASS/14 FAIL
+was a fixture error: generic serde-Value serialization treats JS number as f64, so
+type2 became2.0. Fixtures now use bigint for integral tokens, preserving the strict
+u8/i64 production decoder rather than weakening it. No live interaction was sent.
