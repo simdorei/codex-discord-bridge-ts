@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,221 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,245 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4458,3 +4458,34 @@ skip/0 cancelled**. Earlier 18-family/22-test and 4,211 full results are retaine
 as intermediate runs, not the final source validation. Evidence
 `.runtime/cloud-gateway-dispatch-simple-192/`. All-event completion, adapter wiring
 and operational validation remain unfinished.
+
+
+## Checkpoint 193 — nested reaction, member and stage events
+
+Extended the source-backed partial registry to 37 families with full nested Member,
+Presence and ThreadMember validation, reaction burst/colors, ThreadListSync and
+StageInstance wrappers. Stage privacy is a closed discriminant accepting only 2,
+not the open-u8 channel kind. Optional/default source distinctions remain intact.
+Strict TS exit0; focused43 PASS; full4,232 PASS, zero failures/skips/cancellations.
+Evidence `.runtime/cloud-gateway-dispatch-nested-193/`; exact intermediate source
+hashes and a 65-event source inventory are retained.
+
+## Checkpoint 194 — voice, permissions, guild emoji/sticker and scheduled events
+
+Added seven related dispatch families and reusable complete model fields. Voice
+self_stream defaults false while other required booleans remain required. Guild
+emojis differ from reaction emojis; full stickers retain all child validation.
+Command permission kind accepts only 1/2/3; no undocumented decode-time 100-entry
+limit was added. Scheduled-event type/privacy/status preserve source unknown-u8
+variants and do not invent a required end timestamp from descriptive business docs.
+
+Initial fixtures produced 9 PASS/4 FAIL plus a readonly tuple type error: their
+short Z timestamp violated the already-pinned Twilight minimum input length. Only
+the tuple annotation and fixture timestamp were corrected; production timestamp
+validation was not relaxed. The raw failing run and exact fixture changes remain.
+
+Final strict TS exit0; related focused13 PASS; full Linux **4,245 PASS /0 fail/0
+skip/0 cancelled**. Evidence `.runtime/cloud-gateway-dispatch-related-194/`.
+Model availability now covers47/65 source dispatch names; remaining18 and full
+event filtering/control parsing/runtime adapter stay pending. These counts do not
+certify overall migration parity, operational readiness or deployment.
