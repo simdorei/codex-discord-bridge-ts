@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,600 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,613 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5180,3 +5180,29 @@ runs had one fixture failure from JSON.stringify on a bigint interaction ID; the
 corrected test checks the ID separately and inspects the actual redacted text.
 Production serialization/ID semantics were not weakened. Lane concurrency/drain
 and full executable dispatcher custody remain pending.
+
+
+## Checkpoint 229 — bounded normal/reserved interaction lanes
+
+Added owned interaction consumer loops with source normal16/reserved4 concurrency.
+Normal accepts only Normal tags and stops on shutdown; Reserved accepts Busy or
+Stopping tags and drains for13s. Available input is validated before lazy handler
+operations start, so wrong ready tags/early input closure do not poll buffered
+handlers. Full branded interaction payloads and immutable ingress metadata are
+required. The actual dispatcher remains a mandatory separate handler boundary.
+
+Completed operations retain slots until their results are consumed. Ack/Update
+failures are event-local with token-redacted diagnostics; invariant errors remain
+fatal. All started operations are cancelled/joined on exit, including asynchronous
+finally cleanup. Receiver close/dispose failures are deferred until task cleanup
+and aggregated, rather than skipping joins. Noncooperative handlers still need
+outer runtime deadline escalation. Node Promise scheduling is not asserted to
+match every Tokio FuturesUnordered poll interleaving.
+
+Strict TS exit0, focused13 PASS, full Linux **4,613 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-runtime-interaction-lanes-229/` pins full lane/failure source
+and contract tests. Tests cover16/4 independent progress, late reserved drain, exact
+deadline priority, wrong tags, HTTP versus invariant failure, forced cancellation,
+lazy-handler closure, receiver cleanup errors and real awaited async cleanup.
+Full dispatcher custody, seven-consumer startup and live/Windows qualification
+remain incomplete. No external interaction was processed.
