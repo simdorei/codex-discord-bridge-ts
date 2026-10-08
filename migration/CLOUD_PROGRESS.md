@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,817 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,833 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3814,3 +3814,26 @@ original compiler log retained. Strict TS exit 0; focused **57 PASS**; full Linu
 `.runtime/cloud-discord-message-parts-166/`. Complete Message decoding still awaits
 Channel/thread and interaction metadata closure. No live Discord or Rust executable
 differential verification, merge or deployment is claimed.
+
+
+## Checkpoint 167 — Channel, thread member and Presence transitive closure
+
+Added all 35 pinned Channel fields and the actually reachable thread metadata/member,
+Member, Presence/UserOrId and full Activity child schemas. Shared permission, User,
+timestamp and image-hash models are reused. Signed member counts/positions, open byte
+enums, exact two-u64 party tuples, map-only activity link buttons, closed status unit
+enums and untagged UserOrId fallback are preserved. Presence reached through a
+ThreadMember requires its own guild ID; no unrelated intermediary injection is used.
+
+The custom forum emoji visitor requires explicit emoji_id (serde with), accepts
+numeric 0/null, but rejects string "0" through NonZero::from_str despite the source
+comment saying otherwise. Tests bind to the implementation. Comment-only forum
+one-of, length and UI limits were not introduced as response validators.
+
+Sixteen new tests cover the complete paths, invalid nested models, ignored fields,
+sequence order and source defaults. Strict TS exit 0; focused **73 PASS**; full Linux
+**3,833 PASS / 0 fail / 0 skip / 0 cancelled**. Evidence:
+`.runtime/cloud-discord-channel-model-167/`. Complete Message decoding still awaits
+interaction metadata and final response composition. No Gateway subscription, live
+Discord, Rust executable differential run, operational qualification or deployment
+is claimed.
