@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,015 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,027 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -2108,3 +2108,28 @@ source DeadGenerationFence. Five complete frozen Rust authority hashes are recor
 This is a bounded library fence with native observation, not an installed production DB
 fence or complete restart supervisor. Automatic replacement/forwarder activation, durable
 mutation dispatch, Windows, sustained operation and deployment remain unfinished.
+
+## 2026-10-08 — Generation-scoped event forwarders and death monitoring
+
+Implemented the manager/events.rs, events/activation.rs and death.rs forwarding subset:
+subscribe before activation, no pre-activation event/death publication, explicit lag gaps,
+old-generation queued-event drain before exit, same-generation notifications, and owned
+death-monitor joins. Native helper integration proves forwarding activates only after
+resident ownership and a closed current client publishes its exact-generation restart.
+
+JS receive and generation-change operations are both canceled/joined before the next
+iteration. If a losing receive already consumed a value, that value is forwarded once
+before draining, rather than discarded by Promise.race. This deterministic tie handling
+does not claim Tokio select randomized fairness. Active join requires generation change
+or closure of all watched sources; joining alone never kills the client.
+
+Review found mutable death-monitor callback identity and late async callback rejection.
+Callbacks are now captured and validated before subscription acquisition. Same 11-test
+file: original 9 PASS / 2 FAIL, corrected 11 PASS. Evidence
+.runtime/cloud-resident-forwarders-107: focused 18 PASS including 7 native binding cases;
+full **3,027 PASS, 0 fail/skip/cancel; strict TS exit 0**. Includes 40 co-ready race
+iterations, gap draining, stale monitor cleanup, partial-construction cleanup, target
+closure, and unchanged callback identity. Unexpected task errors remain observable.
+
+These are explicit-lifetime library components. Whole replacement orchestration, durable
+idle/dead-work store bindings, mutation dispatch and automatic supervisor remain pending.

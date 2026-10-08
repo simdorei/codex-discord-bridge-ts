@@ -1,3 +1,6 @@
+import {ResidentForwarders,type ResidentNotificationEvent,type ResidentServerRequestEvent} from "../../src/app-server/resident-forwarders.ts";
+import {GenerationWatch} from "../../src/app-server/generation-watch.ts";
+import {BoundedBroadcast} from "../../src/app-server/broadcast.ts";
 import assert from "node:assert/strict";
 import {test,type TestContext} from "node:test";
 import {PortableAppServerSession,type PortableSessionConfig} from "../../src/app-server/portable-session.ts";
@@ -51,4 +54,13 @@ test("actual native exit fences exact unfinished work before clearing transient 
   state.markCurrentClosed(port,1n);let persisted=0;
   assert.equal(state.fenceDeadGenerationBeforeRestart(work=>{persisted++;assert.equal(work.generation,1n);assert.deepEqual(work.activeTurns,[{threadId:"t",turnId:"v"}]);assert.equal(work.serverRequests.length,1);assert.equal(work.serverRequests[0]!.occurrence.equals(request.occurrence),true);assert.equal(session.activeTurnId("t"),"v");assert.equal(session.pendingServerRequests().length,1);}),true);
   assert.equal(persisted,1);assert.equal(session.activeTurnId("t"),null);assert.equal(session.pendingServerRequests().length,0);assert.equal(state.deadGenerationWork(1n),null);
+});
+
+test("native resident forwarders activate only after state ownership and report exact-generation death",{timeout:10000},async t=>{
+  const watch=new GenerationWatch(1n),notifications=new BoundedBroadcast<ResidentNotificationEvent>(1000),requests=new BoundedBroadcast<ResidentServerRequestEvent>(500),nr=notifications.subscribe(),rr=requests.subscribe();
+  let state:ResidentAdmissionState<ReturnType<PortableAppServerSession["residentClient"]>>|undefined;
+  const {session,observer}=await PortableAppServerSession.startObserved(config(),session=>({value:new ResidentForwarders(session,1n,notifications,requests,watch.subscribe(),{waitClosed:signal=>session.waitClosed(signal),onClosed(){state!.markCurrentClosed(session.residentClient(),1n);}}),dispose(){}}),()=>"safe diagnostic",t.signal);
+  state=new ResidentAdmissionState(session.residentClient());t.after(async()=>{watch.replace(0n);try{await observer.value.join();}finally{try{await session.dispose();}finally{nr.dispose();rr.dispose();}}});
+  observer.value.activate();await session.request("start",{},1000);await session.request("approval",{},1000);const event=await rr.receive(t.signal);assert.equal(event.kind,"Request");assert.equal(event.generation,1n);const notification=await nr.receive(t.signal);assert.equal(notification.kind,"Notification");assert.equal(notification.generation,1n);
+  const changed=state.subscribeLifecycleChanges();await assert.rejects(session.request("die",{},1000));await changed.changed(t.signal);assert.equal(state.snapshot().accepting,false);assert.equal(state.restartPendingFor(1n),true);changed.dispose();watch.replace(0n);await observer.value.join();assert.equal(watch.receiverCount,0);
 });
