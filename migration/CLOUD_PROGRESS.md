@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **2,957 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **2,966 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -1985,3 +1985,18 @@ or Discord. Descendant-inherited pipe cleanup and the outer 45s startup envelope
 unsupported: drain joining can wait on an inherited open pipe. No generic resident manager,
 end-to-end Discord/store scheduling, Windows/native-window parity, sustained operation or
 deployment claim is made. Diagnostic rendering remains a required public-safe adapter.
+
+## 2026-10-08 — Resident lifecycle generation watch foundation
+
+Added the required one-sender watch<Option<u64>> subset from checksum-pinned Tokio 1.53.1
+watch.rs: equal-value replace still notifies, latest values coalesce, each receiver has
+an independent seen cursor, clone preserves unseen state, and an unseen final value is
+observed before sender-close error. Cancellation/disposal unlinks only its own waiter;
+subscribe-before-snapshot ordering can avoid missed lifecycle transitions.
+
+Evidence .runtime/cloud-generation-watch-101: 9 focused PASS, full **2,966 PASS,
+0 fail/skip/cancel; strict TS exit 0**. Tests cover same-value None publication, coalescing,
+borrow vs borrowAndUpdate, fresh subscriber vs clone, close, cancellation, receiver
+concurrency and optional u64 boundaries. Publication version exhaustion fails closed
+before native wrap; no generic multi-sender/RwLock/rollover parity claim. This is a
+foundation for resident-generation/restart state, not an implemented restart controller.
