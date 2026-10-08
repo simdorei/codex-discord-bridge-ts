@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,715 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,728 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3609,3 +3609,31 @@ correctly returns RangeError and that expectation was corrected without changing
 Strict TS exit 0, focused parser **16 PASS**, full Linux **3,715 PASS / 0 fail / 0 skip /
 0 cancelled**. Evidence `.runtime/cloud-discord-api-error-158/`. This is static-source and
 TS executable evidence, not a Rust differential run or full transport/receipt approval.
+
+
+## Checkpoint 159 — owned Discord response-state engine
+
+Added the response-state adapter with REQUIRED wire, shared rate-limiter and complete
+Message-model decoder ports. None has a permissive production default. 429 reacquires
+rate permission using identical request/body/nonce; it does not parse a 429 body or turn
+unknown transport failure into a retry. Every response and permit is released/joined.
+401 invalidates configured authorization before body decode, so future requests fail
+before sending. Typed success receipts require a valid nonzero u64 ID from the mandatory
+complete model decoder; the test decoder is explicitly mocked, not a full Message parser.
+
+Non-success response bodies must decode as pinned ApiError before a Response fault can
+reach receipt rejection logic. Invalid UTF8/JSON and UTF8 BOM remain unconfirmed. BOM
+is retained by the decoder rather than silently stripped. Routes match the actual
+relative-path request builder, with exact nonzero u64/whole-string validation. Tokens and
+response bodies are not interpolated into diagnostics. Supported authorization is ASCII;
+proxy/default-header policies and broader timeout representations are outside this unit.
+
+Thirteen new tests cover 429 custody/order, 401 state, typing, model failures, route/header
+validation, joined close and actual SQLite receipt distinction for valid 400, malformed
+400 and valid 503. Initial RED caught a real leading-slash mismatch in the new adapter and
+a wrong table name in tests; both raw failures and the prior source are retained.
+
+Strict TS exit 0; focused response/error/receipt **34 PASS**; full Linux **3,728 PASS /
+0 fail / 0 skip / 0 cancelled**. Evidence `.runtime/cloud-discord-response-engine-159/`.
+Production wire, rate manager, successful Message decoder and full service remain pending;
+this is not a live HTTP or complete client approval.
