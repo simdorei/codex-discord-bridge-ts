@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,465 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,477 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4848,3 +4848,29 @@ completion; actual startup retry loop and Ready consumer integration remain pend
 Strict TS exit0, focused6 PASS, full Linux **4,465 PASS /0 fail/0 skip/0 cancelled**.
 Evidence `.runtime/cloud-runtime-startup-notice-213/` pins the complete source with
 its three original tests and adds JS overlap/invalid-completion boundaries.
+
+
+## Checkpoint 214 — identity-guarded actual asynchronous operation
+
+Added guard(future) over a trusted cooperative operation with explicit Node
+cancellation and actual join on shutdown/conflict. Pre-existing shutdown/conflict
+prevents operation start; borrowed conflict subscriptions remain usable. Complete
+undefined is distinguishable from stopped. A distinct cleanup failure is retained
+alongside a primary conflict rather than silently discarded: this is an explicit
+Node async-cleanup extension, not Rust future Drop equivalence. Noncooperative work
+remains pending for the outer common-deadline owner to escalate.
+
+Direct race review found that Promise completion could outrun an already-ready
+conflict-channel closure. The lower-priority result now waits for the owned hint
+read to cancel/join and synchronously checks the receiver before returning. The
+retained closed-race RED case passes after correction. A second regression found
+unnecessary abort delivery after successful completion; the same final test file
+failed before that one-line lifecycle fix and passes afterward. Already-settled
+operations no longer receive a spurious cancellation.
+
+Strict TS exit0, focused12 PASS, full Linux **4,477 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-runtime-identity-guard-214/` retains both RED cases, the
+initial4476 run, and a TS control-flow-narrowing failure corrected with a typed
+post-await snapshot accessor. The first RED file had11 cases; the second RED and
+final GREEN use the same12-case file. Ready HTTP registration/retry and main service
+wiring remain pending; no real Discord traffic or process abort was executed.
