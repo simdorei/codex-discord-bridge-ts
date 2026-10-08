@@ -4176,3 +4176,31 @@ Strict TS exit0; new focused **11 PASS**; full Linux **4,049 PASS /0 fail/0 skip
 0 cancelled**. Evidence `.runtime/cloud-gateway-ready-180/`; gateway source archive
 `.runtime/cloud-gateway-wire-authority-180/`. Actual WebSocket protocol/discovery,
 remaining dispatch validation, Windows/performance/operations remain unfinished.
+
+
+## Checkpoint 181 — actual owned Node WebSocket transport
+
+Installed official npm ws 8.22.0 and @types/ws 8.18.2 with exact lockfile integrity
+and lifecycle scripts disabled. Restored the existing TypeScript 7.0.2 optional
+platform compiler after the initial omit-optional install removed it; final strict
+typecheck works. npm production audit reports zero listed vulnerabilities at this
+checkpoint, not a comprehensive security certification.
+
+Transport owns one agent, WebSocket, message-boundary-preserving readable stream,
+actual socket close promises and read/write operations. Cancellation of one read
+does not destroy or consume later messages. Disposal joins underlying sockets even
+when ws emits close before a cancelled upgrade socket has closed. Unrelated owners
+remain usable. Production routes require validated official Gateway WSS hosts;
+test routes are literal IPv4 loopback only. No redirect following, supplied headers,
+TLS bypass or production credentials. Backpressure does not imply a bound on one
+message: payload limits remain unlimited like the frozen source.
+
+Review found ws handshakeTimeout is an idle timer: a peer trickling partial headers
+extended the handshake. Same-test RED1 -> GREEN1 proves the owned absolute deadline
+fix. The earlier fixture timeout was a half-open test server that never answered
+FIN; its server-side cleanup was corrected, separately from the product deadline fix.
+
+Strict TS exit0; real loopback focused **14 PASS**; full Linux **4,063 PASS /0 fail/
+0 skip/0 cancelled**. Evidence `.runtime/cloud-node-websocket-181/`. Actual production
+TLS/Discord, Gateway protocol/reconnect/identify/compression, Windows/performance/
+operational validation remain unfinished.
