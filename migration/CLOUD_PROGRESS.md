@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **3,594 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **3,608 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -3267,3 +3267,38 @@ proven by arbitrary input objects. The production source receiver/page owner is 
 next integration boundary; no broadcast/history input may self-assert native proof.
 The checkpoint-145 malformed diagnostic compatibility gap and all existing offload,
 Windows, service and operational limits remain unresolved.
+
+
+## 2026-10-08 — Owned indexed source intake and bounded completion handoff
+
+Checkpoint 147 owns one resident notification receiver and one indexed source cursor.
+Current broadcast events are only wakeups; exact old-generation terminal/final events
+retain legacy journaling without certifying the new stream. Each source page activates
+and discovers its original scope, stops the terminal fence before journaling, invokes
+required effect certification, then transfers bounded envelopes to a 128-entry ingress
+FIFO separate from scheduler lanes. Byte pressure, missing retained occurrences and
+queue pressure retain uncertainty and never invent a verified source prefix.
+
+The owned loop uses an immediate initial scan and delayed 250ms/wakeup scans. It retains
+losing receives/ticks, observes their errors and joins them on shutdown; queued envelopes
+release their byte permits. Envelopes already taken by a consumer remain that consumer's
+explicit disposal responsibility. Successful pages yield an event-loop turn, matching
+the source's yield_now intent rather than relying on microtask awaits to yield I/O.
+
+Evidence .runtime/cloud-source-intake-147: focused14 PASS; strict TS0; full **3,608 PASS**,
+zero fail/skip/cancel. Actual owned Node helper notifications traverse indexed windows,
+SQLite journals/proof and bounded handoff. Deterministic tests cover activation/window/
+discovery failures, exact late generation, oversized occurrences, 128-entry saturation,
+byte-budget cleanup, no-target filtering, failed terminal journals, cursor reset,
+overlapping scans, cancellation, closed broadcast and rejected tick cleanup.
+
+Pre-publication review exposed missing explicit page-yield behavior: the identical
+yield regression fails against source-before-yield.ts and passes after setImmediate.
+Raw RED/GREEN logs and exact source/test hashes are retained, not a claimed live incident.
+Full-before-yield3,607 is separate from final3,608.
+
+This is owned source intake, not the full completion processor/reconciliation/service
+assembly. Synchronous SQLite/FS still cannot be preempted or treated as offloaded; logical
+serialized-byte accounting is not a V8 heap bound or exact Tokio scheduling equivalence.
+Malformed diagnostic compatibility, native answer dispatch, Windows and operations
+remain incomplete. No live Discord/Codex service or external reviewer was invoked.
