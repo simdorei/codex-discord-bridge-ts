@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,459 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,465 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -4831,3 +4831,20 @@ registration/notice and remaining service-consumer wiring remain pending.
 Strict TS exit0, focused9 PASS, full Linux **4,459 PASS /0 fail/0 skip/0 cancelled**.
 Evidence `.runtime/cloud-runtime-identity-wait-212/` includes pinned identity helper
 and tracker/test authorities. No production network or credentials were used.
+
+
+## Checkpoint 213 — per-process startup notice custody
+
+Added StartupNoticeState with the exact runtime/startup-notice/v1 domain. One boot
+logical key survives reconnects; a later process key produces a distinct existing
+messageNonce. Only a successful awaited void completion marks delivery; failures
+retain retryability and original error identity. Subsequent confirmed calls return
+false without invoking another callback. An explicit overlap guard replaces Rust
+exclusive mutable borrow and rejects duplicate concurrent attempts before sending.
+
+The state owns no HTTP, generates no credentials and does not promise permanent
+Discord deduplication. Its trusted callback must represent confirmed transport
+completion; actual startup retry loop and Ready consumer integration remain pending.
+Strict TS exit0, focused6 PASS, full Linux **4,465 PASS /0 fail/0 skip/0 cancelled**.
+Evidence `.runtime/cloud-runtime-startup-notice-213/` pins the complete source with
+its three original tests and adds JS overlap/invalid-completion boundaries.
