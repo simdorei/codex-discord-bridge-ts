@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,766 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,774 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5553,3 +5553,34 @@ remain incomplete. No external interaction was processed.
   typecheck.log,focused-tests.log,full-tests.log,source-inputs.json,verification-result.json}.
   Per-event handler wiring, actual execution, recovery actors, Windows and service
   bootstrap remain incomplete; this is not authorization or deployment certification.
+
+
+## Per-event ordinary interaction handler and shared claims (241)
+
+- Added a single handler factory to share the 4,096-entry claim cache across Normal
+  and Reserved lanes. Each input captures immutable ingress metadata, awaits the
+  central mirror-policy refresh, then creates and disposes one dispatcher sender
+  clone. Policy refresh precedes deadline handling, including expired inputs.
+- Both lane validation and the handler use the same passive ingress capture;
+  wrong-lane tag priority is retained. Cancellation joins started policy reads
+  before rejecting and never acknowledges afterward. HTTP and the root queue
+  sender are borrowed and must outlive every call. Primary and cleanup errors
+  remain visible if both fail.
+- Eight new tests use native loopback HTTP and isolated SQLite, including actual
+  Normal/Reserved lane loops sharing one handler, pending/committed duplicate
+  suppression, mapping deletion, immutable metadata, corrupt-store failure before
+  expired dispatch and cancellation. No live Discord credentials or events used.
+- Initial focused/full tests each had one fixture failure: the test expected a
+  second distinct callback while the first response was stalled, ignoring shared
+  HTTP bucket serialization. The corrected test observes the actual duplicate
+  handler completing before releasing the first ACK, and still asserts one HTTP
+  request and one queued work item. Product rate limiting was not altered.
+- Final focused 21 PASS, full 4,774 PASS, strict TS0; zero failures/cancel/skips.
+  Evidence: .runtime/cloud-runtime-ordinary-interaction-handler-241/{initial-
+  focused-tests.log,initial-full-tests.log,typecheck.log,focused-tests.log,
+  full-tests.log,source-inputs.json,verification-result.json}.
+- This connects the existing ordinary admission/ACK/queue profile only. Recovery
+  actors, actual command execution, full Gateway-to-handler integration, all-seven
+  consumer startup, Windows and live deployment are still incomplete. Store IO
+  remains synchronous inside existing adapters; this is not an offload or latency
+  certification.
