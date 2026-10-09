@@ -1,3 +1,5 @@
+import * as PublicationProposalStore from "../../src/store/publication-proposal.ts";
+import * as PublicationBinding from "../../src/store/publication-binding.ts";
 import * as BusyPromptIntake from "../../src/store/prompt-intake-busy.ts";
 import * as ControlBinding from "../../src/store/control-binding.ts";
 import * as MirrorOrigin from "../../src/store/mirror-origin.ts";
@@ -80,6 +82,12 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.proposePublication, PublicationProposalStore.proposePublication);
+    assert.strictEqual(FacadeExports.proposePublication, PublicationProposalStore.proposePublication);
+    assert.strictEqual(StateAccessFacade.bindPublicationDelivery, PublicationProposalStore.bindPublicationDelivery);
+    assert.strictEqual(FacadeExports.bindPublicationDelivery, PublicationProposalStore.bindPublicationDelivery);
+    assert.strictEqual(StateAccessFacade.deliveredPublicationProposal, PublicationBinding.deliveredPublicationProposal);
+    assert.strictEqual(FacadeExports.deliveredPublicationProposal, PublicationBinding.deliveredPublicationProposal);
     assert.strictEqual(StateAccessFacade.admitBusyQueue, BusyPromptIntake.admitBusyQueue);
     assert.strictEqual(FacadeExports.admitBusyQueue, BusyPromptIntake.admitBusyQueue);
     assert.strictEqual(StateAccessFacade.bindBusyControl, ControlBinding.bindBusyControl);
@@ -344,6 +352,9 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
   it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
+      "proposePublication",
+      "bindPublicationDelivery",
+      "deliveredPublicationProposal",
       "admitBusyQueue",
       "bindBusyControl",
       "resolveBusyControl",
@@ -546,7 +557,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 201);
+    assert.strictEqual(actual.length, 204);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
@@ -575,6 +586,12 @@ describe("StateAccessFacade type signature fidelity (compile-time)", () => {
     const eq7: AssertEqual<typeof StateAccessFacade.finish, typeof MutationAttempt.finish> = true;
     const eq8: AssertEqual<typeof StateAccessFacade.openCheckedRead, typeof CheckedRead.open> = true;
 
+    const eqproposePublication: AssertEqual<typeof StateAccessFacade.proposePublication, typeof PublicationProposalStore.proposePublication> = true;
+    assert.strictEqual(eqproposePublication, true);
+    const eqbindPublicationDelivery: AssertEqual<typeof StateAccessFacade.bindPublicationDelivery, typeof PublicationProposalStore.bindPublicationDelivery> = true;
+    assert.strictEqual(eqbindPublicationDelivery, true);
+    const eqdeliveredPublicationProposal: AssertEqual<typeof StateAccessFacade.deliveredPublicationProposal, typeof PublicationBinding.deliveredPublicationProposal> = true;
+    assert.strictEqual(eqdeliveredPublicationProposal, true);
     const eqBusyQueue: AssertEqual<typeof StateAccessFacade.admitBusyQueue, typeof BusyPromptIntake.admitBusyQueue> = true;
     assert.strictEqual(eqBusyQueue, true);
     const eqControlBind: AssertEqual<typeof StateAccessFacade.bindBusyControl, typeof ControlBinding.bindBusyControl> = true;

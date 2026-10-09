@@ -1,3 +1,5 @@
+import * as PublicationProposalStore from "./publication-proposal.ts";
+import * as PublicationBinding from "./publication-binding.ts";
 import * as BusyPromptIntake from "./prompt-intake-busy.ts";
 import * as ControlBinding from "./control-binding.ts";
 import * as MirrorOrigin from "./mirror-origin.ts";
@@ -248,6 +250,9 @@ export const recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureI
 export const markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed = QueueClaims.markRunningIfClaimed;
 export const markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed = QueueClaims.markRunningWithResidentIfClaimed;
 
+export const proposePublication: typeof PublicationProposalStore.proposePublication = PublicationProposalStore.proposePublication;
+export const bindPublicationDelivery: typeof PublicationProposalStore.bindPublicationDelivery = PublicationProposalStore.bindPublicationDelivery;
+export const deliveredPublicationProposal: typeof PublicationBinding.deliveredPublicationProposal = PublicationBinding.deliveredPublicationProposal;
 export const admitBusyQueue: typeof BusyPromptIntake.admitBusyQueue = BusyPromptIntake.admitBusyQueue;
 export const bindBusyControl: typeof ControlBinding.bindBusyControl = ControlBinding.bindBusyControl;
 export const resolveBusyControl: typeof ControlBinding.resolveBusyControl = ControlBinding.resolveBusyControl;
@@ -518,6 +523,9 @@ export interface IStateAccessFacade {
   readonly recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed;
   readonly markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed;
   readonly markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed;
+  readonly proposePublication: typeof PublicationProposalStore.proposePublication;
+  readonly bindPublicationDelivery: typeof PublicationProposalStore.bindPublicationDelivery;
+  readonly deliveredPublicationProposal: typeof PublicationBinding.deliveredPublicationProposal;
   readonly admitBusyQueue: typeof BusyPromptIntake.admitBusyQueue;
   readonly bindBusyControl: typeof ControlBinding.bindBusyControl;
   readonly resolveBusyControl: typeof ControlBinding.resolveBusyControl;
@@ -734,6 +742,9 @@ export const StateAccessFacade: IStateAccessFacade = {
   recordStartFailureIfClaimed,
   markRunningIfClaimed,
   markRunningWithResidentIfClaimed,
+  proposePublication,
+  bindPublicationDelivery,
+  deliveredPublicationProposal,
   admitBusyQueue,
   bindBusyControl,
   resolveBusyControl,

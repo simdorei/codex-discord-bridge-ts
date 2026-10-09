@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **5,062 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **5,073 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6346,3 +6346,23 @@ remain incomplete. No external interaction was processed.
   .runtime/cloud-store-publication-snapshot-274/{source-inputs.json,typecheck.log,
   focused-tests.log,full-tests.log,verification-result.json}. No Rust executable
   differential, proposal/consent write path or production approval is claimed.
+
+## 275 - Immutable recovery publication proposal and delivered binding (2026-10-09)
+
+- Direct root implementation/review against pinned publication.rs and binding.rs.
+  Strict stored struct codec preserves derive field order, unknown/duplicate field
+  rejection, typed sequence input and exact u64 f64 bits; nested Values retain the
+  existing lossless Serde codec. Proposal is descriptive intent, not a start permit.
+- Owned IMMEDIATE proposal/delivery writes preserve exact repeats, monotonically
+  selected revision, expiry and local evidence freshness. Read-after-write and
+  post-insert freshness checks catch ignored inserts and trigger-induced changes
+  with rollback. Readonly historical delivery checks exact actor/app/room/message.
+- StateAccessFacade now has 204 exact aliases. Eleven new SQLite/codec tests plus
+  eight facade tests PASS; strict TS0 and full 5,073 PASS, fail/cancel/skip0.
+- Initial 7/9 focused result retained: nonfinite timestamps were rejected too early
+  by generic Serde clone, corrected with passive timestamp validation before clone;
+  corrupt fixture removed a required trigger, corrected by restoring exact DDL
+  before testing seal/header corruption. No DDL or identity assertion weakened.
+- Evidence: .runtime/cloud-store-publication-proposal-275 (source-inputs, logs,
+  initial source/test/log, verification-result). No record_consent, full recovery
+  runtime, native Rust differential, Windows/live deployment or performance PASS.
