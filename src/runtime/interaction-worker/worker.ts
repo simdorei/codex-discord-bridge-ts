@@ -1,13 +1,11 @@
 import {types} from 'node:util';
 import {DiscordChannelClient} from '../../discord/channel-client.ts';
-import {isRoutedInteractionWork} from '../../discord/interaction-routing.ts';
 import {gatewayOwnField} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
-import {snapshotBusyChoice} from '../../store/busy-choice.ts';
 import {AdmissionPermit} from '../../admission/drain-gate.ts';
 import {invokeSynchronousVoid} from '../../core/synchronous-void.ts';
 import {passiveErrorText} from '../../core/passive-error-text.ts';
-import {type InteractionWorkQueue, type InboundInteractionWork, isInteractionWorkQueue} from '../discord-dispatch/interaction-work.ts';
+import {type InteractionWorkQueue, type InboundInteractionWork, isInteractionWorkQueue, snapshotInboundInteractionWork} from '../discord-dispatch/interaction-work.ts';
 import {cleanupNotificationFailureInfo} from '../cleanup-notification-failure.ts';
 import {componentWorkerErrorInfo} from '../component-worker/errors.ts';
 import {ExecutionCustody} from './execution-custody.ts';
@@ -21,15 +19,7 @@ export interface InteractionProcessor {
   notifyDeliveryReady(): void;
   report(code: InteractionWorkerReportCode, detail: string): void;
 }
-function capture(input: InboundInteractionWork): InboundInteractionWork {
-  const fields = ['applicationId', 'interactionId', 'channelId', 'userId', 'sourceMessageId', 'interactionToken', 'work', 'processingMode', 'custodyDatabase', 'custodyIngressId', 'authorizedBusyChoice', 'admissionPermit'] as const;
-  const out = Object.fromEntries(fields.map(k => [k, gatewayOwnField(input, k)])) as unknown as InboundInteractionWork;
-  for (const id of [out.applicationId, out.interactionId, out.channelId, out.userId, ...(out.sourceMessageId === null ? [] : [out.sourceMessageId])]) if (typeof id !== 'bigint' || id <= 0n || id >= 1n << 64n) throw new TypeError('Expected queued Discord identity');
-  for (const text of [out.interactionToken, out.custodyDatabase, out.custodyIngressId]) requireDiscordText(text);
-  if (!isRoutedInteractionWork(out.work) || !['Execute', 'ConfirmationOnly'].includes(out.processingMode)) throw new TypeError('Expected owned queued interaction');
-  if (out.admissionPermit !== null && (typeof out.admissionPermit !== 'object' || types.isProxy(out.admissionPermit))) throw new TypeError('Expected admission permit');
-  return Object.freeze({...out, authorizedBusyChoice: out.authorizedBusyChoice === null ? null : Object.freeze(snapshotBusyChoice(out.authorizedBusyChoice))});
-}
+
 function failure(error: unknown, fallback: 'Action' | 'Custody'): InteractionWorkerError {
   if (interactionWorkerErrorInfo(error) !== null) return error as InteractionWorkerError;
   if (cleanupNotificationFailureInfo(error) !== null) return new InteractionWorkerError('KnownOutcomeNotification', error);
@@ -53,7 +43,7 @@ export async function runInteractionWorker(queue: InteractionWorkQueue, database
       const permit = gatewayOwnField(next.value, 'admissionPermit') as AdmissionPermit | null;
       let custody: ExecutionCustody | null = null;
       try {
-        const work = capture(next.value), safe = (text: string) => work.interactionToken === '' ? text : text.split(work.interactionToken).join('[redacted]');
+        const work = snapshotInboundInteractionWork(next.value), safe = (text: string) => work.interactionToken === '' ? text : text.split(work.interactionToken).join('[redacted]');
         const report = (code: InteractionWorkerReportCode, text: string) => invokeReport(code, safe(text));
         try {custody = await ExecutionCustody.begin(database, work.custodyDatabase, work.custodyIngressId, work.processingMode,
           {report: value => report(value.code, passiveErrorText(value.error, 'custody cleanup failed'))});}

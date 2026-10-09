@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **5,045 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **5,051 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6306,3 +6306,25 @@ remain incomplete. No external interaction was processed.
   focused-tests.log,full-tests.log,verification-result.json}. Synthetic sessions use
   explicit null response fences; live durable native-fence/service integration,
   recovery decision components and Windows/operational acceptance remain open.
+
+## 273 — Concrete ordinary component handler and lazy confirmation
+
+- Connected ordinary bound approval/input, Busy Queue/control, async choice and
+  ConfirmationOnly branches to their concrete coordinators. Async choice routes
+  before ConfirmationOnly. Recovery publication/abandonment stay explicitly outside
+  ordinary admission and are rejected here; their dedicated store handlers are open.
+- Added owner-created lazy confirmation object holding only receipt/clear delivery,
+  never an action callback. Repeated delivery skips prior confirmed POST and retries
+  only clearing. Centralized inbound-work snapshot in its queue module and reused
+  it in worker/handler; mismatched component/envelope is rejected before store access.
+- Real queue→processor→handler→native response→SQLite outcome→HTTP receipt/clear
+  integration exposed an unpublished method-shape bug: prototype delivery method
+  failed the processor's own-function boundary after action success. Fixed to an
+  own captured callback. Single regression SHA
+  0cb354098200b7acae17097afb0ccc27838011f355c21f655c100c94eeaeb294
+  RED0/1→GREEN1/1 retained; final expanded suite has6 handler tests, separately hashed.
+- Focused15 PASS (6+9 worker), strict TS0, full5,051 PASS, fail/cancel/skip0. Evidence:
+  .runtime/cloud-runtime-ordinary-component-handler-273/{source-inputs.json,
+  typecheck.log,focused-tests.log,full-tests.log,own-delivery-red.log,
+  own-delivery-green.log,verification-result.json}. Full slash business executor,
+  dedicated recovery components/bootstrap and Windows/live acceptance remain open.
