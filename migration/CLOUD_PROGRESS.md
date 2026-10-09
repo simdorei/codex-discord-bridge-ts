@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,980 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,990 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6163,3 +6163,25 @@ remain incomplete. No external interaction was processed.
   .runtime/cloud-runtime-interaction-worker-loop-265/{source-inputs.json,typecheck.log,
   focused-tests.log,full-tests.log,verification-result.json}. Full business dispatch,
   service bootstrap, Windows and live operational validation remain unfinished.
+
+## 266 — Source interaction business sequencing and typed cleanup boundary
+
+- Connected durable pre-admission rejection, slash planning/original context,
+  precise result-before-delivery ordering, lazy component notification, no-dispatch
+  busy evidence and known completed-action confirmation failure handling. Required
+  business service ports remain explicit and pinned, not default success stubs.
+- Added owned ActionError taxonomy and concrete Mirror CleanupProtected conversion.
+  Only the exact owned action/mirror pair and validated nine-reason/nonzero signed
+  room domain becomes known refusal; copied prototypes and similar error text do
+  not dispose held work. Mirror synchronization itself remains unimplemented here.
+- Custody failures retain their central type. Typed confirmation-delivery failures
+  remain LogOnly after completed result, not ordinary replayable action errors.
+  Shared native HTTP/queue fixtures were extracted rather than duplicated.
+- Initial focused15/18 failed because tests expected null for absent ingress outcome;
+  actual store API uses undefined. Exactly those three oracle expectations were
+  corrected, original tests/log retained. Added SQL-trigger regression proving
+  failed result persistence prevents success delivery. Final focused19 PASS (10 new
+  +9 worker), strict TS0, full4,990 PASS, fail/cancel/skip0. Evidence:
+  .runtime/cloud-runtime-interaction-processor-266/{source-inputs.json,typecheck.log,
+  focused-tests.log,full-tests.log,verification-result.json}. Full ActionExecutor,
+  all special components, production service wiring and live/Windows QA remain open.
