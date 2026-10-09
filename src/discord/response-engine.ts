@@ -1,3 +1,4 @@
+import {clearMessageComponentsRequest} from './message-component-clear-request.ts';
 import type {DiscordComponent} from './components.ts';
 import {interactionUpdateRequest, interactionUpdateRequestWithComponents} from './interaction-update-request.ts';
 import {interactionCallbackRequest} from './interaction-callback-request.ts';
@@ -66,6 +67,7 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
  acknowledgeInteraction(id:bigint,token:string,response:InteractionResponse,signal?:AbortSignal):Promise<void>{const request=interactionCallbackRequest(id,token,response);return this.#run(async owned=>{await this.#request('POST',request.path,request.body,null,()=>new Error('unused callback decoder'),owned,false);},signal);}
  updateInitialResponse(applicationId:bigint,token:string,content:string,signal?:AbortSignal):Promise<void>{const request=interactionUpdateRequest(applicationId,token,content);return this.#run(async owned=>{await this.#request('PATCH',request.path,request.body,null,()=>new Error('unused initial-response decoder'),owned,false);},signal);}
  updateInitialResponseWithComponents(applicationId:bigint,token:string,content:string,components:readonly DiscordComponent[],signal?:AbortSignal):Promise<void>{const request=interactionUpdateRequestWithComponents(applicationId,token,content,components);return this.#run(async owned=>{await this.#request('PATCH',request.path,request.body,null,()=>new Error('unused component-update decoder'),owned,false);},signal);}
+ clearMessageComponents(channelId:bigint,messageId:bigint,signal?:AbortSignal):Promise<void>{const request=clearMessageComponentsRequest(channelId,messageId);return this.#run(async owned=>{await this.#request('PATCH',request.path,request.body,null,()=>new Error('unused clear-components decoder'),owned);},signal);}
  async #request<T>(method:DiscordHttpMethod,path:string,body:string|null,decode:((bytes:Uint8Array)=>T)|null,decodeFailure:()=>Error,signal:AbortSignal,useAuthorization=true):Promise<T|void>{
   const request:DiscordWireRequest=Object.freeze({method,path,body,authorization:useAuthorization?this.#authorization:null});
   for(;;){signal.throwIfAborted();let permit:DiscordRatePermit|undefined,response:DiscordWireResponse|undefined;

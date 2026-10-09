@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,898 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,906 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5969,3 +5969,30 @@ remain incomplete. No external interaction was processed.
 - These claim/plan helpers are not actor authority or proof of executing a button.
   Actual confirmation send/clear, component execution and runtime wiring remain
   subsequent work. Existing expiry/retry semantics were not strengthened or changed.
+
+
+## Durable confirmation send before original-button clearing (257)
+
+- Added narrow authenticated PATCH channels/{channel}/messages/{message} with
+  exact components:[] body, no content/attachment mutation and headers-only success.
+  Source default allowed-mentions setting is None. The route shares channel rate
+  resources, consumes global allowance and invalidates configured Bot auth on401.
+- Confirmation delivery uses the existing durable receipt writer before clearing.
+  A confirmed retry skips POST and repeats only clear; failed delivery never clears.
+  Absent source-message ID needs no PATCH. JS sendThenClear takes lazy operations,
+  not eager Promises, preserving source future ordering.
+- An unpublished rate-adapter defect accepted POST on the new PATCH-only path
+  because the old channels-prefix check became too broad. Native wire already
+  rejected it. The first negative test also leaked that unexpected permit and
+  blocked its cleanup: only its owned exec session was interrupted (exit130),
+  with logs preserved. The fixture now releases any unexpected permit before
+  asserting failure. On identical corrected test bytes, RED7/8 then GREEN8/8 after
+  tightening the rate POST predicate. No validation assertion was removed.
+- Eight new tests cover lazy ordering, receipt-before-clear, clear-only retries,
+  blocked POST, absent message, strict paths/body/method, shared/nonexempt rate
+  behavior and Bot401 ownership. Focused18 PASS, strict TS0, full4,906 PASS,
+  fail/cancel/skip0. Evidence and same-test proof are under
+  .runtime/cloud-runtime-confirmation-send-clear-257/.
+- This confirms/clears already completed actions; it never executes/releases their
+  action claims. Recovery-specific timeout wrappers, actual component actions and
+  full service integration remain pending. No live Discord messages were touched.

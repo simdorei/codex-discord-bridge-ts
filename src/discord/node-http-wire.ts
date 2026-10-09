@@ -1,3 +1,4 @@
+import {messageComponentClearResource} from './message-component-clear-request.ts';
 import {isOriginalInteractionResponsePath} from './interaction-update-request.ts';
 import {isInteractionCallbackPath} from './interaction-callback-request.ts';
 import {isCommandRegistrationPath} from './commands.ts';
@@ -32,7 +33,8 @@ export class NodeDiscordHttpWire implements DiscordHttpWire{
   const commands=method==='PUT'&&isCommandRegistrationPath(path)&&typeof body==='string'&&!/[\uD800-\uDFFF]/u.test(body);
   const callback=method==='POST'&&isInteractionCallbackPath(path)&&typeof body==='string'&&!/[\uD800-\uDFFF]/u.test(body)&&authorization===null;
   const update=method==='PATCH'&&isOriginalInteractionResponsePath(path)&&typeof body==='string'&&!/[\uD800-\uDFFF]/u.test(body)&&authorization===null;
-  if(!gateway&&!channel&&!commands&&!callback&&!update)throw new WireError('Invalid HTTP request profile');
+  const clear=method==='PATCH'&&messageComponentClearResource(path)!==null&&body==='{"components":[]}';
+  if(!gateway&&!channel&&!commands&&!callback&&!update&&!clear)throw new WireError('Invalid HTTP request profile');
   if(authorization!==null&&(typeof authorization!=='string'||/[^\x20-\x7e]/u.test(authorization)))throw new WireError('Invalid HTTP authorization');
   if(this.#loopback&&authorization!==null)throw new WireError('Credentials are forbidden for loopback tests');
   if(!Number.isSafeInteger(timeout)||timeout<0||timeout>2147483647)throw new WireError('Invalid header deadline');

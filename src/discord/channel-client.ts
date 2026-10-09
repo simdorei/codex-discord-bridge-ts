@@ -45,6 +45,7 @@ export class DiscordChannelClient implements DiscordReceiptTransport,TypingTrans
  acknowledgeInteraction(id:bigint,token:string,response:InteractionResponse,signal?:AbortSignal):Promise<void>{return this.#engine.acknowledgeInteraction(id,token,response,signal);}
  updateInitialResponse(applicationId:bigint,token:string,content:string,signal?:AbortSignal):Promise<void>{return this.#engine.updateInitialResponse(applicationId,token,content,signal);}
  updateInitialResponseWithComponents(applicationId:bigint,token:string,content:string,components:readonly DiscordComponent[],signal?:AbortSignal):Promise<void>{return this.#engine.updateInitialResponseWithComponents(applicationId,token,content,components,signal);}
+ clearMessageComponents(channelId:bigint,messageId:bigint,signal?:AbortSignal):Promise<void>{return this.#engine.clearMessageComponents(channelId,messageId,signal);}
  getGatewayBot(signal?:AbortSignal){return this.#engine.getGatewayBot(signal);}
  get authorizationInvalidated():boolean{return this.#engine.authorizationInvalidated;}
  get activeRequests():number{return this.#wire.activeRequests;}
