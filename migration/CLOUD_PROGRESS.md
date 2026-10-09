@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,971 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,980 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6142,3 +6142,24 @@ remain incomplete. No external interaction was processed.
   fail/cancel/skip0. Evidence: .runtime/cloud-runtime-interaction-error-report-264/
   {source-inputs.json,typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
   Full interaction worker/action executor integration and live validation remain open.
+
+## 265 — Owning interaction receive/custody/error loop
+
+- Added one sequential owning receive loop over the existing bounded interaction
+  queue. Each item joins custody begin, required business-processor Promise,
+  finish/hold and error reporting before disposal and admission-permit release.
+  Source generic success outcome is retained only if the processor did not record
+  a more precise result. Confirmation failure never emits delivery-ready notice.
+- Callbacks and work envelopes are captured before asynchronous use. Fatal local
+  callback failure still disposes current custody and buffered queue permit owners.
+  Graceful sender/receiver close drains normally; forced uncooperative cancellation
+  requires the existing outer worker deadline and is not implemented as Promise.race.
+- The required trusted processor port remains explicit; this is not an invented
+  implementation of all ActionExecutor commands. An integration test supplies the
+  real bound-component coordinator and receipt delivery: synthetic native response,
+  durable action result, confirmation POST, source-button PATCH and ingress final
+  confirmation complete before the real admission gate drains.
+- Nine focused tests PASS, strict TS0, full4,980 PASS, fail/cancel/skip0. Evidence:
+  .runtime/cloud-runtime-interaction-worker-loop-265/{source-inputs.json,typecheck.log,
+  focused-tests.log,full-tests.log,verification-result.json}. Full business dispatch,
+  service bootstrap, Windows and live operational validation remain unfinished.
