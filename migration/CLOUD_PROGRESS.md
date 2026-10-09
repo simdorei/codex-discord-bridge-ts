@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,637 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,649 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5262,4 +5262,36 @@ remain incomplete. No external interaction was processed.
   JSON input is an explicit Node boundary; this catalogue is an immutable snapshot,
   not a shared mutable remote cache.
 - Evidence: .runtime/cloud-runtime-interaction-autocomplete-231/source-inputs.json,
+  typecheck.log, focused-tests.log, full-tests.log and verification-result.json.
+
+
+## Already-admitted interaction custody ownership (232)
+
+- Ported custody::from_admission and StagedCustody lifecycle over captured central
+  StateAccessFacade acknowledgeIngress/holdIngress operations. Created custody requires
+  its durable record and matching busy authorization presence. Ordinary duplicate
+  returns no cleanup owner. Canonical repeats require busy origin, durable record,
+  prompt/ingress ownership and a frozen authorization snapshot; only prompt is
+  confirmation-ready. These conversion inputs must be original store results.
+- Actual acknowledge transitions staged to acknowledged; a false update is the exact
+  source integrity failure. Explicit hold marks not-executed and disarms cancellation
+  only after successful persistence. Receipt transfer disarms the guard and owns an
+  immutable token-free snapshot. A receipt alone is not execution authority.
+- Awaited dispose replaces Rust Drop. It joins a previously started write, then holds
+  still-armed custody as interaction_dispatch_cancelled. Overlapping mutations and
+  transfer are rejected; repeated cleanup shares its result. Failed clock/store cleanup
+  reports structured errors instead of claiming persistence succeeded. Caller must await
+  cleanup on every exit; JS garbage collection does not provide this guarantee.
+- Twelve focused tests PASS (native isolated SQLite lifecycle plus constructed invalid
+  admission/canonical conversion cases), strict TS0, full 4,649 PASS with zero failures,
+  cancellations and skips. Tested real outbox hold notice, unchanged payload, failed
+  hold retry during disposal, pending write join, clock/store cleanup diagnostics,
+  canonical snapshot isolation and malformed ownership. Canonical conversion fixtures
+  are not an end-to-end busy interaction admission test.
+- Full custody::stage is still pending, including settings binding, recovery publication/
+  abandonment actor checks and route-specific admissions; this does not bypass them.
+  Full dispatcher, queue transfer, seven-consumer runtime and production remain unfinished.
+  SQLite uses existing owned adapters with synchronous native statements; no offload or
+  performance completion claim. Default clock retains existing millisecond precision.
+- Evidence: .runtime/cloud-runtime-interaction-custody-232/source-inputs.json,
   typecheck.log, focused-tests.log, full-tests.log and verification-result.json.
