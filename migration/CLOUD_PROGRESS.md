@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,866 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,873 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5873,3 +5873,26 @@ remain incomplete. No external interaction was processed.
   typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
   Per-chunk delivery revalidation, durable redisplay receipts and responding to
   approval/input requests remain subsequent integrations.
+
+
+## Per-chunk pending prompt redisplay delivery (253)
+
+- Connected prepared prompts to existing durable receipt delivery and the native
+  HTTP client. Each chunk rebuilds/verifies current authority and exact prepared
+  state, then checks that the original request is still pending. Components appear
+  only on the final chunk; every message has its own durable receipt.
+- Logical key matches Serde tuple(command key,generation,request ID,occurrence).
+  Verified the source occurrence newtype serializes as sixteen integer bytes, not
+  a UUID string; lossless generation/request IDs and original occurrence are kept.
+  The caller must supply the original command key; no random retry identity is made.
+- Seven real local child/HTTP/SQLite tests cover confirmed-repeat suppression,
+  exact receipt identity, multi-chunk final buttons, mapping changes between chunks,
+  wrong actor/restart, safe unavailable diagnostics, malformed provider receipts
+  held unknown, factory identity and mutable input capture. A mapping change after
+  part one stops before later content/buttons. No approval/input response is sent.
+- Focused7 PASS, strict TS0, full4,873 PASS, failure/cancel/skip0. Evidence:
+  .runtime/cloud-runtime-server-prompt-delivery-253/{source-inputs.json,
+  typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
+- Existing receipt-writer and HTTP operations are awaited, not race-abandoned.
+  Provider-side nonce deduplication, full service cancellation policy, live request
+  permissions and actual action execution are not certified by synthetic fixtures.
