@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,807 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,815 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5694,3 +5694,32 @@ remain incomplete. No external interaction was processed.
   Discord permissions, Windows or end-to-end action execution is certified here.
   Empty-content local validation parity is not a promise of provider acceptance
   when no other message content exists.
+
+
+## Persisted cleanup-refusal to original-response delivery (246)
+
+- Connected begun execution custody to validated cleanup-refusal outcome storage
+  and the native original-response PATCH. Result persistence precedes HTTP; success
+  returns waits_for_final=false, leaving confirmation to finishNotification.
+  The exact source message names the protected room/reason and preserves the
+  earlier-changes-possible/no-deletion-for-this-room distinction.
+- Delivery failures become the shared known-outcome notification error and retain
+  the refusal-specific hold. There is no follow-up POST or fallback channel send.
+  Default HTTP429 handling is inherited; one logical PATCH is not a claim that
+  rate-limited wire attempts can never repeat.
+- Captures the original envelope/refusal before awaits; validates all nine fixed
+  reasons and room bounds. Caller still owns matching custody/work identity and
+  the queue admission permit. This function does not infer a refusal from arbitrary
+  action errors and does not delete any room.
+- Eight tests with real loopback HTTP/SQLite cover pre-network durable evidence,
+  successful confirmation preserving sync_completed=false, failed PATCH, failed
+  storage, invalid refusal, all nine reasons, mutable input, token rejection and
+  forced cancellation. Server-side async fixture work is explicitly joined too.
+  Focused8 PASS, strict TS0, full4,815 PASS, failure/cancel/skip0.
+- Node cancellation after a recorded result joins the native request and records
+  known delivery uncertainty. This explicit cleanup profile is not identical to
+  simply dropping a Rust future; it never erases the known refusal or retries it
+  as an action. Pre-cancelled work has no result/network side effect.
+- Evidence: .runtime/cloud-runtime-cleanup-refusal-delivery-246/{source-inputs.json,
+  typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
+  General action/component execution and worker orchestration remain incomplete.
