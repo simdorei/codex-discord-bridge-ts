@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,815 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,822 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5723,3 +5723,26 @@ remain incomplete. No external interaction was processed.
 - Evidence: .runtime/cloud-runtime-cleanup-refusal-delivery-246/{source-inputs.json,
   typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
   General action/component execution and worker orchestration remain incomplete.
+
+
+## Ordinary interaction text delivery with stable chunk identity (247)
+
+- Connected existing source delivery splitting/retry policy to the owned HTTP
+  client: part0 PATCHes the deferred response; subsequent chunks POST to the
+  original channel with interaction:{id}, domain and chunk-index nonce identity.
+  Successful earlier chunks are not resent when a later chunk fails. Default
+  delays remain750ms/2s and markers retain the existing1,900-character budget.
+- Captures original application/interaction/channel/token before awaits. Reuses
+  headers-only channel send behavior and content/mention/nonce request builders.
+  Both follow-up and error domain constants match the Rust delivery identity.
+  This function is expressly NOT the special /new single-attempt receipt path.
+- Seven loopback HTTP tests verify short/empty text, exact multipart destination
+  and body, second-part retry identity, permanent first-PATCH failure with no POST
+  fallback, mutable-envelope isolation and cancellation of custom/native retry
+  sleeps. Retry-duration assertions use injected sleep receipts; they are not
+  wall-clock performance certification. Native cancellation timers are joined.
+- Focused7 PASS, strict TS0, full4,822 PASS, fail/cancel/skip0. Evidence:
+  .runtime/cloud-runtime-interaction-text-delivery-247/{source-inputs.json,
+  typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
+- No provider-side nonce deduplication, actual command execution, UI-component
+  rendering, durable /new delivery, full worker or live deployment is claimed.
