@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,649 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,658 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5294,4 +5294,27 @@ remain incomplete. No external interaction was processed.
   SQLite uses existing owned adapters with synchronous native statements; no offload or
   performance completion claim. Default clock retains existing millisecond precision.
 - Evidence: .runtime/cloud-runtime-interaction-custody-232/source-inputs.json,
+  typecheck.log, focused-tests.log, full-tests.log and verification-result.json.
+
+
+## Registered slash command planning (233)
+
+- Ported the full plan_slash registered-command match from pinned command_plan.rs:
+  all 19 QA-enabled registered commands map to their original external-tagged action.
+  This is an owned routed-slash boundary, not the full text-command parser or the
+  complete CommandAction deserializer (which includes additional non-slash actions).
+- Defaults/clamps: list/context 10 and 1..30; archived_list 10 and 1..50; usage 7
+  and 1..30. bridge_sync retains the optional signed i64 without clamping. Integer
+  fields stay bigint so Serde JSON emits integer rather than f64 tokens. Prompt,
+  reference and settings strings use Rust trim; blank present strings fail in source
+  evaluation order. Missing option, legacy IPC and removed auto_reserve are already
+  blocked at the existing router boundary; the redundant planning errors remain.
+- Pure immutable planned actions perform no lookup, persistence, acknowledgement or
+  execution. This prerequisite does not complete settings target binding: concrete
+  CodexThreadStore and original reference resolution are still needed.
+- Nine focused tests covering all 19 commands PASS; full actual Linux Node 24.21.0
+  4,658 PASS, zero failures/cancellations/skips, strict TS0. Exact i64 extremes,
+  clamping, NEL/BOM, optional blank errors, boolean defaults, QA inventory, immutable
+  output and external-tagged integer JSON verified. No Windows/live runtime claim.
+- Evidence: .runtime/cloud-runtime-slash-command-plan-233/source-inputs.json,
   typecheck.log, focused-tests.log, full-tests.log and verification-result.json.
