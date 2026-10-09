@@ -1,3 +1,4 @@
+import * as PublicationConsent from "./publication-consent.ts";
 import * as PublicationProposalStore from "./publication-proposal.ts";
 import * as PublicationBinding from "./publication-binding.ts";
 import * as BusyPromptIntake from "./prompt-intake-busy.ts";
@@ -250,6 +251,7 @@ export const recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureI
 export const markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed = QueueClaims.markRunningIfClaimed;
 export const markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed = QueueClaims.markRunningWithResidentIfClaimed;
 
+export const recordPublicationConsent: typeof PublicationConsent.recordPublicationConsent = PublicationConsent.recordPublicationConsent;
 export const proposePublication: typeof PublicationProposalStore.proposePublication = PublicationProposalStore.proposePublication;
 export const bindPublicationDelivery: typeof PublicationProposalStore.bindPublicationDelivery = PublicationProposalStore.bindPublicationDelivery;
 export const deliveredPublicationProposal: typeof PublicationBinding.deliveredPublicationProposal = PublicationBinding.deliveredPublicationProposal;
@@ -523,6 +525,7 @@ export interface IStateAccessFacade {
   readonly recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed;
   readonly markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed;
   readonly markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed;
+  readonly recordPublicationConsent: typeof PublicationConsent.recordPublicationConsent;
   readonly proposePublication: typeof PublicationProposalStore.proposePublication;
   readonly bindPublicationDelivery: typeof PublicationProposalStore.bindPublicationDelivery;
   readonly deliveredPublicationProposal: typeof PublicationBinding.deliveredPublicationProposal;
@@ -742,6 +745,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   recordStartFailureIfClaimed,
   markRunningIfClaimed,
   markRunningWithResidentIfClaimed,
+  recordPublicationConsent,
   proposePublication,
   bindPublicationDelivery,
   deliveredPublicationProposal,

@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **5,073 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **5,086 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6366,3 +6366,21 @@ remain incomplete. No external interaction was processed.
 - Evidence: .runtime/cloud-store-publication-proposal-275 (source-inputs, logs,
   initial source/test/log, verification-result). No record_consent, full recovery
   runtime, native Rust differential, Windows/live deployment or performance PASS.
+
+## 276 - Durable exact recovery publication consent (2026-10-09)
+
+- Direct source-backed record_consent port, rechecking the stored authenticated
+  ingress headers, exact component/value identity, delivered review binding and
+  current unowned execution custody. No caller-supplied actor fields can substitute.
+- Exact original replay may read its immutable original receipt after completion,
+  expiry or changed evidence. A different click requires fresh proposal and live
+  custody; conflicting decisions never overwrite. Rechecks retained timestamp,
+  decision, ingress and local evidence after INSERT before atomic commit.
+- Thirteen real SQLite tests plus eight facade tests PASS; facade205 exact aliases.
+  Tests cover both decisions, original versus other click, expiry and revision
+  mismatch, changed actors/headers/work, physical payload limit, ignored inserts,
+  altered timestamp and post-insert mutations with rollback. Full5,086 PASS,
+  strict TS0, fail/cancel/skip0. Evidence .runtime/cloud-store-publication-consent-276.
+- This records intent only: no queue start, hold release, publisher permit, runtime
+  recovery handler, Windows/live or performance approval. Existing count-only
+  schema compatibility limitations and lack of native Rust differential remain.

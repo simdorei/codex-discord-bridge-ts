@@ -1,3 +1,4 @@
+import * as PublicationConsent from "../../src/store/publication-consent.ts";
 import * as PublicationProposalStore from "../../src/store/publication-proposal.ts";
 import * as PublicationBinding from "../../src/store/publication-binding.ts";
 import * as BusyPromptIntake from "../../src/store/prompt-intake-busy.ts";
@@ -82,6 +83,8 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.recordPublicationConsent, PublicationConsent.recordPublicationConsent);
+    assert.strictEqual(FacadeExports.recordPublicationConsent, PublicationConsent.recordPublicationConsent);
     assert.strictEqual(StateAccessFacade.proposePublication, PublicationProposalStore.proposePublication);
     assert.strictEqual(FacadeExports.proposePublication, PublicationProposalStore.proposePublication);
     assert.strictEqual(StateAccessFacade.bindPublicationDelivery, PublicationProposalStore.bindPublicationDelivery);
@@ -352,6 +355,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
   it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
+      "recordPublicationConsent",
       "proposePublication",
       "bindPublicationDelivery",
       "deliveredPublicationProposal",
@@ -557,7 +561,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 204);
+    assert.strictEqual(actual.length, 205);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
@@ -586,6 +590,8 @@ describe("StateAccessFacade type signature fidelity (compile-time)", () => {
     const eq7: AssertEqual<typeof StateAccessFacade.finish, typeof MutationAttempt.finish> = true;
     const eq8: AssertEqual<typeof StateAccessFacade.openCheckedRead, typeof CheckedRead.open> = true;
 
+    const eqConsent: AssertEqual<typeof StateAccessFacade.recordPublicationConsent, typeof PublicationConsent.recordPublicationConsent> = true;
+    assert.strictEqual(eqConsent, true);
     const eqproposePublication: AssertEqual<typeof StateAccessFacade.proposePublication, typeof PublicationProposalStore.proposePublication> = true;
     assert.strictEqual(eqproposePublication, true);
     const eqbindPublicationDelivery: AssertEqual<typeof StateAccessFacade.bindPublicationDelivery, typeof PublicationProposalStore.bindPublicationDelivery> = true;
