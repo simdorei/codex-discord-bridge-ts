@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,932 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,942 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6053,3 +6053,22 @@ remain incomplete. No external interaction was processed.
   .runtime/cloud-app-server-input-replies-260/{source-inputs.json,typecheck.log,
   focused-tests.log,full-tests.log,verification-result.json}. Response submission,
   full worker integration, Windows and live-service validation remain unfinished.
+
+## 261 — Exact component response selection and typed errors
+
+- Added the central component worker error taxonomy with passive cause text and
+  owned classification. Only durable-confirmation Recovery failures, directly or
+  through Busy confirmation, imply action-completed-before-failure.
+- Legacy selection filters thread and method before uniqueness; bound selection
+  matches thread, typed request id, occurrence and generation before checking
+  request kind. Mixed duplicate identities remain ambiguous, not first-match.
+  Approval/input payloads reuse259/260. Pure preparation retains pending requests.
+- Ten tests cover aliases, URL-only elicitation, exact occurrence/generation/type
+  isolation, ambiguous requests, error nesting, passive snapshots and an actual
+  synthetic child process. Focused10 PASS, strict TS0, full4,942 PASS, no failures,
+  cancellations or skips. Evidence: .runtime/cloud-runtime-component-response-261/
+  {source-inputs.json,typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
+- The portable pending snapshot is synchronous; its generation guard is retained
+  but no simulated concurrent change inside that synchronous read is claimed.
+  Generated confirmation strings are prospective, not submission evidence. Actor
+  authorization, legacy expiry and actual response submission remain later gates.
