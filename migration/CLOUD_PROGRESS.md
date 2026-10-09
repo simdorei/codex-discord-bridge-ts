@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,963 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,971 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6119,3 +6119,26 @@ remain incomplete. No external interaction was processed.
   focused-tests.log,full-tests.log,verification-result.json}. The caller must still
   own processing-mode/execution-custody admission. No Busy/recovery/async-choice
   dispatcher, live service or full Windows/runtime acceptance is claimed.
+
+## 264 — Central interaction error disposition and reporting
+
+- Centralized typed interaction errors and source IgnoreDuplicate/LogOnly/Report
+  decisions. Only owned component and known-refusal errors can acquire the special
+  suppression categories; strings, copied prototypes and arbitrary error objects
+  cannot masquerade as completed or indeterminate work.
+- Component reports use existing durable error receipt identity and channel POST;
+  ordinary reports use original-response PATCH then indexed chunks. Duplicate
+  confirmed receipts skip HTTP. Changed text under the same receipt identity is
+  held and logged, not overwritten. A failed report never falls back to action
+  execution, deletes a claim or retries the original request.
+- Diagnostic profile explicitly differs from Rust arbitrary Debug formatting:
+  passive own-message text only, structured local report codes, and literal
+  interaction-token redaction before logging or delivery. Exact Rust Debug bytes
+  are not claimed. Logger callbacks must synchronously return void.
+- Eight native HTTP/SQLite tests pass, including known-refusal preservation,
+  duplicate/uncertain suppression, receipt reuse/content mismatch and report failure.
+  Initial TS receiver-type error was corrected without execution-policy changes;
+  initial-typecheck.log retained. Final focused8 PASS, strict TS0, full4,971 PASS,
+  fail/cancel/skip0. Evidence: .runtime/cloud-runtime-interaction-error-report-264/
+  {source-inputs.json,typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
+  Full interaction worker/action executor integration and live validation remain open.
