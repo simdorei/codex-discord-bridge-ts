@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,658 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,670 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5318,3 +5318,37 @@ remain incomplete. No external interaction was processed.
   output and external-tagged integer JSON verified. No Windows/live runtime claim.
 - Evidence: .runtime/cloud-runtime-slash-command-plan-233/source-inputs.json,
   typecheck.log, focused-tests.log, full-tests.log and verification-result.json.
+
+
+## Read-only original Codex thread store (234)
+
+- Ported cdr-codex-state/store.rs and ThreadInfo into one dedicated read owner for the
+  existing original Codex state DB. Open requires a regular existing file, probes a
+  read-only handle, then each exact/list query reopens a read-only connection. No
+  bridge schema initialization, migration, write or missing-file creation.
+- Preserves source exact lookup independent of list limits; active ordering, archived
+  ordering, separate legacy VS Code roots and complete CLI/app-server interactive
+  mirror roots. Zero limit means unbounded; positive limits accept exact u32 bigint.
+  Optional text defaults empty, optional timestamps default zero, unknown tokens stay
+  null; every i64 remains bigint. Inactive archived_at is ignored, while exact lookup
+  still requires that source SELECT column.
+- Raw text aliases and SQLite encoding verify UTF-8/UTF-16 rather than silently
+  replacing invalid text. Wrong storage classes reject. Sqlite errors retain native
+  causes behind the source category/prefix; exact rusqlite error detail text is not
+  claimed. Extra raw-byte/encoding expressions assume ordinary stable state schema
+  expressions, not equivalence for arbitrary volatile views.
+- Retrieved official rusqlite 0.40.2 archive:
+  https://static.crates.io/crates/rusqlite/rusqlite-0.40.2.crate
+  SHA256 23f2a97da3e3873c73cb2a2e71b35c40ff95e0b1eefa8d72d8499a6928c3b5b3,
+  matching the pinned Cargo.lock. Its connection initializes busy_timeout=5000;
+  Node constructor uses timeout=5000, independently checked via an actual pragma
+  view fixture on the same query connection.
+- Twelve focused native SQLite tests PASS; full Linux Node 24.21.0 4,670 PASS,
+  zero failures/cancellations/skips and strict TS0. Verified file-byte preservation,
+  fresh reads, missing file noncreation, integer extremes, all read selectors,
+  NULL/error distinctions, invalid UTF-8 and UTF-16 text.
+- This is a synchronous read owner awaiting production offload; Node does not expose
+  SQLITE_OPEN_NO_MUTEX. No contention-duration, Windows, state-store reference
+  resolver, live user DB or complete settings admission qualification.
+- Evidence: .runtime/cloud-codex-thread-store-234/source-inputs.json, typecheck.log,
+  focused-tests.log, full-tests.log and verification-result.json.
