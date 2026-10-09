@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **5,026 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **5,034 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6267,3 +6267,21 @@ remain incomplete. No external interaction was processed.
   focused-tests.log,full-tests.log,ambiguity-red-tests.log,ambiguity-green-tests.log,
   verification-result.json}. Special recovery/async components, full business
   executor/bootstrap and Windows/live validation remain unfinished.
+
+## 271 — Read-only async-choice original-turn preflight
+
+- Added original resident/generation readiness, active-original-turn Steer, or
+  completed-original latest-turn → goal → complete history Start eligibility.
+  Successor active turns, active goals, missing/duplicate history and in-progress
+  siblings fail closed. Baseline uses source UTF-8 ordered exact turn ids.
+- Native observations preserve source8-second request timeouts, exact list options
+  and generation binding. This is only a snapshot: the caller must hold target lock
+  and repeat preflight at dispatch. No question claim, new turn or answer is sent.
+- Eight tests run real synthetic child sessions across positive and negative
+  evidence matrices. Initial1/8 arose from fixture counting initialized handshake
+  notification as a history request; fixture now explicitly consumes it without
+  replying. Original tests/log retained, production source unchanged by that fix.
+  Focused8 PASS, strict TS0, full5,034 PASS, fail/cancel/skip0. Evidence:
+  .runtime/cloud-runtime-async-choice-preflight-271/{source-inputs.json,typecheck.log,
+  focused-tests.log,full-tests.log,verification-result.json}. Full async-choice
+  claim/dispatch and Windows/live acceptance remain separate unfinished work.
