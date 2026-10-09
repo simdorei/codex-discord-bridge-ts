@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,916 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,923 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6021,3 +6021,19 @@ remain incomplete. No external interaction was processed.
   {source-inputs.json,typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
 - Actual busy action dispatch, claim-failure release/retention, full component
   worker and live services remain unfinished. No old choice gained new authority.
+
+## 259 — Pure app-server approval reply payloads
+
+- Ported exact Rust-trim/Unicode-lowercase answer aliases and modern, legacy,
+  elicitation and permission response shapes from pinned approval_replies.rs.
+  Permission session/turn scopes, deny strictAutoReview=false and elicitation
+  session→accept normalization are preserved. URL-mode selection remains the
+  caller’s responsibility, as in the source builder.
+- Payloads are immutable snapshots; active JavaScript objects are rejected without
+  getter/coercion calls. No approval submission, permission change or actor grant
+  occurs here. Original occurrence/actor validation and response dispatch remain
+  separate unfinished integration work.
+- Focused7 PASS, strict TS0, full4,923 PASS, fail/cancel/skip0. Evidence:
+  .runtime/cloud-app-server-approval-replies-259/{source-inputs.json,typecheck.log,
+  focused-tests.log,full-tests.log,verification-result.json}. Linux native Node
+  tests only; no live Codex, Windows or production acceptance claim.
