@@ -1,3 +1,4 @@
+import * as BusyChoiceStore from "../../src/store/busy-choice-store.ts";
 import * as ComponentClaims from "../../src/store/component-claims.ts";
 import * as NewReplyRead from "../../src/store/new-reply-read.ts";
 import * as MirrorPolicyRead from "../../src/store/mirror-policy-read.ts";
@@ -76,6 +77,12 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.readBusyChoiceState, BusyChoiceStore.readBusyChoiceState);
+    assert.strictEqual(FacadeExports.readBusyChoiceState, BusyChoiceStore.readBusyChoiceState);
+    assert.strictEqual(StateAccessFacade.claimBusyChoice, BusyChoiceStore.claimBusyChoice);
+    assert.strictEqual(FacadeExports.claimBusyChoice, BusyChoiceStore.claimBusyChoice);
+    assert.strictEqual(StateAccessFacade.releaseBusyChoiceClaim, BusyChoiceStore.releaseBusyChoiceClaim);
+    assert.strictEqual(FacadeExports.releaseBusyChoiceClaim, BusyChoiceStore.releaseBusyChoiceClaim);
     assert.strictEqual(StateAccessFacade.claimComponent, ComponentClaims.claimComponent);
     assert.strictEqual(FacadeExports.claimComponent, ComponentClaims.claimComponent);
     assert.strictEqual(StateAccessFacade.releaseComponentClaim, ComponentClaims.releaseComponentClaim);
@@ -326,6 +333,9 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
   it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
+      "readBusyChoiceState",
+      "claimBusyChoice",
+      "releaseBusyChoiceClaim",
       "claimComponent",
       "releaseComponentClaim",
       "isComponentClaimLive",
@@ -521,7 +531,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 194);
+    assert.strictEqual(actual.length, 197);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
@@ -550,6 +560,10 @@ describe("StateAccessFacade type signature fidelity (compile-time)", () => {
     const eq7: AssertEqual<typeof StateAccessFacade.finish, typeof MutationAttempt.finish> = true;
     const eq8: AssertEqual<typeof StateAccessFacade.openCheckedRead, typeof CheckedRead.open> = true;
 
+    const eqBusyRead: AssertEqual<typeof StateAccessFacade.readBusyChoiceState, typeof BusyChoiceStore.readBusyChoiceState> = true;
+    const eqBusyClaim: AssertEqual<typeof StateAccessFacade.claimBusyChoice, typeof BusyChoiceStore.claimBusyChoice> = true;
+    const eqBusyRelease: AssertEqual<typeof StateAccessFacade.releaseBusyChoiceClaim, typeof BusyChoiceStore.releaseBusyChoiceClaim> = true;
+    assert.strictEqual(eqBusyRead, true); assert.strictEqual(eqBusyClaim, true); assert.strictEqual(eqBusyRelease, true);
     const eqClaim: AssertEqual<typeof StateAccessFacade.claimComponent, typeof ComponentClaims.claimComponent> = true;
     const eqRelease: AssertEqual<typeof StateAccessFacade.releaseComponentClaim, typeof ComponentClaims.releaseComponentClaim> = true;
     const eqLive: AssertEqual<typeof StateAccessFacade.isComponentClaimLive, typeof ComponentClaims.isComponentClaimLive> = true;

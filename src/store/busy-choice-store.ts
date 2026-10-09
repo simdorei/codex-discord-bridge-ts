@@ -24,19 +24,29 @@ export async function createBusyChoice(path:string,input:NewBusyChoice,expected:
     return {value:id,commit:true};
   },false);
 }
+export interface BusyChoiceState {readonly choice:BusyChoice;readonly claimed:boolean}
+function readBusyChoiceRow(db:DatabaseSync,id:string):BusyChoiceState|null{
+  const query=db.prepare(`SELECT owner_user_id,channel_id,target_thread_id,prompt,allow_steer,created_at,expires_at,claimed_at,
+    CAST(target_thread_id AS BLOB) AS raw_target,CAST(prompt AS BLOB) AS raw_prompt,(SELECT encoding FROM pragma_encoding) AS encoding FROM busy_choices WHERE choice_id=?`);query.setReadBigInts(true);
+  const row=query.get(id);if(row===undefined)return null;
+  const decoder=textDecoderFor(row.encoding),ownerUserId=decodeI64(row.owner_user_id,"owner_user_id"),channelId=decodeI64(row.channel_id,"channel_id"),
+    targetThreadId=decodeTextField(row.target_thread_id,row.raw_target,"target_thread_id",true,decoder),prompt=decodeTextField(row.prompt,row.raw_prompt,"prompt",false,decoder)!,
+    allowSteer=decodeI64(row.allow_steer,"allow_steer")!==0n,createdAt=decodeTimestamp(row.created_at,"created_at"),expiresAt=decodeTimestamp(row.expires_at,"expires_at"),
+    claimedAt=row.claimed_at===null?null:decodeTimestamp(row.claimed_at,"claimed_at");
+  return {choice:{choiceId:id,ownerUserId,channelId,targetThreadId,prompt,allowSteer,createdAt,expiresAt},claimed:claimedAt!==null};
+}
 export async function getBusyChoice(path:string,id:string,now:number):Promise<BusyChoice|null>{
   text(id);timestamp(now);
   return withPromptIntakeWriter<BusyChoice|null>(path,db=>{
-    const query=db.prepare(`SELECT owner_user_id,channel_id,target_thread_id,prompt,allow_steer,created_at,expires_at,claimed_at,
-      CAST(target_thread_id AS BLOB) AS raw_target,CAST(prompt AS BLOB) AS raw_prompt,(SELECT encoding FROM pragma_encoding) AS encoding FROM busy_choices WHERE choice_id=?`);query.setReadBigInts(true);
-    const row=query.get(id);if(row===undefined)return {value:null,commit:true};
-    const decoder=textDecoderFor(row.encoding),ownerUserId=decodeI64(row.owner_user_id,"owner_user_id"),channelId=decodeI64(row.channel_id,"channel_id"),
-      targetThreadId=decodeTextField(row.target_thread_id,row.raw_target,"target_thread_id",true,decoder),prompt=decodeTextField(row.prompt,row.raw_prompt,"prompt",false,decoder)!,
-      allowSteer=decodeI64(row.allow_steer,"allow_steer")!==0n,createdAt=decodeTimestamp(row.created_at,"created_at"),expiresAt=decodeTimestamp(row.expires_at,"expires_at"),
-      claimedAt=row.claimed_at===null?null:decodeTimestamp(row.claimed_at,"claimed_at");
-    if(expiresAt<=now){db.prepare("DELETE FROM busy_choices WHERE choice_id=?").run(id);return {value:null,commit:true};}
-    return {value:claimedAt!==null?null:{choiceId:id,ownerUserId,channelId,targetThreadId,prompt,allowSteer,createdAt,expiresAt},commit:true};
+    const row=readBusyChoiceRow(db,id);if(row===null)return {value:null,commit:true};
+    if(row.choice.expiresAt<=now){db.prepare("DELETE FROM busy_choices WHERE choice_id=?").run(id);return {value:null,commit:true};}
+    return {value:row.claimed?null:row.choice,commit:true};
   },false);
+}
+/** Source runtime busy-state read: decode before expiry filter, retain claimed
+ * state, and never delete expired rows as getBusyChoice intentionally does. */
+export function readBusyChoiceState(path:string,id:string,now:number):Promise<BusyChoiceState|null>{
+  text(id);timestamp(now);return owned(path,db=>{const row=readBusyChoiceRow(db,id);return row===null||row.choice.expiresAt<=now?null:row;});
 }
 async function owned<T>(path:string,work:(db:DatabaseSync)=>T):Promise<T>{const db=await openInitialized(path);try{return work(db);}finally{db.close();}}
 export async function claimBusyChoice(path:string,id:string,now:number):Promise<boolean>{

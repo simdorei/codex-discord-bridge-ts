@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,906 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,916 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5996,3 +5996,28 @@ remain incomplete. No external interaction was processed.
 - This confirms/clears already completed actions; it never executes/releases their
   action claims. Recovery-specific timeout wrappers, actual component actions and
   full service integration remain pending. No live Discord messages were touched.
+
+
+## Busy-choice original-snapshot preflight and confirmation-only path (258)
+
+- Added nondeleting readBusyChoiceState behind central state access, retaining
+  claimed status and decoding every column before expiry filtering. Factored the
+  existing decoder so getBusyChoice keeps its prior expired-row deletion and
+  claimed-row rejection behavior. Added read/claim/release aliases (194→197).
+- Added original pre-ACK snapshot matching, source user→channel range/match order,
+  and Pro-steering refusal. The validator intentionally does not invent an expiry
+  check or reject ordinary Steer solely because allow_steer=false; source does not
+  apply those rules here. Later dispatch/state checks remain mandatory.
+- ConfirmationOnly requires the exact actor-bound ready marker, never reads or
+  recreates a current busy choice and never claims/executes its action. Pro command
+  detection is only the source first-word predicate, not prompt rewriting, another
+  agent invocation or a connection workflow. Busy error metadata retains causes
+  passively and refuses prototype-only classification.
+- Ten new tests cover claimed/expired state, decoder ordering, detached reads,
+  actor/range precedence, Pro whitespace/case, preserved source flag behavior,
+  absent/mismatched snapshots, marker-only confirmation and no-store short circuits.
+  Focused23 PASS including unchanged busy-store/facade tests, strict TS0, full4,916
+  PASS, fail/cancel/skip0. Evidence: .runtime/cloud-runtime-busy-preflight-258/
+  {source-inputs.json,typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
+- Actual busy action dispatch, claim-failure release/retention, full component
+  worker and live services remain unfinished. No old choice gained new authority.

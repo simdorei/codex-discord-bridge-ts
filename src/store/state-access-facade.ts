@@ -1,3 +1,4 @@
+import * as BusyChoiceStore from "./busy-choice-store.ts";
 import * as ComponentClaims from "./component-claims.ts";
 import * as NewReplyRead from "./new-reply-read.ts";
 import * as MirrorPolicyRead from "./mirror-policy-read.ts";
@@ -244,6 +245,9 @@ export const recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureI
 export const markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed = QueueClaims.markRunningIfClaimed;
 export const markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed = QueueClaims.markRunningWithResidentIfClaimed;
 
+export const readBusyChoiceState: typeof BusyChoiceStore.readBusyChoiceState = BusyChoiceStore.readBusyChoiceState;
+export const claimBusyChoice: typeof BusyChoiceStore.claimBusyChoice = BusyChoiceStore.claimBusyChoice;
+export const releaseBusyChoiceClaim: typeof BusyChoiceStore.releaseBusyChoiceClaim = BusyChoiceStore.releaseBusyChoiceClaim;
 export const claimComponent: typeof ComponentClaims.claimComponent = ComponentClaims.claimComponent;
 export const releaseComponentClaim: typeof ComponentClaims.releaseComponentClaim = ComponentClaims.releaseComponentClaim;
 export const isComponentClaimLive: typeof ComponentClaims.isComponentClaimLive = ComponentClaims.isComponentClaimLive;
@@ -507,6 +511,9 @@ export interface IStateAccessFacade {
   readonly recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed;
   readonly markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed;
   readonly markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed;
+  readonly readBusyChoiceState: typeof BusyChoiceStore.readBusyChoiceState;
+  readonly claimBusyChoice: typeof BusyChoiceStore.claimBusyChoice;
+  readonly releaseBusyChoiceClaim: typeof BusyChoiceStore.releaseBusyChoiceClaim;
   readonly claimComponent: typeof ComponentClaims.claimComponent;
   readonly releaseComponentClaim: typeof ComponentClaims.releaseComponentClaim;
   readonly isComponentClaimLive: typeof ComponentClaims.isComponentClaimLive;
@@ -716,6 +723,9 @@ export const StateAccessFacade: IStateAccessFacade = {
   recordStartFailureIfClaimed,
   markRunningIfClaimed,
   markRunningWithResidentIfClaimed,
+  readBusyChoiceState,
+  claimBusyChoice,
+  releaseBusyChoiceClaim,
   claimComponent,
   releaseComponentClaim,
   isComponentClaimLive,
