@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,798 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,807 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5663,3 +5663,34 @@ remain incomplete. No external interaction was processed.
 - Actual deferred-response PATCH, refusal delivery, action-error conversion and
   full interaction-worker error disposition remain separate pending integrations.
   No real Discord messages, services or original Codex databases were changed.
+
+
+## Original interaction-response PATCH through shared HTTP owner (245)
+
+- Added content-only updateInitialResponse through the existing client, response
+  engine, strict native wire and shared rate limiter. Exact route is PATCH
+  webhooks/{application}/{token}/messages/@original with no bot Authorization.
+  Body contains allowed_mentions parse[] and content; components/attachments are
+  omitted rather than cleared. Success awaits headers and releases the body, with
+  no Message decoding. Existing 429 retry and cancellation ownership are reused.
+- Global exemption matches source webhook endpoints; bucket resource identity
+  includes both application ID and opaque token, so different token resources do
+  not share an unknown bucket. Same-resource requests remain serialized. Callback
+  token validation is reused; arbitrary token URI acceptance remains outside scope.
+- Official twilight-validate0.17.0 crate was downloaded and SHA-verified against
+  pinned Cargo.lock (d6a27472e023e3841d1c4e4e20253ed796e8440aada8b5205b8544f1172e661d).
+  Its content validator permits empty text and at most2,000 Unicode scalars.
+  Initial code incorrectly reused the bridge's1,900-character chunking budget;
+  unchanged astral boundary tests detected it. Exact same test SHA passes after
+  correcting only this request limit. Original source/log/test are retained.
+- Nine new tests cover body bytes, mention suppression, token/path validation,
+  astral limits, native stalled-body release,429 retry, resource isolation/global
+  exemption,401 token ownership, cancellation and wire method/header rejection.
+  Focused24 PASS, strict TS0, full4,807 PASS, failure/cancel/skip0.
+- Evidence: .runtime/cloud-discord-original-response-update-245/{red-request.ts,
+  red-tests.ts,red-tests.log,typecheck.log,focused-tests.log,full-tests.log,
+  source-inputs.json,verification-result.json}.
+- No components-update API, follow-up POST, actual refusal-delivery adapter, live
+  Discord permissions, Windows or end-to-end action execution is certified here.
+  Empty-content local validation parity is not a promise of provider acceptance
+  when no other message content exists.

@@ -1,3 +1,4 @@
+import {isOriginalInteractionResponsePath, originalInteractionResponseResource} from './interaction-update-request.ts';
 import {isInteractionCallbackPath} from './interaction-callback-request.ts';
 import {isCommandRegistrationPath} from './commands.ts';
 /** Source: twilight-http-ratelimiting 0.17.1 actor, narrowed to POST channel
@@ -10,7 +11,7 @@ interface Pending{readonly path:string;readonly resource:string;readonly exempt:
 interface Queue{inFlight:boolean;pending:Pending[];limit:number;remaining:number;resetAt:number|null}
 const empty=():Queue=>({inFlight:false,pending:[],limit:0,remaining:0,resetAt:null});
 const GC_MS=6*60*60*1000;
-function identity(path:string):string{if(path==='gateway/bot'||isCommandRegistrationPath(path)||isInteractionCallbackPath(path))return 'none';if(typeof path!=='string')throw new TypeError('Expected channel endpoint');const match=/^channels\/([1-9][0-9]{0,19})\/(messages|typing)$/u.exec(path);if(match===null||match[0]!==path||BigInt(match[1]!)>=(1n<<64n))throw new TypeError('Expected canonical channel message/typing endpoint');return 'channels/'+match[1];}
+function identity(path:string):string{const webhook=originalInteractionResponseResource(path);if(webhook!==null)return webhook;if(path==='gateway/bot'||isCommandRegistrationPath(path)||isInteractionCallbackPath(path))return 'none';if(typeof path!=='string')throw new TypeError('Expected channel endpoint');const match=/^channels\/([1-9][0-9]{0,19})\/(messages|typing)$/u.exec(path);if(match===null||match[0]!==path||BigInt(match[1]!)>=(1n<<64n))throw new TypeError('Expected canonical channel message/typing endpoint');return 'channels/'+match[1];}
 function headers(value:ChannelRateHeaders):{bucket:string;limit:number;remaining:number;resetAtMs:number}{
  if(!(value.bucket instanceof Uint8Array)||!Number.isInteger(value.limit)||value.limit<0||value.limit>65535||!Number.isInteger(value.remaining)||value.remaining<0||value.remaining>65535||!Number.isFinite(value.resetAtMs)||value.resetAtMs<0)throw new TypeError('Invalid parsed rate headers');return {bucket:Buffer.from(value.bucket).toString('hex'),limit:value.limit,remaining:value.remaining,resetAtMs:value.resetAtMs};
 }
@@ -33,7 +34,7 @@ export class DiscordChannelRateState{
  get globalRemaining():number{return this.#remaining;}
  acquire(path:string,signal:AbortSignal):Promise<ChannelRatePermit>{
   const resource=identity(path);if(this.#closed)return Promise.reject(this.#reason);if(signal.aborted)return Promise.reject(signal.reason);this.#expire();
-  return new Promise((resolve,reject)=>{const req:Pending={path,resource,exempt:isInteractionCallbackPath(path),signal,resolve,reject,pending:true,abort:()=>{if(!req.pending)return;req.pending=false;// Retain cancelled tombstone until source FIFO eligibility can pop it.
+  return new Promise((resolve,reject)=>{const req:Pending={path,resource,exempt:isInteractionCallbackPath(path)||isOriginalInteractionResponsePath(path),signal,resolve,reject,pending:true,abort:()=>{if(!req.pending)return;req.pending=false;// Retain cancelled tombstone until source FIFO eligibility can pop it.
    signal.removeEventListener('abort',req.abort);reject(signal.reason);this.#arm();}};
    signal.addEventListener('abort',req.abort,{once:true});const q=this.#queue(path,resource);if(!q.inFlight&&(q.remaining!==0||q.resetAt===null)&&(this.#remaining!==0||req.exempt))this.#grant(q,req);else q.pending.push(req);this.#arm();
   });

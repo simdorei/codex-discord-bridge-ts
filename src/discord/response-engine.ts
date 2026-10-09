@@ -1,3 +1,4 @@
+import {interactionUpdateRequest} from './interaction-update-request.ts';
 import {interactionCallbackRequest} from './interaction-callback-request.ts';
 import type {InteractionResponse} from './interaction-response.ts';
 import {slashCommandRegistrationRequest} from './commands.ts';
@@ -10,7 +11,7 @@ import type {IdempotentMessageRequest} from './idempotent-message.ts';
 import {DiscordTransportFault} from './transport-fault.ts';
 import type {DiscordReceiptTransport} from '../runtime/completion/receipt-sender.ts';
 import type {TypingTransport} from '../runtime/completion/typing.ts';
-export type DiscordHttpMethod='POST'|'GET'|'PUT';
+export type DiscordHttpMethod='POST'|'GET'|'PUT'|'PATCH';
 export interface DiscordWireRequest{readonly method:DiscordHttpMethod;readonly path:string;readonly body:string|null;readonly authorization:string|null}
 /** Response/body/decompression/socket custody belongs to this trusted adapter. release
  * must cancel/drain and settle owned IO, even when the caller did not read the body. */
@@ -62,6 +63,7 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
  getGatewayBot(signal?:AbortSignal):Promise<DiscordGatewayBotInfo>{return this.#run(owned=>this.#request('GET','gateway/bot',null,decodeDiscordGatewayBotInfoBytes,()=>new DiscordGatewayModelError(),owned),signal) as Promise<DiscordGatewayBotInfo>;}
  registerSlashCommands(applicationId:bigint,guildId:bigint|null,qa:boolean,signal?:AbortSignal):Promise<void>{const request=slashCommandRegistrationRequest(applicationId,guildId,qa);return this.#run(async owned=>{await this.#request('PUT',request.path,request.body,null,()=>new Error('unused registration decoder'),owned);},signal);}
  acknowledgeInteraction(id:bigint,token:string,response:InteractionResponse,signal?:AbortSignal):Promise<void>{const request=interactionCallbackRequest(id,token,response);return this.#run(async owned=>{await this.#request('POST',request.path,request.body,null,()=>new Error('unused callback decoder'),owned,false);},signal);}
+ updateInitialResponse(applicationId:bigint,token:string,content:string,signal?:AbortSignal):Promise<void>{const request=interactionUpdateRequest(applicationId,token,content);return this.#run(async owned=>{await this.#request('PATCH',request.path,request.body,null,()=>new Error('unused initial-response decoder'),owned,false);},signal);}
  async #request<T>(method:DiscordHttpMethod,path:string,body:string|null,decode:((bytes:Uint8Array)=>T)|null,decodeFailure:()=>Error,signal:AbortSignal,useAuthorization=true):Promise<T|void>{
   const request:DiscordWireRequest=Object.freeze({method,path,body,authorization:useAuthorization?this.#authorization:null});
   for(;;){signal.throwIfAborted();let permit:DiscordRatePermit|undefined,response:DiscordWireResponse|undefined;
