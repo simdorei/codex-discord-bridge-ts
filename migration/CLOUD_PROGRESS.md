@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,712 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,729 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5453,3 +5453,29 @@ remain incomplete. No external interaction was processed.
   .runtime/resume-20261009-0047.json records resumed baseline reconciliation.
   Full recovery actor checks, dispatcher queue/ACK integration, Windows and service
   runtime remain unfinished. Counts are not migration-completion percentages.
+
+
+## Owned bounded work reservations and queue shutdown (238)
+
+- Added the single-event-loop clone-and-reserve profile needed by source
+  work.clone().try_reserve_owned(). Queued values and outstanding reservations
+  share capacity; successful reservation guarantees later send. FIFO follows send
+  order, not reservation order. Release consumes once and returns capacity.
+- Graceful receiver close rejects new reservations but drains previously reserved
+  sends, waiting for outstanding permits before Closed. Explicit sender clones and
+  reservation ownership keep the stream alive when a root sender is disposed.
+- Source Tokio 1.53.1 bounded/chan ownership reviewed: receiver Drop drains current
+  values, but a later OwnedPermit send can remain in Chan until its final sender
+  owner disappears. Preserved this distinction; late abandoned work does not release
+  its real AdmissionPermit prematurely. Consumer receive transfers ownership, so
+  queue cleanup cannot release a permit already owned by the consumer.
+- Cancellation does not consume a ready value, concurrent receive is rejected, and
+  all queued cleanup callbacks run even when one fails. Explicit sender/receiver/
+  reservation disposal replaces Rust Drop; no garbage-collection cleanup guarantee,
+  cross-thread channel implementation, complete Tokio API or physical heap bound.
+  Runtime source capacity is 64; factory supports positive safe-integer capacities.
+- Focused 17 PASS including real admission gate integration and 5,000 ownership
+  cycles; full Linux Node 24.21.0 4,729 PASS, zero failures/cancellations/skips,
+  strict TS0. This queue is not yet connected to the full dispatcher/worker loop.
+- Evidence: .runtime/cloud-runtime-owned-work-queue-238/source-inputs.json,
+  typecheck.log, focused-tests.log, full-tests.log and verification-result.json.
