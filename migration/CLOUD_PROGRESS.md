@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,832 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,838 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5771,3 +5771,26 @@ remain incomplete. No external interaction was processed.
 - Uses seeded native /new evidence, not an actual thread/start or live Codex run.
   General action delivery dispatch, command execution and full runtime startup
   remain unfinished. Receipt confirmations remain separate source transactions.
+
+
+## Action UI rendering and owned-component initial response updates (249)
+
+- Added source Busy/ProBusy rendering, reusing the existing PromptActionUi type and
+  helper-owned button/row DTOs. ProBusy removes only steer, retaining queue/stop/ignore
+  labels, styles and custom IDs. ServerPrompts rendering is a read projection of
+  already prepared owned components, flattened in order with the source five-row
+  cap. It is not a PreparedPrompt authority/request/generation implementation.
+- Added component-bearing original-response PATCH on the same HTTP owner. Empty
+  arrays omit components (preserve current UI); nonempty arrays use existing owned
+  serializers. The low-level source builder does not impose the separate renderer
+  row cap, and no new cap was invented there. Other component variants, arbitrary
+  unowned DTOs and multipart attachments remain outside this helper profile.
+- Six new tests cover Busy labels, exact ProBusy filtering,0/5/6 row boundaries,
+  unrelated-field passivity, array snapshot isolation, component forgery rejection,
+  source body-field order and native tokenless PATCH. Focused15 PASS including the
+  unchanged content-only update suite; strict TS0; full4,838 PASS, fail/cancel/skip0.
+- Evidence: .runtime/cloud-runtime-action-ui-249/{source-inputs.json,typecheck.log,
+  focused-tests.log,full-tests.log,verification-result.json}.
+- This renders and transports existing UI; it does not create or answer server
+  requests. Actual server-prompt redisplay/delivery authorization and general
+  action-result orchestration, Windows and live service remain unfinished.

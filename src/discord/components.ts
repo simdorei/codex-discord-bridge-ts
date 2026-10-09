@@ -65,6 +65,10 @@ export function serializeDiscordComponent(value:DiscordComponent):string{if(!own
 export function busyButtonRow(choice:string,allowSteer:boolean):ActionRowComponent{
   requireDiscordText(choice);if(!fingerprint(choice,24)||typeof allowSteer!=="boolean")invalid();return row([button(allowSteer?"Steer now":"Steer (check)",`codex_busy:${choice}:steer`,1),button("Queue next",`codex_busy:${choice}:queue`,2),button("Stop reply",`codex_busy:${choice}:stop`,4),button("Ignore",`codex_busy:${choice}:ignore`,2)]);
 }
+/** ActionUi::ProBusy removes only the steer button from the normal busy row. */
+export function proBusyButtonRow(choice:string):ActionRowComponent{
+  const source=busyButtonRow(choice,false);return row(source.components.filter(component=>!component.custom_id.endsWith(":steer")));
+}
 const APPROVALS:readonly (readonly [string,string,1|2|3|4])[]=[["Approve","1",3],["Approve session","2",1],["Reject","3",4],["Cancel","cancel",2]];
 export function approvalButtonRow(thread:string):ActionRowComponent{requireDiscordText(thread);thread=trim(thread);if(thread==="")invalid();return row(APPROVALS.map(([label,answer,style])=>button(label,`codex_approval:${thread}:${answer}`,style)));}
 export function boundApprovalButtonRow(thread:string,generation:bigint,occurrence:Uint8Array,requestId:string|bigint):ActionRowComponent{const t=threadFingerprint(thread),r=requestFingerprint(generation,occurrence,requestId);return row(APPROVALS.map(([label,answer,style])=>button(label,`codex_approval:v2:${t}:${r}:${answer}`,style)));}

@@ -1,3 +1,4 @@
+import type {DiscordComponent} from './components.ts';
 import type {InteractionResponse} from './interaction-response.ts';
 import {types} from 'node:util';
 import {NodeDiscordHttpWire} from './node-http-wire.ts';
@@ -43,6 +44,7 @@ export class DiscordChannelClient implements DiscordReceiptTransport,TypingTrans
  createTyping(channel:bigint,signal:AbortSignal):Promise<void>{return this.#engine.createTyping(channel,signal);}
  acknowledgeInteraction(id:bigint,token:string,response:InteractionResponse,signal?:AbortSignal):Promise<void>{return this.#engine.acknowledgeInteraction(id,token,response,signal);}
  updateInitialResponse(applicationId:bigint,token:string,content:string,signal?:AbortSignal):Promise<void>{return this.#engine.updateInitialResponse(applicationId,token,content,signal);}
+ updateInitialResponseWithComponents(applicationId:bigint,token:string,content:string,components:readonly DiscordComponent[],signal?:AbortSignal):Promise<void>{return this.#engine.updateInitialResponseWithComponents(applicationId,token,content,components,signal);}
  getGatewayBot(signal?:AbortSignal){return this.#engine.getGatewayBot(signal);}
  get authorizationInvalidated():boolean{return this.#engine.authorizationInvalidated;}
  get activeRequests():number{return this.#wire.activeRequests;}
