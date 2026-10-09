@@ -46,3 +46,7 @@ export async function claimStandardAction(database: string, actionClaim: string,
   if (await claim(database, actionClaim, now, timeToLive)) return 'ExecuteAction';
   return await live(database, readyMarker, now) ? 'DeliverConfirmation' : 'ActionUnconfirmed';
 }
+/** Exact async-question confirmation identity, minted only as a display plan. */
+export function asyncQuestionConfirmationPlan(questionId: string): ConfirmationPlan {
+  requireDiscordText(questionId); const value = Object.freeze({content: '선택한 답변을 원래 Codex 스레드에 전달했습니다.', domain: 'async-question-confirmation-v1', logicalKey: questionId}); plans.add(value); return value;
+}

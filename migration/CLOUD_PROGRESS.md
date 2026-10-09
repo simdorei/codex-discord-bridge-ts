@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **5,034 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **5,045 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6285,3 +6285,24 @@ remain incomplete. No external interaction was processed.
   .runtime/cloud-runtime-async-choice-preflight-271/{source-inputs.json,typecheck.log,
   focused-tests.log,full-tests.log,verification-result.json}. Full async-choice
   claim/dispatch and Windows/live acceptance remain separate unfinished work.
+
+## 272 — One-shot async choice claim and dispatch
+
+- Connected exact question/actor/room/source-message/option checks under the shared
+  target lock. Submitted same option returns confirmation only; different option
+  is AlreadyHandled. ConfirmationOnly cannot dispatch an open question.
+- Original preflight → sealed durable claim/reserved Start job → repeated identical
+  preflight/mapping/dispatch guards → native Steer/Start → exact accepted-turn
+  confirmation. Definite remote/generation rejection clears only the owned reserve;
+  missing identity or native transport loss remains dispatching/quarantined without
+  retry. Start usage-limit rejection does not enter Reserve.
+- Added factory-owned async confirmation plan. Eleven new tests use synthetic
+  native child sessions and actual SQLite, including repeated/concurrent clicks,
+  changed second preflight, wrong accepted turn, definite rejection and process
+  exit after write. The shared native fixture was extracted from271 unchanged for
+  its read-only cases and extended with explicit test response modes.
+- Focused19 PASS (11+8), strict TS0, full5,045 PASS, fail/cancel/skip0. Evidence:
+  .runtime/cloud-runtime-async-choice-dispatch-272/{source-inputs.json,typecheck.log,
+  focused-tests.log,full-tests.log,verification-result.json}. Synthetic sessions use
+  explicit null response fences; live durable native-fence/service integration,
+  recovery decision components and Windows/operational acceptance remain open.

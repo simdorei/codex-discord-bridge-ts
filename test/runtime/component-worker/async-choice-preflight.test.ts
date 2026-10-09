@@ -1,17 +1,9 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {PortableResidentLifecycle} from '../../../src/app-server/portable-resident-lifecycle.ts';
-import {preflightAsyncChoice, type AsyncChoiceIdentity} from '../../../src/runtime/component-worker/async-choice-preflight.ts';
+import {preflightAsyncChoice} from '../../../src/runtime/component-worker/async-choice-preflight.ts';
 import {componentWorkerErrorInfo} from '../../../src/runtime/component-worker/errors.ts';
 import {ownedRequestFailure} from '../../../src/app-server/request-client.ts';
-interface Config {active?: string | null; latest?: unknown; goal?: unknown; history?: unknown; fail?: string}
-async function fixture(config: Config, run: (server: PortableResidentLifecycle, q: AsyncChoiceIdentity, seen: () => Promise<any[]>) => Promise<void>) {
-  const initial={active:null,latest:{data:[{id:'v',status:'completed'}]},goal:{goal:null},history:{thread:{id:'t',turns:[{id:'v',status:'completed'},{id:'old',status:'failed'}]}},...config};
-  const code=`import readline from 'node:readline';const c=${JSON.stringify(initial)},seen=[];const emit=x=>process.stdout.write(JSON.stringify(x)+'\\n');readline.createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line),reply=result=>emit({id:m.id,result});if(m.method==='initialize')reply({});else if(m.method==='initialized'){}else if(m.method==='seed'){emit(c.active===null?{method:'turn/completed',params:{threadId:'t',turnId:'v'}}:{method:'turn/started',params:{threadId:'t',turnId:c.active}});reply({});}else if(m.method==='seen')reply(seen);else {seen.push({method:m.method,params:m.params});if(c.fail===m.method)emit({id:m.id,error:{code:-7,message:'fixture rejected'}});else if(m.method==='thread/turns/list')reply(c.latest);else if(m.method==='thread/goal/get')reply(c.goal);else if(m.method==='thread/read')reply(c.history);else emit({id:m.id,error:{code:-8,message:'unexpected method'}});}});`;
-  const server=await PortableResidentLifecycle.start({process:{executable:process.execPath,arguments:['--input-type=module','-e',code],environment:{}},clientInfo:{name:'preflight',title:'fixture',version:'1'}},()=> 'fixture error',{persistDeadWork(){},oldChildExited(){}},undefined,{fence:null,renderError:()=> 'fixture error'});
-  const call=async(method:string)=>{const a=server.admitRequest();try{return await a.client.requestAdmitted(a.permit,method,{},2000);}finally{a.release();}};
-  try {await call('seed');await run(server,{runtimeId:server.instanceId,generation:1n,threadId:'t',turnId:'v'},async()=>await call('seen') as any[]);} finally {await server.dispose();assert.equal(server.lifecycleSnapshot().healthy,false);}
-}
+import {asyncChoiceServer as fixture} from '../../helpers/async-choice-server.ts';
 const invalid=(e:unknown)=>componentWorkerErrorInfo(e)?.kind==='AsyncQuestion';
 test('active original turn returns Steer without history reads; active successor refuses with no RPC',async()=>{
   await fixture({active:'v'},async(server,q,seen)=>{assert.deepEqual(await preflightAsyncChoice(server,q),{mode:'steer',baselineTurnIds:[]});assert.deepEqual(await seen(),[]);});
