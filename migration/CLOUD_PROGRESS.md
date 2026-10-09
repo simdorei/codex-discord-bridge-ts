@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,848 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,858 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5818,3 +5818,32 @@ remain incomplete. No external interaction was processed.
   typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
   Input snapshots add Node ownership isolation; they are not a heap/resource
   budget or an authorization certificate for displayed buttons.
+
+
+## Original pending-request owner verification (251)
+
+- Added source-ordered prompt authority verification against the actual owned
+  portable resident and central store reads: reject secret/missing identities,
+  require ready generation, active noncompleted turn, exactly one matching Running
+  non-goal-waiting job with matching app-server generation and positive original
+  actor/channel, unchanged optional mapping, and exact still-pending occurrence.
+  A top-level request/item ID never substitutes for turnId.
+- Added the resident's read-only current-client pendingServerRequests adapter and
+  central listQueueJobs direct alias. Facade inventory190→191 keeps exact export
+  and whole-function type checks. All queue rows decode before filtering, so a
+  malformed unrelated row is not hidden by a narrower query.
+- Returned authority is immutable and privately branded for actor comparison,
+  but is explicitly a snapshot, not an enduring grant to respond later. No server
+  request is answered, recreated, remapped or restarted by verification.
+- Ten native child-process/SQLite tests cover valid original ownership, actor and
+  occurrence mismatch, lifecycle/generation/turn changes, observed completion,
+  absent/ambiguous/nonrunning ownership, mapping drift, absent mapping, signed ID
+  bounds, malformed unrelated rows and no-store-access short-circuit paths.
+- Initial focused16/17 passed; one fixture used nonexistent status/payload_json
+  columns. Corrected to source generation/payload schema without product changes.
+  Final focused18 PASS including facade tests, strict TS0, full4,858 PASS, no
+  failures/cancel/skips. Native helper processes are disposed and joined.
+- Evidence: .runtime/cloud-runtime-server-prompt-authority-251/{initial-focused-
+  tests.log,source-inputs.json,typecheck.log,focused-tests.log,full-tests.log,
+  verification-result.json}. Existing cross-read races are not replaced by an
+  atomic transaction; actual response-time authority and live Codex remain pending.

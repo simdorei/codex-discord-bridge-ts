@@ -243,6 +243,7 @@ export const recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureI
 export const markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed = QueueClaims.markRunningIfClaimed;
 export const markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed = QueueClaims.markRunningWithResidentIfClaimed;
 
+export const listQueueJobs: typeof QueueRead.list = QueueRead.list;
 export const listFiltered: typeof QueueRead.listFiltered = QueueRead.listFiltered;
 export const eligibleJobs: typeof ExecutionHold.eligibleJobs = ExecutionHold.eligibleJobs;
 
@@ -502,6 +503,7 @@ export interface IStateAccessFacade {
   readonly recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed;
   readonly markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed;
   readonly markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed;
+  readonly listQueueJobs: typeof QueueRead.list;
   readonly listFiltered: typeof QueueRead.listFiltered;
   readonly eligibleJobs: typeof ExecutionHold.eligibleJobs;
   readonly asyncAdmissionHeld: typeof AsyncAdmission.asyncResolutionAdmissionHeld;
@@ -707,6 +709,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   recordStartFailureIfClaimed,
   markRunningIfClaimed,
   markRunningWithResidentIfClaimed,
+  listQueueJobs,
   listFiltered,
   eligibleJobs,
   asyncAdmissionHeld,

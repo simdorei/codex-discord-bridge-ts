@@ -75,6 +75,8 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.listQueueJobs, QueueRead.list);
+    assert.strictEqual(FacadeExports.listQueueJobs, QueueRead.list);
     assert.strictEqual(StateAccessFacade.getNewReplyByIngress, NewReplyRead.getNewReplyByIngress);
     assert.strictEqual(FacadeExports.getNewReplyByIngress, NewReplyRead.getNewReplyByIngress);
     assert.strictEqual(StateAccessFacade.remainingDiscordIds, MirrorPolicyRead.remainingDiscordIds);
@@ -317,6 +319,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
   it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
+      "listQueueJobs",
       "getNewReplyByIngress",
       "remainingDiscordIds",
       "mirrorTargets",
@@ -508,7 +511,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 190);
+    assert.strictEqual(actual.length, 191);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
@@ -537,6 +540,8 @@ describe("StateAccessFacade type signature fidelity (compile-time)", () => {
     const eq7: AssertEqual<typeof StateAccessFacade.finish, typeof MutationAttempt.finish> = true;
     const eq8: AssertEqual<typeof StateAccessFacade.openCheckedRead, typeof CheckedRead.open> = true;
 
+    const eqQueueList: AssertEqual<typeof StateAccessFacade.listQueueJobs, typeof QueueRead.list> = true;
+    assert.strictEqual(eqQueueList, true);
     const eqNewReplyRead: AssertEqual<typeof StateAccessFacade.getNewReplyByIngress, typeof NewReplyRead.getNewReplyByIngress> = true;
     void eqNewReplyRead;
     const eqMirrorIds: AssertEqual<typeof StateAccessFacade.remainingDiscordIds, typeof MirrorPolicyRead.remainingDiscordIds> = true;

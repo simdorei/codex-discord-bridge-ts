@@ -1,3 +1,4 @@
+import type {PendingServerRequest} from "./server-request-state.ts";
 import {performance} from "node:perf_hooks";
 import {collectRecoveryObservation} from "./recovery-collector.ts";
 import {AppServerInvalidReplyError} from "./client-errors.ts";
@@ -101,6 +102,11 @@ export class PortableResidentLifecycle{
   generation():bigint{return this.#state.generation();}
   /** Same current-client snapshot read as the source resident: no RPC, restart or new admission. */
   activeTurnId(thread:string):string|null{if(typeof thread!=="string"||/[\uD800-\uDFFF]/u.test(thread))throw new TypeError("Expected well-formed target");return this.#session(this.#state.currentClient()).activeTurnId(thread);}
+  /** Read the current owned client's immutable pending-request snapshots; no RPC. */
+  pendingServerRequests(thread:string|null=null):PendingServerRequest[]{
+    if(thread!==null&&(typeof thread!=="string"||/[\uD800-\uDFFF]/u.test(thread)))throw new TypeError("Expected well-formed target or null");
+    return this.#session(this.#state.currentClient()).pendingServerRequests(thread);
+  }
   /** Install once before target intake. The native client capability is internal;
    * callers must not use its raw prefix setter as substitute for this journal proof. */
   installIdleReleaseJournal(input:IdleReleaseJournal):void{
