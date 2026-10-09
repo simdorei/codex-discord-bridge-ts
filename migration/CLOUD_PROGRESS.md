@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,774 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,777 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5584,3 +5584,27 @@ remain incomplete. No external interaction was processed.
   consumer startup, Windows and live deployment are still incomplete. Store IO
   remains synchronous inside existing adapters; this is not an offload or latency
   certification.
+
+
+## Native Gateway-to-interaction custody integration (242)
+
+- Tests-only integration of the existing recommended Gateway owner, actual local
+  WebSocket Hello/Identify/READY and INTERACTION_CREATE packets, complete decoder,
+  actual Normal/Reserved consumers, central policy refresh, native HTTP callback,
+  durable SQLite acknowledgement and owned work queue. No production source change.
+- Three scenarios: valid input plus duplicate plus stopping input; malformed full
+  interaction followed by valid input and mapping deletion; callback HTTP failure
+  records a held not-executed request while the next input succeeds on the same lane.
+  Final ownership assertions cover queue admission permits, HTTP sockets, Gateway
+  tasks and fake identify/heartbeat clock timers. Credentials and endpoints are
+  strictly synthetic/literal loopback.
+- Initial third-case test confused the retained phase with hold_reason. Source
+  custody holds preserve phase=staged and store discord_ack_failed in hold_reason.
+  The test now asserts all three fields (held state, staged phase, exact reason),
+  without modifying the product or suppressing its error. Original log retained.
+- Final focused 3 PASS, strict TS0, full 4,777 PASS, no failure/cancel/skip. Evidence:
+  .runtime/cloud-runtime-gateway-interaction-integration-242/{initial-focused-
+  tests.log,typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
+- This proves the bounded input-to-queued-work chain, not execution of that work,
+  full seven-consumer service orchestration, recovery actors, Windows, throughput,
+  real account permissions or production deployment.
