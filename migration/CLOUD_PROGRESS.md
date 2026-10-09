@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,923 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,932 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6037,3 +6037,19 @@ remain incomplete. No external interaction was processed.
   .runtime/cloud-app-server-approval-replies-259/{source-inputs.json,typecheck.log,
   focused-tests.log,full-tests.log,verification-result.json}. Linux native Node
   tests only; no live Codex, Windows or production acceptance claim.
+
+## 260 — Pure input reply assignment grammar
+
+- Reused existing structural input validation; ported pipe splitting, Rust trim,
+  64-bit usize option indices, first ASCII-case-insensitive label selection and
+  literal free-text fallback. Single-question semicolons remain literal when no
+  equals sign exists. Multi-question assignments split only the first equals,
+  ignore empty segments and preserve last duplicate assignment, as the source.
+- Missing ids are reported before unknown ids, sorted by UTF-8. Frozen own-data
+  dictionaries replace the public BTreeMap representation; existing Serde wire
+  serialization restores its lexical key order, including integer-looking and
+  __proto__ ids. This builder adds no secret-input or occurrence authorization.
+- Focused9 PASS, strict TS0, full4,932 PASS, fail/cancel/skip0. Evidence:
+  .runtime/cloud-app-server-input-replies-260/{source-inputs.json,typecheck.log,
+  focused-tests.log,full-tests.log,verification-result.json}. Response submission,
+  full worker integration, Windows and live-service validation remain unfinished.
