@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **5,051 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **5,062 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6328,3 +6328,21 @@ remain incomplete. No external interaction was processed.
   typecheck.log,focused-tests.log,full-tests.log,own-delivery-red.log,
   own-delivery-green.log,verification-result.json}. Full slash business executor,
   dedicated recovery components/bootstrap and Windows/live acceptance remain open.
+
+## 274 — Bounded local publication-review evidence snapshot
+
+- Added borrowed-transaction capture of exact owned Pending job, unique mapping,
+  stop revision and six ordered queue/mapping/obligation/settlement/handoff/policy
+  pages. It never commits, opens another connection or grants execution/publisher
+  authority. Cell seals distinguish null, i64, IEEE real bits, UTF-8 text and blob hex.
+- Enforced original prompt131072-byte, page128-row, cell/blob and shared262144-byte
+  JSON limits plus final seal overhead. Native Node eagerly materializes rows, so
+  SQL CASE suppresses oversized text/blob values before JS conversion; UTF-16 raw
+  allowance is followed by exact UTF-8 logical bound and existing strict decoder.
+  This is not a hard process/native-SQLite heap bound or performance certification.
+- Eleven real SQLite tests PASS, including typed cells/Infinity bits/quoted column
+  names, byte/row/final-overhead limits, invalid UTF-8, UTF-16le/be and rollback owner
+  preservation. Strict TS0, full5,062 PASS, fail/cancel/skip0. Evidence:
+  .runtime/cloud-store-publication-snapshot-274/{source-inputs.json,typecheck.log,
+  focused-tests.log,full-tests.log,verification-result.json}. No Rust executable
+  differential, proposal/consent write path or production approval is claimed.
