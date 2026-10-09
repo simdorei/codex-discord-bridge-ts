@@ -10,7 +10,7 @@ const approvals = new Map([['Approve', '1'], ['ApproveSession', '2'], ['Reject',
 const busy = new Map([['Steer', 'steer'], ['Queue', 'queue'], ['Stop', 'stop'], ['Ignore', 'ignore']]);
 function id(value: bigint): void {if (typeof value !== 'bigint' || value <= 0n || value >= 1n << 64n) throw new TypeError('Expected nonzero Discord identity');}
 function field(name: string, value: string): string {requireDiscordText(value); return `${name}=${Buffer.byteLength(value, 'utf8')}:${value};`;}
-function capture(input: ComponentId): ComponentId {
+export function snapshotComponentId(input: ComponentId): ComponentId {
   const copied = cloneOwnedSerdeValue(input);
   if (copied === null || typeof copied !== 'object' || Array.isArray(copied) || Object.keys(copied).length !== 1) throw new TypeError('Expected one component variant');
   const [kind] = Object.keys(copied), value = (copied as Record<string, unknown>)[kind!];
@@ -47,13 +47,13 @@ export function interactionDeliveryKey(interactionId: bigint): string {id(intera
  * selected64-bit usize profile. Length fields count UTF-8 bytes, not JS units. */
 export function componentDeliveryKey(interactionId: bigint, sourceMessageId: bigint | null, input: ComponentId, claimIdentity: string | null): string {
   id(interactionId); if (sourceMessageId !== null) id(sourceMessageId); if (claimIdentity !== null) requireDiscordText(claimIdentity);
-  const component = componentIdentity(capture(input));
+  const component = componentIdentity(snapshotComponentId(input));
   return 'v1;' + (sourceMessageId === null ? 'source-none;' : field('source-some', String(sourceMessageId)))
     + field('interaction', String(interactionId)) + field('component', component)
     + (claimIdentity === null ? 'claim-none;' : field('claim-some', claimIdentity));
 }
 export function componentClaimIdentity(sourceMessageId: bigint | null, input: ComponentId): string | null {
-  if (sourceMessageId !== null) id(sourceMessageId); const component = capture(input);
+  if (sourceMessageId !== null) id(sourceMessageId); const component = snapshotComponentId(input);
   if ('RecoveryAbandonDecision' in component || 'RecoveryPublicationDecision' in component) return null;
   if ('AsyncChoice' in component) return component.AsyncChoice.question_id;
   if ('Busy' in component) return component.Busy.choice_id;

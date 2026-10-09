@@ -1,3 +1,4 @@
+import * as ComponentClaims from "./component-claims.ts";
 import * as NewReplyRead from "./new-reply-read.ts";
 import * as MirrorPolicyRead from "./mirror-policy-read.ts";
 import * as MirrorEventRead from "./mirror-event-read.ts";
@@ -243,6 +244,9 @@ export const recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureI
 export const markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed = QueueClaims.markRunningIfClaimed;
 export const markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed = QueueClaims.markRunningWithResidentIfClaimed;
 
+export const claimComponent: typeof ComponentClaims.claimComponent = ComponentClaims.claimComponent;
+export const releaseComponentClaim: typeof ComponentClaims.releaseComponentClaim = ComponentClaims.releaseComponentClaim;
+export const isComponentClaimLive: typeof ComponentClaims.isComponentClaimLive = ComponentClaims.isComponentClaimLive;
 export const listQueueJobs: typeof QueueRead.list = QueueRead.list;
 export const listFiltered: typeof QueueRead.listFiltered = QueueRead.listFiltered;
 export const eligibleJobs: typeof ExecutionHold.eligibleJobs = ExecutionHold.eligibleJobs;
@@ -503,6 +507,9 @@ export interface IStateAccessFacade {
   readonly recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed;
   readonly markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed;
   readonly markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed;
+  readonly claimComponent: typeof ComponentClaims.claimComponent;
+  readonly releaseComponentClaim: typeof ComponentClaims.releaseComponentClaim;
+  readonly isComponentClaimLive: typeof ComponentClaims.isComponentClaimLive;
   readonly listQueueJobs: typeof QueueRead.list;
   readonly listFiltered: typeof QueueRead.listFiltered;
   readonly eligibleJobs: typeof ExecutionHold.eligibleJobs;
@@ -709,6 +716,9 @@ export const StateAccessFacade: IStateAccessFacade = {
   recordStartFailureIfClaimed,
   markRunningIfClaimed,
   markRunningWithResidentIfClaimed,
+  claimComponent,
+  releaseComponentClaim,
+  isComponentClaimLive,
   listQueueJobs,
   listFiltered,
   eligibleJobs,

@@ -18,3 +18,11 @@ export async function cleanupComponentClaims(path:string,now:number):Promise<big
 export async function componentClaimCounts(path:string,now:number):Promise<readonly [bigint,bigint]>{
   timestamp(now);return owned(path,db=>{const count=(op:string)=>{const s=db.prepare(`SELECT COUNT(*) AS n FROM persistent_component_claims WHERE expires_at${op}?`);s.setReadBigInts(true);return decodeI64(s.get(now)?.n,"count");};return [count(">"),count("<=")];});
 }
+
+/** Source runtime confirmation_ready query centralized with claim storage. */
+export function isComponentClaimLive(path:string,key:string,now:number):Promise<boolean>{
+  text(key);timestamp(now);return owned(path,db=>{
+    const statement=db.prepare("SELECT EXISTS(SELECT 1 FROM persistent_component_claims WHERE claim_key=? AND expires_at>?) AS live");
+    statement.setReadBigInts(true);return decodeI64(statement.get(key,now)?.live,"live")!==0n;
+  });
+}

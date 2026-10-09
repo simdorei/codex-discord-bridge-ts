@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,888 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,898 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5944,3 +5944,28 @@ remain incomplete. No external interaction was processed.
   source and failure log under .runtime/cloud-runtime-component-delivery-identity-255/.
 - Component execution, confirmation recovery, central worker error reporting and
   live delivery remain pending integrations; no action capability comes from a key.
+
+
+## Component confirmation plans and durable claim distinction (256)
+
+- Added exact standard/busy confirmation content/domains, UTF-8-length delivery
+  keys and actor-bound ready markers. Standard plans accept approval/input only;
+  busy/async/recovery families require their separate plans, as in source.
+- Centralized live-claim reads beside existing component claim storage and exposed
+  claim/release/live aliases through StateAccessFacade (191→194 exact inventory).
+  Runtime claimStandardAction preserves ready→claim→ready ordering and independent
+  source transactions. A completed marker yields confirmation only, while an
+  existing claim without success evidence stays ActionUnconfirmed.
+- Reused the qualified null-prototype component snapshot rather than introducing
+  another parser. Added owned confirmation failure categories preserving raw cause,
+  without accepting a forged prototype as trusted classification.
+- Ten native SQLite/pure tests cover exact plans/markers, concurrent same-claim
+  ownership, expiration equality, nonextended duplicate TTL, actor isolation and
+  error propagation. A real SQLite trigger publishes a ready marker during an
+  ignored duplicate INSERT, proving the second ready read is executed.
+- Focused25 PASS including facade/identity tests, strict TS0, full4,898 PASS,
+  failure/cancel/skip0. Evidence: .runtime/cloud-runtime-component-confirmation-256/
+  {source-inputs.json,typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
+- These claim/plan helpers are not actor authority or proof of executing a button.
+  Actual confirmation send/clear, component execution and runtime wiring remain
+  subsequent work. Existing expiry/retry semantics were not strengthened or changed.
