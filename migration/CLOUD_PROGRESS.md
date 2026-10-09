@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,838 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,848 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5794,3 +5794,27 @@ remain incomplete. No external interaction was processed.
 - This renders and transports existing UI; it does not create or answer server
   requests. Actual server-prompt redisplay/delivery authorization and general
   action-result orchestration, Windows and live service remain unfinished.
+
+
+## Immutable pending-server-request prompt rendering (250)
+
+- Added shared input-question structure validation and pure approval/input prompt
+  rendering over existing immutable PendingServerRequest snapshots. Reuses central
+  InvalidReply errors, thread extraction and occurrence/generation/request-ID-bound
+  component fingerprints. No RPC, answer, consent or request creation occurs.
+- Preserves five approval methods plus URL-mode elicitation, reason/command/message
+  precedence, Rust whitespace and1,000-scalar detail bounds. Input validation runs
+  before secret detection, matching source ordering. Duplicate trimmed IDs and
+  malformed options fail; secret questions produce no Discord UI.
+- Single-question options generate up to five buttons while all labels remain in
+  text. Multiple questions have no buttons and preserve source raw question IDs
+  in the pair example. Exact-request text prefixes use the existing request hash.
+  Parsing replies and redisplay/actor authority are not implemented by this slice.
+- Ten pure tests cover exact text, all approval methods, missing/unsupported cases,
+  structural error precedence, free text and multi-question forms, Unicode bounds,
+  secret data, generation/occurrence/ID distinctions and hostile input snapshots.
+  Focused10 PASS, strict TS0, full4,848 PASS, fail/cancel/skip0.
+- Evidence: .runtime/cloud-runtime-server-prompt-250/{source-inputs.json,
+  typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
+  Input snapshots add Node ownership isolation; they are not a heap/resource
+  budget or an authorization certificate for displayed buttons.
