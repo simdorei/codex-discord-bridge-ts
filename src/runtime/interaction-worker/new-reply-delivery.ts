@@ -12,7 +12,7 @@ const get = state.getNewReplyByIngress, begin = state.beginDeliveryReceipt, conf
 /** /new normal initial-response acknowledgement is a durable single logical
  * attempt. No generic delivery-policy retry or fallback POST is permitted.
  * true means handled/already delivered; false means no /new record exists. */
-export async function deliverNewReply(client: DiscordChannelClient, work: InboundInteractionWork,
+export async function deliverNewReply(client: DiscordChannelClient, work: Pick<InboundInteractionWork, 'applicationId' | 'interactionId' | 'interactionToken' | 'custodyIngressId'>,
   result: {readonly text: string; readonly ui: unknown | null}, database: string, signal?: AbortSignal): Promise<boolean> {
   signal?.throwIfAborted();
   const ingress = gatewayOwnField(work, 'custodyIngressId'); requireDiscordText(ingress);

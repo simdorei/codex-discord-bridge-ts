@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,873 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,881 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5896,3 +5896,28 @@ remain incomplete. No external interaction was processed.
 - Existing receipt-writer and HTTP operations are awaited, not race-abandoned.
   Provider-side nonce deduplication, full service cancellation policy, live request
   permissions and actual action execution are not certified by synthetic fixtures.
+
+
+## Complete action-result delivery branch selection (254)
+
+- Added shared ActionResult/ActionUi contracts and immutable delivery snapshots,
+  reusing the existing Busy/ProBusy shape and real prepared-prompt owners. Existing
+  prompt submission exports remain type-compatible aliases, without runtime changes.
+- Connected source delivery order: /new durable acknowledgement first; prepared
+  server prompts before ordinary action text; otherwise one component-bearing
+  initial PATCH or sequential ordinary text delivery. A /new match bypasses every
+  other branch. Component failures remain single-attempt DeliveryFailure(1,1,1),
+  without text-only downgrade, multipart split or channel-POST fallback.
+- Narrowed text/new helper input types to the fields actually read, avoiding fake
+  full queue items. Action delivery snapshots original identities, token and result
+  before awaits. It does not execute an action or record its result on the caller's
+  behalf; execution custody/admission must remain owned by that caller.
+- Eight new loopback/SQLite/native-resident cases cover all branches, exact /new
+  precedence, immutable UI/identity, component failure/oversize text, prompt-before-
+  text order, authority changes and forged prompt rejection. Existing message-kind
+  receipt fixture remains default; added explicit interaction-kind fixture option.
+- Focused31 PASS including prior delivery/UI suites, strict TS0, full4,881 PASS,
+  fail/cancel/skip0. Evidence: .runtime/cloud-runtime-action-result-delivery-254/
+  {source-inputs.json,typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
+  Command execution, component processing/error reporting and the full interaction
+  worker/runtime remain subsequent integrations; no live delivery occurred.

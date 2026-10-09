@@ -10,7 +10,7 @@ export const INTERACTION_ERROR_DOMAIN = 'interaction/error/v1';
 /** Ordinary text delivery only. Part zero updates the existing deferred response;
  * later parts are channel POSTs with stable per-interaction nonce identities.
  * This is not the separate /new single-attempt durable acknowledgement path. */
-export async function deliverInteractionTextIdempotent(client: DiscordChannelClient, work: InboundInteractionWork,
+export async function deliverInteractionTextIdempotent(client: DiscordChannelClient, work: Pick<InboundInteractionWork, 'applicationId' | 'interactionId' | 'channelId' | 'interactionToken'>,
   content: string, domain: string, options: {signal?: AbortSignal; sleep?: DeliverySleep} = {}): Promise<number> {
   const signal = options.signal; signal?.throwIfAborted();
   const application = gatewayOwnField(work, 'applicationId'), interaction = gatewayOwnField(work, 'interactionId'), channel = gatewayOwnField(work, 'channelId');

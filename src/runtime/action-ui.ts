@@ -1,7 +1,7 @@
 import {types} from 'node:util';
 import {busyButtonRow, proBusyButtonRow, serializeDiscordComponent, ComponentError, type DiscordComponent} from '../discord/components.ts';
 import {gatewayOwnField} from '../discord/gateway/values.ts';
-import type {PromptActionUi} from './action-executor/prepared-submission.ts';
+import type {PromptActionUi} from './action-result.ts';
 /** Read projection only. Server prompt authorization/request/generation fields
  * belong to the future full PreparedPrompt owner, not this rendering function. */
 export type RenderableActionUi = PromptActionUi | {readonly kind: 'ServerPrompts';

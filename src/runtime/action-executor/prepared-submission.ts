@@ -10,7 +10,8 @@ import {ForkHandoffTargetMovedError} from "../../store/fork-handoff-admission.ts
 import {StateAccessFacade,type IStateAccessFacade} from "../../store/state-access-facade.ts";
 import {submissionResult} from "./submission-result.ts";
 export interface ActionTarget {readonly threadId:string;readonly sourceLabel:string;readonly mirrorMapping:boolean}
-export type PromptActionUi={readonly kind:"Busy";readonly choiceId:string;readonly allowSteer:boolean}|{readonly kind:"ProBusy";readonly choiceId:string};
+import type {PromptActionUi} from "../action-result.ts";
+export type {PromptActionUi} from "../action-result.ts";
 export interface PromptActionResult {text:string;waitsForFinal:boolean;ui:PromptActionUi|null}
 export interface PreparedPromptSubmission {
   readonly channelId:bigint;readonly userId:bigint;readonly discordMessageId:bigint|null;

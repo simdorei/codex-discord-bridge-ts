@@ -5,9 +5,9 @@ import {receiptHash} from "../../src/store/delivery-receipt-key.ts";
 import {serializeSerdeValue as json} from "../../src/core/serde-json.ts";
 async function edit<T>(path:string,run:(db:DatabaseSync)=>T):Promise<T>{const db=await openInitialized(path);try{return run(db);}finally{db.close();}}
 const key=(channel:bigint,domain:string,logical:string,index=0n)=>json([channel,domain,logical,index]);
-export async function newReply(path:string,turn:string|null="turn"):Promise<void>{
-  await admitIngress(path,{ingressId:"original",kind:"message",eventId:3n,applicationId:null,channelId:1n,ownerUserId:2n,sourceMessageId:null,payload:{version:1n},targetThreadId:"target",canonicalOwner:null,now:1});
-  const identity={ingress_id:"original",job_id:"job",thread_id:"target",cwd:"C:/work",state_db:"C:/state.db",channel_id:2n,origin_channel_id:1n,event_id:3n,kind:"message",creation_generation:1n,prompt_sha256:"a".repeat(64),acknowledgement:"accepted"};
+export async function newReply(path:string,turn:string|null="turn",kind:"message"|"interaction"="message"):Promise<void>{
+  await admitIngress(path,{ingressId:"original",kind,eventId:3n,applicationId:kind==="interaction"?4n:null,channelId:1n,ownerUserId:2n,sourceMessageId:null,payload:{version:1n},targetThreadId:"target",canonicalOwner:null,now:1});
+  const identity={ingress_id:"original",job_id:"job",thread_id:"target",cwd:"C:/work",state_db:"C:/state.db",channel_id:2n,origin_channel_id:1n,event_id:3n,kind,creation_generation:1n,prompt_sha256:"a".repeat(64),acknowledgement:"accepted"};
   await edit(path,db=>{
     db.prepare("UPDATE discord_ingress_journal SET state='owned',phase='durable_prompt',owner_kind='prompt',owner_id='job',outcome_json=?").run(json({new_creation:{version:1n,cwd:"C:/work"},new_verification:{thread_id:"target",channel_id:2n,prompt_sha256:"a".repeat(64)}}));
     db.exec("INSERT INTO mirror_threads VALUES ('target','p','title',1,2,1)");
