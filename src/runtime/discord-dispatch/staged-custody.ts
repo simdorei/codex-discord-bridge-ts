@@ -1,3 +1,4 @@
+import {types} from 'node:util';
 import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
 import {StoreIntegrityError} from '../../store/schema-assembly.ts';
 import {snapshotBusyChoice, busyChoiceDataField, type BusyChoice} from '../../store/busy-choice.ts';
@@ -26,8 +27,9 @@ export type InteractionCustodyStage =
 
 const token = Symbol('StagedInteractionCustody');
 const acknowledge = state.acknowledgeIngress, hold = state.holdIngress;
-function timestamp(now: () => number): number {
+export function readCustodyTimestamp(now: () => number): number {
   const value = now();
+  if (types.isPromise(value)) void Promise.prototype.then.call(value, undefined, () => undefined);
   if (!Number.isFinite(value) || value < 0) throw new TypeError('Expected nonnegative finite custody timestamp');
   return value;
 }
@@ -61,7 +63,7 @@ export class StagedInteractionCustody {
   }
   acknowledge(): Promise<void> {
     return this.#operation(async () => {
-      if (!await acknowledge(this.#receipt.database, this.#receipt.ingressId, timestamp(this.#now))) {
+      if (!await acknowledge(this.#receipt.database, this.#receipt.ingressId, readCustodyTimestamp(this.#now))) {
         throw new StoreIntegrityError('interaction custody acknowledgement is no longer current');
       }
     });
@@ -69,7 +71,7 @@ export class StagedInteractionCustody {
   holdNotExecuted(reason: string): Promise<void> {
     requireDiscordText(reason);
     return this.#operation(async () => {
-      await hold(this.#receipt.database, this.#receipt.ingressId, reason, true, timestamp(this.#now));
+      await hold(this.#receipt.database, this.#receipt.ingressId, reason, true, readCustodyTimestamp(this.#now));
       this.#armed = false;
     });
   }
@@ -91,7 +93,7 @@ export class StagedInteractionCustody {
       if (!this.#armed) return;
       this.#armed = false;
       let now: number;
-      try {now = timestamp(this.#now);}
+      try {now = readCustodyTimestamp(this.#now);}
       catch (error) {
         invokeSynchronousVoid(this.#report, {}, [Object.freeze({code: 'interaction_custody_cancel_hold_clock_failed', error})]);
         return;

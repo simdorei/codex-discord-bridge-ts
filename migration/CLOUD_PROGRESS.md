@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,699 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,712 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5415,3 +5415,41 @@ remain incomplete. No external interaction was processed.
   typecheck.log, focused-tests.log, full-tests.log and verification-result.json.
   This is not an atomic cross-file transaction, a production offload/performance
   qualification, or approval to mutate a live user Codex state database.
+
+
+## Durable ordinary interaction stage before ACK (237)
+
+- Connected custody::stage's ordinary executable slash/component subset to real
+  central admitIngress, admitMappedSlashIngress and admitBusyInteraction operations.
+  ID range checks preserve source order around settings preparation; integer payload
+  version, processing mode, routed work, settings binding/rejection, canonical owner,
+  source message and original clock are persisted before any HTTP acknowledgement.
+  Callback tokens are absent from the stage input and persisted payload.
+- ask/interview use original-mapping admission. New keeps original route evidence.
+  Settings binding and stop origin persist together. Busy action names and frozen
+  actor/display snapshot survive transient choice expiry; canonical repeats retain
+  ingress versus prompt ownership and confirmation readiness. Unavailable first busy
+  choice is distinguished from store errors; duplicate identity keeps original payload.
+- Explicit scope barrier: recovery publication/abandonment require their original actor
+  implementation and are rejected before DB access here. Autocomplete is not executable
+  custody. This is stageOrdinaryInteraction, not the full source dispatcher/stage.
+  Returned Created custody must be awaited/disposed on every abandoned caller path;
+  no HTTP ACK, queue reservation, command execution or replay permission occurs here.
+- Clock/reporter callbacks are captured before admission, active/async callbacks refused,
+  and promise-valued clocks rejected with their native rejection consumed. Actual DB
+  operations remain awaited; no cancellation that abandons an in-flight write is added.
+- Thirteen focused actual SQLite tests PASS; full Linux Node 24.21.0 4,712 PASS, zero
+  failures/cancellations/skips, strict TS0. Tested pre-ACK staged/acknowledged transitions,
+  payload/token separation, duplicate preservation, mapping-change execution refusal,
+  new/settings origin capture, actual busy canonical repeats, unavailable actors,
+  excluded recovery paths, conversion ordering and input snapshot ownership.
+- VM resumed at 2026-10-09 00:46:58 UTC after another starting transition/time gap.
+  Fresh fetch/hash reconciliation confirmed checkpoint 236 had already been published;
+  its existing commit/receipt were retained, not duplicated. The unfinished 237 source
+  was reread against the source contract before these tests; no claim about the cause
+  of the transition or unseen execution is made.
+- Evidence: .runtime/cloud-runtime-ordinary-interaction-stage-237/{typecheck.log,
+  focused-tests.log,full-tests.log,source-inputs.json,verification-result.json};
+  .runtime/resume-20261009-0047.json records resumed baseline reconciliation.
+  Full recovery actor checks, dispatcher queue/ACK integration, Windows and service
+  runtime remain unfinished. Counts are not migration-completion percentages.
