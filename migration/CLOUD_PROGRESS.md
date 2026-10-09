@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,999 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **5,007 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6205,3 +6205,21 @@ remain incomplete. No external interaction was processed.
   Evidence: .runtime/cloud-store-busy-control-binding-267/{source-inputs.json,
   typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
   Busy control RPC wiring, full runtime and live/Windows validation remain open.
+
+## 268 — Original-turn busy control RPC path
+
+- Connected Ignore/Steer/Stop control branch to shared target lock, durable original
+  control binding, current mirror/turn/generation verification and native resident
+  RPC. Steer persists user-origin evidence before dispatch; Stop does not invent
+  that side effect. Queue remains in the separate atomic intake branch.
+- Preflight failures are ControlNotDispatched; post-dispatch errors retain owned
+  AppServer certainty. The target lease is released only after actual request
+  settles. Pro steer, absent binding, changed target/turn and failed origin write
+  send no control. No new allow_steer check is inserted where Rust omits it.
+- Eight tests use a synthetic native child and actual SQLite. Exact wire payloads,
+  shared-lock blocking, no-control failures, first-turn retention and remote error
+  identity pass. Strict TS0, full5,007 PASS, fail/cancel/skip0. Evidence:
+  .runtime/cloud-runtime-busy-control-268/{source-inputs.json,typecheck.log,
+  focused-tests.log,full-tests.log,verification-result.json}. No live control RPC
+  was sent; caller busy-claim/atomic Queue coordination and runtime bootstrap remain
+  separate work, with full Windows/operational validation still pending.
