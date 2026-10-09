@@ -20,6 +20,12 @@ export function validateSelectedSettingsSnapshot(binding:FrozenSettingsBinding,b
 }
 /** Current route check only. Full Codex thread-reference resolution is separate. */
 export async function validateLifecycleSettingsSnapshot(path:string,binding:FrozenSettingsBinding,channel:bigint,bridge:Pick<BridgeState,"selectedThreadId">,state:Pick<IStateAccessFacade,"mirroredThreadId">=StateAccessFacade):Promise<void>{
+  return validateRouteSnapshot(path,binding,channel,bridge,state,"lifecycle");
+}
+export async function validateSettingsSnapshot(path:string,binding:FrozenSettingsBinding,channel:bigint,bridge:Pick<BridgeState,"selectedThreadId">,state:Pick<IStateAccessFacade,"mirroredThreadId">=StateAccessFacade):Promise<void>{
+  return validateRouteSnapshot(path,binding,channel,bridge,state,"settings");
+}
+async function validateRouteSnapshot(path:string,binding:FrozenSettingsBinding,channel:bigint,bridge:Pick<BridgeState,"selectedThreadId">,state:Pick<IStateAccessFacade,"mirroredThreadId">,label:"settings"|"lifecycle"):Promise<void>{
   const valid=binding.route==="Explicit"?true:binding.route==="Mapped"?(await state.mirroredThreadId(path,channel))===binding.target:(await state.mirroredThreadId(path,channel))===null&&bridge.selectedThreadId()===binding.target;
-  if(!valid)throw new InvalidActionRequestError("lifecycle target changed after admission; no replacement target will be used");
+  if(!valid)throw new InvalidActionRequestError(`${label} target changed after admission; no replacement target will be used`);
 }

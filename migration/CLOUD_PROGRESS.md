@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,687 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,699 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5383,3 +5383,35 @@ remain incomplete. No external interaction was processed.
   Settings binding, full custody staging and service runtime remain unfinished.
 - Evidence: .runtime/cloud-codex-thread-reference-235/source-inputs.json,
   typecheck.log, focused-tests.log, full-tests.log and verification-result.json.
+
+
+## Concrete slash-settings original target binding (236)
+
+- Wired the slash-settings subset of settings_binding.rs to the actual read-only
+  CodexThreadStore, central StateAccessFacade mirror lookup and original BridgeState.
+  Explicit reference wins, then mapped room, then the captured selected thread.
+  Original active target is checked again, and final route validation rejects changed
+  selection/mapping instead of substituting a replacement or canonical fork.
+- Command input is snapshotted before asynchronous mirror lookup. Returned target,
+  route and command are immutable. Existing lifecycle and new settings route validation
+  share one implementation without changing the lifecycle API/error wording.
+  Explicit route skips mirror access (including mirror i64 conversion); other routes
+  check channel range before any mirror initialization.
+- prepareSettingsAdmission handles only owned settings slash work. Nonsettings and
+  read-only settings require no resolver/read. Blank planning input and NoTarget/
+  Resolve/Invalid errors become recorded rejection text; absent resolver or state/
+  bridge/store faults remain StoreIntegrityError. Merely preparing this object does
+  not persist admission or execute a settings change.
+- Scope is Linux/POSIX original-reference binding for modern registered slash settings.
+  Windows binding is explicitly blocked pending path qualification; non-slash
+  AutoReserve and lifecycle command binding are not implemented by this class.
+  Full custody::stage, recovery actor checks and dispatcher remain unfinished.
+- Actual isolated DB/file tests: 12 focused PASS; whole Linux Node 24.21.0 suite
+  4,699 PASS, zero failures/cancellations/skips, strict TS0. Includes explicit priority,
+  complete-list index lookup, mapped/selected changes, inactive targets, error taxonomy,
+  missing state/noncreation, i64 conditional conversion, immutable input snapshot and
+  selection changing during an actual asynchronous mirror lookup.
+- Evidence: .runtime/cloud-runtime-settings-binding-236/source-inputs.json,
+  typecheck.log, focused-tests.log, full-tests.log and verification-result.json.
+  This is not an atomic cross-file transaction, a production offload/performance
+  qualification, or approval to mutate a live user Codex state database.
