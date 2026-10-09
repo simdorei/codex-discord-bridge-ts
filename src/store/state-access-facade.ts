@@ -1,3 +1,4 @@
+import * as NewReplyRead from "./new-reply-read.ts";
 import * as MirrorPolicyRead from "./mirror-policy-read.ts";
 import * as MirrorEventRead from "./mirror-event-read.ts";
 import * as QuestionDispatch from "./async-question-dispatch.ts";
@@ -135,6 +136,7 @@ export const releaseRejectedDelivery: typeof DeliveryReceipts.releaseRejectedDel
 export const blockRejectedDelivery: typeof DeliveryReceipts.blockRejectedDelivery = DeliveryReceipts.blockRejectedDelivery;
 export const unknownDeliveryReceiptCount: typeof DeliveryReceipts.unknownDeliveryReceiptCount = DeliveryReceipts.unknownDeliveryReceiptCount;
 export const blockedDeliveryReceiptCount: typeof DeliveryReceipts.blockedDeliveryReceiptCount = DeliveryReceipts.blockedDeliveryReceiptCount;
+export const getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress = NewReplyRead.getNewReplyByIngress;
 export const newReplyOutputHold: typeof NewReplyClaims.newReplyOutputHold = NewReplyClaims.newReplyOutputHold;
 export const newReplyAcknowledgementSendable: typeof NewReplyClaims.newReplyAcknowledgementSendable = NewReplyClaims.newReplyAcknowledgementSendable;
 export const releaseNewReplyAcknowledgement: typeof NewReplyClaims.releaseNewReplyAcknowledgement = NewReplyClaims.releaseNewReplyAcknowledgement;
@@ -369,6 +371,7 @@ export interface IStateAccessFacade {
   readonly blockRejectedDelivery: typeof DeliveryReceipts.blockRejectedDelivery;
   readonly unknownDeliveryReceiptCount: typeof DeliveryReceipts.unknownDeliveryReceiptCount;
   readonly blockedDeliveryReceiptCount: typeof DeliveryReceipts.blockedDeliveryReceiptCount;
+  readonly getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress;
   readonly newReplyOutputHold: typeof NewReplyClaims.newReplyOutputHold;
   readonly newReplyAcknowledgementSendable: typeof NewReplyClaims.newReplyAcknowledgementSendable;
   readonly releaseNewReplyAcknowledgement: typeof NewReplyClaims.releaseNewReplyAcknowledgement;
@@ -596,6 +599,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   blockRejectedDelivery,
   unknownDeliveryReceiptCount,
   blockedDeliveryReceiptCount,
+  getNewReplyByIngress,
   newReplyOutputHold,
   newReplyAcknowledgementSendable,
   releaseNewReplyAcknowledgement,

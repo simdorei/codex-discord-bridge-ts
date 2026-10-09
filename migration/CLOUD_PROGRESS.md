@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,822 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,832 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5746,3 +5746,28 @@ remain incomplete. No external interaction was processed.
   typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
 - No provider-side nonce deduplication, actual command execution, UI-component
   rendering, durable /new delivery, full worker or live deployment is claimed.
+
+
+## /new initial acknowledgement single-attempt delivery (248)
+
+- Added central getNewReplyByIngress using the source ordered job lookup and full
+  record decoding on the same initialized connection. Added one exact facade API,
+  inventory189→190 with direct-reference and compile-time whole-function checks.
+- /new delivery requires exact frozen acknowledgement text and no UI. It claims
+  the content-hashed original acknowledgement receipt before PATCH; Delivered
+  skips HTTP, New proceeds, and every other receipt state remains held without
+  automatic resend. Successful PATCH confirms initial-response/{interaction_id}.
+- No generic750ms/2s retry or fallback channel POST is used. HTTP429 retry remains
+  inherited inside one logical HTTP request; one application attempt does not
+  mean no wire-level rate-limit retry. Failed HTTP or failed confirmation leaves
+  an unknown durable intent, including authoritative HTTP rejection, as in source.
+- Ten new tests exercise absent records, exact lookup, one PATCH/repeated skip,
+  changed body/UI rejection, Unknown/ContentConflict/RejectedBlocked/Held states,
+  mapping drift, failed SQL confirmation, original input capture and malformed
+  Unicode. Focused18 PASS including unchanged facade tests; strict TS0; full4,832
+  PASS with failure/cancel/skip0.
+- Evidence: .runtime/cloud-runtime-new-reply-delivery-248/{source-inputs.json,
+  typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
+- Uses seeded native /new evidence, not an actual thread/start or live Codex run.
+  General action delivery dispatch, command execution and full runtime startup
+  remain unfinished. Receipt confirmations remain separate source transactions.

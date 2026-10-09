@@ -1,3 +1,4 @@
+import * as NewReplyRead from "../../src/store/new-reply-read.ts";
 import * as MirrorPolicyRead from "../../src/store/mirror-policy-read.ts";
 import * as MirrorEventRead from "../../src/store/mirror-event-read.ts";
 import * as QuestionDispatch from "../../src/store/async-question-dispatch.ts";
@@ -74,6 +75,8 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.getNewReplyByIngress, NewReplyRead.getNewReplyByIngress);
+    assert.strictEqual(FacadeExports.getNewReplyByIngress, NewReplyRead.getNewReplyByIngress);
     assert.strictEqual(StateAccessFacade.remainingDiscordIds, MirrorPolicyRead.remainingDiscordIds);
     assert.strictEqual(FacadeExports.remainingDiscordIds, MirrorPolicyRead.remainingDiscordIds);
     assert.strictEqual(StateAccessFacade.mirrorTargets, MirrorPolicyRead.mirrorTargets);
@@ -314,6 +317,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
   it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
+      "getNewReplyByIngress",
       "remainingDiscordIds",
       "mirrorTargets",
       "getIdleIntent",
@@ -504,7 +508,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 189);
+    assert.strictEqual(actual.length, 190);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
@@ -533,6 +537,8 @@ describe("StateAccessFacade type signature fidelity (compile-time)", () => {
     const eq7: AssertEqual<typeof StateAccessFacade.finish, typeof MutationAttempt.finish> = true;
     const eq8: AssertEqual<typeof StateAccessFacade.openCheckedRead, typeof CheckedRead.open> = true;
 
+    const eqNewReplyRead: AssertEqual<typeof StateAccessFacade.getNewReplyByIngress, typeof NewReplyRead.getNewReplyByIngress> = true;
+    void eqNewReplyRead;
     const eqMirrorIds: AssertEqual<typeof StateAccessFacade.remainingDiscordIds, typeof MirrorPolicyRead.remainingDiscordIds> = true;
     const eqMirrorTargets: AssertEqual<typeof StateAccessFacade.mirrorTargets, typeof MirrorPolicyRead.mirrorTargets> = true;
     assert.strictEqual(eqMirrorIds, true);
