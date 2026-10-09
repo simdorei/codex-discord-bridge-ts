@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **5,014 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **5,026 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6242,3 +6242,28 @@ remain incomplete. No external interaction was processed.
   .runtime/cloud-runtime-busy-queue-269/{source-inputs.json,typecheck.log,
   focused-tests.log,full-tests.log,verification-result.json}. Full Busy dispatcher
   wiring and operational/Windows/live acceptance remain unfinished.
+
+## 270 — Busy component action/receipt coordinator
+
+- Connected original pre-ACK snapshot/actor validation → ready marker → Queue
+  atomic intake OR non-Queue state/claim → native control → confirmation marker.
+  No separate claim precedes Queue. Existing claimed-without-ready work stays
+  unconfirmed; preflight/definite native rejection releases, uncertain outcomes
+  retain claims and never auto-replay. Completed control with failed marker writes
+  remains a typed confirmation Recovery failure.
+- Added owned queue-error metadata and action/busy claim disposition. Native
+  represented variants follow source; unrepresented Rust Queue lock-poison/time
+  wrappers and arbitrary JS errors conservatively retain, not inferred release.
+- Adversarial tests exposed an unpublished bug: missing backend ambiguity became
+  Release, and an inherited ambiguous getter ran. Replaced truthiness/property
+  lookup with an own-data exact false test. Identical regression SHA
+  2d865f413632fa32df11299a8ec44eff177f8d3493dd31d339c459730fec0b46
+  produced RED10/12 then GREEN12/12; old source/logs retained.
+- Focused23 PASS including11 unchanged standard tests, strict TS0, full5,026 PASS,
+  fail/cancel/skip0. Actual synthetic child controls and isolated SQLite cover
+  Queue durability/repeats, concurrent Stop, preflight release, uncertainty retain,
+  Pro refusal, expiry and marker failure. Evidence:
+  .runtime/cloud-runtime-busy-component-270/{source-inputs.json,typecheck.log,
+  focused-tests.log,full-tests.log,ambiguity-red-tests.log,ambiguity-green-tests.log,
+  verification-result.json}. Special recovery/async components, full business
+  executor/bootstrap and Windows/live validation remain unfinished.

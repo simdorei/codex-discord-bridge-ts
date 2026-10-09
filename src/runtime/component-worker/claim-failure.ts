@@ -1,3 +1,6 @@
+import {actionExecutionErrorInfo} from '../action-executor/action-error.ts';
+import {ownedQueueFailure} from '../queue-runner/errors.ts';
+import {busyComponentErrorInfo} from './busy-errors.ts';
 import {ownedRequestFailure} from '../../app-server/request-client.ts';
 import {ownedResidentFailure} from '../../app-server/resident-state.ts';
 import {ownedServerResponseFailure} from '../../app-server/server-request-state.ts';
@@ -15,5 +18,26 @@ export function appServerClaimFailure(error: unknown): ClaimFailureDisposition {
 export async function retainOrReleaseComponentClaim(database: string, claimId: string, error: unknown): Promise<ClaimFailureDisposition> {
   const disposition = appServerClaimFailure(error);
   if (disposition === 'Release') await state.releaseComponentClaim(database, claimId);
+  return disposition;
+}
+
+/** Native TS-owned variants only. Unrepresented Rust lock-poison/system-time queue
+ * wrappers and unknown JS failures remain held rather than guessed releasable. */
+export function actionClaimFailure(error: unknown): ClaimFailureDisposition {
+  const action = actionExecutionErrorInfo(error); if (action === null) return 'RetainIndeterminate';
+  if (action.kind === 'AppServer') return appServerClaimFailure(action.source);
+  if (action.kind === 'NoTarget' || action.kind === 'IntegerRange') return 'Release';
+  if (action.kind === 'Queue') {const queue = ownedQueueFailure(action.source); if (queue?.kind === 'IntegerRange') return 'Release'; if (queue?.kind === 'Backend') {const flag = Object.getOwnPropertyDescriptor(queue.failure, 'ambiguous'); return flag !== undefined && Object.hasOwn(flag, 'value') && flag.value === false ? 'Release' : 'RetainIndeterminate';}}
+  return 'RetainIndeterminate';
+}
+export function busyActionClaimFailure(error: unknown): ClaimFailureDisposition {
+  const busy = busyComponentErrorInfo(error); if (busy === null) return 'RetainIndeterminate';
+  if (busy.kind === 'Action') return actionClaimFailure(busy.source);
+  if (busy.kind === 'AppServer') return appServerClaimFailure(busy.source);
+  return ['NoActiveTurn', 'ControlNotDispatched', 'NoTarget', 'SteerNotAllowed'].includes(busy.kind) ? 'Release' : 'RetainIndeterminate';
+}
+export async function retainOrReleaseBusyClaim(database: string, choiceId: string, error: unknown): Promise<ClaimFailureDisposition> {
+  const disposition = busyActionClaimFailure(error);
+  if (disposition === 'Release') await state.releaseBusyChoiceClaim(database, choiceId);
   return disposition;
 }
