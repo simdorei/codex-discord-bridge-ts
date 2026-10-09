@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **5,007 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **5,014 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6223,3 +6223,22 @@ remain incomplete. No external interaction was processed.
   focused-tests.log,full-tests.log,verification-result.json}. No live control RPC
   was sent; caller busy-claim/atomic Queue coordination and runtime bootstrap remain
   separate work, with full Windows/operational validation still pending.
+
+## 269 — Busy Queue acceptance before prompt processing
+
+- Connected original busy snapshot to current route-mode check, signed actor
+  conversion, atomic admitBusyQueue and existing ready marker. No separate busy
+  preclaim precedes the transaction. Only returned new intake enters the required
+  pinned processAdmittedPrompt service; receipt repeats produce source no-duplicate
+  result and never restart preparation. Service implementations remain explicit.
+- Post-admission preparation errors retain intake and ready receipt for recovery.
+  Changed route, expiry, missing target and invalid actor fail without a new intake.
+  Added exact admitBusyQueue facade alias (200→201) without reimplementing storage.
+- Seven new tests include actual SQLite transaction/marker inspection before
+  processing, concurrent clicks, repeat receipts, route failure and retained
+  preparation failure. Focused15 PASS with8 facade tests, strict TS0, full5,014
+  PASS, fail/cancel/skip0. Initial unknown-Promise-result TS diagnostic is retained;
+  the result still passes the full runtime snapshot validator. Evidence:
+  .runtime/cloud-runtime-busy-queue-269/{source-inputs.json,typecheck.log,
+  focused-tests.log,full-tests.log,verification-result.json}. Full Busy dispatcher
+  wiring and operational/Windows/live acceptance remain unfinished.

@@ -1,3 +1,4 @@
+import * as BusyPromptIntake from "../../src/store/prompt-intake-busy.ts";
 import * as ControlBinding from "../../src/store/control-binding.ts";
 import * as MirrorOrigin from "../../src/store/mirror-origin.ts";
 import * as BusyChoiceStore from "../../src/store/busy-choice-store.ts";
@@ -79,6 +80,8 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.admitBusyQueue, BusyPromptIntake.admitBusyQueue);
+    assert.strictEqual(FacadeExports.admitBusyQueue, BusyPromptIntake.admitBusyQueue);
     assert.strictEqual(StateAccessFacade.bindBusyControl, ControlBinding.bindBusyControl);
     assert.strictEqual(FacadeExports.bindBusyControl, ControlBinding.bindBusyControl);
     assert.strictEqual(StateAccessFacade.resolveBusyControl, ControlBinding.resolveBusyControl);
@@ -341,6 +344,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
   it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
+      "admitBusyQueue",
       "bindBusyControl",
       "resolveBusyControl",
       "recordUserOrigin",
@@ -542,7 +546,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 200);
+    assert.strictEqual(actual.length, 201);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
@@ -571,6 +575,8 @@ describe("StateAccessFacade type signature fidelity (compile-time)", () => {
     const eq7: AssertEqual<typeof StateAccessFacade.finish, typeof MutationAttempt.finish> = true;
     const eq8: AssertEqual<typeof StateAccessFacade.openCheckedRead, typeof CheckedRead.open> = true;
 
+    const eqBusyQueue: AssertEqual<typeof StateAccessFacade.admitBusyQueue, typeof BusyPromptIntake.admitBusyQueue> = true;
+    assert.strictEqual(eqBusyQueue, true);
     const eqControlBind: AssertEqual<typeof StateAccessFacade.bindBusyControl, typeof ControlBinding.bindBusyControl> = true;
     const eqControlResolve: AssertEqual<typeof StateAccessFacade.resolveBusyControl, typeof ControlBinding.resolveBusyControl> = true;
     const eqOrigin: AssertEqual<typeof StateAccessFacade.recordUserOrigin, typeof MirrorOrigin.recordUserOrigin> = true;
