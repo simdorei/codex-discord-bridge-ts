@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,881 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,888 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5921,3 +5921,26 @@ remain incomplete. No external interaction was processed.
   {source-inputs.json,typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
   Command execution, component processing/error reporting and the full interaction
   worker/runtime remain subsequent integrations; no live delivery occurred.
+
+
+## Source component delivery/claim identities (255)
+
+- Added all eight component identity variants, exact follow-up/confirmation/error
+  domains and source claim-identity selection. Length prefixes use UTF-8 bytes;
+  None differs from Some(empty). Existing standard claim hashing is reused, and
+  ordinary text delivery now uses the shared interaction identity helper.
+- This is identity formatting, not UI parser validation or execution authority.
+  Internal String fields retain delimiters/Unicode; revision has source i64 range,
+  option uses the selected64-bit usize profile. The actual UI parser retains its
+  narrower accepted IDs/revisions/options.
+- Unpublished initial candidate had a real inherited-variant bug: Object.prototype
+  Busy could trigger three getters and replace an owned Input branch. Identical
+  test bytes reproduced RED6/7 then GREEN7/7 after returning a freshly owned null-
+  prototype variant container. Input data/prototypes were not mutated or frozen.
+- Seven new identity/golden/adversarial tests cover variants, byte lengths, delimiter
+  collisions, claim branches, widths, malformed/active values and prototype poison.
+  Focused14 PASS including existing text delivery; strict TS0; full4,888 PASS with
+  failure/cancel/skip0. Evidence includes unchanged red/green test hash, original
+  source and failure log under .runtime/cloud-runtime-component-delivery-identity-255/.
+- Component execution, confirmation recovery, central worker error reporting and
+  live delivery remain pending integrations; no action capability comes from a key.
