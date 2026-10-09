@@ -1,3 +1,4 @@
+import {recordCleanupNotificationFailure} from '../cleanup-notification-failure.ts';
 import {realpath} from 'node:fs/promises';
 import {types} from 'node:util';
 import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
@@ -23,8 +24,8 @@ export interface ExecutionCustodyOptions {
 }
 /** Explicit async owner for source ExecutionCustody durable transitions. Caller
  * must await dispose on every path, and must retain its queue admission permit
- * until cleanup finishes. NotificationFailure conversion belongs to the future
- * worker notification adapter; finishSuccess here exposes the original error. */
+ * until cleanup finishes. finishNotification preserves the known-refusal error
+ * boundary; finishSuccess exposes the original store error. */
 export class ExecutionCustody {
   readonly #database: string; readonly #id: string;
   readonly #now: () => number; readonly #report: ExecutionCustodyOptions['report'];
@@ -79,11 +80,22 @@ export class ExecutionCustody {
     const snapshot = parseSerdeValue(serializeSerdeValue(outcome));
     return this.#operation(() => this.#record(snapshot));
   }
+  async #finish(outcome: unknown): Promise<void> {
+    if (!this.#recorded) await this.#record(outcome);
+    await confirm(this.#database, this.#id, readCustodyTimestamp(this.#now)); this.#armed = false;
+  }
   finishSuccess(outcome: unknown): Promise<void> {
     const snapshot = parseSerdeValue(serializeSerdeValue(outcome));
+    return this.#operation(() => this.#finish(snapshot));
+  }
+  finishNotification(outcome: unknown): Promise<void> {
+    const snapshot = parseSerdeValue(serializeSerdeValue(outcome));
     return this.#operation(async () => {
-      if (!this.#recorded) await this.#record(snapshot);
-      await confirm(this.#database, this.#id, readCustodyTimestamp(this.#now)); this.#armed = false;
+      try {await this.#finish(snapshot);}
+      catch (error) {
+        if (!this.#knownRefusal) throw error;
+        throw await recordCleanupNotificationFailure(this.#database, this.#id, 'confirmation', error, this.#now);
+      }
     });
   }
   holdFailed(): Promise<void> {

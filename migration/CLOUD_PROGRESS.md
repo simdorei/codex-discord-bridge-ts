@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,791 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,798 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5636,3 +5636,30 @@ remain incomplete. No external interaction was processed.
   Actual action execution/delivery, whole worker orchestration and Windows/live
   service remain unfinished. POSIX symlink evidence is not Windows canonical-path
   or locking certification. Inherited canonicalize-to-open races are not repaired.
+
+
+## Known cleanup-refusal notification failure boundary (244)
+
+- Added the shared known-refusal NotificationFailure adapter for delivery and
+  confirmation stages. The caller must already have persisted a validated refusal;
+  this error type does not itself authorize execution or prove that precondition.
+  Original source error remains the cause, and secondary hold/clock errors are
+  retained separately with an explicit holdSaved flag.
+- ExecutionCustody.finishNotification now preserves source behavior: ordinary
+  errors propagate; a known refusal confirmation failure records its special hold
+  before returning the typed failure. Its entire asynchronous boundary remains
+  under the same exclusive operation owner, so dispose joins the hold too.
+- Extracted existing passive own-data error message reading into one core helper;
+  settings diagnostics reuse it with their unchanged fallback. Unknown getters,
+  proxy traps, cause, stack and toString are never consulted. Owned error identity
+  uses a private registry rather than prototype/name trust. Arbitrary Rust Error
+  display strings are not reproduced for unknown JS objects.
+- Seven new native SQLite tests exercise persisted refusal holds, ordinary error
+  propagation, delivery stage, secondary SQL/clock failures, concurrent disposal,
+  raw error identity and hostile error objects. Focused33 PASS (including unchanged
+  custody/settings tests), strict TS0, full4,798 PASS, zero fail/cancel/skip.
+- Evidence: .runtime/cloud-runtime-cleanup-notification-244/{source-inputs.json,
+  typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
+- Actual deferred-response PATCH, refusal delivery, action-error conversion and
+  full interaction-worker error disposition remain separate pending integrations.
+  No real Discord messages, services or original Codex databases were changed.

@@ -1,3 +1,4 @@
+import {passiveErrorText} from '../core/passive-error-text.ts';
 import {types} from 'node:util';
 import {CodexThreadStore} from '../codex-state/store.ts';
 import {resolveThreadRefPosix, ThreadResolveError} from '../codex-state/thread-reference.ts';
@@ -92,9 +93,5 @@ export function isSettingsRequestRejection(error: unknown): boolean {
     || prototype === ThreadResolveError.prototype;
 }
 export function settingsErrorText(error: unknown): string {
-  if (error !== null && typeof error === 'object' && !types.isProxy(error)) {
-    const descriptor = Object.getOwnPropertyDescriptor(error, 'message');
-    if (descriptor !== undefined && Object.hasOwn(descriptor, 'value') && typeof descriptor.value === 'string') return descriptor.value;
-  }
-  return 'settings admission failed';
+  return passiveErrorText(error, 'settings admission failed');
 }
