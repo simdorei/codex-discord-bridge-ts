@@ -7,9 +7,11 @@ import {extractThreadId} from "./identity.ts";
 export interface PendingServerRequest{readonly id:RequestId;readonly occurrence:ServerRequestOccurrence;readonly method:string;readonly params:unknown}
 export type ServerRequestRecordOutcome={readonly kind:"Broadcast";readonly request:PendingServerRequest}|{readonly kind:"Duplicate"|"Deferred"};
 export class ServerRequestRecordError extends Error{readonly kind:"Conflict"|"Saturated";readonly id:RequestId;constructor(kind:"Conflict"|"Saturated",id:RequestId){super(`Server request ${kind.toLowerCase()}`);this.name="ServerRequestRecordError";this.kind=kind;this.id=id;}}
+const ownedResponseFailures = new WeakMap<object, ServerResponseStateError["kind"]>();
+export function ownedServerResponseFailure(value: unknown): ServerResponseStateError["kind"] | null {return value !== null && (typeof value === "object" || typeof value === "function") ? ownedResponseFailures.get(value) ?? null : null;}
 export class ServerResponseStateError extends Error{
   readonly kind:"StaleServerRequest"|"ServerRequestResponseInFlight"|"ServerRequestResponseIndeterminate";readonly id:RequestId;
-  constructor(kind:ServerResponseStateError["kind"],id:RequestId){const debug=typeof id==="string"?`String(${rustDebugString(id)})`:`Integer(${id})`;super(`app-server request ${debug} ${kind==="StaleServerRequest"?"is stale or no longer pending":kind==="ServerRequestResponseInFlight"?"already has a response in flight":"response delivery is indeterminate"}`);this.name="ServerResponseStateError";this.kind=kind;this.id=id;}
+  constructor(kind:ServerResponseStateError["kind"],id:RequestId){const debug=typeof id==="string"?`String(${rustDebugString(id)})`:`Integer(${id})`;super(`app-server request ${debug} ${kind==="StaleServerRequest"?"is stale or no longer pending":kind==="ServerRequestResponseInFlight"?"already has a response in flight":"response delivery is indeterminate"}`);this.name="ServerResponseStateError";this.kind=kind;this.id=id;ownedResponseFailures.set(this,kind);}
 }
 function occurrenceHex(value:ServerRequestOccurrence):string{return Buffer.from(ServerRequestOccurrence.prototype.asBytes.call(value)).toString("hex");}
 export function clonePendingServerRequest(input:PendingServerRequest):PendingServerRequest{

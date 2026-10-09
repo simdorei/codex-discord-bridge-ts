@@ -3,7 +3,9 @@ import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
 import {serdeField,serdeObject} from "./value.ts";
 import {NodeAppServerInput,NodeAppServerByteSource} from "./node-streams.ts";
 export interface PortableProcessConfig{readonly executable:string;readonly arguments:readonly string[];readonly environment:Readonly<Record<string,string>>}
-export class AppServerSpawnError extends Error{readonly executable:string;constructor(executable:string,cause:unknown){super(`could not start Codex app-server at ${executable}`,{cause});this.name="AppServerSpawnError";this.executable=executable;}}
+const ownedSpawnFailures = new WeakSet<object>();
+export function isOwnedAppServerSpawnError(value: unknown): boolean {return value !== null && (typeof value === "object" || typeof value === "function") && ownedSpawnFailures.has(value);}
+export class AppServerSpawnError extends Error{readonly executable:string;constructor(executable:string,cause:unknown){super(`could not start Codex app-server at ${executable}`,{cause});this.name="AppServerSpawnError";this.executable=executable;ownedSpawnFailures.add(this);}}
 export class AppServerProcessExitTimeout extends Error{constructor(){super("owned app-server process exit was not confirmed before cleanup timeout");this.name="AppServerProcessExitTimeout";}}
 interface ProcessRecord{child:ChildProcessWithoutNullStreams;exited:boolean;pipesClosed:boolean;exit:Promise<void>;closed:Promise<void>}
 const owned=new Set<ProcessRecord>();

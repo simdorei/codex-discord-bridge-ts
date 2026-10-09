@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,952 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,963 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6095,3 +6095,27 @@ remain incomplete. No external interaction was processed.
   .runtime/cloud-runtime-pending-text-reply-262/{source-inputs.json,typecheck.log,
   focused-tests.log,full-tests.log,verification-result.json}. Live services, Windows,
   full command routing and end-to-end operational acceptance remain unfinished.
+
+## 263 — Bound component claim, authorization and response coordinator
+
+- Connected standard bound approval/input: source message/legacy expiry checks →
+  actor-specific persistent claim → exact response preparation → current original
+  actor authority → resident response → durable confirmation-ready marker. A ready
+  marker returns the confirmation plan without executing the action again. A live
+  action claim lacking a marker remains unconfirmed, including concurrent clicks.
+- Definite owned Spawn/Remote/GenerationMismatch/GenerationQuarantined/StaleRequest
+  errors release claims; all other errors remain indeterminate. Added own-instance
+  metadata to existing spawn/response-state errors so copied prototypes or forged
+  kind strings cannot justify release. Portable missing pipes use Spawn already;
+  no new speculative Windows error class was added. Busy/action-executor failure
+  classification remains separate unfinished work.
+- Preparation/authority failures release their claim. Clock or marker persistence
+  failure after native response preserves the action claim and reports known
+  completed action with confirmation-recovery failure, preventing replay.
+- Eleven focused tests pass, including native synthetic response writes, real
+  SQLite claims/triggers, concurrent clicks, actor isolation and failure retention.
+  Strict TS0, full4,963 PASS, fail/cancel/skip0. Evidence:
+  .runtime/cloud-runtime-standard-component-263/{source-inputs.json,typecheck.log,
+  focused-tests.log,full-tests.log,verification-result.json}. The caller must still
+  own processing-mode/execution-custody admission. No Busy/recovery/async-choice
+  dispatcher, live service or full Windows/runtime acceptance is claimed.
