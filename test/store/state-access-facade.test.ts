@@ -1,3 +1,4 @@
+import * as MirrorPolicyRead from "../../src/store/mirror-policy-read.ts";
 import * as MirrorEventRead from "../../src/store/mirror-event-read.ts";
 import * as QuestionDispatch from "../../src/store/async-question-dispatch.ts";
 import * as QuestionDelivery from "../../src/store/async-question-delivery-state.ts";
@@ -73,6 +74,10 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.remainingDiscordIds, MirrorPolicyRead.remainingDiscordIds);
+    assert.strictEqual(FacadeExports.remainingDiscordIds, MirrorPolicyRead.remainingDiscordIds);
+    assert.strictEqual(StateAccessFacade.mirrorTargets, MirrorPolicyRead.mirrorTargets);
+    assert.strictEqual(FacadeExports.mirrorTargets, MirrorPolicyRead.mirrorTargets);
     assert.strictEqual(StateAccessFacade.recordAsyncQuestionObservation, QuestionObservation.recordAsyncQuestionObservation);
     assert.strictEqual(FacadeExports.recordAsyncQuestionObservation, QuestionObservation.recordAsyncQuestionObservation);
     assert.strictEqual(StateAccessFacade.reconcileAsyncQuestionObservations, QuestionObservation.reconcileAsyncQuestionObservations);
@@ -309,6 +314,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
   it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
+      "remainingDiscordIds",
+      "mirrorTargets",
       "getIdleIntent",
       "pendingIdleIntents",
       "beforeIdleMutation",
@@ -497,7 +504,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 187);
+    assert.strictEqual(actual.length, 189);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
@@ -526,6 +533,10 @@ describe("StateAccessFacade type signature fidelity (compile-time)", () => {
     const eq7: AssertEqual<typeof StateAccessFacade.finish, typeof MutationAttempt.finish> = true;
     const eq8: AssertEqual<typeof StateAccessFacade.openCheckedRead, typeof CheckedRead.open> = true;
 
+    const eqMirrorIds: AssertEqual<typeof StateAccessFacade.remainingDiscordIds, typeof MirrorPolicyRead.remainingDiscordIds> = true;
+    const eqMirrorTargets: AssertEqual<typeof StateAccessFacade.mirrorTargets, typeof MirrorPolicyRead.mirrorTargets> = true;
+    assert.strictEqual(eqMirrorIds, true);
+    assert.strictEqual(eqMirrorTargets, true);
     assert.strictEqual(eq1, true);
     assert.strictEqual(eq2, true);
     assert.strictEqual(eq3, true);

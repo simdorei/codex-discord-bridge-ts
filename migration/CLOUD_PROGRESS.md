@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,754 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,766 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5521,3 +5521,35 @@ remain incomplete. No external interaction was processed.
 - Evidence: .runtime/cloud-runtime-ordinary-dispatcher-239/{typecheck.log,
   focused-tests.log,full-tests.log,source-inputs.json,verification-result.json,
   reporter-red-source.ts,reporter-red-tests.log,reporter-red-green-proof.json}.
+
+
+## Dynamic mirror access policy through central state reads (240)
+
+- Added source remaining_discord_ids and mirror_targets read adapters behind
+  StateAccessFacade. Thread IDs deduplicate/sort as signed i64; project IDs retain
+  source vector multiplicity/order. NULL/zero handling uses strict optional integer
+  decoding. Target rows decode before filtering empty thread IDs/zero rooms; SQL
+  limit precedes filtering, including zero and negative i64 limit semantics.
+- Immutable policy refresh follows the source ordered pair of reads, combining
+  remaining thread/project IDs and target parent/room IDs, then discarding negative
+  values during u64 collection. It replaces dynamic IDs while preserving static
+  channel/user/all-channel rules. Failures propagate with no old-policy fallback.
+  This is NOT an atomic multi-query snapshot or a fix for inherited cross-read races.
+- Read adapters use the existing bridge-store initializer, which can create/migrate
+  that owned store. They are distinct from the read-only original Codex state reader.
+  No raw SQL was added to runtime policy code; the two operations are centrally exposed.
+- Initial full suite: 4,765 PASS / 1 FAIL, because the exact facade API inventory did
+  not yet include the two new operations. Final canonical names remainingDiscordIds
+  and mirrorTargets now have exact direct-reference and whole-function type assertions;
+  inventory count changed from 187 to 189 while retaining the exact-key comparison.
+  No unknown exports were allowed and no assertion was removed.
+- Final focused 20 PASS (12 mapping/policy plus 8 facade contracts), strict TS0,
+  whole Linux Node 24.21.0 4,766 PASS with zero failures/cancellations/skips.
+  Includes stable refresh deletion, static restrictions, signed extremes, duplicate
+  project IDs, source pre-filter limit, malformed text/storage failure and detached
+  immutable results. Normal schema NULL columns are constrained; optional decoder
+  support is retained but not claimed as a separate nullable legacy-schema execution.
+- Evidence: .runtime/cloud-runtime-mirror-policy-240/{initial-full-tests.log,
+  typecheck.log,focused-tests.log,full-tests.log,source-inputs.json,verification-result.json}.
+  Per-event handler wiring, actual execution, recovery actors, Windows and service
+  bootstrap remain incomplete; this is not authorization or deployment certification.

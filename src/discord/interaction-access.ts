@@ -13,6 +13,10 @@ export class InteractionAccessPolicy{
  constructor(input:InteractionAccessPolicyInput={allowedChannelIds:[],allowedUserIds:[],mirroredChannelIds:[],allowAllChannels:false}){
   if(new.target!==InteractionAccessPolicy)throw new TypeError('Expected exact interaction access policy');this.#channels=ids(gatewayOwnField(input,'allowedChannelIds'));this.#users=ids(gatewayOwnField(input,'allowedUserIds'));this.#mirrors=ids(gatewayOwnField(input,'mirroredChannelIds'));const all=gatewayOwnField(input,'allowAllChannels');if(typeof all!=='boolean')throw new TypeError('Expected channel policy flag');this.#all=all;Object.freeze(this);
  }
+ /** Replace only dynamic mirror IDs, retaining the original static access policy. */
+ withMirroredChannelIds(mirroredChannelIds:readonly bigint[]):InteractionAccessPolicy{
+  return new InteractionAccessPolicy({allowedChannelIds:[...this.#channels],allowedUserIds:[...this.#users],mirroredChannelIds,allowAllChannels:this.#all});
+ }
  evaluate(interaction:DecodedGatewayInteraction):InteractionAccessDecision{
   if(!isDecodedGatewayInteraction(interaction))throw new TypeError('Expected fully decoded interaction');
   const channel=interaction.channel as Readonly<{id:bigint}>|null,author=discordInteractionAuthor(interaction) as Readonly<{id:bigint}>|null,message=interaction.message as Readonly<{id:bigint}>|null;

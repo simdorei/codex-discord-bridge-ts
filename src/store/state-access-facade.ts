@@ -1,3 +1,4 @@
+import * as MirrorPolicyRead from "./mirror-policy-read.ts";
 import * as MirrorEventRead from "./mirror-event-read.ts";
 import * as QuestionDispatch from "./async-question-dispatch.ts";
 import * as QuestionDelivery from "./async-question-delivery-state.ts";
@@ -83,6 +84,8 @@ export const recordAsyncQuestionError: typeof QuestionDispatch.recordAsyncQuesti
 export const rejectDefiniteAsyncQuestion: typeof QuestionDispatch.rejectDefiniteAsyncQuestion = QuestionDispatch.rejectDefiniteAsyncQuestion;
 export const rejectUsageLimitAsyncQuestion: typeof QuestionDispatch.rejectUsageLimitAsyncQuestion = QuestionDispatch.rejectUsageLimitAsyncQuestion;
 export const listFilteredExisting: typeof QueueRead.listFilteredExisting = QueueRead.listFilteredExisting;
+export const remainingDiscordIds: typeof MirrorPolicyRead.remainingDiscordIds = MirrorPolicyRead.remainingDiscordIds;
+export const mirrorTargets: typeof MirrorPolicyRead.mirrorTargets = MirrorPolicyRead.mirrorTargets;
 export const hasMirrorEvent: typeof MirrorEventRead.hasMirrorEvent = MirrorEventRead.hasMirrorEvent;
 export const getIdleIntent: typeof IdleReleaseStore.getIdleIntent = IdleReleaseStore.getIdleIntent;
 export const pendingIdleIntents: typeof IdleReleaseStore.pendingIdleIntents = IdleReleaseStore.pendingIdleIntents;
@@ -306,6 +309,8 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
 export interface IStateAccessFacade {
+  readonly remainingDiscordIds: typeof MirrorPolicyRead.remainingDiscordIds;
+  readonly mirrorTargets: typeof MirrorPolicyRead.mirrorTargets;
   readonly hasMirrorEvent: typeof MirrorEventRead.hasMirrorEvent;
   readonly listFilteredExisting: typeof QueueRead.listFilteredExisting;
   readonly beginAsyncQuestionDispatch: typeof QuestionDispatch.beginAsyncQuestionDispatch;
@@ -513,6 +518,8 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  remainingDiscordIds,
+  mirrorTargets,
   hasMirrorEvent,
   listFilteredExisting,
   beginAsyncQuestionDispatch,
