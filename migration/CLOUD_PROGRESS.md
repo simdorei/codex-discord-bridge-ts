@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,729 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,754 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5479,3 +5479,45 @@ remain incomplete. No external interaction was processed.
   strict TS0. This queue is not yet connected to the full dispatcher/worker loop.
 - Evidence: .runtime/cloud-runtime-owned-work-queue-238/source-inputs.json,
   typecheck.log, focused-tests.log, full-tests.log and verification-result.json.
+
+
+## Ordinary interaction dispatcher: real HTTP/DB/queue composition (239)
+
+- Composed source access/routing, restart admission, response selection, 2,500ms
+  acknowledgement budget, shared 4,096-default claim cache, ordinary durable stage,
+  real DiscordChannelClient callback, work reservation and custody confirmation.
+  Only after HTTP acknowledgement, persisted custody acknowledgement and claim commit
+  does normal work enter the queue. No-work/status branches acknowledge without staging.
+- Full/closed queue persists its specific hold before status ACK. HTTP failure and
+  deadline hold staged custody; source duplicate and pending/committed claims avoid
+  repeated ACK/work. Canonical Busy ingress repeats respond saved/manual-review;
+  prompt-owned repeats queue ConfirmationOnly, retaining original authorization.
+- Sender clone, reservation, claim, armed custody and admission permit have explicit
+  ownership. HTTP is borrowed. Cancellation joins actual HTTP and DB work. A real
+  Node await during custody acknowledgement introduces a conservative cancellation
+  boundary: completed persistence is held rather than queued if force arrived there.
+  This is documented Node safety behavior, not identical Tokio poll interleaving.
+- Source owned-permit behavior is retained: closing a receiver after reservation does
+  not invalidate that reservation. If it was disposed, late queued custody and permit
+  stay owned until the last sender ends. Queued is not proof of execution or receipt
+  by a live consumer. The durable row supports later runtime recovery.
+- Review found diagnostic callback failure could hide the original ACK failure.
+  Same-test SHA 825e78167f01f20c604fe4dcd9eff7b4d06fc995862315e2762425757c8df90e:
+  focused RED 24/25, then deferred diagnostic errors and GREEN 25/25. Primary failure
+  now survives with cleanup failures, and actual sockets/timers/permits still join.
+  Initial compile-only application_id/narrowing fixes and test-append syntax error
+  logs are retained separately; no validation or production assertion was weakened.
+- Focused 25 native credential-free loopback HTTP + isolated SQLite tests PASS,
+  strict TS0; full actual Linux Node 24.21.0 4,754 PASS with zero failure/cancel/skip.
+  Covered pre-ACK stage/reservation order, ACK persistence failure, failed hold, force,
+  controlled-clock deadline, duplicates/cache saturation, canonical Busy modes,
+  sealed controls/autocomplete, receiver close/drop and reporter-failure cleanup.
+  Controlled time tests are not a real-world latency or throughput certification.
+- Explicit limitations: Normal recovery publication/abandonment staging is refused;
+  actor authorization is still missing. Actual queue command execution, per-event
+  mirror-policy refresh, seven-consumer bootstrap, Windows and live service remain
+  unfinished. Existing restricted callback-token profile and safe Node error details
+  remain in effect; this is not complete Rust/runtime parity or deployment readiness.
+- Evidence: .runtime/cloud-runtime-ordinary-dispatcher-239/{typecheck.log,
+  focused-tests.log,full-tests.log,source-inputs.json,verification-result.json,
+  reporter-red-source.ts,reporter-red-tests.log,reporter-red-green-proof.json}.
