@@ -1,3 +1,5 @@
+import * as ControlBinding from "../../src/store/control-binding.ts";
+import * as MirrorOrigin from "../../src/store/mirror-origin.ts";
 import * as BusyChoiceStore from "../../src/store/busy-choice-store.ts";
 import * as ComponentClaims from "../../src/store/component-claims.ts";
 import * as NewReplyRead from "../../src/store/new-reply-read.ts";
@@ -77,6 +79,12 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.bindBusyControl, ControlBinding.bindBusyControl);
+    assert.strictEqual(FacadeExports.bindBusyControl, ControlBinding.bindBusyControl);
+    assert.strictEqual(StateAccessFacade.resolveBusyControl, ControlBinding.resolveBusyControl);
+    assert.strictEqual(FacadeExports.resolveBusyControl, ControlBinding.resolveBusyControl);
+    assert.strictEqual(StateAccessFacade.recordUserOrigin, MirrorOrigin.recordUserOrigin);
+    assert.strictEqual(FacadeExports.recordUserOrigin, MirrorOrigin.recordUserOrigin);
     assert.strictEqual(StateAccessFacade.readBusyChoiceState, BusyChoiceStore.readBusyChoiceState);
     assert.strictEqual(FacadeExports.readBusyChoiceState, BusyChoiceStore.readBusyChoiceState);
     assert.strictEqual(StateAccessFacade.claimBusyChoice, BusyChoiceStore.claimBusyChoice);
@@ -333,6 +341,9 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
   it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
+      "bindBusyControl",
+      "resolveBusyControl",
+      "recordUserOrigin",
       "readBusyChoiceState",
       "claimBusyChoice",
       "releaseBusyChoiceClaim",
@@ -531,7 +542,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 197);
+    assert.strictEqual(actual.length, 200);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
@@ -560,6 +571,10 @@ describe("StateAccessFacade type signature fidelity (compile-time)", () => {
     const eq7: AssertEqual<typeof StateAccessFacade.finish, typeof MutationAttempt.finish> = true;
     const eq8: AssertEqual<typeof StateAccessFacade.openCheckedRead, typeof CheckedRead.open> = true;
 
+    const eqControlBind: AssertEqual<typeof StateAccessFacade.bindBusyControl, typeof ControlBinding.bindBusyControl> = true;
+    const eqControlResolve: AssertEqual<typeof StateAccessFacade.resolveBusyControl, typeof ControlBinding.resolveBusyControl> = true;
+    const eqOrigin: AssertEqual<typeof StateAccessFacade.recordUserOrigin, typeof MirrorOrigin.recordUserOrigin> = true;
+    assert.strictEqual(eqControlBind, true); assert.strictEqual(eqControlResolve, true); assert.strictEqual(eqOrigin, true);
     const eqBusyRead: AssertEqual<typeof StateAccessFacade.readBusyChoiceState, typeof BusyChoiceStore.readBusyChoiceState> = true;
     const eqBusyClaim: AssertEqual<typeof StateAccessFacade.claimBusyChoice, typeof BusyChoiceStore.claimBusyChoice> = true;
     const eqBusyRelease: AssertEqual<typeof StateAccessFacade.releaseBusyChoiceClaim, typeof BusyChoiceStore.releaseBusyChoiceClaim> = true;

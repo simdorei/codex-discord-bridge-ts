@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,990 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,999 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6185,3 +6185,23 @@ remain incomplete. No external interaction was processed.
   .runtime/cloud-runtime-interaction-processor-266/{source-inputs.json,typecheck.log,
   focused-tests.log,full-tests.log,verification-result.json}. Full ActionExecutor,
   all special components, production service wiring and live/Windows QA remain open.
+
+## 267 — Original busy-control binding store
+
+- Added source bind/resolve under owned BEGIN IMMEDIATE scopes: orphan cleanup
+  and INSERT OR IGNORE commit together; an existing valid choice never rebinds to
+  a later turn or another thread. Resolve uses only exact preceding running,
+  non-goal-waiting job and persists its observed turn once. Existing migration
+  trigger pins the first turn even if a later goal turn is already running.
+- Nullable turn/job tuple fully decodes before branch selection. Empty explicit
+  turn remains Some empty. Strict native text/raw-byte decoding rejects malformed
+  storage and Unicode without inventing another target. SQL errors and rollback
+  remain owned by shared store scopes.
+- Central facade adds bindBusyControl/resolveBusyControl and exact existing
+  recordUserOrigin alias (197→200), without duplicating its implementation.
+- Focused17 PASS (9 new +8 facade), strict TS0, full4,999 PASS, fail/cancel/skip0.
+  Tests cover first-turn trigger, late resolution, foreign/absent/nonrunning jobs,
+  orphan cleanup rollback, failed resolution rollback and invalid SQLite text.
+  Evidence: .runtime/cloud-store-busy-control-binding-267/{source-inputs.json,
+  typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
+  Busy control RPC wiring, full runtime and live/Windows validation remain open.
