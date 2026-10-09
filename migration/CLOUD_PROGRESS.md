@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,670 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,687 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5352,3 +5352,34 @@ remain incomplete. No external interaction was processed.
   resolver, live user DB or complete settings admission qualification.
 - Evidence: .runtime/cloud-codex-thread-store-234/source-inputs.json, typecheck.log,
   focused-tests.log, full-tests.log and verification-result.json.
+
+
+## Original-thread reference and alias resolution, POSIX profile (235)
+
+- Ported pinned thread_ref.rs priority: exact ID first; full UUID accepts ASCII case
+  only and never falls back to copy/workspace; other/next chooses first nonselected;
+  numeric references are one-based with 64-bit usize overflow rejection. Remaining
+  short-ID prefix, displayed alias, full path and workspace-name namespaces are
+  evaluated together. Multiple matches reject, preserving the first ten diagnostic
+  IDs in original row order.
+- Workspace aliases number duplicate/case-colliding/reserved names. Unsafe aliases
+  or collisions with another row's ID/name fall back to exact identity. Returned
+  alias map is detached; resolution builds its own mapping. Returned thread is the
+  exact original row reference, with passive ID/cwd snapshot validation.
+- POSIX path normalization uses source components plus pop behavior: excess parent
+  segments are discarded, root remains root, case stays significant, backslashes
+  remain literal path characters. Workspace-name extraction still recognizes both
+  separators, and Windows extended prefix stripping matches the source helper.
+  Public resolver/normalizer names explicitly end in Posix. This is NOT Windows
+  Path::components qualification or a generic Windows resolver.
+- Retrieved Rust 1.97.1 official Unicode/str/char source. Unicode version 17.0 matches
+  pinned Node 24.21.0; checked contextual sigma, Alphabetic-or-Number predicate and
+  case conversion. Runtime requires qualified Unicode 17.0. Tests cover Greek sigma,
+  dotted I, CJK/numeric names and trailing-newline unsafe aliases.
+  This is source plus Node executable evidence, not a Rust binary differential run.
+- Focused 17 PASS; full actual Linux 4,687 PASS, zero failures/cancellations/skips;
+  strict TS0. All source reference contract examples adapted to POSIX, UUID absence,
+  ambiguity, alias round-trips, index boundaries and getter refusal covered.
+  Settings binding, full custody staging and service runtime remain unfinished.
+- Evidence: .runtime/cloud-codex-thread-reference-235/source-inputs.json,
+  typecheck.log, focused-tests.log, full-tests.log and verification-result.json.
