@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,777 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,791 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5608,3 +5608,31 @@ remain incomplete. No external interaction was processed.
 - This proves the bounded input-to-queued-work chain, not execution of that work,
   full seven-consumer service orchestration, recovery actors, Windows, throughput,
   real account permissions or production deployment.
+
+
+## Interaction execution custody durable owner (243)
+
+- Ported the bounded ExecutionCustody durable owner: ordered canonical-path affinity
+  checks before claiming execution/confirmation, rejection-envelope validation,
+  result persistence, confirmation, failed processing hold and cancellation cleanup.
+  All store operations use the existing central facade. Missing files are rejected
+  before initialization; same keys in different databases cannot authorize work.
+- Result and confirmation remain separate transitions. A successfully recorded
+  result survives failed confirmation and is never downgraded to an unknown action
+  by ordinary hold_failed/dispose. A known cleanup-refusal flag follows the last
+  successful input outcome, preserving the future notification adapter boundary.
+- Node ownership is explicit: overlapping operations reject, JSON arguments are
+  snapshotted before awaits, and awaited dispose joins in-flight writes. The queue
+  owner must retain its admission permit until cleanup finishes. No GC/Drop claim.
+- Fourteen native SQLite tests cover source custody tests plus same-file symlinks,
+  absent-file noncreation, canonical confirmation-only mode, rejection identity,
+  malformed rejection, overlapping/cancelled operations, actual result/confirmation
+  trigger failures, cleanup reporter failures and refusal flag transitions.
+  Final focused14 PASS, strict TS0, full4,791 PASS, fail/cancel/skip0.
+- Evidence: .runtime/cloud-runtime-interaction-execution-custody-243/{source-inputs.json,
+  typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
+- finish_notification and its known-refusal NotificationFailure conversion are
+  deliberately not wired yet; finishSuccess exposes the underlying store error.
+  Actual action execution/delivery, whole worker orchestration and Windows/live
+  service remain unfinished. POSIX symlink evidence is not Windows canonical-path
+  or locking certification. Inherited canonicalize-to-open races are not repaired.
