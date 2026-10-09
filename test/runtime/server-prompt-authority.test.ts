@@ -1,29 +1,13 @@
+import {promptFixture as fixture, callPromptFixture as call, editPromptFixture as edit} from '../helpers/server-prompt-fixture.ts';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {existsSync} from 'node:fs';
-import {storeFixture} from '../helpers/store-fixture.ts';
 import {queueJob} from '../helpers/queue-job.ts';
 import {StateAccessFacade as state} from '../../src/store/state-access-facade.ts';
 import {openInitialized} from '../../src/store/owned-driver.ts';
-import {PortableResidentLifecycle} from '../../src/app-server/portable-resident-lifecycle.ts';
 import type {PendingServerRequest} from '../../src/app-server/server-request-state.ts';
 import {ServerRequestOccurrence} from '../../src/protocol/ids.ts';
 import {verifyPromptAuthority, PromptAuthority, PromptAuthorityError} from '../../src/runtime/server-prompt-authority.ts';
-async function call(owner: PortableResidentLifecycle, method: string) {const a = owner.admitRequest(); try {return await a.client.requestAdmitted(a.permit, method, {}, 2000);} finally {a.release();}}
-async function edit(path: string, sql: string) {const db = await openInitialized(path); try {db.exec(sql);} finally {db.close();}}
-async function fixture(run: (path: string, server: PortableResidentLifecycle, request: PendingServerRequest) => Promise<void>) {
-  await storeFixture(async path => {
-    const code = `import readline from 'node:readline';const emit=v=>process.stdout.write(JSON.stringify(v)+'\\n');readline.createInterface({input:process.stdin,crlfDelay:Infinity}).on('line',line=>{const m=JSON.parse(line);if(m.method==='initialize')emit({id:m.id,result:{}});else if(m.method==='arm'){emit({method:'turn/started',params:{threadId:'t',turnId:'v'}});emit({id:'approval',method:'item/commandExecution/requestApproval',params:{threadId:'t',turnId:'v',reason:'fixture'}});emit({id:m.id,result:{}});}else if(m.method==='finish'){emit({method:'turn/completed',params:{threadId:'t',turnId:'v'}});emit({id:m.id,result:{}});}});`;
-    const server = await PortableResidentLifecycle.start({process: {executable: process.execPath, arguments: ['--input-type=module', '-e', code], environment: {}},
-      clientInfo: {name: 'authority-fixture', title: 'Fixture', version: '0.1.0'}}, () => 'safe fixture', {persistDeadWork() {}, oldChildExited() {}});
-    try {
-      await call(server, 'arm'); const pending = server.pendingServerRequests('t'); assert.equal(pending.length, 1);
-      await state.enqueue(path, queueJob({jobId: 'job', targetThreadId: 't', channelId: 1n, ownerUserId: 2n}));
-      await edit(path, "UPDATE codex_turn_queue SET state='running',turn_id='v'; INSERT INTO mirror_threads VALUES ('t','p','T',10,1,1)");
-      await run(path, server, pending[0]!);
-    } finally {await server.dispose(); assert.equal(server.lifecycleSnapshot().healthy, false);}
-  });
-}
 test('actual native pending request plus running DB owner yields immutable actor-scoped authority', {timeout: 10000}, async () => {
   await fixture(async (path, server, request) => {
     const authority = await verifyPromptAuthority(path, server, request, 1n);

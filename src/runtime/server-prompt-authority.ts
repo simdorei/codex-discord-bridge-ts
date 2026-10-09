@@ -1,9 +1,7 @@
 import {PortableResidentLifecycle} from '../app-server/portable-resident-lifecycle.ts';
-import {clonePendingServerRequest, type PendingServerRequest} from '../app-server/server-request-state.ts';
+import {clonePendingServerRequest, pendingServerRequestEqual, type PendingServerRequest} from '../app-server/server-request-state.ts';
 import {extractThreadId} from '../app-server/identity.ts';
 import {serdeField, rustTrim} from '../app-server/value.ts';
-import {ServerRequestOccurrence} from '../protocol/ids.ts';
-import {serdeValueEqual} from '../core/serde-value-equal.ts';
 import {StateAccessFacade as state} from '../store/state-access-facade.ts';
 const completed = state.hasObservedCompletion, jobs = state.listQueueJobs, mapping = state.mirroredThreadId;
 const token = Symbol('PromptAuthority');
@@ -22,10 +20,6 @@ export class PromptAuthority implements Scope {
   requireActor(channel: bigint, user: bigint): void {
     if (this.#scope.channelId !== channel || this.#scope.userId !== user) throw new PromptAuthorityError('original user or channel does not match');
   }
-}
-function same(a: PendingServerRequest, b: PendingServerRequest): boolean {
-  return a.id === b.id && a.method === b.method && serdeValueEqual(a.params, b.params)
-    && Buffer.from(ServerRequestOccurrence.prototype.asBytes.call(a.occurrence)).equals(Buffer.from(ServerRequestOccurrence.prototype.asBytes.call(b.occurrence)));
 }
 /** Source ordered authority verification. This is a snapshot, NOT an enduring
  * grant or permission to respond later without current-request revalidation.
@@ -50,7 +44,7 @@ export async function verifyPromptAuthority(database: string, server: PortableRe
   const mapped = await mapping(database, channel);
   if (mapped !== null && mapped !== thread) throw new PromptAuthorityError('original channel mapping changed');
   if (PortableResidentLifecycle.prototype.generation.call(server) !== generation
-    || !PortableResidentLifecycle.prototype.pendingServerRequests.call(server, thread).some(pending => same(pending, request))) throw new PromptAuthorityError('original request expired or changed');
+    || !PortableResidentLifecycle.prototype.pendingServerRequests.call(server, thread).some(pending => pendingServerRequestEqual(pending, request))) throw new PromptAuthorityError('original request expired or changed');
   return new PromptAuthority(token, {threadId: thread, turnId: turn, channelId: channel, userId: user, generation});
 }
 Object.freeze(PromptAuthority.prototype);

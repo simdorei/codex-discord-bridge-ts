@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,858 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,866 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -5847,3 +5847,29 @@ remain incomplete. No external interaction was processed.
   tests.log,source-inputs.json,typecheck.log,focused-tests.log,full-tests.log,
   verification-result.json}. Existing cross-read races are not replaced by an
   atomic transaction; actual response-time authority and live Codex remain pending.
+
+
+## Safe pending prompt redisplay and exact snapshot comparison (252)
+
+- Added one/all pending-request preparation with source readiness checks, original
+  authority+actor verification, UI rebuilding and final generation/request-vector
+  checks. Invalid authority or prompt validation becomes an unavailable diagnostic
+  with no buttons; storage/server failures still propagate. Unsupported method
+  contents, private commands and question text are never copied into diagnostics.
+- PreparedPrompt values are immutable factory-owned snapshots containing the real
+  request, generation, rendered prompt and unavailable flag. Equality includes the
+  full request occurrence, ID, method, params, UI and diagnostic state. These are
+  display snapshots, not permission to answer a request without rechecking it.
+- Centralized full pending-request equality while preserving record()'s separate
+  method/params duplicate semantics. Extracted the existing native test fixture
+  for reuse; no authority assertions were removed or relaxed.
+- Eight new tests cover native valid preparation, empty thread list, wrong actor,
+  secret/malformed/unsupported diagnostics, storage-error propagation, restart
+  during preparation, expired occurrence and active-object rejection. Focused18
+  PASS with prior authority tests, strict TS0, full4,866 PASS, fail/cancel/skip0.
+  Native mid-preparation restart is exercised; arbitrary cross-thread vector races
+  are not claimed exhaustively tested or made atomic.
+- Evidence: .runtime/cloud-runtime-server-prompt-redisplay-252/{source-inputs.json,
+  typecheck.log,focused-tests.log,full-tests.log,verification-result.json}.
+  Per-chunk delivery revalidation, durable redisplay receipts and responding to
+  approval/input requests remain subsequent integrations.

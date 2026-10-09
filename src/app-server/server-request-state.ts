@@ -19,6 +19,12 @@ export function clonePendingServerRequest(input:PendingServerRequest):PendingSer
   if(typeof method!=="string"||/[\uD800-\uDFFF]/u.test(method))throw new TypeError("Expected decoded Serde request metadata");
   const token=ServerRequestOccurrence.fromBytes(ServerRequestOccurrence.prototype.asBytes.call(occurrence));Object.freeze(token);const owned=cloneOwnedSerdeValue(params);return Object.freeze({id,occurrence:token,method,params:owned});
 }
+/** Full immutable request identity equality, unlike record() duplicate detection
+ * which intentionally compares only method/params for an existing request ID. */
+export function pendingServerRequestEqual(left:PendingServerRequest,right:PendingServerRequest):boolean{
+  const a=clonePendingServerRequest(left),b=clonePendingServerRequest(right);
+  return a.id===b.id&&a.method===b.method&&serdeValueEqual(a.params,b.params)&&occurrenceHex(a.occurrence)===occurrenceHex(b.occurrence);
+}
 interface Key{idKey:string;occurrence:string;key:string}
 const key=(id:RequestId,occurrence:ServerRequestOccurrence):Key=>{const idKey=requestIdKey(id),hex=occurrenceHex(occurrence);return {idKey,occurrence:hex,key:JSON.stringify([idKey,hex])};};
 const same=(a:PendingServerRequest,b:PendingServerRequest)=>a.method===b.method&&serdeValueEqual(a.params,b.params);
