@@ -1,6 +1,6 @@
 # Cloud migration checkpoint
 
-Latest verified Linux checkpoint: **4,942 tests passed**, no failures/skips;
+Latest verified Linux checkpoint: **4,952 tests passed**, no failures/skips;
 strict TypeScript passed. Includes native local helper-session tests, not live Codex/Discord.
 Migration, Windows and production validation remain incomplete. See the chronological
 sections below for exact scope and evidence; counts are not a full Rust-parity claim.
@@ -6072,3 +6072,26 @@ remain incomplete. No external interaction was processed.
   but no simulated concurrent change inside that synchronous read is claimed.
   Generated confirmation strings are prospective, not submission evidence. Actor
   authorization, legacy expiry and actual response submission remain later gates.
+
+## 262 — Original-authority pending text reply path
+
+- Added exact copyable prefix parsing and occurrence/generation fingerprint
+  selection. ASCII uppercase hex parses but does not case-fold into a lowercase
+  fingerprint match. Malformed/stale explicit bindings fail rather than falling
+  back to a different request; unbound zero eligible requests return null.
+- Connected current pending snapshot → unique selection → original turn/user/
+  channel authority → pure answer payload → resident response adapter. Confirmation
+  is returned only after native write completion. The existing resident owns final
+  generation/occurrence checks and uncertain-write handling; no automatic retry.
+- Ten new tests include actual synthetic child stdin responses and isolated SQLite
+  ownership. Valid approval/input is emitted exactly once; repeated stale binding,
+  wrong actor, remapping, completed turn, secret input, missing adapter and pre-abort
+  do not submit. Test-only response mode explicitly uses fence:null; production
+  durable response-fence integration is not certified by that fixture.
+- Initial focused19/20 failed due to nonexistent fixture channel_id. Corrected the
+  test to remap existing codex_thread_id, retaining initial-tests.ts and
+  initial-focused-tests.log; product validation was not weakened. Final focused20
+  PASS, strict TS0, full4,952 PASS, fail/cancel/skip0. Evidence:
+  .runtime/cloud-runtime-pending-text-reply-262/{source-inputs.json,typecheck.log,
+  focused-tests.log,full-tests.log,verification-result.json}. Live services, Windows,
+  full command routing and end-to-end operational acceptance remain unfinished.

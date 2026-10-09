@@ -15,7 +15,7 @@ const approvalMethods = new Set(['item/commandExecution/requestApproval', 'item/
 export function isApprovalMethod(method: string, params: unknown): boolean {
   return approvalMethods.has(method) || method === 'mcpServer/elicitation/request' && serdeField(params, 'mode') === 'url';
 }
-function requestsSnapshot(input: readonly PendingServerRequest[]): readonly PendingServerRequest[] {
+export function capturePendingRequests(input: readonly PendingServerRequest[]): readonly PendingServerRequest[] {
   if (!Array.isArray(input) || types.isProxy(input)) throw new TypeError('Expected pending request array');
   const result: PendingServerRequest[] = [];
   for (let i = 0; i < input.length; i++) {const d = Object.getOwnPropertyDescriptor(input, String(i)); if (!d || !Object.hasOwn(d, 'value')) throw new TypeError('Expected own pending request'); result.push(clonePendingServerRequest(d.value));}
@@ -33,7 +33,7 @@ export function buildComponentResponse(input: ComponentId, pending: readonly Pen
   const component = snapshotComponentId(input);
   if ('AsyncChoice' in component || 'RecoveryPublicationDecision' in component || 'RecoveryAbandonDecision' in component) throw new ComponentWorkerError('InvalidComponent');
   if ('Busy' in component) throw new ComponentWorkerError('BusyChoice');
-  const requests = requestsSnapshot(pending); let request: PendingServerRequest, inputValue: string | null = null, approvalValue: string | null = null;
+  const requests = capturePendingRequests(pending); let request: PendingServerRequest, inputValue: string | null = null, approvalValue: string | null = null;
   if ('Approval' in component) {
     request = exactlyOne(requests.filter(r => extractThreadId(r.params) === component.Approval.thread_id && isApprovalMethod(r.method, r.params)));
     approvalValue = answers.get(component.Approval.answer)!;
