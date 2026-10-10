@@ -1,3 +1,4 @@
+import * as ArchiveFence from '../../src/store/archive-fence.ts';
 import * as MirrorCursor from '../../src/store/mirror-cursor.ts';
 import * as ConfirmedDelivery from '../../src/store/delivery-confirmed.ts';
 import * as DiagnosticRead from '../../src/store/diagnostic-read.ts';
@@ -194,6 +195,10 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.rejectUsageLimitAsyncQuestion,QuestionDispatch.rejectUsageLimitAsyncQuestion);
     assert.strictEqual(StateAccessFacade.listFilteredExisting, QueueRead.listFilteredExisting);
     assert.strictEqual(FacadeExports.listFilteredExisting, QueueRead.listFilteredExisting);
+    assert.strictEqual(StateAccessFacade.reserveArchiveScope, ArchiveFence.reserveArchiveScope);
+    assert.strictEqual(StateAccessFacade.archiveTargetFenced, ArchiveFence.archiveTargetFenced);
+    assert.strictEqual(StateAccessFacade.markArchiveVerified, ArchiveFence.markArchiveVerified);
+    assert.strictEqual(StateAccessFacade.releaseRejectedArchive, ArchiveFence.releaseRejectedArchive);
     assert.strictEqual(StateAccessFacade.claimMirrorEvent, MirrorCursor.claimMirrorEvent);
     assert.strictEqual(StateAccessFacade.cleanupMirrorEvents, MirrorCursor.cleanupMirrorEvents);
     assert.strictEqual(StateAccessFacade.getOrInitMirrorCursor, MirrorCursor.getOrInitMirrorCursor);
@@ -413,6 +418,11 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
   it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
+      "reserveArchiveScope",
+      "archiveTargetFenced",
+      "markArchiveVerified",
+      "releaseRejectedArchive",
+
       "proposeAbandonment",
       "bindAbandonmentDelivery",
       "recordAbandonmentDecision",
@@ -651,7 +661,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 237);
+    assert.strictEqual(actual.length, 241);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

@@ -1,3 +1,4 @@
+import * as ArchiveFence from './archive-fence.ts';
 import * as MirrorCursor from './mirror-cursor.ts';
 import * as ConfirmedDelivery from './delivery-confirmed.ts';
 import * as DiagnosticRead from './diagnostic-read.ts';
@@ -107,6 +108,10 @@ export const rejectUsageLimitAsyncQuestion: typeof QuestionDispatch.rejectUsageL
 export const listFilteredExisting: typeof QueueRead.listFilteredExisting = QueueRead.listFilteredExisting;
 export const remainingDiscordIds: typeof MirrorPolicyRead.remainingDiscordIds = MirrorPolicyRead.remainingDiscordIds;
 export const mirrorTargets: typeof MirrorPolicyRead.mirrorTargets = MirrorPolicyRead.mirrorTargets;
+export const reserveArchiveScope: typeof ArchiveFence.reserveArchiveScope = ArchiveFence.reserveArchiveScope;
+export const archiveTargetFenced: typeof ArchiveFence.archiveTargetFenced = ArchiveFence.archiveTargetFenced;
+export const markArchiveVerified: typeof ArchiveFence.markArchiveVerified = ArchiveFence.markArchiveVerified;
+export const releaseRejectedArchive: typeof ArchiveFence.releaseRejectedArchive = ArchiveFence.releaseRejectedArchive;
 export const claimMirrorEvent: typeof MirrorCursor.claimMirrorEvent = MirrorCursor.claimMirrorEvent;
 export const cleanupMirrorEvents: typeof MirrorCursor.cleanupMirrorEvents = MirrorCursor.cleanupMirrorEvents;
 export const getOrInitMirrorCursor: typeof MirrorCursor.getOrInitMirrorCursor = MirrorCursor.getOrInitMirrorCursor;
@@ -380,6 +385,10 @@ export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.m
 export interface IStateAccessFacade {
   readonly remainingDiscordIds: typeof MirrorPolicyRead.remainingDiscordIds;
   readonly mirrorTargets: typeof MirrorPolicyRead.mirrorTargets;
+  readonly reserveArchiveScope: typeof ArchiveFence.reserveArchiveScope;
+  readonly archiveTargetFenced: typeof ArchiveFence.archiveTargetFenced;
+  readonly markArchiveVerified: typeof ArchiveFence.markArchiveVerified;
+  readonly releaseRejectedArchive: typeof ArchiveFence.releaseRejectedArchive;
   readonly claimMirrorEvent: typeof MirrorCursor.claimMirrorEvent;
   readonly cleanupMirrorEvents: typeof MirrorCursor.cleanupMirrorEvents;
   readonly getOrInitMirrorCursor: typeof MirrorCursor.getOrInitMirrorCursor;
@@ -637,6 +646,10 @@ export type StateAccessFacade = IStateAccessFacade;
 export const StateAccessFacade: IStateAccessFacade = {
   remainingDiscordIds,
   mirrorTargets,
+  reserveArchiveScope,
+  archiveTargetFenced,
+  markArchiveVerified,
+  releaseRejectedArchive,
   claimMirrorEvent,
   cleanupMirrorEvents,
   getOrInitMirrorCursor,
