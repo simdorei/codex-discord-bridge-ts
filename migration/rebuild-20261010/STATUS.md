@@ -12,3 +12,7 @@ The original 8,183-test workspace remains inaccessible. Nothing in this director
 The sink keeps maintenance admission alive, checks canonical custody DB identity, acquires the shared target mutex with a two-second deadline, rechecks delivered and durable ingress identity, and records immutable consent. It never starts or replays a request. Dispatcher integration, other missing runtime modules, platform qualification and full migration remain incomplete.
 
 The prior checkpoint 633 full-suite outcome remains UNKNOWN. The older 8,183 count is historical, not the current recovered checkout count. Original-workspace recovery request remains separate from code reimplementation.
+
+## Reimplementation 278
+
+Abandonment proposal/receipt codecs preserve typed struct order, i64/u64 bits, strict unknown/duplicate field rejection and unit enum decoding. Six new focused tests PASS; full 5,101 PASS, no failures/cancellations/skips; strict TS exit 0. Raw 277/278 verification logs are retained as gzip files under `evidence/`. No abandonment write or runtime integration is claimed.
