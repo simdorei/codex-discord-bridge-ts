@@ -1,0 +1,24 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 292,
+  "localCommit": "6e950c02697cbd3b5c85c89f44ec11c2ccd1272d",
+  "fullTests": 5263,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/discord/interaction-access.ts": "ef56aadde23b8fd0ba7ec6a59b14356893a200cc7a499d4d15a74bef29920af7",
+    "src/runtime/message-worker/admission.ts": "7d2f3bacc00cd8a53fda7f012468c06eedc228e1e8236e6cd830b59a57981868",
+    "src/runtime/message-worker/classification.ts": "75002c12ce8bd2577d484f368fbab0c89560e3e22d8204bd396e7c395ff40388",
+    "test/runtime/message-worker/admission.test.ts": "fa94114f1375436f25f24b9807f7550c1ac77e405f35e38e3dbd422125c0b14f",
+    "test/runtime/message-worker/classification.test.ts": "79d2c776b00a3ddbe536818782478d7bc478308f0f1c775703fcbc77439866bf"
+  },
+  "rawLogsPublished": false,
+  "reason": "Denied compressed log artifacts excluded; local raw evidence retained pending approval. Source and verification-summary publication independently authorized.",
+  "limits": [
+    "Original workspace remains inaccessible",
+    "Full runtime and Windows integration incomplete",
+    "Current local/remote histories intentionally separate"
+  ]
+}

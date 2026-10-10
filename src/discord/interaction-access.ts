@@ -1,6 +1,7 @@
 import {types} from 'node:util';
 import {gatewayOwnField} from './gateway/values.ts';
 import {isDecodedGatewayInteraction,type DecodedGatewayInteraction} from './gateway/decoded-interaction.ts';
+import {isDecodedGatewayMessage,type DecodedGatewayMessage} from './gateway/decoded-message.ts';
 import {discordInteractionAuthor} from './model/interaction.ts';
 export interface InteractionAccessPolicyInput{readonly allowedChannelIds:readonly bigint[];readonly allowedUserIds:readonly bigint[];readonly mirroredChannelIds:readonly bigint[];readonly allowAllChannels:boolean}
 export interface InteractionAccessDecision{readonly kind:'Allowed'|'DeniedUser'|'DeniedChannel';readonly channelId:bigint|null;readonly userId:bigint|null;readonly sourceMessageId:bigint|null}
@@ -16,6 +17,12 @@ export class InteractionAccessPolicy{
  /** Replace only dynamic mirror IDs, retaining the original static access policy. */
  withMirroredChannelIds(mirroredChannelIds:readonly bigint[]):InteractionAccessPolicy{
   return new InteractionAccessPolicy({allowedChannelIds:[...this.#channels],allowedUserIds:[...this.#users],mirroredChannelIds,allowAllChannels:this.#all});
+ }
+ /** Independent flags retain message planner's channel-before-user gate order. */
+ messageAccess(message:DecodedGatewayMessage):Readonly<{channelAllowed:boolean;userAllowed:boolean}>{
+  if(!isDecodedGatewayMessage(message))throw new TypeError('Expected fully decoded message');
+  const user=(message.author as Readonly<{id:bigint}>).id;
+  return Object.freeze({channelAllowed:this.#all||this.#channels.has(message.channel_id)||this.#mirrors.has(message.channel_id),userAllowed:this.#users.size===0||this.#users.has(user)});
  }
  evaluate(interaction:DecodedGatewayInteraction):InteractionAccessDecision{
   if(!isDecodedGatewayInteraction(interaction))throw new TypeError('Expected fully decoded interaction');
