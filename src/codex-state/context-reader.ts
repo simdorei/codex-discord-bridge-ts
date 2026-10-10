@@ -22,3 +22,11 @@ export async function renderContextView(input:readonly ThreadInfo[],refresh:bool
  const response=cloneOwnedSerdeValue(await slot.run(new URL('./context-worker.ts',import.meta.url),{operation:'render',threads,refresh,targets:threads.map(t=>({thread:t.id,path:t.rolloutPath})),budget:DEFAULT_CONTEXT_BUDGET,maxFiles:50,recentLimit:refresh?Math.max(1,Math.min(limit,50)):null,mode},3000,signal));
  if(serdeField(response,'ok')!==true){const message=serdeField(response,'message');throw new Error(typeof message==='string'?message:'context reader failed');}const text=serdeField(response,'value');requireDiscordText(text);return text;
 }
+
+const listSlot=new OwnedWorkerSlot();
+export function joinThreadListReader():Promise<void>{return listSlot.join();}
+export async function renderThreadList(input:readonly ThreadInfo[],selected:string|null,limit:number,archived:boolean,states:ReadonlyMap<string,string>,signal?:AbortSignal):Promise<string>{
+ const threads=cloneOwnedSerdeValue(input) as readonly ThreadInfo[];if(!Array.isArray(threads)||!Number.isSafeInteger(limit)||limit<0||limit>0xffffffff||typeof archived!=='boolean')throw new TypeError('Expected list options');if(selected!==null)requireDiscordText(selected);
+ const observations=[...Map.prototype.entries.call(states)];for(const [id,state] of observations){requireDiscordText(id);requireDiscordText(state);}for(const thread of threads){for(const text of [thread.id,thread.title,thread.cwd,thread.rolloutPath,thread.model,thread.reasoningEffort])requireDiscordText(text);}
+ const targets=threads.slice(0,limit===0?threads.length:limit).map(t=>({thread:t.id,path:t.rolloutPath}));const result=cloneOwnedSerdeValue(await listSlot.run(new URL('./context-worker.ts',import.meta.url),{operation:'list',threads,selected,limit,archived,states:observations,targets,budget:DEFAULT_CONTEXT_BUDGET,maxFiles:50,recentLimit:null,mode:'Visible'},3000,signal));if(serdeField(result,'ok')!==true){const message=serdeField(result,'message');throw new Error(typeof message==='string'?message:'thread list reader failed');}const text=serdeField(result,'value');requireDiscordText(text);return text;
+}
