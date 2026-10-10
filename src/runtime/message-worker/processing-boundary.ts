@@ -25,11 +25,12 @@ export async function processMessageWithErrorReport<T>(target:MessageErrorReport
 export type MessageErrorReporter=(code:'on_message_error'|'on_message_error_report_failed',detail:string)=>void;
 /** A known, saved refusal with failed notification must not emit another-key
  * ERROR. Ordinary error notices use their original message/error/v1 receipt. */
-export async function reportMessageProcessingError(database:string,http:DiscordChannelClient,target:MessageErrorReportTarget,error:unknown,report:MessageErrorReporter):Promise<void>{
+export async function reportMessageProcessingError(database:string,http:DiscordChannelClient,target:MessageErrorReportTarget,error:unknown,report:MessageErrorReporter,signal?:AbortSignal):Promise<void>{
+ signal?.throwIfAborted();
  requireTarget(target);if(typeof report!=='function'||types.isProxy(report)||types.isAsyncFunction(report)||types.isGeneratorFunction(report))throw new TypeError('Expected synchronous message reporter');
  const info=messageWorkerErrorInfo(error),detail=info?.text??passiveErrorText(error,'message processing failed');invokeSynchronousVoid(report,{},['on_message_error',detail]);
  if(info?.kind==='KnownOutcomeNotification')return;
  if(isMessageDatabaseMismatch(error)||info?.kind==='Admission'&&isMessageDatabaseMismatch(info.source))throw info?.kind==='Admission'?info.source:error;
- try{await sendMessageReplyOnce(database,http,target.channelId,target.messageId,'ErrorReport','ERROR: '+detail);}
- catch(failure){invokeSynchronousVoid(report,{},['on_message_error_report_failed',passiveErrorText(failure,'message error report failed')]);}
+ try{await sendMessageReplyOnce(database,http,target.channelId,target.messageId,'ErrorReport','ERROR: '+detail,[],signal);}
+ catch(failure){if(signal?.aborted&&failure===signal.reason)throw failure;invokeSynchronousVoid(report,{},['on_message_error_report_failed',passiveErrorText(failure,'message error report failed')]);}
 }

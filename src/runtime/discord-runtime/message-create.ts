@@ -46,20 +46,21 @@ export interface MessageCreateOptions {
  * gate entry and durable deduplication. Caller determines allowDrainControl by
  * probing the actual current pending native request; this function does not guess.
  * The outer normal/emergency consumer and cancellation wiring remain separate. */
-export async function prepareGatewayMessage(message:DecodedGatewayMessage,botUserId:bigint|null,options:MessageCreateOptions):Promise<PreparedGatewayMessage>{
+export async function prepareGatewayMessage(message:DecodedGatewayMessage,botUserId:bigint|null,options:MessageCreateOptions,signal?:AbortSignal):Promise<PreparedGatewayMessage>{
+ signal?.throwIfAborted();
  const target=messageErrorReportTarget(message),{database,config,basePolicy,gate,allowDrainControl,resolver,observedAt,custody}=options;
  if(typeof allowDrainControl!=='boolean')throw new TypeError('Expected drain control availability');
  const result=await classifyGatewayMessage(message,database,config,await refreshMirrorPolicy(basePolicy,database),botUserId);
  const simple=(kind:Kind,ignored:PreparedGatewayMessage['ignored']=null)=>new PreparedGatewayMessage(token,kind,target,null,null,ignored);
  if(result.kind==='Ignore')return simple('Ignore',Object.freeze({reason:result.reason,channelId:result.channelId,userId:result.userId}));
- const candidate=result.candidate;if(resolver!==null)await MessageCandidate.prototype.bindSettings.call(candidate,resolver);
- const pendingOnly=allowDrainControl&&MessageCandidate.prototype.isPendingReplyCandidate.call(candidate),stop=MessageCandidate.prototype.isStopControl.call(candidate),force=MessageCandidate.prototype.isForceRestart.call(candidate);
+ signal?.throwIfAborted();const candidate=result.candidate;if(resolver!==null)await MessageCandidate.prototype.bindSettings.call(candidate,resolver);
+ signal?.throwIfAborted();const pendingOnly=allowDrainControl&&MessageCandidate.prototype.isPendingReplyCandidate.call(candidate),stop=MessageCandidate.prototype.isStopControl.call(candidate),force=MessageCandidate.prototype.isForceRestart.call(candidate);
  if(allowDrainControl&&!pendingOnly&&!stop&&!force)return simple('Unavailable');
  let permit:AdmissionPermit|null=null,admitted:AdmittedMessage|null=null,transferred=false;
  try{
   if(!force){try{permit=pendingOnly||stop?AdmissionGate.prototype.tryEnterControlObserved.call(gate)[0]:AdmissionGate.prototype.tryEnter.call(gate);}catch(error){if(drainGateErrorInfo(error)?.kind==='Sealed')return simple('Unavailable');throw error;}}
   admitted=await admitMessageCandidateAt(candidate,observedAt,custody);if(admitted===null)return simple('Duplicate');
   if(pendingOnly)await AdmittedMessage.prototype.requirePendingReply.call(admitted);
-  const prepared=new PreparedGatewayMessage(token,'Admitted',target,admitted,permit);transferred=true;return prepared;
+  signal?.throwIfAborted();const prepared=new PreparedGatewayMessage(token,'Admitted',target,admitted,permit);transferred=true;return prepared;
  }finally{if(!transferred){try{if(admitted!==null)await AdmittedMessage.prototype.dispose.call(admitted);}finally{if(permit!==null)AdmissionPermit.prototype.release.call(permit);}}}
 }
