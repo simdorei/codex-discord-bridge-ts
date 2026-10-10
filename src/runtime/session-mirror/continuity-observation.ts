@@ -1,15 +1,11 @@
+import {snapshotMirrorCursorAnchor as captureExpected,type MirrorCursorAnchor} from '../../core/mirror-cursor-anchor.ts';
 import {observeMirrorBatch,type MirrorBatchObservation} from './batch-observation.ts';
 import {snapshotMirrorReadLimits,type MirrorReadLimits} from './read-window.ts';
 import {snapshotMirrorItemOptions,type MirrorItemOptions} from './decode-reader.ts';
 import {createHash} from 'node:crypto';
-import {resolve} from 'node:path';
 import {MirrorFileWindow,type MirrorFileStamp,MirrorFileChangedError} from './file-window.ts';
-import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
-export interface MirrorCursorAnchor{
- readonly version:1;readonly path:string;readonly offset:bigint;readonly stamp:MirrorFileStamp;
- readonly prefixHash:string;readonly tailHash:string;
-}
+export type {MirrorCursorAnchor} from '../../core/mirror-cursor-anchor.ts';
 export type MirrorContinuity='UnchangedMetadataAndAnchors'|'SameIdentityGrowthAndAnchors';
 const stampKeys=['dev','ino','birthtimeNs','mtimeNs','ctimeNs','size'] as const;
 const token=Symbol('native mirror continuity observation');
@@ -26,16 +22,6 @@ export class MirrorContinuityObservation{
  async verifyCurrent(signal?:AbortSignal):Promise<void>{await this.#window.verifyCurrent(signal);}
 }
 Object.freeze(MirrorContinuityObservation.prototype);
-function captureExpected(input:MirrorCursorAnchor):MirrorCursorAnchor{
- const version=own(input,'version'),path=own(input,'path'),offset=own(input,'offset'),raw=own(input,'stamp'),prefixHash=own(input,'prefixHash'),tailHash=own(input,'tailHash');
- requireDiscordText(path);
- if(version!==1||path.includes('\0')||path.length>32768||Buffer.byteLength(path)>32768||resolve(path)!==path||typeof offset!=='bigint'||offset<0n||offset>=(1n<<64n))throw new TypeError('Invalid persisted mirror anchor');
- const fields=Object.create(null) as Record<typeof stampKeys[number],bigint>;
- for(const k of stampKeys){const value=own(raw,k);if(typeof value!=='bigint')throw new TypeError('Invalid mirror file stamp');fields[k]=value;}
- if(fields.dev<0n||fields.ino<=0n||fields.birthtimeNs<=0n||fields.size<offset||fields.size>=(1n<<64n))throw new TypeError('Unusable mirror file identity');
- for(const value of [prefixHash,tailHash])if(typeof value!=='string'||value.length!==64||!/^[0-9a-f]{64}$/.test(value))throw new TypeError('Invalid mirror anchor hash');
- return Object.freeze({version:1,path,offset,stamp:Object.freeze({...fields}),prefixHash:prefixHash as string,tailHash:tailHash as string});
-}
 /** Reads at most 256 prefix + 256 pre-cursor bytes, not the whole rollout.
  * A zero cursor needs one bounded byte read for native metadata only.
  * The caller must already know what the offset means; capturing now does not

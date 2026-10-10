@@ -1,0 +1,41 @@
+import {types} from 'node:util';
+import {resolve} from 'node:path';
+import {parseSerdeValue} from './serde-json-parse.ts';
+import {serializeSerdeValue} from './serde-json.ts';
+export interface MirrorFileStamp {readonly dev:bigint;readonly ino:bigint;readonly birthtimeNs:bigint;readonly mtimeNs:bigint;readonly ctimeNs:bigint;readonly size:bigint;}
+export interface MirrorCursorAnchor {readonly version:1;readonly path:string;readonly offset:bigint;readonly stamp:MirrorFileStamp;readonly prefixHash:string;readonly tailHash:string;}
+const keys=['dev','ino','birthtimeNs','mtimeNs','ctimeNs','size'] as const;
+const u64=1n<<64n,i64=1n<<63n;
+export const MIRROR_ANCHOR_MAX_BYTES=65536;
+function own(input:unknown,key:string):unknown{
+ if(input===null||typeof input!=='object'||types.isProxy(input))throw new TypeError('Expected mirror anchor data');
+ const d=Object.getOwnPropertyDescriptor(input,key);if(!d||!Object.hasOwn(d,'value'))throw new TypeError('Expected own mirror anchor field');return d.value;
+}
+/** Shared bounded data validation for native observations and persisted decoding.
+ * Well-formed data is not proof of provenance, delivery or unchanged history. */
+export function snapshotMirrorCursorAnchor(input:MirrorCursorAnchor):MirrorCursorAnchor{
+ const version=own(input,'version'),path=own(input,'path'),offset=own(input,'offset'),raw=own(input,'stamp'),prefixHash=own(input,'prefixHash'),tailHash=own(input,'tailHash');
+ if(version!==1||typeof path!=='string'||path.length>32768||/[\uD800-\uDFFF]/u.test(path)||path.includes('\0')||Buffer.byteLength(path)>32768||resolve(path)!==path||typeof offset!=='bigint'||offset<0n||offset>=u64)throw new TypeError('Invalid persisted mirror anchor');
+ const fields=Object.create(null) as Record<typeof keys[number],bigint>;
+ for(const k of keys){const value=own(raw,k);if(typeof value!=='bigint')throw new TypeError('Invalid mirror file stamp');fields[k]=value;}
+ for(const k of ['dev','ino','birthtimeNs','size'] as const)if(fields[k]<0n||fields[k]>=u64)throw new TypeError('Mirror stamp outside u64');
+ for(const k of ['mtimeNs','ctimeNs'] as const)if(fields[k]<-i64||fields[k]>=i64)throw new TypeError('Mirror timestamp outside i64');
+ if(fields.ino===0n||fields.birthtimeNs===0n||fields.size<offset)throw new TypeError('Unusable mirror file identity');
+ for(const value of [prefixHash,tailHash])if(typeof value!=='string'||value.length!==64||!/^[0-9a-f]{64}$/.test(value))throw new TypeError('Invalid mirror anchor hash');
+ return Object.freeze({version:1,path,offset,stamp:Object.freeze({...fields}),prefixHash:prefixHash as string,tailHash:tailHash as string});
+}
+/** Canonical v1 tuple. All integers use the existing lossless serde codec. */
+export function encodeMirrorCursorAnchor(input:MirrorCursorAnchor):string{
+ const a=snapshotMirrorCursorAnchor(input),s=a.stamp;
+ const result=serializeSerdeValue([1n,a.path,a.offset,s.dev,s.ino,s.birthtimeNs,s.mtimeNs,s.ctimeNs,s.size,a.prefixHash,a.tailHash]);
+ if(Buffer.byteLength(result)>MIRROR_ANCHOR_MAX_BYTES)throw new RangeError('Encoded mirror anchor budget exceeded');
+ return result;
+}
+export function decodeMirrorCursorAnchor(text:string):MirrorCursorAnchor{
+ if(typeof text!=='string'||text.length>MIRROR_ANCHOR_MAX_BYTES||Buffer.byteLength(text)>MIRROR_ANCHOR_MAX_BYTES)throw new RangeError('Encoded mirror anchor budget exceeded');
+ const a=parseSerdeValue<unknown>(text);
+ if(!Array.isArray(a)||a.length!==11||a[0]!==1n)throw new TypeError('Invalid mirror anchor tuple');
+ const value=snapshotMirrorCursorAnchor({version:1,path:a[1],offset:a[2],stamp:{dev:a[3],ino:a[4],birthtimeNs:a[5],mtimeNs:a[6],ctimeNs:a[7],size:a[8]},prefixHash:a[9],tailHash:a[10]});
+ if(encodeMirrorCursorAnchor(value)!==text)throw new TypeError('Noncanonical mirror anchor encoding');
+ return value;
+}

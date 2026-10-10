@@ -1,3 +1,4 @@
+import type {MirrorFileStamp} from '../../core/mirror-cursor-anchor.ts';
 import {open,stat,type FileHandle} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import type {BigIntStats} from 'node:fs';
@@ -18,7 +19,7 @@ export class MirrorFileClosePendingError extends Error {
   this.#pending=(async()=>{await this.#handle.close();this.#closed=true;active--;})().finally(()=>{this.#pending=undefined;});return this.#pending;
  }
 }
-export interface MirrorFileStamp {readonly dev:bigint;readonly ino:bigint;readonly birthtimeNs:bigint;readonly mtimeNs:bigint;readonly ctimeNs:bigint;readonly size:bigint;}
+export type {MirrorFileStamp} from '../../core/mirror-cursor-anchor.ts';
 const keys=['dev','ino','birthtimeNs','mtimeNs','ctimeNs','size'] as const;
 function stamp(value:BigIntStats):MirrorFileStamp{if(!value.isFile())throw new TypeError('Expected regular mirror rollout file');return Object.freeze({dev:value.dev,ino:value.ino,birthtimeNs:value.birthtimeNs,mtimeNs:value.mtimeNs,ctimeNs:value.ctimeNs,size:value.size});}
 function same(a:MirrorFileStamp,b:MirrorFileStamp):boolean{return keys.every(k=>a[k]===b[k]);}
