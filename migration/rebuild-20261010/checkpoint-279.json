@@ -1,0 +1,38 @@
+{
+  "kind": "borrowed-read-reimplementation",
+  "rustCommit": "4e213aa69dc89bed1552d8b83e12471d7664b7ae",
+  "sourceAuthority": {
+    "path": ".runtime/rust-authority/crates/cdr-store/src/async_resolution/abandonment/identity.rs",
+    "sha256": "8484c22827eddd58c3f58ebefc57ae438a498f69f56255fee0dfbca4a6c274ba"
+  },
+  "files": {
+    "src/store/abandonment-identity.ts": "6de175c22ce19855c436b6a85eca583f30283c770911c2a3ef10885738288ef8",
+    "test/store/abandonment-identity.test.ts": "135f95dfd68eda4623c1d9bd3ffe9fecf60c675860248a08e9c5b71b74a5a36f"
+  },
+  "strictTypeScriptExit": 0,
+  "focused": {
+    "tests": 11,
+    "pass": 11,
+    "fail": 0
+  },
+  "full": {
+    "tests": 5112,
+    "pass": 5112,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "exit": 0,
+    "fileConcurrency": 2
+  },
+  "logs": {
+    "migration/rebuild-20261010/evidence/279-typecheck.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "migration/rebuild-20261010/evidence/279-focused.log.gz": "6d181167853f50c9f6f8237525e5b59452fc77b63ae2c1da4196d413bf2d56bc",
+    "migration/rebuild-20261010/evidence/279-full-tests.log.gz": "462ccf68c8fbad1fcba48aaaef7deedb5a8d395c61446c67e7039ecb3ad4d7c6"
+  },
+  "limitations": [
+    "Minimal native SQLite read fixtures, not full production schema reachability",
+    "No abandonment proposal/decision writer or runtime integration yet",
+    "No fresh Rust executable differential or Windows qualification",
+    "Original lost workspace not recovered"
+  ]
+}

@@ -16,3 +16,7 @@ The prior checkpoint 633 full-suite outcome remains UNKNOWN. The older 8,183 cou
 ## Reimplementation 278
 
 Abandonment proposal/receipt codecs preserve typed struct order, i64/u64 bits, strict unknown/duplicate field rejection and unit enum decoding. Six new focused tests PASS; full 5,101 PASS, no failures/cancellations/skips; strict TS exit 0. Raw 277/278 verification logs are retained as gzip files under `evidence/`. No abandonment write or runtime integration is claimed.
+
+## Reimplementation 279
+
+Borrowed abandonment identity checks now read actual persisted source commands and decision clicks, compare exact actor/runtime/delivery identity, preserve historical-vs-fresh custody rules, and reject cross-proposal reuse. Eleven focused native SQLite tests PASS; full 5,112 PASS, zero failed/cancelled/skipped; strict TS exit 0. Raw logs and source hashes retained. No abandonment write or runtime integration is claimed.
