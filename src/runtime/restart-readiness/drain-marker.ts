@@ -1,7 +1,5 @@
-import {randomUUID} from 'node:crypto';
-import {open,mkdir,rename,unlink,stat} from 'node:fs/promises';
-import {dirname} from 'node:path';
-import {joinRuntimePath} from '../runtime-paths/path-text.ts';
+import {open,unlink,stat} from 'node:fs/promises';
+import {writePosixAtomicMarker} from '../atomic-marker.ts';
 import {parseRustU64} from '../../config/remote.ts';
 import {DrainFenceKey,DrainGateError,getDrainFenceKeyRecord} from '../../admission/owned-key.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
@@ -56,10 +54,7 @@ export class PosixDrainMarkerStore implements DrainMarkerStore{
  async readPrepare(){const text=await this.#read('prepare');return text===null?null:parseRuntimeFenceMarker(text,this.#path('prepare'));}
  async readAck(){const text=await this.#read('ack');return text===null?null:parseRuntimeFenceMarker(text,this.#path('ack'),'sealed');}
  async readRestart(){const text=await this.#read('restart');return text===null?null:parseRuntimeFenceMarker(text,this.#path('restart'));}
- async #write(kind:'identity'|'ack',text:string):Promise<void>{
-  const path=this.#path(kind),parent=dirname(path);let temporary:string|null=null;let temporaryOwned=false;
-  try{await mkdir(parent,{recursive:true});temporary=joinRuntimePath(parent,`.cdr-drain-${randomUUID()}.tmp`,'posix');const handle=await open(temporary,'wx',0o600);temporaryOwned=true;let failed=false,primary:unknown;try{await handle.writeFile(text,'utf8');await handle.sync();}catch(error){failed=true;primary=error;}try{await handle.close();}catch(error){if(!failed){failed=true;primary=error;}}if(failed)throw primary;await rename(temporary,path);temporary=null;}catch(error){if(temporary!==null&&temporaryOwned)try{await unlink(temporary);}catch{/* preserve the write failure */}throw new DrainMarkerError('Io',path,null,error);}
- }
+ async #write(kind:'identity'|'ack',text:string):Promise<void>{const path=this.#path(kind);try{await writePosixAtomicMarker(path,text);}catch(error){throw new DrainMarkerError('Io',path,null,error);}}
  async publishIdentity(marker:RuntimeMarker){await this.#write('identity',encodeRuntimeIdentityMarker(marker));}
  async publishAck(key:DrainFenceKey){await this.#write('ack',encodeRuntimeAckMarker(key));}
  async #remove(kind:'identity'|'ack'){const path=this.#path(kind);try{await unlink(path);}catch(error){if(code(error)!=='ENOENT')throw new DrainMarkerError('Io',path,null,error);}}
