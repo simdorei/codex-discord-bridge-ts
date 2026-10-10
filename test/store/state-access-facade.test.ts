@@ -1,3 +1,4 @@
+import * as MirrorInspection from '../../src/store/mirror-inspection.ts';
 import * as ArchiveFence from '../../src/store/archive-fence.ts';
 import * as MirrorCursor from '../../src/store/mirror-cursor.ts';
 import * as ConfirmedDelivery from '../../src/store/delivery-confirmed.ts';
@@ -147,6 +148,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.beginMirrorCreation, MirrorCreation.beginMirrorCreation);
     assert.strictEqual(StateAccessFacade.confirmMirrorCreation, MirrorCreation.confirmMirrorCreation);
     assert.strictEqual(FacadeExports.confirmMirrorCreation, MirrorCreation.confirmMirrorCreation);
+    assert.strictEqual(StateAccessFacade.mirrorInspectionSnapshotReadonly, MirrorInspection.mirrorInspectionSnapshotReadonly);
+    assert.strictEqual(FacadeExports.mirrorInspectionSnapshotReadonly, MirrorInspection.mirrorInspectionSnapshotReadonly);
     assert.strictEqual(StateAccessFacade.mirrorThreadChannels, MirrorSync.mirrorThreadChannels);
     assert.strictEqual(FacadeExports.mirrorThreadChannels, MirrorSync.mirrorThreadChannels);
     assert.strictEqual(StateAccessFacade.mirrorProjectForChannel, MirrorSync.mirrorProjectForChannel);
@@ -451,6 +454,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "confirmedMirrorCreation",
       "beginMirrorCreation",
       "confirmMirrorCreation",
+      "mirrorInspectionSnapshotReadonly",
       "mirrorThreadChannels",
       "mirrorProjectForChannel",
       "commitNewThreadSync",
@@ -664,7 +668,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 243);
+    assert.strictEqual(actual.length, 244);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

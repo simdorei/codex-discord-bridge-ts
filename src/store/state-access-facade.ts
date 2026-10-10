@@ -1,3 +1,4 @@
+import * as MirrorInspection from './mirror-inspection.ts';
 import * as RecoveryEffect from './recovery-effect-guard.ts';
 import * as ArchiveFence from './archive-fence.ts';
 import * as MirrorCursor from './mirror-cursor.ts';
@@ -179,6 +180,7 @@ export const blockedDeliveryReceiptCount: typeof DeliveryReceipts.blockedDeliver
 export const confirmedMirrorCreation: typeof MirrorCreation.confirmedMirrorCreation = MirrorCreation.confirmedMirrorCreation;
 export const beginMirrorCreation: typeof MirrorCreation.beginMirrorCreation = MirrorCreation.beginMirrorCreation;
 export const confirmMirrorCreation: typeof MirrorCreation.confirmMirrorCreation = MirrorCreation.confirmMirrorCreation;
+export const mirrorInspectionSnapshotReadonly: typeof MirrorInspection.mirrorInspectionSnapshotReadonly = MirrorInspection.mirrorInspectionSnapshotReadonly;
 export const mirrorThreadChannels: typeof MirrorSync.mirrorThreadChannels = MirrorSync.mirrorThreadChannels;
 export const mirrorProjectForChannel: typeof MirrorSync.mirrorProjectForChannel = MirrorSync.mirrorProjectForChannel;
 export const commitNewThreadSync: typeof MirrorSync.commitNewThreadSync = MirrorSync.commitNewThreadSync;
@@ -461,6 +463,7 @@ export interface IStateAccessFacade {
   readonly confirmedMirrorCreation: typeof MirrorCreation.confirmedMirrorCreation;
   readonly beginMirrorCreation: typeof MirrorCreation.beginMirrorCreation;
   readonly confirmMirrorCreation: typeof MirrorCreation.confirmMirrorCreation;
+  readonly mirrorInspectionSnapshotReadonly: typeof MirrorInspection.mirrorInspectionSnapshotReadonly;
   readonly mirrorThreadChannels: typeof MirrorSync.mirrorThreadChannels;
   readonly mirrorProjectForChannel: typeof MirrorSync.mirrorProjectForChannel;
   readonly commitNewThreadSync: typeof MirrorSync.commitNewThreadSync;
@@ -748,6 +751,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   confirmedMirrorCreation,
   beginMirrorCreation,
   confirmMirrorCreation,
+  mirrorInspectionSnapshotReadonly,
   mirrorThreadChannels,
   mirrorProjectForChannel,
   commitNewThreadSync,
