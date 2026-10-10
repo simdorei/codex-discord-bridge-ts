@@ -118,6 +118,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.resolveBusyControl, ControlBinding.resolveBusyControl);
     assert.strictEqual(StateAccessFacade.recordUserOrigin, MirrorOrigin.recordUserOrigin);
     assert.strictEqual(FacadeExports.recordUserOrigin, MirrorOrigin.recordUserOrigin);
+    assert.strictEqual(StateAccessFacade.createBusyChoice, BusyChoiceStore.createBusyChoice);
     assert.strictEqual(StateAccessFacade.readBusyChoiceState, BusyChoiceStore.readBusyChoiceState);
     assert.strictEqual(FacadeExports.readBusyChoiceState, BusyChoiceStore.readBusyChoiceState);
     assert.strictEqual(StateAccessFacade.claimBusyChoice, BusyChoiceStore.claimBusyChoice);
@@ -394,6 +395,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "bindBusyControl",
       "resolveBusyControl",
       "recordUserOrigin",
+      "createBusyChoice",
       "readBusyChoiceState",
       "claimBusyChoice",
       "releaseBusyChoiceClaim",
@@ -596,7 +598,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 216);
+    assert.strictEqual(actual.length, 217);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

@@ -275,6 +275,7 @@ export const admitBusyQueue: typeof BusyPromptIntake.admitBusyQueue = BusyPrompt
 export const bindBusyControl: typeof ControlBinding.bindBusyControl = ControlBinding.bindBusyControl;
 export const resolveBusyControl: typeof ControlBinding.resolveBusyControl = ControlBinding.resolveBusyControl;
 export const recordUserOrigin: typeof MirrorOrigin.recordUserOrigin = MirrorOrigin.recordUserOrigin;
+export const createBusyChoice: typeof BusyChoiceStore.createBusyChoice = BusyChoiceStore.createBusyChoice;
 export const readBusyChoiceState: typeof BusyChoiceStore.readBusyChoiceState = BusyChoiceStore.readBusyChoiceState;
 export const claimBusyChoice: typeof BusyChoiceStore.claimBusyChoice = BusyChoiceStore.claimBusyChoice;
 export const releaseBusyChoiceClaim: typeof BusyChoiceStore.releaseBusyChoiceClaim = BusyChoiceStore.releaseBusyChoiceClaim;
@@ -560,6 +561,7 @@ export interface IStateAccessFacade {
   readonly bindBusyControl: typeof ControlBinding.bindBusyControl;
   readonly resolveBusyControl: typeof ControlBinding.resolveBusyControl;
   readonly recordUserOrigin: typeof MirrorOrigin.recordUserOrigin;
+  readonly createBusyChoice: typeof BusyChoiceStore.createBusyChoice;
   readonly readBusyChoiceState: typeof BusyChoiceStore.readBusyChoiceState;
   readonly claimBusyChoice: typeof BusyChoiceStore.claimBusyChoice;
   readonly releaseBusyChoiceClaim: typeof BusyChoiceStore.releaseBusyChoiceClaim;
@@ -791,6 +793,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   bindBusyControl,
   resolveBusyControl,
   recordUserOrigin,
+  createBusyChoice,
   readBusyChoiceState,
   claimBusyChoice,
   releaseBusyChoiceClaim,
