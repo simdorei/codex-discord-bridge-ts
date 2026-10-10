@@ -2,7 +2,8 @@ import {types} from 'node:util';
 import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {isProCommand} from '../../pro/prompt.ts';
-import {snapshotActionResult, type ActionResult} from '../action-result.ts';
+import {snapshotActionResult} from '../action-result.ts';
+import type {PromptActionResult} from './prepared-submission.ts';
 import {QueueReadCoordinator} from '../queue-runner/read-coordinator.ts';
 import {ControlTurnVerifier} from './control-turn.ts';
 import {ActionIntegerRangeError, InvalidActionRequestError, MissingActionAppServerError} from './errors.ts';
@@ -18,7 +19,7 @@ export class BusyResultProducer {
     if(typeof now!=='function'||types.isProxy(now)||types.isAsyncFunction(now)||types.isGeneratorFunction(now))throw new TypeError('Expected synchronous busy clock');
     this.#database=database;this.#verifier=verifier;this.#binding=QueueReadCoordinator.prototype.controlBinding.bind(reads);this.#now=now;Object.freeze(this);
   }
-  async busyResult(thread:string,channel:bigint,user:bigint,prompt:string,requestedSteer:boolean,mapped:boolean,signal?:AbortSignal):Promise<ActionResult>{
+  async busyResult(thread:string,channel:bigint,user:bigint,prompt:string,requestedSteer:boolean,mapped:boolean,signal?:AbortSignal):Promise<PromptActionResult>{
     requireDiscordText(thread);requireDiscordText(prompt);
     if(typeof channel!=='bigint'||typeof user!=='bigint'||typeof requestedSteer!=='boolean'||typeof mapped!=='boolean')throw new TypeError('Expected busy request fields');
     signal?.throwIfAborted();const lease=await this.#verifier.lock(thread,signal);
@@ -37,7 +38,9 @@ export class BusyResultProducer {
       signal?.throwIfAborted();const choiceId=await state.createBusyChoice(this.#database,{ownerUserId:id(user),channelId:id(channel),targetThreadId:thread,prompt,allowSteer,now:readCustodyTimestamp(this.#now),timeToLive:1800},mapped);
       // If cancellation races the durable insert, finish the binding before returning.
       await state.bindBusyControl(this.#database,choiceId,thread,turn,job);signal?.throwIfAborted();
-      return snapshotActionResult({text:`Codex is busy for ${thread}. Choose what to do with this request.${status===null?'':'\nControl status: '+status}`,waitsForFinal:false,ui:pro?{kind:'ProBusy',choiceId}:{kind:'Busy',choiceId,allowSteer}});
+      const result=snapshotActionResult({text:`Codex is busy for ${thread}. Choose what to do with this request.${status===null?'':'\nControl status: '+status}`,waitsForFinal:false,ui:pro?{kind:'ProBusy',choiceId}:{kind:'Busy',choiceId,allowSteer}});
+      if(result.ui?.kind==='ServerPrompts')throw new TypeError('Unexpected server prompt in busy result');
+      return Object.freeze({...result,ui:result.ui});
     }finally{lease.release();}
   }
 }

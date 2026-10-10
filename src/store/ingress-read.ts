@@ -35,6 +35,12 @@ export function getIngressIn(db:DatabaseSync,key:string):StoredIngress|null{
 export function ingressByOriginIn(db:DatabaseSync,eventId:bigint):StoredIngress|null{
   const result=rows(db," WHERE event_id=? LIMIT 2",eventId);if(result.length>1)throw new StoreIntegrityError("ambiguous ingress origin identity");return result[0]??null;
 }
+/** Original event lookup; duplicate origins are integrity errors, never replay authority. */
+export async function ingressByOrigin(path:string,eventId:bigint):Promise<StoredIngress|null>{
+  if(typeof path!=="string"||/[\uD800-\uDFFF]/u.test(path))throw new TypeError("Expected well-formed path");
+  if(typeof eventId!=="bigint"||eventId<-(1n<<63n)||eventId>=(1n<<63n))throw new TypeError("Expected i64 origin");
+  const db=await openInitialized(path);try{return ingressByOriginIn(db,eventId);}finally{db.close();}
+}
 export async function getIngress(path:string,key:string):Promise<StoredIngress|null>{
   const db=await openInitialized(path);try{return getIngressIn(db,key);}finally{db.close();}
 }

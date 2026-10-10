@@ -132,6 +132,7 @@ export const admitBusyInteraction: typeof BusyIngress.admitBusyInteraction = Bus
 
 export const holdIngress: typeof IngressRecovery.holdIngress = IngressRecovery.holdIngress;
 export const recoverPriorRuntimeIngress: typeof IngressRecovery.recoverPriorRuntimeIngress = IngressRecovery.recoverPriorRuntimeIngress;
+export const ingressByOrigin: typeof IngressRead.ingressByOrigin = IngressRead.ingressByOrigin;
 export const getIngress: typeof IngressRead.getIngress = IngressRead.getIngress;
 export const getIngressForOwnerReadonly: typeof IngressRead.getIngressForOwnerReadonly = IngressRead.getIngressForOwnerReadonly;
 export const listIngressesForOwner: typeof IngressRead.listIngressesForOwner = IngressRead.listIngressesForOwner;
@@ -423,6 +424,7 @@ export interface IStateAccessFacade {
 
   readonly holdIngress: typeof IngressRecovery.holdIngress;
   readonly recoverPriorRuntimeIngress: typeof IngressRecovery.recoverPriorRuntimeIngress;
+  readonly ingressByOrigin: typeof IngressRead.ingressByOrigin;
   readonly getIngress: typeof IngressRead.getIngress;
   readonly getIngressForOwnerReadonly: typeof IngressRead.getIngressForOwnerReadonly;
   readonly listIngressesForOwner: typeof IngressRead.listIngressesForOwner;
@@ -653,6 +655,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   admitBusyInteraction,
   holdIngress,
   recoverPriorRuntimeIngress,
+  ingressByOrigin,
   getIngress,
   getIngressForOwnerReadonly,
   listIngressesForOwner,

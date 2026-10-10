@@ -1,0 +1,25 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 308,
+  "localCommit": "8ae48fd4c2787a20e8afd648b4bed36cc28a8020",
+  "fullTests": 5387,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/action-executor/busy-result.ts": "b067cc9e671ff076e3b10100c6b0d3e46cd386f882fc7c6a9cbebbbadfbd4cf5",
+    "src/runtime/action-executor/queue-prompt.ts": "38ac8ad6b3a73edb96d6cc3d05904e9dbb1531647c4877c8230bd2be7c2dee72",
+    "src/store/ingress-read.ts": "9e182f97f0b3154f67c89bdc2586968623cd744d1796e5fa2a2a00c9b3e569d8",
+    "src/store/state-access-facade.ts": "44a27abce670111b13c70f0b29e9595a9268e40758823dcddb2ff77768e928d6",
+    "test/runtime/action-executor/queue-prompt.test.ts": "9f9d5f4d8815b6b9b900de4f8358f3595afaa78e576c9e7bfb21294f2f3ef4d0",
+    "test/store/state-access-facade.test.ts": "e049c7e4b84c3d9480d79601d2ab203c49bf8550272fa0447610fde91014839c"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

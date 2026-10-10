@@ -246,6 +246,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.admitBusyInteraction, BusyIngress.admitBusyInteraction);
     assert.strictEqual(StateAccessFacade.holdIngress, IngressRecovery.holdIngress);
     assert.strictEqual(StateAccessFacade.recoverPriorRuntimeIngress, IngressRecovery.recoverPriorRuntimeIngress);
+    assert.strictEqual(StateAccessFacade.ingressByOrigin, IngressRead.ingressByOrigin);
     assert.strictEqual(StateAccessFacade.getIngress, IngressRead.getIngress);
     assert.strictEqual(StateAccessFacade.getIngressForOwnerReadonly, IngressRead.getIngressForOwnerReadonly);
     assert.strictEqual(StateAccessFacade.listIngressesForOwner, IngressRead.listIngressesForOwner);
@@ -517,6 +518,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "admitBusyInteraction",
       "holdIngress",
       "recoverPriorRuntimeIngress",
+      "ingressByOrigin",
       "getIngress",
       "getIngressForOwnerReadonly",
       "listIngressesForOwner",
@@ -598,7 +600,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 217);
+    assert.strictEqual(actual.length, 218);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
