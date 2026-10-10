@@ -1,3 +1,4 @@
+import * as DiagnosticRead from './diagnostic-read.ts';
 import * as RunnerCounts from './runner-target-counts.ts';
 import * as MirrorSync from './mirror-mapping.ts';
 import * as MirrorCreation from './mirror-creation.ts';
@@ -139,6 +140,8 @@ export const recoverPriorRuntimeIngress: typeof IngressRecovery.recoverPriorRunt
 export const ingressByOrigin: typeof IngressRead.ingressByOrigin = IngressRead.ingressByOrigin;
 export const getIngress: typeof IngressRead.getIngress = IngressRead.getIngress;
 export const getIngressForOwnerReadonly: typeof IngressRead.getIngressForOwnerReadonly = IngressRead.getIngressForOwnerReadonly;
+export const diagnosticDatabaseCounts: typeof DiagnosticRead.diagnosticDatabaseCounts = DiagnosticRead.diagnosticDatabaseCounts;
+export const diagnosticIdleRelease: typeof DiagnosticRead.diagnosticIdleRelease = DiagnosticRead.diagnosticIdleRelease;
 export const runnerTargetCounts: typeof RunnerCounts.runnerTargetCounts = RunnerCounts.runnerTargetCounts;
 export const listIngressesForOwner: typeof IngressRead.listIngressesForOwner = IngressRead.listIngressesForOwner;
 
@@ -448,6 +451,8 @@ export interface IStateAccessFacade {
   readonly ingressByOrigin: typeof IngressRead.ingressByOrigin;
   readonly getIngress: typeof IngressRead.getIngress;
   readonly getIngressForOwnerReadonly: typeof IngressRead.getIngressForOwnerReadonly;
+  readonly diagnosticDatabaseCounts: typeof DiagnosticRead.diagnosticDatabaseCounts;
+  readonly diagnosticIdleRelease: typeof DiagnosticRead.diagnosticIdleRelease;
   readonly runnerTargetCounts: typeof RunnerCounts.runnerTargetCounts;
   readonly listIngressesForOwner: typeof IngressRead.listIngressesForOwner;
 
@@ -680,6 +685,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   ingressByOrigin,
   getIngress,
   getIngressForOwnerReadonly,
+  diagnosticDatabaseCounts,
+  diagnosticIdleRelease,
   runnerTargetCounts,
   listIngressesForOwner,
   claimIngressRecovery,

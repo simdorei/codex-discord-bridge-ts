@@ -1,3 +1,4 @@
+import * as DiagnosticRead from '../../src/store/diagnostic-read.ts';
 import * as RunnerCounts from '../../src/store/runner-target-counts.ts';
 import * as MirrorSync from '../../src/store/mirror-mapping.ts';
 import * as MirrorCreation from '../../src/store/mirror-creation.ts';
@@ -268,6 +269,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.getIngress, IngressRead.getIngress);
     assert.strictEqual(StateAccessFacade.getIngressForOwnerReadonly, IngressRead.getIngressForOwnerReadonly);
     assert.strictEqual(StateAccessFacade.listIngressesForOwner, IngressRead.listIngressesForOwner);
+    assert.strictEqual(StateAccessFacade.diagnosticDatabaseCounts, DiagnosticRead.diagnosticDatabaseCounts);
+    assert.strictEqual(StateAccessFacade.diagnosticIdleRelease, DiagnosticRead.diagnosticIdleRelease);
     assert.strictEqual(StateAccessFacade.runnerTargetCounts, RunnerCounts.runnerTargetCounts);
     assert.strictEqual(StateAccessFacade.claimIngressRecovery, RecoveryCustody.claimIngressRecovery);
     assert.strictEqual(StateAccessFacade.validateIngressRecovery, RecoveryCustody.validateIngressRecovery);
@@ -549,6 +552,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "getIngress",
       "getIngressForOwnerReadonly",
       "listIngressesForOwner",
+      "diagnosticDatabaseCounts",
+      "diagnosticIdleRelease",
       "runnerTargetCounts",
       "claimIngressRecovery",
       "validateIngressRecovery",
@@ -628,7 +633,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 227);
+    assert.strictEqual(actual.length, 229);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
@@ -648,6 +653,10 @@ describe("StateAccessFacade type signature fidelity (compile-time)", () => {
         : false
       : false;
 
+    const eqDiagCounts: AssertEqual<typeof StateAccessFacade.diagnosticDatabaseCounts, typeof DiagnosticRead.diagnosticDatabaseCounts> = true;
+    const eqDiagIdle: AssertEqual<typeof StateAccessFacade.diagnosticIdleRelease, typeof DiagnosticRead.diagnosticIdleRelease> = true;
+    assert.strictEqual(eqDiagCounts, true);
+    assert.strictEqual(eqDiagIdle, true);
     const eqRunner: AssertEqual<typeof StateAccessFacade.runnerTargetCounts, typeof RunnerCounts.runnerTargetCounts> = true;
     assert.strictEqual(eqRunner, true);
     const eq1: AssertEqual<typeof StateAccessFacade.enqueue, typeof QueueEnqueue.enqueue> = true;
