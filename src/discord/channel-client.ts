@@ -47,6 +47,9 @@ export class DiscordChannelClient implements DiscordReceiptTransport,TypingTrans
  updateInitialResponseWithComponents(applicationId:bigint,token:string,content:string,components:readonly DiscordComponent[],signal?:AbortSignal):Promise<void>{return this.#engine.updateInitialResponseWithComponents(applicationId,token,content,components,signal);}
  clearMessageComponents(channelId:bigint,messageId:bigint,signal?:AbortSignal):Promise<void>{return this.#engine.clearMessageComponents(channelId,messageId,signal);}
  getGatewayBot(signal?:AbortSignal){return this.#engine.getGatewayBot(signal);}
+ getMirrorChannel(id:bigint,signal?:AbortSignal){return this.#engine.getMirrorChannel(id,signal);}
+ createMirrorThread(parent:bigint,title:string,signal?:AbortSignal){return this.#engine.createMirrorThread(parent,title,signal);}
+ updateMirrorThread(channel:bigint,title:string,signal?:AbortSignal){return this.#engine.updateMirrorThread(channel,title,signal);}
  get authorizationInvalidated():boolean{return this.#engine.authorizationInvalidated;}
  get activeRequests():number{return this.#wire.activeRequests;}
  get ownedSockets():number{return this.#wire.ownedSockets;}

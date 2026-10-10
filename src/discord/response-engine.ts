@@ -1,3 +1,6 @@
+import {mirrorChannelId,mirrorCreateThreadRequest,mirrorUpdateThreadRequest,decodeMirrorChannelBytes} from './mirror-channel-request.ts';
+import type {MirrorChannel} from '../runtime/mirror-sync/new-mirror-link.ts';
+import {ownedDiscordTransportFault} from './transport-fault.ts';
 import {clearMessageComponentsRequest} from './message-component-clear-request.ts';
 import type {DiscordComponent} from './components.ts';
 import {interactionUpdateRequest, interactionUpdateRequestWithComponents} from './interaction-update-request.ts';
@@ -49,6 +52,11 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
   if(typeof options.decoder.decode!=="function"||types.isProxy(options.decoder.decode)||types.isAsyncFunction(options.decoder.decode)||types.isGeneratorFunction(options.decoder.decode))throw new DiscordTransportFault("BuildingRequest","a synchronous complete receipt decoder is required");
   this.#authorization=authorization;this.#wire={request:options.wire.request.bind(options.wire)};this.#rate={acquire:options.rateLimiter.acquire.bind(options.rateLimiter)};this.#decoder={decode:options.decoder.decode.bind(options.decoder)};this.#timeout=options.headerTimeoutMs??10000;if(!Number.isSafeInteger(this.#timeout)||this.#timeout<0||this.#timeout>2147483647)throw new DiscordTransportFault('BuildingRequest','invalid timeout profile');
  }
+ async getMirrorChannel(id:bigint,signal?:AbortSignal):Promise<MirrorChannel|null>{
+  const path=`channels/${mirrorChannelId(id)}`;try{return await this.#run(owned=>this.#request('GET',path,null,decodeMirrorChannelBytes,()=>new DiscordTransportFault('Json','channel response model could not be decoded'),owned,true,true),signal) as MirrorChannel;}catch(error){const fault=ownedDiscordTransportFault(error);if(fault?.kind==='Response'&&fault.status===404)return null;throw error;}
+ }
+ createMirrorThread(parent:bigint,title:string,signal?:AbortSignal):Promise<MirrorChannel>{const r=mirrorCreateThreadRequest(parent,title);return this.#run(owned=>this.#request('POST',r.path,r.body,decodeMirrorChannelBytes,()=>new DiscordTransportFault('Json','channel response model could not be decoded'),owned,true,true),signal) as Promise<MirrorChannel>;}
+ updateMirrorThread(channel:bigint,title:string,signal?:AbortSignal):Promise<void>{const r=mirrorUpdateThreadRequest(channel,title);return this.#run(async owned=>{await this.#request('PATCH',r.path,r.body,null,()=>new Error('unused channel update decoder'),owned,true,true);},signal);}
  get authorizationInvalidated():boolean{return this.#invalid;}
  #run<T>(operation:(signal:AbortSignal)=>Promise<T>,input?:AbortSignal):Promise<T>{
   if(this.#closing!==null)return Promise.reject(this.#shutdown.signal.reason);

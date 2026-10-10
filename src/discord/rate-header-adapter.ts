@@ -1,3 +1,4 @@
+import {isMirrorChannelMethod} from './mirror-channel-request.ts';
 import {messageComponentClearResource} from './message-component-clear-request.ts';
 import {isOriginalInteractionResponsePath} from './interaction-update-request.ts';
 import {isInteractionCallbackPath} from './interaction-callback-request.ts';
@@ -45,7 +46,7 @@ export function parseChannelRateHeaders(input:ReadonlyMap<string,Uint8Array>,now
 export class DiscordChannelRateLimiter implements DiscordRateLimiter{
  readonly #state:DiscordChannelRateState;readonly #now:()=>number;readonly #report:(error:unknown)=>void;
  constructor(options:{globalLimit?:number;clock?:RateClock;report:(error:unknown)=>void}){this.#state=new DiscordChannelRateState(options.globalLimit,options.clock);this.#now=options.clock===undefined?()=>performance.now():options.clock.now.bind(options.clock);this.#report=options.report;}
- async acquire(method:DiscordHttpMethod,path:string,signal:AbortSignal):Promise<DiscordRatePermit>{if(!(method==='GET'&&path==='gateway/bot')&&!(method==='POST'&&(isChannelPostPath(path)||isInteractionCallbackPath(path)))&&!(method==='PUT'&&isCommandRegistrationPath(path))&&!(method==='PATCH'&&(isOriginalInteractionResponsePath(path)||messageComponentClearResource(path)!==null)))throw new TypeError('Unsupported Discord rate endpoint method');const permit=await this.#state.acquire(path,signal);return Object.freeze({complete:(_status:number,values:ReadonlyMap<string,Uint8Array>)=>{
+ async acquire(method:DiscordHttpMethod,path:string,signal:AbortSignal):Promise<DiscordRatePermit>{if(!isMirrorChannelMethod(method,path)&&!(method==='GET'&&path==='gateway/bot')&&!(method==='POST'&&(isChannelPostPath(path)||isInteractionCallbackPath(path)))&&!(method==='PUT'&&isCommandRegistrationPath(path))&&!(method==='PATCH'&&(isOriginalInteractionResponsePath(path)||messageComponentClearResource(path)!==null)))throw new TypeError('Unsupported Discord rate endpoint method');const permit=await this.#state.acquire(path,signal);return Object.freeze({complete:(_status:number,values:ReadonlyMap<string,Uint8Array>)=>{
   let parsed:ChannelRateHeaders|null;try{parsed=parseChannelRateHeaders(values,this.#now());}catch(error){invokeSynchronousVoid(this.#report,{},[error]);if(!(error instanceof SyntaxError))throw error;parsed=null;}permit.complete(parsed);
  },release:()=>permit.release()});}
  close(reason?:unknown):Promise<void>{return this.#state.close(reason);}

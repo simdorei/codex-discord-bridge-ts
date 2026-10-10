@@ -1,3 +1,4 @@
+import {mirrorChannelResource} from './mirror-channel-request.ts';
 import {messageComponentClearResource} from './message-component-clear-request.ts';
 import {isOriginalInteractionResponsePath, originalInteractionResponseResource} from './interaction-update-request.ts';
 import {isInteractionCallbackPath} from './interaction-callback-request.ts';
@@ -12,7 +13,7 @@ interface Pending{readonly path:string;readonly resource:string;readonly exempt:
 interface Queue{inFlight:boolean;pending:Pending[];limit:number;remaining:number;resetAt:number|null}
 const empty=():Queue=>({inFlight:false,pending:[],limit:0,remaining:0,resetAt:null});
 const GC_MS=6*60*60*1000;
-function identity(path:string):string{const clear=messageComponentClearResource(path);if(clear!==null)return clear;const webhook=originalInteractionResponseResource(path);if(webhook!==null)return webhook;if(path==='gateway/bot'||isCommandRegistrationPath(path)||isInteractionCallbackPath(path))return 'none';if(typeof path!=='string')throw new TypeError('Expected channel endpoint');const match=/^channels\/([1-9][0-9]{0,19})\/(messages|typing)$/u.exec(path);if(match===null||match[0]!==path||BigInt(match[1]!)>=(1n<<64n))throw new TypeError('Expected canonical channel message/typing endpoint');return 'channels/'+match[1];}
+function identity(path:string):string{const mirror=mirrorChannelResource(path);if(mirror!==null)return mirror;const clear=messageComponentClearResource(path);if(clear!==null)return clear;const webhook=originalInteractionResponseResource(path);if(webhook!==null)return webhook;if(path==='gateway/bot'||isCommandRegistrationPath(path)||isInteractionCallbackPath(path))return 'none';if(typeof path!=='string')throw new TypeError('Expected channel endpoint');const match=/^channels\/([1-9][0-9]{0,19})\/(messages|typing)$/u.exec(path);if(match===null||match[0]!==path||BigInt(match[1]!)>=(1n<<64n))throw new TypeError('Expected canonical channel message/typing endpoint');return 'channels/'+match[1];}
 function headers(value:ChannelRateHeaders):{bucket:string;limit:number;remaining:number;resetAtMs:number}{
  if(!(value.bucket instanceof Uint8Array)||!Number.isInteger(value.limit)||value.limit<0||value.limit>65535||!Number.isInteger(value.remaining)||value.remaining<0||value.remaining>65535||!Number.isFinite(value.resetAtMs)||value.resetAtMs<0)throw new TypeError('Invalid parsed rate headers');return {bucket:Buffer.from(value.bucket).toString('hex'),limit:value.limit,remaining:value.remaining,resetAtMs:value.resetAtMs};
 }
