@@ -1,6 +1,6 @@
-import {createHash} from 'node:crypto';
+import {normalizedMirrorTextDigest} from './recent-text.ts';
 import {cloneOwnedSerdeValue} from '../../core/owned-serde-value.ts';
-import {rustTrim,serdeField,serdeObject} from '../../app-server/value.ts';
+import {serdeField,serdeObject} from '../../app-server/value.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {deliverTextIndexed} from '../../discord/delivery.ts';
 import {sendReceiptChunk,type DiscordReceiptTransport} from '../completion/receipt-sender.ts';
@@ -22,7 +22,7 @@ export function sessionMirrorIdentity(thread:string,input:MirrorItem):SessionMir
   if(typeof recent!=='boolean')throw new TypeError('Expected mirror text dedupe flag');
   if(!recent)return identity(SESSION_MIRROR_EVENT_NONCE_DOMAIN,thread,id);
   const t=turn??'',scope=`${Buffer.byteLength(thread,'utf8')}:${thread}:${Buffer.byteLength(t,'utf8')}:${t}`;
-  const hash=createHash('sha256').update(rustTrim(text),'utf8').update('\0').digest('hex');
+  const hash=normalizedMirrorTextDigest(text);
   return identity(SESSION_MIRROR_ASSISTANT_TEXT_NONCE_DOMAIN,scope,hash);
 }
 /** Await every receipt; no retries, timers, cursor writes or detached work. Transport
