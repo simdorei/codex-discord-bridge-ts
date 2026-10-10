@@ -122,6 +122,7 @@ export class PortableAppServerSession{
   lifecycleSnapshot(){return this.#state.snapshot();}
   diagnosticSnapshot(){return this.#diagnostics.snapshot();}
   activeTurnId(thread:string):string|null{return this.#state.activeTurnId(thread);}
+  hasUnsettledServerRequests():boolean{return this.#state.hasUnsettledServerRequests;}
   pendingServerRequests(thread:string|null=null):PendingServerRequest[]{return this.#state.pendingServerRequests(thread);}
   observedThreadSettings(thread:string){return this.#state.observedThreadSettings(thread);}
   /** Owned resident writer hook reads this synchronous source revision. */

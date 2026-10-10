@@ -101,6 +101,7 @@ export class PortableResidentLifecycle{
   #session(port:PortableResidentClientPort):PortableAppServerSession{const session=this.#sessions.get(port);if(!session)throw new ResidentStateError({kind:"ReplacementState",message:"owned native session is missing"});return session;}
   generation():bigint{return this.#state.generation();}
   /** Same current-client snapshot read as the source resident: no RPC, restart or new admission. */
+  hasUnsettledServerRequests():boolean{return this.#session(this.#state.currentClient()).hasUnsettledServerRequests();}
   activeTurnId(thread:string):string|null{if(typeof thread!=="string"||/[\uD800-\uDFFF]/u.test(thread))throw new TypeError("Expected well-formed target");return this.#session(this.#state.currentClient()).activeTurnId(thread);}
   observedThreadSettings(thread:string,expectedGeneration:bigint):readonly [bigint,unknown]|null{
     if(typeof thread!=="string"||/[\uD800-\uDFFF]/u.test(thread)||typeof expectedGeneration!=="bigint"||expectedGeneration<0n||expectedGeneration>=(1n<<64n))throw new TypeError("Expected settings observation identity");

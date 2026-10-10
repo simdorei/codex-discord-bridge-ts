@@ -1,0 +1,23 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 398,
+  "localCommit": "bfb805828ba56e04cfb890a15d7c50bc0f3f049d",
+  "fullTests": 6099,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/app-server/portable-resident-lifecycle.ts": "65cd779bf5b9ceec94e3b530433878ae1b5c9d03db16f194cb98d0d48965a2f4",
+    "src/app-server/portable-session.ts": "df3743b2732e7cb8182d08a5eaa12bd07e4332aff3b8c3dd355299f47f2eaa02",
+    "src/runtime/restart-readiness/live-drain.ts": "b0065c4740a642dab40560a39ce8158462f3579cb952a1c66c1b807aca0771e6",
+    "test/runtime/restart-readiness/live-drain.test.ts": "06fd462a703945cb69bc46dffd52bb057995c4f8e7a6891ee2af040cf9feb460"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}
