@@ -1,3 +1,4 @@
+import {historyChannelResource,HISTORY_HTTP_MAX_BYTES} from './history-request.ts';
 import {isMirrorChannelMethod} from './mirror-channel-request.ts';
 import {messageComponentClearResource} from './message-component-clear-request.ts';
 import {isOriginalInteractionResponsePath} from './interaction-update-request.ts';
@@ -29,6 +30,7 @@ export class NodeDiscordHttpWire implements DiscordHttpWire{
  async request(input:DiscordWireRequest,timeout:number,signal:AbortSignal):Promise<DiscordWireResponse>{
   signal.throwIfAborted();if(this.#closed)throw new WireError('HTTP wire closed');
   const {method,path,body,authorization}=input,route=typeof path==='string'?/^channels\/([1-9][0-9]{0,19})\/(messages|typing)$/u.exec(path):null;
+  const history=method==='GET'&&historyChannelResource(path)!==null&&body===null;
   const gateway=method==='GET'&&path==='gateway/bot'&&body===null;
   const channel=method==='POST'&&route!==null&&route[0]===path&&BigInt(route[1]!)<(1n<<64n)&&(route[2]==='messages'?typeof body==='string':body===null)&&!(typeof body==='string'&&/[\uD800-\uDFFF]/u.test(body));
   const commands=method==='PUT'&&isCommandRegistrationPath(path)&&typeof body==='string'&&!/[\uD800-\uDFFF]/u.test(body);
@@ -36,7 +38,7 @@ export class NodeDiscordHttpWire implements DiscordHttpWire{
   const update=method==='PATCH'&&isOriginalInteractionResponsePath(path)&&typeof body==='string'&&!/[\uD800-\uDFFF]/u.test(body)&&authorization===null;
   const clear=method==='PATCH'&&messageComponentClearResource(path)!==null&&body==='{"components":[]}';
   const mirror=isMirrorChannelMethod(method,path)&&(method==='GET'?body===null:typeof body==='string'&&!/[\uD800-\uDFFF]/u.test(body));
-  if(!gateway&&!channel&&!commands&&!callback&&!update&&!clear&&!mirror)throw new WireError('Invalid HTTP request profile');
+  if(!history&&!gateway&&!channel&&!commands&&!callback&&!update&&!clear&&!mirror)throw new WireError('Invalid HTTP request profile');
   if(authorization!==null&&(typeof authorization!=='string'||/[^\x20-\x7e]/u.test(authorization)))throw new WireError('Invalid HTTP authorization');
   if(this.#loopback&&authorization!==null)throw new WireError('Credentials are forbidden for loopback tests');
   if(!Number.isSafeInteger(timeout)||timeout<0||timeout>2147483647)throw new WireError('Invalid header deadline');
@@ -67,7 +69,7 @@ export class NodeDiscordHttpWire implements DiscordHttpWire{
    const compressed=values.has('content-encoding');
    return Object.freeze({status,headers:values,bytes:()=>{
     if(released||read)return Promise.reject(new WireError('Response body ownership already consumed'));read=true;
-    bodyWork=(async()=>{try{const chunks:Buffer[]=[];for await(const chunk of incoming)chunks.push(Buffer.from(chunk));const bytes=Buffer.concat(chunks);return compressed?await decompress(bytes):bytes;}catch{throw signal.aborted?signal.reason:new WireError('HTTP response body could not be read');}})();return bodyWork;
+    bodyWork=(async()=>{try{const chunks:Buffer[]=[];let length=0;for await(const chunk of incoming){const part=Buffer.isBuffer(chunk)?chunk:Buffer.from(chunk);length+=part.length;if(history&&length>HISTORY_HTTP_MAX_BYTES)throw new WireError('History encoded body budget exceeded');chunks.push(part);}const bytes=Buffer.concat(chunks,length);const decoded=compressed?await decompress(bytes,...(history?[{maxOutputLength:HISTORY_HTTP_MAX_BYTES}]:[])):bytes;signal.throwIfAborted();return decoded;}catch{throw signal.aborted?signal.reason:new WireError('HTTP response body could not be read');}})();return bodyWork;
    },release:()=>record.dispose()});
   }catch(error){await record.dispose();throw signal.aborted?signal.reason:error;}
  }

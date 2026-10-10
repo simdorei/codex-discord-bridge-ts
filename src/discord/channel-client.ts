@@ -46,6 +46,7 @@ export class DiscordChannelClient implements DiscordReceiptTransport,TypingTrans
  updateInitialResponse(applicationId:bigint,token:string,content:string,signal?:AbortSignal):Promise<void>{return this.#engine.updateInitialResponse(applicationId,token,content,signal);}
  updateInitialResponseWithComponents(applicationId:bigint,token:string,content:string,components:readonly DiscordComponent[],signal?:AbortSignal):Promise<void>{return this.#engine.updateInitialResponseWithComponents(applicationId,token,content,components,signal);}
  clearMessageComponents(channelId:bigint,messageId:bigint,signal?:AbortSignal):Promise<void>{return this.#engine.clearMessageComponents(channelId,messageId,signal);}
+ fetchLatestChannelMessages(id:bigint,signal?:AbortSignal){return this.#engine.fetchLatestChannelMessages(id,signal);}
  getGatewayBot(signal?:AbortSignal){return this.#engine.getGatewayBot(signal);}
  getMirrorChannel(id:bigint,signal?:AbortSignal){return this.#engine.getMirrorChannel(id,signal);}
  createMirrorThread(parent:bigint,title:string,signal?:AbortSignal){return this.#engine.createMirrorThread(parent,title,signal);}

@@ -1,3 +1,5 @@
+import {historyMessagePath} from './history-request.ts';
+import {decodeDiscordHistoryMessages,type DecodedGatewayMessage} from './gateway/decoded-message.ts';
 import {mirrorChannelId,mirrorCreateThreadRequest,mirrorUpdateThreadRequest,decodeMirrorChannelBytes} from './mirror-channel-request.ts';
 import type {MirrorChannel} from '../runtime/mirror-sync/new-mirror-link.ts';
 import {ownedDiscordTransportFault} from './transport-fault.ts';
@@ -57,6 +59,7 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
  }
  createMirrorThread(parent:bigint,title:string,signal?:AbortSignal):Promise<MirrorChannel>{const r=mirrorCreateThreadRequest(parent,title);return this.#run(owned=>this.#request('POST',r.path,r.body,decodeMirrorChannelBytes,()=>new DiscordTransportFault('Json','channel response model could not be decoded'),owned,true,true),signal) as Promise<MirrorChannel>;}
  updateMirrorThread(channel:bigint,title:string,signal?:AbortSignal):Promise<void>{const r=mirrorUpdateThreadRequest(channel,title);return this.#run(async owned=>{await this.#request('PATCH',r.path,r.body,null,()=>new Error('unused channel update decoder'),owned,true,true);},signal);}
+ fetchLatestChannelMessages(id:bigint,signal?:AbortSignal):Promise<readonly DecodedGatewayMessage[]>{const path=historyMessagePath(id);return this.#run(owned=>this.#request('GET',path,null,bytes=>decodeDiscordHistoryMessages(bytes,owned),()=>new DiscordTransportFault('Json','history response model could not be decoded'),owned,true,true),signal) as Promise<readonly DecodedGatewayMessage[]>;}
  get authorizationInvalidated():boolean{return this.#invalid;}
  #run<T>(operation:(signal:AbortSignal)=>Promise<T>,input?:AbortSignal):Promise<T>{
   if(this.#closing!==null)return Promise.reject(this.#shutdown.signal.reason);
@@ -76,7 +79,7 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
  updateInitialResponse(applicationId:bigint,token:string,content:string,signal?:AbortSignal):Promise<void>{const request=interactionUpdateRequest(applicationId,token,content);return this.#run(async owned=>{await this.#request('PATCH',request.path,request.body,null,()=>new Error('unused initial-response decoder'),owned,false);},signal);}
  updateInitialResponseWithComponents(applicationId:bigint,token:string,content:string,components:readonly DiscordComponent[],signal?:AbortSignal):Promise<void>{const request=interactionUpdateRequestWithComponents(applicationId,token,content,components);return this.#run(async owned=>{await this.#request('PATCH',request.path,request.body,null,()=>new Error('unused component-update decoder'),owned,false);},signal);}
  clearMessageComponents(channelId:bigint,messageId:bigint,signal?:AbortSignal):Promise<void>{const request=clearMessageComponentsRequest(channelId,messageId);return this.#run(async owned=>{await this.#request('PATCH',request.path,request.body,null,()=>new Error('unused clear-components decoder'),owned);},signal);}
- async #request<T>(method:DiscordHttpMethod,path:string,body:string|null,decode:((bytes:Uint8Array)=>T)|null,decodeFailure:()=>Error,signal:AbortSignal,useAuthorization=true,preserveCancellation=false):Promise<T|void>{
+ async #request<T>(method:DiscordHttpMethod,path:string,body:string|null,decode:((bytes:Uint8Array)=>T|Promise<T>)|null,decodeFailure:()=>Error,signal:AbortSignal,useAuthorization=true,preserveCancellation=false):Promise<T|void>{
   const request:DiscordWireRequest=Object.freeze({method,path,body,authorization:useAuthorization?this.#authorization:null});
   for(;;){signal.throwIfAborted();let permit:DiscordRatePermit|undefined,response:DiscordWireResponse|undefined;
    try{
@@ -85,7 +88,7 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
     try{invokeSynchronousVoid(permit.complete,permit,[status,response.headers]);}catch{throw transport();}
     if(status>=200&&status<300){
      if(decode===null)return;
-     try{return decode(await response.bytes());}catch(error){if(preserveCancellation&&signal.aborted&&error===signal.reason)throw error;throw decodeFailure();}
+     try{return await decode(await response.bytes());}catch(error){if(preserveCancellation&&signal.aborted&&error===signal.reason)throw error;throw decodeFailure();}
     }
     if(status!==429){
      try{const bytes=await response.bytes(),text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);parseDiscordApiError(text);}catch{throw transport();}
