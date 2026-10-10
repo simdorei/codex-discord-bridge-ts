@@ -8,7 +8,7 @@ import {DispatchAttempt,type DispatchResult} from "./dispatch-attempt.ts";
 import {WrittenRequestGuard} from "./written-request-guard.ts";
 import {AppServerRequestError,ownedRequestFailure} from "./request-client.ts";
 import {isOwnedMutationOutcomeUnknown} from "./maintenance-attempt.ts";
-import {cloneAppRequest,isObservationalRequest,type AppRequest} from "./requests.ts";
+import {cloneAppRequest,isObservationalRequest,updateThreadSettings,type ThreadSettingsUpdate,type AppRequest} from "./requests.ts";
 import {serdeField,rustTrim} from "./value.ts";
 import {serdeValueEqual} from "../core/serde-value-equal.ts";
 import {currentStopOrigin,hasStopOriginScope,withoutStopOriginScope,withStopOrigin} from "./dispatch-origin.ts";
@@ -53,7 +53,7 @@ export class NativeRecoveryObservation{
 Object.freeze(NativeRecoveryObservation.prototype);
 Object.freeze(NativeRecoveryObservation);
 export type PreparedTargetMutation={readonly kind:"Ready";readonly permit:TargetMutationPermit|null}|{readonly kind:"Completed";readonly value:unknown};
-interface DispatchContext{readonly check:(()=>void)|null;readonly queueClaim:unknown|null;readonly stopClaim:unknown|null;readonly clientPin:PortableResidentClientPort|null}
+interface DispatchContext{readonly check:(()=>void)|null;readonly queueClaim:unknown|null;readonly stopClaim:unknown|null;readonly clientPin:PortableResidentClientPort|null;readonly writeWatermark?:((revision:bigint)=>void)}
 /** Cancel only the caller's wait, while disposing a late Ready permit if preparation
  * was already handed to managed resume. The managed operation itself keeps running. */
 function awaitPrepared(task:Promise<PreparedTargetMutation>,signal?:AbortSignal):Promise<PreparedTargetMutation>{
@@ -102,6 +102,20 @@ export class PortableResidentLifecycle{
   generation():bigint{return this.#state.generation();}
   /** Same current-client snapshot read as the source resident: no RPC, restart or new admission. */
   activeTurnId(thread:string):string|null{if(typeof thread!=="string"||/[\uD800-\uDFFF]/u.test(thread))throw new TypeError("Expected well-formed target");return this.#session(this.#state.currentClient()).activeTurnId(thread);}
+  observedThreadSettings(thread:string,expectedGeneration:bigint):readonly [bigint,unknown]|null{
+    if(typeof thread!=="string"||/[\uD800-\uDFFF]/u.test(thread)||typeof expectedGeneration!=="bigint"||expectedGeneration<0n||expectedGeneration>=(1n<<64n))throw new TypeError("Expected settings observation identity");
+    let actual=this.generation();if(actual!==expectedGeneration)throw new ResidentStateError({kind:"GenerationMismatch",expected:expectedGeneration,actual});
+    const result=this.#session(this.#state.currentClient()).observedThreadSettings(thread);
+    actual=this.generation();if(actual!==expectedGeneration)throw new ResidentStateError({kind:"GenerationMismatch",expected:expectedGeneration,actual});return result;
+  }
+  /** Captures revision with the native writer acquired immediately before write.
+   * Notifications received during preparation/writer wait are not fresh evidence.
+   * Uses the same durable mutation, target, origin and cancellation path as execute. */
+  async updateSettingsWithWatermark(thread:string,update:ThreadSettingsUpdate,generation:bigint,signal?:AbortSignal):Promise<bigint>{
+    const request=updateThreadSettings(thread,update);let before:bigint|undefined;
+    await this.#requestScoped(request.method,request.params,request.timeoutMs,generation,false,{check:null,queueClaim:null,stopClaim:null,clientPin:null,writeWatermark:revision=>{before=revision;}},signal);
+    if(before===undefined)throw new AppServerInvalidReplyError("successful settings request had no writer admission");return before;
+  }
   /** Read the current owned client's immutable pending-request snapshots; no RPC. */
   pendingServerRequests(thread:string|null=null):PendingServerRequest[]{
     if(thread!==null&&(typeof thread!=="string"||/[\uD800-\uDFFF]/u.test(thread)))throw new TypeError("Expected well-formed target or null");
@@ -268,7 +282,7 @@ export class PortableResidentLifecycle{
       try{
         const value=await admission.client.requestAdmitted(admission.permit,method,params,waitMs,{
           preflight:wire=>{invokeSynchronousVoid(check,{},[]);this.checkActualTargetMutation(target,admission.generation,method,params);attempt.begin(wire);invokeSynchronousVoid(check,{},[]);},
-          writeStarted:()=>{attempt.writeStarted();guard.confirmWriteStarted();},
+          writeStarted:()=>{if(Object.hasOwn(context,"writeWatermark"))context.writeWatermark!(this.#session(admission.client).notificationRevision);attempt.writeStarted();guard.confirmWriteStarted();},
           writeComplete:()=>{if(isolate||observational||attempt.isolatesTarget())flushed.confirmFlushed();},
         },signal);
         guard.finish("Success");result={ok:true,value};

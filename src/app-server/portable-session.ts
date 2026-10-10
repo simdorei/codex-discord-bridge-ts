@@ -124,6 +124,8 @@ export class PortableAppServerSession{
   activeTurnId(thread:string):string|null{return this.#state.activeTurnId(thread);}
   pendingServerRequests(thread:string|null=null):PendingServerRequest[]{return this.#state.pendingServerRequests(thread);}
   observedThreadSettings(thread:string){return this.#state.observedThreadSettings(thread);}
+  /** Owned resident writer hook reads this synchronous source revision. */
+  get notificationRevision():bigint{return this.#state.notificationRevision;}
   subscribeNotifications():BroadcastReceiver<AppNotification>{return this.#notifications.subscribe();}
   subscribeServerRequests():BroadcastReceiver<PendingServerRequest>{return this.#serverRequests.subscribe();}
   request(method:string,params:unknown,waitMs:number,hooks?:RequestHooks,signal?:AbortSignal):Promise<unknown>{return this.#requests.request(method,params,waitMs,hooks,signal);}
