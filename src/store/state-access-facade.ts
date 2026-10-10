@@ -1,3 +1,4 @@
+import * as MirrorCreation from './mirror-creation.ts';
 import * as NewPromptIntake from './prompt-intake-new-thread.ts';
 import * as NewInput from "./ingress-new-input.ts";
 import * as ProcessedMessages from "./processed-messages.ts";
@@ -151,6 +152,9 @@ export const releaseRejectedDelivery: typeof DeliveryReceipts.releaseRejectedDel
 export const blockRejectedDelivery: typeof DeliveryReceipts.blockRejectedDelivery = DeliveryReceipts.blockRejectedDelivery;
 export const unknownDeliveryReceiptCount: typeof DeliveryReceipts.unknownDeliveryReceiptCount = DeliveryReceipts.unknownDeliveryReceiptCount;
 export const blockedDeliveryReceiptCount: typeof DeliveryReceipts.blockedDeliveryReceiptCount = DeliveryReceipts.blockedDeliveryReceiptCount;
+export const confirmedMirrorCreation: typeof MirrorCreation.confirmedMirrorCreation = MirrorCreation.confirmedMirrorCreation;
+export const beginMirrorCreation: typeof MirrorCreation.beginMirrorCreation = MirrorCreation.beginMirrorCreation;
+export const confirmMirrorCreation: typeof MirrorCreation.confirmMirrorCreation = MirrorCreation.confirmMirrorCreation;
 export const admitPromptIntakeWithIngress: typeof NewPromptIntake.admitPromptIntakeWithIngress = NewPromptIntake.admitPromptIntakeWithIngress;
 export const validateNewReplyCurrent: typeof NewReplyClaims.validateNewReplyCurrent = NewReplyClaims.validateNewReplyCurrent;
 export const getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress = NewReplyRead.getNewReplyByIngress;
@@ -415,6 +419,9 @@ export interface IStateAccessFacade {
   readonly blockRejectedDelivery: typeof DeliveryReceipts.blockRejectedDelivery;
   readonly unknownDeliveryReceiptCount: typeof DeliveryReceipts.unknownDeliveryReceiptCount;
   readonly blockedDeliveryReceiptCount: typeof DeliveryReceipts.blockedDeliveryReceiptCount;
+  readonly confirmedMirrorCreation: typeof MirrorCreation.confirmedMirrorCreation;
+  readonly beginMirrorCreation: typeof MirrorCreation.beginMirrorCreation;
+  readonly confirmMirrorCreation: typeof MirrorCreation.confirmMirrorCreation;
   readonly admitPromptIntakeWithIngress: typeof NewPromptIntake.admitPromptIntakeWithIngress;
   readonly validateNewReplyCurrent: typeof NewReplyClaims.validateNewReplyCurrent;
   readonly getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress;
@@ -674,6 +681,9 @@ export const StateAccessFacade: IStateAccessFacade = {
   blockRejectedDelivery,
   unknownDeliveryReceiptCount,
   blockedDeliveryReceiptCount,
+  confirmedMirrorCreation,
+  beginMirrorCreation,
+  confirmMirrorCreation,
   admitPromptIntakeWithIngress,
   validateNewReplyCurrent,
   getNewReplyByIngress,
