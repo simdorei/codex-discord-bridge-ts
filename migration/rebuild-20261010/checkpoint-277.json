@@ -1,0 +1,43 @@
+{
+  "capturedAt": "2026-10-10T09:28:39.915008+00:00",
+  "kind": "reimplementation-not-recovered-original",
+  "base": "371018cb132b2578e0aa74e5db85d0debec04ccb",
+  "rustAuthority": "4e213aa69dc89bed1552d8b83e12471d7664b7ae",
+  "files": {
+    "src/runtime/component-worker/confirmation.ts": "445f181cc34e054c232e97c9f7b0595aff0e70d2c28938f9d13d1df43c6d3132",
+    "src/runtime/component-worker/recovery-publication.ts": "b749d8d7b8d483b85a0f44ed3dcebd508b10a85d6144b388450e1cec7ade9482",
+    "test/runtime/component-worker/recovery-publication.test.ts": "4e947c79b7578ae6dbeb336cc53f8f98b3cd0d57e6569cff42daebb73fc4c0a6"
+  },
+  "authorities": {
+    "crates/cdr-runtime/src/component_worker/recovery_publication.rs": "20469f6c4aa3a8e895d7c06fc2f09e68889992657236743b4586cbb4d3d9a87b",
+    "crates/cdr-store/src/async_resolution/publication.rs": "2292359a4a5e546002227d721b550f594a71dd941c3a5d11eec1f451a05cb408",
+    "crates/cdr-store/src/async_resolution/publication/binding.rs": "5d2d770d36c578fc5d4c9dbdd53ceb193d18724a230b58ea41716e04c7874556",
+    "crates/cdr-store/src/async_resolution/publication/consent.rs": "42adf1544720d1cb9af11c96b43c58cb8e0db523eff15318da0330018ba825ad"
+  },
+  "focused": {
+    "tests": 9,
+    "pass": 9,
+    "fail": 0
+  },
+  "full": {
+    "tests": 5095,
+    "pass": 5095,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "exit": 0
+  },
+  "limitations": [
+    "No live Discord or app-server execution",
+    "Standalone intent sink; dispatcher maintenance-admission integration remains unfinished",
+    "No fresh Rust differential or Windows validation",
+    "Original 8183-test workspace has not been recovered"
+  ],
+  "strictTypeScriptExit": 0,
+  "verifiedAt": "2026-10-10T09:30:51.503083+00:00",
+  "logs": {
+    "typecheck-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "focused-final.log": "4b8bdcd2fd9d44b44f447ca739e8c87adac1d5af4babcc486f65d66a67f83e2d",
+    "full-tests.log": "0b282bc398d3ba20af9abd8f8dd46b3386c4718270fbc73fd799587e20b0f4ce"
+  }
+}

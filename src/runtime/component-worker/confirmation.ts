@@ -50,3 +50,17 @@ export async function claimStandardAction(database: string, actionClaim: string,
 export function asyncQuestionConfirmationPlan(questionId: string): ConfirmationPlan {
   requireDiscordText(questionId); const value = Object.freeze({content: '선택한 답변을 원래 Codex 스레드에 전달했습니다.', domain: 'async-question-confirmation-v1', logicalKey: questionId}); plans.add(value); return value;
 }
+
+/** Records descriptive recovery intent only, never an execution permit. */
+export function publicationIntentConfirmationPlan(id: string, revision: bigint, decision: 'ApproveExact' | 'KeepHeld'): ConfirmationPlan {
+  requireDiscordText(id);
+  if (!/^[0-9a-f]{32}$/.test(id) || typeof revision !== 'bigint' || revision <= 0n || revision >= 1n << 63n
+    || (decision !== 'ApproveExact' && decision !== 'KeepHeld')) throw new TypeError('Expected exact publication decision');
+  const value = Object.freeze({
+    content: decision === 'ApproveExact'
+      ? 'Exact recovery intent recorded. No request was started; separate safety checks are still required.'
+      : 'Recovery will remain held. No request was started.',
+    domain: 'recovery-publication-intent-confirmation-v1', logicalKey: `${id}:${revision}`,
+  });
+  plans.add(value); return value;
+}
