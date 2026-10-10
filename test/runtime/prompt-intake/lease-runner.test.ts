@@ -77,3 +77,28 @@ test("real atomic promotion keeps an in-flight backend result owned when intake 
     assert.equal(result.kind,"Finished");if(result.kind!=="Finished"||!result.result.ok)assert.fail("expected owned result");assert.equal(result.result.value.turnId,"turn");assert.equal(ticks.closed,true);
   });
 });
+
+test('external pre-abort performs no renewal or processing',async()=>{
+  const controller=new AbortController(),reason=new Error('shutdown');controller.abort(reason);
+  const runner=new PromptClaimLeaseRunner('unused',{renewPromptIntakeClaimIfCurrent:async()=>assert.fail('no renewal'),promptIntakeHasDurableOwner:async()=>false});
+  await assert.rejects(runner.run(claim(),async()=>assert.fail('no processing'),controller.signal),e=>e===reason);
+});
+test('external cancellation joins cancellation-ignoring preparation and closes renewal source',async()=>{
+  const ticks=new ManualTicks(),work=deferred<string>(),controller=new AbortController(),reason=new Error('shutdown');let signal:AbortSignal|undefined,finished=false;
+  const runner=new PromptClaimLeaseRunner('unused',{renewPromptIntakeClaimIfCurrent:async(_,c,_n,e)=>renewed(c,e),promptIntakeHasDurableOwner:async()=>false},()=>10,()=>ticks);
+  const pending=runner.run(claim(),async(_c,s)=>{signal=s;return work.promise;},controller.signal).finally(()=>{finished=true;});
+  const checked=assert.rejects(pending,e=>e===reason);await flush();controller.abort(reason);await flush();assert.equal(signal?.reason,reason);assert.equal(finished,false);
+  work.resolve('late');await checked;assert.equal(ticks.closed,true);
+});
+test('external cancellation during initial renewal prevents processor and timer creation',async()=>{
+  const renewal=deferred<PromptIntakeClaim>(),controller=new AbortController(),reason=new Error('cancel renewal');
+  const runner=new PromptClaimLeaseRunner('unused',{renewPromptIntakeClaimIfCurrent:async()=>renewal.promise,promptIntakeHasDurableOwner:async()=>false},()=>10,()=>assert.fail('no timer'));
+  const pending=runner.run(claim(),async()=>assert.fail('no processing'),controller.signal),checked=assert.rejects(pending,e=>e===reason);
+  controller.abort(reason);renewal.resolve(claim());await checked;
+});
+test('external cancellation still joins after intake has acquired a durable queue owner',async()=>{
+  const ticks=new ManualTicks(),work=deferred<string>(),controller=new AbortController(),reason=new Error('shutdown');let calls=0,signal:AbortSignal|undefined;
+  const runner=new PromptClaimLeaseRunner('unused',{renewPromptIntakeClaimIfCurrent:async(_,c,_n,e)=>++calls===1?renewed(c,e):null,promptIntakeHasDurableOwner:async()=>true},()=>10,()=>ticks);
+  const pending=runner.run(claim(),async(_c,s)=>{signal=s;return work.promise;},controller.signal),checked=assert.rejects(pending,e=>e===reason);
+  await flush();ticks.fire();await flush();controller.abort(reason);assert.equal(signal?.reason,reason);work.resolve('late');await checked;assert.equal(ticks.closed,true);
+});

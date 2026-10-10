@@ -74,3 +74,15 @@ test("mirrored intake cannot silently fall back to a selected target during prep
     const intake=(await state.getPromptIntake(path,"job"))!;await assert.rejects(()=>f.processor.processAdmittedPrompt(intake),/lost or changed its original mirror mapping/);assert.equal(f.starts.length,0);assert.equal((await state.getPromptIntake(path,"job"))?.attemptCount,1n);
   });
 });
+
+test('external shutdown joins real durable intake preparation and preserves the claim without retry or dispatch',async()=>{
+  await storeFixture(async path=>{const f=fixture(path),controller=new AbortController(),reason=new Error('shutdown');let begin!:()=>void,release!:(v:string)=>void,signal:AbortSignal|undefined,settled=false;
+    const started=new Promise<void>(r=>{begin=r;}),work=new Promise<string>(r=>{release=r;});
+    f.services.preparePrompt=async(_raw,_target,s)=>{signal=s;begin();return work;};
+    const pending=f.processor.admitPrompt(request(),controller.signal).finally(()=>{settled=true;}),checked=assert.rejects(pending,e=>e===reason);
+    await started;controller.abort(reason);await new Promise<void>(r=>setImmediate(r));assert.equal(signal?.reason,reason);assert.equal(settled,false);
+    release('late enriched');await checked;assert.deepEqual(f.starts,[]);assert.deepEqual(await state.listFiltered(path,null,null),[]);
+    const saved=await state.listPromptIntakes(path);assert.equal(saved.length,1);assert.equal(saved[0]?.rawPrompt,'raw');assert.equal(saved[0]?.attemptCount,0n);assert.notEqual(saved[0]?.claimToken,null);
+  });
+});
+test('pre-aborted intake creates no durable request',async()=>{await storeFixture(async path=>{const f=fixture(path),controller=new AbortController(),reason=new Error('before admission');controller.abort(reason);await assert.rejects(f.processor.admitPrompt(request(),controller.signal),e=>e===reason);assert.deepEqual(await state.listPromptIntakes(path),[]);assert.deepEqual(f.starts,[]);});});

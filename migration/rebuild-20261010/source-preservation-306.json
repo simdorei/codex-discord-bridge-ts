@@ -1,0 +1,23 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 306,
+  "localCommit": "0180b763c7eba3cd9d4e5b76b656868f9051d90f",
+  "fullTests": 5375,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/prompt-intake/lease-runner.ts": "1af73ee92580e83a978277fb115d8155fababf8f6b8699d1aae9cb833ce5ee0b",
+    "src/runtime/prompt-intake/processor.ts": "628db9e06804656e088ed65a3971fd3a11956437bed3bcb0b1d3621578c3175b",
+    "test/runtime/prompt-intake/lease-runner.test.ts": "8bed4fff1088decbda7cf7315b609d562700a9b930f74fc02fb64b00502c5493",
+    "test/runtime/prompt-intake/processor.test.ts": "4b0de5d9319cb32c3dd7a5e592748f15904bf0e29a7ca2bea6671e2043932032"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

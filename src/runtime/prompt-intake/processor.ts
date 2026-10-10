@@ -26,17 +26,19 @@ export class PromptIntakeProcessor{
     this.#runner=new PromptClaimLeaseRunner(path,this.#state,()=>this.#now(),options.ticks);this.#prepared=new PreparedPromptExecutor(path,queue,services,this.#state);this.#event=options.onRecoveryEvent??(()=>{});
   }
   #now():number{const now=this.#clock();if(!Number.isFinite(now))throw new TypeError("Expected finite clock");if(now<0)throw new SystemTimeError(-now*1000);return now;}
-  async admitPrompt(request:PromptAdmission):Promise<PromptActionResult>{
+  async admitPrompt(request:PromptAdmission,signal?:AbortSignal):Promise<PromptActionResult>{
+    signal?.throwIfAborted();
     const route=own(request,"source");if(typeof route!=="string"||/[\uD800-\uDFFF]/u.test(route))throw new TypeError("Expected source label");
     const input=snapshotNewPromptIntake({jobId:randomUUID(),targetThreadId:own(request,"targetThreadId"),channelId:own(request,"channelId"),ownerUserId:own(request,"userId"),
       discordMessageId:own(request,"discordMessageId"),rawPrompt:own(request,"rawPrompt"),autoQueueWhenBusy:own(request,"autoQueueWhenBusy"),requireCurrentMirror:route==="mirror",createdAt:0} as Parameters<typeof snapshotNewPromptIntake>[0]);
     unsigned(input.channelId);if(input.ownerUserId===null)throw new QueueIntegerRangeError();unsigned(input.ownerUserId);if(input.discordMessageId!==null)unsigned(input.discordMessageId);
     input.createdAt=this.#now();
-    const admitted=await this.#state.admitPromptIntake(this.#path,input);return this.processAdmittedPrompt(admitted.intake);
+    const admitted=await this.#state.admitPromptIntake(this.#path,input);return this.processAdmittedPrompt(admitted.intake,signal);
   }
-  async processAdmittedPrompt(input:StoredPromptIntake):Promise<PromptActionResult>{
-    const intake=snapshotStoredPromptIntake(input),claim=await this.#claim(intake);if(claim===null)return this.#replayOrPending(intake);
-    const outcome=await this.#runner.run(claim,(owned,signal)=>this.#process(owned,signal));
+  async processAdmittedPrompt(input:StoredPromptIntake,signal?:AbortSignal):Promise<PromptActionResult>{
+    signal?.throwIfAborted();
+    const intake=snapshotStoredPromptIntake(input),claim=await this.#claim(intake);signal?.throwIfAborted();if(claim===null)return this.#replayOrPending(intake);
+    const outcome=await this.#runner.run(claim,(owned,ownedSignal)=>this.#process(owned,ownedSignal),signal);
     return outcome.kind==="Lost"?this.#replayOrPending(intake):this.#finish(claim,outcome.result);
   }
   #claim(intake:StoredPromptIntake):Promise<PromptIntakeClaim|null>{const now=this.#now();return this.#state.tryClaimPromptIntake(this.#path,intake.jobId,now,now+600);}
