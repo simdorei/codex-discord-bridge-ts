@@ -27,6 +27,8 @@ export class NewThreadJournal {
  readonly #database:string;readonly #now:()=>number;readonly #records=new WeakMap<object,StoredIngress>();
  #capture(record:StoredIngress):StoredIngress {const snapshot=snapshotStoredIngress(record);this.#records.set(snapshot,snapshotStoredIngress(record));return snapshot;}
  constructor(database:string,now:()=>number=systemNow){requireDiscordText(database);if(typeof now!=='function'||types.isProxy(now)||types.isAsyncFunction(now)||types.isGeneratorFunction(now))throw new TypeError('Expected synchronous journal clock');this.#database=database;this.#now=now;Object.freeze(this);}
+ requireDatabase(database:string):void {if(database!==this.#database)throw new TypeError('Journal database mismatch');}
+ requireOriginalRecord(ingress:StoredIngress):void {const record=this.#records.get(ingress);if(record===undefined||!storedIngressEqual(snapshotStoredIngress(ingress),record))throw new TypeError('Expected original journal admission record');}
  async admit(input:NewActionContext,prompt:string,signal?:AbortSignal):Promise<StoredIngress>{
   requireDiscordText(prompt);if(rustTrim(prompt)==='')throw new InvalidActionRequestError('new request prompt must not be blank');
   const scope=context(input);signal?.throwIfAborted();
