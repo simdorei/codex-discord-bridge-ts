@@ -10,15 +10,13 @@ import {snapshotStoredQueueJob,serializeStoredQueueJob,type StoredQueueJob} from
 import {BackendFailureError} from "./queue-runner/errors.ts";
 import type {QueueStartBackend,QueueAttemptClaim} from "./queue-runner/start-coordinator.ts";
 import {createAppBackendErrors} from "./app-backend-errors.ts";
-const PRO_CALL="$ask-chatgpt-pro [@Chrome](plugin://chrome@openai-bundled)";
+import {buildProTurnInput} from "../pro/prompt.ts";
 function text(value:unknown):asserts value is string{if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed backend text");}
 function generation(value:unknown):asserts value is bigint{if(typeof value!=="bigint"||value<0n||value>=(1n<<64n))throw new RangeError("Expected u64 backend generation");}
 function invalid(message:string,ambiguous=false):never{throw new BackendFailureError({message,ambiguous,kind:"Other"});}
 /** Source-compatible prompt DTO only. This code never invokes another reviewer/agent. */
 export function appBackendTurnInput(prompt:string,path:string):readonly unknown[]{
-  text(prompt);text(path);const input:unknown[]=[{type:"text",text:prompt,text_elements:[]}];
-  if(prompt.startsWith(PRO_CALL)){const rest=prompt.slice(PRO_CALL.length);if(rest===""||/^\p{White_Space}/u.test(rest))input.push({type:"skill",name:"ask-chatgpt-pro",path},{type:"mention",name:"Chrome",path:"plugin://chrome@openai-bundled"});}
-  return cloneOwnedSerdeValue(input) as readonly unknown[];
+  text(prompt);text(path);return buildProTurnInput(prompt,path);
 }
 /** Core real-resident queue adapter. Fresh-thread knowledge is process-generation
  * local and consumed before every start attempt. Historical JSON remains evidence;
