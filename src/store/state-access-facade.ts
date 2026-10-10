@@ -1,3 +1,4 @@
+import * as ProcessedClaimGuard from './processed-claim-guard.ts';
 import * as MirrorInspection from './mirror-inspection.ts';
 import * as RecoveryEffect from './recovery-effect-guard.ts';
 import * as ArchiveFence from './archive-fence.ts';
@@ -205,6 +206,7 @@ export const finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPrefl
 export const pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply = DeliveryPreflight.pendingFirstReply;
 
 export const recordNewInput: typeof NewInput.recordNewInput = NewInput.recordNewInput;
+export const claimProcessedMessageGuarded: typeof ProcessedClaimGuard.claimProcessedMessageGuarded = ProcessedClaimGuard.claimProcessedMessageGuarded;
 export const claimProcessedMessage: typeof ProcessedMessages.claimProcessedMessage = ProcessedMessages.claimProcessedMessage;
 export const isProcessedMessage: typeof ProcessedMessages.isProcessedMessage = ProcessedMessages.isProcessedMessage;
 export const markProcessedMessage: typeof ProcessedMessages.markProcessedMessage = ProcessedMessages.markProcessedMessage;
@@ -504,6 +506,7 @@ export interface IStateAccessFacade {
   readonly confirmIngress: typeof IngressLifecycle.confirmIngress;
   readonly recordIngressProcessingMode: typeof IngressLifecycle.recordIngressProcessingMode;
   readonly recordNewInput: typeof NewInput.recordNewInput;
+  readonly claimProcessedMessageGuarded: typeof ProcessedClaimGuard.claimProcessedMessageGuarded;
   readonly claimProcessedMessage: typeof ProcessedMessages.claimProcessedMessage;
   readonly isProcessedMessage: typeof ProcessedMessages.isProcessedMessage;
   readonly markProcessedMessage: typeof ProcessedMessages.markProcessedMessage;
@@ -774,6 +777,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   finalDeliveryPreflight,
   pendingFirstReply,
   recordNewInput,
+  claimProcessedMessageGuarded,
   claimProcessedMessage,
   isProcessedMessage,
   markProcessedMessage,

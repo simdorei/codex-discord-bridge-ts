@@ -1,3 +1,4 @@
+import * as ProcessedClaimGuard from '../../src/store/processed-claim-guard.ts';
 import * as MirrorInspection from '../../src/store/mirror-inspection.ts';
 import * as ArchiveFence from '../../src/store/archive-fence.ts';
 import * as MirrorCursor from '../../src/store/mirror-cursor.ts';
@@ -307,6 +308,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.finalDeliveryPreflight, DeliveryPreflight.finalDeliveryPreflight);
     assert.strictEqual(StateAccessFacade.pendingFirstReply, DeliveryPreflight.pendingFirstReply);
     assert.strictEqual(StateAccessFacade.admitIngress, IngressAdmission.admitIngress);
+    assert.strictEqual(StateAccessFacade.claimProcessedMessageGuarded, ProcessedClaimGuard.claimProcessedMessageGuarded);
+    assert.strictEqual(FacadeExports.claimProcessedMessageGuarded, ProcessedClaimGuard.claimProcessedMessageGuarded);
     assert.strictEqual(StateAccessFacade.claimProcessedMessage, ProcessedMessages.claimProcessedMessage);
     assert.strictEqual(StateAccessFacade.isProcessedMessage, ProcessedMessages.isProcessedMessage);
     assert.strictEqual(StateAccessFacade.recordNewInput, NewInput.recordNewInput);
@@ -599,6 +602,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "finalDeliveryPreflight",
       "pendingFirstReply",
       "admitIngress",
+      "claimProcessedMessageGuarded",
       "claimProcessedMessage",
       "isProcessedMessage",
       "markProcessedMessage",
@@ -668,7 +672,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 244);
+    assert.strictEqual(actual.length, 245);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
