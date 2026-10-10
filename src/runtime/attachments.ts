@@ -14,7 +14,8 @@ export class AttachmentError extends Error {readonly kind:'Io'|'Required';constr
 /** Sequential source envelope. Required new-thread attachment failure never
  * yields prepared input. Ordinary attachment failure is reported and rendered.
  * No command, thread, approval or database write happens in this module. */
-export async function enrichMessageAttachments(message:DecodedGatewayMessage,basePrompt:string,config:AttachmentConfig,root:string,transport:AttachmentTransport,required:boolean,report:AttachmentReporter):Promise<string>{
+export async function enrichMessageAttachments(message:DecodedGatewayMessage,basePrompt:string,config:AttachmentConfig,root:string,transport:AttachmentTransport,required:boolean,report:AttachmentReporter,signal?:AbortSignal):Promise<string>{
+ signal?.throwIfAborted();
  if(!isDecodedGatewayMessage(message))throw new TypeError('Expected original decoded message');requireDiscordText(basePrompt);requireDiscordText(root);
  const enabled=gatewayOwnField(config,'attachmentsEnabled'),max=gatewayOwnField(config,'attachmentMaxBytes'),inline=gatewayOwnField(config,'attachmentTextInlineMaxBytes');
  if(typeof enabled!=='boolean'||typeof required!=='boolean'||typeof max!=='bigint'||max<0n||max>=1n<<64n||typeof inline!=='bigint'||inline<0n||inline>=1n<<64n)throw new TypeError('Expected attachment configuration');
@@ -26,9 +27,10 @@ export async function enrichMessageAttachments(message:DecodedGatewayMessage,bas
  const directory=join(root,String(message.channel_id),String(message.id));try{await mkdir(directory,{recursive:true});}catch(error){throw new AttachmentError('Io',error);}
  const details:string[]=[],previews:(readonly [string,string])[]=[];
  for(let offset=0;offset<attachments.length;offset++){
+  signal?.throwIfAborted();
   const a=attachments[offset]!,index=BigInt(offset+1),filename=sanitizeAttachmentFilename(a.filename,index);
-  try{const result=await downloadAttachment(index,{filename:a.filename,size:a.size,url:a.url,contentType:a.content_type??null},directory,max,inline,transport,required);details.push(result.detail);if(result.preview!==null)previews.push(result.preview);}
-  catch(error){const text=passiveErrorText(error,'attachment download failed');if(required)throw new AttachmentError('Required',`${filename}: ${text}`);invokeSynchronousVoid(report,{},[Object.freeze({messageId:message.id,filename,error:text})]);details.push(`${index}. ${filename} failed to save: ${text}`);}
+  try{const result=await downloadAttachment(index,{filename:a.filename,size:a.size,url:a.url,contentType:a.content_type??null},directory,max,inline,transport,required,signal);details.push(result.detail);if(result.preview!==null)previews.push(result.preview);}
+  catch(error){if(signal?.aborted&&error===signal.reason)throw error;const text=passiveErrorText(error,'attachment download failed');if(required)throw new AttachmentError('Required',`${filename}: ${text}`);invokeSynchronousVoid(report,{},[Object.freeze({messageId:message.id,filename,error:text})]);details.push(`${index}. ${filename} failed to save: ${text}`);}
  }
  return renderAttachmentPrompt(basePrompt,details,previews);
 }

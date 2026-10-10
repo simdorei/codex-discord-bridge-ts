@@ -15,7 +15,7 @@ export interface AttachmentResponse {
  readonly chunks:AsyncIterable<Uint8Array>;
  release():Promise<void>;
 }
-export interface AttachmentTransport {get(url:string):Promise<AttachmentResponse>}
+export interface AttachmentTransport {get(url:string,signal?:AbortSignal):Promise<AttachmentResponse>}
 export interface AttachmentDownload {readonly detail:string; readonly preview:readonly [string,string]|null}
 function u64(value:unknown):asserts value is bigint {
  if(typeof value!=='bigint'||value<0n||value>=1n<<64n)throw new TypeError('Expected u64 attachment byte count');
@@ -31,7 +31,8 @@ export function attachmentTextPreview(bytes:Uint8Array):string {
  * envelope layer. Required new-thread input is fsynced before a hash is returned.
  * Mid-stream errors keep source partial-file semantics; only oversize removes it. */
 export async function downloadAttachment(index:bigint, input:DownloadAttachment, directory:string,
- maxBytes:bigint, inlineMaxBytes:bigint, transport:AttachmentTransport, required:boolean):Promise<AttachmentDownload> {
+ maxBytes:bigint, inlineMaxBytes:bigint, transport:AttachmentTransport, required:boolean,signal?:AbortSignal):Promise<AttachmentDownload> {
+ signal?.throwIfAborted();
  u64(index);u64(maxBytes);u64(inlineMaxBytes);requireDiscordText(directory);
  if(typeof required!=='boolean')throw new TypeError('Expected required attachment flag');
  const raw=gatewayOwnField(input,'filename'),size=gatewayOwnField(input,'size'),url=gatewayOwnField(input,'url'),contentType=gatewayOwnField(input,'contentType');
@@ -40,21 +41,23 @@ export async function downloadAttachment(index:bigint, input:DownloadAttachment,
  const skipped=(why:string):AttachmentDownload=>Object.freeze({detail:`${index}. ${filename} skipped: ${why}.`,preview:null});
  if(size>maxBytes){const reason=`file is ${size} bytes; limit is ${maxBytes} bytes`;if(required)throw new Error(reason);return skipped(reason);}
  const getter=transport.get;if(typeof getter!=='function'||types.isProxy(getter)||types.isGeneratorFunction(getter))throw new TypeError('Expected attachment transport');
- const request=getter.call(transport,url);if(!types.isPromise(request))throw new TypeError('Expected native attachment request Promise');
+ const request=getter.call(transport,url,signal);if(!types.isPromise(request))throw new TypeError('Expected native attachment request Promise');
  const response=await request;
  try {
+  signal?.throwIfAborted();
   if(response.contentLength!==null){u64(response.contentLength);if(response.contentLength>maxBytes){const reason=`response exceeds ${maxBytes} bytes`;if(required)throw new Error(reason);return skipped(reason);}}
   const destination=join(directory,`${String(index).padStart(2,'0')}-${filename}`),file=await open(destination,'w');
   const digest=createHash('sha256');let written=0n,oversize=false;
   try {
    for await(const inputChunk of response.chunks){
+    signal?.throwIfAborted();
     if(!types.isUint8Array(inputChunk)||types.isProxy(inputChunk))throw new TypeError('Expected binary attachment chunk');
     const chunk=Buffer.from(inputChunk);written+=BigInt(chunk.byteLength);
     if(written>maxBytes){oversize=true;break;}
-    let offset=0;while(offset<chunk.length){const result=await file.write(chunk,offset,chunk.length-offset);if(result.bytesWritten===0)throw new Error('attachment write returned zero bytes');offset+=result.bytesWritten;}
+    let offset=0;while(offset<chunk.length){signal?.throwIfAborted();const result=await file.write(chunk,offset,chunk.length-offset);if(result.bytesWritten===0)throw new Error('attachment write returned zero bytes');offset+=result.bytesWritten;}
     digest.update(chunk);
    }
-   if(!oversize&&required)await file.sync();
+   signal?.throwIfAborted();if(!oversize&&required)await file.sync();
   } finally {await file.close();}
   if(oversize){
    try{await unlink(destination);}catch(error){if(!(error instanceof Error&&'code' in error&&error.code==='ENOENT'))throw new Error('oversized partial-file cleanup failed: '+passiveErrorText(error,'filesystem error'),{cause:error});}
@@ -67,6 +70,6 @@ export async function downloadAttachment(index:bigint, input:DownloadAttachment,
    let bytes:Buffer|null=null;try{bytes=await readFile(destination);}catch(error){if(required)throw new Error('text attachment preview read failed: '+passiveErrorText(error,'filesystem error'),{cause:error});}
    if(bytes!==null)preview=Object.freeze([filename,attachmentTextPreview(bytes)]);
   }
-  return Object.freeze({detail,preview});
+  signal?.throwIfAborted();return Object.freeze({detail,preview});
  } finally {await response.release();}
 }
