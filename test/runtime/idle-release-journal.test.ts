@@ -37,7 +37,7 @@ test("actual installed journal requires durable event proof and confirms unload 
   assert.equal(f.owner.observationTrackingEnabled(),true);await f.call("seed");f.owner.markSourceObservationGap(1n,e=>{throw e;});assert.equal(f.owner.reconcileIdleObservationPrefix(1n,1n),false);
   const event=f.owner.observationWindow(1n,0n).events[0]!.notification!,payload=serializeSerdeValue(event.params);f.db.prepare("INSERT INTO codex_observed_completions(thread_id,turn_id,generation,payload,resident_owner) VALUES('T','V',1,?,?)").run(payload,f.owner.instanceId);
   assert.equal(certifyObservationOn(f.db,{ownerId:f.owner.instanceId,generation:1n},1n,[{kind:"Terminal",thread:"T",turn:"V",payload}]),true);assert.equal(f.owner.reconcileIdleObservationPrefix(1n,1n),true);
-  await f.owner.releaseIdleSubscription(f.current());assert.equal(f.current().state,"AwaitUnload");await f.owner.releaseIdleSubscription(f.current());assert.equal(f.current().state,"Settled");assert.equal(f.current().detail,"UnloadedConfirmed");
+  assert.equal(f.owner.subscriptionResumeRequired("T"),false);await f.owner.releaseIdleSubscription(f.current());assert.equal(f.current().state,"AwaitUnload");assert.equal(f.owner.subscriptionResumeRequired("T"),true);await f.owner.releaseIdleSubscription(f.current());assert.equal(f.current().state,"Settled");assert.equal(f.current().detail,"UnloadedConfirmed");assert.equal(f.owner.subscriptionResumeRequired("T"),false);
 }));
 test("installed journal performs one real resubscribe before the next ordinary mutation",{timeout:15000},async t=>fixture(t,async f=>{
   await reconcile(f);await f.owner.releaseIdleSubscription(f.current());assert.equal(f.current().state,"AwaitUnload");

@@ -129,6 +129,8 @@ export class PortableResidentLifecycle{
     if(tracked){const admission=this.#state.admitResponse(this.generation());try{admission.client.requireObservationLedger();}finally{admission.release();}}
   }
   observationTrackingEnabled():boolean{return this.#targetGate.journal()?.tracksObservations()??false;}
+  /** Source target_mutation::subscription_resume_required, no admission or RPC. */
+  subscriptionResumeRequired(thread:string):boolean{if(typeof thread!=="string"||/[\uD800-\uDFFF]/u.test(thread))throw new TypeError("Expected well-formed target");return this.#targetGate.journal()?.resumeRequired(thread)??false;}
   /** Managed promise retains exact resident + target ownership until completion.
    * No caller AbortSignal may cancel a request after durable permission is recorded. */
   releaseIdleSubscription(input:IdleReleaseToken):Promise<void>{

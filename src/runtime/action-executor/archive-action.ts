@@ -15,7 +15,7 @@ import {archiveOwnRequest,archiveDescendants,type ArchiveActor} from './archive-
 import {archiveDispatchFailure} from './archive-failure.ts';
 import {verifyArchivedScope} from './archive-persistence.ts';
 import {snapshotSettingsBinding,validateLifecycleSettingsSnapshot,type FrozenSettingsBinding} from './settings-snapshot.ts';
-import {InvalidActionRequestError} from './errors.ts';
+import {InvalidActionRequestError,ActionIntegerRangeError} from './errors.ts';
 import {snapshotActionResult,type ActionResult} from '../action-result.ts';
 /** Message-ingress-bound archive coordinator. Caller supplies the shared target
  * registry used by queue/other controls. Timeout cancels and joins this operation;
@@ -26,7 +26,7 @@ export class AdmittedArchiveExecutor {
   requireDiscordText(path);requireDiscordText(codex);resumeThreadWithTimeout('',timeoutMs);this.#path=path;this.#codex=codex;this.#bridge=bridge;this.#server=server;this.#locks=locks;this.#timeout=timeoutMs;this.#selection=new ActionThreadSelection(codex,path,bridge);this.#verify=new ArchiveTargetVerifier(path,codex,this.#selection,server,timeoutMs);Object.freeze(this);
  }
  async execute(input:ArchiveActor,reference:string|null,key:string,signal?:AbortSignal):Promise<ActionResult>{
-  const actor=cloneOwnedSerdeValue(input) as ArchiveActor;requireDiscordText(key);if(reference!==null)requireDiscordText(reference);for(const id of [actor.channelId,actor.userId,actor.discordMessageId])if(typeof id!=='bigint'||id<0n||id>=1n<<63n)throw new TypeError('Expected admitted SQLite archive actor');signal?.throwIfAborted();
+  const actor=cloneOwnedSerdeValue(input) as ArchiveActor;requireDiscordText(key);if(reference!==null)requireDiscordText(reference);for(const id of [actor.channelId,actor.userId,actor.discordMessageId]){if(typeof id!=='bigint'||id<0n||id>=1n<<64n)throw new TypeError('Expected admitted u64 archive actor');if(id>=1n<<63n)throw new ActionIntegerRangeError();}signal?.throwIfAborted();
   const cancel=new AbortController(),timeoutReason=new Error('archive operation deadline'),onAbort=()=>cancel.abort(signal?.reason);signal?.addEventListener('abort',onAbort,{once:true});const timer=setTimeout(()=>cancel.abort(timeoutReason),this.#timeout);let attempted=false;
   try{
    const record=await state.getIngress(this.#path,key);cancel.signal.throwIfAborted();if(record===null)throw new InvalidActionRequestError('lifecycle admission record is missing');

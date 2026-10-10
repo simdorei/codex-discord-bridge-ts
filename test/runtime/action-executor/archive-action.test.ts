@@ -1,3 +1,4 @@
+import {ActionIntegerRangeError} from '../../../src/runtime/action-executor/errors.ts';
 import assert from 'node:assert/strict';import {it} from 'node:test';import {DatabaseSync} from 'node:sqlite';import {join,dirname} from 'node:path';
 import {PortableResidentLifecycle} from '../../../src/app-server/portable-resident-lifecycle.ts';import {AdmittedArchiveExecutor} from '../../../src/runtime/action-executor/archive-action.ts';
 import {TargetLocks} from '../../../src/core/keyed-locks.ts';import {BridgeState} from '../../../src/runtime/bridge-state.ts';import {StateAccessFacade as state} from '../../../src/store/state-access-facade.ts';import {openInitialized} from '../../../src/store/owned-driver.ts';import {createMutationCustodyFence} from '../../../src/runtime/mutation-custody-fence.ts';import {storeFixture} from '../../helpers/store-fixture.ts';
@@ -49,4 +50,8 @@ it('frozen target identity cannot be reinterpreted as a numeric list alias after
  await state.admitIngress(f.path,{ingressId:'alias',kind:'message',eventId:4n,applicationId:null,channelId:1n,ownerUserId:2n,sourceMessageId:4n,targetThreadId:'1',canonicalOwner:null,now:2,payload:{version:1n,content:'!archive 1',plan:{Execute:{Archive:{reference:'1'}}},lifecycle_binding:{target:'1',route:'Explicit',command:{Archive:{reference:'1'}}},stop_origin:{target:'1',stopRevision:0n}}});
  const edit=await openInitialized(f.path);try{edit.exec("UPDATE discord_ingress_journal SET state='executing',phase='processing' WHERE ingress_id='alias'");}finally{edit.close();}
  await assert.rejects(f.action.execute({...actor,discordMessageId:4n},'1','alias'),/admitted original target no longer resolves exactly/);assert.deepEqual(await f.seen(),[]);assert.equal(f.locks.activeTargetCount,0);assert.equal(await state.archiveTargetFenced(f.path,'root'),false);
+}));
+
+it('valid u64 actor outside SQLite i64 retains the central integer-range error without RPC',async()=>fixture('ok',async f=>{
+ for(const field of ['channelId','userId','discordMessageId'])await assert.rejects(f.action.execute({...actor,[field]:1n<<63n},null,'own'),ActionIntegerRangeError);assert.deepEqual(await f.seen(),[]);
 }));
