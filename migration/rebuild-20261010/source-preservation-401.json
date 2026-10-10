@@ -1,0 +1,21 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 401,
+  "localCommit": "0e06e8bf8b4d9d03c4d23f96fb2a05f9a47c290f",
+  "fullTests": 6125,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/discord-runtime/gateway-control.ts": "7c41cd704741b34491a1d495b1d7cd0c2d73694823bcea4d9615e261ba434746",
+    "test/runtime/discord-runtime/gateway-control.test.ts": "14ecd8eea30bd258db83b5af242079c94cc53466a9fe19c8ac567a63d2d945cb"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}
