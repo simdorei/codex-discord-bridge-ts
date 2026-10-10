@@ -21,8 +21,13 @@ async function owned<T>(path:string,transaction:boolean,run:(db:DatabaseSync)=>{
 /** Unknown outcomes never resend. Only a recorded authoritative rejection may release an intent. */
 export function beginDeliveryReceipt(path:string,key:string,hash:string,inputGuard:DeliveryGuard|null=null):Promise<ReceiptState>{
   text(key);text(hash);const guard=guardSnapshot(inputGuard);
-  return owned<ReceiptState>(path,true,db=>{
-    validateFinalRecoveryClaimIn(db,key,hash,guard);const hold=validateNewReplyClaimIn(db,key,hash,guard);if(hold!==null)return {value:{kind:"Held",reason:hold},commit:false};
+  return owned<ReceiptState>(path,true,db=>{const value=beginDeliveryReceiptIn(db,key,hash,guard);return {value,commit:value.kind!=="Held"};});
+}
+/** Borrowed transaction only; the caller commits or rolls back all receipt side effects. */
+export function beginDeliveryReceiptIn(db:DatabaseSync,key:string,hash:string,inputGuard:DeliveryGuard|null=null):ReceiptState{
+  text(key);text(hash);const guard=guardSnapshot(inputGuard);
+  if(!db.isTransaction)throw new StoreIntegrityError("delivery receipt requires an active transaction");
+    validateFinalRecoveryClaimIn(db,key,hash,guard);const hold=validateNewReplyClaimIn(db,key,hash,guard);if(hold!==null)return {kind:"Held",reason:hold};
     const inserted=BigInt(db.prepare("INSERT OR IGNORE INTO codex_delivery_receipts(receipt_key,content_hash) VALUES (?,?)").run(key,hash).changes)===1n;
     const row=receiptRow(db,`SELECT content_hash,message_id,retryable,blocked_reason,${receiptTextColumns("content_hash","message_id","blocked_reason")} FROM codex_delivery_receipts WHERE receipt_key=?`,key);
     if(row===undefined)throw new StoreIntegrityError("delivery receipt intent is missing after INSERT");
@@ -30,9 +35,9 @@ export function beginDeliveryReceipt(path:string,key:string,hash:string,inputGua
     const retry=storedHash===hash&&message===null&&blocked===null&&retryable&&BigInt(db.prepare("UPDATE codex_delivery_receipts SET retryable=0 WHERE receipt_key=? AND retryable=1").run(key).changes)===1n;
     if(message!==null&&storedHash===hash)confirmNewReplyReceiptIn(db,key);newReplyNoticeClaimedIn(db,key);
     const value:ReceiptState=storedHash!==hash?{kind:"ContentConflict"}:inserted||retry?{kind:"New"}:message!==null?{kind:"Delivered",messageId:message}:blocked!==null?{kind:"RejectedBlocked",reason:blocked}:{kind:"Unknown"};
-    return {value,commit:true};
-  });
+    return value;
 }
+
 export function confirmDeliveryReceipt(path:string,key:string,messageId:string):Promise<boolean>{
   text(key);text(messageId);return owned(path,true,db=>{const changed=BigInt(db.prepare("UPDATE codex_delivery_receipts SET message_id=? WHERE receipt_key=? AND message_id IS NULL").run(messageId,key).changes)===1n;
     if(changed)confirmNewReplyReceiptIn(db,key);return {value:changed,commit:true};});

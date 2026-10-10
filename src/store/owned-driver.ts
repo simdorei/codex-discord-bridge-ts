@@ -240,15 +240,7 @@ export class CheckedRead {
       const signature = getCatalogSignature(connection);
       const cached = PROCESS_CATALOG_CACHE.contains(signature);
       if (!cached) {
-        const found = schemaVersion(connection);
-        if (found !== LATEST_STORE_SCHEMA_VERSION) {
-          throw new UnsupportedVersionError(found, LATEST_STORE_SCHEMA_VERSION);
-        }
-        if (!schemaExtensionsCurrent(connection)) {
-          throw new StoreIntegrityError(
-            "metadata discovery requires an initialized current schema; no repair attempted",
-          );
-        }
+        requireCurrentSchema(connection);
       }
       const instance = new CheckedRead(connection, cached ? null : signature);
       success = true;
@@ -343,4 +335,22 @@ export class CheckedRead {
       }
     }
   }
+}
+
+/** Supplemental Rust main ed47c482: verify caller transaction without repair or caching. */
+export function verifyCurrentCatalogIn(connection: DatabaseSync): void {
+  if (!connection.isTransaction) throw new StoreIntegrityError("catalog check requires an active snapshot");
+  const signature = getCatalogSignature(connection);
+  if (!PROCESS_CATALOG_CACHE.contains(signature)) requireCurrentSchema(connection);
+}
+function requireCurrentSchema(connection: DatabaseSync): void {
+        const found = schemaVersion(connection);
+        if (found !== LATEST_STORE_SCHEMA_VERSION) {
+          throw new UnsupportedVersionError(found, LATEST_STORE_SCHEMA_VERSION);
+        }
+        if (!schemaExtensionsCurrent(connection)) {
+          throw new StoreIntegrityError(
+            "metadata discovery requires an initialized current schema; no repair attempted",
+          );
+        }
 }

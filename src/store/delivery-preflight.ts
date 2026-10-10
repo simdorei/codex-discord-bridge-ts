@@ -17,7 +17,7 @@ export function pendingFirstReplyIn(db:DatabaseSync,job:string):string|null{
 export async function pendingFirstReply(path:string,job:string):Promise<string|null>{
   for(const value of [path,job])if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed text");
   const db=await openInitialized(path);try{return pendingFirstReplyIn(db,job);}finally{db.close();}}
-function read(db:DatabaseSync,pending:StoredDelivery):FinalReadiness{
+export function finalDeliveryPreflightIn(db:DatabaseSync,pending:StoredDelivery):FinalReadiness{
   const grant=finalRecoveryAuthorizedIn(db,pending),hold=newReplyOutputHoldIn(db,pending.jobId);if(hold!==null)return {kind:"Held",reason:hold};
   if(!grant){const request=pendingFirstReplyIn(db,pending.jobId);if(request!==null)return {kind:"FirstReply",request};
     if(hasPendingCommentaryIn(db,pending.jobId,null))return {kind:"Commentary"};}
@@ -26,5 +26,5 @@ function read(db:DatabaseSync,pending:StoredDelivery):FinalReadiness{
 /** A short read snapshot, not send authorization. Finish the snapshot before returning; no result cache. */
 export function finalDeliveryPreflight(path:string,input:StoredDelivery):FinalReadiness{
   const pending=snapshotStoredDelivery(input),snapshot=CheckedRead.open(path);
-  try{snapshot.ensureActive();const result=read(snapshot.connection(),pending);snapshot.ensureActive();snapshot.finish();return result;}finally{snapshot.close();}
+  try{snapshot.ensureActive();const result=finalDeliveryPreflightIn(snapshot.connection(),pending);snapshot.ensureActive();snapshot.finish();return result;}finally{snapshot.close();}
 }
