@@ -1,3 +1,4 @@
+import * as RestartReadiness from './restart-readiness.ts';
 import * as HistoryTargets from './history-targets.ts';
 import * as ProcessedClaimGuard from './processed-claim-guard.ts';
 import * as MirrorInspection from './mirror-inspection.ts';
@@ -207,6 +208,7 @@ export const finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPrefl
 export const pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply = DeliveryPreflight.pendingFirstReply;
 
 export const recordNewInput: typeof NewInput.recordNewInput = NewInput.recordNewInput;
+export const restartReadinessSnapshot: typeof RestartReadiness.restartReadinessSnapshot = RestartReadiness.restartReadinessSnapshot;
 export const historyPollTargets: typeof HistoryTargets.historyPollTargets = HistoryTargets.historyPollTargets;
 export const claimProcessedMessageGuarded: typeof ProcessedClaimGuard.claimProcessedMessageGuarded = ProcessedClaimGuard.claimProcessedMessageGuarded;
 export const claimProcessedMessage: typeof ProcessedMessages.claimProcessedMessage = ProcessedMessages.claimProcessedMessage;
@@ -508,6 +510,7 @@ export interface IStateAccessFacade {
   readonly confirmIngress: typeof IngressLifecycle.confirmIngress;
   readonly recordIngressProcessingMode: typeof IngressLifecycle.recordIngressProcessingMode;
   readonly recordNewInput: typeof NewInput.recordNewInput;
+  readonly restartReadinessSnapshot: typeof RestartReadiness.restartReadinessSnapshot;
   readonly historyPollTargets: typeof HistoryTargets.historyPollTargets;
   readonly claimProcessedMessageGuarded: typeof ProcessedClaimGuard.claimProcessedMessageGuarded;
   readonly claimProcessedMessage: typeof ProcessedMessages.claimProcessedMessage;
@@ -780,6 +783,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   finalDeliveryPreflight,
   pendingFirstReply,
   recordNewInput,
+  restartReadinessSnapshot,
   historyPollTargets,
   claimProcessedMessageGuarded,
   claimProcessedMessage,
