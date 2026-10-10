@@ -54,9 +54,9 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
   if(this.#closing!==null)return Promise.reject(this.#shutdown.signal.reason);
   const signal=input===undefined?this.#shutdown.signal:AbortSignal.any([this.#shutdown.signal,input]);const task=Promise.resolve().then(()=>{signal.throwIfAborted();if(this.#invalid)throw new DiscordTransportFault('Unauthorized','authorization was invalidated');return operation(signal);});this.#tasks.add(task);void task.then(()=>this.#tasks.delete(task),()=>this.#tasks.delete(task));return task;
  }
- sendValidated(input:IdempotentMessageRequest):Promise<bigint>{
+ sendValidated(input:IdempotentMessageRequest,inputSignal?:AbortSignal):Promise<bigint>{
   const {path,body}=messageRequest(input);
-  return this.#run(signal=>this.#request('POST',path,body,bytes=>{const id=this.#decoder.decode(bytes);if(types.isPromise(id))void Promise.prototype.then.call(id,undefined,()=>undefined);if(typeof id!=='bigint'||id<=0n||id>=(1n<<64n))throw new Error('invalid identity');return id;},()=>new DiscordTransportFault('Receipt','response model could not be decoded'),signal)) as Promise<bigint>;
+  return this.#run(signal=>this.#request('POST',path,body,bytes=>{const id=this.#decoder.decode(bytes);if(types.isPromise(id))void Promise.prototype.then.call(id,undefined,()=>undefined);if(typeof id!=='bigint'||id<=0n||id>=(1n<<64n))throw new Error('invalid identity');return id;},()=>new DiscordTransportFault('Receipt','response model could not be decoded'),signal),inputSignal) as Promise<bigint>;
  }
  /** Source send_idempotent_message awaits response headers, unlike the separate
   * durable receipt API. Success body is released without decoding. */

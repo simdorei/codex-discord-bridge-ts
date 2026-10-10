@@ -39,7 +39,7 @@ export class DiscordChannelClient implements DiscordReceiptTransport,TypingTrans
    await Promise.allSettled([...(rate===undefined?[]:[rate.close(error)]),...(wire===undefined?[]:[wire.close()])]);throw error;
   }
  }
- sendValidated(request:IdempotentMessageRequest):Promise<bigint>{return this.#engine.sendValidated(request);}
+ sendValidated(request:IdempotentMessageRequest,signal?:AbortSignal):Promise<bigint>{return this.#engine.sendValidated(request,signal);}
  sendWithoutReceipt(request:IdempotentMessageRequest,signal?:AbortSignal):Promise<void>{return this.#engine.sendWithoutReceipt(request,signal);}
  createTyping(channel:bigint,signal:AbortSignal):Promise<void>{return this.#engine.createTyping(channel,signal);}
  acknowledgeInteraction(id:bigint,token:string,response:InteractionResponse,signal?:AbortSignal):Promise<void>{return this.#engine.acknowledgeInteraction(id,token,response,signal);}
