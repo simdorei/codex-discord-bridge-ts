@@ -3,7 +3,7 @@ import {cloneOwnedSerdeValue} from '../core/owned-serde-value.ts';
 import {serdeField} from '../app-server/value.ts';
 import {requireDiscordText} from '../discord/text.ts';
 import type {RestartReadinessSnapshot} from './restart-snapshot-pure.ts';
-const slot=new OwnedWorkerSlot();
+const slot=new OwnedWorkerSlot('Control');
 export class RestartSnapshotWorkerError extends Error {readonly sourceName:string;constructor(sourceName:string,message:string){super(message);this.name='RestartSnapshotWorkerError';this.sourceName=sourceName;}}
 export function restartSnapshotReaderBusy():boolean{return slot.busy;}
 export function joinRestartSnapshotReader():Promise<void>{return slot.join();}
