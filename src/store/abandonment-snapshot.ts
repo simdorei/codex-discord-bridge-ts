@@ -108,7 +108,20 @@ export function captureAbandonmentSnapshotIn(db:DatabaseSync,path:string,jobId:s
   const unresolved=receiptExists(db,`SELECT EXISTS(SELECT 1 FROM codex_mutation_attempts WHERE state='prepared' AND (scoped=0 OR target_thread_id=?1))
     OR EXISTS(SELECT 1 FROM codex_request_cancellations WHERE job_id=?2 OR discord_message_id=?3) AS held`,target.thread,jobId,job.discordMessageId);
   if(!mapped||unresolved)return invalid('mapping or unresolved wire/cancellation authority changed');
-  const budget={bytes:0},row=captureSqliteEvidenceRows(db,'SELECT * FROM codex_turn_queue WHERE job_id=?',[jobId],budget,profile),context:Record<string,unknown>={};
+  const budget={bytes:0},row=captureAbandonmentJobRowIn(db,jobId,budget);
+  const context=captureAbandonmentContextIn(db,path,target,source,creating,budget);
+  const evidence={job:row,context};
+  if(Buffer.byteLength(serializeSerdeValue(evidence),'utf8')>MAX_BYTES)return invalid('private snapshot exceeds bound');
+  return Object.freeze({target:Object.freeze(target),evidence:cloneOwnedSerdeValue(evidence)});
+}
+
+/** Internal evidence leaves also used between cancellation insertion and exact
+ * Pending removal. They intentionally do not re-run the pre-disposition guard. */
+export function captureAbandonmentJobRowIn(db:DatabaseSync,job:string,budget:{bytes:number}):unknown {
+ return captureSqliteEvidenceRows(db,'SELECT * FROM codex_turn_queue WHERE job_id=?',[job],budget,profile);
+}
+export function captureAbandonmentContextIn(db:DatabaseSync,path:string,target:AbandonmentTarget,source:string,creating:boolean,budget:{bytes:number}):unknown {
+ const context:Record<string,unknown>={};
   for(const [key,sql] of queries){
     // Fixed source queries use numbered SQLite parameters, including the unused
     // ?2 slot when ?3 is present. Preserve that slot rather than rebinding it.
@@ -120,7 +133,5 @@ export function captureAbandonmentSnapshotIn(db:DatabaseSync,path:string,jobId:s
   context.runtime=readAbandonmentRuntimeIn(db);
   context.source=verifyAbandonmentMessageIn(db,target,source,creating);
   context.database=abandonmentDatabaseIdentity(path);
-  const evidence={job:row,context};
-  if(Buffer.byteLength(serializeSerdeValue(evidence),'utf8')>MAX_BYTES)return invalid('private snapshot exceeds bound');
-  return Object.freeze({target:Object.freeze(target),evidence:cloneOwnedSerdeValue(evidence)});
+  return context;
 }

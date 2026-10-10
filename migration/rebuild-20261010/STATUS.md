@@ -28,3 +28,7 @@ Private abandonment snapshot now checks owned, held, unstarted Pending state; ex
 ## Reimplementation 281
 
 Existing-only abandonment proposal storage, canonical seal reads, timestamp/SQL/body identity validation, fresh snapshot comparison, monotonic revisions and exact delivery binding implemented. UUID acceptance checked against Cargo.lock-pinned uuid 1.26.0 parser; existing source-backed f64 Display reused. Full-schema shared fixtures: 29 focused PASS, full 5,141 PASS with no failures/cancellations/skips, strict TS exit 0. Runtime admission and target lock remain caller preconditions. Decision writer and owned historical routing are not implemented by this checkpoint.
+
+## Reimplementation 282
+
+Exact saved abandonment decisions now atomically retain KeepHeld or cancel only the original Pending request with a verified non-executable tombstone. Historical same-click replay returns the original receipt; conflicting interactions/choices, stale evidence and partial effects fail closed. Source row/context are rechecked before and after removal; injected ignored inserts/deletion and context mutation roll back all effects. Focused 43 PASS, full 5,155 PASS, zero failed/cancelled/skipped, strict TS exit 0. Initial test-oracle RED preserved separately. Runtime caller admission/target-lock integration and owned historical routing remain pending.
