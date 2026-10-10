@@ -1,7 +1,10 @@
 import {normalizedMirrorTextDigest} from './recent-text.ts';
 import {cloneOwnedSerdeValue} from '../../core/owned-serde-value.ts';
 import {serdeField,serdeObject} from '../../app-server/value.ts';
-import {requireDiscordText} from '../../discord/text.ts';
+import {requireDiscordText,splitDeliveryChunks} from '../../discord/text.ts';
+import {serializeSerdeValue} from '../../core/serde-json.ts';
+import {receiptHash} from '../../store/delivery-receipt-key.ts';
+import type {ExpectedReceipt} from '../../store/confirmed-receipt-batch.ts';
 import {deliverTextIndexed} from '../../discord/delivery.ts';
 import {sendReceiptChunk,type DiscordReceiptTransport} from '../completion/receipt-sender.ts';
 import type {MirrorItem} from './collect.ts';
@@ -32,9 +35,30 @@ export function sessionMirrorIdentity(thread:string,input:MirrorItem):SessionMir
  * unknown outcomes remain held and cannot be retried automatically. */
 export async function sendSessionMirrorText(path:string,transport:DiscordReceiptTransport,channel:bigint,input:SessionMirrorIdentity,text:string,signal?:AbortSignal):Promise<void>{
   signal?.throwIfAborted();
-  if(input===null||typeof input!=='object'||!identities.has(input))throw new TypeError('Expected factory-created session mirror identity');
-  if(typeof channel!=='bigint'||channel<=0n||channel>=(1n<<64n))throw new RangeError('Discord channel identifier must be non-zero u64');
+  validateIdentity(channel,input);
   const {domain,logicalKey}=input;
   await deliverTextIndexed(text,{retryDelaysMs:[],chunkMarkers:true},(chunkIndex,content)=>sendReceiptChunk(path,transport,channel,{domain,logicalKey,chunkIndex,content},[],null,signal));
   signal?.throwIfAborted();
+}
+
+function validateIdentity(channel:bigint,input:SessionMirrorIdentity):void{
+  if(input===null||typeof input!=='object'||!identities.has(input))throw new TypeError('Expected factory-created session mirror identity');
+  if(typeof channel!=='bigint'||channel<=0n||channel>=(1n<<64n))throw new RangeError('Discord channel identifier must be non-zero u64');
+}
+/** Exact receipt expectations for one bounded mirror send using the same chunk
+ * splitter/markers, serde key and content hash as sendSessionMirrorText.
+ * This is not evidence that a send happened or that all batch items were supplied.
+ * Only this new planning API is bounded; the existing sender contract is unchanged. */
+export function sessionMirrorReceiptExpectations(channel:bigint,input:SessionMirrorIdentity,text:string):readonly ExpectedReceipt[]{
+  validateIdentity(channel,input);requireDiscordText(text);
+  if(text.length>1048576||Buffer.byteLength(text)>1048576)throw new RangeError('Mirror receipt text exceeds one MiB');
+  if(input.logicalKey.length>65536||Buffer.byteLength(input.logicalKey)>65536)throw new RangeError('Mirror receipt identity exceeds key budget');
+  const chunks=splitDeliveryChunks(text,true);
+  if(chunks.length>4096)throw new RangeError('Mirror receipt chunk count exceeds 4096');
+  let bytes=0;
+  return Object.freeze(chunks.map((content,index)=>{
+    const key=serializeSerdeValue([channel,input.domain,input.logicalKey,BigInt(index)]),length=Buffer.byteLength(key);
+    bytes+=length+64;if(length>65536||bytes>1048576)throw new RangeError('Mirror receipt batch exceeds key budget');
+    return Object.freeze({key,contentHash:receiptHash(content)});
+  }));
 }
