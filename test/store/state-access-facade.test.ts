@@ -1,3 +1,4 @@
+import * as RunnerCounts from '../../src/store/runner-target-counts.ts';
 import * as MirrorSync from '../../src/store/mirror-mapping.ts';
 import * as MirrorCreation from '../../src/store/mirror-creation.ts';
 import * as NewPromptIntake from '../../src/store/prompt-intake-new-thread.ts';
@@ -267,6 +268,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.getIngress, IngressRead.getIngress);
     assert.strictEqual(StateAccessFacade.getIngressForOwnerReadonly, IngressRead.getIngressForOwnerReadonly);
     assert.strictEqual(StateAccessFacade.listIngressesForOwner, IngressRead.listIngressesForOwner);
+    assert.strictEqual(StateAccessFacade.runnerTargetCounts, RunnerCounts.runnerTargetCounts);
     assert.strictEqual(StateAccessFacade.claimIngressRecovery, RecoveryCustody.claimIngressRecovery);
     assert.strictEqual(StateAccessFacade.validateIngressRecovery, RecoveryCustody.validateIngressRecovery);
     assert.strictEqual(StateAccessFacade.cancelLatestPending, PendingCancellation.cancelLatestPending);
@@ -547,6 +549,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "getIngress",
       "getIngressForOwnerReadonly",
       "listIngressesForOwner",
+      "runnerTargetCounts",
       "claimIngressRecovery",
       "validateIngressRecovery",
       "cancelLatestPending",
@@ -625,7 +628,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 226);
+    assert.strictEqual(actual.length, 227);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
@@ -645,6 +648,8 @@ describe("StateAccessFacade type signature fidelity (compile-time)", () => {
         : false
       : false;
 
+    const eqRunner: AssertEqual<typeof StateAccessFacade.runnerTargetCounts, typeof RunnerCounts.runnerTargetCounts> = true;
+    assert.strictEqual(eqRunner, true);
     const eq1: AssertEqual<typeof StateAccessFacade.enqueue, typeof QueueEnqueue.enqueue> = true;
     const eq2: AssertEqual<typeof StateAccessFacade.enqueueIfMirrorMatches, typeof QueueEnqueue.enqueueIfMirrorMatches> = true;
     const eq3: AssertEqual<typeof StateAccessFacade.enqueueInTransaction, typeof QueueEnqueue.enqueueInTransaction> = true;

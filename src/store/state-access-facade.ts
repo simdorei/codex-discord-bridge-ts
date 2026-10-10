@@ -1,3 +1,4 @@
+import * as RunnerCounts from './runner-target-counts.ts';
 import * as MirrorSync from './mirror-mapping.ts';
 import * as MirrorCreation from './mirror-creation.ts';
 import * as NewPromptIntake from './prompt-intake-new-thread.ts';
@@ -138,6 +139,7 @@ export const recoverPriorRuntimeIngress: typeof IngressRecovery.recoverPriorRunt
 export const ingressByOrigin: typeof IngressRead.ingressByOrigin = IngressRead.ingressByOrigin;
 export const getIngress: typeof IngressRead.getIngress = IngressRead.getIngress;
 export const getIngressForOwnerReadonly: typeof IngressRead.getIngressForOwnerReadonly = IngressRead.getIngressForOwnerReadonly;
+export const runnerTargetCounts: typeof RunnerCounts.runnerTargetCounts = RunnerCounts.runnerTargetCounts;
 export const listIngressesForOwner: typeof IngressRead.listIngressesForOwner = IngressRead.listIngressesForOwner;
 
 export const claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery = RecoveryCustody.claimIngressRecovery;
@@ -446,6 +448,7 @@ export interface IStateAccessFacade {
   readonly ingressByOrigin: typeof IngressRead.ingressByOrigin;
   readonly getIngress: typeof IngressRead.getIngress;
   readonly getIngressForOwnerReadonly: typeof IngressRead.getIngressForOwnerReadonly;
+  readonly runnerTargetCounts: typeof RunnerCounts.runnerTargetCounts;
   readonly listIngressesForOwner: typeof IngressRead.listIngressesForOwner;
 
   readonly admitBusyInteraction: typeof BusyIngress.admitBusyInteraction;
@@ -677,6 +680,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   ingressByOrigin,
   getIngress,
   getIngressForOwnerReadonly,
+  runnerTargetCounts,
   listIngressesForOwner,
   claimIngressRecovery,
   validateIngressRecovery,
