@@ -7,9 +7,11 @@ export const CHROME_PLUGIN_ID='chrome@openai-bundled';
 export type ProDiagnosticStage='PluginInventory'|'PluginManifest'|'PluginContent'|'ResidentAppServer'|'RemoteMcp'|'ProjectTicket';
 export type ProDiagnosticCode='PluginInventoryQueryFailed'|'PluginInventoryInvalid'|'RemotePluginMissing'|'RemotePluginNotInstalled'|'RemotePluginDisabled'|'RemotePluginVersionInvalid'|'RemotePluginVersionMismatch'|'BrowserPluginMissing'|'BrowserPluginNotInstalled'|'BrowserPluginDisabled'|'BrowserPluginVersionInvalid'|'PluginContentUnverified'|'RemoteManifestUnavailable'|'RemoteManifestInvalid'|'ResidentUnhealthy'|'ResidentSnapshotFailed'|'ResidentSnapshotMissing'|'ResidentStale'|'RemoteMcpConfigurationInvalid'|'RemoteMcpConnectionFailed'|'RemoteMcpNotConfigured'|'ProjectTicketTimezoneInvalid'|'ProjectTicketExpired';
 export interface ProRuntimeDiagnostic{readonly stage:ProDiagnosticStage;readonly code:ProDiagnosticCode;readonly publicMessage:string;readonly recoveryAction:string;readonly internalDetail:string;}
+const ownedDiagnostics=new WeakMap<object,ProRuntimeDiagnostic>();
+export function ownedProDiagnostic(error:unknown):ProRuntimeDiagnostic|null{return error!==null&&typeof error==='object'?ownedDiagnostics.get(error)??null:null;}
 export class ProPreflightError extends Error{
  readonly diagnostic:ProRuntimeDiagnostic;
- constructor(stage:ProDiagnosticStage,code:ProDiagnosticCode,publicMessage:string,recoveryAction:string,internalDetail:string){super(internalDetail);this.name='ProPreflightError';this.diagnostic=Object.freeze({stage,code,publicMessage,recoveryAction,internalDetail});}
+ constructor(stage:ProDiagnosticStage,code:ProDiagnosticCode,publicMessage:string,recoveryAction:string,internalDetail:string,cause?:unknown){super(internalDetail,{cause});this.name='ProPreflightError';this.diagnostic=Object.freeze({stage,code,publicMessage,recoveryAction,internalDetail});ownedDiagnostics.set(this,this.diagnostic);}
 }
 export interface ProResidentSnapshot{readonly generation:bigint;readonly healthy:boolean;readonly accepting:boolean;readonly pluginRuntimeFingerprint:string|null;readonly pluginRuntimeError:string|null;}
 export interface ProRuntimeStatus{readonly remotePluginVersion:string;readonly browserPluginVersion:string;readonly residentGeneration:bigint;}
