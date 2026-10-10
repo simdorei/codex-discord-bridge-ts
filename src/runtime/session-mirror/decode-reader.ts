@@ -1,5 +1,8 @@
+import {requireDiscordText} from '../../discord/text.ts';
+import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
+import type {MirrorDetail,MirrorCollection} from './collect.ts';
 import {OwnedWorkerBusyError,OwnedWorkerSlot} from '../owned-worker-slot.ts';
-import {copyBoundedMirrorRecordWindow,type MirrorRecordWindow} from './record-window.ts';
+import {copyBoundedMirrorRecordWindow,type MirrorRecordWindow,type MirrorWindowStop} from './record-window.ts';
 import {cloneOwnedSerdeValue} from '../../core/owned-serde-value.ts';
 import {serdeField} from '../../app-server/value.ts';
 const slot=new OwnedWorkerSlot();
@@ -17,4 +20,28 @@ export async function decodeMirrorWindowOffThread(input:Uint8Array,startOffset:b
  const value=serdeField(response,'value'),offset=serdeField(value,'nextOffset'),records=serdeField(value,'scannedRecords'),events=serdeField(value,'events'),stop=serdeField(value,'stop');
  if(typeof offset!=='bigint'||offset<startOffset||offset>startOffset+BigInt(bytes.length)||typeof records!=='number'||!Number.isSafeInteger(records)||records<0||records>maxRecords||!Array.isArray(events)||events.length>records||typeof stop!=='string'||!['WindowEnd','IncompleteRecord','RecordLimit','OversizedRecord','InvalidUtf8','InvalidJson'].includes(stop))throw new Error('Invalid mirror decode worker response');
  return value as MirrorRecordWindow;
+}
+
+export interface MirrorItemOptions {readonly thread:string;readonly detail:MirrorDetail;readonly currentTurn:string|null;}
+export interface MirrorItemsWindow {readonly collection:MirrorCollection;readonly nextOffset:bigint;readonly scannedRecords:number;readonly stop:MirrorWindowStop;}
+/** Validation precedes file IO and worker submission. No inherited/accessor options. */
+export function snapshotMirrorItemOptions(input:MirrorItemOptions):MirrorItemOptions{
+ const thread=own(input,'thread'),detail=own(input,'detail'),currentTurn=own(input,'currentTurn');
+ requireDiscordText(thread);if(currentTurn!==null)requireDiscordText(currentTurn);
+ if(Buffer.byteLength(thread)>16384||(typeof currentTurn==='string'&&Buffer.byteLength(currentTurn)>16384))throw new RangeError('Mirror context exceeds bounded identity budget');
+ if(detail!=='Send'&&detail!=='All')throw new TypeError('Expected mirror detail');
+ return Object.freeze({thread,detail,currentTurn});
+}
+/** Shares the exact decoder slot: parse, digest, deduplicate, and transform all run
+ * in the owned worker. Only bounded display items return, never the decoded AST.
+ * Saturation/oversized output fails the whole window; no prefix is silently dropped. */
+export async function collectMirrorWindowOffThread(input:Uint8Array,startOffset:bigint,maxWindowBytes:number,maxRecordBytes:number,maxRecords:number,options:MirrorItemOptions,timeoutMs=3000,signal?:AbortSignal):Promise<MirrorItemsWindow>{
+ signal?.throwIfAborted();if(slot.busy)throw new OwnedWorkerBusyError();
+ if(!Number.isSafeInteger(timeoutMs)||timeoutMs<0||timeoutMs>2147483647)throw new RangeError('Expected bounded mirror decode deadline');
+ const context=snapshotMirrorItemOptions(options),bytes=copyBoundedMirrorRecordWindow(input,startOffset,maxWindowBytes,maxRecordBytes,maxRecords);
+ const response=cloneOwnedSerdeValue(await slot.run(new URL('./decode-worker.ts',import.meta.url),{bytes,startOffset,maxWindowBytes,maxRecordBytes,maxRecords,context},timeoutMs,signal));
+ if(serdeField(response,'ok')!==true){const message=serdeField(response,'message');throw new Error(typeof message==='string'?message:'Mirror item worker failed');}
+ const value=serdeField(response,'value'),offset=serdeField(value,'nextOffset'),records=serdeField(value,'scannedRecords'),stop=serdeField(value,'stop'),collection=serdeField(value,'collection'),items=serdeField(collection,'items'),turn=serdeField(collection,'currentTurn');
+ if(typeof offset!=='bigint'||offset<startOffset||offset>startOffset+BigInt(bytes.length)||typeof records!=='number'||!Number.isSafeInteger(records)||records<0||records>maxRecords||!Array.isArray(items)||items.length>16384||(turn!==null&&typeof turn!=='string')||typeof stop!=='string'||!['WindowEnd','IncompleteRecord','RecordLimit','OversizedRecord','InvalidUtf8','InvalidJson'].includes(stop))throw new Error('Invalid mirror item worker response');
+ return value as MirrorItemsWindow;
 }
