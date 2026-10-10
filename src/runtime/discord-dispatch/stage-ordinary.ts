@@ -48,8 +48,8 @@ function cleanupOptions(input: CustodyOptions): Required<CustodyOptions> {
 }
 
 /** Concrete durable stage for normal executable slash/ordinary component work.
- * Recovery publication/abandonment are EXCLUDED until original actor binding is
- * implemented; autocomplete must not enter executable custody. No fallback target,
+ * Recovery components resolve their original authenticated delivery before
+ * persistence; autocomplete must not enter executable custody. No fallback target,
  * callback token, HTTP acknowledgement or queue dispatch is created here.
  * Caller must await disposal of returned Created custody on every abandoned path. */
 export async function stageOrdinaryInteraction(
@@ -63,9 +63,6 @@ export async function stageOrdinaryInteraction(
   if (!isRoutedInteractionWork(work) || Object.hasOwn(work, 'Autocomplete')) throw new TypeError('Expected owned executable interaction work');
   const component = Object.hasOwn(work, 'Component') ? (work as Extract<RoutedInteractionWork, {Component: unknown}>).Component : null;
   const slash = Object.hasOwn(work, 'Slash') ? (work as Extract<RoutedInteractionWork, {Slash: unknown}>).Slash : null;
-  if (component !== null && (Object.hasOwn(component, 'RecoveryPublicationDecision') || Object.hasOwn(component, 'RecoveryAbandonDecision'))) {
-    throw new TypeError('Recovery interaction custody requires its original actor-binding implementation');
-  }
   const cleanup = cleanupOptions(busyChoiceDataField(options, 'cleanup') as CustodyOptions);
   const resolver = busyChoiceDataField(options, 'settingsResolver') as SlashSettingsTargetResolver | null;
   // Original conversion order precedes settings lookup; application conversion is
@@ -76,11 +73,30 @@ export async function stageOrdinaryInteraction(
   const settings = await prepareSettingsAdmission(work, resolver, channel);
   const busy = component !== null && Object.hasOwn(component, 'Busy') ? (component as Extract<typeof component, {Busy: unknown}>).Busy : null;
   const applicationId = i64(application, 'application');
+  // Rust custody::stage evaluates recovery routing before the ingress clock.
+  // This authenticates the displayed source, never a selected-thread fallback.
+  let recoveryTarget: string | null = null;
+  if (component !== null && 'RecoveryAbandonDecision' in component) {
+    if (sourceMessageId === null) throw new StoreIntegrityError('abandonment component has no source message');
+    const value = component.RecoveryAbandonDecision;
+    recoveryTarget = state.authorizeAbandonmentDecision(database, {
+      proposal_id: value.proposal_id, revision: value.revision, decision: value.decision,
+      interaction_id: interactionId, application_id: applicationId, channel_id: channelId,
+      owner_user_id: userId, source_message_id: sourceMessageId, now: readCustodyTimestamp(cleanup.now),
+    }).proposal.thread_id;
+  }
+  if (component !== null && 'RecoveryPublicationDecision' in component) {
+    const value = component.RecoveryPublicationDecision;
+    const binding = state.deliveredPublicationProposal(database, value.proposal_id, value.revision);
+    if (sourceMessageId === null) throw new StoreIntegrityError('publication component has no source message');
+    binding.requireActor(applicationId, channelId, userId, sourceMessageId);
+    recoveryTarget = binding.proposal.thread_id;
+  }
   const now = readCustodyTimestamp(cleanup.now);
   const request: NewIngress = {
     ingressId, kind: 'interaction', eventId: interactionId, applicationId, channelId, ownerUserId: userId, sourceMessageId,
     payload: {version: 1n, processing_mode: 'normal', work, settings_binding: settings.binding, request_rejection: settings.rejection},
-    targetThreadId: settings.binding?.target ?? null,
+    targetThreadId: recoveryTarget ?? settings.binding?.target ?? null,
     canonicalOwner: busy === null ? ingressId : `busy-choice:${busy.choice_id}`, now,
   };
   let admission;

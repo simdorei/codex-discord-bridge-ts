@@ -12,6 +12,8 @@ import {prepareStandardComponentAction} from './standard.ts';
 import {prepareBusyConfirmationOnly} from './busy-preflight.ts';
 import {handleBusyComponent} from './busy.ts';
 import {handleAsyncChoice} from './async-choice.ts';
+import {handleRecoveryAbandonment} from './recovery-abandonment.ts';
+import {handleRecoveryPublication} from './recovery-publication.ts';
 import {ComponentWorkerError, componentWorkerErrorInfo} from './errors.ts';
 import {busyComponentErrorInfo, BusyComponentError} from './busy-errors.ts';
 import {isConfirmationPlan, confirmationErrorInfo, type ConfirmationPlan} from './confirmation.ts';
@@ -31,9 +33,8 @@ export class PreparedOrdinaryComponentConfirmation {
     catch (error) {if (confirmationErrorInfo(error) !== null) throw new ComponentWorkerError('Confirmation', error); throw error;}
   };
 }
-/** Concrete handler for ordinary admission's supported variants. Recovery intent
- * and abandonment require their own still-unimplemented admission/store handlers;
- * this factory rejects them, never substitutes an approval or starts work. */
+/* Recovery variants are dispatched before ordinary approvals and confirmation-
+ * only busy handling. Their dedicated sinks never substitute a native action. */
 export function createOrdinaryComponentHandler(database: string, server: PortableResidentLifecycle, http: DiscordChannelClient,
   queue: BusyQueueExecutor, verifier: ControlTurnVerifier, notifyDeliveryReady: () => void) {
   requireDiscordText(database);
@@ -41,9 +42,10 @@ export function createOrdinaryComponentHandler(database: string, server: Portabl
   return async (inputWork: InboundInteractionWork, inputComponent: ComponentId): Promise<PreparedOrdinaryComponentConfirmation> => {
     const work = snapshotInboundInteractionWork(inputWork), component = snapshotComponentId(inputComponent);
     if (!Object.hasOwn(work.work, 'Component') || !serdeValueEqual((work.work as {Component: ComponentId}).Component, component)) throw new ComponentWorkerError('InvalidComponent');
-    if ('RecoveryPublicationDecision' in component || 'RecoveryAbandonDecision' in component) throw new ComponentWorkerError('InvalidComponent');
     let plan: ConfirmationPlan;
-    if ('AsyncChoice' in component) plan = await handleAsyncChoice(work, component.AsyncChoice.question_id, component.AsyncChoice.option, database, server, verifier, notifyDeliveryReady);
+    if ('RecoveryAbandonDecision' in component) plan = await handleRecoveryAbandonment(work, component, database, verifier);
+    else if ('RecoveryPublicationDecision' in component) plan = await handleRecoveryPublication(work, component, database, verifier);
+    else if ('AsyncChoice' in component) plan = await handleAsyncChoice(work, component.AsyncChoice.question_id, component.AsyncChoice.option, database, server, verifier, notifyDeliveryReady);
     else if (work.processingMode === 'ConfirmationOnly' || 'Busy' in component) {
       try {plan = work.processingMode === 'ConfirmationOnly' ? await prepareBusyConfirmationOnly(work, component, database) : await handleBusyComponent(work, component, database, queue, server, verifier);}
       catch (error) {

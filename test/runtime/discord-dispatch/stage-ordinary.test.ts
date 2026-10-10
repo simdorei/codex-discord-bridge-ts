@@ -158,13 +158,9 @@ test('busy wrong actor and expired first choice return unavailable with no admit
     assert.equal(await state.getIngress(path, 'interaction:3'), null);
   });
 });
-test('recovery actors and autocomplete cannot silently fall into ordinary executable custody', async () => {
+test('autocomplete cannot enter executable custody', async () => {
   await storeFixture(async path => {
-    for (const work of [
-      routed('help', {}, 'codex_pub:v1:' + 'b'.repeat(32) + ':1:a'),
-      routed('help', {}, 'codex_discard:v1:' + 'b'.repeat(32) + ':1:a'),
-      routed('settings', {model: 'g'}, undefined, true),
-    ]) await assert.rejects(stage(path, request(work), options), TypeError);
+    await assert.rejects(stage(path, request(routed('settings', {model: 'g'}, undefined, true)), options), TypeError);
     assert.equal(existsSync(path), false);
   });
 });

@@ -47,12 +47,12 @@ test('Busy Queue concrete branch commits once and ConfirmationOnly reuses ready 
   const again=await handler({...w,processingMode:'ConfirmationOnly'},w.work.Component);await again.deliver();assert.equal(calls,1);assert.deepEqual(seen,['POST','PATCH','PATCH']);
  }finally{w.admissionPermit!.release();}
 })));
-test('ordinary confirmation-only nonbusy and unsupported recovery paths perform no action',async()=>{
+test('confirmation-only nonbusy and recovery components perform no action',async()=>{
  const handler=createOrdinaryComponentHandler('/unused',null as any,null as any,null as any,null as any,()=>{});
  for(const custom of ['codex_approval:t:1',`codex_pub:v1:${'a'.repeat(32)}:1:a`,`codex_discard:v1:${'a'.repeat(32)}:1:a`]){
   const w=work('/unused',3n,new AdmissionGate(),custom);try{assert.ok('Component'in w.work);
    if(custom.startsWith('codex_approval')){await assert.rejects(handler({...w,processingMode:'ConfirmationOnly'},w.work.Component),e=>{const info=componentWorkerErrorInfo(e);return info?.kind==='Busy'&&busyComponentErrorInfo(info.source)?.kind==='ActionUnconfirmed';});await assert.rejects(handler(w,w.work.Component),kind('LegacyComponentExpired'));}
-   else await assert.rejects(handler(w,w.work.Component),kind('InvalidComponent'));
+   else await assert.rejects(handler({...w,processingMode:'ConfirmationOnly'},w.work.Component),kind(custom.startsWith('codex_pub')?'PublicationConsent':'Abandonment'));
   }finally{w.admissionPermit!.release();}
  }
 });

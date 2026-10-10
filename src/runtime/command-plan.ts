@@ -1,3 +1,4 @@
+import type {PrefixAction} from './prefix-plan.ts';
 import {rustTrim} from '../app-server/value.ts';
 import {AUTO_RESERVE_REMOVED, isRoutedInteractionWork, slashBoolean, slashHasOption, slashInteger, slashString,
   type RoutedInteractionWork, type SlashInvocation} from '../discord/interaction-routing.ts';
@@ -16,6 +17,12 @@ export type SlashCommandAction =
   | {readonly Interview: {readonly prompt: string}}
   | {readonly Retract: {readonly reference: string | null}}
   | {readonly BridgeSync: {readonly limit: bigint | null}};
+
+/** Complete source command description union. Existing slash execution services
+ * stay narrow; adding a message plan does not install an executor for every variant. */
+export type CommandAction = SlashCommandAction
+  | Exclude<PrefixAction, 'DiscoverCodex' | 'MirrorSync' | {readonly MirrorList: unknown} | {readonly MirrorCheck: unknown} | {readonly MirrorDetail: unknown} | {readonly SkillPrompt: unknown}>
+  | {readonly MirrorInspect: {readonly limit: bigint | null; readonly list: boolean}};
 
 export class CommandPlanError extends Error {
   readonly kind: 'Unsupported' | 'MissingOption' | 'BlankOption';

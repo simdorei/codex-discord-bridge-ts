@@ -42,8 +42,8 @@ export interface OrdinaryDispatcherOptions {
 const releasePermit = AdmissionPermit.prototype.release;
 
 /** Complete front/ACK/queue ordering for the ordinary stage profile only.
- * Recovery publication/abandonment staging and actual queue execution are NOT
- * implemented here. HTTP is borrowed; one owned sender clone must be disposed
+ * Recovery staging uses original authenticated delivery identity; actual queue
+ * execution remains in the worker. HTTP is borrowed; one sender clone is disposed
  * after all dispatch calls finish. Policy refresh belongs to the ingress owner. */
 export class OrdinaryInteractionDispatcher {
   readonly #options: OrdinaryDispatcherOptions;

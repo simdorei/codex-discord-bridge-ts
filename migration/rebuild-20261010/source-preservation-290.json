@@ -1,0 +1,40 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 290,
+  "localCommit": "7fb234d0d421034d2eed5448d5af781e380d434c",
+  "fullTests": 5236,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/command-plan.ts": "53cf625fe8e5957499142eb7b9bde2fd38ae340ee988e5dbbb7af693a433914c",
+    "src/runtime/component-worker/confirmation.ts": "4ffab1a56c7a9af925960fdb3ef436668352e467cb943d28b936a17a07f163fa",
+    "src/runtime/component-worker/ordinary-handler.ts": "d62feb4835ce70247640552d2c762809baa5e189dbd78ab3dd09e48289c592b5",
+    "src/runtime/component-worker/recovery-abandonment.ts": "63587b665cb40dcb68addda0cf4505f04247ed89f7f6a62ada638f7d5f8115a6",
+    "src/runtime/discord-dispatch/ordinary-dispatcher.ts": "47fbc72ac259e33fb9dd901e08e5b58c802d91d5807bcc366cf01aaab526a60b",
+    "src/runtime/discord-dispatch/stage-ordinary.ts": "09fb41e939d672695207276cae1d93efcd4f5083a43c3f54bad89ab334682dbb",
+    "src/runtime/message-plan.ts": "d5ba32a0e9059f78cd2aee4cc4f7ca9442a1c1e937847163905999c20c7e7352",
+    "src/runtime/message-worker/custody.ts": "440a0240c5193fd35a934681d3ede43bb1ceafc967279a3aef64702810c1266c",
+    "src/runtime/prefix-plan.ts": "0dd2b209e20b8c1bcfe0bb8f908df896e6dcf756b0f21e2d71316105a032af26",
+    "src/runtime/settings-binding.ts": "bfd6d024c7cddce84796c24257e3b6b2e624a40efe58e4f24e76bd92d71b257a",
+    "test/helpers/abandonment-store-fixture.ts": "0b3384804fdb4ee1207149998d7c57cf96eee35cc5019eb1681ab222eeac708b",
+    "test/runtime/component-worker/ordinary-handler.test.ts": "bef703442fcf012f582e11b4f3d3ada0ad73af163e6deb6a08dd59242071e01e",
+    "test/runtime/component-worker/recovery-abandonment.test.ts": "40a284a469e988d474b713cc7df08339c7a485a0e73ad0330a2b8071b903eb89",
+    "test/runtime/component-worker/recovery-pipeline.test.ts": "1ba59209870c6136d77a4516e89e3741081390c70c0910618f7f880d4abbcc0c",
+    "test/runtime/discord-dispatch/recovery-custody.test.ts": "c5f3351bd5256ad8bc7f2e364884ab9668528d172628f40740777dc763773775",
+    "test/runtime/discord-dispatch/stage-ordinary.test.ts": "ef6bbb10e7f58fae9429540a6bbd96faa4dbb02a5e4ab05ec6bea9671992173d",
+    "test/runtime/lifecycle-binding.test.ts": "8e617a9b2223bdadb27b899a9499ecac0723441eeaf1ac1dcc6a8335a87e71c6",
+    "test/runtime/message-plan.test.ts": "905729195310179d3fd765a8090f02a74e2f9cb39c83d9e98f45d706957d3af3",
+    "test/runtime/message-worker/custody.test.ts": "8dd6c87ea16fa82c91b6a5ccfc5f890ca5a228f5d8a74de66618f0795e80682c",
+    "test/runtime/prefix-plan.test.ts": "fca138f67c3742ccbb543b927ed25ecdee29f578da378f00498a2e6aaa9c92fc"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed full test log upload was denied. No denied log artifact is included in this source-only preservation. Raw evidence remains local and publication is pending user approval.",
+  "originalWorkspaceRecovered": false,
+  "limits": [
+    "No live Discord/Windows qualification",
+    "Migration incomplete",
+    "Same-owner source and verification-summary publication approved by user 2026-10-10T09:32Z"
+  ]
+}

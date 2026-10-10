@@ -7,14 +7,14 @@ import {cloneOwnedSerdeValue} from '../core/owned-serde-value.ts';
 import {rustTrim} from '../app-server/value.ts';
 import {requireDiscordText} from '../discord/text.ts';
 import {BridgeState} from './bridge-state.ts';
-import type {SlashCommandAction} from './command-plan.ts';
+import type {CommandAction, SlashCommandAction} from './command-plan.ts';
 import {ActionIntegerRangeError, InvalidActionRequestError, NoActionTargetError} from './action-executor/errors.ts';
-import {snapshotSettingsBinding, validateSettingsSnapshot, validateSelectedSettingsSnapshot,
+import {snapshotSettingsBinding, validateSettingsSnapshot, validateLifecycleSettingsSnapshot, validateSelectedSettingsSnapshot,
   type FrozenSettingsBinding} from './action-executor/settings-snapshot.ts';
 
 const mapped = state.mirroredThreadId;
 type Settings = Extract<SlashCommandAction, {Settings: unknown}>['Settings'];
-function settings(action: SlashCommandAction): Settings | null {
+function settings(action: CommandAction): Settings | null {
   if (typeof action === 'string' || !Object.hasOwn(action, 'Settings')) return null;
   const value = (action as {Settings: Settings}).Settings;
   for (const key of ['reference', 'model', 'effort', 'speed'] as const) {
@@ -36,8 +36,8 @@ export function isSlashSettingsMutation(action: SlashCommandAction): boolean {
 
 /** Concrete original-thread settings binding for this Linux/POSIX migration.
  * Uses real read-only Codex state, central mirror lookup and original BridgeState.
- * No canonical fork, fallback replacement or execution. Non-slash AutoReserve and
- * lifecycle action binding are separate; removed auto-reserve cannot enter here. */
+ * No canonical fork, fallback replacement or execution. Full message settings
+ * and lifecycle descriptions share this same original-target resolver. */
 export class SlashSettingsTargetResolver {
   readonly #statePath: string;
   readonly #mirrorPath: string;
@@ -48,15 +48,37 @@ export class SlashSettingsTargetResolver {
     this.#bridge = Object.freeze({selectedThreadId: BridgeState.prototype.selectedThreadId.bind(bridge)});
     Object.freeze(this);
   }
-  async bind(action: SlashCommandAction, channel: bigint): Promise<FrozenSettingsBinding | null> {
-    const command = cloneOwnedSerdeValue(action) as SlashCommandAction, value = settings(command);
+  async bind(action: CommandAction, channel: bigint): Promise<FrozenSettingsBinding | null> {
+    const command = cloneOwnedSerdeValue(action) as CommandAction;
+    if (typeof command !== 'string' && 'AutoReserve' in command) {
+      const value = command.AutoReserve;
+      if (typeof value.enabled !== 'boolean') throw new TypeError('Expected auto-reserve description flag');
+      if (value.reference !== null) requireDiscordText(value.reference);
+      return this.#bindReference(command, value.reference, channel, 'settings');
+    }
+    const value = settings(command);
     if (value === null || (value.model === null && value.effort === null && value.speed === null)) return null;
+    return this.#bindReference(command, value.reference, channel, 'settings');
+  }
+  async bindLifecycle(action: CommandAction, channel: bigint): Promise<FrozenSettingsBinding | null> {
+    const command = cloneOwnedSerdeValue(action) as CommandAction;
+    if (typeof command === 'string') return null;
+    for (const key of ['Archive', 'Resume', 'Recover', 'Repair', 'Stop'] as const) {
+      if (key in command) {
+        const value = (command as Record<typeof key, {readonly reference: string | null}>)[key];
+        if (value.reference !== null) requireDiscordText(value.reference);
+        return this.#bindReference(command, value.reference, channel, 'lifecycle');
+      }
+    }
+    return null;
+  }
+  async #bindReference(command: CommandAction, inputReference: string | null, channel: bigint, label: 'settings' | 'lifecycle'): Promise<FrozenSettingsBinding> {
     channelId(channel);
     if (process.platform === 'win32') throw new Error('Windows original-thread reference binding is not yet qualified');
     const store = CodexThreadStore.open(this.#statePath), selected = this.#bridge.selectedThreadId();
     let target: string, route: FrozenSettingsBinding['route'];
-    if (value.reference !== null) {
-      const reference = rustTrim(value.reference);
+    if (inputReference !== null) {
+      const reference = rustTrim(inputReference);
       const exact = store.loadThread(reference, false);
       target = (exact ?? resolveThreadRefPosix(store.loadRecentThreads(0n), reference, selected, false)).id;
       route = 'Explicit';
@@ -69,15 +91,18 @@ export class SlashSettingsTargetResolver {
         target = selected; route = 'Selected';
       }
     }
-    if (store.loadThread(target, false) === null) throw new InvalidActionRequestError('settings admission target is not an active original thread');
+    if (store.loadThread(target, false) === null) throw new InvalidActionRequestError(`${label} admission target is not an active original thread`);
     const binding = Object.freeze({target, route, command});
-    await this.validate(binding, channel);
+    await this.#validateRoute(binding, channel, label);
     return binding;
   }
-  async validate(input: FrozenSettingsBinding, channel: bigint): Promise<void> {
+  async validate(input: FrozenSettingsBinding, channel: bigint): Promise<void> {return this.#validateRoute(input, channel, 'settings');}
+  async validateLifecycle(input: FrozenSettingsBinding, channel: bigint): Promise<void> {return this.#validateRoute(input, channel, 'lifecycle');}
+  async #validateRoute(input: FrozenSettingsBinding, channel: bigint, label: 'settings' | 'lifecycle'): Promise<void> {
     const binding = snapshotSettingsBinding(input); channelId(channel);
     if (binding.route !== 'Explicit') sqliteChannel(channel);
-    await validateSettingsSnapshot(this.#mirrorPath, binding, channel, this.#bridge, {mirroredThreadId: mapped});
+    const validate = label === 'settings' ? validateSettingsSnapshot : validateLifecycleSettingsSnapshot;
+    await validate(this.#mirrorPath, binding, channel, this.#bridge, {mirroredThreadId: mapped});
   }
   validateSelectedSnapshot(input: FrozenSettingsBinding): void {
     validateSelectedSettingsSnapshot(snapshotSettingsBinding(input), this.#bridge);
@@ -94,4 +119,13 @@ export function isSettingsRequestRejection(error: unknown): boolean {
 }
 export function settingsErrorText(error: unknown): string {
   return passiveErrorText(error, 'settings admission failed');
+}
+
+/** Shared full resolver alias; existing slash callers retain the identical class. */
+export {SlashSettingsTargetResolver as SettingsTargetResolver};
+export function isSettingsMutation(action: CommandAction): boolean {
+  const command = cloneOwnedSerdeValue(action) as CommandAction;
+  if (typeof command !== 'string' && 'AutoReserve' in command) return true;
+  const value = settings(command);
+  return value !== null && (value.model !== null || value.effort !== null || value.speed !== null);
 }

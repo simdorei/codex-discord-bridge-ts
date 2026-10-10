@@ -64,3 +64,13 @@ export function publicationIntentConfirmationPlan(id: string, revision: bigint, 
   });
   plans.add(value); return value;
 }
+
+/** Display-only confirmation minted after durable no-replay disposition. */
+export function abandonmentConfirmationPlan(id:string,revision:bigint,decision:'AbandonOnly'|'KeepHeld'):ConfirmationPlan {
+ requireDiscordText(id);
+ if(!/^[0-9a-f]{32}$/u.test(id)||typeof revision!=='bigint'||revision<=0n||revision>=1n<<63n||(decision!=='AbandonOnly'&&decision!=='KeepHeld'))throw new TypeError('Expected exact abandonment decision');
+ const value=Object.freeze({content:decision==='AbandonOnly'
+  ?'Saved request permanently abandoned without replay. The thread remains held; no new request was started.'
+  :'Saved request kept. The thread remains held; no request was replayed or started.',domain:'recovery-abandonment-confirmation-v1',logicalKey:`${id}:${revision}`});
+ plans.add(value);return value;
+}
