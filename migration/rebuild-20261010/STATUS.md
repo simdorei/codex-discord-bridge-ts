@@ -20,3 +20,7 @@ Abandonment proposal/receipt codecs preserve typed struct order, i64/u64 bits, s
 ## Reimplementation 279
 
 Borrowed abandonment identity checks now read actual persisted source commands and decision clicks, compare exact actor/runtime/delivery identity, preserve historical-vs-fresh custody rules, and reject cross-proposal reuse. Eleven focused native SQLite tests PASS; full 5,112 PASS, zero failed/cancelled/skipped; strict TS exit 0. Raw logs and source hashes retained. No abandonment write or runtime integration is claimed.
+
+## Reimplementation 280
+
+Private abandonment snapshot now checks owned, held, unstarted Pending state; exact mapping; absence of unresolved mutation/cancellation; 16 source query pages; runtime/source identity; canonical database identity; and 393,216-byte/128-row limits. Publication and abandonment share one bounded typed SQLite evidence reader. Eleven new full-schema native SQLite tests plus eleven unchanged publication regressions PASS; full 5,123 PASS with zero failures/cancellations/skips; strict TS exit 0. No proposal/decision writer, runtime integration, fresh Rust differential or Windows qualification is claimed.
