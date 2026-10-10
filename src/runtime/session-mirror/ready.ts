@@ -1,6 +1,7 @@
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
+export const MAX_MIRROR_THREAD_BYTES=16384;
 export interface MirrorTargetHint{readonly thread:string;readonly channel:bigint;}
 export interface MirrorReadyLimits{readonly maxTargets:number;readonly maxBytes:number;}
 /** Bounded discovery hints only, never delivery/cursor authority or active-work
@@ -15,7 +16,7 @@ export class MirrorTargetReady{
  refresh(input:readonly MirrorTargetHint[],activeThreads:ReadonlySet<string>):void{
   if(types.isProxy(input)||!Array.isArray(input))throw new TypeError('Expected owned mirror targets');if(input.length>this.#count)throw new RangeError('Mirror discovery target budget exceeded');
   const targets:MirrorTargetHint[]=[],destinations=new Map<string,bigint>();let used=0;
-  for(let i=0;i<input.length;i++){const row=own(input,String(i)),thread=own(row,'thread'),channel=own(row,'channel');requireDiscordText(thread);if(typeof channel!=='bigint'||channel<-(1n<<63n)||channel>(1n<<63n)-1n)throw new TypeError('Expected signed mirror channel');used+=Buffer.byteLength(thread,'utf8')+8;if(used>this.#bytes)throw new RangeError('Mirror discovery byte budget exceeded');if(destinations.has(thread))throw new TypeError('Duplicate mirror target');destinations.set(thread,channel);targets.push(Object.freeze({thread,channel}));}
+  for(let i=0;i<input.length;i++){const row=own(input,String(i)),thread=own(row,'thread'),channel=own(row,'channel');requireDiscordText(thread);if(Buffer.byteLength(thread,'utf8')>MAX_MIRROR_THREAD_BYTES)throw new RangeError('Mirror thread identity budget exceeded');if(typeof channel!=='bigint'||channel<-(1n<<63n)||channel>(1n<<63n)-1n)throw new TypeError('Expected signed mirror channel');used+=Buffer.byteLength(thread,'utf8')+8;if(used>this.#bytes)throw new RangeError('Mirror discovery byte budget exceeded');if(destinations.has(thread))throw new TypeError('Duplicate mirror target');destinations.set(thread,channel);targets.push(Object.freeze({thread,channel}));}
   const next:MirrorTargetHint[]=[];
   for(const row of this.#ready){const channel=destinations.get(row.thread);if(channel===undefined)continue;destinations.delete(row.thread);if(!activeThreads.has(row.thread))next.push(Object.freeze({thread:row.thread,channel}));}
   for(const row of targets)if(destinations.delete(row.thread)&&!activeThreads.has(row.thread))next.push(row);

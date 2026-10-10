@@ -1,7 +1,7 @@
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
-import type {MirrorTargetHint} from './ready.ts';
+import {MAX_MIRROR_THREAD_BYTES,type MirrorTargetHint} from './ready.ts';
 export interface MirrorPollCounts{readonly targets:bigint;readonly events:bigint;readonly sent:bigint;}
 export type MirrorTargetOutcome={readonly kind:'Completed';readonly progress:MirrorPollCounts}|{readonly kind:'Failed';readonly error:unknown}|{readonly kind:'TimedOut';readonly error:unknown}|{readonly kind:'Cancelled';readonly reason:unknown};
 export interface MirrorTargetFinished{readonly target:MirrorTargetHint;readonly outcome:MirrorTargetOutcome;}
@@ -20,7 +20,7 @@ export class MirrorTargetExecution{
  activeThreads():ReadonlySet<string>{return new Set(this.#threads);}
  activeChannels():ReadonlySet<bigint>{return new Set(this.#channels);}
  tryStart(input:MirrorTargetHint,poll:(target:MirrorTargetHint,signal:AbortSignal)=>Promise<MirrorPollCounts>,signal?:AbortSignal):boolean{
-  if(this.#closed)throw new TypeError('Mirror execution closed');signal?.throwIfAborted();const thread=own(input,'thread'),channel=own(input,'channel');requireDiscordText(thread);if(Buffer.byteLength(thread,'utf8')>16384||typeof channel!=='bigint'||channel<-(1n<<63n)||channel>(1n<<63n)-1n)throw new TypeError('Invalid mirror target');if(typeof poll!=='function'||types.isProxy(poll)||types.isGeneratorFunction(poll))throw new TypeError('Expected mirror poll function');
+  if(this.#closed)throw new TypeError('Mirror execution closed');signal?.throwIfAborted();const thread=own(input,'thread'),channel=own(input,'channel');requireDiscordText(thread);if(Buffer.byteLength(thread,'utf8')>MAX_MIRROR_THREAD_BYTES||typeof channel!=='bigint'||channel<-(1n<<63n)||channel>(1n<<63n)-1n)throw new TypeError('Invalid mirror target');if(typeof poll!=='function'||types.isProxy(poll)||types.isGeneratorFunction(poll))throw new TypeError('Expected mirror poll function');
   if(this.#tasks.size===8||this.#threads.has(thread)||this.#channels.has(channel))return false;
   const target=Object.freeze({thread,channel}),abort=new AbortController();let interrupted:'TimedOut'|'Cancelled'|null=null;
   const cancel=(reason:unknown)=>{if(abort.signal.aborted)return;interrupted='Cancelled';abort.abort(reason);};
