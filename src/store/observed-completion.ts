@@ -81,9 +81,7 @@ export async function pendingObservedCompletions(path:string):Promise<ObservedCo
 }
 export async function hasObservedCompletion(path:string,thread:string,turn:string):Promise<boolean> {
   const db=await openInitialized(path);
-  try {const stmt=db.prepare("SELECT EXISTS(SELECT 1 FROM codex_observed_completions WHERE thread_id=? AND turn_id=?) AS present");
-    stmt.setReadBigInts(true);return decodeI64(stmt.get(thread,turn)?.present,"present")!==0n;
-  } finally {db.close();}
+  try {return hasObservedCompletionIn(db,thread,turn);} finally {db.close();}
 }
 export async function recordObservedCompletionError(path:string,thread:string,turn:string,error:string):Promise<void> {
   if(typeof error!=="string"||/[\uD800-\uDFFF]/u.test(error)) throw new TypeError("Expected well-formed error text");
@@ -108,4 +106,9 @@ export function hasObservedCompletionResidentEvidence(path:string,thread:string,
   for(const value of [thread,turn,resident])if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed resident evidence identity");
   if(typeof generation!=="bigint"||generation<I64_MIN||generation>I64_MAX)throw new RangeError("Expected i64 evidence generation");
   return usingInitializedStore(path,db=>{const q=db.prepare("SELECT EXISTS(SELECT 1 FROM codex_observed_completions WHERE thread_id=?1 AND turn_id=?2 AND generation=?3 AND resident_owner=?4) AS present");q.setReadBigInts(true);return decodeI64(q.get(thread,turn,generation,resident)?.present,"present")!==0n;});
+}
+
+/** Existing borrowed read only; source query and strict scalar decoder. */
+export function hasObservedCompletionIn(db:DatabaseSync,thread:string,turn:string):boolean{
+ const stmt=db.prepare("SELECT EXISTS(SELECT 1 FROM codex_observed_completions WHERE thread_id=? AND turn_id=?) AS present");stmt.setReadBigInts(true);return decodeI64(stmt.get(thread,turn)?.present,"present")!==0n;
 }

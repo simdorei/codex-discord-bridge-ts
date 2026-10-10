@@ -1,0 +1,26 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 443,
+  "localCommit": "e8aa5404ef443098e8d352ddaa59b8a9ebb2c854",
+  "fullTests": 6414,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/session-mirror/ownership-reader.ts": "23ec29ade10b23d66359c87e4b11b28c2c2f6553c872e622adc8b197bc6535a9",
+    "src/runtime/session-mirror/ownership-worker.ts": "d25a101ba629180f55a91ea0a5fa6271d03aeec57707dc74220b2f3b09f6477e",
+    "src/runtime/session-mirror/ownership.ts": "be9ce08309fcb2cd69750abb99da5cf9c75239b38c16e1ffd827be3c27bdcf4f",
+    "src/store/mirror-event-read.ts": "1b56f6d312c37608f27a6454fd0b0a9dd400c304652a82e7520dc3905d913cf9",
+    "src/store/observed-completion.ts": "cf114ff1a9bb8fc44fc18bd1e2c17792caea1e32e58a17eca1287f19e7660245",
+    "src/store/queue-snapshot.ts": "1385568102a54259a1800a30d645bf627d7f5209d41e3fd5ec3e0b471f92a266",
+    "test/runtime/session-mirror/ownership-reader.test.ts": "a5dc8b1dddf6702f815ced57891f8d676e86d92b901b791b51ee698861a7fee9"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

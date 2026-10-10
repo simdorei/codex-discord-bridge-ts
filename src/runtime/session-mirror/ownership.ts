@@ -1,3 +1,7 @@
+import type {DatabaseSync} from 'node:sqlite';
+import {boundedQueueJobsIn} from '../../store/queue-snapshot.ts';
+import {hasObservedCompletionIn} from '../../store/observed-completion.ts';
+import {hasMirrorEventIn} from '../../store/mirror-event-read.ts';
 import {types} from 'node:util';
 import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
 import {snapshotStoredQueueJob,type StoredQueueJob} from '../../store/queue-read.ts';
@@ -25,7 +29,7 @@ function active(thread:string,item:OriginItem,jobs:readonly StoredQueueJob[]):bo
 }
 async function origin(path:string,thread:string,item:OriginItem,jobs:readonly StoredQueueJob[]):Promise<boolean>{
  if(item.kind!=='User')return false;
- if(jobs.some(job=>job.targetThreadId===thread&&job.turnId!==null&&rustTrim(job.prompt)===rustTrim(item.text)&&(item.turnId===null||job.turnId===item.turnId)))return true;
+ if(promptOrigin(thread,item,jobs))return true;
  return item.turnId!==null?state.hasMirrorEvent(path,userOriginMarker(thread,item.turnId,item.text),thread):false;
 }
 export function discordActiveMirrorTurn(thread:string,input:MirrorItem,jobs:readonly StoredQueueJob[]):boolean{
@@ -43,6 +47,28 @@ export class MirrorOwnershipPendingError extends Error{
 export async function currentDiscordMirrorOwner(path:string,thread:string,input:MirrorItem):Promise<boolean>{
  requireDiscordText(thread);const item=snapshot(input),jobs=await state.listFiltered(path,thread,null);
  for(const job of jobs)if(job.state==='Running'&&job.turnId!==null&&await state.hasObservedCompletion(path,thread,job.turnId))throw new MirrorOwnershipPendingError();
- if(jobs.some(job=>job.state==='Starting'||(job.state==='Running'&&job.goalWaiting)))throw new MirrorOwnershipPendingError();
+ if(ownershipPendingState(jobs))throw new MirrorOwnershipPendingError();
  return await origin(path,thread,item,jobs)||(item.kind!=='User'&&active(thread,item,jobs));
+}
+
+/** Bounded source-order refresh on an existing readonly worker connection.
+ * Queue snapshot is complete for this target; subsequent marker checks remain
+ * separate observations as in the original path, not an atomic send certificate. */
+export function currentDiscordMirrorOwnerIn(db:DatabaseSync,thread:string,input:MirrorItem,maxJobs:bigint,maxValueBytes:bigint):boolean{
+ requireDiscordText(thread);const item=snapshot(input),jobs=boundedQueueJobsIn(db,maxJobs,maxValueBytes,thread);
+ for(const job of jobs)if(job.state==='Running'&&job.turnId!==null&&hasObservedCompletionIn(db,thread,job.turnId))throw new MirrorOwnershipPendingError();
+ if(ownershipPendingState(jobs))throw new MirrorOwnershipPendingError();
+ let userOrigin=false;
+ if(item.kind==='User'){
+  userOrigin=promptOrigin(thread,item,jobs);
+  if(!userOrigin&&item.turnId!==null)userOrigin=hasMirrorEventIn(db,userOriginMarker(thread,item.turnId,item.text),thread);
+ }
+ return userOrigin||(item.kind!=='User'&&active(thread,item,jobs));
+}
+
+function promptOrigin(thread:string,item:OriginItem,jobs:readonly StoredQueueJob[]):boolean{
+ return jobs.some(job=>job.targetThreadId===thread&&job.turnId!==null&&rustTrim(job.prompt)===rustTrim(item.text)&&(item.turnId===null||job.turnId===item.turnId));
+}
+function ownershipPendingState(jobs:readonly StoredQueueJob[]):boolean{
+ return jobs.some(job=>job.state==='Starting'||(job.state==='Running'&&job.goalWaiting));
 }
