@@ -1,3 +1,4 @@
+import * as NewPromptIntake from '../../src/store/prompt-intake-new-thread.ts';
 import * as NewInput from "../../src/store/ingress-new-input.ts";
 import * as ProcessedMessages from "../../src/store/processed-messages.ts";
 import * as AbandonmentProposalStore from "../../src/store/abandonment-proposal.ts";
@@ -133,6 +134,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.isComponentClaimLive, ComponentClaims.isComponentClaimLive);
     assert.strictEqual(StateAccessFacade.listQueueJobs, QueueRead.list);
     assert.strictEqual(FacadeExports.listQueueJobs, QueueRead.list);
+    assert.strictEqual(StateAccessFacade.admitPromptIntakeWithIngress, NewPromptIntake.admitPromptIntakeWithIngress);
+    assert.strictEqual(StateAccessFacade.validateNewReplyCurrent, NewReplyClaims.validateNewReplyCurrent);
     assert.strictEqual(StateAccessFacade.getNewReplyByIngress, NewReplyRead.getNewReplyByIngress);
     assert.strictEqual(FacadeExports.getNewReplyByIngress, NewReplyRead.getNewReplyByIngress);
     assert.strictEqual(StateAccessFacade.remainingDiscordIds, MirrorPolicyRead.remainingDiscordIds);
@@ -404,6 +407,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "releaseComponentClaim",
       "isComponentClaimLive",
       "listQueueJobs",
+      "admitPromptIntakeWithIngress",
+      "validateNewReplyCurrent",
       "getNewReplyByIngress",
       "remainingDiscordIds",
       "mirrorTargets",
@@ -600,7 +605,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 218);
+    assert.strictEqual(actual.length, 220);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

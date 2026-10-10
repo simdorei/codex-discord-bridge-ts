@@ -1,3 +1,4 @@
+import {requireDiscordText} from '../discord/text.ts';
 import {decodeI64} from "./sqlite-values.ts";
 import type {DatabaseSync} from "node:sqlite";
 import {getIn,type NewReply} from "./new-reply-read.ts";
@@ -18,6 +19,10 @@ export function validateNewReplyIdentityIn(db:DatabaseSync,record:NewReply):void
     AND json_extract(outcome_json,'$.new_creation.version')=1 AND json_extract(outcome_json,'$.new_creation.cwd')=? AND json_extract(outcome_json,'$.new_verification.thread_id')=?
     AND json_extract(outcome_json,'$.new_verification.channel_id')=? AND json_extract(outcome_json,'$.new_verification.prompt_sha256')=? AND phase<>'cancelled') AS held`,id.ingress_id,id.job_id,id.thread_id,id.origin_channel_id,id.cwd,id.thread_id,id.channel_id,id.prompt_sha256);
   const mapping=mirroredThreadIdIn(db,id.channel_id);if(!matches||mapping!==id.thread_id)throw new StoreIntegrityError("new first-reply evidence or original room mapping changed; no message sent");
+}
+/** Source validate_current: absence is allowed; present identity must remain exact. */
+export async function validateNewReplyCurrent(path:string,job:string):Promise<void>{
+  requireDiscordText(path);requireDiscordText(job);const db=await openInitialized(path);try{const record=getIn(db,job);if(record!==null)validateNewReplyIdentityIn(db,record);}finally{db.close();}
 }
 function readiness(record:NewReply):string|null{
   if(record.state!=="verified")return `new first input verification is ${record.state}; output remains saved: ${record.lastError}`;

@@ -1,3 +1,4 @@
+import * as NewPromptIntake from './prompt-intake-new-thread.ts';
 import * as NewInput from "./ingress-new-input.ts";
 import * as ProcessedMessages from "./processed-messages.ts";
 import * as AbandonmentProposalStore from "./abandonment-proposal.ts";
@@ -150,6 +151,8 @@ export const releaseRejectedDelivery: typeof DeliveryReceipts.releaseRejectedDel
 export const blockRejectedDelivery: typeof DeliveryReceipts.blockRejectedDelivery = DeliveryReceipts.blockRejectedDelivery;
 export const unknownDeliveryReceiptCount: typeof DeliveryReceipts.unknownDeliveryReceiptCount = DeliveryReceipts.unknownDeliveryReceiptCount;
 export const blockedDeliveryReceiptCount: typeof DeliveryReceipts.blockedDeliveryReceiptCount = DeliveryReceipts.blockedDeliveryReceiptCount;
+export const admitPromptIntakeWithIngress: typeof NewPromptIntake.admitPromptIntakeWithIngress = NewPromptIntake.admitPromptIntakeWithIngress;
+export const validateNewReplyCurrent: typeof NewReplyClaims.validateNewReplyCurrent = NewReplyClaims.validateNewReplyCurrent;
 export const getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress = NewReplyRead.getNewReplyByIngress;
 export const newReplyOutputHold: typeof NewReplyClaims.newReplyOutputHold = NewReplyClaims.newReplyOutputHold;
 export const newReplyAcknowledgementSendable: typeof NewReplyClaims.newReplyAcknowledgementSendable = NewReplyClaims.newReplyAcknowledgementSendable;
@@ -412,6 +415,8 @@ export interface IStateAccessFacade {
   readonly blockRejectedDelivery: typeof DeliveryReceipts.blockRejectedDelivery;
   readonly unknownDeliveryReceiptCount: typeof DeliveryReceipts.unknownDeliveryReceiptCount;
   readonly blockedDeliveryReceiptCount: typeof DeliveryReceipts.blockedDeliveryReceiptCount;
+  readonly admitPromptIntakeWithIngress: typeof NewPromptIntake.admitPromptIntakeWithIngress;
+  readonly validateNewReplyCurrent: typeof NewReplyClaims.validateNewReplyCurrent;
   readonly getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress;
   readonly newReplyOutputHold: typeof NewReplyClaims.newReplyOutputHold;
   readonly newReplyAcknowledgementSendable: typeof NewReplyClaims.newReplyAcknowledgementSendable;
@@ -669,6 +674,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   blockRejectedDelivery,
   unknownDeliveryReceiptCount,
   blockedDeliveryReceiptCount,
+  admitPromptIntakeWithIngress,
+  validateNewReplyCurrent,
   getNewReplyByIngress,
   newReplyOutputHold,
   newReplyAcknowledgementSendable,
