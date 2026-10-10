@@ -13,7 +13,7 @@ function own(object:object,key:string):unknown{
   if(!d||!Object.hasOwn(d,"value"))throw new TypeError("Expected own receipt data");
   return d.value;
 }
-function snapshot(input:readonly ExpectedReceipt[]):readonly ExpectedReceipt[]{
+export function snapshotExpectedReceiptBatch(input:readonly ExpectedReceipt[]):readonly ExpectedReceipt[]{
   if(typeof input!=="object"||input===null||types.isProxy(input)||!Array.isArray(input))throw new TypeError("Expected receipt array");
   if(input.length>4096)throw new RangeError("Receipt count exceeds 4096");
   const result:ExpectedReceipt[]=[];let bytes=0;
@@ -36,7 +36,7 @@ function snapshot(input:readonly ExpectedReceipt[]):readonly ExpectedReceipt[]{
  * Runtime integration must execute this synchronous leaf in an owned DB worker.
  */
 export function requireConfirmedReceiptBatchIn(db:DatabaseSync,input:readonly ExpectedReceipt[]):void{
-  const expected=snapshot(input);
+  const expected=snapshotExpectedReceiptBatch(input);
   if(!db.isTransaction)throw new StoreIntegrityError("confirmed receipt batch requires an active transaction");
   if(expected.length===0)return;
   const sql=`SELECT hash_matches,mid,CAST(mid AS BLOB) AS raw_mid,
