@@ -9,8 +9,7 @@ export interface MirrorReadLimits {readonly maxWindowBytes:number;readonly maxRe
  * Returns complete-record prefix evidence only. Caller must durably hand off that
  * prefix and bind the cursor to file identity; this function never writes a cursor. */
 async function readStable<T>(path:string,offset:bigint,input:MirrorReadLimits,decode:(bytes:Uint8Array,limits:MirrorReadLimits)=>Promise<T>,signal?:AbortSignal){
- const bytes=own(input,'maxWindowBytes'),record=own(input,'maxRecordBytes'),records=own(input,'maxRecords'),timeout=own(input,'decodeTimeoutMs');
- if(typeof bytes!=='number'||!Number.isSafeInteger(bytes)||bytes<1||bytes>1048576||typeof record!=='number'||!Number.isSafeInteger(record)||record<1||record>262144||record>bytes||typeof records!=='number'||!Number.isSafeInteger(records)||records<1||records>1024||typeof timeout!=='number'||!Number.isSafeInteger(timeout)||timeout<0||timeout>2147483647)throw new RangeError('Invalid bounded mirror read limits');
+ const {maxWindowBytes:bytes,maxRecordBytes:record,maxRecords:records,decodeTimeoutMs:timeout}=snapshotMirrorReadLimits(input);
  signal?.throwIfAborted();
  const window=await MirrorFileWindow.read(path,offset,bytes,signal);
  if(mirrorDecoderBusy())throw new OwnedWorkerBusyError();
@@ -30,4 +29,11 @@ export function readStableMirrorWindow(path:string,offset:bigint,input:MirrorRea
 export async function readStableMirrorItems(path:string,offset:bigint,input:MirrorReadLimits,options:MirrorItemOptions,signal?:AbortSignal){
  const context=snapshotMirrorItemOptions(options);
  return readStable(path,offset,input,(bytes,limits)=>collectMirrorWindowOffThread(bytes,offset,limits.maxWindowBytes,limits.maxRecordBytes,limits.maxRecords,context,limits.decodeTimeoutMs,signal),signal);
+}
+
+/** Own-data resource snapshot captured before asynchronous IO. */
+export function snapshotMirrorReadLimits(input:MirrorReadLimits):MirrorReadLimits{
+ const bytes=own(input,'maxWindowBytes'),record=own(input,'maxRecordBytes'),records=own(input,'maxRecords'),timeout=own(input,'decodeTimeoutMs');
+ if(typeof bytes!=='number'||!Number.isSafeInteger(bytes)||bytes<1||bytes>1048576||typeof record!=='number'||!Number.isSafeInteger(record)||record<1||record>262144||record>bytes||typeof records!=='number'||!Number.isSafeInteger(records)||records<1||records>1024||typeof timeout!=='number'||!Number.isSafeInteger(timeout)||timeout<0||timeout>2147483647)throw new RangeError('Invalid bounded mirror read limits');
+ return Object.freeze({maxWindowBytes:bytes,maxRecordBytes:record,maxRecords:records,decodeTimeoutMs:timeout});
 }
