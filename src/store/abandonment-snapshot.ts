@@ -84,7 +84,7 @@ const queries=[
   ]
 ] as const;
 
-function databaseIdentity(path:string):string {
+export function abandonmentDatabaseIdentity(path:string):string {
   let raw:Buffer;try{raw=realpathSync(path,{encoding:'buffer'});}catch{return invalid('database identity is unavailable');}
   try{return new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(raw);}catch{return invalid('database identity is not UTF-8');}
 }
@@ -119,7 +119,7 @@ export function captureAbandonmentSnapshotIn(db:DatabaseSync,path:string,jobId:s
   context.stop_origin=captureStopOriginIn(db,target.thread);
   context.runtime=readAbandonmentRuntimeIn(db);
   context.source=verifyAbandonmentMessageIn(db,target,source,creating);
-  context.database=databaseIdentity(path);
+  context.database=abandonmentDatabaseIdentity(path);
   const evidence={job:row,context};
   if(Buffer.byteLength(serializeSerdeValue(evidence),'utf8')>MAX_BYTES)return invalid('private snapshot exceeds bound');
   return Object.freeze({target:Object.freeze(target),evidence:cloneOwnedSerdeValue(evidence)});

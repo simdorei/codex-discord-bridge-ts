@@ -1,0 +1,62 @@
+{
+  "kind": "abandonment-proposal-persistence-and-verification",
+  "rustCommit": "4e213aa69dc89bed1552d8b83e12471d7664b7ae",
+  "files": {
+    "src/core/rust-uuid-text.ts": "1f418e456ebafe8dcdb25748ec0ea537bb118489f457d0df4575827f738c02f3",
+    "src/store/abandonment-proposal-read.ts": "65e6d0f2a865e0430e18219c245305bcb90cd05ad76e2c642997a98bcd8dadae",
+    "src/store/abandonment-proposal.ts": "094bf5573b692837ceaf7fa8a37cb1fdfece20e602a72fb92657ed276f1809ae",
+    "src/store/abandonment-snapshot.ts": "427e5d5eee2896f17a01d3fcc61f39fd538e3ae126d6b1b799ac512a386c28f3",
+    "test/helpers/abandonment-store-fixture.ts": "69d092553611e47ab8bb721a54863037712bb4f611eccceaa9f0d08c040fcb59",
+    "test/store/abandonment-proposal-read.test.ts": "3b53cc2d16f0a014fc1f3dd9e1e04e81361c8171a62a5fa174c3de5701c68832",
+    "test/store/abandonment-proposal.test.ts": "9db2faaf31ea60d2ffeba5dff74cc2b0355869141ba86724ad20288883bb6d1f",
+    "test/store/abandonment-snapshot.test.ts": "06f1ad08c3a960b8511e1238a77aac6e08e8b0cd29a4a209da02dc4f2a2e606f"
+  },
+  "strictTypeScriptExit": 0,
+  "focused": {
+    "tests": 29,
+    "pass": 29,
+    "fail": 0
+  },
+  "full": {
+    "tests": 5141,
+    "pass": 5141,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "exit": 0,
+    "fileConcurrency": 2
+  },
+  "logs": {
+    "migration/rebuild-20261010/evidence/281-typecheck.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "migration/rebuild-20261010/evidence/281-focused.log.gz": "d56a3280ba861406a76238095fb80e1a279921847ce4c007c215cc03a5b4bdc0",
+    "migration/rebuild-20261010/evidence/281-full-tests.log.gz": "904d2f8dc67f25c518e1af8e017564f236d310fbb31277de283efa7cfcee233c"
+  },
+  "review": {
+    "authorities": {
+      ".runtime/rust-authority/crates/cdr-store/src/async_resolution/abandonment/proposal.rs": "1906bb5a7dd067ce8108439b52aa183877b5bebcc1ccb672c548830e7efc25e7",
+      ".runtime/rust-authority/crates/cdr-store/src/async_resolution/abandonment/binding.rs": "25b8403a2aa23a4938635b6c607d5982e3287441571b478515caf655a903395a",
+      ".runtime/rust-authority/crates/cdr-store/src/async_resolution/abandonment/api.rs": "9c0a46652492eeacacc623f939d01d3a30668b684ae529c811ca9fb091196e53",
+      ".runtime/source-authorities/uuid-1.26.0-parser.rs": "3fb335406d4650b26ec8620beb4e6c411cb4eca4d703fd64b987dc602dc5ae0c"
+    },
+    "uuidCrate": {
+      "version": "1.26.0",
+      "url": "https://static.crates.io/crates/uuid/uuid-1.26.0.crate",
+      "sha256": "b5772d71c9be8a8a6ac2117d949c5b224c1b72241bb611d9a3012edcf8af7812",
+      "matchesPinnedCargoLock": true
+    },
+    "review": [
+      "Read path validates bounded encoded seal hash, independently stored SQL identities, exact review hash and finite bounded timestamp bits",
+      "Existing-only owned writer does not create or migrate database; central IMMEDIATE transaction scope preserves cleanup/error behavior",
+      "Proposal reuse compares full typed canonical stored seal; new revisions use checked i64 increment; insert row count and retained read verified before commit",
+      "Freshness compares current snapshot in same transaction, requires canonical database and latest revision; exact body delivery checks and retained binding read precede commit",
+      "UUID acceptance source checked in Cargo.lock-pinned crate; existing Rust f64 display reused rather than JS toString",
+      "Full-schema fixture reused by snapshot and proposal tests to avoid duplicated setup"
+    ],
+    "limitations": [
+      "Runtime admission/target lock is caller precondition, not granted by storage API",
+      "Decision writer and owned historical read-only routing remain unfinished",
+      "No fresh Rust executable differential or Windows qualification",
+      "Original missing workspace remains unrecovered"
+    ]
+  }
+}

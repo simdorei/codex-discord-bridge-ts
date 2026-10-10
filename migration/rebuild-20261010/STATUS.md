@@ -24,3 +24,7 @@ Borrowed abandonment identity checks now read actual persisted source commands a
 ## Reimplementation 280
 
 Private abandonment snapshot now checks owned, held, unstarted Pending state; exact mapping; absence of unresolved mutation/cancellation; 16 source query pages; runtime/source identity; canonical database identity; and 393,216-byte/128-row limits. Publication and abandonment share one bounded typed SQLite evidence reader. Eleven new full-schema native SQLite tests plus eleven unchanged publication regressions PASS; full 5,123 PASS with zero failures/cancellations/skips; strict TS exit 0. No proposal/decision writer, runtime integration, fresh Rust differential or Windows qualification is claimed.
+
+## Reimplementation 281
+
+Existing-only abandonment proposal storage, canonical seal reads, timestamp/SQL/body identity validation, fresh snapshot comparison, monotonic revisions and exact delivery binding implemented. UUID acceptance checked against Cargo.lock-pinned uuid 1.26.0 parser; existing source-backed f64 Display reused. Full-schema shared fixtures: 29 focused PASS, full 5,141 PASS with no failures/cancellations/skips, strict TS exit 0. Runtime admission and target lock remain caller preconditions. Decision writer and owned historical routing are not implemented by this checkpoint.

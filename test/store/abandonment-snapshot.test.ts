@@ -2,20 +2,10 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import type {DatabaseSync} from 'node:sqlite';
 import {realpathSync} from 'node:fs';
-import {storeFixture} from '../helpers/store-fixture.ts';
-import {openInitialized,ActiveTransactionError} from '../../src/store/owned-driver.ts';
-import {enqueueInTransaction} from '../../src/store/queue-enqueue.ts';
+import {ActiveTransactionError} from '../../src/store/owned-driver.ts';
 import {captureAbandonmentSnapshotIn} from '../../src/store/abandonment-snapshot.ts';
 import {serializeSerdeValue} from '../../src/core/serde-json.ts';
-const source={version:1n,content:'!discard-request job',author_is_bot:false,plan:{Execute:{DiscardRequest:{job_id:'job'}}}};
-async function fixture(run:(db:DatabaseSync,path:string)=>void,held=true){await storeFixture(async path=>{const db=await openInitialized(path);try{
- db.exec('BEGIN IMMEDIATE');enqueueInTransaction(db,{jobId:'job',targetThreadId:'t',channelId:1n,ownerUserId:2n,discordMessageId:7n,appServerGeneration:1n,prompt:'prompt',queued:true,ackSent:true,createdAt:1});
- db.exec("INSERT INTO mirror_threads VALUES('t','p','title',10,1,1); INSERT INTO codex_app_server_runtime VALUES(1,'app'); INSERT INTO codex_mutation_runtime VALUES(1,'wire')");
- if(held)db.prepare("INSERT INTO cdr_async_recovery_policies VALUES('t',1,'publishing_recovery',?,'turn','origin','job')").run('a'.repeat(64));
- db.prepare(`INSERT INTO discord_ingress_journal(ingress_id,kind,event_id,application_id,channel_id,owner_user_id,source_message_id,payload_json,runtime_id,state,phase,target_thread_id,created_at,updated_at)
- VALUES('message:5','message',5,NULL,1,2,5,?,'app','executing','processing','t',11,11)`).run(serializeSerdeValue(source));
- db.exec('COMMIT');run(db,path);
- }finally{if(db.isOpen){if(db.isTransaction)db.exec('ROLLBACK');db.close();}}});}
+import {abandonmentStoreFixture as fixture} from '../helpers/abandonment-store-fixture.ts';
 const capture=(db:DatabaseSync,path:string,creating=true)=>captureAbandonmentSnapshotIn(db,path,'job','message:5',creating);
 test('private snapshot seals all source pages, runtimes, source and canonical database without writes',()=>fixture((db,path)=>{
  assert.throws(()=>capture(db,path),ActiveTransactionError);db.exec('BEGIN; PRAGMA query_only=ON');const before=db.prepare('SELECT total_changes() AS n').get()!.n;
