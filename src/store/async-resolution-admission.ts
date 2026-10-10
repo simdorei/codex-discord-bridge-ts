@@ -1,3 +1,4 @@
+import {legacyStopSupersededIn} from './async-resolution-legacy-stop.ts';
 import type { DatabaseSync } from "node:sqlite";
 import { StoreIntegrityError } from "./schema-assembly.ts";
 import { textDecoderFor } from "./sqlite-values.ts";
@@ -47,7 +48,8 @@ const LIFECYCLE_SQL = `
   SELECT typeof(CASE WHEN length(CAST(payload_json AS BLOB))<=?2 THEN payload_json END) AS payload_type,
     CAST(CASE WHEN length(CAST(payload_json AS BLOB))<=?2 THEN payload_json END AS BLOB) AS payload_bytes,
     typeof(CASE WHEN length(CAST(outcome_json AS BLOB))<=?2 THEN outcome_json END) AS outcome_type,
-    CAST(CASE WHEN length(CAST(outcome_json AS BLOB))<=?2 THEN outcome_json END AS BLOB) AS outcome_bytes
+    CAST(CASE WHEN length(CAST(outcome_json AS BLOB))<=?2 THEN outcome_json END AS BLOB) AS outcome_bytes,
+    typeof(ingress_id) AS ingress_type, CAST(ingress_id AS BLOB) AS ingress_bytes
   FROM discord_ingress_journal
   WHERE target_thread_id=?1 AND owner_id IS NULL AND state!='completed'
     AND NOT(phase IN ('result_recorded','stop_accepted') AND outcome_json IS NOT NULL)
@@ -87,6 +89,10 @@ export function asyncLifecycleAdmissionHeldIn(db: DatabaseSync, thread: string):
     try { payload = parseSerdeValue(encoded); } catch { return true; }
     if (typeof payload !== "object" || payload === null || Array.isArray(payload)) return true;
     if (!asyncLifecycleDeclaredControl(payload) && asyncLifecycleOrdinary(payload)) continue;
+
+    const ingress = decode(row.ingress_type, row.ingress_bytes, "ingress_id");
+    if (ingress === null) throw new StoreIntegrityError("Expected SQLite TEXT for ingress_id");
+    if (legacyStopSupersededIn(db, thread, ingress, payload)) continue;
 
     const outcomeText = decode(row.outcome_type, row.outcome_bytes, "outcome_json");
     let outcome: unknown;

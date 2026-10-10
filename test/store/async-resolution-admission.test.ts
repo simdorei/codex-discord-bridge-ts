@@ -28,7 +28,7 @@ function schema(db: DatabaseSync): void {
   // Query fixture, deliberately nullable and affinity-free for corrupt values.
   db.exec(`CREATE TABLE cdr_async_execution_obligations(question_id TEXT, thread_id TEXT);
     INSERT INTO cdr_async_execution_obligations VALUES ('q','t');
-    CREATE TABLE discord_ingress_journal(ingress_id INTEGER PRIMARY KEY, created_at INTEGER,
+    CREATE TABLE discord_ingress_journal(ingress_id TEXT PRIMARY KEY, created_at INTEGER,
       target_thread_id TEXT, owner_id TEXT, state TEXT, phase TEXT, payload_json, outcome_json);
     CREATE VIEW cdr_async_unsettled_obligations AS
       SELECT thread_id FROM cdr_async_execution_obligations WHERE 0;`);
@@ -36,9 +36,10 @@ function schema(db: DatabaseSync): void {
 
 function row(db: DatabaseSync, payload: string | Uint8Array | number | null = ordinary,
   outcome: string | Uint8Array | number | null = null, thread = "t"): void {
+  const ordinal=Number(db.prepare("SELECT COALESCE(MAX(rowid),0)+1 AS n FROM discord_ingress_journal").get()!.n);
   db.prepare(`INSERT INTO discord_ingress_journal
-    (created_at,target_thread_id,owner_id,state,phase,payload_json,outcome_json)
-    VALUES (0,?,NULL,'pending','received',?,?)`).run(thread, payload, outcome);
+    (ingress_id,created_at,target_thread_id,owner_id,state,phase,payload_json,outcome_json)
+    VALUES (?,?,?,NULL,'pending','received',?,?)`).run(String(ordinal),ordinal,thread,payload,outcome);
 }
 
 test("unsettled leaf queries directly, accepts empty/astral IDs and preserves native errors", () => {
