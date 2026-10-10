@@ -1,3 +1,4 @@
+import * as ProcessedMessages from "../../src/store/processed-messages.ts";
 import * as AbandonmentProposalStore from "../../src/store/abandonment-proposal.ts";
 import * as AbandonmentDecisionStore from "../../src/store/abandonment-decision.ts";
 import * as AbandonmentRouting from "../../src/store/abandonment-routing.ts";
@@ -262,6 +263,10 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.finalDeliveryPreflight, DeliveryPreflight.finalDeliveryPreflight);
     assert.strictEqual(StateAccessFacade.pendingFirstReply, DeliveryPreflight.pendingFirstReply);
     assert.strictEqual(StateAccessFacade.admitIngress, IngressAdmission.admitIngress);
+    assert.strictEqual(StateAccessFacade.claimProcessedMessage, ProcessedMessages.claimProcessedMessage);
+    assert.strictEqual(StateAccessFacade.isProcessedMessage, ProcessedMessages.isProcessedMessage);
+    assert.strictEqual(StateAccessFacade.markProcessedMessage, ProcessedMessages.markProcessedMessage);
+
     assert.strictEqual(StateAccessFacade.pendingNewPrompt, NewPromptArm.pendingNewPrompt);
     assert.strictEqual(StateAccessFacade.newThreadOrigin, NewOrigin.newThreadOrigin);
     assert.strictEqual(StateAccessFacade.pendingStopControlsAfter, StopControlRead.pendingStopControlsAfter);
@@ -527,6 +532,9 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "finalDeliveryPreflight",
       "pendingFirstReply",
       "admitIngress",
+      "claimProcessedMessage",
+      "isProcessedMessage",
+      "markProcessedMessage",
       "pendingNewPrompt",
       "pendingStopControlsAfter",
       "stopControlPhase",
@@ -585,7 +593,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 212);
+    assert.strictEqual(actual.length, 215);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

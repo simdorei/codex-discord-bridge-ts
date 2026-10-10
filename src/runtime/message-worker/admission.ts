@@ -1,3 +1,4 @@
+import {rustDebugString} from '../../core/rust-debug.ts';
 import {AdmissionPermit} from '../../admission/drain-gate.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {getOwn,pointer} from '../../store/async-resolution-json-helpers.ts';
@@ -14,7 +15,7 @@ export interface MessageProcessingParts {
 }
 export class MessageDatabaseMismatchError extends Error {
  readonly claimedDatabase:string;readonly contextDatabase:string;
- constructor(claimed:string,context:string){super(`admitted Discord message database mismatch: claimed=${JSON.stringify(claimed)} context=${JSON.stringify(context)}`);this.name='MessageDatabaseMismatchError';this.claimedDatabase=claimed;this.contextDatabase=context;Object.freeze(this);}
+ constructor(claimed:string,context:string){super(`admitted Discord message database mismatch: claimed=${rustDebugString(claimed)} context=${rustDebugString(context)}`);this.name='MessageDatabaseMismatchError';this.claimedDatabase=claimed;this.contextDatabase=context;Object.freeze(this);}
 }
 /** Rust Path::components comparison on Unix UTF-8 paths. No filesystem lookup,
  * symlink resolution or '..' collapse. Windows path semantics remain gated. */
