@@ -1,3 +1,4 @@
+import * as ReviewedPolicy from '../../src/store/reviewed-recovery-policy.ts';
 import * as RestartReadiness from '../../src/store/restart-readiness.ts';
 import * as HistoryTargets from '../../src/store/history-targets.ts';
 import * as ProcessedClaimGuard from '../../src/store/processed-claim-guard.ts';
@@ -310,6 +311,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.finalDeliveryPreflight, DeliveryPreflight.finalDeliveryPreflight);
     assert.strictEqual(StateAccessFacade.pendingFirstReply, DeliveryPreflight.pendingFirstReply);
     assert.strictEqual(StateAccessFacade.admitIngress, IngressAdmission.admitIngress);
+    assert.strictEqual(StateAccessFacade.installReviewedRecoveryPolicy, ReviewedPolicy.installReviewedRecoveryPolicy);
+    assert.strictEqual(FacadeExports.installReviewedRecoveryPolicy, ReviewedPolicy.installReviewedRecoveryPolicy);
     assert.strictEqual(StateAccessFacade.restartReadinessSnapshot, RestartReadiness.restartReadinessSnapshot);
     assert.strictEqual(FacadeExports.restartReadinessSnapshot, RestartReadiness.restartReadinessSnapshot);
     assert.strictEqual(StateAccessFacade.historyPollTargets, HistoryTargets.historyPollTargets);
@@ -608,6 +611,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "finalDeliveryPreflight",
       "pendingFirstReply",
       "admitIngress",
+      "installReviewedRecoveryPolicy",
       "restartReadinessSnapshot",
       "historyPollTargets",
       "claimProcessedMessageGuarded",
@@ -680,7 +684,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 247);
+    assert.strictEqual(actual.length, 248);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

@@ -1,3 +1,4 @@
+import {REVIEWED_INCIDENT_THREAD} from '../../store/async-resolution-policy.ts';
 import { QueueForkCoordinator, type AppServerTarget } from "./fork-coordinator.ts";
 import type { PromptIntakeClaim } from "../../store/prompt-intake.ts";
 import { snapshotPromptIntakeClaim } from "../../store/prompt-intake-write.ts";
@@ -94,6 +95,18 @@ export class QueueStartCoordinator {
     if (typeof messageId !== "bigint" || messageId < 0n || messageId > I64_MAX) throw new QueueIntegerRangeError();
     const job = (await this.#state.listFiltered(this.#path, null, null)).find(value => value.discordMessageId === messageId);
     return job === undefined ? null : presentSavedSubmission(this.#path, job, this.#state);
+  }
+
+  /** Same target mutex and control admission as ordinary runtime work.
+   * The 3-second budget applies only to lock acquisition; once admitted, the
+   * durable write retains both owners until the actual store operation settles. */
+  async installReviewedRecoveryPolicy(): Promise<void> {
+    if(this.#gate===null)throw new BackendFailureError({kind:"Other",ambiguous:false,message:"recovery policy installation requires the owning runtime control gate"});
+    const stop=new AbortController(),busy=new BackendFailureError({kind:"Other",ambiguous:false,message:"recovery policy target lock is busy; target remains held"});
+    const timer=setTimeout(()=>stop.abort(busy),3000);
+    let lease:TargetLease;
+    try{lease=await this.locks.acquire(REVIEWED_INCIDENT_THREAD,stop.signal);}finally{clearTimeout(timer);}
+    try{const permit=this.#gate.tryEnterControl();try{await this.#state.installReviewedRecoveryPolicy(this.#path);}finally{permit.release();}}finally{lease.release();}
   }
 
   recover(): Promise<RecoveryReport> { return this.#recovery.recoverAll(); }
