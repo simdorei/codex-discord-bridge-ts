@@ -1,3 +1,4 @@
+import * as MirrorSync from '../../src/store/mirror-mapping.ts';
 import * as MirrorCreation from '../../src/store/mirror-creation.ts';
 import * as NewPromptIntake from '../../src/store/prompt-intake-new-thread.ts';
 import * as NewInput from "../../src/store/ingress-new-input.ts";
@@ -141,6 +142,12 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.beginMirrorCreation, MirrorCreation.beginMirrorCreation);
     assert.strictEqual(StateAccessFacade.confirmMirrorCreation, MirrorCreation.confirmMirrorCreation);
     assert.strictEqual(FacadeExports.confirmMirrorCreation, MirrorCreation.confirmMirrorCreation);
+    assert.strictEqual(StateAccessFacade.mirrorThreadChannels, MirrorSync.mirrorThreadChannels);
+    assert.strictEqual(FacadeExports.mirrorThreadChannels, MirrorSync.mirrorThreadChannels);
+    assert.strictEqual(StateAccessFacade.mirrorProjectForChannel, MirrorSync.mirrorProjectForChannel);
+    assert.strictEqual(FacadeExports.mirrorProjectForChannel, MirrorSync.mirrorProjectForChannel);
+    assert.strictEqual(StateAccessFacade.commitNewThreadSync, MirrorSync.commitNewThreadSync);
+    assert.strictEqual(FacadeExports.commitNewThreadSync, MirrorSync.commitNewThreadSync);
     assert.strictEqual(StateAccessFacade.admitPromptIntakeWithIngress, NewPromptIntake.admitPromptIntakeWithIngress);
     assert.strictEqual(StateAccessFacade.validateNewReplyCurrent, NewReplyClaims.validateNewReplyCurrent);
     assert.strictEqual(StateAccessFacade.getNewReplyByIngress, NewReplyRead.getNewReplyByIngress);
@@ -417,6 +424,9 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "confirmedMirrorCreation",
       "beginMirrorCreation",
       "confirmMirrorCreation",
+      "mirrorThreadChannels",
+      "mirrorProjectForChannel",
+      "commitNewThreadSync",
       "admitPromptIntakeWithIngress",
       "validateNewReplyCurrent",
       "getNewReplyByIngress",
@@ -615,7 +625,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 223);
+    assert.strictEqual(actual.length, 226);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

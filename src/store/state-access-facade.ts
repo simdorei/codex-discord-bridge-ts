@@ -1,3 +1,4 @@
+import * as MirrorSync from './mirror-mapping.ts';
 import * as MirrorCreation from './mirror-creation.ts';
 import * as NewPromptIntake from './prompt-intake-new-thread.ts';
 import * as NewInput from "./ingress-new-input.ts";
@@ -155,6 +156,9 @@ export const blockedDeliveryReceiptCount: typeof DeliveryReceipts.blockedDeliver
 export const confirmedMirrorCreation: typeof MirrorCreation.confirmedMirrorCreation = MirrorCreation.confirmedMirrorCreation;
 export const beginMirrorCreation: typeof MirrorCreation.beginMirrorCreation = MirrorCreation.beginMirrorCreation;
 export const confirmMirrorCreation: typeof MirrorCreation.confirmMirrorCreation = MirrorCreation.confirmMirrorCreation;
+export const mirrorThreadChannels: typeof MirrorSync.mirrorThreadChannels = MirrorSync.mirrorThreadChannels;
+export const mirrorProjectForChannel: typeof MirrorSync.mirrorProjectForChannel = MirrorSync.mirrorProjectForChannel;
+export const commitNewThreadSync: typeof MirrorSync.commitNewThreadSync = MirrorSync.commitNewThreadSync;
 export const admitPromptIntakeWithIngress: typeof NewPromptIntake.admitPromptIntakeWithIngress = NewPromptIntake.admitPromptIntakeWithIngress;
 export const validateNewReplyCurrent: typeof NewReplyClaims.validateNewReplyCurrent = NewReplyClaims.validateNewReplyCurrent;
 export const getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress = NewReplyRead.getNewReplyByIngress;
@@ -422,6 +426,9 @@ export interface IStateAccessFacade {
   readonly confirmedMirrorCreation: typeof MirrorCreation.confirmedMirrorCreation;
   readonly beginMirrorCreation: typeof MirrorCreation.beginMirrorCreation;
   readonly confirmMirrorCreation: typeof MirrorCreation.confirmMirrorCreation;
+  readonly mirrorThreadChannels: typeof MirrorSync.mirrorThreadChannels;
+  readonly mirrorProjectForChannel: typeof MirrorSync.mirrorProjectForChannel;
+  readonly commitNewThreadSync: typeof MirrorSync.commitNewThreadSync;
   readonly admitPromptIntakeWithIngress: typeof NewPromptIntake.admitPromptIntakeWithIngress;
   readonly validateNewReplyCurrent: typeof NewReplyClaims.validateNewReplyCurrent;
   readonly getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress;
@@ -684,6 +691,9 @@ export const StateAccessFacade: IStateAccessFacade = {
   confirmedMirrorCreation,
   beginMirrorCreation,
   confirmMirrorCreation,
+  mirrorThreadChannels,
+  mirrorProjectForChannel,
+  commitNewThreadSync,
   admitPromptIntakeWithIngress,
   validateNewReplyCurrent,
   getNewReplyByIngress,
