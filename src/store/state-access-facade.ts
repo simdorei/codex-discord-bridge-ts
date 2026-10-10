@@ -1,3 +1,6 @@
+import * as AbandonmentProposalStore from "./abandonment-proposal.ts";
+import * as AbandonmentDecisionStore from "./abandonment-decision.ts";
+import * as AbandonmentRouting from "./abandonment-routing.ts";
 import * as PublicationConsent from "./publication-consent.ts";
 import * as PublicationProposalStore from "./publication-proposal.ts";
 import * as PublicationBinding from "./publication-binding.ts";
@@ -251,6 +254,13 @@ export const recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureI
 export const markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed = QueueClaims.markRunningIfClaimed;
 export const markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed = QueueClaims.markRunningWithResidentIfClaimed;
 
+export const proposeAbandonment: typeof AbandonmentProposalStore.proposeAbandonment = AbandonmentProposalStore.proposeAbandonment;
+export const bindAbandonmentDelivery: typeof AbandonmentProposalStore.bindAbandonmentDelivery = AbandonmentProposalStore.bindAbandonmentDelivery;
+export const recordAbandonmentDecision: typeof AbandonmentDecisionStore.recordAbandonmentDecision = AbandonmentDecisionStore.recordAbandonmentDecision;
+export const deliveredAbandonmentProposal: typeof AbandonmentRouting.deliveredAbandonmentProposal = AbandonmentRouting.deliveredAbandonmentProposal;
+export const abandonmentDecisionStatus: typeof AbandonmentRouting.abandonmentDecisionStatus = AbandonmentRouting.abandonmentDecisionStatus;
+export const abandonmentCommandTarget: typeof AbandonmentRouting.abandonmentCommandTarget = AbandonmentRouting.abandonmentCommandTarget;
+export const authorizeAbandonmentDecision: typeof AbandonmentRouting.authorizeAbandonmentDecision = AbandonmentRouting.authorizeAbandonmentDecision;
 export const recordPublicationConsent: typeof PublicationConsent.recordPublicationConsent = PublicationConsent.recordPublicationConsent;
 export const proposePublication: typeof PublicationProposalStore.proposePublication = PublicationProposalStore.proposePublication;
 export const bindPublicationDelivery: typeof PublicationProposalStore.bindPublicationDelivery = PublicationProposalStore.bindPublicationDelivery;
@@ -525,6 +535,13 @@ export interface IStateAccessFacade {
   readonly recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed;
   readonly markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed;
   readonly markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed;
+  readonly proposeAbandonment: typeof AbandonmentProposalStore.proposeAbandonment;
+  readonly bindAbandonmentDelivery: typeof AbandonmentProposalStore.bindAbandonmentDelivery;
+  readonly recordAbandonmentDecision: typeof AbandonmentDecisionStore.recordAbandonmentDecision;
+  readonly deliveredAbandonmentProposal: typeof AbandonmentRouting.deliveredAbandonmentProposal;
+  readonly abandonmentDecisionStatus: typeof AbandonmentRouting.abandonmentDecisionStatus;
+  readonly abandonmentCommandTarget: typeof AbandonmentRouting.abandonmentCommandTarget;
+  readonly authorizeAbandonmentDecision: typeof AbandonmentRouting.authorizeAbandonmentDecision;
   readonly recordPublicationConsent: typeof PublicationConsent.recordPublicationConsent;
   readonly proposePublication: typeof PublicationProposalStore.proposePublication;
   readonly bindPublicationDelivery: typeof PublicationProposalStore.bindPublicationDelivery;
@@ -745,6 +762,13 @@ export const StateAccessFacade: IStateAccessFacade = {
   recordStartFailureIfClaimed,
   markRunningIfClaimed,
   markRunningWithResidentIfClaimed,
+  proposeAbandonment,
+  bindAbandonmentDelivery,
+  recordAbandonmentDecision,
+  deliveredAbandonmentProposal,
+  abandonmentDecisionStatus,
+  abandonmentCommandTarget,
+  authorizeAbandonmentDecision,
   recordPublicationConsent,
   proposePublication,
   bindPublicationDelivery,

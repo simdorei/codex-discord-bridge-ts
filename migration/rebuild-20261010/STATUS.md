@@ -32,3 +32,7 @@ Existing-only abandonment proposal storage, canonical seal reads, timestamp/SQL/
 ## Reimplementation 282
 
 Exact saved abandonment decisions now atomically retain KeepHeld or cancel only the original Pending request with a verified non-executable tombstone. Historical same-click replay returns the original receipt; conflicting interactions/choices, stale evidence and partial effects fail closed. Source row/context are rechecked before and after removal; injected ignored inserts/deletion and context mutation roll back all effects. Focused 43 PASS, full 5,155 PASS, zero failed/cancelled/skipped, strict TS exit 0. Initial test-oracle RED preserved separately. Runtime caller admission/target-lock integration and owned historical routing remain pending.
+
+## Reimplementation 283
+
+Owned read-only abandonment command targeting, decision authorization, historical delivery and receipt status now use one central read-only store scope (100ms busy timeout). All seven owned abandonment APIs are routed through StateAccessFacade. Exact API whitelist/reference/type checks updated for seven additions; two test-oracle RED logs retained. Final focused 22 PASS, one final full 5,166 PASS, zero failed/cancelled/skipped, strict TS exit 0. Runtime component/dispatcher integration remains pending.

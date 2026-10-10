@@ -1,4 +1,4 @@
-import type {DatabaseSync} from "node:sqlite";
+import {DatabaseSync} from "node:sqlite";
 import {types} from "node:util";
 import {StoreIntegrityError} from "./schema-assembly.ts";
 import {openInitialized,ActiveTransactionError} from "./owned-driver.ts";
@@ -31,4 +31,10 @@ export async function usingInitializedStore<T>(path:string,operation:(db:Databas
 /** Synchronous existing-only scope for preflight/commit paths. Never creates or migrates. */
 export function usingExistingStore<T>(path:string,operation:(db:DatabaseSync)=>T):T{
   requireOperation(operation);return runOwned(openExisting(path),operation);
+}
+
+/** Existing-only read-only scope with the source's short 100ms busy timeout.
+ * No initialization, migration, transaction or permission grant is implicit. */
+export function usingExistingReadOnlyStore<T>(path:string,operation:(db:DatabaseSync)=>T):T {
+ requireOperation(operation);return runOwned(new DatabaseSync(path,{readOnly:true,timeout:100,enableForeignKeyConstraints:false}),operation);
 }

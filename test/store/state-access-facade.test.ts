@@ -1,3 +1,6 @@
+import * as AbandonmentProposalStore from "../../src/store/abandonment-proposal.ts";
+import * as AbandonmentDecisionStore from "../../src/store/abandonment-decision.ts";
+import * as AbandonmentRouting from "../../src/store/abandonment-routing.ts";
 import * as PublicationConsent from "../../src/store/publication-consent.ts";
 import * as PublicationProposalStore from "../../src/store/publication-proposal.ts";
 import * as PublicationBinding from "../../src/store/publication-binding.ts";
@@ -83,6 +86,20 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.proposeAbandonment, AbandonmentProposalStore.proposeAbandonment);
+    assert.strictEqual(FacadeExports.proposeAbandonment, AbandonmentProposalStore.proposeAbandonment);
+    assert.strictEqual(StateAccessFacade.bindAbandonmentDelivery, AbandonmentProposalStore.bindAbandonmentDelivery);
+    assert.strictEqual(FacadeExports.bindAbandonmentDelivery, AbandonmentProposalStore.bindAbandonmentDelivery);
+    assert.strictEqual(StateAccessFacade.recordAbandonmentDecision, AbandonmentDecisionStore.recordAbandonmentDecision);
+    assert.strictEqual(FacadeExports.recordAbandonmentDecision, AbandonmentDecisionStore.recordAbandonmentDecision);
+    assert.strictEqual(StateAccessFacade.deliveredAbandonmentProposal, AbandonmentRouting.deliveredAbandonmentProposal);
+    assert.strictEqual(FacadeExports.deliveredAbandonmentProposal, AbandonmentRouting.deliveredAbandonmentProposal);
+    assert.strictEqual(StateAccessFacade.abandonmentDecisionStatus, AbandonmentRouting.abandonmentDecisionStatus);
+    assert.strictEqual(FacadeExports.abandonmentDecisionStatus, AbandonmentRouting.abandonmentDecisionStatus);
+    assert.strictEqual(StateAccessFacade.abandonmentCommandTarget, AbandonmentRouting.abandonmentCommandTarget);
+    assert.strictEqual(FacadeExports.abandonmentCommandTarget, AbandonmentRouting.abandonmentCommandTarget);
+    assert.strictEqual(StateAccessFacade.authorizeAbandonmentDecision, AbandonmentRouting.authorizeAbandonmentDecision);
+    assert.strictEqual(FacadeExports.authorizeAbandonmentDecision, AbandonmentRouting.authorizeAbandonmentDecision);
     assert.strictEqual(StateAccessFacade.recordPublicationConsent, PublicationConsent.recordPublicationConsent);
     assert.strictEqual(FacadeExports.recordPublicationConsent, PublicationConsent.recordPublicationConsent);
     assert.strictEqual(StateAccessFacade.proposePublication, PublicationProposalStore.proposePublication);
@@ -355,6 +372,13 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
   it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
+      "proposeAbandonment",
+      "bindAbandonmentDelivery",
+      "recordAbandonmentDecision",
+      "deliveredAbandonmentProposal",
+      "abandonmentDecisionStatus",
+      "abandonmentCommandTarget",
+      "authorizeAbandonmentDecision",
       "recordPublicationConsent",
       "proposePublication",
       "bindPublicationDelivery",
@@ -561,7 +585,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 205);
+    assert.strictEqual(actual.length, 212);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
@@ -590,6 +614,20 @@ describe("StateAccessFacade type signature fidelity (compile-time)", () => {
     const eq7: AssertEqual<typeof StateAccessFacade.finish, typeof MutationAttempt.finish> = true;
     const eq8: AssertEqual<typeof StateAccessFacade.openCheckedRead, typeof CheckedRead.open> = true;
 
+    const eqAbandon0: AssertEqual<typeof StateAccessFacade.proposeAbandonment, typeof AbandonmentProposalStore.proposeAbandonment> = true;
+    assert.strictEqual(eqAbandon0, true);
+    const eqAbandon1: AssertEqual<typeof StateAccessFacade.bindAbandonmentDelivery, typeof AbandonmentProposalStore.bindAbandonmentDelivery> = true;
+    assert.strictEqual(eqAbandon1, true);
+    const eqAbandon2: AssertEqual<typeof StateAccessFacade.recordAbandonmentDecision, typeof AbandonmentDecisionStore.recordAbandonmentDecision> = true;
+    assert.strictEqual(eqAbandon2, true);
+    const eqAbandon3: AssertEqual<typeof StateAccessFacade.deliveredAbandonmentProposal, typeof AbandonmentRouting.deliveredAbandonmentProposal> = true;
+    assert.strictEqual(eqAbandon3, true);
+    const eqAbandon4: AssertEqual<typeof StateAccessFacade.abandonmentDecisionStatus, typeof AbandonmentRouting.abandonmentDecisionStatus> = true;
+    assert.strictEqual(eqAbandon4, true);
+    const eqAbandon5: AssertEqual<typeof StateAccessFacade.abandonmentCommandTarget, typeof AbandonmentRouting.abandonmentCommandTarget> = true;
+    assert.strictEqual(eqAbandon5, true);
+    const eqAbandon6: AssertEqual<typeof StateAccessFacade.authorizeAbandonmentDecision, typeof AbandonmentRouting.authorizeAbandonmentDecision> = true;
+    assert.strictEqual(eqAbandon6, true);
     const eqConsent: AssertEqual<typeof StateAccessFacade.recordPublicationConsent, typeof PublicationConsent.recordPublicationConsent> = true;
     assert.strictEqual(eqConsent, true);
     const eqproposePublication: AssertEqual<typeof StateAccessFacade.proposePublication, typeof PublicationProposalStore.proposePublication> = true;
