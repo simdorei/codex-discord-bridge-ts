@@ -5,6 +5,7 @@ import { targetIsHeldIn } from "./dead-generation-admission.ts";
 import { openInitialized } from "./owned-driver.ts";
 import { StoreIntegrityError } from "./schema-assembly.ts";
 import {
+  decodeI64,
   decodeTextField,
   textDecoderFor,
   type SqliteTextDecoder,
@@ -210,4 +211,32 @@ export async function attachGoalTurn(
       }
     }
   }
+}
+
+import {snapshotStoredQueueJob,storedQueueJobsEqual,selectJob,type StoredQueueJob} from "./queue-read.ts";
+import {handoffOwnedAsyncIn} from "./async-resolution-ownership.ts";
+import {trimUnicodeWhitespace} from "./queue-preflight-failure.ts";
+/** Exact observed successor; does not rewrite the original execution generation. */
+export async function attachGoalTurnObservedIfOwned(path:string,input:StoredQueueJob,turnId:string,observationGeneration:bigint):Promise<boolean>{
+  if(typeof turnId!=="string"||/[\uD800-\uDFFF]/u.test(turnId))throw new TypeError("Expected a well-formed turn");
+  if(typeof observationGeneration!=="bigint"||observationGeneration<-(1n<<63n)||observationGeneration>=(1n<<63n))throw new TypeError("Expected i64 generation");
+  const expected=snapshotStoredQueueJob(input);
+  if(observationGeneration<0n||expected.state!=="Running"||!expected.goalWaiting||expected.turnId===null||expected.turnId===turnId||trimUnicodeWhitespace(turnId)==="")return false;
+  const db=await openInitialized(path);let committed=false;
+  try{
+    db.exec("BEGIN IMMEDIATE");
+    if(targetIsHeldIn(db,expected.targetThreadId))return false;
+    const query=db.prepare(`SELECT job_id,CAST(job_id AS BLOB) AS raw,(SELECT encoding FROM pragma_encoding) AS encoding
+      FROM codex_turn_queue WHERE target_thread_id=? AND state='running'`);
+    const owners=query.all(expected.targetThreadId).map(row=>decodeTextField(row.job_id,row.raw,"job_id",false,textDecoderFor(row.encoding))!);
+    if(owners.length>1)throw new InvalidQueueStateError(`multiple running jobs for ${expected.targetThreadId}`);
+    if(owners[0]!==expected.jobId||!storedQueueJobsEqual(selectJob(db,expected.jobId),expected))return false;
+    const completed=db.prepare("SELECT EXISTS(SELECT 1 FROM codex_session_mirror_events WHERE event_digest=? AND codex_thread_id=?) AS present");
+    completed.setReadBigInts(true);
+    if(decodeI64(completed.get(`discord-origin:v1:${expected.targetThreadId}:${turnId}`,expected.targetThreadId)?.present,"completed origin")!==0n)return false;
+    const changed=db.prepare("UPDATE codex_turn_queue SET turn_id=?,turn_observation_generation=?,goal_waiting=0,updated_at=? WHERE job_id=?")
+      .run(turnId,observationGeneration,now(),expected.jobId).changes;
+    if(BigInt(changed)===1n)handoffOwnedAsyncIn(db,expected);
+    db.exec("COMMIT");committed=true;return BigInt(changed)===1n;
+  }finally{if(!committed&&db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
 }

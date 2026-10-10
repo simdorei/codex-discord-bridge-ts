@@ -1,0 +1,26 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 378,
+  "localCommit": "119070fa57cd81add56f87afb372e6195bcff7fe",
+  "fullTests": 5941,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/discord/channel-client.ts": "0e5d30b0e793c40b7230a5c45e7c6da7c6535cc6d5e1759db132ef6153a4de43",
+    "src/discord/channel-rate-state.ts": "0d6f28db0a25a5cc5e056486b4072d9d35888e579617ec9418df77a4c0d07e3a",
+    "src/discord/history-request.ts": "446bb2068f7ddf6f0e3fe0eb72a21d2043263f85c375ef7d5c358824747f372b",
+    "src/discord/node-http-wire.ts": "d566e5882ce9ae2709cc90079fa91d7f96689a2024d920c42c63457ec206e4ad",
+    "src/discord/rate-header-adapter.ts": "b188b5f69509dd8ec55556d5b54742b3641297050c48cd43b5928b351961a1f7",
+    "src/discord/response-engine.ts": "8fa88014b75b18f27c7ac210927893a8b5881da96073b9fb3965492302fcde05",
+    "test/discord/history-http.test.ts": "3ae529ef7bee981db723e21ffb35d83574498716193f47bcfa18ee99c712f3ee"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

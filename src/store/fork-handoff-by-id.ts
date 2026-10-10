@@ -1,3 +1,4 @@
+import { types } from "node:util";
 import type { DatabaseSync } from "node:sqlite";
 import type { AppServerForkHandoff } from "./fork-unresolved-read.ts";
 import {
@@ -62,17 +63,18 @@ const COLUMNS =
 
 const RAW_FIELDS = TEXT_FIELDS.map((name) => `CAST(${name} AS BLOB) AS b_${name}`).join(", ");
 
-const SELECT_BY_ID_SQL =
+const SELECT_PREFIX =
   `SELECT ${COLUMNS}, ${RAW_FIELDS}, (SELECT encoding FROM pragma_encoding) AS encoding ` +
-  `FROM codex_thread_fork_handoffs WHERE handoff_id = ?`;
+  `FROM codex_thread_fork_handoffs WHERE `;
 
-export function forkHandoffByIdIn(
+function readHandoffIn(
   db: DatabaseSync,
   handoffId: string,
+  column: "handoff_id" | "source_thread_id" | "ambiguous_job_id",
 ): AppServerForkHandoff | null {
   requireText(handoffId);
 
-  const stmt = db.prepare(SELECT_BY_ID_SQL);
+  const stmt = db.prepare(SELECT_PREFIX + column + " = ?");
   stmt.setReadBigInts(true);
   const row = stmt.get(handoffId) as Record<string, unknown> | undefined;
   if (row === undefined) {
@@ -158,4 +160,24 @@ export function forkHandoffByIdIn(
     targetThreadId,
     completedGeneration,
   };
+}
+
+export function forkHandoffByIdIn(db: DatabaseSync,id: string): AppServerForkHandoff | null {return readHandoffIn(db,id,"handoff_id");}
+export function forkHandoffBySourceIn(db: DatabaseSync,source: string): AppServerForkHandoff | null {return readHandoffIn(db,source,"source_thread_id");}
+export function forkHandoffByAmbiguousJobIn(db: DatabaseSync,job: string): AppServerForkHandoff | null {return readHandoffIn(db,job,"ambiguous_job_id");}
+
+export const FORK_HANDOFF_FIELDS = Object.freeze(["handoffId","ambiguousJobId","sourceThreadId","expectedGeneration","discordChannelId","discordThreadId","quarantineReason","lastForkError","forkFailureAmbiguous","observedTargetThreadId","targetThreadId","completedGeneration"] as const);
+export function snapshotForkHandoff(input:AppServerForkHandoff):AppServerForkHandoff{
+  if(input===null||typeof input!=="object"||types.isProxy(input)||Array.isArray(input))throw new TypeError("Expected fork handoff data");
+  const result:Record<string,unknown>=Object.create(null);
+  for(const key of FORK_HANDOFF_FIELDS){
+    const d=Object.getOwnPropertyDescriptor(input,key);if(!d||!Object.hasOwn(d,"value"))throw new TypeError("Expected own fork handoff field");
+    const value=d.value;
+    if(key==="forkFailureAmbiguous"){if(typeof value!=="boolean")throw new TypeError("Expected fork ambiguity flag");}
+    else if(key==="expectedGeneration"||key==="discordChannelId"||key==="discordThreadId"||key==="completedGeneration"){
+      if(!(key==="completedGeneration"&&value===null)&&(typeof value!=="bigint"||value<-(1n<<63n)||value>=(1n<<63n)))throw new TypeError("Expected i64 handoff field");
+    }else if(!(["ambiguousJobId","observedTargetThreadId","targetThreadId"].includes(key)&&value===null))requireText(value);
+    result[key]=value;
+  }
+  return result as unknown as AppServerForkHandoff;
 }

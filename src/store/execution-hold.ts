@@ -1,6 +1,8 @@
 import type { DatabaseSync } from "node:sqlite";
 import { StoreIntegrityError } from "./schema-assembly.ts";
 import { decodeTextField, textDecoderFor } from "./sqlite-values.ts";
+import { openInitialized } from "./owned-driver.ts";
+import type { StoredQueueJob } from "./queue-read.ts";
 
 export const EXECUTION_HOLD_PREFIX = "[cdr-rust:execution-held:v1] ";
 export const LEGACY_RESERVE_HOLD_PREFIX = "[cdr-rust:auto-reserve-hold:v1] ";
@@ -80,4 +82,18 @@ export function legacyOrCurrentError(error: string): boolean {
     error.startsWith(EXECUTION_HOLD_PREFIX) ||
     error.startsWith(LEGACY_RESERVE_HOLD_PREFIX)
   );
+}
+
+/** Only Pending jobs consult a durable execution hold; input records stay unchanged. */
+export function eligibleJobsIn(db: DatabaseSync, jobs: readonly StoredQueueJob[]): StoredQueueJob[] {
+  return jobs.filter(job => job.state !== "Pending" || reasonIn(db, job.jobId) === null);
+}
+
+export async function eligibleJobs(path: string, jobs: readonly StoredQueueJob[]): Promise<StoredQueueJob[]> {
+  const db = await openInitialized(path);
+  try { return eligibleJobsIn(db, jobs); } finally { db.close(); }
+}
+
+export async function executionHoldReason(path:string,id:string):Promise<string|null>{
+  const db=await openInitialized(path);try{return reasonIn(db,id);}finally{db.close();}
 }

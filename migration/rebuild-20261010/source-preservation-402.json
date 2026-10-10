@@ -1,0 +1,21 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 402,
+  "localCommit": "43c46e30aac46600a0a41e649bac0edbbb4c6360",
+  "fullTests": 6138,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/discord-runtime/cleanup-coordinator.ts": "f7167e218891c11b43e7a2fddee894302305827110abd514034c1a4353fed48a",
+    "test/runtime/discord-runtime/cleanup-coordinator.test.ts": "a8135ea242ce2658c1fca93d41a24ff830c9e1ba6f496c59e22ca8c07037b509"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

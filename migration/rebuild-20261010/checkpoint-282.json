@@ -1,0 +1,51 @@
+{
+  "kind": "atomic-abandonment-decision-store",
+  "rustCommit": "4e213aa69dc89bed1552d8b83e12471d7664b7ae",
+  "files": {
+    "src/store/abandonment-snapshot.ts": "8de7860a9930907c3841d3685df99c10505ff8cc6916a9e882f92b0c9fe579a2",
+    "src/store/abandonment-decision.ts": "183795830a0790d912714e65d06a3daf706b8497c17fa5f74b7b0c40cc4ae811",
+    "test/store/abandonment-decision.test.ts": "dd3469f6c7646767bfe34edecdf64f1d61b30dc09c58c0bb2cde0fdfeb5a7c2a"
+  },
+  "strictTypeScriptExit": 0,
+  "focused": {
+    "tests": 43,
+    "pass": 43,
+    "fail": 0
+  },
+  "full": {
+    "tests": 5155,
+    "pass": 5155,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "exit": 0,
+    "fileConcurrency": 2
+  },
+  "logs": {
+    "migration/rebuild-20261010/evidence/282-typecheck.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "migration/rebuild-20261010/evidence/282-focused.log.gz": "c390aabd79314ab9de5a170ab249329800237f315295df3d109f81c74bb96fcc",
+    "migration/rebuild-20261010/evidence/282-full-tests.log.gz": "6a5c8142756547eb9c8521bcf32cf325838f7953953b8207f586cf249658f1c2",
+    "migration/rebuild-20261010/evidence/282-initial-focused-red.log.gz": "fdfeb99779a2605e52ad124d8a1114b61c99fd4ea2ab6022054a7ee7c8452473"
+  },
+  "review": {
+    "sourceAuthority": {
+      "path": ".runtime/rust-authority/crates/cdr-store/src/async_resolution/abandonment/decision.rs",
+      "sha256": "22b121700f79be64e1fa39e4758add9c427efb227df0aa5f567f2651d3d9d3c5"
+    },
+    "review": [
+      "Existing-only IMMEDIATE transaction; validates finite host time and exact proposal revision/database",
+      "Replay checks existing exact receipt and historical click before any fresh snapshot; conflicting interaction or choice refused",
+      "Fresh path verifies current snapshot and authenticated click before append-only decision insert",
+      "AbandonOnly inserts exact cancellation, rechecks original row/context, deletes exact Pending, verifies tombstone and unchanged surrounding context",
+      "Post-write retained proposal, receipt, fresh click and latest revision checked before commit",
+      "Snapshot context/job leaves extracted without changing 16 pinned query strings; no pre-disposition guard incorrectly rerun after cancellation",
+      "Native cancellation trigger already rejects original queue update; initial test expected a later integrity error. Test oracle corrected to exact native error; separate mapping-mutation fault injection reaches intended before-delete evidence check"
+    ],
+    "limitations": [
+      "Source-backed store API only; runtime admission and shared target-lock caller integration still pending",
+      "Owned read-only status/routing wrappers remain pending",
+      "No fresh Rust executable differential or Windows qualification",
+      "Original missing workspace not recovered"
+    ]
+  }
+}

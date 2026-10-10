@@ -8,8 +8,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { AdmissionGate } from "../../src/admission/drain-gate.ts";
 import type { DrainFenceKeyRecord } from "../../src/admission/owned-key.ts";
 
-const BASE_GATE_SHA256 = "5a7dbf80ed00c61ac8c140ed1bbbef3690d27dd418f525a1b11b0eecde21f0ab";
-const BASE_KEY_SHA256 = "41e1fd6125b9ae1efd2587895c2f8b2cf942896c76fd9e8fc6cfdaff77de7f72";
+const BASE_GATE_SHA256 = "ae4efc9f482dda3183944ca1ed4bab0e185a122c4c01081687e0b70345c0f7dc";
+const BASE_KEY_SHA256 = "864fa8ed7d51888503868e8ee0e07f4b3a4017f39d665b88dcaca762b9a7e6a8";
 
 export const INSTRUMENTATION_INSERTION = `
 // __AGY_INSTRUMENTATION_APPENDED_INSERTION__

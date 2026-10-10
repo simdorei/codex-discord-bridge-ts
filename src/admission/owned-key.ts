@@ -20,11 +20,20 @@ function getErrorMessage(kind: DrainGateErrorKind): string {
   }
 }
 
+const errorRecords = new WeakMap<object, Readonly<{kind: DrainGateErrorKind; message: string}>>();
+
+/** Reads constructor-owned metadata without touching user-controlled properties. */
+export function drainGateErrorInfo(value: unknown): Readonly<{kind: DrainGateErrorKind; message: string}> | null {
+  return value !== null && (typeof value === "object" || typeof value === "function")
+    ? errorRecords.get(value) ?? null : null;
+}
+
 export class DrainGateError extends Error {
   readonly kind: DrainGateErrorKind;
 
   constructor(kind: DrainGateErrorKind) {
     super(getErrorMessage(kind));
+    errorRecords.set(this, Object.freeze({kind, message: getErrorMessage(kind)}));
     this.kind = kind;
     this.name = "DrainGateError";
     Object.setPrototypeOf(this, new.target.prototype);

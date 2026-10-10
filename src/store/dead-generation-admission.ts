@@ -3,6 +3,12 @@ import { I64_MAX, I64_MIN } from "../protocol/ids.ts";
 import type { StoredQueueJob } from "./queue-read.ts";
 import { StoreIntegrityError } from "./schema-assembly.ts";
 import { decodeBool } from "./sqlite-values.ts";
+import { openInitialized } from "./owned-driver.ts";
+
+export async function targetIsHeld(path: string, target: string): Promise<boolean> {
+  const db = await openInitialized(path);
+  try { return targetIsHeldIn(db, target); } finally { db.close(); }
+}
 
 function assertStrictUnicode(value: unknown, name: string): string {
   if (typeof value !== "string") {

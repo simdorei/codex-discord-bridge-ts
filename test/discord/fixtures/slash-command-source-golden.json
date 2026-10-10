@@ -1,0 +1,318 @@
+{
+  "sourceCommit": "4e213aa69dc89bed1552d8b83e12471d7664b7ae",
+  "sourceSha256": "fead3d4ede10a5ac740ef6620ea85ffac07baaae545325e52a207c0f4f0515bb",
+  "commands": [
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Show Discord Codex commands.",
+        "type": 1,
+        "name": "help",
+        "options": [],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Show recent Codex threads.",
+        "type": 1,
+        "name": "list",
+        "options": [
+          {
+            "description": "…",
+            "type": 4,
+            "name": "limit"
+          }
+        ],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Show archived Codex threads.",
+        "type": 1,
+        "name": "archived_list",
+        "options": [
+          {
+            "description": "…",
+            "type": 4,
+            "name": "limit"
+          }
+        ],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Select the active Codex thread.",
+        "type": 1,
+        "name": "use",
+        "options": [
+          {
+            "description": "…",
+            "type": 3,
+            "name": "ref",
+            "required": true
+          }
+        ],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Show selected Codex thread status.",
+        "type": 1,
+        "name": "status",
+        "options": [
+          {
+            "description": "…",
+            "type": 3,
+            "name": "ref"
+          }
+        ],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Update Codex thread model, effort, or speed.",
+        "type": 1,
+        "name": "settings",
+        "options": [
+          {
+            "description": "…",
+            "type": 3,
+            "name": "ref"
+          },
+          {
+            "autocomplete": true,
+            "description": "…",
+            "type": 3,
+            "name": "model"
+          },
+          {
+            "autocomplete": true,
+            "description": "…",
+            "type": 3,
+            "name": "effort"
+          },
+          {
+            "description": "…",
+            "type": 3,
+            "name": "speed"
+          }
+        ],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Show the Codex thread mapped to this Discord channel.",
+        "type": 1,
+        "name": "where",
+        "options": [],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Show context usage for this Codex thread.",
+        "type": 1,
+        "name": "context",
+        "options": [
+          {
+            "description": "…",
+            "type": 5,
+            "name": "all_threads"
+          },
+          {
+            "description": "…",
+            "type": 5,
+            "name": "refresh"
+          },
+          {
+            "description": "…",
+            "type": 4,
+            "name": "limit"
+          }
+        ],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Show live Codex usage and rate limits.",
+        "type": 1,
+        "name": "usage",
+        "options": [
+          {
+            "description": "…",
+            "type": 4,
+            "name": "days"
+          }
+        ],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Create a new Codex thread with the first prompt.",
+        "type": 1,
+        "name": "new",
+        "options": [
+          {
+            "description": "…",
+            "type": 3,
+            "name": "prompt",
+            "required": true
+          }
+        ],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Send a prompt to the mapped or selected Codex thread.",
+        "type": 1,
+        "name": "ask",
+        "options": [
+          {
+            "description": "…",
+            "type": 3,
+            "name": "prompt",
+            "required": true
+          }
+        ],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Clarify a request before implementation.",
+        "type": 1,
+        "name": "interview",
+        "options": [
+          {
+            "description": "…",
+            "type": 3,
+            "name": "prompt",
+            "required": true
+          }
+        ],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Run Codex bridge diagnostics.",
+        "type": 1,
+        "name": "doctor",
+        "options": [],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Show existing Codex approval and input requests.",
+        "type": 1,
+        "name": "approval",
+        "options": [],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Show Discord runner queues.",
+        "type": 1,
+        "name": "runners",
+        "options": [],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Remove your latest queued ask for this Codex thread.",
+        "type": 1,
+        "name": "retract",
+        "options": [
+          {
+            "description": "…",
+            "type": 3,
+            "name": "ref"
+          }
+        ],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Check Discord mirror mappings.",
+        "type": 1,
+        "name": "mirror_check",
+        "options": [],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": false,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Refresh Codex bridge state and Discord mirror.",
+        "type": 1,
+        "name": "bridge_sync",
+        "options": [
+          {
+            "description": "…",
+            "type": 4,
+            "name": "limit"
+          }
+        ],
+        "version": "1"
+      }
+    },
+    {
+      "conditional": true,
+      "command": {
+        "default_member_permissions": null,
+        "description": "Run Discord button QA smoke.",
+        "type": 1,
+        "name": "qa_buttons",
+        "options": [],
+        "version": "1"
+      }
+    }
+  ]
+}

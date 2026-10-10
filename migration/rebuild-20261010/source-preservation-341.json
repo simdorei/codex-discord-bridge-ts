@@ -1,0 +1,26 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 341,
+  "localCommit": "ee4c85a3ec9040352a8af2d3a4239627a3c21448",
+  "fullTests": 5656,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/diagnostic-report-blocking.ts": "5b076286d2fc6a096c7d213f705cb8ea356ffc9a6330c2dc7edee687f0655efc",
+    "src/runtime/diagnostic-report.ts": "9c8bcca2161af61d49774b9e1a6f227489171bf71aa8dd645e1e1b0c3bda0c4a",
+    "src/runtime/diagnostic-worker.ts": "63c339cea720fe015dd652b0c1253c399c7916d67ef5a2dce977658722943b2a",
+    "src/store/diagnostic-read.ts": "92db7a5ec2111f7570deeac1486ba6375e56b17f1264866baf8c62907964101e",
+    "src/store/state-access-facade.ts": "2a88407e936a11549cecacd2fb2ad081b573b8e2e3a02879a33eeee65c8fc37f",
+    "test/runtime/diagnostic-report.test.ts": "ea52ba77fafc82742d9f86fe0129f5b7c62b80fb8eb8e3df3ca464d3b8fa43ae",
+    "test/store/state-access-facade.test.ts": "f9eb87e99cf1282bc6b938e880f53e291a2cfbf658eb710f0d6c047063742004"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

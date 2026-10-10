@@ -1,0 +1,21 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 309,
+  "localCommit": "27f3a8b4cef8564985da61c251ceb70cd4ca78b2",
+  "fullTests": 5394,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/action-executor/new-journal.ts": "b584b45a04f2035215d391d465f482cde38913b97f79583d666c42b6a9b191cc",
+    "test/runtime/action-executor/new-journal.test.ts": "59cb2faf2d874350e506c7ff477287770566612dd4b881332c622432e9a052f3"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

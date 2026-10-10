@@ -1,0 +1,200 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import type { DatabaseSync } from "node:sqlite";
+import { storeFixture } from "../helpers/store-fixture.ts";
+import { queueJob } from "../helpers/queue-job.ts";
+import { StateAccessFacade as state } from "../../src/store/state-access-facade.ts";
+import { openInitialized } from "../../src/store/owned-driver.ts";
+import { stageOwnedQueueCompletion } from "../../src/store/delivery.ts";
+import { selectJob, type StoredQueueJob } from "../../src/store/queue-read.ts";
+
+async function edit(path:string,run:(db:DatabaseSync)=>void):Promise<void> {
+  const db=await openInitialized(path);try{run(db);}finally{db.close();}
+}
+async function fixture(run:(path:string,job:StoredQueueJob)=>Promise<void>):Promise<void> {
+  await storeFixture(async path=>{
+    await state.enqueue(path,queueJob({ownerUserId:2n}));
+    const claim=(await state.tryBeginAttempt(path,"saved",[],1n))!;
+    const job=(await state.markRunningIfClaimed(path,claim,"turn"))!;
+    await edit(path,db=>db.exec(`INSERT INTO codex_observed_completions(thread_id,turn_id,generation,payload,resident_owner)
+      VALUES ('target','turn',1,'{}','resident')`));
+    await run(path,job);
+  });
+}
+test("owned completion commits one outbox row, removes job/journal and stages unsent idle intent",async()=>{
+  await fixture(async(path,job)=>{
+    const delivery=await stageOwnedQueueCompletion(path,job,"final",5,{observer:"resident",generation:1n});
+    assert.equal(delivery.content,"final");assert.equal(delivery.channelId,1n);assert.equal(delivery.attemptCount,0n);
+    await edit(path,db=>{
+      assert.equal(db.prepare("SELECT count(*) AS n FROM codex_turn_queue").get()?.n,0);
+      assert.equal(db.prepare("SELECT count(*) AS n FROM codex_observed_completions").get()?.n,0);
+      assert.equal(db.prepare("SELECT state FROM cdr_idle_release").get()?.state,"Candidate");
+      assert.equal(db.prepare("SELECT event_digest FROM codex_session_mirror_events WHERE event_digest='discord-origin:v1:target:turn'").get()?.event_digest,"discord-origin:v1:target:turn");
+    });
+    await assert.rejects(()=>stageOwnedQueueCompletion(path,job,"again",6),/queue job not found/);
+  });
+});
+test("stale ownership and duplicate running owners preserve queue, outbox and journal",async()=>{
+  for(const duplicate of [false,true]) await fixture(async(path,job)=>{
+    if(duplicate) await edit(path,db=>db.exec(`INSERT INTO codex_turn_queue
+      (job_id,target_thread_id,channel_id,prompt,queued,ack_sent,state,attempt_count,turn_id,baseline_turn_ids,created_at,updated_at,app_server_generation)
+      VALUES ('other','target',1,'prompt',1,1,'running',1,'turn','[]',0,0,1)`));
+    await assert.rejects(()=>stageOwnedQueueCompletion(path,duplicate?job:{...job,attemptCount:job.attemptCount+1n},"final",5),/completion ownership changed/);
+    await edit(path,db=>{
+      assert.equal(selectJob(db,"saved").state,"Running");assert.equal(db.prepare("SELECT count(*) AS n FROM codex_delivery_outbox").get()?.n,0);
+      assert.equal(db.prepare("SELECT count(*) AS n FROM codex_observed_completions").get()?.n,1);
+    });
+  });
+});
+test("completion snapshots expected job before asynchronous database opening",async()=>{
+  await fixture(async(path,job)=>{
+    const operation=stageOwnedQueueCompletion(path,job,"final",5);
+    job.attemptCount+=1n;job.baselineTurnIds.push("tampered");
+    assert.equal((await operation).content,"final");
+  });
+});
+test("existing outbox contents are retained rather than overwritten by completion retry",async()=>{
+  await fixture(async(path,job)=>{
+    await edit(path,db=>db.exec(`INSERT INTO codex_delivery_outbox(delivery_id,job_id,target_thread_id,turn_id,channel_id,content,created_at,updated_at)
+      VALUES ('saved','saved','target','turn',1,'original',0,0)`));
+    assert.equal((await stageOwnedQueueCompletion(path,job,"replacement",5)).content,"original");
+  });
+});
+test("failure after queue deletion rolls back outbox, journal deletion and queue together",async()=>{
+  await fixture(async(path,job)=>{
+    await edit(path,db=>db.exec("CREATE TRIGGER test_idle_failure BEFORE INSERT ON cdr_idle_release BEGIN SELECT RAISE(ABORT,'idle stage failure'); END"));
+    await assert.rejects(()=>stageOwnedQueueCompletion(path,job,"final",5,{observer:"resident",generation:1n}),/idle stage failure/);
+    await edit(path,db=>{
+      assert.equal(selectJob(db,"saved").state,"Running");assert.equal(db.prepare("SELECT count(*) AS n FROM codex_delivery_outbox").get()?.n,0);
+      assert.equal(db.prepare("SELECT count(*) AS n FROM codex_observed_completions").get()?.n,1);
+    });
+  });
+});
+test("inbox ownership is reconciled before queue deletion and prevents false idle release",async()=>{
+  await fixture(async(path,job)=>{
+    await edit(path,db=>db.prepare(`INSERT INTO cdr_async_question_inbox
+      (id,runtime_id,generation,thread_id,turn_id,item_id,candidate_job_id,candidate_channel_id,candidate_owner_id,body,created_at,
+       candidate_generation,candidate_execution_generation,candidate_attempt_count)
+      VALUES ('question','resident',1,'target','turn','item','saved',1,2,'body',0,?,?,?)`).run(job.appServerGeneration,job.executionGeneration,job.attemptCount));
+    await stageOwnedQueueCompletion(path,job,"final",5,{observer:"resident",generation:1n});
+    await edit(path,db=>{
+      assert.equal(db.prepare("SELECT owner_confirmed FROM cdr_async_questions").get()?.owner_confirmed,1);
+      assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_async_question_inbox").get()?.n,0);
+      assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_idle_release").get()?.n,0);
+    });
+  });
+});
+test("release generation mismatch skips idle candidate without losing completed delivery",async()=>{
+  await fixture(async(path,job)=>{
+    await stageOwnedQueueCompletion(path,job,"final",5,{observer:"resident",generation:2n});
+    await edit(path,db=>assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_idle_release").get()?.n,0));
+  });
+});
+test("idle capacity defers release without rolling back the completed delivery",async()=>{
+  await fixture(async(path,job)=>{
+    await edit(path,db=>{
+      const insert=db.prepare("INSERT INTO cdr_idle_release VALUES (?,?,1,?,?,?,1,'Candidate','')");
+      for(let i=0;i<128;i++) insert.run("intent"+i,"resident","other"+i,"turn","job"+i);
+    });
+    assert.equal((await stageOwnedQueueCompletion(path,job,"final",5,{observer:"resident",generation:1n})).content,"final");
+    await edit(path,db=>assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_idle_release").get()?.n,128));
+  });
+});
+test("existing unresolved idle intent is preserved, while settled history is bounded",async()=>{
+  for(const settled of [false,true]) await fixture(async(path,job)=>{
+    await edit(path,db=>{
+      if(!settled) db.exec("INSERT INTO cdr_idle_release VALUES ('original','old-owner',0,'target','old-turn','old-job',2,'Unknown','preserved')");
+      else {
+        const insert=db.prepare("INSERT INTO cdr_idle_release VALUES (?,?,1,?,?,?,1,'Settled','')");
+        for(let i=0;i<40;i++) insert.run("intent"+i,"resident","other"+i,"turn","job"+i);
+      }
+    });
+    await stageOwnedQueueCompletion(path,job,"final",5,{observer:"resident",generation:1n});
+    await edit(path,db=>{
+      if(settled) assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_idle_release").get()?.n,33);
+      else assert.equal(db.prepare("SELECT intent_id FROM cdr_idle_release WHERE thread_id='target'").get()?.intent_id,"original");
+    });
+  });
+});
+test("only pristine expired questions permit idle release",async()=>{
+  for(const chosen of [null,"answer"]) await fixture(async(path,job)=>{
+    await edit(path,db=>db.prepare(`INSERT INTO cdr_async_questions
+      (id,runtime_id,generation,thread_id,turn_id,item_id,origin_job_id,channel_id,owner_user_id,body,owner_confirmed,created_at,updated_at,state,chosen)
+      VALUES ('q','resident',1,'target','turn','item','saved',1,2,'body',1,0,0,'expired',?)`).run(chosen));
+    await stageOwnedQueueCompletion(path,job,"final",5,{observer:"resident",generation:1n});
+    await edit(path,db=>assert.equal(db.prepare("SELECT count(*) AS n FROM cdr_idle_release").get()?.n,chosen===null?1:0));
+  });
+});
+test("resident journal updates exact Stop and response custody, keeping missing hold as unknown",async()=>{
+  for(const held of [false,true]) await fixture(async(path,job)=>{
+    await edit(path,db=>{
+      db.exec("DELETE FROM codex_observed_completions");
+      const record=JSON.stringify({can_settle:true,jobs:[JSON.stringify({job_id:"saved"})]});
+      db.prepare("INSERT INTO cdr_stop_controls(operation_id,target_thread_id,resident_owner,generation,turn_id,record_json,phase) VALUES ('stop','target','resident',1,'turn',?,'accepted')").run(record);
+      if(held) db.exec("INSERT INTO cdr_execution_holds(job_id,target_thread_id,reason,evidence_json,created_at) VALUES ('saved','target','stop','{}',0)");
+      db.exec(`INSERT INTO cdr_server_responses(request_key,runtime_id,resident_owner,generation,target_thread_id,turn_id,job_id,authority_json,response_sha256,phase,created_at,updated_at)
+        VALUES ('request','runtime','resident',1,'target','turn','saved','{}','hash','admitted',0,0)`);
+    });
+    const payload=JSON.stringify({threadId:"target",turn:{id:"turn",status:"interrupted"}});
+    assert.equal(await state.recordObservedCompletionForResident(path,"target","turn",1n,payload,"resident"),true);
+    await edit(path,db=>{
+      assert.equal(db.prepare("SELECT phase FROM cdr_stop_controls").get()?.phase,held?"settled":"unknown");
+      assert.equal(db.prepare("SELECT phase FROM cdr_server_responses").get()?.phase,"terminal");
+      assert.equal(db.prepare("SELECT resident_owner FROM codex_observed_completions").get()?.resident_owner,"resident");
+    });
+  });
+});
+test("existing raw journal cannot acquire resident authority from different payload or generation",async()=>{
+  await fixture(async(path,job)=>{
+    await edit(path,db=>db.exec("UPDATE codex_observed_completions SET resident_owner=NULL"));
+    assert.equal(await state.recordObservedCompletionForResident(path,"target","turn",1n,'{"different":true}',"resident"),false);
+    await edit(path,db=>assert.equal(db.prepare("SELECT resident_owner FROM codex_observed_completions").get()?.resident_owner,null));
+    assert.equal(await state.recordObservedCompletionForResident(path,"target","turn",2n,'{}',"resident"),false);
+    await edit(path,db=>assert.equal(db.prepare("SELECT resident_owner FROM codex_observed_completions").get()?.resident_owner,null));
+    assert.equal(await state.recordObservedCompletionForResident(path,"target","turn",1n,'{}',"resident"),false);
+    await edit(path,db=>assert.equal(db.prepare("SELECT resident_owner FROM codex_observed_completions").get()?.resident_owner,"resident"));
+  });
+});
+import { listPendingDeliveries,recordDeliveryFailure,completeDelivery,DeliveryNotFoundError } from "../../src/store/delivery.ts";
+test("durable outbox read/failure/completion preserve content and use Rust scalar trimming",async()=>{
+  await fixture(async(path,job)=>{
+    await stageOwnedQueueCompletion(path,job,"final",5);
+    const error="\u0085"+"😀".repeat(1001)+"\u0085";
+    const failed=await recordDeliveryFailure(path,"saved",error,6);
+    assert.equal(failed.attemptCount,1n);assert.equal(failed.lastError,"😀".repeat(1000));assert.equal(failed.content,"final");
+    const pending=await listPendingDeliveries(path);assert.equal(pending.length,1);assert.equal(pending[0]!.updatedAt,6);
+    assert.equal(await completeDelivery(path,"saved"),true);assert.equal(await completeDelivery(path,"saved"),false);
+    assert.deepEqual(await listPendingDeliveries(path),[]);
+    await assert.rejects(()=>recordDeliveryFailure(path,"saved","error",7),DeliveryNotFoundError);
+  });
+});
+test("failed outbox decode rolls back increment rather than silently coercing or overflowing counts",async()=>{
+  await fixture(async(path,job)=>{
+    await stageOwnedQueueCompletion(path,job,"final",5);
+    await edit(path,db=>db.exec("UPDATE codex_delivery_outbox SET attempt_count=9223372036854775807"));
+    await assert.rejects(()=>recordDeliveryFailure(path,"saved","error",7),/Expected integer bigint/);
+    assert.equal((await listPendingDeliveries(path))[0]!.attemptCount,9223372036854775807n);
+    await edit(path,db=>db.exec("UPDATE codex_delivery_outbox SET content=CAST(x'80' AS TEXT)"));
+    await assert.rejects(()=>listPendingDeliveries(path),/Invalid text encoding/);
+  });
+});
+test("pending deliveries are ordered by timestamp then ID without dropping old failures",async()=>{
+  await storeFixture(async path=>{
+    await edit(path,db=>{
+      const stmt=db.prepare("INSERT INTO codex_delivery_outbox(delivery_id,job_id,target_thread_id,turn_id,channel_id,content,created_at,updated_at) VALUES (?,?,'target','turn',1,'final',?,0)");
+      stmt.run("b","b",1);stmt.run("a","a",1);stmt.run("c","c",0);
+    });
+    assert.deepEqual((await listPendingDeliveries(path)).map(d=>d.deliveryId),["c","a","b"]);
+  });
+});
+test("observed journal reads preserve order and generation, error text does not trim, finish removes only requested row",async()=>{
+  await fixture(async(path,job)=>{
+    await edit(path,db=>db.exec("INSERT INTO codex_observed_completions(thread_id,turn_id,generation,payload) VALUES ('other','second',9223372036854775807,'raw')"));
+    const pending=await state.pendingObservedCompletions(path);assert.deepEqual(pending.map(r=>r.threadId),["target","other"]);
+    assert.equal(pending[1]!.generation,9223372036854775807n);
+    await state.recordObservedCompletionError(path,"target","turn"," "+"😀".repeat(1000));
+    await edit(path,db=>assert.equal(db.prepare("SELECT last_error FROM codex_observed_completions WHERE thread_id='target'").get()?.last_error," "+"😀".repeat(999)));
+    await state.finishObservedCompletion(path,"target","turn");assert.equal(await state.hasObservedCompletion(path,"target","turn"),false);
+    assert.equal(await state.hasObservedCompletion(path,"other","second"),true);
+  });
+});

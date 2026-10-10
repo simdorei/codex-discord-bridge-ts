@@ -1,0 +1,76 @@
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import * as http from 'node:http';
+import {DiscordChannelClient} from '../../../src/discord/channel-client.ts';
+import {usingInitializedStore} from '../../../src/store/owned-scope.ts';
+import {setImmediate as tick} from 'node:timers/promises';
+import {storeFixture} from '../../helpers/store-fixture.ts';
+import {queueJob} from '../../helpers/queue-job.ts';
+import {StateAccessFacade as state} from '../../../src/store/state-access-facade.ts';
+import {PortableResidentLifecycle} from '../../../src/app-server/portable-resident-lifecycle.ts';
+import {QueueStartCoordinator,type QueueStartBackend} from '../../../src/runtime/queue-runner/start-coordinator.ts';
+import {CompletionPipeline,maintainCompletionPipeline} from '../../../src/runtime/completion/pipeline.ts';
+import {installRuntimeIdleJournal} from '../../../src/runtime/idle-release-journal.ts';
+import {AdmissionGate,DrainFenceKey} from '../../../src/admission/drain-gate.ts';
+import {ResidentStateError} from '../../../src/app-server/resident-state.ts';
+const OWNER='00000000-0000-4000-8000-000000000001' as const;
+const deferred=()=>{let resolve!:()=>void;const promise=new Promise<void>(r=>{resolve=r;});return {promise,resolve};};
+const backend:QueueStartBackend={generation:()=>1n,residentInstanceId:()=>OWNER,activeTurnId:async()=>null,resumeThread:async()=>{},readTurns:async()=>[],startClaimedTurn:async()=>{throw new Error('No new start');}};
+function maintenanceServer(quarantined:boolean,restarted=true){let calls=0,snapshots=0;return {server:{instanceId:OWNER,generation:()=>1n,lifecycleSnapshot:()=>{snapshots++;return {generation:1n,healthy:!quarantined,quarantined,restartPending:false,processId:null};},forceRestartIfQuiescent:async()=>{calls++;return restarted;}},calls:()=>calls,snapshots:()=>snapshots};}
+test('maintenance leaves healthy resident untouched and restarts only actual quarantine',async()=>storeFixture(async path=>{
+ const queue=new QueueStartCoordinator(path,backend);const healthy=maintenanceServer(false);await maintainCompletionPipeline(healthy.server,queue);assert.equal(healthy.calls(),0);const quarantined=maintenanceServer(true);await maintainCompletionPipeline(quarantined.server,queue);assert.equal(quarantined.calls(),1);
+}));
+test('busy quarantine remains an exact generation failure and releases control admission',async()=>storeFixture(async path=>{
+ const gate=new AdmissionGate(),key=DrainFenceKey.create('runtime','1|2','nonce');gate.seal(key);const queue=new QueueStartCoordinator(path,backend,{admission:gate}),f=maintenanceServer(true,false);await assert.rejects(maintainCompletionPipeline(f.server,queue),error=>error instanceof ResidentStateError&&error.detail.kind==='GenerationQuarantined'&&error.detail.generation===1n);assert.equal(gate.isDrainedFor(key),true);
+}));
+test('closed restart controls prevent stabilization after the question preparation pass',async()=>storeFixture(async path=>{
+ const gate=new AdmissionGate(),key=DrainFenceKey.create('runtime','1|2','nonce');gate.seal(key);gate.closeControls(key);const queue=new QueueStartCoordinator(path,backend,{admission:gate}),f=maintenanceServer(true);await maintainCompletionPipeline(f.server,queue);assert.equal(f.calls(),0);assert.equal(f.snapshots(),0);assert.equal(gate.isDrainedFor(key),true);
+}));
+test('pre-cancelled maintenance does not read or mutate a missing store',async()=>{
+ const abort=new AbortController(),reason=new Error('cancel');abort.abort(reason);const queue=new QueueStartCoordinator('/must-not-exist/completion.sqlite',backend),f=maintenanceServer(true);await assert.rejects(maintainCompletionPipeline(f.server,queue,abort.signal),e=>e===reason);assert.equal(f.calls(),0);
+});
+const script=`import readline from 'node:readline';const emit=v=>process.stdout.write(JSON.stringify(v)+'\\n');readline.createInterface({input:process.stdin,crlfDelay:Infinity}).on('line',line=>{const m=JSON.parse(line);if(m.method==='initialize')emit({id:m.id,result:{}});else if(m.method==='read'){emit({method:'item/completed',params:{threadId:'target',turnId:'turn',item:{type:'agentMessage',phase:'final_answer',text:'native pipeline final'}}});emit({method:'turn/completed',params:{threadId:'target',turn:{id:'turn',status:'completed'}}});emit({id:m.id,result:{}});}else if(m.method==='thread/goal/get')emit({id:m.id,result:{goal:null}});else if(m.method==='thread/read')emit({id:m.id,result:{thread:{id:'target',turns:[{id:'turn',status:'completed',items:[{type:'agentMessage',phase:'final_answer',text:'native pipeline final'}]}]}}});else emit({id:m.id,result:{ping:true}});});`;
+async function native(signal:AbortSignal,code=script){return PortableResidentLifecycle.start({process:{executable:process.execPath,arguments:['--input-type=module','-e',code],environment:{}},clientInfo:{name:'pipeline-fixture',title:'Fixture',version:'1'}},()=> 'safe',{persistDeadWork(){},oldChildExited(){}},signal,{renderError:()=> 'safe',fence:{requestOrigin:()=>null,checkRequest(){},beginMutationWithOrigin(){throw new Error('No mutation');},finishMutation(){throw new Error('No mutation');}}});}
+async function call(owner:PortableResidentLifecycle,method:string,signal?:AbortSignal){const a=owner.admitRequest();try{return await a.client.requestAdmitted(a.permit,method,{},2000,undefined,signal);}finally{a.release();}}
+test('actual native source -> scheduler -> receipt pipeline joins in-flight send on stop and retains caller-owned process',{timeout:15000},async t=>storeFixture(async path=>{
+ await state.enqueue(path,queueJob({ownerUserId:2n}));const claim=(await state.tryBeginAttempt(path,'saved',[],1n))!;assert.ok(await state.markRunningIfClaimed(path,claim,'turn'));const owner=await native(t.signal),abort=new AbortController(),sent=deferred(),release=deferred(),errors:unknown[]=[],bodies:string[]=[];let pipeline:CompletionPipeline|undefined,running:Promise<void>|undefined;
+ try{
+  installRuntimeIdleJournal(owner,path,()=> 'safe');const queue=new QueueStartCoordinator(path,{...backend,residentInstanceId:()=>owner.instanceId,generation:()=>owner.generation(),activeTurnId:async target=>owner.activeTurnId(target),readTurns:async()=>[{turnId:'turn',status:'Completed'}]},{notifyDeliveryReady:()=>pipeline?.notifyDeliveryReady()});
+  pipeline=new CompletionPipeline(owner,queue,{typing:{createTyping:async()=>{throw new Error("No typing after terminal");}},commentaryEnabled:false,historyReadTimeoutMs:2000,render:()=> 'safe',report:error=>{errors.push(error);},delivery:{transport:{sendValidated:async request=>{bodies.push(JSON.parse(request.body).content);sent.resolve();await release.promise;return 91n;}},failures:{render:()=> 'safe'},now:()=>1}});
+  await call(owner,'read',t.signal);running=pipeline.run(abort.signal);await sent.promise;assert.deepEqual(bodies,['Final\nnative pipeline final']);abort.abort(new Error('stop'));let stopped=false;void running.then(()=>{stopped=true;});await tick();assert.equal(stopped,false);release.resolve();await running;assert.equal(stopped,true);assert.equal(pipeline.availableEventBytes,4*1024*1024);assert.equal(queue.locks.activeTargetCount,0);assert.deepEqual(await state.listPendingDeliveries(path),[]);assert.deepEqual(await call(owner,'ping',t.signal),{ping:true});assert.equal(owner.lifecycleSnapshot().healthy,true);assert.deepEqual(errors,[]);
+ }finally{abort.abort();release.resolve();if(running)await running;await owner.dispose();}
+}));
+test('pipeline refuses intake before observation journal installation',{timeout:10000},async t=>storeFixture(async path=>{
+ const owner=await native(t.signal);try{const queue=new QueueStartCoordinator(path,backend),pipeline=new CompletionPipeline(owner,queue,{typing:{createTyping:async()=>{throw new Error("No typing after terminal");}},commentaryEnabled:false,historyReadTimeoutMs:1000,render:()=> 'safe',report:()=>{},delivery:{transport:{sendValidated:async()=>{throw new Error('No send');}},failures:{render:()=> 'safe'},now:()=>1}});await assert.rejects(pipeline.run(t.signal),/Install the runtime observation journal/);}finally{await owner.dispose();}
+}));
+test('native terminal revokes blocked typing while independent Final processing completes',{timeout:15000},async t=>storeFixture(async path=>{
+ await state.enqueue(path,queueJob({ownerUserId:2n}));const claim=(await state.tryBeginAttempt(path,'saved',[],1n))!;await state.markRunningIfClaimed(path,claim,'turn');
+ const code=`import readline from 'node:readline';let completed=false;const emit=v=>process.stdout.write(JSON.stringify(v)+'\\n');readline.createInterface({input:process.stdin,crlfDelay:Infinity}).on('line',line=>{const m=JSON.parse(line);if(m.method==='initialize')emit({id:m.id,result:{}});else if(m.method==='begin'){emit({method:'turn/started',params:{threadId:'target',turnId:'turn'}});emit({id:m.id,result:{}});}else if(m.method==='finish'){completed=true;emit({method:'item/completed',params:{threadId:'target',turnId:'turn',item:{type:'agentMessage',phase:'final_answer',text:'after typing'}}});emit({method:'turn/completed',params:{threadId:'target',turn:{id:'turn',status:'completed'}}});emit({id:m.id,result:{}});}else if(m.method==='thread/goal/get')emit({id:m.id,result:{goal:null}});else if(m.method==='thread/read')emit({id:m.id,result:{thread:{id:'target',turns:[{id:'turn',status:completed?'completed':'inProgress',items:completed?[{type:'agentMessage',phase:'final_answer',text:'after typing'}]:[]}]}}});else emit({id:m.id,result:{}});});`;
+ const owner=await native(t.signal,code),abort=new AbortController(),typing=deferred(),final=deferred(),bodies:string[]=[];let typingAborted=false,running:Promise<void>|undefined;const errors:unknown[]=[];
+ try{installRuntimeIdleJournal(owner,path,()=> 'safe');const queue=new QueueStartCoordinator(path,{...backend,residentInstanceId:()=>owner.instanceId,generation:()=>owner.generation(),activeTurnId:async target=>owner.activeTurnId(target),readTurns:async()=>[{turnId:'turn',status:'InProgress'}]});
+  const pipeline=new CompletionPipeline(owner,queue,{commentaryEnabled:false,historyReadTimeoutMs:2000,render:()=> 'safe',report:e=>{errors.push(e);},typing:{createTyping:async(_channel,signal)=>{typing.resolve();await new Promise<void>(resolve=>{const stop=()=>{typingAborted=true;resolve();};if(signal.aborted)stop();else signal.addEventListener('abort',stop,{once:true});});}},delivery:{transport:{sendValidated:async request=>{bodies.push(JSON.parse(request.body).content);final.resolve();return 101n;}},failures:{render:()=> 'safe'},now:()=>1}});
+  await call(owner,'begin',t.signal);running=pipeline.run(abort.signal);await typing.promise;await call(owner,'finish',t.signal);await final.promise;assert.equal(typingAborted,true);assert.deepEqual(bodies,['Final\nafter typing']);abort.abort();await running;assert.deepEqual(errors,[]);assert.equal(pipeline.availableEventBytes,4*1024*1024);assert.equal(queue.locks.activeTargetCount,0);
+ }finally{abort.abort();if(running)await running;await owner.dispose();}
+}));
+
+test('native helper -> completion pipeline -> owned HTTP client -> full model -> durable receipt',{timeout:15000},async t=>storeFixture(async path=>{
+ await state.enqueue(path,queueJob({ownerUserId:2n}));const claim=(await state.tryBeginAttempt(path,'saved',[],1n))!;assert.ok(await state.markRunningIfClaimed(path,claim,'turn'));
+ const abort=new AbortController(),sent=deferred(),bodies:string[]=[],errors:unknown[]=[];
+ const response={attachments:[],author:{id:'1',username:'fixture',discriminator:'0'},channel_id:'1',content:'',embeds:[],id:'991',type:0,mention_everyone:false,mention_roles:[],mentions:[],pinned:false,timestamp:'2020-01-01T00:00:00+00:00',tts:false};
+ const server=http.createServer((request,res)=>{let body='';request.on('data',chunk=>{body+=String(chunk);});request.on('end',()=>{bodies.push(body);res.end(JSON.stringify(response));sent.resolve();});});
+ let owner:PortableResidentLifecycle|undefined,client:DiscordChannelClient|undefined,running:Promise<void>|undefined;
+ try{
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const address=server.address();assert.ok(address&&typeof address!=='string');
+  owner=await native(t.signal);const resident=owner;installRuntimeIdleJournal(resident,path,()=> 'safe');
+  client=await DiscordChannelClient.create({token:null,testOrigin:`http://127.0.0.1:${address.port}/api/v10/`,report:e=>{errors.push(e);}});
+  const queue=new QueueStartCoordinator(path,{...backend,residentInstanceId:()=>resident.instanceId,generation:()=>resident.generation(),activeTurnId:async target=>resident.activeTurnId(target),readTurns:async()=>[{turnId:'turn',status:'Completed'}]});
+  const pipeline=new CompletionPipeline(resident,queue,{typing:client,commentaryEnabled:false,historyReadTimeoutMs:2000,render:()=> 'safe',report:e=>{errors.push(e);},delivery:{transport:client,failures:{render:()=> 'safe'},now:()=>1}});
+  await call(resident,'read',t.signal);running=pipeline.run(abort.signal);await sent.promise;abort.abort(new Error('stop after response'));await running;
+  assert.equal(bodies.length,1);const payload=JSON.parse(bodies[0]!);assert.equal(payload.content,'Final\nnative pipeline final');assert.equal(payload.enforce_nonce,true);
+  const receipt=await usingInitializedStore(path,db=>db.prepare('SELECT message_id,retryable,blocked_reason FROM codex_delivery_receipts').get());assert.equal(receipt?.message_id,'991');assert.equal(receipt?.blocked_reason,null);
+  assert.deepEqual(await state.listPendingDeliveries(path),[]);assert.equal(queue.locks.activeTargetCount,0);assert.equal(pipeline.availableEventBytes,4*1024*1024);assert.deepEqual(errors,[]);
+  await client.close();assert.equal(client.activeRequests,0);assert.equal(client.ownedSockets,0);assert.deepEqual(await call(resident,'ping',t.signal),{ping:true});
+ }finally{
+  abort.abort();try{if(running)await running;}finally{try{if(client)await client.close();}finally{try{if(owner)await owner.dispose();}finally{server.closeAllConnections();if(server.listening)await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}}}
+ }
+}));

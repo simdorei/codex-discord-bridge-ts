@@ -1,0 +1,51 @@
+{
+  "kind": "borrowed-private-snapshot-reimplementation",
+  "rustCommit": "4e213aa69dc89bed1552d8b83e12471d7664b7ae",
+  "sourceAuthority": {
+    "path": ".runtime/rust-authority/crates/cdr-store/src/async_resolution/abandonment/snapshot.rs",
+    "sha256": "da4a12c136acac9aa69af9b38a63222ce2bfb5aa8a198384e12f6ab8adb8ee98"
+  },
+  "files": {
+    "src/store/abandonment-snapshot.ts": "26c3e783213f095afa6527b3c5c775403bd6977f9a558edf71bda21bbcced4a8",
+    "src/store/sqlite-evidence-rows.ts": "674ee811d46378a978313e3fe9f894e8c9cf023712d8605c27015321933adb99",
+    "src/store/publication-snapshot.ts": "4658a8dd0258756e742817d0df9a8c09df98d3739f2d26a64d3d51bfc46babaa",
+    "test/store/abandonment-snapshot.test.ts": "6283c5ae75590941118611bfc52509b612fbce43f2f00b1d96ad5f9011ab814b"
+  },
+  "strictTypeScriptExit": 0,
+  "focused": {
+    "tests": 22,
+    "pass": 22,
+    "fail": 0
+  },
+  "full": {
+    "tests": 5123,
+    "pass": 5123,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "exit": 0,
+    "fileConcurrency": 2
+  },
+  "logs": {
+    "migration/rebuild-20261010/evidence/280-typecheck.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "migration/rebuild-20261010/evidence/280-focused.log.gz": "b483e6c3efa37e683f9a83a9555d6de210bf5fb11064c6a40864099c76acd7d9",
+    "migration/rebuild-20261010/evidence/280-full-tests.log.gz": "c8d80e387e50abecceea31bfaa15f0ae042ce730a2e7cba2214bcf35b30518a5"
+  },
+  "review": {
+    "exactRustQueryCount": 16,
+    "queryStringsByteEqual": true,
+    "scope": "borrowed active-transaction private snapshot only",
+    "review": [
+      "Source order retained: prompt bound, queue ownership, held state, mapping and unresolved wire/cancellation, job row, context pages, capabilities, stop revision, runtime, source, canonical database, final JSON bound",
+      "Native numbered parameter hole ?2 retained for ?3 queries; actual Node24.21.0 probe returned index3 correctly",
+      "Existing publication reader extracted without changed publication limits or error text; 11 unchanged publication snapshot regression tests passed",
+      "Full initialized schema fixtures cover new snapshot, no live database or service mutation"
+    ],
+    "limitations": [
+      "No fresh Rust executable differential",
+      "No Windows filesystem identity qualification",
+      "SQLite internal query memory is not bounded by projection",
+      "Proposal persistence, abandonment decision and dispatcher integration remain unfinished"
+    ]
+  }
+}

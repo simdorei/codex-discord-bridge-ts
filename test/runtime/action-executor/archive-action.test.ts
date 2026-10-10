@@ -1,0 +1,57 @@
+import {ActionIntegerRangeError} from '../../../src/runtime/action-executor/errors.ts';
+import assert from 'node:assert/strict';import {it} from 'node:test';import {DatabaseSync} from 'node:sqlite';import {join,dirname} from 'node:path';
+import {PortableResidentLifecycle} from '../../../src/app-server/portable-resident-lifecycle.ts';import {AdmittedArchiveExecutor} from '../../../src/runtime/action-executor/archive-action.ts';
+import {TargetLocks} from '../../../src/core/keyed-locks.ts';import {BridgeState} from '../../../src/runtime/bridge-state.ts';import {StateAccessFacade as state} from '../../../src/store/state-access-facade.ts';import {openInitialized} from '../../../src/store/owned-driver.ts';import {createMutationCustodyFence} from '../../../src/runtime/mutation-custody-fence.ts';import {storeFixture} from '../../helpers/store-fixture.ts';
+const actor={channelId:1n,userId:2n,discordMessageId:3n};
+async function fixture(mode:string,run:(f:{path:string;codex:string;bridge:BridgeState;locks:TargetLocks;server:PortableResidentLifecycle;action:AdmittedArchiveExecutor;seen:()=>Promise<any[]>})=>Promise<void>,timeout=3000){await storeFixture(async path=>{
+ const codex=join(dirname(path),'codex.sqlite'),bridge=new BridgeState(join(dirname(path),'bridge.json')),locks=new TargetLocks();bridge.setSelectedThreadId('root');
+ const cd=new DatabaseSync(codex);try{cd.exec("CREATE TABLE threads(id TEXT PRIMARY KEY,title TEXT,cwd TEXT,updated_at INTEGER,rollout_path TEXT,model TEXT,reasoning_effort TEXT,tokens_used INTEGER,archived INTEGER,archived_at INTEGER);INSERT INTO threads(id,title,cwd,updated_at,archived,archived_at) VALUES ('root','Root','/tmp',1,0,0),('child','Child','/tmp',1,0,0)");}finally{cd.close();}
+ await state.admitIngress(path,{ingressId:'own',kind:'message',eventId:3n,applicationId:null,channelId:1n,ownerUserId:2n,sourceMessageId:3n,targetThreadId:'root',canonicalOwner:null,now:1,payload:{version:1n,content:'!archive',plan:{Execute:{Archive:{reference:null}}},lifecycle_binding:{target:'root',route:'Selected',command:{Archive:{reference:null}}},stop_origin:{target:'root',stopRevision:0n}}});
+ const db=await openInitialized(path);try{db.exec("INSERT INTO codex_mutation_runtime VALUES(1,'runtime');INSERT INTO codex_app_server_runtime VALUES(1,'runtime');UPDATE discord_ingress_journal SET state='executing',phase='processing' WHERE ingress_id='own'");}finally{db.close();}
+ const code=`import readline from 'node:readline';import {DatabaseSync} from 'node:sqlite';const mode=${JSON.stringify(mode)},file=${JSON.stringify(codex)},seen=[];let lists=0;const emit=x=>process.stdout.write(JSON.stringify(x)+'\\n');readline.createInterface({input:process.stdin}).on('line',l=>{const m=JSON.parse(l),reply=result=>emit({id:m.id,result});if(m.method==='initialize')reply({});else if(m.method==='initialized'){}else if(m.method==='seen')reply(seen);else{seen.push({method:m.method,params:m.params});if(m.method==='thread/resume')reply({thread:{id:m.params.threadId}});else if(m.method==='thread/read')reply({thread:{id:m.params.threadId,status:{type:'idle'}}});else if(m.method==='thread/list'){lists++;reply({data:mode==='scope-change'&&lists>1?[]:[{id:'child'}],nextCursor:null});}else if(m.method==='thread/archive'){if(mode==='writer-reject')emit({id:m.id,error:{code:-32600,message:'already has an active writer'}});else if(mode!=='no-ack'){const db=new DatabaseSync(file);try{db.exec('UPDATE threads SET archived=1,archived_at=2');}finally{db.close();}reply({});}}else reply({});}});`;
+ const server=await PortableResidentLifecycle.start({process:{executable:process.execPath,arguments:['--input-type=module','-e',code],environment:{}},clientInfo:{name:'archive-coordinator',title:'fixture',version:'1'}},()=> 'fixture error',{persistDeadWork(){},oldChildExited(){}},undefined,{renderError:()=> 'fixture error',fence:createMutationCustodyFence(path,'runtime',()=> 'fixture error')});
+ const seen=async()=>{const a=server.admitResponse(server.generation());try{return await a.client.requestAdmitted(a.permit,'seen',{},1000) as any[];}finally{a.release();}};
+ try{await run({path,codex,bridge,locks,server,action:new AdmittedArchiveExecutor(path,codex,bridge,server,locks,timeout),seen});}finally{await server.dispose();}
+});}
+it('admitted archive verifies root plus child, persists verified reservations and clears selected scope',async()=>fixture('ok',async f=>{
+ const result=await f.action.execute(actor,null,'own');assert.match(result.text,/Archived Codex thread root \(2 conversations, persisted state verified\)/);assert.equal(f.bridge.selectedThreadId(),null);assert.equal(f.locks.activeTargetCount,0);const calls=await f.seen();assert.deepEqual(calls.map(c=>c.method),['thread/resume','thread/read','thread/list','thread/resume','thread/read','thread/list','thread/archive']);assert.equal(calls.at(-1).params.threadId,'root');
+ const db=await openInitialized(f.path);try{const rows=db.prepare('SELECT phase FROM codex_archive_fences').all();assert.equal(rows.length,2);assert.ok(rows.every(r=>r.phase==='verified'));}finally{db.close();}
+}));
+it('wrong actor, event, key or command cannot enter any lifecycle RPC',async()=>fixture('ok',async f=>{
+ for(const a of [{...actor,userId:7n},{...actor,discordMessageId:4n}])await assert.rejects(f.action.execute(a,null,'own'));await assert.rejects(f.action.execute(actor,null,'missing'));await assert.rejects(f.action.execute(actor,'root','own'));assert.deepEqual(await f.seen(),[]);assert.equal(f.locks.activeTargetCount,0);assert.equal(await state.archiveTargetFenced(f.path,'root'),false);
+}));
+it('changed descendant scope rejects before reservation and releases all control locks',async()=>fixture('scope-change',async f=>{
+ await assert.rejects(f.action.execute(actor,null,'own'),/scope changed/);assert.equal(f.locks.activeTargetCount,0);assert.equal(await state.archiveTargetFenced(f.path,'root'),false);assert.ok((await f.seen()).every(c=>c.method!=='thread/archive'));assert.equal(f.bridge.selectedThreadId(),'root');
+}));
+it('child queued work blocks archive and is preserved',async()=>fixture('ok',async f=>{
+ await state.enqueue(f.path,{jobId:'j',targetThreadId:'child',channelId:1n,ownerUserId:2n,discordMessageId:5n,appServerGeneration:1n,prompt:'hi',queued:true,ackSent:false,createdAt:1});await assert.rejects(f.action.execute(actor,null,'own'),/queued, running, or intake/);assert.equal((await state.listQueueJobs(f.path)).length,1);assert.equal(f.locks.activeTargetCount,0);assert.ok((await f.seen()).every(c=>c.method!=='thread/archive'));
+}));
+it('deadline waiting on shared root lock never releases the foreign owner or dispatches',async()=>fixture('ok',async f=>{
+ const lease=await f.locks.acquire('root');try{await assert.rejects(f.action.execute(actor,null,'own'),/timed out; no archive was sent/);lease.requireTarget('root');assert.equal(f.locks.tryAcquire('root'),undefined);assert.deepEqual(await f.seen(),[]);}finally{lease.release();}assert.equal(f.locks.activeTargetCount,0);
+},150));
+it('timeout after attempted archive retains durable entire scope and does not clear selected target',async()=>fixture('no-ack',async f=>{
+ await assert.rejects(f.action.execute(actor,null,'own'),/dispatch was attempted.*do not automatically retry/);assert.equal(f.locks.activeTargetCount,0);assert.equal(await state.archiveTargetFenced(f.path,'root'),true);assert.equal(await state.archiveTargetFenced(f.path,'child'),true);assert.equal(f.bridge.selectedThreadId(),'root');assert.equal((await f.seen()).filter(c=>c.method==='thread/archive').length,1);
+},700));
+it('exact known writer rejection releases attempted reservation but never forks',async()=>fixture('writer-reject',async f=>{
+ await assert.rejects(f.action.execute(actor,null,'own'),/owns original thread.*no fork/);assert.equal(await state.archiveTargetFenced(f.path,'root'),false);assert.equal(await state.archiveTargetFenced(f.path,'child'),false);assert.equal(f.locks.activeTargetCount,0);assert.ok((await f.seen()).every(c=>c.method!=='thread/fork'));
+}));
+it('route change during child-lock wait is rechecked before reservation without retargeting',async()=>fixture('ok',async f=>{
+ const lease=await f.locks.acquire('child');const pending=f.action.execute(actor,null,'own'),assertion=assert.rejects(pending,/room target changed|target changed after admission/);try{
+ for(let i=0;i<200;i++){if((await f.seen()).some(c=>c.method==='thread/list'))break;await new Promise(r=>setTimeout(r,5));if(i===199)throw Error('scope was not observed');}
+ f.bridge.setSelectedThreadId('child');
+ }finally{lease.release();}await assertion;assert.equal(await state.archiveTargetFenced(f.path,'root'),false);assert.equal(f.locks.activeTargetCount,0);assert.ok((await f.seen()).every(c=>c.method!=='thread/archive'));
+}));
+it('caller cancellation while waiting joins local work and cannot release a foreign child lock',async()=>fixture('ok',async f=>{
+ const lease=await f.locks.acquire('child'),c=new AbortController(),reason=new Error('user cancelled');const pending=f.action.execute(actor,null,'own',c.signal),assertion=assert.rejects(pending,e=>e===reason);
+ try{for(let i=0;i<200;i++){if((await f.seen()).some(x=>x.method==='thread/list'))break;await new Promise(r=>setTimeout(r,5));if(i===199)throw Error('scope was not observed');}c.abort(reason);await assertion;lease.requireTarget('child');assert.equal(f.locks.activeTargetCount,1);assert.equal(await state.archiveTargetFenced(f.path,'root'),false);}finally{lease.release();}assert.equal(f.locks.activeTargetCount,0);
+}));
+it('frozen target identity cannot be reinterpreted as a numeric list alias after exact row disappears',async()=>fixture('ok',async f=>{
+ const db=await openInitialized(f.path);try{db.exec("UPDATE discord_ingress_journal SET state='completed' WHERE ingress_id='own'");}finally{db.close();}
+ await state.admitIngress(f.path,{ingressId:'alias',kind:'message',eventId:4n,applicationId:null,channelId:1n,ownerUserId:2n,sourceMessageId:4n,targetThreadId:'1',canonicalOwner:null,now:2,payload:{version:1n,content:'!archive 1',plan:{Execute:{Archive:{reference:'1'}}},lifecycle_binding:{target:'1',route:'Explicit',command:{Archive:{reference:'1'}}},stop_origin:{target:'1',stopRevision:0n}}});
+ const edit=await openInitialized(f.path);try{edit.exec("UPDATE discord_ingress_journal SET state='executing',phase='processing' WHERE ingress_id='alias'");}finally{edit.close();}
+ await assert.rejects(f.action.execute({...actor,discordMessageId:4n},'1','alias'),/admitted original target no longer resolves exactly/);assert.deepEqual(await f.seen(),[]);assert.equal(f.locks.activeTargetCount,0);assert.equal(await state.archiveTargetFenced(f.path,'root'),false);
+}));
+
+it('valid u64 actor outside SQLite i64 retains the central integer-range error without RPC',async()=>fixture('ok',async f=>{
+ for(const field of ['channelId','userId','discordMessageId'])await assert.rejects(f.action.execute({...actor,[field]:1n<<63n},null,'own'),ActionIntegerRangeError);assert.deepEqual(await f.seen(),[]);
+}));

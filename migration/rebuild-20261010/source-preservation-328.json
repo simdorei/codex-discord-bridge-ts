@@ -1,0 +1,26 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 328,
+  "localCommit": "2e5e9f7150a2db98b2a8aac77119aa5377827d27",
+  "fullTests": 5558,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/codex-state/context-reader.ts": "ea9a77216472298fac94e61c194b89bbe1d1973606d9be6f0bbb6a5a49c57fcc",
+    "src/codex-state/context-worker.ts": "28a588536a606f0a55abf4893eac13588964017210e4804570173b719b60b219",
+    "src/runtime/action-executor/thread-list-format.ts": "8cbac69fc23c688e70c5913e2e14d28f9582b12ae887f589b6d695349de7870d",
+    "src/runtime/action-executor/thread-list.ts": "63935132a5cdb509d0d2602ed58b9ff79055550c0129562dbbb598c89a6cc059",
+    "test/runtime/action-executor/thread-list-format.test.ts": "35b1e47c921fbf7506d3ce59c00691b80b1a7d9e7901338260ee210fdc5526f3",
+    "test/runtime/action-executor/thread-list.test.ts": "bc1b42f8ced877ab03f9014c86caf864b4dd0e046b13605766d537e7e0b612cb",
+    "test/runtime/action-executor/thread-state-probe.test.ts": "f2a36589a1a537a5039b17efea1f0ce9b3557493a4379e2bca50f24fba12a52f"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

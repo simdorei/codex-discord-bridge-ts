@@ -1,0 +1,471 @@
+{
+  "sourceSha256": "527b7932b9f1ae814b4e9ed1ea8e1b7808f1169c5d927bf3dbf974c1d91db9f0",
+  "cases": [
+    {
+      "key": "afk_channel_id",
+      "mode": "optional",
+      "valid": "1",
+      "invalid": "0"
+    },
+    {
+      "key": "afk_timeout",
+      "mode": "required",
+      "valid": 0,
+      "invalid": -1
+    },
+    {
+      "key": "allow",
+      "mode": "optional",
+      "valid": "0",
+      "invalid": []
+    },
+    {
+      "key": "application_id",
+      "mode": "optional",
+      "valid": "1",
+      "invalid": "0"
+    },
+    {
+      "key": "archived",
+      "mode": "optional",
+      "valid": true,
+      "invalid": 1
+    },
+    {
+      "key": "asset",
+      "mode": "optional",
+      "valid": "",
+      "invalid": 1
+    },
+    {
+      "key": "auto_archive_duration",
+      "mode": "optional",
+      "valid": 65535,
+      "invalid": 65536
+    },
+    {
+      "key": "available",
+      "mode": "optional",
+      "valid": true,
+      "invalid": 1
+    },
+    {
+      "key": "avatar_hash",
+      "mode": "optional",
+      "valid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "invalid": "bad"
+    },
+    {
+      "key": "banner_hash",
+      "mode": "optional",
+      "valid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "invalid": "bad"
+    },
+    {
+      "key": "bitrate",
+      "mode": "optional",
+      "valid": 0,
+      "invalid": -1
+    },
+    {
+      "key": "channel_id",
+      "mode": "optional",
+      "valid": "1",
+      "invalid": "0"
+    },
+    {
+      "key": "code",
+      "mode": "optional",
+      "valid": "",
+      "invalid": 1
+    },
+    {
+      "key": "color",
+      "mode": "optional",
+      "valid": 0,
+      "invalid": -1
+    },
+    {
+      "key": "command_id",
+      "mode": "optional",
+      "valid": {
+        "application_id": "1",
+        "guild_id": "2",
+        "id": "3",
+        "permissions": []
+      },
+      "invalid": {}
+    },
+    {
+      "key": "communication_disabled_until",
+      "mode": "optional",
+      "valid": "2020-01-01T00:00:00+00:00",
+      "invalid": "bad"
+    },
+    {
+      "key": "deaf",
+      "mode": "optional",
+      "valid": true,
+      "invalid": 1
+    },
+    {
+      "key": "default_auto_archive_duration",
+      "mode": "optional",
+      "valid": 65535,
+      "invalid": 65536
+    },
+    {
+      "key": "default_message_notifications",
+      "mode": "optional",
+      "valid": 255,
+      "invalid": 256
+    },
+    {
+      "key": "deny",
+      "mode": "optional",
+      "valid": "0",
+      "invalid": []
+    },
+    {
+      "key": "description",
+      "mode": "optional",
+      "valid": "",
+      "invalid": 1
+    },
+    {
+      "key": "discovery_splash_hash",
+      "mode": "optional",
+      "valid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "invalid": "bad"
+    },
+    {
+      "key": "enable_emoticons",
+      "mode": "optional",
+      "valid": true,
+      "invalid": 1
+    },
+    {
+      "key": "entity_type",
+      "mode": "optional",
+      "valid": 0,
+      "invalid": -1
+    },
+    {
+      "key": "expire_behavior",
+      "mode": "optional",
+      "valid": 0,
+      "invalid": -1
+    },
+    {
+      "key": "expire_grace_period",
+      "mode": "optional",
+      "valid": 0,
+      "invalid": -1
+    },
+    {
+      "key": "explicit_content_filter",
+      "mode": "optional",
+      "valid": 255,
+      "invalid": 256
+    },
+    {
+      "key": "format_type",
+      "mode": "optional",
+      "valid": 255,
+      "invalid": 256
+    },
+    {
+      "key": "guild_id",
+      "mode": "optional",
+      "valid": "1",
+      "invalid": "0"
+    },
+    {
+      "key": "hoist",
+      "mode": "optional",
+      "valid": true,
+      "invalid": 1
+    },
+    {
+      "key": "icon_hash",
+      "mode": "optional",
+      "valid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "invalid": "bad"
+    },
+    {
+      "key": "id",
+      "mode": "optional",
+      "valid": "1",
+      "invalid": "0"
+    },
+    {
+      "key": "image_hash",
+      "mode": "optional",
+      "valid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "invalid": "bad"
+    },
+    {
+      "key": "invitable",
+      "mode": "optional",
+      "valid": true,
+      "invalid": 1
+    },
+    {
+      "key": "inviter_id",
+      "mode": "optional",
+      "valid": "1",
+      "invalid": "0"
+    },
+    {
+      "key": "location",
+      "mode": "optional",
+      "valid": "",
+      "invalid": 1
+    },
+    {
+      "key": "locked",
+      "mode": "optional",
+      "valid": true,
+      "invalid": 1
+    },
+    {
+      "key": "max_age",
+      "mode": "optional",
+      "valid": 0,
+      "invalid": -1
+    },
+    {
+      "key": "max_uses",
+      "mode": "optional",
+      "valid": 0,
+      "invalid": -1
+    },
+    {
+      "key": "mentionable",
+      "mode": "optional",
+      "valid": true,
+      "invalid": 1
+    },
+    {
+      "key": "mfa_level",
+      "mode": "optional",
+      "valid": 255,
+      "invalid": 256
+    },
+    {
+      "key": "mute",
+      "mode": "optional",
+      "valid": true,
+      "invalid": 1
+    },
+    {
+      "key": "name",
+      "mode": "optional",
+      "valid": "",
+      "invalid": 1
+    },
+    {
+      "key": "nick",
+      "mode": "optional",
+      "valid": "",
+      "invalid": 1
+    },
+    {
+      "key": "nsfw",
+      "mode": "optional",
+      "valid": true,
+      "invalid": 1
+    },
+    {
+      "key": "nsfw_level",
+      "mode": "optional",
+      "valid": 255,
+      "invalid": 256
+    },
+    {
+      "key": "owner_id",
+      "mode": "optional",
+      "valid": "1",
+      "invalid": "0"
+    },
+    {
+      "key": "permission_overwrites",
+      "mode": "optional",
+      "valid": [
+        {
+          "allow": "0",
+          "deny": "0",
+          "id": "1",
+          "type": 255
+        }
+      ],
+      "invalid": [
+        {}
+      ]
+    },
+    {
+      "key": "permissions",
+      "mode": "optional",
+      "valid": "0",
+      "invalid": []
+    },
+    {
+      "key": "position",
+      "mode": "optional",
+      "valid": 0,
+      "invalid": -1
+    },
+    {
+      "key": "preferred_locale",
+      "mode": "optional",
+      "valid": "",
+      "invalid": 1
+    },
+    {
+      "key": "privacy_level",
+      "mode": "optional",
+      "valid": 2,
+      "invalid": 255
+    },
+    {
+      "key": "prune_delete_days",
+      "mode": "optional",
+      "valid": 0,
+      "invalid": -1
+    },
+    {
+      "key": "public_updates_channel_id",
+      "mode": "optional",
+      "valid": "1",
+      "invalid": "0"
+    },
+    {
+      "key": "rate_limit_per_user",
+      "mode": "optional",
+      "valid": 0,
+      "invalid": -1
+    },
+    {
+      "key": "region",
+      "mode": "optional",
+      "valid": "",
+      "invalid": 1
+    },
+    {
+      "key": "$add",
+      "mode": "vector",
+      "valid": [
+        {
+          "id": "1",
+          "name": "r"
+        }
+      ],
+      "invalid": [
+        {}
+      ]
+    },
+    {
+      "key": "$remove",
+      "mode": "vector",
+      "valid": [
+        {
+          "id": "1",
+          "name": "r"
+        }
+      ],
+      "invalid": [
+        {}
+      ]
+    },
+    {
+      "key": "rules_channel_id",
+      "mode": "optional",
+      "valid": "1",
+      "invalid": "0"
+    },
+    {
+      "key": "splash_hash",
+      "mode": "optional",
+      "valid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "invalid": "bad"
+    },
+    {
+      "key": "status",
+      "mode": "optional",
+      "valid": 0,
+      "invalid": -1
+    },
+    {
+      "key": "system_channel_id",
+      "mode": "optional",
+      "valid": "1",
+      "invalid": "0"
+    },
+    {
+      "key": "tags",
+      "mode": "optional",
+      "valid": "",
+      "invalid": 1
+    },
+    {
+      "key": "temporary",
+      "mode": "optional",
+      "valid": true,
+      "invalid": 1
+    },
+    {
+      "key": "topic",
+      "mode": "optional",
+      "valid": "",
+      "invalid": 1
+    },
+    {
+      "key": "type",
+      "mode": "optional",
+      "valid": "x",
+      "invalid": true
+    },
+    {
+      "key": "unicode_emoji",
+      "mode": "optional",
+      "valid": "",
+      "invalid": 1
+    },
+    {
+      "key": "user_limit",
+      "mode": "optional",
+      "valid": 0,
+      "invalid": -1
+    },
+    {
+      "key": "uses",
+      "mode": "optional",
+      "valid": 0,
+      "invalid": -1
+    },
+    {
+      "key": "vanity_url_code",
+      "mode": "optional",
+      "valid": "",
+      "invalid": 1
+    },
+    {
+      "key": "verification_level",
+      "mode": "optional",
+      "valid": 255,
+      "invalid": 256
+    },
+    {
+      "key": "widget_channel_id",
+      "mode": "optional",
+      "valid": "1",
+      "invalid": "0"
+    },
+    {
+      "key": "widget_enabled",
+      "mode": "optional",
+      "valid": true,
+      "invalid": 1
+    }
+  ]
+}

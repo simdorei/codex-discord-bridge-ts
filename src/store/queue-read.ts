@@ -1,6 +1,7 @@
+import {usingExistingStore} from "./owned-scope.ts";
 import { textDecoderFor, decodeTextField, decodeI64, decodeOptionalI64, decodeBool, decodeTimestamp } from "./sqlite-values.ts";
 import type { DatabaseSync } from "node:sqlite";
-import { types } from "node:util";
+import { types, isDeepStrictEqual } from "node:util";
 import { serializeSerdeValue } from "../core/serde-json.ts";
 import { parseSerdeValue } from "../core/serde-json-parse.ts";
 import { I64_MAX, I64_MIN } from "../protocol/ids.ts";
@@ -247,57 +248,26 @@ export async function list(path: string): Promise<StoredQueueJob[]> {
   }
 }
 
-export async function listFiltered(
-  path: string,
-  target: string | null,
-  generation: bigint | null,
-): Promise<StoredQueueJob[]> {
-  if (typeof path !== "string" || !isWellFormedString(path)) {
-    throw new TypeError(`Invalid database path: ${String(path)}`);
-  }
-  if (target !== null && (typeof target !== "string" || !isWellFormedString(target))) {
-    throw new TypeError(`Invalid target: expected well-formed string or null`);
-  }
-  if (generation !== null) {
-    if (typeof generation !== "bigint") {
-      throw new TypeError(`Invalid generation: expected bigint or null`);
-    }
-    if (generation < I64_MIN || generation > I64_MAX) {
-      throw new RangeError(`Generation out of signed i64 range: ${generation.toString()}`);
-    }
-  }
-
-  const db = await openInitialized(path);
-  try {
-    if (target === null && generation === null) {
-      return allJobs(db);
-    }
-
-    let sql: string;
-    let params: Array<string | bigint>;
-
-    if (target !== null && generation !== null) {
-      sql = `SELECT ${SELECT_FIELDS} FROM codex_turn_queue WHERE target_thread_id = ? AND app_server_generation = ? ORDER BY created_at, job_id`;
-      params = [target, generation];
-    } else if (target !== null) {
-      sql = `SELECT ${SELECT_FIELDS} FROM codex_turn_queue WHERE target_thread_id = ? ORDER BY created_at, job_id`;
-      params = [target];
-    } else {
-      sql = `SELECT ${SELECT_FIELDS} FROM codex_turn_queue WHERE app_server_generation = ? ORDER BY created_at, job_id`;
-      params = [generation!];
-    }
-
-    const stmt = db.prepare(sql);
-    stmt.setReadBigInts(true);
-    const rows = stmt.all(...params) as Array<Record<string, unknown>>;
-    return rows.map(decodeRow);
-  } finally {
-    try {
-      db.close();
-    } catch {
-      // preserve primary error
-    }
-  }
+function validateQueueFilters(target:string|null,generation:bigint|null):void{
+  if(target!==null&&(typeof target!=="string"||!isWellFormedString(target)))throw new TypeError("Invalid target: expected well-formed string or null");
+  if(generation!==null){if(typeof generation!=="bigint")throw new TypeError("Invalid generation: expected bigint or null");if(generation<I64_MIN||generation>I64_MAX)throw new RangeError(`Generation out of signed i64 range: ${generation.toString()}`);}
+}
+/** Shared filtered SQL/typed decoding for initialized and already-initialized callers. */
+export function listFilteredIn(db:DatabaseSync,target:string|null,generation:bigint|null):StoredQueueJob[]{
+  validateQueueFilters(target,generation);if(target===null&&generation===null)return allJobs(db);
+  let sql:string,params:Array<string|bigint>;
+  if(target!==null&&generation!==null){sql=`SELECT ${SELECT_FIELDS} FROM codex_turn_queue WHERE target_thread_id = ? AND app_server_generation = ? ORDER BY created_at, job_id`;params=[target,generation];}
+  else if(target!==null){sql=`SELECT ${SELECT_FIELDS} FROM codex_turn_queue WHERE target_thread_id = ? ORDER BY created_at, job_id`;params=[target];}
+  else{sql=`SELECT ${SELECT_FIELDS} FROM codex_turn_queue WHERE app_server_generation = ? ORDER BY created_at, job_id`;params=[generation!];}
+  const stmt=db.prepare(sql);stmt.setReadBigInts(true);return (stmt.all(...params) as Array<Record<string,unknown>>).map(decodeRow);
+}
+export async function listFiltered(path:string,target:string|null,generation:bigint|null):Promise<StoredQueueJob[]>{
+  if(typeof path!=="string"||!isWellFormedString(path))throw new TypeError(`Invalid database path: ${String(path)}`);validateQueueFilters(target,generation);
+  const db=await openInitialized(path);try{return listFilteredIn(db,target,generation);}finally{try{db.close();}catch{/* preserve primary error */}}
+}
+/** Synchronous admission profile: store MUST already be initialized. No create/migrate. */
+export function listFilteredExisting(path:string,target:string|null,generation:bigint|null):StoredQueueJob[]{
+  if(typeof path!=="string"||!isWellFormedString(path))throw new TypeError(`Invalid database path: ${String(path)}`);validateQueueFilters(target,generation);return usingExistingStore(path,db=>listFilteredIn(db,target,generation));
 }
 
 const STORED_QUEUE_JOB_PROPERTIES = [
@@ -541,3 +511,36 @@ export function serializeStoredQueueJob(job: StoredQueueJob): string {
 
   return `{${pairs.join(",")}}`;
 }
+
+/** Owned snapshot before an asynchronous mutation opens its connection. */
+export function snapshotStoredQueueJob(claimed: StoredQueueJob): StoredQueueJob {
+  if (claimed === null || typeof claimed !== "object" || types.isProxy(claimed) || Array.isArray(claimed))
+    throw new TypeError("Expected a stored job data object");
+  const copy = Object.create(null) as Record<string, unknown>;
+  for (const key of Object.getOwnPropertyNames(claimed)) {
+    const field = Object.getOwnPropertyDescriptor(claimed, key)!;
+    if (!Object.hasOwn(field, "value") || !field.enumerable) throw new TypeError("Expected stored job data properties");
+    copy[key] = field.value;
+  }
+  const baseline = copy.baselineTurnIds;
+  if (!Array.isArray(baseline) || types.isProxy(baseline)) throw new TypeError("Expected baseline data array");
+  const items: string[] = [];
+  for (let i = 0; i < baseline.length; i++) {
+    const field = Object.getOwnPropertyDescriptor(baseline, String(i));
+    if (!field || !Object.hasOwn(field, "value") || typeof field.value !== "string" || !isWellFormedString(field.value))
+      throw new TypeError("Expected baseline string data elements");
+    items.push(field.value);
+  }
+  copy.baselineTurnIds = items;
+  const result = copy as unknown as StoredQueueJob;
+  serializeStoredQueueJob(result); // Reuse the exact full stored-job value validation.
+  return result;
+}
+
+/** Rust StoredQueueJob PartialEq, including f64 zero/NaN behavior. */
+export function storedQueueJobsEqual(a: StoredQueueJob, b: StoredQueueJob): boolean {
+  return a.createdAt === b.createdAt && a.updatedAt === b.updatedAt &&
+    isDeepStrictEqual({...a, createdAt: 0, updatedAt: 0}, {...b, createdAt: 0, updatedAt: 0});
+}
+
+export const STARTING_CANDIDATE_HOLD_PREFIX = "[cdr-rust:turn-start-candidates-ambiguous:v1] ";

@@ -1,0 +1,21 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 424,
+  "localCommit": "b073c11af49e26f12d90c524385010bad2577101",
+  "fullTests": 6281,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/discord-runtime/autocomplete-bootstrap.ts": "6a4a078a4108c1d7cbe95a47e258347cdd6a737ef07d3a7057b26ac18c14d4f0",
+    "test/runtime/discord-runtime/autocomplete-bootstrap.test.ts": "cf4e68d4b82e06619d64b0ffdc8734bd31f60f918720562e71d5c28a1619368d"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}
