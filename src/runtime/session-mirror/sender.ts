@@ -26,10 +26,15 @@ export function sessionMirrorIdentity(thread:string,input:MirrorItem):SessionMir
   return identity(SESSION_MIRROR_ASSISTANT_TEXT_NONCE_DOMAIN,scope,hash);
 }
 /** Await every receipt; no retries, timers, cursor writes or detached work. Transport
- * ownership and public error rendering remain with the shared completion boundary. */
-export async function sendSessionMirrorText(path:string,transport:DiscordReceiptTransport,channel:bigint,input:SessionMirrorIdentity,text:string):Promise<void>{
+ * ownership and public error rendering remain with the shared completion boundary.
+ * Cancellation prevents later chunk submission but cannot undo an in-flight send.
+ * A late confirmed message receipt is still committed before cancellation returns;
+ * unknown outcomes remain held and cannot be retried automatically. */
+export async function sendSessionMirrorText(path:string,transport:DiscordReceiptTransport,channel:bigint,input:SessionMirrorIdentity,text:string,signal?:AbortSignal):Promise<void>{
+  signal?.throwIfAborted();
   if(input===null||typeof input!=='object'||!identities.has(input))throw new TypeError('Expected factory-created session mirror identity');
   if(typeof channel!=='bigint'||channel<=0n||channel>=(1n<<64n))throw new RangeError('Discord channel identifier must be non-zero u64');
   const {domain,logicalKey}=input;
-  await deliverTextIndexed(text,{retryDelaysMs:[],chunkMarkers:true},(chunkIndex,content)=>sendReceiptChunk(path,transport,channel,{domain,logicalKey,chunkIndex,content}));
+  await deliverTextIndexed(text,{retryDelaysMs:[],chunkMarkers:true},(chunkIndex,content)=>sendReceiptChunk(path,transport,channel,{domain,logicalKey,chunkIndex,content},[],null,signal));
+  signal?.throwIfAborted();
 }
