@@ -1,3 +1,4 @@
+import * as NewInput from "../../src/store/ingress-new-input.ts";
 import * as ProcessedMessages from "../../src/store/processed-messages.ts";
 import * as AbandonmentProposalStore from "../../src/store/abandonment-proposal.ts";
 import * as AbandonmentDecisionStore from "../../src/store/abandonment-decision.ts";
@@ -265,6 +266,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.admitIngress, IngressAdmission.admitIngress);
     assert.strictEqual(StateAccessFacade.claimProcessedMessage, ProcessedMessages.claimProcessedMessage);
     assert.strictEqual(StateAccessFacade.isProcessedMessage, ProcessedMessages.isProcessedMessage);
+    assert.strictEqual(StateAccessFacade.recordNewInput, NewInput.recordNewInput);
     assert.strictEqual(StateAccessFacade.markProcessedMessage, ProcessedMessages.markProcessedMessage);
 
     assert.strictEqual(StateAccessFacade.pendingNewPrompt, NewPromptArm.pendingNewPrompt);
@@ -535,6 +537,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "claimProcessedMessage",
       "isProcessedMessage",
       "markProcessedMessage",
+      "recordNewInput",
       "pendingNewPrompt",
       "pendingStopControlsAfter",
       "stopControlPhase",
@@ -593,7 +596,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 215);
+    assert.strictEqual(actual.length, 216);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

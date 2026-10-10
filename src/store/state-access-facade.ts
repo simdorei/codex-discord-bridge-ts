@@ -1,3 +1,4 @@
+import * as NewInput from "./ingress-new-input.ts";
 import * as ProcessedMessages from "./processed-messages.ts";
 import * as AbandonmentProposalStore from "./abandonment-proposal.ts";
 import * as AbandonmentDecisionStore from "./abandonment-decision.ts";
@@ -166,6 +167,7 @@ export const loadCompletionPayload: typeof CompletionPayload.loadCompletionPaylo
 export const finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight = DeliveryPreflight.finalDeliveryPreflight;
 export const pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply = DeliveryPreflight.pendingFirstReply;
 
+export const recordNewInput: typeof NewInput.recordNewInput = NewInput.recordNewInput;
 export const claimProcessedMessage: typeof ProcessedMessages.claimProcessedMessage = ProcessedMessages.claimProcessedMessage;
 export const isProcessedMessage: typeof ProcessedMessages.isProcessedMessage = ProcessedMessages.isProcessedMessage;
 export const markProcessedMessage: typeof ProcessedMessages.markProcessedMessage = ProcessedMessages.markProcessedMessage;
@@ -436,6 +438,7 @@ export interface IStateAccessFacade {
   readonly recordIngressResult: typeof IngressLifecycle.recordIngressResult;
   readonly confirmIngress: typeof IngressLifecycle.confirmIngress;
   readonly recordIngressProcessingMode: typeof IngressLifecycle.recordIngressProcessingMode;
+  readonly recordNewInput: typeof NewInput.recordNewInput;
   readonly claimProcessedMessage: typeof ProcessedMessages.claimProcessedMessage;
   readonly isProcessedMessage: typeof ProcessedMessages.isProcessedMessage;
   readonly markProcessedMessage: typeof ProcessedMessages.markProcessedMessage;
@@ -677,6 +680,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   loadCompletionPayload,
   finalDeliveryPreflight,
   pendingFirstReply,
+  recordNewInput,
   claimProcessedMessage,
   isProcessedMessage,
   markProcessedMessage,
