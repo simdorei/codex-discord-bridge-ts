@@ -37,6 +37,13 @@ export class MirrorFileWindow {
  readonly path:string;readonly offset:bigint;readonly generation:MirrorFileStamp;readonly #bytes:Uint8Array;
  constructor(token:symbol,path:string,offset:bigint,generation:MirrorFileStamp,bytes:Uint8Array){if(token!==TOKEN)throw new TypeError('Expected owned file observation');this.path=path;this.offset=offset;this.generation=generation;this.#bytes=bytes;Object.freeze(this);}
  get byteLength():number{return this.#bytes.length;}
+ /** Constant-time boundary check over the authentic captured bytes, without
+  * copying or hashing the whole file/window on the main event loop. */
+ isCompleteRecordBoundary(nextOffset:bigint):boolean{
+  const length=this.#bytes.length;if(typeof nextOffset!=='bigint')return false;
+  const relative=nextOffset-this.offset;if(relative<0n||relative>BigInt(length))return false;
+  return relative===0n||this.#bytes[Number(relative)-1]===10;
+ }
  copyBytes():Uint8Array{return this.#bytes.slice();}
  async verifyCurrent(signal?:AbortSignal):Promise<void>{
   void this.#bytes; // Reject forged/proxied receivers before reading public fields.
