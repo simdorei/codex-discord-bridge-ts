@@ -14,16 +14,18 @@ export async function sendThenClear(send: () => Promise<void>, clear: () => Prom
  * then retries only clearing. Neither this function nor its plan reexecutes an
  * action or releases its persistent action claim. */
 export async function deliverConfirmationAndClear(http: DiscordChannelClient, database: string, channelId: bigint,
-  sourceMessageId: bigint | null, plan: ConfirmationPlan): Promise<void> {
+  sourceMessageId: bigint | null, plan: ConfirmationPlan, signal?:AbortSignal): Promise<void> {
+  signal?.throwIfAborted();
   if (!isConfirmationPlan(plan)) throw new TypeError('Expected factory-created confirmation plan');
   for (const id of [channelId, ...(sourceMessageId === null ? [] : [sourceMessageId])]) if (typeof id !== 'bigint' || id <= 0n || id >= 1n << 64n) throw new TypeError('Expected Discord confirmation identity');
-  const transport = Object.freeze({sendValidated: DiscordChannelClient.prototype.sendValidated.bind(http)});
+  const transport = Object.freeze({sendValidated: (request:Parameters<DiscordChannelClient['sendValidated']>[0])=>DiscordChannelClient.prototype.sendValidated.call(http,request,signal)});
   await sendThenClear(async () => {
-    try {await sendReceiptChunk(database, transport, channelId, {domain: plan.domain, logicalKey: plan.logicalKey, chunkIndex: 0, content: plan.content});}
+    try {await sendReceiptChunk(database, transport, channelId, {domain: plan.domain, logicalKey: plan.logicalKey, chunkIndex: 0, content: plan.content},[],null,signal);}
     catch (error) {throw new ConfirmationError('Delivery', passiveErrorText(error, 'confirmation delivery failed'), error);}
   }, async () => {
+    signal?.throwIfAborted();
     if (sourceMessageId === null) return;
-    try {await DiscordChannelClient.prototype.clearMessageComponents.call(http, channelId, sourceMessageId);}
+    try {await DiscordChannelClient.prototype.clearMessageComponents.call(http, channelId, sourceMessageId,signal);}
     catch (error) {throw new ConfirmationError('Clear', passiveErrorText(error, 'button clearing failed'), error);}
   });
 }

@@ -29,8 +29,12 @@ export class PreparedOrdinaryComponentConfirmation {
   }
   readonly deliver = async (): Promise<void> => {
     if (!owned.has(this)) throw new TypeError('Expected prepared ordinary confirmation');
-    try {await deliverConfirmationAndClear(this.#http, this.#database, this.#channel, this.#source, this.#plan);}
-    catch (error) {if (confirmationErrorInfo(error) !== null) throw new ComponentWorkerError('Confirmation', error); throw error;}
+    const abandonment=this.#plan.domain==='recovery-abandonment-confirmation-v1',budget=abandonment?new AbortController():null;
+    const timer=budget===null?null:setTimeout(()=>budget.abort(new Error('notification timed out; its receipt must be reconciled')),10000);
+    try {await deliverConfirmationAndClear(this.#http,this.#database,this.#channel,this.#source,this.#plan,budget?.signal);}
+    catch(error){if(abandonment)throw new ComponentWorkerError('AbandonmentNotice',error);if(confirmationErrorInfo(error)!==null)throw new ComponentWorkerError('Confirmation',error);throw error;}
+    finally{if(timer!==null)clearTimeout(timer);}
+
   };
 }
 /* Recovery variants are dispatched before ordinary approvals and confirmation-
