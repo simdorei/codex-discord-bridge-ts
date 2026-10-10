@@ -23,7 +23,7 @@ export class MirrorDispatch{
  get activeCount():number{return this.#execution.size;}
  get readyCount():number{return this.#ready.length;}
  refresh(targets:readonly MirrorTargetHint[]):void{this.#open();const active=this.#execution.activeThreads();this.#ready.refresh(targets,active);const present=new Set(this.#ready.snapshot().map(t=>t.thread));for(const [thread,retry]of this.#retry)if(!present.has(thread)&&!active.has(thread)){this.#retryBytes-=retry.textBytes;this.#retry.delete(thread);}}
- dispatch():number{this.#open();const now=this.#now();let started=0;while(this.#execution.size<8){const next=this.#ready.take(this.#execution.activeThreads(),this.#execution.activeChannels(),thread=>(this.#retry.get(thread)?.readyAt??0n)<=now);if(next===null)break;if(!this.#execution.tryStart(next,this.#poll))throw new TypeError('Mirror ownership changed during synchronous dispatch');started++;}return started;}
+ dispatch(poll=this.#poll):number{this.#open();const now=this.#now();let started=0;while(this.#execution.size<8){const next=this.#ready.take(this.#execution.activeThreads(),this.#execution.activeChannels(),thread=>(this.#retry.get(thread)?.readyAt??0n)<=now);if(next===null)break;if(!this.#execution.tryStart(next,poll))throw new TypeError('Mirror ownership changed during synchronous dispatch');started++;}return started;}
  waitForSettlement(signal?:AbortSignal):Promise<boolean>{return this.#execution.waitForSettlement(signal);}
  harvest():readonly MirrorDispatchResult[]{
   this.#open();const rows=this.#execution.takeSettled();if(rows.length===0)return Object.freeze([]);this.#held=rows;
