@@ -27,7 +27,8 @@ async function claim<P,T,A>(io:HistoryPollIo<P,T,A>,item:T,purpose:HistoryClaimP
  const value=await step('Claim',signal,()=>io.claim(item,purpose,signal));try{const kind=own(value,'kind');if(kind==='Lost')return {kind};if(kind==='Won')return {kind,admitted:own(value,'admitted') as A};throw new TypeError('Expected durable claim disposition');}catch(error){throw new HistoryPollRunError('Claim',error);}
 }
 function stateStep<T>(stage:'State'|'Commit',run:()=>T):T{try{return run();}catch(error){throw new HistoryPollRunError(stage,error);}}
-/** Claim calls are awaited because the TS store facade owns its SQLite worker.
+/** Claim calls are awaited through the asynchronous store facade. Some underlying
+ * DatabaseSync paths still run on this thread; this is not a DB-offload claim.
  * No cursor commit on fetch/adapt/claim/process failure or cancellation. */
 export async function runHistoryPollCycle<P,T,A>(state:HistoryPollState,channel:bigint,startedAt:bigint,input:HistoryPollIo<P,T,A>,signal?:AbortSignal):Promise<HistoryPollOutcome>{signal?.throwIfAborted();const cycle=stateStep('State',()=>HistoryPollState.prototype.begin.call(state,channel,startedAt));return runBegunHistoryPollCycle(state,channel,cycle,input,signal);}
 async function runBegun<P,T,A>(state:HistoryPollState,channel:bigint,cycle:HistoryPollCycleToken,input:HistoryPollIo<P,T,A>,signal?:AbortSignal):Promise<HistoryPollOutcome>{
