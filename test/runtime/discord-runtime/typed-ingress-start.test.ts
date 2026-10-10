@@ -9,7 +9,7 @@ class Port implements GatewayShardPort<DecodedGatewayInteraction>{
  async dispose(){this.disposed++;this.deliver?.(null);}
 }
 function setup(){const port=new Port(),gateway=GatewayRuntime.fromOwnedPorts([port],{reportReceiveErrorDrop(){},reportTriggerFailure(){}}),shutdown=new AbortController(),notifier=new RuntimeWorkerExitChannel(),seen:string[]=[],waiters=new Map<string,(()=>void)[]>();const mark=(key:string)=>{seen.push(key);for(const resolve of waiters.get(key)??[])resolve();waiters.delete(key);};const waitFor=async(key:string)=>{if(seen.includes(key))return;let timer:ReturnType<typeof setTimeout>|undefined;try{await new Promise<void>((resolve,reject)=>{waiters.set(key,[...(waiters.get(key)??[]),resolve]);timer=setTimeout(()=>reject(new Error('Missing consumer event '+key)),5000);});}finally{clearTimeout(timer);}};
- const options:TypedIngressStartOptions={ready:{port:{async register(){mark('register');},async sendNotice(){assert.fail();}},guildId:null,qaCommands:false,startupNotify:false,startupChannelId:null,report(){}},message:async(message)=>{mark(message.content);},history:{async recover(){mark('history');},async poll(){assert.fail();}},historyPeriodMs:null,interaction:async(item)=>{mark(item.tag);},reportInteraction(){},reportReceiveError(){mark('error');}};
+ const options:TypedIngressStartOptions={ready:{port:{async register(){mark('register');},async sendNotice(){assert.fail();}},guildId:null,qaCommands:false,startupNotify:false,startupChannelId:null,report(){}},message:async(message)=>{mark(message.content);},history:()=>({async recover(){mark('history');},async poll(){assert.fail();}}),historyPeriodMs:null,interaction:async(item)=>{mark(item.tag);},reportInteraction(){},reportReceiveError(){mark('error');}};
  return {port,gateway,shutdown,notifier,seen,options,waitFor,async close(workers:RuntimeMonitoredWorker[]=[]){shutdown.abort();await gateway.shutdown(performance.now()+2000);await Promise.all(workers.map(w=>w.join()));notifier.close();}};
 }
 const ready=():GatewayShardItem<DecodedGatewayInteraction>=>({kind:'Event',event:{kind:'Ready',identity:{userId:9n,applicationId:4n}}});
@@ -33,4 +33,11 @@ it('shutdown winning readiness aborts and joins consumers without activating sha
 });
 it('second start cannot retake receivers or disturb the first seven owners',async()=>{
  const f=setup();let workers:RuntimeMonitoredWorker[]=[];try{workers=await startTypedIngressWorkers(f.gateway,f.shutdown.signal,f.notifier,f.options);await assert.rejects(startTypedIngressWorkers(f.gateway,f.shutdown.signal,f.notifier,f.options),/already been taken/);f.port.push(ready());await f.waitFor('register');assert.ok(f.seen.includes('register'));}finally{await f.close(workers);}
+});
+it('history factory receives exact consumer-owned receiver and it is disposed on shutdown',async()=>{
+ const f=setup();let owned:import('../../../src/discord/gateway/message-gaps.ts').MessageGapReceiver|undefined;let entered!:()=>void;const ran=new Promise<void>(r=>entered=r);let workers:RuntimeMonitoredWorker[]=[];
+ try{workers=await startTypedIngressWorkers(f.gateway,f.shutdown.signal,f.notifier,{...f.options,history:gaps=>{owned=gaps;return {async recover(){assert.deepEqual(gaps.snapshot(),[]);entered();},async poll(){assert.fail();}};}});f.port.push(ready());await ran;assert.ok(owned);assert.deepEqual(owned.snapshot(),[]);}finally{await f.close(workers);}assert.throws(()=>owned!.snapshot(),/disposed/);
+});
+it('invalid history factory result is rejected before receiver take and shard activation',async()=>{
+ const f=setup();try{await assert.rejects(startTypedIngressWorkers(f.gateway,f.shutdown.signal,f.notifier,{...f.options,history:()=>({recover:1,poll:2}) as never}),TypeError);assert.equal(f.port.polls,0);for(const receiver of Object.values(f.gateway.takeIngressReceivers()))receiver.dispose();}finally{await f.close();}
 });

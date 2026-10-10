@@ -110,3 +110,15 @@ it('periodic processing boundary failure is fatal and leaves cursor uncommitted 
  const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe(),fatal=new Error('report failure');f.options.context.services.executeWithIngressContext=async()=>{throw Error('business failure');};const options={...f.options,allowedChannelIds:new Set([1n]),startupChannelId:null,report:(code:string)=>{if(code==='on_message_error')throw fatal;}};
  try{await assert.rejects(runPeriodicDiscordHistory(history,rx,options));assert.equal(history.isPrimed(1n),false);assert.equal((await state.getIngress(f.path,'message:2'))!.state,'held');const key=DrainFenceKey.create('runtime','1|2','worker');f.options.gate.seal(key);assert.equal(f.options.gate.isDrainedFor(key),true);}finally{rx.dispose();tracker.close();}
 }));
+
+import {createDiscordHistoryOperations} from '../../../src/runtime/discord-runtime/history-operations.ts';
+it('bound history operations use established bot identity and the same sticky-gap receiver',async()=>fixture([message(2)],async f=>{
+ const tracker=new MessageGapTracker(),rx=tracker.subscribe(),controller=new AbortController();const operations=createDiscordHistoryOperations(rx,{...f.options,allowedChannelIds:new Set([1n]),startupChannelId:null});
+ try{record(tracker);await operations.recover({applicationId:4n,userId:2n},controller.signal);assert.equal(rx.snapshot().length,0);assert.equal(await state.isProcessedMessage(f.path,2n),false);assert.deepEqual(f.calls,[]);
+  const history=new HistoryPollState();await operations.poll(history,{applicationId:4n,userId:9n},controller.signal);assert.equal((await state.getIngress(f.path,'message:2'))!.confirmationDelivered,true);assert.equal(history.isPrimed(1n),true);
+ }finally{rx.dispose();tracker.close();}
+}));
+it('bound operations snapshot allowed IDs and never dispose borrowed receiver themselves',async()=>fixture([],async f=>{
+ const tracker=new MessageGapTracker(),rx=tracker.subscribe(),controller=new AbortController(),allowed=new Set([1n]),history=new HistoryPollState();const operations=createDiscordHistoryOperations(rx,{...f.options,allowedChannelIds:allowed,startupChannelId:null});allowed.clear();
+ try{await operations.poll(history,{applicationId:4n,userId:9n},controller.signal);assert.equal(history.isPrimed(1n),true);assert.deepEqual(rx.snapshot(),[]);const reason=new Error('cancel');controller.abort(reason);await assert.rejects(operations.recover({applicationId:4n,userId:9n},controller.signal),e=>e===reason);assert.deepEqual(rx.snapshot(),[]);}finally{rx.dispose();tracker.close();}
+}));
