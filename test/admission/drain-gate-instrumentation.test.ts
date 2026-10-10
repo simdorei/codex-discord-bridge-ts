@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { AdmissionGate } from "../../src/admission/drain-gate.ts";
 import type { DrainFenceKeyRecord } from "../../src/admission/owned-key.ts";
 
-const BASE_GATE_SHA256 = "48c3752547ac9da9a938c39694051d26362b2cb9e0fcd03505cfe711b84eb8df";
+const BASE_GATE_SHA256 = "ae4efc9f482dda3183944ca1ed4bab0e185a122c4c01081687e0b70345c0f7dc";
 const BASE_KEY_SHA256 = "864fa8ed7d51888503868e8ee0e07f4b3a4017f39d665b88dcaca762b9a7e6a8";
 
 export const INSTRUMENTATION_INSERTION = `
