@@ -27,9 +27,10 @@ const HELD:Readonly<Record<CompletionSource,string>>=Object.freeze({
   "Final": "r.channel=h.channel AND r.domain='completion/v1' AND r.logical=h.id"
 });
 export function completionHeldMatch(source:CompletionSource):string{requireCompletionSource(source);return HELD[source];}
-export function completionMetadataQuery(source:CompletionSource):string{
-  requireCompletionSource(source);const lane=completionSourceIsState(source)?"target":"channel";
-  return `WITH scope AS (SELECT ?1 runtime,?2 generation), source_input AS (${SELECT[source]}),
+/** Supplemental Rust main ed47c482: final-current probes scope the original channel before ranking. */
+export function completionMetadataQuery(source:CompletionSource,channelScoped=false):string{
+  requireCompletionSource(source);if(typeof channelScoped!=="boolean")throw new TypeError("Expected channel scope flag");const lane=completionSourceIsState(source)?"target":"channel",input=channelScoped&&source==="Final"?`${SELECT[source]} WHERE channel_id=?6`:SELECT[source];
+  return `WITH scope AS (SELECT ?1 runtime,?2 generation), source_input AS (${input}),
     ranked AS (SELECT *,row_number() OVER (PARTITION BY ${lane} ORDER BY stamp,ordinal,sort_id) lane_rank FROM source_input),
     unavailable AS (SELECT
       json_extract(CASE WHEN json_valid(receipt_key) THEN receipt_key ELSE '[]' END,'$[0]') channel,

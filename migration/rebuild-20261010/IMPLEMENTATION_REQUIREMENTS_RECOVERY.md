@@ -37,3 +37,13 @@ Freeze full source and relevant dependencies before implementing each delta. Kee
 ## Recovery limitation
 
 The original workspace has not been recovered. Current work is reimplementation from the previously preserved remote checkpoint. Raw compressed test logs remain local pending separate sharing approval; source, tests and bounded verification summaries are being preserved remotely.
+
+## Attachment recovered at 2026-10-10 15:02 UTC
+
+The user reattached the document in the same Slack thread. Its full 19,379 bytes are now preserved locally at `requirements/ts-runtime-parity-pro-reviewed-20261007.md`. File SHA256: `a0799cfa3d7419a45e7003e1f579167a05dcdca0a8709dc4f891e7b0ac04bb72`. The body between the explicit markers, normalized by trimming outer whitespace and appending LF, matches the declared approved body SHA256 `b38ec59008b6a98955ca86b0e13034d05eda3b045152e8df1fa235e02c06f22a`. The earlier access failure above is historical; this retrieval used the new user attachment, not a bypass of Library restrictions.
+
+The full A–G contract is an implementation/verification requirement, not a current PASS. In particular DatabaseSync isolation and predefined numerical G acceptance criteria remain incomplete.
+
+## New user-reported stale-stop defect
+
+On 2026-10-10 15:01 UTC the user reported that any historical async-question obligation causes all old unresolved stop requests in the thread to be reevaluated, without distinguishing their jobs. Required correction: exclude an old stop from admission blocking only on evidence of a separate request in the same thread that started later and completed normally. Age alone, a question ledger row, an ordinary acknowledgement, missing history, failed/interrupted completion or another thread are insufficient. Do not delete old ingress evidence or replay the stop. Identify and test the exact durable start/completion/ownership evidence before enabling the exception. Latest Rust main still contains the broad historical predicate at the time checked. Status: confirmed predicate, fix pending.

@@ -75,6 +75,7 @@ export function equalCompletionEntry(a:CompletionEntry,b:CompletionEntry):boolea
 }
 export function currentCompletionEntryIn(db:DatabaseSync,input:CompletionEntry,runtime:string,gen:bigint):CompletionEntry|null{
   const entry=snapshotCompletionEntry(input);text(runtime);generation(gen);
-  const row=receiptRow(db,`${completionMetadataQuery(entry.source)} SELECT ${entryColumns} FROM candidates WHERE id=?3 AND target=?4 AND turn=?5`,runtime,gen,entry.id,entry.target,entry.turn);
+  const final=entry.source==="Final";
+  const row=receiptRow(db,`${completionMetadataQuery(entry.source,final)} SELECT ${entryColumns} FROM candidates WHERE id=?3 AND target=?4 AND turn=?5`,runtime,gen,entry.id,entry.target,entry.turn,...(final?[entry.channel]:[]));
   return row===undefined?null:readEntry(entry.source,row);
 }
