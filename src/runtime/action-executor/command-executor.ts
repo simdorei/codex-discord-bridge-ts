@@ -1,3 +1,7 @@
+import {DiscordChannelClient} from '../../discord/channel-client.ts';
+import type {InteractionBusinessServices} from '../interaction-worker/processor.ts';
+import {createOrdinaryComponentHandler} from '../component-worker/ordinary-handler.ts';
+import {BusyQueueExecutor} from './busy-queue.ts';
 import {ActionExecutionError} from './action-error.ts';
 import {MirrorInspector} from '../mirror-sync/inspection.ts';
 import {types} from 'node:util';
@@ -48,6 +52,7 @@ export interface RuntimeExecutorDependencies{
  * A native server, queue backend and live gateway still require bootstrap and
  * ownership qualification; this constructor does not start any of them. */
 export class RuntimeCommandExecutor implements MessageBusinessServices{
+ readonly #server:PortableResidentLifecycle|null;readonly #componentQueue:BusyQueueExecutor;readonly #control:ControlTurnVerifier;
  readonly #codex:string;readonly #database:string;#inspection:MirrorInspector|null=null;
  readonly #basic:BasicActionDispatcher;readonly #queue:QueueStartCoordinator;readonly #new:NewThreadExecutor;readonly #prompts:QueuePromptExecutor;readonly #retract:RetractAction;readonly #controls:PromptControlActions;readonly #open:OpenThreadAction;readonly #settings:AdmittedSettingsExecutor;readonly #archive:AdmittedArchiveExecutor|null;readonly #resume:AdmittedResumeExecutor|null;readonly #stop:AdmittedStopExecutor;readonly #repair:AdmittedRepairExecutor|null;
  constructor(input:RuntimeExecutorDependencies){
@@ -59,6 +64,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   this.#codex=paths.state;this.#database=paths.mirror;
   const locks=queue.locks,selection=new ActionThreadSelection(paths.state,paths.mirror,bridge),control=new ControlTurnVerifier(paths.mirror,server,bridge,locks),busy=new BusyResultProducer(paths.mirror,control,queue.reads);
   const targets=new ActionTargetServices(paths.mirror,bridge,queue,{preparePrompt:prepare,busyResult:BusyResultProducer.prototype.busyResult.bind(busy)}),intake=new PromptIntakeProcessor(paths.mirror,queue,targets);
+  this.#server=server;this.#control=control;this.#componentQueue=new BusyQueueExecutor(paths.mirror,Object.freeze({processAdmittedPrompt:PromptIntakeProcessor.prototype.processAdmittedPrompt.bind(intake)}));
   this.#queue=queue;this.#basic=new BasicActionDispatcher(paths,bridge,server,locks,render,timeout);
   this.#new=new NewThreadExecutor(paths.mirror,paths.state,queue,intake,bridge,server,backend,get('mirror'),get('reportNewAttempt'));
   this.#prompts=new QueuePromptExecutor(paths.mirror,selection,targets,queue,intake,busy);this.#retract=new RetractAction(paths.mirror,selection);
@@ -75,6 +81,13 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
  notifyDeliveryReady():void{invokeSynchronousVoid(QueueStartCoordinator.prototype.notifyDeliveryReady,this.#queue,[]);}
  /** Own-data functions match the processor's strict service capture contract. */
  messageServices():MessageBusinessServices{return Object.freeze({targetThreadId:RuntimeCommandExecutor.prototype.targetThreadId.bind(this),executeWithIngressContext:RuntimeCommandExecutor.prototype.executeWithIngressContext.bind(this),notifyDeliveryReady:RuntimeCommandExecutor.prototype.notifyDeliveryReady.bind(this)});}
+ /** Slash commands and components use this same queue, target locks and native
+  * owner. Preparation never sends confirmation before the processor commits its
+  * completed-action receipt. This does not start gateway or worker loops. */
+ interactionServices(http:DiscordChannelClient):InteractionBusinessServices{
+  if(this.#server===null)throw new MissingActionAppServerError();
+  return Object.freeze({executeWithIngressContext:RuntimeCommandExecutor.prototype.executeWithIngressContext.bind(this),prepareComponent:createOrdinaryComponentHandler(this.#database,this.#server,http,this.#componentQueue,this.#control,RuntimeCommandExecutor.prototype.notifyDeliveryReady.bind(this))});
+ }
  async executeWithIngressContext(input:CommandAction,inputActor:MessageActionContext,key:string,signal?:AbortSignal):Promise<ActionResult>{
   signal?.throwIfAborted();const action=snapshotRuntimeCommand(input),actor=snapshotActionContext(inputActor);requireDiscordText(key);if(actor.discordMessageId===null)throw new InvalidActionRequestError('admitted message/interaction event identity is required');let result:ActionResult;
   if(typeof action==='object'){
