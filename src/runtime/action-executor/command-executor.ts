@@ -1,3 +1,5 @@
+import {ActionExecutionError} from './action-error.ts';
+import {MirrorInspector} from '../mirror-sync/inspection.ts';
 import {types} from 'node:util';
 import {PortableResidentLifecycle} from '../../app-server/portable-resident-lifecycle.ts';
 import {gatewayOwnField} from '../../discord/gateway/values.ts';
@@ -46,6 +48,7 @@ export interface RuntimeExecutorDependencies{
  * A native server, queue backend and live gateway still require bootstrap and
  * ownership qualification; this constructor does not start any of them. */
 export class RuntimeCommandExecutor implements MessageBusinessServices{
+ readonly #codex:string;readonly #database:string;#inspection:MirrorInspector|null=null;
  readonly #basic:BasicActionDispatcher;readonly #queue:QueueStartCoordinator;readonly #new:NewThreadExecutor;readonly #prompts:QueuePromptExecutor;readonly #retract:RetractAction;readonly #controls:PromptControlActions;readonly #open:OpenThreadAction;readonly #settings:AdmittedSettingsExecutor;readonly #archive:AdmittedArchiveExecutor|null;readonly #resume:AdmittedResumeExecutor|null;readonly #stop:AdmittedStopExecutor;readonly #repair:AdmittedRepairExecutor|null;
  constructor(input:RuntimeExecutorDependencies){
   const get=<K extends keyof RuntimeExecutorDependencies>(key:K)=>gatewayOwnField(input,key) as RuntimeExecutorDependencies[K];
@@ -53,6 +56,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   const bridge=get('bridge'),server=get('server'),backend=get('backend'),queue=get('queue'),render=get('render'),prepare=get('preparePrompt'),timeout=get('resumeTimeoutMs');
   if(queue.dbPath!==paths.mirror)throw new InvalidActionRequestError('queue and action database differ');
   if(typeof prepare!=='function'||types.isProxy(prepare)||types.isGeneratorFunction(prepare))throw new TypeError('Expected prompt preparation function');
+  this.#codex=paths.state;this.#database=paths.mirror;
   const locks=queue.locks,selection=new ActionThreadSelection(paths.state,paths.mirror,bridge),control=new ControlTurnVerifier(paths.mirror,server,bridge,locks),busy=new BusyResultProducer(paths.mirror,control,queue.reads);
   const targets=new ActionTargetServices(paths.mirror,bridge,queue,{preparePrompt:prepare,busyResult:BusyResultProducer.prototype.busyResult.bind(busy)}),intake=new PromptIntakeProcessor(paths.mirror,queue,targets);
   this.#queue=queue;this.#basic=new BasicActionDispatcher(paths,bridge,server,locks,render,timeout);
@@ -65,6 +69,8 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   this.#resume=server===null?null:new AdmittedResumeExecutor(paths.mirror,paths.state,bridge,server,locks,timeout);
   this.#repair=server===null?null:new AdmittedRepairExecutor(paths.mirror,bridge,server,locks,render);Object.freeze(this);
  }
+ configureMirrorInspection(inspector:MirrorInspector):void{if(this.#inspection!==null)throw new InvalidActionRequestError('mirror inspection is already configured');MirrorInspector.prototype.requireScope.call(inspector,this.#codex,this.#database);this.#inspection=inspector;}
+ async #inspect(channel:bigint,limit:bigint|null,list:boolean,signal?:AbortSignal):Promise<ActionResult>{if(this.#inspection===null)throw new ActionExecutionError('Unsupported','mirror inspection transport is not configured; remote state was not checked');return snapshotActionResult({text:await MirrorInspector.prototype.inspect.call(this.#inspection,channel,limit,list,signal),waitsForFinal:false,ui:null});}
  targetThreadId(channel:bigint,signal?:AbortSignal):Promise<string>{return this.#basic.targetThreadId(channel,signal);}
  notifyDeliveryReady():void{invokeSynchronousVoid(QueueStartCoordinator.prototype.notifyDeliveryReady,this.#queue,[]);}
  /** Own-data functions match the processor's strict service capture contract. */
@@ -72,7 +78,8 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
  async executeWithIngressContext(input:CommandAction,inputActor:MessageActionContext,key:string,signal?:AbortSignal):Promise<ActionResult>{
   signal?.throwIfAborted();const action=snapshotRuntimeCommand(input),actor=snapshotActionContext(inputActor);requireDiscordText(key);if(actor.discordMessageId===null)throw new InvalidActionRequestError('admitted message/interaction event identity is required');let result:ActionResult;
   if(typeof action==='object'){
-   if('New'in action)result=await this.#new.execute(actor,action.New.prompt,signal);
+   if('MirrorInspect'in action)result=await this.#inspect(actor.channelId,action.MirrorInspect.limit,action.MirrorInspect.list,signal);
+   else if('New'in action)result=await this.#new.execute(actor,action.New.prompt,signal);
    else if('Ask'in action)result=await this.#prompts.queuePrompt(actor.channelId,actor.userId,actor.discordMessageId,actor.autoQueueWhenBusy,action.Ask.prompt,signal);
    else if('Interview'in action)result=await this.#prompts.interview(actor.channelId,actor.userId,actor.discordMessageId,actor.autoQueueWhenBusy,action.Interview.prompt,signal);
    else if('Settings'in action||'AutoReserve'in action)result=await this.#settings.execute(actor,action,key,signal);
@@ -85,7 +92,8 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
    else if('Open'in action)result=await this.#open.open(action.Open.reference,action.Open.abort,signal);
    else if('DiscardRequest'in action)throw new InvalidActionRequestError('discard-request requires authenticated message custody and live normal admission');
    else result=await this.#basic.execute(action,actor,signal);
-  }else if(action==='Approval')result=await this.#controls.approval(actor.channelId,actor.userId,signal);
+  }else if(action==='MirrorCheck')result=await this.#inspect(actor.channelId,null,false,signal);
+  else if(action==='Approval')result=await this.#controls.approval(actor.channelId,actor.userId,signal);
   else result=await this.#basic.execute(action,actor,signal);
   signal?.throwIfAborted();return snapshotActionResult(result);
  }
