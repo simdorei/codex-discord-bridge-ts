@@ -19,7 +19,7 @@ export interface RuntimeCleanupPorts {
  readonly signalHeartbeat:()=>void;
  readonly joinHeartbeat:(deadline:number)=>Promise<RuntimeWorkerResult>;
 }
-export interface RuntimeCleanupOptions {readonly clock?:GatewayShutdownClock;readonly fatal?:(component:string)=>never}
+export interface RuntimeCleanupOptions {readonly clock?:GatewayShutdownClock;readonly startedAt?:number;readonly fatal?:(component:string)=>never}
 export interface RuntimeCleanupOutcome {readonly decision:RuntimeShutdownDecision;readonly orchestrationErrors:readonly unknown[]}
 const okay=Object.freeze({ok:true} as const),fail=(error:unknown):RuntimeWorkerResult=>Object.freeze({ok:false,error});
 const active=new WeakSet<object>();
@@ -43,7 +43,8 @@ export async function coordinateRuntimeCleanup(inputCause:RuntimeShutdownCause,k
  const p=capture(input),cause=causeSnapshot(inputCause);if(key!==null&&(getDrainFenceKeyRecord(key)===null||cause.kind!=='Control'||!cause.result.ok))throw new TypeError('Drain key requires successful control outcome');
  const fatal=options.fatal;if(fatal!==undefined&&(typeof fatal!=='function'||types.isProxy(fatal)||types.isAsyncFunction(fatal)||types.isGeneratorFunction(fatal)))throw new TypeError('Expected synchronous nonreturning fatal policy');
  const clock=options.clock??nativeGatewayShutdownClock,now=clock.now();if(!Number.isFinite(now)||now<0)throw new TypeError('Invalid shutdown clock');if(active.has(input))throw new Error('Cleanup already consumed these owner ports');
- const deadline=now+RUNTIME_SHUTDOWN_TIMEOUT_MS,nonHeartbeat=deadline-NON_HEARTBEAT_RESERVE_MS,serverDeadline=deadline-HEARTBEAT_JOIN_RESERVE_MS,errors:unknown[]=[];active.add(input);
+ const startedAt=options.startedAt??now;if(!Number.isFinite(startedAt)||startedAt<0||startedAt>now)throw new TypeError('Invalid original shutdown start time');
+ const deadline=startedAt+RUNTIME_SHUTDOWN_TIMEOUT_MS,nonHeartbeat=deadline-NON_HEARTBEAT_RESERVE_MS,serverDeadline=deadline-HEARTBEAT_JOIN_RESERVE_MS,errors:unknown[]=[];active.add(input);
  const hard=<T>(d:number,name:string,operation:Promise<T>)=>completeBeforeRuntimeShutdownDeadline(d,name,operation,{clock,...(fatal===undefined?{}:{fatal})});
  const hook=(f:()=>void)=>{try{f();}catch(error){errors.push(error);}};
  const remote=async()=>{try{const value=await p.requestRemoteHandoff();if(value!==undefined)throw new TypeError('Expected void handoff request');}catch(error){errors.push(error);}};
