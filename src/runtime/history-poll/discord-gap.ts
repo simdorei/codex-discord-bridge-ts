@@ -19,6 +19,9 @@ import {now as systemNow} from '../../store/queue-attach-goal.ts';
 import {historyMessageWatermark,type HistoryBatchItem,type HistoryWatermark} from './state.ts';
 import {runHistoryGapRecovery,type HistoryPollIo,type HistoryGapOutcome} from './runner.ts';
 export interface DiscordHistoryGapOptions extends MessageHandlerOptions {readonly applicationId:bigint;readonly botUserId:bigint|null}
+const policyErrors=new WeakSet<object>();
+class DiscordHistoryPolicyError extends Error{constructor(source:unknown){super('Discord history policy refresh failed',{cause:source});this.name='DiscordHistoryPolicyError';policyErrors.add(this);}}
+export function isDiscordHistoryPolicyError(value:unknown):boolean{return value!==null&&typeof value==='object'&&policyErrors.has(value);}
 interface Claimed {readonly admitted:AdmittedMessage;readonly target:MessageErrorReportTarget}
 /** One real HTTP -> oldest-first classification -> durable admission -> message
  * processor cycle. Caller owns sticky-gap acknowledgement and policy for incomplete
@@ -37,7 +40,7 @@ export async function recoverDiscordHistoryChannel(options:DiscordHistoryGapOpti
  const emit=(code:string,detail:string)=>invokeSynchronousVoid(report,{},[code,detail]);
  const permit=AdmissionGate.prototype.tryEnter.call(gate),pending=new Set<AdmittedMessage>();
  try{
-  const policy=await refreshMirrorPolicy(basePolicy,database);signal?.throwIfAborted();const observedAt=readCustodyTimestamp(now);
+  let policy:InteractionAccessPolicy;try{policy=await refreshMirrorPolicy(basePolicy,database);}catch(error){if(signal?.aborted&&error===signal.reason)throw error;throw new DiscordHistoryPolicyError(error);}signal?.throwIfAborted();const observedAt=readCustodyTimestamp(now);
   const io:HistoryPollIo<DecodedGatewayMessage,DecodedGatewayMessage,Claimed>=Object.freeze({
    fetch:async(id:bigint,limit:number,ownedSignal?:AbortSignal)=>{if(id!==channel||limit!==10)throw new TypeError('Expected fixed history page');return DiscordChannelClient.prototype.fetchLatestChannelMessages.call(http,id,ownedSignal);},
    adapt:(message:DecodedGatewayMessage):HistoryBatchItem<DecodedGatewayMessage>=>{if(!isDecodedGatewayMessage(message)||message.channel_id!==channel)throw new TypeError('History response channel mismatch');return {watermark:historyMessageWatermark(message.timestamp.unixNanoseconds/1000n,message.id),item:(message.author as {bot:boolean}).bot?{kind:'Ignore'}:{kind:'Candidate',value:message}};},

@@ -8,7 +8,7 @@ async function fixture(page:unknown[],run:(f:{path:string;options:DiscordHistory
  await storeFixture(path=>asyncChoiceServer({},async server=>{
   const seen:string[]=[],calls:unknown[]=[],reports:string[]=[],web=createServer((req,res)=>{req.resume();req.on('end',()=>{seen.push(req.method!);res.end(JSON.stringify(req.method==='GET'?page:message(100+seen.length,'')));});});await new Promise<void>(r=>web.listen(0,'127.0.0.1',r));
   const http=await DiscordChannelClient.create({token:null,testOrigin:'http://127.0.0.1:'+(web.address() as {port:number}).port+'/api/v10/',report:()=>{}}),bridge=new BridgeState(join(dirname(path),'bridge.json'));
-  const options:DiscordHistoryGapOptions={applicationId:4n,botUserId:9n,gate:new AdmissionGate(),classification:{enableMessageContent:true,plainAskMentionUserIds:new Set()},policy:new InteractionAccessPolicy({allowAllChannels:true,allowedChannelIds:[],allowedUserIds:[],mirroredChannelIds:[]}),resolver:new SettingsTargetResolver(join(dirname(path),'codex.sqlite'),path,bridge),report:code=>reports.push(code),context:{database:path,server,http,config:{attachmentsEnabled:true,attachmentMaxBytes:100n,attachmentTextInlineMaxBytes:100n},attachmentRoot:dirname(path),attachmentTransport:{async get(){assert.fail();}},attachmentReport:()=>{},controlVerifier:new ControlTurnVerifier(path,server,bridge,new TargetLocks()),services:{async targetThreadId(){return 't';},async executeWithIngressContext(action,_actor,key){calls.push({action,key});return {text:'done',waitsForFinal:false,ui:null};},notifyDeliveryReady(){}},now:()=>102}};
+  const options:DiscordHistoryGapOptions={applicationId:4n,botUserId:9n,gate:new AdmissionGate(),classification:{enableMessageContent:true,plainAskMentionUserIds:new Set()},policy:new InteractionAccessPolicy({allowAllChannels:true,allowedChannelIds:[],allowedUserIds:[],mirroredChannelIds:[]}),resolver:new SettingsTargetResolver(join(dirname(path),'codex.sqlite'),path,bridge),report:code=>{reports.push(code);},context:{database:path,server,http,config:{attachmentsEnabled:true,attachmentMaxBytes:100n,attachmentTextInlineMaxBytes:100n},attachmentRoot:dirname(path),attachmentTransport:{async get(){assert.fail();}},attachmentReport:()=>{},controlVerifier:new ControlTurnVerifier(path,server,bridge,new TargetLocks()),services:{async targetThreadId(){return 't';},async executeWithIngressContext(action,_actor,key){calls.push({action,key});return {text:'done',waitsForFinal:false,ui:null};},notifyDeliveryReady(){}},now:()=>102}};
   try{await run({path,options,calls,seen,reports});}finally{await http.close();web.closeAllConnections();await new Promise<void>((r,j)=>web.close(e=>e?j(e):r()));}
  }));
 }
@@ -32,4 +32,31 @@ it('cancellation during business work joins custody and releases the outer drain
  const c=new AbortController(),reason=new Error('stop history');let started!:()=>void,finish!:()=>void;const entered=new Promise<void>(r=>started=r),release=new Promise<void>(r=>finish=r);let settled=false;
  f.options.context.services.executeWithIngressContext=async(_a,_actor,_key,signal)=>{started();await release;assert.equal(signal!.reason,reason);throw reason;};
  const pending=recoverDiscordHistoryChannel(f.options,1n,floor,c.signal);void pending.then(()=>settled=true,()=>settled=true);const check=assert.rejects(pending,e=>e===reason);await entered;c.abort(reason);const key=DrainFenceKey.create('runtime','1|2','worker');f.options.gate.seal(key);assert.equal(f.options.gate.isDrainedFor(key),false);assert.equal(settled,false);finish();await check;assert.equal((await state.getIngress(f.path,'message:2'))!.state,'held');assert.equal(await state.getIngress(f.path,'message:3'),null);assert.equal(f.options.gate.isDrainedFor(key),true);assert.deepEqual(f.seen,['GET']);
+}));
+
+import {MessageGapTracker} from '../../../src/discord/gateway/message-gaps.ts';
+import {recoverPendingDiscordHistory} from '../../../src/runtime/discord-runtime/gap-recovery.ts';
+const record=(tracker:MessageGapTracker,id=1n)=>tracker.record(1n,{timestampMicros:floor.micros,messageId:id},'Full');
+it('real gap recovery acknowledges original notice only after complete processing and delivery',async()=>fixture([message(2)],async f=>{
+ const tracker=new MessageGapTracker(),rx=tracker.subscribe();try{record(tracker);await recoverPendingDiscordHistory(rx,f.options);assert.equal(rx.snapshot().length,0);assert.deepEqual(f.reports,['discord_message_gap_recovered']);assert.equal((await state.getIngress(f.path,'message:2'))!.confirmationDelivered,true);}finally{rx.dispose();tracker.close();}
+}));
+it('full newer window retains sticky gap and reports incomplete coverage',async()=>fixture(Array.from({length:10},(_,i)=>message(20-i,'!help',true)),async f=>{
+ const tracker=new MessageGapTracker(),rx=tracker.subscribe();try{record(tracker);await recoverPendingDiscordHistory(rx,f.options);assert.equal(rx.snapshot().length,1);assert.deepEqual(f.reports,['discord_message_gap_degraded']);}finally{rx.dispose();tracker.close();}
+}));
+it('new gap during processing makes original acknowledgement stale and cannot clear newer revision',async()=>fixture([message(2)],async f=>{
+ const tracker=new MessageGapTracker(),rx=tracker.subscribe();try{record(tracker);const execute=f.options.context.services.executeWithIngressContext;f.options.context.services.executeWithIngressContext=async(...args)=>{record(tracker,3n);return execute(...args);};await recoverPendingDiscordHistory(rx,f.options);assert.equal(rx.snapshot()[0]!.snapshot().revision,2n);assert.deepEqual(f.reports,['discord_message_gap_ack_stale']);}finally{rx.dispose();tracker.close();}
+}));
+it('malformed provider page is recoverable source failure and never acknowledges gap',async()=>fixture([{}],async f=>{
+ const tracker=new MessageGapTracker(),rx=tracker.subscribe();try{record(tracker);await recoverPendingDiscordHistory(rx,f.options);assert.equal(rx.snapshot().length,1);assert.deepEqual(f.reports,['discord_message_gap_failed']);assert.deepEqual(f.calls,[]);}finally{rx.dispose();tracker.close();}
+}));
+it('sealed gap pass defers without fetching or consuming pending notice',async()=>fixture([message(2)],async f=>{
+ const tracker=new MessageGapTracker(),rx=tracker.subscribe();try{record(tracker);f.options.gate.seal(DrainFenceKey.create('runtime','1|2','worker'));await recoverPendingDiscordHistory(rx,f.options);assert.equal(rx.snapshot().length,1);assert.deepEqual(f.seen,[]);assert.deepEqual(f.reports,['discord_message_gap_deferred']);}finally{rx.dispose();tracker.close();}
+}));
+it('fatal processing report failure preserves pending notice and propagates after custody cleanup',async()=>fixture([message(2)],async f=>{
+ const tracker=new MessageGapTracker(),rx=tracker.subscribe(),fatal=new Error('report failure');try{record(tracker);f.options.context.services.executeWithIngressContext=async()=>{throw Error('business failure');};const options={...f.options,report:(code:string)=>{if(code==='on_message_error')throw fatal;}};await assert.rejects(recoverPendingDiscordHistory(rx,options));assert.equal(rx.snapshot().length,1);assert.equal((await state.getIngress(f.path,'message:2'))!.state,'held');const seal=DrainFenceKey.create('runtime','1|2','worker');f.options.gate.seal(seal);assert.equal(f.options.gate.isDrainedFor(seal),true);}finally{rx.dispose();tracker.close();}
+}));
+
+import {writeFileSync} from 'node:fs';
+it('actual corrupt policy database reports policy failure without fetching or acknowledging gap',async()=>fixture([message(2)],async f=>{
+ const tracker=new MessageGapTracker(),rx=tracker.subscribe();try{record(tracker);writeFileSync(f.path,'not a sqlite database');await recoverPendingDiscordHistory(rx,f.options);assert.equal(rx.snapshot().length,1);assert.deepEqual(f.seen,[]);assert.deepEqual(f.reports,['discord_message_gap_failed']);}finally{rx.dispose();tracker.close();}
 }));
