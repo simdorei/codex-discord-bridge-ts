@@ -13,9 +13,11 @@ export interface MessageProcessingParts {
  readonly frozenPlan:FrozenMessagePlan;readonly processingMode:MessageProcessingMode;
  readonly custody:MessageCustody;readonly admissionPermit:AdmissionPermit|null;
 }
+const mismatches=new WeakSet<object>();
+export function isMessageDatabaseMismatch(value:unknown):value is MessageDatabaseMismatchError{return value!==null&&(typeof value==='object'||typeof value==='function')&&mismatches.has(value);}
 export class MessageDatabaseMismatchError extends Error {
  readonly claimedDatabase:string;readonly contextDatabase:string;
- constructor(claimed:string,context:string){super(`admitted Discord message database mismatch: claimed=${rustDebugString(claimed)} context=${rustDebugString(context)}`);this.name='MessageDatabaseMismatchError';this.claimedDatabase=claimed;this.contextDatabase=context;Object.freeze(this);}
+ constructor(claimed:string,context:string){super(`admitted Discord message database mismatch: claimed=${rustDebugString(claimed)} context=${rustDebugString(context)}`);this.name='MessageDatabaseMismatchError';this.claimedDatabase=claimed;this.contextDatabase=context;mismatches.add(this);Object.freeze(this);}
 }
 /** Rust Path::components comparison on Unix UTF-8 paths. No filesystem lookup,
  * symlink resolution or '..' collapse. Windows path semantics remain gated. */
