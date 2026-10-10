@@ -60,3 +60,25 @@ import {writeFileSync} from 'node:fs';
 it('actual corrupt policy database reports policy failure without fetching or acknowledging gap',async()=>fixture([message(2)],async f=>{
  const tracker=new MessageGapTracker(),rx=tracker.subscribe();try{record(tracker);writeFileSync(f.path,'not a sqlite database');await recoverPendingDiscordHistory(rx,f.options);assert.equal(rx.snapshot().length,1);assert.deepEqual(f.seen,[]);assert.deepEqual(f.reports,['discord_message_gap_failed']);}finally{rx.dispose();tracker.close();}
 }));
+
+import {pollDiscordHistoryChannel} from '../../../src/runtime/history-poll/discord-gap.ts';
+import {HistoryPollState} from '../../../src/runtime/history-poll/state.ts';
+it('periodic prime discards historical commands without ingress or execution, then processes new arrivals',async()=>{
+ const page=[message(3,'!new'),message(2)];await fixture(page,async f=>{
+  const options={...f.options,context:{...f.options.context,now:()=>1577836801000}};const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();
+  try{const prime=await pollDiscordHistoryChannel(options,history,rx,1n);assert.equal(prime!.phase,'Prime');assert.equal(prime!.discarded,2);assert.equal(prime!.processed,0);assert.equal(await state.getIngress(f.path,'message:3'),null);assert.equal(await state.pendingNewPrompt(f.path,1n,2n,4n),null);assert.deepEqual(f.seen,['GET']);assert.equal(history.isPrimed(1n),true);
+   page.unshift({...message(4),timestamp:'2020-01-01T00:00:02+00:00'});const incremental=await pollDiscordHistoryChannel(options,history,rx,1n);assert.equal(incremental!.phase,'Incremental');assert.equal(incremental!.processed,1);assert.equal((await state.getIngress(f.path,'message:4'))!.confirmationDelivered,true);assert.deepEqual(f.calls.map((v:any)=>v.key),['message:4']);
+  }finally{rx.dispose();tracker.close();}
+ });
+});
+it('periodic pending gap skips before HTTP or prime boundary creation',async()=>fixture([message(2)],async f=>{
+ const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();try{record(tracker);assert.equal(await pollDiscordHistoryChannel(f.options,history,rx,1n),null);assert.deepEqual(f.seen,[]);assert.equal(history.primedCount,0);assert.equal(await state.isProcessedMessage(f.path,2n),false);}finally{rx.dispose();tracker.close();}
+}));
+it('gap advancing during policy await rejects old-page discard and prevents cursor commit',async()=>fixture([message(2)],async f=>{
+ const options={...f.options,context:{...f.options.context,now:()=>1577836801000}};const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();try{const pending=pollDiscordHistoryChannel(options,history,rx,1n);record(tracker);await assert.rejects(pending,/claim/);assert.equal(history.isPrimed(1n),false);assert.equal(await state.isProcessedMessage(f.path,2n),false);assert.equal(rx.snapshot().length,1);assert.deepEqual(f.calls,[]);}finally{rx.dispose();tracker.close();}
+}));
+it('failed periodic policy keeps first prime boundary so later valid requests are not silently discarded',async()=>fixture([{...message(2),timestamp:'2020-01-01T00:00:02+00:00'}],async f=>{
+ const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();let time=1577836801000;const options={...f.options,context:{...f.options.context,now:()=>time}};
+ const {readFileSync}=await import('node:fs');await state.isProcessedMessage(f.path,1n);const original=readFileSync(f.path);
+ try{writeFileSync(f.path,'corrupt database');await assert.rejects(pollDiscordHistoryChannel(options,history,rx,1n),/policy/);assert.deepEqual(f.seen,[]);writeFileSync(f.path,original);time=1577836803000;const out=await pollDiscordHistoryChannel(options,history,rx,1n);assert.equal(out!.processed,1);assert.equal((await state.getIngress(f.path,'message:2'))!.confirmationDelivered,true);}finally{rx.dispose();tracker.close();}
+}));
