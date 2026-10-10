@@ -1,7 +1,7 @@
 import {DiscordChannelClient} from '../../discord/channel-client.ts';
 import type {DiscordComponent} from '../../discord/components.ts';
 import {requireDiscordText,splitDeliveryChunks,splitExactDeliveryChunks} from '../../discord/text.ts';
-import {deliverChunksIndexed} from '../../discord/delivery.ts';
+import {DeliveryFailure,deliverChunksIndexed} from '../../discord/delivery.ts';
 import {sendReceiptChunk} from '../completion/receipt-sender.ts';
 export const MESSAGE_REPLY_DOMAIN='message/reply/v1';
 export const MESSAGE_ERROR_DOMAIN='message/error/v1';
@@ -17,14 +17,16 @@ export function messageReplyIdentity(sourceMessageId:bigint,kind:MessageReplyKin
 const policy=Object.freeze({retryDelaysMs:Object.freeze([]),chunkMarkers:true});
 /** Sequential durable chunk receipts. An unknown send outcome never auto-retries.
  * Await the whole operation, including receipt commit, before releasing custody. */
-export async function deliverMessageReplyText(database:string,client:DiscordChannelClient,channelId:bigint,sourceMessageId:bigint,kind:MessageReplyKind,text:string):Promise<number>{
+export async function deliverMessageReplyText(database:string,client:DiscordChannelClient,channelId:bigint,sourceMessageId:bigint,kind:MessageReplyKind,text:string,signal?:AbortSignal):Promise<number>{
+ signal?.throwIfAborted();
  requireDiscordText(database);requireDiscordText(text);id(channelId);const identity=messageReplyIdentity(sourceMessageId,kind);
  const chunks=kind==='SavedRequest'?splitExactDeliveryChunks(text,true):splitDeliveryChunks(text,true);
- const transport=Object.freeze({sendValidated:DiscordChannelClient.prototype.sendValidated.bind(client)});
- return deliverChunksIndexed(chunks,policy,(chunkIndex,content)=>sendReceiptChunk(database,transport,channelId,{...identity,chunkIndex,content}));
+ const transport=Object.freeze({sendValidated:(request:Parameters<DiscordChannelClient['sendValidated']>[0])=>DiscordChannelClient.prototype.sendValidated.call(client,request,signal)});
+ try{return await deliverChunksIndexed(chunks,policy,(chunkIndex,content)=>sendReceiptChunk(database,transport,channelId,{...identity,chunkIndex,content},[],null,signal));}catch(error){if(signal?.aborted&&error instanceof DeliveryFailure&&error.source===signal.reason)throw error.source;throw error;}
 }
-export async function sendMessageReplyOnce(database:string,client:DiscordChannelClient,channelId:bigint,sourceMessageId:bigint,kind:MessageReplyKind,text:string,components:readonly DiscordComponent[]=[]):Promise<void>{
+export async function sendMessageReplyOnce(database:string,client:DiscordChannelClient,channelId:bigint,sourceMessageId:bigint,kind:MessageReplyKind,text:string,components:readonly DiscordComponent[]=[],signal?:AbortSignal):Promise<void>{
+ signal?.throwIfAborted();
  requireDiscordText(database);requireDiscordText(text);id(channelId);const identity=messageReplyIdentity(sourceMessageId,kind);
- const transport=Object.freeze({sendValidated:DiscordChannelClient.prototype.sendValidated.bind(client)});
- await sendReceiptChunk(database,transport,channelId,{...identity,chunkIndex:0,content:text},components);
+ const transport=Object.freeze({sendValidated:(request:Parameters<DiscordChannelClient['sendValidated']>[0])=>DiscordChannelClient.prototype.sendValidated.call(client,request,signal)});
+ await sendReceiptChunk(database,transport,channelId,{...identity,chunkIndex:0,content:text},components,null,signal);
 }

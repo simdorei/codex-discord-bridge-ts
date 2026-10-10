@@ -26,7 +26,8 @@ function componentSnapshot(input:readonly DiscordComponent[]):DiscordComponent[]
   for(let i=0;i<input.length;i++){const d=Object.getOwnPropertyDescriptor(input,String(i));if(!d||!Object.hasOwn(d,"value"))throw new TypeError("Expected own component entry");serializeDiscordComponent(d.value);result.push(d.value);}return result;
 }
 /** Caller owns this Promise until transport and receipt storage settle; it must not detach it or equate Promise.race with cancellation. */
-export async function sendReceiptChunk(path:string,transport:DiscordReceiptTransport,channel:bigint,input:IdempotentChunk,inputComponents:readonly DiscordComponent[]=[],guard:DeliveryGuard|null=null):Promise<void>{
+export async function sendReceiptChunk(path:string,transport:DiscordReceiptTransport,channel:bigint,input:IdempotentChunk,inputComponents:readonly DiscordComponent[]=[],guard:DeliveryGuard|null=null,signal?:AbortSignal):Promise<void>{
+  signal?.throwIfAborted();
   const chunk=snapshot(input),components=componentSnapshot(inputComponents);let request:IdempotentMessageRequest;
   try{request=idempotentMessageRequestWithComponents(channel,chunk.content,components,chunk.domain,chunk.logicalKey,chunk.chunkIndex);}
   catch(error){throw new CompletionDeliveryError(idempotentContentErrorMessage(error)??"invalid Discord request");}
@@ -43,9 +44,10 @@ export async function sendReceiptChunk(path:string,transport:DiscordReceiptTrans
   }
   let message:bigint;
   try{
-    message=await transport.sendValidated(request);
+    signal?.throwIfAborted();message=await transport.sendValidated(request);
     if(typeof message!=="bigint"||message<=0n||message>=(1n<<64n))throw new DiscordTransportFault("Receipt","transport returned an invalid message identity");
   }catch(error){
+    if(signal?.aborted&&error===signal.reason)throw error;
     const fault=ownedDiscordTransportFault(error);
     const definite=fault!==undefined&&(["BuildingRequest","CreatingHeader","Json","Unauthorized","Validation"].includes(fault.kind)||(fault.kind==="Response"&&[400,401,403,404,405,413,415,422,429].includes(fault.status!)));
     const display=fault?.display??"unclassified Discord transport failure";

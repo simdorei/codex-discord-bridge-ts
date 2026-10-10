@@ -1,0 +1,27 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 303,
+  "localCommit": "725fa7ee87d2d8e1c427cd75cc23019a955b70bc",
+  "fullTests": 5353,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/discord/response-engine.ts": "ec4918193679b6988af6c6c4e6749c74c567f8f8335a4859643afebb68ecbc9c",
+    "src/runtime/completion/receipt-sender.ts": "52188259982b44b6d8b6150121a7cfc237f16a8f21bc6ddbae6db41a97e2693c",
+    "src/runtime/message-worker/cleanup-refusal.ts": "7a285869c54f1bc35468eb8116f58fb55cc641825f3500535eeb9a646eaa9d64",
+    "src/runtime/message-worker/processor.ts": "7bf3834031ecb5b7c205ade1f12fd95bec5e25bbf89185f5a1703f887a02ef83",
+    "src/runtime/message-worker/recovery-abandonment.ts": "2b604b1240b470eb9c2aeaec3b6dbc6233299427bd83c9e8aad9dac195533cff",
+    "src/runtime/message-worker/reply-delivery.ts": "17e406b9b07c3c82571d03070b253184d8596946b55f4b17ea92bc11fd89eb4f",
+    "src/runtime/server-prompt-delivery.ts": "321fd6af7e0a4ffc2a6fc17bfe3fac58b81896c6834774538789ff627ed3a74a",
+    "test/runtime/message-worker/cancellation.test.ts": "607bb78b2576a68824355f3364cd4b41fde0ac6ffb8f8fb56716cce93167e04f"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

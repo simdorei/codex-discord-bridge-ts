@@ -56,7 +56,7 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
  }
  sendValidated(input:IdempotentMessageRequest,inputSignal?:AbortSignal):Promise<bigint>{
   const {path,body}=messageRequest(input);
-  return this.#run(signal=>this.#request('POST',path,body,bytes=>{const id=this.#decoder.decode(bytes);if(types.isPromise(id))void Promise.prototype.then.call(id,undefined,()=>undefined);if(typeof id!=='bigint'||id<=0n||id>=(1n<<64n))throw new Error('invalid identity');return id;},()=>new DiscordTransportFault('Receipt','response model could not be decoded'),signal),inputSignal) as Promise<bigint>;
+  return this.#run(signal=>this.#request('POST',path,body,bytes=>{const id=this.#decoder.decode(bytes);if(types.isPromise(id))void Promise.prototype.then.call(id,undefined,()=>undefined);if(typeof id!=='bigint'||id<=0n||id>=(1n<<64n))throw new Error('invalid identity');return id;},()=>new DiscordTransportFault('Receipt','response model could not be decoded'),signal,true,inputSignal!==undefined),inputSignal) as Promise<bigint>;
  }
  /** Source send_idempotent_message awaits response headers, unlike the separate
   * durable receipt API. Success body is released without decoding. */
@@ -68,7 +68,7 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
  updateInitialResponse(applicationId:bigint,token:string,content:string,signal?:AbortSignal):Promise<void>{const request=interactionUpdateRequest(applicationId,token,content);return this.#run(async owned=>{await this.#request('PATCH',request.path,request.body,null,()=>new Error('unused initial-response decoder'),owned,false);},signal);}
  updateInitialResponseWithComponents(applicationId:bigint,token:string,content:string,components:readonly DiscordComponent[],signal?:AbortSignal):Promise<void>{const request=interactionUpdateRequestWithComponents(applicationId,token,content,components);return this.#run(async owned=>{await this.#request('PATCH',request.path,request.body,null,()=>new Error('unused component-update decoder'),owned,false);},signal);}
  clearMessageComponents(channelId:bigint,messageId:bigint,signal?:AbortSignal):Promise<void>{const request=clearMessageComponentsRequest(channelId,messageId);return this.#run(async owned=>{await this.#request('PATCH',request.path,request.body,null,()=>new Error('unused clear-components decoder'),owned);},signal);}
- async #request<T>(method:DiscordHttpMethod,path:string,body:string|null,decode:((bytes:Uint8Array)=>T)|null,decodeFailure:()=>Error,signal:AbortSignal,useAuthorization=true):Promise<T|void>{
+ async #request<T>(method:DiscordHttpMethod,path:string,body:string|null,decode:((bytes:Uint8Array)=>T)|null,decodeFailure:()=>Error,signal:AbortSignal,useAuthorization=true,preserveCancellation=false):Promise<T|void>{
   const request:DiscordWireRequest=Object.freeze({method,path,body,authorization:useAuthorization?this.#authorization:null});
   for(;;){signal.throwIfAborted();let permit:DiscordRatePermit|undefined,response:DiscordWireResponse|undefined;
    try{
@@ -77,7 +77,7 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
     try{invokeSynchronousVoid(permit.complete,permit,[status,response.headers]);}catch{throw transport();}
     if(status>=200&&status<300){
      if(decode===null)return;
-     try{return decode(await response.bytes());}catch{throw decodeFailure();}
+     try{return decode(await response.bytes());}catch(error){if(preserveCancellation&&signal.aborted&&error===signal.reason)throw error;throw decodeFailure();}
     }
     if(status!==429){
      try{const bytes=await response.bytes(),text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);parseDiscordApiError(text);}catch{throw transport();}
