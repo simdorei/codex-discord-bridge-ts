@@ -195,6 +195,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.rejectUsageLimitAsyncQuestion,QuestionDispatch.rejectUsageLimitAsyncQuestion);
     assert.strictEqual(StateAccessFacade.listFilteredExisting, QueueRead.listFilteredExisting);
     assert.strictEqual(FacadeExports.listFilteredExisting, QueueRead.listFilteredExisting);
+    assert.strictEqual(StateAccessFacade.unfinishedArchiveRequest, ArchiveFence.unfinishedArchiveRequest);
     assert.strictEqual(StateAccessFacade.reserveArchiveScope, ArchiveFence.reserveArchiveScope);
     assert.strictEqual(StateAccessFacade.archiveTargetFenced, ArchiveFence.archiveTargetFenced);
     assert.strictEqual(StateAccessFacade.markArchiveVerified, ArchiveFence.markArchiveVerified);
@@ -418,6 +419,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
   it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
+      "unfinishedArchiveRequest",
       "reserveArchiveScope",
       "archiveTargetFenced",
       "markArchiveVerified",
@@ -661,7 +663,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 241);
+    assert.strictEqual(actual.length, 242);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
