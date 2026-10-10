@@ -21,16 +21,17 @@ function immediate(text:string):PromptActionResult{return {text,waitsForFinal:fa
 export class StopActionExecutor{
   readonly #render:(error:unknown)=>string;readonly #path:string;readonly #server:Server|null;readonly #bridge:Pick<BridgeState,"selectedThreadId">;readonly #state:Store;readonly #verify:ControlTurnVerifier;
   constructor(path:string,server:Server|null,bridge:Pick<BridgeState,"selectedThreadId">,locks:TargetLocks,render:(error:unknown)=>string,state:Store=StateAccessFacade){this.#render=render;storeActionCheck(()=>{},render);this.#path=path;this.#server=server;this.#bridge=bridge;this.#state=state;this.#verify=new ControlTurnVerifier(path,server,bridge,locks,state);}
-  async stopBound(input:StopActionContext,inputBinding:unknown,inputIngress:StoredIngress|null=null):Promise<PromptActionResult>{
+  async stopBound(input:StopActionContext,inputBinding:unknown,inputIngress:StoredIngress|null=null,signal?:AbortSignal):Promise<PromptActionResult>{
+    signal?.throwIfAborted();
     const context=cloneOwnedSerdeValue(input) as StopActionContext,binding=snapshotSettingsBinding(inputBinding),ingress=inputIngress===null?null:snapshotStoredIngress(inputIngress),scope={target:binding.target,channel:id(context.channelId),owner:id(context.userId)},check=storeActionCheck(()=>validateSelectedSettingsSnapshot(binding,this.#bridge),this.#render);
     const server=this.#server;
     if(server!==null){const receipt=this.#state.acceptRunningStop(this.#path,scope,binding,ingress,server.instanceId,id(server.generation()),check);if(receipt!==null)return immediate(`Stop accepted for ${binding.target}.\noperation_id: ${receipt.operation_id}\nExecution end is not confirmed; the original turn will be checked separately. Original requests will not be replayed automatically.`);}
     const receipt=this.#state.acceptUnresolvedStop(this.#path,scope,binding,ingress,check);if(receipt!==null)return immediate(`Stop accepted for ${binding.target}.\nOriginal local requests held (queued, preparing, running or unresolved): ${receipt.jobs.length}\nUnowned original requests held: ${receipt.ingresses?.length??0}\nExecution end is not confirmed; original requests will not be replayed automatically.`);
-    if(server===null)throw new MissingActionAppServerError();const lease=await this.#verify.lock(binding.target);
+    if(server===null)throw new MissingActionAppServerError();const lease=await this.#verify.lock(binding.target,signal);
     try{
-      await validateLifecycleSettingsSnapshot(this.#path,binding,context.channelId,this.#bridge,this.#state);
+      await validateLifecycleSettingsSnapshot(this.#path,binding,context.channelId,this.#bridge,this.#state);signal?.throwIfAborted();
       const [turn,generation]=binding.route==="Explicit"?await this.#verify.owned(binding.target):await this.#verify.control(context.channelId,binding.target);
-      await server.execute(interruptTurn(binding.target,turn),generation);return immediate(`Stop request submitted for ${binding.target}.`);
+      signal?.throwIfAborted();await server.execute(interruptTurn(binding.target,turn),generation,signal);signal?.throwIfAborted();return immediate(`Stop request submitted for ${binding.target}.`);
     }finally{lease.release();}
   }
 }
