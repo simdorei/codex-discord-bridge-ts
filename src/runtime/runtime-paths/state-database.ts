@@ -1,3 +1,4 @@
+import {joinRuntimePath as appendName} from './path-text.ts';
 import {readdir} from 'node:fs/promises';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
@@ -18,10 +19,6 @@ export const nativeStateDatabaseProbe:StateDatabaseProbe=Object.freeze({
     return names;
   },
 });
-function appendName(base:string,name:string,platform:'win32'|'posix'):string {
-  if(base===''||base.endsWith('/')||(platform==='win32'&&(/^[A-Za-z]:$/.test(base)||base.endsWith('\\'))))return base+name;
-  return base+(platform==='win32'?'\\':'/')+name;
-}
 /** Read-only selection shared by future online/offline path resolvers. Does not
  * open SQLite, initialize a database, or create the fallback file. Directory
  * enumeration and metadata use asynchronous native fs calls. */

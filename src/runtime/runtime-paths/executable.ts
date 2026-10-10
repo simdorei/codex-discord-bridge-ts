@@ -1,3 +1,4 @@
+import {joinRuntimePath as append} from './path-text.ts';
 import {stat} from 'node:fs/promises';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
@@ -14,7 +15,6 @@ export const nativeExecutableProbe:ExecutableProbe=Object.freeze({
  async modifiedNs(path:string){try{return (await stat(path,{bigint:true})).mtimeNs;}catch{return 0n;}},
 });
 function paths(value:unknown):string[]{if(!Array.isArray(value)||types.isProxy(value))throw new TypeError('Expected dense path array');const out:string[]=[];for(let i=0;i<value.length;i++){const v=own(value,String(i));requireDiscordText(v as string);out.push(v as string);}return out;}
-function append(base:string,child:string,platform:'win32'|'posix'):string{if(base==='')return child;if(platform==='win32'&&(/^[a-z]:$/i.test(base)||/[\\/]$/.test(base)))return base+child;if(platform==='posix'&&base.endsWith('/'))return base+child;return base+(platform==='win32'?'\\':'/')+child;}
 function sibling(path:string,name:string,platform:'win32'|'posix'):string{const index=platform==='win32'?Math.max(path.lastIndexOf('/'),path.lastIndexOf('\\')):path.lastIndexOf('/');return index<0?(/^[a-z]:/i.test(path)&&platform==='win32'?path.slice(0,2)+name:name):path.slice(0,index+1)+name;}
 /** Selection leaf over already-expanded paths. Latest Rust host validation is
  * preserved: incomplete explicit/local/sandbox installs may fall back; a missing
