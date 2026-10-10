@@ -34,6 +34,15 @@ function connection<T>(path: string, run: (db: DatabaseSync) => T): T {
   finally {db?.close();}
 }
 
+function queryRows(db:DatabaseSync,clause:string,limit:bigint,archived:boolean):readonly ThreadInfo[]{
+      const query = db.prepare(`SELECT ${fields}${archived ? ',archived_at' : ''},${rawFields},(SELECT encoding FROM pragma_encoding) AS encoding FROM threads ${clause}${limit > 0n ? ' LIMIT ?' : ''}`);
+      query.setReadBigInts(true);
+      const params: SQLInputValue[] = limit > 0n ? [limit] : [];
+      const result: ThreadInfo[] = [];
+      for (const row of query.iterate(...params)) result.push(decode(row, archived));
+      return Object.freeze(result);
+}
+
 /** Separate existing Codex state database; never initialize/migrate/create it.
  * Like the source, open probes once and each query uses a fresh read-only handle.
  * Synchronous native I/O still needs an owned offload boundary in production.
@@ -66,6 +75,24 @@ export class CodexThreadStore {
   loadRecentThreads(limit = 0n): readonly ThreadInfo[] {
     return this.#query('WHERE archived = 0 ORDER BY updated_at DESC, id', limit, false);
   }
+  /** Complete active-thread snapshot with explicit row-materialization budgets.
+   * Both aggregate admission and row decoding share this readonly transaction.
+   * Overflow rejects the whole snapshot; it never returns the first N as complete.
+   * Still synchronous: production callers must use an owned worker boundary. */
+  loadRecentThreadsBounded(maxRows:bigint,maxValueBytes:bigint):readonly ThreadInfo[]{
+    if(typeof maxRows!=='bigint'||maxRows<1n||maxRows>65536n||typeof maxValueBytes!=='bigint'||maxValueBytes<1n||maxValueBytes>16777216n)throw new RangeError('Invalid complete Codex snapshot budget');
+    return connection(this.#path,db=>{
+      db.exec('BEGIN');
+      try{
+        const columns=fields.split(',');
+        const size=columns.map(name=>`COALESCE(length(CAST(${name} AS BLOB)),0)`).join('+');
+        const query=db.prepare(`SELECT COUNT(*) AS rows,COALESCE(SUM(${size}),0) AS bytes FROM threads WHERE archived=0`);query.setReadBigInts(true);const measured=query.get();
+        if(measured===undefined||typeof measured.rows!=='bigint'||typeof measured.bytes!=='bigint'||measured.rows<0n||measured.bytes<0n)throw new TypeError('Invalid Codex snapshot measurement');
+        if(measured.rows>maxRows||measured.bytes>maxValueBytes)throw new RangeError('Complete Codex snapshot exceeds row or value-byte budget');
+        return queryRows(db,'WHERE archived = 0 ORDER BY updated_at DESC, id',0n,false);
+      }finally{db.exec('ROLLBACK');}
+    });
+  }
   loadUserRootThreads(limit = 0n): readonly ThreadInfo[] {
     return this.#query("WHERE archived = 0 AND source = 'vscode' AND COALESCE(thread_source, '') IN ('', 'user') AND title != '' ORDER BY updated_at DESC", limit, false);
   }
@@ -78,12 +105,7 @@ export class CodexThreadStore {
   #query(clause: string, limit: bigint, archived: boolean): readonly ThreadInfo[] {
     limitValue(limit);
     return connection(this.#path, db => {
-      const query = db.prepare(`SELECT ${fields}${archived ? ',archived_at' : ''},${rawFields},(SELECT encoding FROM pragma_encoding) AS encoding FROM threads ${clause}${limit > 0n ? ' LIMIT ?' : ''}`);
-      query.setReadBigInts(true);
-      const params: SQLInputValue[] = limit > 0n ? [limit] : [];
-      const result: ThreadInfo[] = [];
-      for (const row of query.iterate(...params)) result.push(decode(row, archived));
-      return Object.freeze(result);
+      return queryRows(db,clause,limit,archived);
     });
   }
 }
