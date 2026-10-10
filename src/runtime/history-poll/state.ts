@@ -16,6 +16,7 @@ function i64(value:unknown):asserts value is bigint{if(typeof value!=='bigint'||
 function own(value:unknown,key:string):unknown{if(value===null||typeof value!=='object'||types.isProxy(value))throw new TypeError('Expected passive history data');const d=Object.getOwnPropertyDescriptor(value,key);if(!d||!Object.hasOwn(d,'value'))throw new TypeError('Expected own history data field');return d.value;}
 export function historyMessageWatermark(micros:bigint,messageId:bigint):HistoryWatermark|null{i64(micros);u64(messageId);return messageId===0n?null:Object.freeze({micros,messageId});}
 function captureWatermark(value:unknown):HistoryWatermark|null{if(value===null)return null;const micros=own(value,'micros'),message=own(value,'messageId');i64(micros);u64(message);if(message===0n)throw new TypeError('Message watermark requires nonzero identity');return Object.freeze({micros,messageId:message});}
+export function snapshotHistoryBatchItem<T>(row:HistoryBatchItem<T>):HistoryBatchItem<T>{const watermark=captureWatermark(own(row,'watermark')),item=own(row,'item'),kind=own(item,'kind');if(kind!=='Ignore'&&kind!=='Candidate')throw new TypeError('Expected history item kind');return Object.freeze({watermark,item:kind==='Ignore'?Object.freeze({kind:'Ignore' as const}):Object.freeze({kind:'Candidate' as const,value:own(item,'value') as T})});}
 export function compareHistoryWatermarks(a:HistoryWatermark,b:HistoryWatermark):number{const am=own(a,'micros'),ai=own(a,'messageId'),bm=own(b,'micros'),bi=own(b,'messageId');i64(am);i64(bm);u64(ai);u64(bi);return am<bm?-1:am>bm?1:ai<bi?-1:ai>bi?1:0;}
 export type HistoryPollErrorKind='BatchTooLarge'|'StaleCycle'|'RevisionExhausted'|'ChannelMismatch'|'StaleCommit';
 export class HistoryPollError extends Error{
@@ -36,13 +37,14 @@ export class HistoryPollState{
   if(current===undefined||current.kind==='Active'&&current.watermark===null){current=Object.freeze({kind:'Priming',phase:current===undefined?'Prime':'Reprime',boundary:Object.freeze({micros:pollStartedAtMicros,messageId:0n}),revision:this.#next(channel)});this.#channels.set(channel,current);}
   const token=Object.freeze({}) as HistoryPollCycleToken;this.#cycles.set(token,{channel,expected:current});return token;
  }
+ requireCycleChannel(channel:bigint,token:HistoryPollCycleToken):void{u64(channel);const cycle=this.#cycles.get(token);if(cycle===undefined)throw new TypeError('Expected this state owner cycle');if(cycle.channel!==channel)throw new HistoryPollError('ChannelMismatch',channel,cycle.channel);if(this.#channels.get(channel)!==cycle.expected)throw new HistoryPollError('StaleCycle',channel);}
  propose<T>(token:HistoryPollCycleToken,newestFirst:readonly HistoryBatchItem<T>[]):HistoryPollProposal<T>{
   if(types.isProxy(newestFirst)||!Array.isArray(newestFirst))throw new TypeError('Expected history batch');
   const cycle=this.#cycles.get(token);if(cycle===undefined)throw new TypeError('Expected this state owner cycle');
   if(newestFirst.length>HISTORY_POLL_PAGE_LIMIT)throw new HistoryPollError('BatchTooLarge',cycle.channel,newestFirst.length);
   const expected=cycle.expected;if(this.#channels.get(cycle.channel)!==expected)throw new HistoryPollError('StaleCycle',cycle.channel);
   const captured:HistoryBatchItem<T>[]=[];let latest:HistoryWatermark|null=null;
-  for(let index=0;index<newestFirst.length;index++){const row=own(newestFirst,String(index)),watermark=captureWatermark(own(row,'watermark')),item=own(row,'item'),kind=own(item,'kind');if(kind!=='Ignore'&&kind!=='Candidate')throw new TypeError('Expected history item kind');captured.push({watermark,item:kind==='Ignore'?{kind}:{kind,value:own(item,'value') as T}});if(watermark!==null&&(latest===null||compareHistoryWatermarks(watermark,latest)>0))latest=watermark;}
+  for(let index=0;index<newestFirst.length;index++){const row=snapshotHistoryBatchItem(own(newestFirst,String(index)) as HistoryBatchItem<T>),watermark=row.watermark;captured.push(row);if(watermark!==null&&(latest===null||compareHistoryWatermarks(watermark,latest)>0))latest=watermark;}
   const phase:HistoryPollPhase=expected.kind==='Priming'?expected.phase:'Incremental',boundary=expected.kind==='Priming'?expected.boundary:expected.watermark;
   if(boundary===null)throw new TypeError('begin must establish reprime boundary');const next=latest!==null&&compareHistoryWatermarks(latest,boundary)>0?latest:boundary;
   const items:HistoryItemDecision<T>[]=captured.reverse().map(({watermark,item})=>item.kind==='Ignore'||watermark===null?Object.freeze({kind:'NoClaim' as const}):Object.freeze({kind:phase!=='Reprime'&&compareHistoryWatermarks(watermark,boundary)>0?'ClaimAndProcess' as const:'ClaimAndDiscard' as const,value:item.value}));
