@@ -82,3 +82,31 @@ it('failed periodic policy keeps first prime boundary so later valid requests ar
  const {readFileSync}=await import('node:fs');await state.isProcessedMessage(f.path,1n);const original=readFileSync(f.path);
  try{writeFileSync(f.path,'corrupt database');await assert.rejects(pollDiscordHistoryChannel(options,history,rx,1n),/policy/);assert.deepEqual(f.seen,[]);writeFileSync(f.path,original);time=1577836803000;const out=await pollDiscordHistoryChannel(options,history,rx,1n);assert.equal(out!.processed,1);assert.equal((await state.getIngress(f.path,'message:2'))!.confirmationDelivered,true);}finally{rx.dispose();tracker.close();}
 }));
+
+import {runPeriodicDiscordHistory} from '../../../src/runtime/discord-runtime/periodic-history.ts';
+it('real periodic driver loads target through facade and reports durable prime',async()=>fixture([message(2)],async f=>{
+ const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();const options={...f.options,allowedChannelIds:new Set([1n]),startupChannelId:1n,context:{...f.options.context,now:()=>1577836801000}};
+ try{await runPeriodicDiscordHistory(history,rx,options);assert.equal(history.isPrimed(1n),true);assert.equal(await state.isProcessedMessage(f.path,2n),true);assert.deepEqual(f.reports,['discord_history_poll']);assert.deepEqual(f.seen,['GET']);}finally{rx.dispose();tracker.close();}
+}));
+it('failed target lookup retains previous cursors, successful empty target set prunes them',async()=>fixture([],async f=>{
+ const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();const options={...f.options,allowedChannelIds:new Set([1n]),startupChannelId:null};const {readFileSync}=await import('node:fs');
+ try{await runPeriodicDiscordHistory(history,rx,options);assert.equal(history.isPrimed(1n),true);const original=readFileSync(f.path);writeFileSync(f.path,'corrupt database');await runPeriodicDiscordHistory(history,rx,options);assert.equal(history.isPrimed(1n),true);assert.equal(f.reports.at(-1),'discord_history_targets_failed');writeFileSync(f.path,original);options.allowedChannelIds.clear();await runPeriodicDiscordHistory(history,rx,options);assert.equal(history.isPrimed(1n),false);assert.deepEqual(f.seen,['GET']);}finally{rx.dispose();tracker.close();}
+}));
+it('periodic driver preserves pending gap and defers sealed gate without fetching',async()=>fixture([message(2)],async f=>{
+ const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();const options={...f.options,allowedChannelIds:new Set([1n]),startupChannelId:null};
+ try{record(tracker);await runPeriodicDiscordHistory(history,rx,options);assert.equal(rx.snapshot().length,1);assert.equal(history.isPrimed(1n),false);f.options.gate.seal(DrainFenceKey.create('runtime','1|2','worker'));await runPeriodicDiscordHistory(history,rx,options);assert.deepEqual(f.seen,[]);assert.deepEqual(f.reports,['discord_history_poll_skipped','discord_history_poll_skipped']);}finally{rx.dispose();tracker.close();}
+}));
+it('periodic malformed source is reported without advancing state or claiming work',async()=>fixture([{}],async f=>{
+ const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();try{await runPeriodicDiscordHistory(history,rx,{...f.options,allowedChannelIds:new Set([1n]),startupChannelId:null});assert.equal(history.isPrimed(1n),false);assert.deepEqual(f.reports,['discord_history_source_failed']);assert.deepEqual(f.calls,[]);}finally{rx.dispose();tracker.close();}
+}));
+it('gap advancing after capture is a deferral rather than ordinary failure or cursor commit',async()=>fixture([message(2)],async f=>{
+ const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();const options={...f.options,allowedChannelIds:new Set([1n]),startupChannelId:null,context:{...f.options.context,now:()=>{record(tracker);return 1577836801000;}}};
+ try{await runPeriodicDiscordHistory(history,rx,options);assert.equal(history.isPrimed(1n),false);assert.equal(await state.isProcessedMessage(f.path,2n),false);assert.deepEqual(f.reports,['discord_history_poll_skipped']);assert.equal(rx.snapshot().length,1);}finally{rx.dispose();tracker.close();}
+}));
+it('periodic driver propagates unusable gap receiver instead of treating it as a recoverable lookup',async()=>fixture([message(2)],async f=>{
+ const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();rx.dispose();try{await assert.rejects(runPeriodicDiscordHistory(history,rx,{...f.options,allowedChannelIds:new Set([1n]),startupChannelId:null}),/disposed/);assert.deepEqual(f.seen,[]);assert.deepEqual(f.reports,[]);}finally{tracker.close();}
+}));
+it('periodic processing boundary failure is fatal and leaves cursor uncommitted after cleanup',async()=>fixture([message(2)],async f=>{
+ const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe(),fatal=new Error('report failure');f.options.context.services.executeWithIngressContext=async()=>{throw Error('business failure');};const options={...f.options,allowedChannelIds:new Set([1n]),startupChannelId:null,report:(code:string)=>{if(code==='on_message_error')throw fatal;}};
+ try{await assert.rejects(runPeriodicDiscordHistory(history,rx,options));assert.equal(history.isPrimed(1n),false);assert.equal((await state.getIngress(f.path,'message:2'))!.state,'held');const key=DrainFenceKey.create('runtime','1|2','worker');f.options.gate.seal(key);assert.equal(f.options.gate.isDrainedFor(key),true);}finally{rx.dispose();tracker.close();}
+}));
