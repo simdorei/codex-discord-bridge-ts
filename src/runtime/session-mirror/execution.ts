@@ -14,6 +14,7 @@ function counts(value:unknown):MirrorPollCounts{const targets=own(value,'targets
  * and check cancellation before durable handoff/cursor mutation. This owner alone
  * cannot revoke an external side effect or prove unknown delivery was absent. */
 export class MirrorTargetExecution{
+ #waiter:{resolve:(value:boolean)=>void;reject:(error:unknown)=>void;cleanup:()=>void}|null=null;
  readonly #tasks=new Set<Task>();readonly #threads=new Set<string>();readonly #channels=new Set<bigint>();readonly #deadline:number;#closed=false;#closing:Promise<readonly MirrorTargetFinished[]>|null=null;
  constructor(deadlineMs=10000){if(!Number.isSafeInteger(deadlineMs)||deadlineMs<1||deadlineMs>10000)throw new RangeError('Expected bounded mirror target deadline');this.#deadline=deadlineMs;}
  get size():number{return this.#tasks.size;}
@@ -33,12 +34,25 @@ export class MirrorTargetExecution{
    finally{clearTimeout(timer);signal?.removeEventListener('abort',listener);}
    if(interrupted==='TimedOut')outcome={kind:'TimedOut',error:outcome.kind==='Failed'?outcome.error:abort.signal.reason};
    else if(interrupted==='Cancelled')outcome={kind:'Cancelled',reason:abort.signal.reason};
-   task.result=Object.freeze({target,outcome:Object.freeze(outcome)});
+   task.result=Object.freeze({target,outcome:Object.freeze(outcome)});this.#notify();
   });return true;
  }
- /** Waits for actual settlement, not the deadline notification. Up to eight
-  * Promise references; all losing operations remain owned by this instance. */
- async waitForSettlement():Promise<boolean>{if(this.#tasks.size===0)return false;await Promise.race([...this.#tasks].map(t=>t.promise));return true;}
+ /** One cancellable observation waiter, not another task or submission slot.
+  * Cancelling the wait never cancels/releases the underlying target operations.
+  * Timer-driven owners can replace a wait without accumulating Promise.race
+  * listeners on a native operation that may remain pending indefinitely. */
+ get waitingForSettlement():boolean{return this.#waiter!==null;}
+ #notify():void{const waiter=this.#waiter;if(waiter===null)return;this.#waiter=null;waiter.cleanup();waiter.resolve(true);}
+ async waitForSettlement(signal?:AbortSignal):Promise<boolean>{
+  signal?.throwIfAborted();if(this.#tasks.size===0)return false;
+  if([...this.#tasks].some(task=>task.result!==null))return true;
+  if(this.#waiter!==null)throw new TypeError('Mirror settlement already has an observation waiter');
+  return new Promise<boolean>((resolve,reject)=>{
+   const abort=()=>{if(this.#waiter!==waiter)return;this.#waiter=null;waiter.cleanup();reject(signal!.reason);};
+   const waiter={resolve,reject,cleanup:()=>signal?.removeEventListener('abort',abort)};this.#waiter=waiter;
+   signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();
+  });
+ }
  takeSettled():readonly MirrorTargetFinished[]{const out:MirrorTargetFinished[]=[];for(const task of this.#tasks)if(task.result!==null){out.push(task.result);this.#tasks.delete(task);this.#threads.delete(task.target.thread);this.#channels.delete(task.target.channel);}return Object.freeze(out);}
  close(reason:unknown=new Error('Mirror execution stopped')):Promise<readonly MirrorTargetFinished[]>{if(this.#closing!==null)return this.#closing;this.#closed=true;for(const task of this.#tasks)task.cancel(reason);this.#closing=(async()=>{await Promise.all([...this.#tasks].map(t=>t.promise));return this.takeSettled();})();return this.#closing;}
 }
