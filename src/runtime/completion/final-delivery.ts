@@ -1,7 +1,8 @@
 import type {DeliveryGuard} from "../../store/delivery-receipt-key.ts";
 import {StateAccessFacade as state} from "../../store/state-access-facade.ts";
 import {snapshotStoredDelivery,type StoredDelivery} from "../../store/delivery.ts";
-import {requireDiscordText} from "../../discord/text.ts";
+import {requireDiscordText,splitDeliveryChunks} from "../../discord/text.ts";
+import {idempotentMessageRequestWithComponents} from "../../discord/idempotent-message.ts";
 import {DeliveryFailure} from "../../discord/delivery.ts";
 import {deliverIdempotentChunks,outboxIdentity,type CompletionDeliveryIdentity} from "./delivery-identity.ts";
 import {sendReceiptChunk,CompletionHeldError,CompletionDeliveryError,isCompletionHeld,type DiscordReceiptTransport} from "./receipt-sender.ts";
@@ -29,6 +30,7 @@ export class CompletionChunkFailure extends Error{
 export async function deliverFinal(path:string,input:StoredDelivery,options:FinalDeliveryOptions):Promise<void>{
   const pending=snapshotStoredDelivery(input),transport=options.transport,failures=options.failures,now=options.now;
   try{
+    if(completeConfirmed(path,pending))return;
     const readiness=state.finalDeliveryPreflight(path,pending);
     switch(readiness.kind){
       case "Held":throw new CompletionHeldError(readiness.reason);
@@ -66,3 +68,11 @@ export async function sendCompletionText(path:string,transport:DiscordReceiptTra
 }
 
 export function validateCompletionChannel(channel:bigint):void{if(typeof channel!=="bigint"||channel<=0n||channel>=(1n<<63n))throw new CompletionChannelIdError();}
+
+/** Current Rust main: only normally rendered/validated chunks reach the store fast path. */
+function completeConfirmed(path:string,pending:StoredDelivery):boolean{
+  if(pending.channelId<=0n||pending.channelId>=(1n<<63n))return false;
+  const identity=outboxIdentity(pending.deliveryId),chunks=splitDeliveryChunks(pending.content,true);
+  for(const[index,chunk]of chunks.entries()){try{idempotentMessageRequestWithComponents(pending.channelId,chunk,[],identity.domain,identity.logicalKey,index);}catch{return false;}}
+  return state.completeConfirmedDelivery(path,pending,chunks);
+}

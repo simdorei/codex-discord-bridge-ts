@@ -1,3 +1,4 @@
+import * as ConfirmedDelivery from '../../src/store/delivery-confirmed.ts';
 import * as DiagnosticRead from '../../src/store/diagnostic-read.ts';
 import * as RunnerCounts from '../../src/store/runner-target-counts.ts';
 import * as MirrorSync from '../../src/store/mirror-mapping.ts';
@@ -269,6 +270,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.getIngress, IngressRead.getIngress);
     assert.strictEqual(StateAccessFacade.getIngressForOwnerReadonly, IngressRead.getIngressForOwnerReadonly);
     assert.strictEqual(StateAccessFacade.listIngressesForOwner, IngressRead.listIngressesForOwner);
+    assert.strictEqual(StateAccessFacade.completeConfirmedDelivery, ConfirmedDelivery.completeConfirmedDelivery);
     assert.strictEqual(StateAccessFacade.diagnosticDatabaseCounts, DiagnosticRead.diagnosticDatabaseCounts);
     assert.strictEqual(StateAccessFacade.diagnosticIdleRelease, DiagnosticRead.diagnosticIdleRelease);
     assert.strictEqual(StateAccessFacade.runnerTargetCounts, RunnerCounts.runnerTargetCounts);
@@ -552,6 +554,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "getIngress",
       "getIngressForOwnerReadonly",
       "listIngressesForOwner",
+      "completeConfirmedDelivery",
       "diagnosticDatabaseCounts",
       "diagnosticIdleRelease",
       "runnerTargetCounts",
@@ -633,7 +636,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 229);
+    assert.strictEqual(actual.length, 230);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
@@ -653,6 +656,8 @@ describe("StateAccessFacade type signature fidelity (compile-time)", () => {
         : false
       : false;
 
+    const eqConfirmed: AssertEqual<typeof StateAccessFacade.completeConfirmedDelivery, typeof ConfirmedDelivery.completeConfirmedDelivery> = true;
+    assert.strictEqual(eqConfirmed, true);
     const eqDiagCounts: AssertEqual<typeof StateAccessFacade.diagnosticDatabaseCounts, typeof DiagnosticRead.diagnosticDatabaseCounts> = true;
     const eqDiagIdle: AssertEqual<typeof StateAccessFacade.diagnosticIdleRelease, typeof DiagnosticRead.diagnosticIdleRelease> = true;
     assert.strictEqual(eqDiagCounts, true);
