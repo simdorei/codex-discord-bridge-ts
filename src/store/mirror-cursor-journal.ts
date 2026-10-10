@@ -39,7 +39,7 @@ function anchor(input:MirrorCursorAnchor):{value:MirrorCursorAnchor;json:string}
 function receiptSet(input:readonly ExpectedReceipt[]):{receipts:readonly ExpectedReceipt[];hash:string}{
  const receipts=snapshotExpectedReceiptBatch(input),hash=createHash('sha256').update(serializeSerdeValue(receipts.map(r=>[r.key,r.contentHash]))).digest('hex');return {receipts,hash};
 }
-function snapshot(input:BoundMirrorCursor):BoundMirrorCursor{
+export function snapshotBoundMirrorCursor(input:BoundMirrorCursor):BoundMirrorCursor{
  const thread=own(input,'thread'),a=anchor(own(input,'anchor') as MirrorCursorAnchor),turn=own(input,'turn'),updatedAt=own(input,'updatedAt'),revision=own(input,'revision'),operationId=own(input,'operationId'),receiptSetHash=own(input,'receiptSetHash');
  text(thread,16384);text(turn,16384);text(operationId,128,true);time(updatedAt);
  if(typeof revision!=='bigint'||revision<1n||revision>=(1n<<63n)||typeof receiptSetHash!=='string'||receiptSetHash.length!==64||!/^[0-9a-f]{64}$/.test(receiptSetHash))throw new TypeError('Invalid mirror cursor revision/proof');
@@ -68,7 +68,7 @@ function readIn(db:DatabaseSync,thread:string):BoundMirrorCursor|null{
  if(records.length===0){if(legacy.length===0)return null;throw new LegacyMirrorCursorUnboundError();}
  if(records.length!==1||legacy.length!==1)throw new MirrorCursorConflictError();
  const row=records[0]!,old=legacy[0]!,a=decodeMirrorCursorAnchor(receiptText(row,'anchor_json')!);
- const result=snapshot({thread,anchor:a,turn:receiptText(row,'turn_context')!,operationId:receiptText(row,'operation_id')!,receiptSetHash:receiptText(row,'receipt_set_hash')!,updatedAt:decodeTimestamp(row.updated_at,'updated_at'),revision:decodeI64(row.revision,'revision')});
+ const result=snapshotBoundMirrorCursor({thread,anchor:a,turn:receiptText(row,'turn_context')!,operationId:receiptText(row,'operation_id')!,receiptSetHash:receiptText(row,'receipt_set_hash')!,updatedAt:decodeTimestamp(row.updated_at,'updated_at'),revision:decodeI64(row.revision,'revision')});
  if(receiptText(old,'rollout_path')!==a.path||decodeI64(old.cursor,'cursor')!==a.offset||receiptText(old,'turn_context')!==result.turn||decodeTimestamp(old.updated_at,'updated_at')!==result.updatedAt)throw new MirrorCursorConflictError();
  return result;
 }
@@ -82,7 +82,7 @@ export function readBoundMirrorCursor(db:DatabaseSync,thread:string):BoundMirror
  * an independently observed initialization boundary and explicit startup policy. */
 export function initializeFreshMirrorCursor(db:DatabaseSync,thread:string,input:MirrorCursorAnchor,turn:string,updatedAt:number,operationId:string):BoundMirrorCursor{
  text(thread,16384);text(turn,16384);text(operationId,128,true);time(updatedAt);const a=anchor(input),proof=receiptSet([]);
- const desired=snapshot({thread,anchor:a.value,turn,updatedAt,revision:1n,operationId,receiptSetHash:proof.hash});
+ const desired=snapshotBoundMirrorCursor({thread,anchor:a.value,turn,updatedAt,revision:1n,operationId,receiptSetHash:proof.hash});
  return withStoreTransaction(db,'IMMEDIATE',()=>{
   const current=readIn(db,thread);if(current!==null){if(same(current,desired))return rollbackStore(current);throw new MirrorCursorConflictError();}
   if(BigInt(db.prepare('INSERT INTO codex_session_mirror_offsets(codex_thread_id,rollout_path,cursor,updated_at,turn_context) VALUES(?,?,?,?,?)').run(thread,a.value.path,a.value.offset,updatedAt,turn).changes)!==1n)throw new MirrorCursorConflictError();
@@ -95,9 +95,9 @@ export function initializeFreshMirrorCursor(db:DatabaseSync,thread:string,input:
  * No network/FS is run inside this transaction; no cursor reset/path switch.
  * Retry with the SAME operation ID and exact packet reconciles a lost commit reply. */
 export function advanceBoundMirrorCursor(db:DatabaseSync,input:BoundMirrorCursor,nextInput:MirrorCursorAnchor,turn:string,updatedAt:number,operationId:string,expectedReceipts:readonly ExpectedReceipt[]):BoundMirrorCursor{
- const expected=snapshot(input),next=anchor(nextInput),proof=receiptSet(expectedReceipts);text(turn,16384);text(operationId,128,true);time(updatedAt);
+ const expected=snapshotBoundMirrorCursor(input),next=anchor(nextInput),proof=receiptSet(expectedReceipts);text(turn,16384);text(operationId,128,true);time(updatedAt);
  if(expected.revision===(1n<<63n)-1n||operationId===expected.operationId||next.value.path!==expected.anchor.path||next.value.offset<expected.anchor.offset||next.value.stamp.size<expected.anchor.stamp.size||(['dev','ino','birthtimeNs'] as const).some(k=>next.value.stamp[k]!==expected.anchor.stamp[k]))throw new MirrorCursorConflictError();
- const desired=snapshot({thread:expected.thread,anchor:next.value,turn,updatedAt,revision:expected.revision+1n,operationId,receiptSetHash:proof.hash});
+ const desired=snapshotBoundMirrorCursor({thread:expected.thread,anchor:next.value,turn,updatedAt,revision:expected.revision+1n,operationId,receiptSetHash:proof.hash});
  return withStoreTransaction(db,'IMMEDIATE',()=>{
   const current=readIn(db,expected.thread);
   if(current!==null&&same(current,desired))return rollbackStore(current);

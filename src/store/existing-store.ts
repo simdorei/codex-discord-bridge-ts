@@ -7,12 +7,13 @@ import { pathToFileURL } from 'node:url';
  *
  * Caller owns the returned DatabaseSync handle and is responsible for closing it.
  */
-export function openExisting(path: string): DatabaseSync {
+export function openExisting(path: string, timeoutMs = 5000): DatabaseSync {
+  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<0||timeoutMs>5000)throw new RangeError('Expected SQLite timeout from 0 through 5000ms');
   const url = pathToFileURL(resolve(path));
   url.searchParams.set('mode', 'rw');
 
   return new DatabaseSync(url.href, {
-    timeout: 5000,
+    timeout: timeoutMs,
     enableForeignKeyConstraints: false,
   });
 }

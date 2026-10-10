@@ -29,8 +29,8 @@ export async function usingInitializedStore<T>(path:string,operation:(db:Databas
   requireOperation(operation);return runOwned(await openInitialized(path),operation);
 }
 /** Synchronous existing-only scope for preflight/commit paths. Never creates or migrates. */
-export function usingExistingStore<T>(path:string,operation:(db:DatabaseSync)=>T):T{
-  requireOperation(operation);return runOwned(openExisting(path),operation);
+export function usingExistingStore<T>(path:string,operation:(db:DatabaseSync)=>T,timeoutMs=5000):T{
+  requireOperation(operation);return runOwned(openExisting(path,timeoutMs),operation);
 }
 
 /** Existing-only read-only scope with the source's short 100ms busy timeout.
