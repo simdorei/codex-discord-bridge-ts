@@ -1,3 +1,4 @@
+import * as RecoveryEffect from './recovery-effect-guard.ts';
 import * as ArchiveFence from './archive-fence.ts';
 import * as MirrorCursor from './mirror-cursor.ts';
 import * as ConfirmedDelivery from './delivery-confirmed.ts';
@@ -161,6 +162,7 @@ export const diagnosticIdleRelease: typeof DiagnosticRead.diagnosticIdleRelease 
 export const runnerTargetCounts: typeof RunnerCounts.runnerTargetCounts = RunnerCounts.runnerTargetCounts;
 export const listIngressesForOwner: typeof IngressRead.listIngressesForOwner = IngressRead.listIngressesForOwner;
 
+export const validateRecoveryEffectIn: typeof RecoveryEffect.validateRecoveryEffectIn = RecoveryEffect.validateRecoveryEffectIn;
 export const claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery = RecoveryCustody.claimIngressRecovery;
 export const validateIngressRecovery: typeof RecoveryCustody.validateIngressRecovery = RecoveryCustody.validateIngressRecovery;
 
@@ -471,6 +473,7 @@ export interface IStateAccessFacade {
 
   readonly cancelForRecovery: typeof RecoveryCancellation.cancelForRecovery;
   readonly cancelLatestPending: typeof PendingCancellation.cancelLatestPending;
+  readonly validateRecoveryEffectIn: typeof RecoveryEffect.validateRecoveryEffectIn;
   readonly claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery;
   readonly validateIngressRecovery: typeof RecoveryCustody.validateIngressRecovery;
 
@@ -731,6 +734,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   diagnosticIdleRelease,
   runnerTargetCounts,
   listIngressesForOwner,
+  validateRecoveryEffectIn,
   claimIngressRecovery,
   validateIngressRecovery,
   cancelLatestPending,

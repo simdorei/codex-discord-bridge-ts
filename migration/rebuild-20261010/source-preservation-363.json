@@ -1,0 +1,26 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 363,
+  "localCommit": "c3473b8f35aeadb7396d3c4092d84a16e3be29a6",
+  "fullTests": 5832,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/action-executor/lifecycle-admission.ts": "291c168b116862169ade923920c5f2a8a4539bfba204260207f5e0464599c2e2",
+    "src/runtime/action-executor/recovery-custody.ts": "ce520cb11f426a156ca49211ac5c4e587cc83960b0199c11b6211208131f06d8",
+    "src/runtime/fence-errors.ts": "f2b3272a4fbd2b427329eff1e1fe1d52a81d9405b8fe0e6795725d8b2755fb69",
+    "src/store/recovery-effect-guard.ts": "61c69543d3bf42e2330f976fdef915d98e70f2a5852b9df94423ea87b9337467",
+    "src/store/state-access-facade.ts": "18f99af65058903a638abc6d84bb07f40df74ad6db5feb5bfb6859ab1e2b5f7e",
+    "test/runtime/action-executor/recovery-custody.test.ts": "a88d31cee02637b89a7356c8189ad7b48d014dfe4310aef69838e97cb9f139f6",
+    "test/store/state-access-facade.test.ts": "c230c65bbe5b12b0b4cd397dd0f8937053dfec872b9245269bbafe2d32a83763"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

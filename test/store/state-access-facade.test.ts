@@ -578,6 +578,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "diagnosticDatabaseCounts",
       "diagnosticIdleRelease",
       "runnerTargetCounts",
+      "validateRecoveryEffectIn",
       "claimIngressRecovery",
       "validateIngressRecovery",
       "cancelLatestPending",
@@ -663,7 +664,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 242);
+    assert.strictEqual(actual.length, 243);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
