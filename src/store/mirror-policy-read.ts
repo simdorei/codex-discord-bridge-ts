@@ -37,7 +37,12 @@ export async function remainingDiscordIds(path: string): Promise<RemainingDiscor
 export async function mirrorTargets(path: string, limit: bigint): Promise<readonly MirrorTarget[]> {
   requireDiscordText(path);
   if (typeof limit !== 'bigint' || limit < -(1n << 63n) || limit >= 1n << 63n) throw new TypeError('Expected i64 mirror target limit');
-  return usingInitializedStore(path, db => {
+  return usingInitializedStore(path, db => mirrorTargetsIn(db,limit));
+}
+/** Borrowed connection form of the same source query and decoder. */
+export function mirrorTargetsIn(db:DatabaseSync,limit:bigint):readonly MirrorTarget[]{
+  if(typeof limit!=='bigint'||limit<-(1n<<63n)||limit>=1n<<63n)throw new TypeError('Expected i64 mirror target limit');
+
     const query = db.prepare(`SELECT codex_thread_id,thread_title,discord_channel_id,discord_thread_id,
       CAST(codex_thread_id AS BLOB) AS raw_id,CAST(thread_title AS BLOB) AS raw_title,
       (SELECT encoding FROM pragma_encoding) AS encoding
@@ -54,5 +59,4 @@ export async function mirrorTargets(path: string, limit: bigint): Promise<readon
       if (codexThreadId !== '' && discordThreadId !== 0n) result.push(Object.freeze({codexThreadId, threadTitle, discordChannelId, discordThreadId}));
     }
     return Object.freeze(result);
-  });
 }
