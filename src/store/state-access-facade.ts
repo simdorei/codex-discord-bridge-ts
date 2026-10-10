@@ -1,3 +1,4 @@
+import * as MirrorCursor from './mirror-cursor.ts';
 import * as ConfirmedDelivery from './delivery-confirmed.ts';
 import * as DiagnosticRead from './diagnostic-read.ts';
 import * as RunnerCounts from './runner-target-counts.ts';
@@ -106,6 +107,13 @@ export const rejectUsageLimitAsyncQuestion: typeof QuestionDispatch.rejectUsageL
 export const listFilteredExisting: typeof QueueRead.listFilteredExisting = QueueRead.listFilteredExisting;
 export const remainingDiscordIds: typeof MirrorPolicyRead.remainingDiscordIds = MirrorPolicyRead.remainingDiscordIds;
 export const mirrorTargets: typeof MirrorPolicyRead.mirrorTargets = MirrorPolicyRead.mirrorTargets;
+export const claimMirrorEvent: typeof MirrorCursor.claimMirrorEvent = MirrorCursor.claimMirrorEvent;
+export const cleanupMirrorEvents: typeof MirrorCursor.cleanupMirrorEvents = MirrorCursor.cleanupMirrorEvents;
+export const getOrInitMirrorCursor: typeof MirrorCursor.getOrInitMirrorCursor = MirrorCursor.getOrInitMirrorCursor;
+export const getMirrorOffset: typeof MirrorCursor.getMirrorOffset = MirrorCursor.getMirrorOffset;
+export const updateMirrorCursor: typeof MirrorCursor.updateMirrorCursor = MirrorCursor.updateMirrorCursor;
+export const getMirrorCursorTurn: typeof MirrorCursor.getMirrorCursorTurn = MirrorCursor.getMirrorCursorTurn;
+export const updateMirrorCursorWithTurn: typeof MirrorCursor.updateMirrorCursorWithTurn = MirrorCursor.updateMirrorCursorWithTurn;
 export const hasMirrorEvent: typeof MirrorEventRead.hasMirrorEvent = MirrorEventRead.hasMirrorEvent;
 export const getIdleIntent: typeof IdleReleaseStore.getIdleIntent = IdleReleaseStore.getIdleIntent;
 export const pendingIdleIntents: typeof IdleReleaseStore.pendingIdleIntents = IdleReleaseStore.pendingIdleIntents;
@@ -372,6 +380,13 @@ export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.m
 export interface IStateAccessFacade {
   readonly remainingDiscordIds: typeof MirrorPolicyRead.remainingDiscordIds;
   readonly mirrorTargets: typeof MirrorPolicyRead.mirrorTargets;
+  readonly claimMirrorEvent: typeof MirrorCursor.claimMirrorEvent;
+  readonly cleanupMirrorEvents: typeof MirrorCursor.cleanupMirrorEvents;
+  readonly getOrInitMirrorCursor: typeof MirrorCursor.getOrInitMirrorCursor;
+  readonly getMirrorOffset: typeof MirrorCursor.getMirrorOffset;
+  readonly updateMirrorCursor: typeof MirrorCursor.updateMirrorCursor;
+  readonly getMirrorCursorTurn: typeof MirrorCursor.getMirrorCursorTurn;
+  readonly updateMirrorCursorWithTurn: typeof MirrorCursor.updateMirrorCursorWithTurn;
   readonly hasMirrorEvent: typeof MirrorEventRead.hasMirrorEvent;
   readonly listFilteredExisting: typeof QueueRead.listFilteredExisting;
   readonly beginAsyncQuestionDispatch: typeof QuestionDispatch.beginAsyncQuestionDispatch;
@@ -622,6 +637,13 @@ export type StateAccessFacade = IStateAccessFacade;
 export const StateAccessFacade: IStateAccessFacade = {
   remainingDiscordIds,
   mirrorTargets,
+  claimMirrorEvent,
+  cleanupMirrorEvents,
+  getOrInitMirrorCursor,
+  getMirrorOffset,
+  updateMirrorCursor,
+  getMirrorCursorTurn,
+  updateMirrorCursorWithTurn,
   hasMirrorEvent,
   listFilteredExisting,
   beginAsyncQuestionDispatch,

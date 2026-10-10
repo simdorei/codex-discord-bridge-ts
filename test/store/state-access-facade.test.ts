@@ -1,3 +1,4 @@
+import * as MirrorCursor from '../../src/store/mirror-cursor.ts';
 import * as ConfirmedDelivery from '../../src/store/delivery-confirmed.ts';
 import * as DiagnosticRead from '../../src/store/diagnostic-read.ts';
 import * as RunnerCounts from '../../src/store/runner-target-counts.ts';
@@ -193,6 +194,13 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.rejectUsageLimitAsyncQuestion,QuestionDispatch.rejectUsageLimitAsyncQuestion);
     assert.strictEqual(StateAccessFacade.listFilteredExisting, QueueRead.listFilteredExisting);
     assert.strictEqual(FacadeExports.listFilteredExisting, QueueRead.listFilteredExisting);
+    assert.strictEqual(StateAccessFacade.claimMirrorEvent, MirrorCursor.claimMirrorEvent);
+    assert.strictEqual(StateAccessFacade.cleanupMirrorEvents, MirrorCursor.cleanupMirrorEvents);
+    assert.strictEqual(StateAccessFacade.getOrInitMirrorCursor, MirrorCursor.getOrInitMirrorCursor);
+    assert.strictEqual(StateAccessFacade.getMirrorOffset, MirrorCursor.getMirrorOffset);
+    assert.strictEqual(StateAccessFacade.updateMirrorCursor, MirrorCursor.updateMirrorCursor);
+    assert.strictEqual(StateAccessFacade.getMirrorCursorTurn, MirrorCursor.getMirrorCursorTurn);
+    assert.strictEqual(StateAccessFacade.updateMirrorCursorWithTurn, MirrorCursor.updateMirrorCursorWithTurn);
     assert.strictEqual(StateAccessFacade.hasMirrorEvent, MirrorEventRead.hasMirrorEvent);
     assert.strictEqual(FacadeExports.hasMirrorEvent, MirrorEventRead.hasMirrorEvent);
     assert.strictEqual(StateAccessFacade.getIdleIntent, IdleReleaseStore.getIdleIntent);
@@ -604,6 +612,13 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "rejectDefiniteAsyncQuestion",
       "rejectUsageLimitAsyncQuestion",
       "listFilteredExisting",
+      "claimMirrorEvent",
+      "cleanupMirrorEvents",
+      "getOrInitMirrorCursor",
+      "getMirrorOffset",
+      "updateMirrorCursor",
+      "getMirrorCursorTurn",
+      "updateMirrorCursorWithTurn",
       "hasMirrorEvent",
       "recordObservedFinalAnswer",
       "getObservedFinalAnswer",
@@ -636,7 +651,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 230);
+    assert.strictEqual(actual.length, 237);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
@@ -656,6 +671,13 @@ describe("StateAccessFacade type signature fidelity (compile-time)", () => {
         : false
       : false;
 
+    const eqCursor0: AssertEqual<typeof StateAccessFacade.claimMirrorEvent, typeof MirrorCursor.claimMirrorEvent> = true; assert.strictEqual(eqCursor0,true);
+    const eqCursor1: AssertEqual<typeof StateAccessFacade.cleanupMirrorEvents, typeof MirrorCursor.cleanupMirrorEvents> = true; assert.strictEqual(eqCursor1,true);
+    const eqCursor2: AssertEqual<typeof StateAccessFacade.getOrInitMirrorCursor, typeof MirrorCursor.getOrInitMirrorCursor> = true; assert.strictEqual(eqCursor2,true);
+    const eqCursor3: AssertEqual<typeof StateAccessFacade.getMirrorOffset, typeof MirrorCursor.getMirrorOffset> = true; assert.strictEqual(eqCursor3,true);
+    const eqCursor4: AssertEqual<typeof StateAccessFacade.updateMirrorCursor, typeof MirrorCursor.updateMirrorCursor> = true; assert.strictEqual(eqCursor4,true);
+    const eqCursor5: AssertEqual<typeof StateAccessFacade.getMirrorCursorTurn, typeof MirrorCursor.getMirrorCursorTurn> = true; assert.strictEqual(eqCursor5,true);
+    const eqCursor6: AssertEqual<typeof StateAccessFacade.updateMirrorCursorWithTurn, typeof MirrorCursor.updateMirrorCursorWithTurn> = true; assert.strictEqual(eqCursor6,true);
     const eqConfirmed: AssertEqual<typeof StateAccessFacade.completeConfirmedDelivery, typeof ConfirmedDelivery.completeConfirmedDelivery> = true;
     assert.strictEqual(eqConfirmed, true);
     const eqDiagCounts: AssertEqual<typeof StateAccessFacade.diagnosticDatabaseCounts, typeof DiagnosticRead.diagnosticDatabaseCounts> = true;
