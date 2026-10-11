@@ -1,3 +1,5 @@
+import {OwnedDispatchAttempt,createOwnedMaintenanceAttempt} from './owned-dispatch-attempt.ts';
+import {isObservationalRequest} from './requests.ts';
 import {pinResidentNativeIdle,type ResidentNativeIdle} from './resident-native-idle.ts';
 import {pinResidentNativeDispatch,type ResidentNativeDispatch} from './resident-native-dispatch.ts';
 import {pinResponseFence,type ResponseFence} from "./response-attempt.ts";
@@ -27,13 +29,15 @@ function pinFence(input:MaintenanceTransportFence|null):MaintenanceTransportFenc
 }
 /** Bound to one resident admission and the actual session's request writer. The owning
  * managed task retains/releases admission + exclusive permit; this adapter never passes
- * waiter cancellation into the owned request. Persistence must finish synchronously
- * before native bytes. This does not create a store adapter or authorize a live service. */
+ * waiter cancellation into the owned request. Persistence must commit before native bytes, either through legacy synchronous
+ * hooks or the explicitly owned native preflight. This does not create a store adapter or authorize a live service. */
 export class MaintenanceTransport{
   readonly #state:ResidentAdmissionState<PortableResidentClientPort>;readonly #admission:ResidentAdmission<PortableResidentClientPort>;
   readonly #gate:IdleTargetGate;readonly #permit:TargetExclusivePermit;readonly #token:IdleReleaseToken;
-  readonly #fence:MaintenanceTransportFence|null;readonly #origin:unknown|null;readonly #render:(e:unknown)=>string;readonly #check:()=>void;
-  constructor(state:ResidentAdmissionState<PortableResidentClientPort>,admission:ResidentAdmission<PortableResidentClientPort>,gate:IdleTargetGate,permit:TargetExclusivePermit,token:IdleReleaseToken,fence:MaintenanceTransportFence|null,origin:unknown|null,render:(e:unknown)=>string,dispatchCheck:()=>void=()=>{}){
+  readonly #native:ResidentNativeDispatch|null;readonly #fence:MaintenanceTransportFence|null;readonly #origin:unknown|null;readonly #render:(e:unknown)=>string;readonly #check:()=>void;
+  constructor(state:ResidentAdmissionState<PortableResidentClientPort>,admission:ResidentAdmission<PortableResidentClientPort>,gate:IdleTargetGate,permit:TargetExclusivePermit,token:IdleReleaseToken,fence:MaintenanceTransportFence|null,origin:unknown|null,render:(e:unknown)=>string,dispatchCheck:()=>void=()=>{},native?:ResidentNativeDispatch){
+    if(native!==undefined&&fence===null)throw new TypeError("Native maintenance requires original authority fence");
+    this.#native=native===undefined?null:pinResidentNativeDispatch(native);
     this.#state=state;this.#admission=admission;this.#gate=gate;this.#permit=permit;this.#token=cloneIdleReleaseToken(token);this.#fence=pinFence(fence);this.#origin=origin===null?null:cloneOwnedSerdeValue(origin);fn(render);fn(dispatchCheck);
     this.#render=e=>{const r=render(e);if(types.isPromise(r))void Promise.prototype.then.call(r,undefined,()=>undefined);if(typeof r!=="string"||/[\uD800-\uDFFF]/u.test(r))throw new TypeError("Expected safe maintenance diagnostic");return r;};this.#check=()=>invokeSynchronousVoid(dispatchCheck,{},[]);
     if(admission.generation!==token.generation||permit.thread!==token.threadId)throw held("maintenance admission identity mismatch");permit.requireHeld();
@@ -52,17 +56,23 @@ export class MaintenanceTransport{
     const method=input.method,wait=input.timeoutMs,idle=input.requireIdle,watermark=input.watermark;
     if(!["thread/goal/get","thread/read","thread/unsubscribe","thread/resume"].includes(method))throw new TypeError("Unsupported maintenance method");
     if(typeof method!=="string"||/[\uD800-\uDFFF]/u.test(method)||!Number.isFinite(wait)||wait<0||typeof idle!=="boolean"||(watermark!==null&&(typeof watermark!=="bigint"||watermark<0n||watermark>=(1n<<64n))))throw new TypeError("Expected maintenance request fields");
-    const attempt=new MaintenanceAttempt(token,method,params,this.#origin,this.#fence,this.#render),written=new WrittenRequestGuard(this.#state,token.generation);
+    const attempt=this.#native===null||isObservationalRequest(method)?new MaintenanceAttempt(token,method,params,this.#origin,this.#fence,this.#render):createOwnedMaintenanceAttempt(token,method,params,this.#origin,this.#native,this.#render),written=new WrittenRequestGuard(this.#state,token.generation);
     const progress:{phase:IdleWritePhase}={phase:"NotStarted"};let result:IdleRpcResult;
     try{
       try{
-        const value=await this.#admission.client.requestAdmitted(this.#admission.permit,method,params,wait,{
-          preflight:wire=>{
-            this.#check();const snapshot=this.#state.snapshot();
-            if(snapshot.generation!==token.generation||!snapshot.accepting||snapshot.quarantined||snapshot.client?.identity!==this.#admission.client.identity)throw held("maintenance connection changed or became unhealthy before actual write");
-            this.#permit.requireHeld();this.#permit.journal.verify(token,idle);this.#fence?.checkRequest(token.generation,method,params);if(idle)this.#localIdle(watermark);attempt.begin(wire);
-          },writeStarted:()=>{progress.phase="Partial";written.confirmWriteStarted();},writeComplete:()=>{progress.phase="Flushed";},
-        });
+        const check=(prepared:object|null)=>{
+          this.#check();const snapshot=this.#state.snapshot();
+          if(snapshot.generation!==token.generation||!snapshot.accepting||snapshot.quarantined||snapshot.client?.identity!==this.#admission.client.identity)throw held("maintenance connection changed or became unhealthy before actual write");
+          this.#admission.client.requireOwnedAdmission(this.#admission.permit);this.#permit.requireHeld();this.#permit.journal.verify(token,idle);
+          if(prepared===null)this.#fence?.checkRequest(token.generation,method,params);else this.#native!.validate(prepared);
+          if(idle)this.#localIdle(watermark);
+        };
+        const started=()=>{if(attempt instanceof OwnedDispatchAttempt)attempt.writeStarted();progress.phase="Partial";written.confirmWriteStarted();},complete=()=>{progress.phase="Flushed";};
+        let value:unknown;
+        if(attempt instanceof OwnedDispatchAttempt){
+          const send=this.#admission.client.requestAdmittedWithOwnedPreflight;if(send===undefined)throw new TypeError("Owned native session preflight is unavailable");
+          value=await send(this.#admission.permit,method,params,wait,{check:async wire=>{check(null);return await attempt.begin(wire);},validate:receipt=>check(receipt),dispose:receipt=>attempt.dispose(receipt),writeStarted:started,writeComplete:complete});
+        }else value=await this.#admission.client.requestAdmitted(this.#admission.permit,method,params,wait,{preflight:wire=>{check(null);attempt.begin(wire);},writeStarted:started,writeComplete:complete});
         written.finish("Success");result={ok:true,value,phase:progress.phase};
       }catch(error){
         const failure=ownedRequestFailure(error);
@@ -72,6 +82,7 @@ export class MaintenanceTransport{
         // inference and no healthy fully-flushed Timeout quarantine are introduced.
         result={ok:false,error,phase:progress.phase};
       }
+      if(attempt instanceof OwnedDispatchAttempt){const outcome=await attempt.finish(result);return {...outcome,phase:result.phase};}
       return attempt.finish(result);
     }finally{written.dispose();}
   }

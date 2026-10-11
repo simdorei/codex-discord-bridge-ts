@@ -150,7 +150,7 @@ export class PortableResidentLifecycle{
         const options=this.#maintenance;if(options===null)throw new IdleObservationError("maintenance adapter is not installed");
         if(token.ownerId!==this.instanceId)throw new IdleObservationError("idle release owner mismatch");
         admission=this.#state.admitRequest(token.generation);
-        const transport=new MaintenanceTransport(this.#state,admission,this.#targetGate,permit,token,options.fence,origin,options.renderError,dispatchCheck);
+        const transport=new MaintenanceTransport(this.#state,admission,this.#targetGate,permit,token,options.fence,origin,options.renderError,dispatchCheck,options.nativeDispatch);
         const originalAdmission=admission;
         const transition=options.nativeIdle===undefined?undefined:async(old:IdleReleaseToken,state:string,detail:string)=>{
           permit.requireHeld();originalAdmission.client.requireOwnedAdmission(originalAdmission.permit);

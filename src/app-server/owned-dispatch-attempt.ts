@@ -1,3 +1,4 @@
+import {cloneIdleReleaseToken,type IdleReleaseToken} from './idle-release-journal.ts';
 import {randomUUID} from 'node:crypto';
 import {types} from 'node:util';
 import {cloneOwnedSerdeValue} from '../core/owned-serde-value.ts';
@@ -34,6 +35,12 @@ export function pinOwnedDispatchMutationFence(input:OwnedDispatchMutationFence):
  const receipt=async(fn:Function,c:unknown):Promise<object>=>{const r=await invoke(fn,[c]);if(r===null||typeof r!=='object'||types.isProxy(r)||!Object.isFrozen(r))throw new TypeError('Expected immutable native dispatch receipt');return r;};
  return Object.freeze({wasNotSubmitted,beginMutationWithOrigin:(c:MaintenanceClaim)=>receipt(begin,c),beginQueueMutation:(c:QueueMutationClaim)=>receipt(queue,c),beginStopMutation:(c:StopMutationClaim)=>receipt(stop,c),finishMutation:async(r:object,o:MaintenanceCompletion['outcome'])=>{if(await invoke(finish,[r,o])!==undefined)throw new TypeError('Native completion must resolve void');}});
 }
+const maintenanceScope=Symbol('owned maintenance scope');
+/** Source maintenance always records scoped=true; never infer it from params. */
+export function createOwnedMaintenanceAttempt(token:IdleReleaseToken,method:string,params:unknown,origin:unknown|null,fence:OwnedDispatchMutationFence,render:(error:unknown)=>string):OwnedDispatchAttempt{
+ const t=cloneIdleReleaseToken(token);if(!['thread/goal/get','thread/read','thread/unsubscribe','thread/resume'].includes(method))throw new TypeError('Unsupported owned maintenance method');
+ return new OwnedDispatchAttempt({ownerId:t.ownerId,generation:t.generation,method,params,repair:false,queueClaim:null,stopClaim:null,origin},fence,render,maintenanceScope);
+}
 /** Phase-aware native intent owner. A successful begin does not authorize send.
  * The writer may dispose an unsent receipt after original-authority revalidation
  * fails. Once writing starts, disposal leaves it held. Only an observed result
@@ -41,8 +48,8 @@ export function pinOwnedDispatchMutationFence(input:OwnedDispatchMutationFence):
 export class OwnedDispatchAttempt {
  readonly #input:DispatchAttemptInput;readonly #scoped:boolean;readonly #fence:OwnedDispatchMutationFence;readonly #render:(error:unknown)=>string;readonly #id=randomUUID();
  #refusal:unknown;#beginRefused=false;#begun=false;#beginInFlight=false;#started=false;#resultHandled=false;#receipt:object|null=null;#settlement:Promise<void>|null=null;#failure:MutationOutcomeUnknownError|null=null;
- constructor(input:DispatchAttemptInput,fence:OwnedDispatchMutationFence,render:(error:unknown)=>string){
-  const captured=captureDispatchAttemptInput(input);this.#input=captured.input;this.#scoped=captured.scoped;this.#fence=pinOwnedDispatchMutationFence(fence);
+ constructor(input:DispatchAttemptInput,fence:OwnedDispatchMutationFence,render:(error:unknown)=>string,scope?:typeof maintenanceScope){
+  const captured=captureDispatchAttemptInput(input);this.#input=captured.input;this.#scoped=scope===maintenanceScope?true:captured.scoped;this.#fence=pinOwnedDispatchMutationFence(fence);
   if(typeof render!=='function'||types.isProxy(render)||types.isAsyncFunction(render)||types.isGeneratorFunction(render))throw new TypeError('Expected synchronous safe renderer');this.#render=render;
  }
  async begin(wire:RequestId):Promise<object|null>{
