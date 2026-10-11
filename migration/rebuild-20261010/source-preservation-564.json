@@ -1,0 +1,22 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 564,
+  "localCommit": "d07d620d30ce19bae303b5fc119939bfdbfa17cb",
+  "fullTests": 7110,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/remote-agent/mutation-cache.ts": "857af4169b60c115c49ddff109d0f1734d4cf3b84d1e7af0b5c3d895bbe7b30d",
+    "src/remote-agent/native-decode.ts": "747e810d593224ba77c611df39e112af15723b9053a5b3e406356a40924953ca",
+    "test/remote-agent/mutation-cache.test.ts": "5e1fc51c04e48af53d8e2435df2649718d8dad7535dfa380a844b633229da558"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

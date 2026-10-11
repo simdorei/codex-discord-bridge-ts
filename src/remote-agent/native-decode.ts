@@ -84,7 +84,8 @@ export async function decodeBridgeMessageOffThread(raw:string,maxBytes:number,si
 /** Validate passive immutable native DTO shape without walking large string
  * contents. Only decoded immutable trees enter structured clone; no caller
  * getters or toJSON hooks can execute. Graph/key enumeration overhead remains. */
-function requireImmutableDto(value:unknown,maxUnits:number):void{
+export function requireImmutableRemoteDto(value:unknown,maxUnits:number):void{
+ if(!Number.isSafeInteger(maxUnits)||maxUnits<1||maxUnits>12032768)throw new RangeError('Invalid immutable remote DTO budget');
  let nodes=0,units=0;const seen=new Set<object>();
  const visit=(item:unknown,depth:number):void=>{
   if(++nodes>4096||depth>16)throw new RangeError('Native remote input graph exceeds budget');
@@ -110,7 +111,7 @@ function requireImmutableDto(value:unknown,maxUnits:number):void{
 export async function serializeBridgeMessageOffThread(value:BridgeInboundMessage,maxBytes:number,signal?:AbortSignal,timeoutMs=6000):Promise<string>{
  signal?.throwIfAborted();
  if(!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>12000000)throw new RangeError('Invalid bridge output byte budget');
- requireImmutableDto(value,maxBytes+32768);
+ requireImmutableRemoteDto(value,maxBytes+32768);
  const result=await runOwned({mode:'serialize_bridge',value,maxBytes},maxBytes,signal,timeoutMs);
  if(typeof result.wire!=='string'||result.wire.length>maxBytes)throw new TypeError('Invalid native bridge wire output');
  return result.wire;
@@ -122,7 +123,7 @@ export async function serializeBridgeMessageOffThread(value:BridgeInboundMessage
 export async function fingerprintGatewayCommandOffThread(value:GatewayCommand,maxBytes:number,signal?:AbortSignal,timeoutMs=6000):Promise<string>{
  signal?.throwIfAborted();
  if(!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>12000000)throw new RangeError('Invalid command fingerprint budget');
- requireImmutableDto(value,maxBytes+32768);
+ requireImmutableRemoteDto(value,maxBytes+32768);
  const result=await runOwned({mode:'fingerprint_command',value,maxBytes},maxBytes,signal,timeoutMs);
  if(typeof result.fingerprint!=='string'||!/[a-f0-9]{64}/u.test(result.fingerprint)||result.fingerprint.length!==64)throw new TypeError('Invalid native command fingerprint');
  return result.fingerprint;
