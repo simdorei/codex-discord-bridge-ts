@@ -40,6 +40,7 @@ export class BasicActionDispatcher{
   if(typeof action==='string'){
    switch(action){
     case 'Help':result=immediate(RUNTIME_HELP);break;
+    case 'QaButtons':result=immediate('Rust button QA contracts are enabled: busy, approval, input, one-use claim, and retry release.');break;
     case 'Where':result=immediate(await this.#selection.whereMessage(channel));break;
     case 'Identity':result=immediate(`Discord identity\nuser_id: ${user}\nchannel_id: ${channel}\nthread_id: ${await this.#selection.targetThreadId(channel)}`);break;
     case 'Runners':result=immediate(await this.#runners.runners(channel,user,signal));break;
