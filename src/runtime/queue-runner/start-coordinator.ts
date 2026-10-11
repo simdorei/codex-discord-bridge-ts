@@ -73,6 +73,7 @@ export class QueueStartCoordinator {
 
   get dbPath():string{return this.#path;}
   /** Runtime composition may bind only this coordinator's original backend. */
+  requireAdmissionGate(gate:AdmissionGate):void{if(this.#gate!==gate)throw new TypeError('Queue admission gate differs from runtime binding');}
   requireBackend(backend:QueueStartBackend):void{if(this.#backend!==backend)throw new TypeError('Queue backend differs from runtime resident binding');}
   notifyDeliveryReady():void{this.#notify();}
   enterBackgroundRecovery():readonly [AdmissionPermit,boolean]|null{return this.#gate?.tryEnterControlObserved()??null;}

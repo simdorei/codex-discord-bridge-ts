@@ -90,6 +90,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
  configureMirrorInspection(inspector:MirrorInspector):void{if(this.#inspection!==null)throw new InvalidActionRequestError('mirror inspection is already configured');MirrorInspector.prototype.requireScope.call(inspector,this.#codex,this.#database);this.#inspection=inspector;}
  async #inspect(channel:bigint,limit:bigint|null,list:boolean,signal?:AbortSignal):Promise<ActionResult>{if(this.#inspection===null)throw new ActionExecutionError('Unsupported','mirror inspection transport is not configured; remote state was not checked');return snapshotActionResult({text:await MirrorInspector.prototype.inspect.call(this.#inspection,channel,limit,list,signal),waitsForFinal:false,ui:null});}
  targetThreadId(channel:bigint,signal?:AbortSignal):Promise<string>{return this.#basic.targetThreadId(channel,signal);}
+ requireRuntimeQueue(queue:QueueStartCoordinator):void{if(this.#queue!==queue)throw new TypeError('Action executor queue differs from runtime binding');}
  notifyDeliveryReady():void{invokeSynchronousVoid(QueueStartCoordinator.prototype.notifyDeliveryReady,this.#queue,[]);}
  /** Own-data functions match the processor's strict service capture contract. */
  messageServices():MessageBusinessServices{return Object.freeze({targetThreadId:RuntimeCommandExecutor.prototype.targetThreadId.bind(this),executeWithIngressContext:RuntimeCommandExecutor.prototype.executeWithIngressContext.bind(this),notifyDeliveryReady:RuntimeCommandExecutor.prototype.notifyDeliveryReady.bind(this)});}

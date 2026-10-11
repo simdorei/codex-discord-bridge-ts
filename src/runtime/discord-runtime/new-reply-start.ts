@@ -21,7 +21,7 @@ export function startNewReplyRuntimeWorker(queue:QueueStartCoordinator,http:Disc
  const database=Object.getOwnPropertyDescriptor(QueueStartCoordinator.prototype,'dbPath')!.get!.call(queue) as string;
  Object.getOwnPropertyDescriptor(DiscordChannelClient.prototype,'activeRequests')!.get!.call(http);
  const emit=(error:unknown)=>invokeSynchronousVoid(report,{},[error]);
- return new RuntimeMonitoredWorker('new-first-reply',notifier,async force=>{
+ return new RuntimeMonitoredWorker('new-first-reply-verification',notifier,async force=>{
   const signal=AbortSignal.any([shutdown,force]);if(signal.aborted)return {ok:true};
   const reconcile=new NewReplyReconciler(database,emit);let timer:TickSource|undefined;
   const stop=()=>timer?.close();
