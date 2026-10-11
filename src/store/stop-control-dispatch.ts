@@ -1,3 +1,5 @@
+import {openExisting} from './existing-store.ts';
+import {ownerIsCurrent} from './mutation-attempt.ts';
 import {parseSerdeStruct,type StructShape} from "../core/serde-struct-json.ts";
 import {randomUUID} from "node:crypto";
 import type {DatabaseSync,SQLInputValue} from "node:sqlite";
@@ -86,3 +88,12 @@ export function retainedStopControlIn(db:DatabaseSync,input:unknown):boolean{ret
 const CONTROL_SHAPE:StructShape={fields:fields.map(key=>[key,key==="binding"?"value":key==="jobs"?"string[]":key==="can_settle"?"bool":["channel","owner","generation"].includes(key)?"i64":"string"] as const)};
 /** Decode the raw derived struct, not a lossy Value intermediary. */
 export function parseStopControlJson(raw:string):StopControl{return control(parseSerdeStruct(raw,CONTROL_SHAPE));}
+
+/** Exact original accepted stop wire only. A stop does not use the ordinary
+ * prepared-attempt table and must retain its own token/record/job/hold identity. */
+export function revalidateStopWire(path:string,runtime:string,value:unknown,inputOwner:StopWireOwner,inputRequest:StopWireRequest,inputParams:unknown):void{
+ const c=claimValue(value),o=owner(inputOwner),r=wire(inputRequest),params=cloneOwnedSerdeValue(inputParams);
+ if(r.attempt===""||r.wire==="")refused();
+ const db=openExisting(path,0);
+ try{db.exec('PRAGMA query_only=ON; BEGIN');ownerIsCurrent(db,runtime);validate(db,c,o,params);if(!wireMatches(db,c,o,r))refused();ownerIsCurrent(db,runtime);db.exec('COMMIT');}finally{db.close();}
+}

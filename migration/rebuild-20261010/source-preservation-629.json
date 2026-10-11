@@ -1,0 +1,26 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 629,
+  "localCommit": "b35baf7ccbd995741b1ec56cfb895067baaee776",
+  "fullTests": 7440,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/mutation-custody-fence.ts": "fc7110c2bfcbe64df3df60faa1e748b7fc66731d9e9e365dfeef97048a9bd2e6",
+    "src/runtime/native-mutation-owner.ts": "946a4cb4e110178c92f7eb905e3a3a7eb0df64331b610e540e5dee96177e4a53",
+    "src/store/prepared-mutation-validation.ts": "2934d6384efaaee12f243fc0661984e4a3b7a9d6f52c67027984b2fb128852e8",
+    "src/store/state-access-facade.ts": "c1184d018d8f0a58fac5c9f7fe1f0fda79f3ecff2f8f08567c98e344e95c3ee5",
+    "src/store/stop-control-dispatch.ts": "9368aced4df9ba3625aa2754f02d37381aa098954b8f252447c9886a0dd47313",
+    "test/runtime/native-final-validation.test.ts": "d0dffbf8670a1cbdf8b4447bfdaeaa2a0bb1970dfb75e15110fddf42c1eb13dd",
+    "test/store/state-access-facade.test.ts": "4d387b1bb52b1ffcdf4a1ebdb237dd17d32eaa4e1ffddefa6f811866fab00e98"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

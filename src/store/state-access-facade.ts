@@ -407,7 +407,11 @@ export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObse
 
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
 
+export const requireFinalDeadGenerationUnheldIn: typeof PreparedMutationValidation.requireFinalDeadGenerationUnheldIn = PreparedMutationValidation.requireFinalDeadGenerationUnheldIn;
+export const revalidateStopWire: typeof StopDispatch.revalidateStopWire = StopDispatch.revalidateStopWire;
 export interface IStateAccessFacade {
+  readonly revalidateStopWire: typeof StopDispatch.revalidateStopWire;
+  readonly requireFinalDeadGenerationUnheldIn: typeof PreparedMutationValidation.requireFinalDeadGenerationUnheldIn;
   readonly remainingDiscordIds: typeof MirrorPolicyRead.remainingDiscordIds;
   readonly mirrorTargets: typeof MirrorPolicyRead.mirrorTargets;
   readonly unfinishedArchiveRequest: typeof ArchiveFence.unfinishedArchiveRequest;
@@ -684,6 +688,8 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  revalidateStopWire,
+  requireFinalDeadGenerationUnheldIn,
   remainingDiscordIds,
   mirrorTargets,
   unfinishedArchiveRequest,
@@ -951,3 +957,5 @@ export const StateAccessFacade: IStateAccessFacade = {
   finish,
   openCheckedRead,
 };
+
+

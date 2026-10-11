@@ -1,3 +1,4 @@
+import {targetIsHeldIn,generationIsSealedIn} from './dead-generation-admission.ts';
 import {types} from 'node:util';
 import type {DatabaseSync} from 'node:sqlite';
 import {cloneOwnedSerdeValue} from '../core/owned-serde-value.ts';
@@ -37,4 +38,13 @@ export function revalidatePreparedMutation(path:string,input:NewAttempt,authorit
   if(!db.isTransaction)refuse('original authority read transaction ended unexpectedly');
   ownerIsCurrent(db,c.runtimeId);db.exec('COMMIT');
  }finally{db.close();}
+}
+
+/** Same durable target/generation predicates used before ordinary resident mutation.
+ * Borrowed final-read handle: no transaction management, repair, or writes. */
+export function requireFinalDeadGenerationUnheldIn(db:DatabaseSync,method:string,target:string|null,generation:bigint):void{
+ requireDiscordText(method);if(target!==null)requireDiscordText(target);
+ if(!['thread/resume','thread/fork','turn/start','turn/steer'].includes(method))return;
+ if(target!==null&&targetIsHeldIn(db,target))refuse('app-server target is durably held');
+ if(generationIsSealedIn(db,generation))refuse('app-server generation is durably sealed');
 }

@@ -1,3 +1,5 @@
+import {createNativeMutationRevalidator} from './mutation-custody-fence.ts';
+import {passiveErrorText} from '../core/passive-error-text.ts';
 import {types} from 'node:util';
 import {pinNativeRuntimePath} from './runtime-paths/path-text.ts';
 import {requireDiscordText} from '../discord/text.ts';
@@ -12,7 +14,7 @@ import {OwnedWorkerSlot,OwnedWorkerBusyError} from './owned-worker-slot.ts';
 export interface NativeMutationReceipt {readonly attemptId:string;readonly method:string}
 type BeginOperation='beginMutationWithOrigin'|'beginQueueMutation'|'beginStopMutation';
 type Operation=BeginOperation|'finishMutation'|'finishStopMutation';
-interface ReceiptData {readonly input:MaintenanceClaim|QueueMutationClaim|StopMutationClaim;readonly stop:boolean;used:boolean}
+interface ReceiptData {readonly input:MaintenanceClaim|QueueMutationClaim|StopMutationClaim;readonly stop:boolean;readonly operation:BeginOperation;used:boolean}
 function text(value:unknown,limit=4096):string {
  requireDiscordText(value);
  if(value.includes('\0')||Buffer.byteLength(value)>limit)throw new RangeError('Native mutation text exceeds boundary');
@@ -24,6 +26,7 @@ function text(value:unknown,limit=4096):string {
  * Accepted native failures are conservatively unknown, including rolled-back refusals.
  * There is no automatic retry, rollback inference, or completion from close/dispose. */
 export class NativeMutationOwner {
+ readonly #validate:ReturnType<typeof createNativeMutationRevalidator>;
  readonly #path:string;readonly #runtime:string;readonly #render:(text:string)=>string;readonly #timeout:number;
  readonly #slot=new OwnedWorkerSlot('Control');readonly #receipts=new WeakMap<object,ReceiptData>();
  #active:Promise<unknown>|null=null;#controller:AbortController|null=null;#closed=false;
@@ -33,11 +36,19 @@ export class NativeMutationOwner {
   if(typeof render!=='function'||types.isProxy(render)||types.isAsyncFunction(render)||types.isGeneratorFunction(render))throw new TypeError('Expected synchronous public-safe renderer');
   if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid native mutation deadline');
   this.#render=render;this.#timeout=timeoutMs;
+  this.#validate=createNativeMutationRevalidator(this.#path,this.#runtime,error=>this.#render(passiveErrorText(error,'Original mutation authority unavailable')));
  }
  get busy():boolean{return this.#active!==null;}
  async close(reason:unknown=new Error('Native mutation owner closed')):Promise<void>{
   this.#closed=true;this.#controller?.abort(reason);
   if(this.#active!==null)await Promise.allSettled([this.#active]);
+ }
+ /** Immediate final read of this owner's exact unused receipt. Caller still
+  * revalidates original in-memory admission before starting the wire. */
+ validateForDispatch(receipt:NativeMutationReceipt):void{
+  this.#ready();const data=this.#receipts.get(receipt);
+  if(data===undefined||data.used)throw new TypeError('Expected unused receipt from this native mutation owner');
+  this.#validate(data.input,data.operation);
  }
  begin(input:MaintenanceClaim,signal?:AbortSignal):Promise<NativeMutationReceipt>{return this.#begin('beginMutationWithOrigin',input,signal);}
  beginQueue(input:QueueMutationClaim,signal?:AbortSignal):Promise<NativeMutationReceipt>{return this.#begin('beginQueueMutation',input,signal);}
@@ -68,7 +79,7 @@ export class NativeMutationOwner {
   const g=own(captured,'generation');if(typeof g!=='bigint'||g<0n||g>=(1n<<63n))throw new TypeError('Expected signed i64 generation');
   return this.#run(operation,captured,method,attemptId,signal).then(()=>{
    const receipt=Object.freeze({attemptId,method});
-   this.#receipts.set(receipt,{input:captured,stop:operation==='beginStopMutation',used:false});return receipt;
+   this.#receipts.set(receipt,{input:captured,stop:operation==='beginStopMutation',operation,used:false});return receipt;
   });
  }
  #run(operation:Operation,input:unknown,method:string,attemptId:string,signal?:AbortSignal):Promise<void>{

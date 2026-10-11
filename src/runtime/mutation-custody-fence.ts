@@ -13,6 +13,13 @@ import {createResponseCustodyFence} from "./response-custody-fence.ts";
 
 function text(v:unknown):v is string{return typeof v==="string"&&!/[\uD800-\uDFFF]/u.test(v);}
 function generation(g:unknown):asserts g is bigint{if(typeof g!=="bigint"||g<0n||g>I64_MAX)throw new RangeError("App-server generation does not fit signed i64");}
+function capturedMutation(runtime:string,raw:MaintenanceClaim|QueueMutationClaim,queued:boolean){
+  const c=cloneOwnedSerdeValue(raw) as MaintenanceClaim&QueueMutationClaim;generation(c.generation);
+  if(!text(c.ownerId)||!text(c.attemptId)||!text(c.method)||(!queued&&typeof c.scoped!=="boolean"))throw new TypeError("Expected exact mutation claim");
+  const target=extractThreadId(c.params),wire=serializeSerdeValue(validateRequestId(c.wire));
+  const payload=queued?{request:c.params,queueClaim:c.claim}:c.origin===null?c.params:{request:c.params,stopOrigin:c.origin};
+  return {c,target,attempt:{runtimeId:runtime,ownerId:c.ownerId,generation:c.generation,attemptId:c.attemptId,wireId:wire,method:c.method,targetThreadId:target,scoped:queued||c.scoped,payload}};
+}
 /** Concrete ordinary/queue/response fence for an ALREADY initialized and activated
  * runtime store. Original stop acceptance and dead-work persistence are separate. This adapter
  * consumes an already accepted/claimed stop and never creates user consent. */
@@ -23,11 +30,8 @@ export function createMutationCustodyFence(path:string,runtime:string,renderErro
   const s={beginStop:state.beginStopWire,finishStop:state.finishStopWire,capture:state.captureStopOrigin,begin:state.beginChecked,finish:state.finish,validateQueue:state.validateQueueStartAuthorityIn,validateStop:state.validateStopRequestIn,checkMutation:state.checkMutationCustody,checkResponse:state.checkResponseCustody,checkResponses:state.checkAllResponseCustody,requireResponse:state.requireResponseUnheldIn,requireResponses:state.requireAllResponsesResolvedIn,requireStop:state.requireStopControlUnheldIn,stopHeld:state.stopControlTargetHeldExisting,targetHeld:state.deadGenerationTargetHeldExisting,sealed:state.deadGenerationSealedExisting};
   const mapped=<T>(kind:"MutationHeld"|"DeadGenerationFence",operation:()=>T):T=>errors.run(kind,operation);
   const claim=(raw:MaintenanceClaim|QueueMutationClaim,queued:boolean):boolean=>mapped("MutationHeld",()=>{
-    const c=cloneOwnedSerdeValue(raw) as MaintenanceClaim&QueueMutationClaim;generation(c.generation);
-    if(!text(c.ownerId)||!text(c.attemptId)||!text(c.method)||(!queued&&typeof c.scoped!=="boolean"))throw new TypeError("Expected exact mutation claim");
-    const target=extractThreadId(c.params),wire=serializeSerdeValue(validateRequestId(c.wire));
-    const payload=queued?{request:c.params,queueClaim:c.claim}:c.origin===null?c.params:{request:c.params,stopOrigin:c.origin};
-    s.begin(path,{runtimeId:runtime,ownerId:c.ownerId,generation:c.generation,attemptId:c.attemptId,wireId:wire,method:c.method,targetThreadId:target,scoped:queued||c.scoped,payload},db=>{
+    const {c,target,attempt}=capturedMutation(runtime,raw,queued);
+    s.begin(path,attempt,db=>{
       if(target!==null){s.requireStop(db,target);s.requireResponse(db,target);}else s.requireResponses(db);
       if(queued){if(c.method!=="turn/start")throw new Error("queue authority cannot authorize another mutation");s.validateQueue(db,c.claim,target??"",c.generation);}
       else s.validateStop(db,c.method,target,c.origin===null?undefined:c.origin);
@@ -51,4 +55,28 @@ export function createMutationCustodyFence(path:string,runtime:string,renderErro
       mapped("DeadGenerationFence",()=>{if(target!==null&&s.targetHeld(path,target))throw new DeadGenerationTargetHeldError(target);generation(g);if(s.sealed(path,g))throw new Error("app-server generation is durably sealed");});
     },
   });
+}
+
+/** Synchronous correctness bridge after native persistence, not complete DB offload.
+ * Input must be the exact privately retained claim. No fresh origin is captured. */
+export function createNativeMutationRevalidator(path:string,runtime:string,render:(error:unknown)=>string){
+ const errors=createRuntimeFenceErrors(render);
+ const s={revalidateStopWire:state.revalidateStopWire,revalidatePreparedMutation:state.revalidatePreparedMutation,requireStopControlUnheldIn:state.requireStopControlUnheldIn,requireResponseUnheldIn:state.requireResponseUnheldIn,requireAllResponsesResolvedIn:state.requireAllResponsesResolvedIn,revalidateQueueStartAuthorityIn:state.revalidateQueueStartAuthorityIn,validateStopRequestIn:state.validateStopRequestIn,requireFinalDeadGenerationUnheldIn:state.requireFinalDeadGenerationUnheldIn};
+ return (input:MaintenanceClaim|QueueMutationClaim|StopMutationClaim,operation:"beginMutationWithOrigin"|"beginQueueMutation"|"beginStopMutation"):void=>{
+ let phase:"MutationHeld"|"DeadGenerationFence"="MutationHeld";
+ try{
+  if(operation==="beginStopMutation"){
+   const c=cloneOwnedSerdeValue(input) as StopMutationClaim;
+   s.revalidateStopWire(path,runtime,c.claim,{resident:c.ownerId,generation:c.generation},{attempt:c.attemptId,wire:serializeSerdeValue(validateRequestId(c.wire))},c.params);return;
+  }
+  if(operation!=="beginMutationWithOrigin"&&operation!=="beginQueueMutation")throw new TypeError("Unsupported original mutation operation");
+  const queued=operation==="beginQueueMutation",{c,target,attempt}=capturedMutation(runtime,input as MaintenanceClaim|QueueMutationClaim,queued);
+  s.revalidatePreparedMutation(path,attempt,db=>{
+   if(target!==null){s.requireStopControlUnheldIn(db,target);s.requireResponseUnheldIn(db,target);}else s.requireAllResponsesResolvedIn(db);
+   if(queued){if(c.method!=="turn/start")throw new Error("queue authority cannot authorize another mutation");s.revalidateQueueStartAuthorityIn(db,c.claim,target??"",c.generation);}
+   else s.validateStopRequestIn(db,c.method,target,c.origin===null?undefined:c.origin);
+   phase="DeadGenerationFence";s.requireFinalDeadGenerationUnheldIn(db,c.method,target,c.generation);phase="MutationHeld";return undefined;
+  });
+ }catch(error){errors.fail(phase,error);}
+ };
 }

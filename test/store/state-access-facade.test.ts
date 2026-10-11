@@ -372,6 +372,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.markRunning, QueueMarkRunning.markRunning);
     assert.strictEqual(StateAccessFacade.activate, MutationAttempt.activate);
     assert.strictEqual(StateAccessFacade.revalidatePreparedMutation, PreparedMutationValidation.revalidatePreparedMutation);
+    assert.strictEqual(StateAccessFacade.requireFinalDeadGenerationUnheldIn, PreparedMutationValidation.requireFinalDeadGenerationUnheldIn);
+    assert.strictEqual(StateAccessFacade.revalidateStopWire, StopDispatch.revalidateStopWire);
     assert.strictEqual(StateAccessFacade.beginChecked, MutationAttempt.beginChecked);
     assert.strictEqual(StateAccessFacade.finish, MutationAttempt.finish);
     assert.strictEqual(StateAccessFacade.openCheckedRead, CheckedRead.open);
@@ -520,6 +522,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "attachGoalTurnObservedIfOwned",
       "beginAppServerForkHandoff",
       "revalidatePreparedMutation",
+      "requireFinalDeadGenerationUnheldIn",
+      "revalidateStopWire",
       "revalidateQueueStartAuthorityIn",
       "beginChecked",
       "canonicalizePromptIntakeTarget",
@@ -707,7 +711,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 256);
+    assert.strictEqual(actual.length, 258);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
