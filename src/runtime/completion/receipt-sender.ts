@@ -1,3 +1,4 @@
+import type {ReceiptState} from '../../store/delivery-receipts.ts';
 import {types} from "node:util";
 import {StateAccessFacade as state} from "../../store/state-access-facade.ts";
 import {serializeSerdeValue} from "../../core/serde-json.ts";
@@ -25,15 +26,35 @@ function componentSnapshot(input:readonly DiscordComponent[]):DiscordComponent[]
   if(types.isProxy(input)||!Array.isArray(input))throw new TypeError("Expected component array");const result:DiscordComponent[]=[];
   for(let i=0;i<input.length;i++){const d=Object.getOwnPropertyDescriptor(input,String(i));if(!d||!Object.hasOwn(d,"value"))throw new TypeError("Expected own component entry");serializeDiscordComponent(d.value);result.push(d.value);}return result;
 }
+/** Trusted persistence boundary. Implementations preserve durable intent before
+ * HTTP and unknown-outcome hold semantics; caller cannot use it as send authority. */
+export interface ReceiptPersistence{
+ begin(key:string,hash:string,guard:DeliveryGuard|null,signal?:AbortSignal):Promise<ReceiptState>;
+ confirm(key:string,hash:string,message:string):Promise<boolean>;
+ releaseRejected(key:string,hash:string):Promise<boolean>;
+ blockRejected(key:string,hash:string,reason:string):Promise<boolean>;
+}
 /** Caller owns this Promise until transport and receipt storage settle; it must not detach it or equate Promise.race with cancellation. */
 export async function sendReceiptChunk(path:string,transport:DiscordReceiptTransport,channel:bigint,input:IdempotentChunk,inputComponents:readonly DiscordComponent[]=[],guard:DeliveryGuard|null=null,signal?:AbortSignal):Promise<void>{
+ return sendReceiptChunkWithPersistence({
+  begin:(key,hash,claim)=>state.beginDeliveryReceipt(path,key,hash,claim),
+  confirm:(key,_hash,message)=>state.confirmDeliveryReceipt(path,key,message),
+  releaseRejected:(key)=>state.releaseRejectedDelivery(path,key),
+  blockRejected:(key,_hash,reason)=>state.blockRejectedDelivery(path,key,reason),
+ },transport,channel,input,inputComponents,guard,signal);
+}
+/** Shared state machine for original facade and explicitly owned native storage.
+ * A known accepted message is confirmed even if cancellation happened in flight.
+ * Only intent observation uses signal; known rejection/confirmation persistence
+ * is joined independently so cancellation cannot discard its outcome. */
+export async function sendReceiptChunkWithPersistence(store:ReceiptPersistence,transport:DiscordReceiptTransport,channel:bigint,input:IdempotentChunk,inputComponents:readonly DiscordComponent[]=[],guard:DeliveryGuard|null=null,signal?:AbortSignal):Promise<void>{
   signal?.throwIfAborted();
   const chunk=snapshot(input),components=componentSnapshot(inputComponents);let request:IdempotentMessageRequest;
   try{request=idempotentMessageRequestWithComponents(channel,chunk.content,components,chunk.domain,chunk.logicalKey,chunk.chunkIndex);}
   catch(error){throw new CompletionDeliveryError(idempotentContentErrorMessage(error)??"invalid Discord request");}
   const key=serializeSerdeValue([channel,chunk.domain,chunk.logicalKey,chunk.chunkIndex]);
   const hash=receiptHash(components.length===0?chunk.content:`[${JSON.stringify(chunk.content)},[${components.map(serializeDiscordComponent).join(",")}]]`);
-  const receipt=await state.beginDeliveryReceipt(path,key,hash,guard);
+  const receipt=await store.begin(key,hash,guard,signal);
   switch(receipt.kind){
     case "Held":throw new CompletionHeldError(receipt.reason);
     case "Delivered":return;
@@ -51,9 +72,9 @@ export async function sendReceiptChunk(path:string,transport:DiscordReceiptTrans
     const fault=ownedDiscordTransportFault(error);
     const definite=fault!==undefined&&(["BuildingRequest","CreatingHeader","Json","Unauthorized","Validation"].includes(fault.kind)||(fault.kind==="Response"&&[400,401,403,404,405,413,415,422,429].includes(fault.status!)));
     const display=fault?.display??"unclassified Discord transport failure";
-    if(definite){if(fault!.kind==="Response"&&fault!.status===429)await state.releaseRejectedDelivery(path,key);else await state.blockRejectedDelivery(path,key,display);
+    if(definite){if(fault!.kind==="Response"&&fault!.status===429)await store.releaseRejected(key,hash);else await store.blockRejected(key,hash,display);
       throw new CompletionDeliveryError(`Discord rejected message; definite rejection recorded separately from unknown delivery: ${display}`);}
     throw new CompletionDeliveryError(`send outcome unconfirmed; automatic resend held: ${display}`);
   }
-  if(!await state.confirmDeliveryReceipt(path,key,message.toString()))throw new CompletionDeliveryError("Discord accepted message but its receipt could not be committed; automatic resend held");
+  if(!await store.confirm(key,hash,message.toString()))throw new CompletionDeliveryError("Discord accepted message but its receipt could not be committed; automatic resend held");
 }

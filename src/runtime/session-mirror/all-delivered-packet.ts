@@ -3,7 +3,7 @@ import {AnchoredMirrorBatch} from './continuity-observation.ts';
 import {encodeMirrorCursorAnchor,type MirrorCursorAnchor} from '../../core/mirror-cursor-anchor.ts';
 import {snapshotBoundMirrorCursor,type BoundMirrorCursor} from '../../store/mirror-cursor-journal.ts';
 import type {ExpectedReceipt} from '../../store/confirmed-receipt-batch.ts';
-import {planMirrorReceiptsOffThread} from './receipt-plan.ts';
+import {planMirrorReceiptsOffThread,type MirrorReceiptPlan} from './receipt-plan.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 export interface AllDeliveredMirrorPacket{
  readonly expected:BoundMirrorCursor;readonly anchor:MirrorCursorAnchor;readonly turn:string;
@@ -11,7 +11,7 @@ export interface AllDeliveredMirrorPacket{
  readonly receipts:readonly ExpectedReceipt[];readonly itemCount:number;
  readonly historyIntegrityVerified:false;
 }
-const packets=new WeakMap<object,Readonly<{observation:AnchoredMirrorBatch;receiptSetHash:string}>>();
+const packets=new WeakMap<object,Readonly<{observation:AnchoredMirrorBatch;receiptSetHash:string;plan:MirrorReceiptPlan}>>();
 function authentic(packet:AllDeliveredMirrorPacket){
  if(packet===null||typeof packet!=='object')throw new TypeError('Expected factory-created all-delivered packet');
  const owned=packets.get(packet);if(owned===undefined)throw new TypeError('Expected factory-created all-delivered packet');return owned;
@@ -44,7 +44,7 @@ export async function prepareAllDeliveredMirrorPacket(
  const next=await AnchoredMirrorBatch.prototype.observeNextBoundary.call(observation,signal);
  signal?.throwIfAborted();
  const result:AllDeliveredMirrorPacket=Object.freeze({expected,anchor:next.anchor,turn:batch.currentTurn??'',channel,updatedAt,operationId,receipts:captured,itemCount:batch.items.length,historyIntegrityVerified:false});
- packets.set(result,Object.freeze({observation,receiptSetHash:plan.receiptSetHash}));
+ packets.set(result,Object.freeze({observation,receiptSetHash:plan.receiptSetHash,plan}));
  return result;
 }
 
@@ -79,3 +79,9 @@ export async function reconcileAllDeliveredMirrorPacket(store:NativeMirrorCursor
   return Object.freeze({kind:'CurrentCursorUnchanged',cursor});
  return Object.freeze({kind:'Conflict',cursor});
 }
+
+
+/** Reuse the exact native chunk plan already retained by this authentic packet.
+ * Caller still decides each item's send ownership; omitting an item never removes
+ * its receipt from the final all-delivered cursor guard. */
+export function mirrorPacketSendPlan(packet:AllDeliveredMirrorPacket):MirrorReceiptPlan{return authentic(packet).plan;}
