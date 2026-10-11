@@ -63,10 +63,17 @@ export interface BoundMirrorWorkerConfig{
  * No service boot, schema creation, account login or independent retry mechanism. */
 export async function runBoundMirrorWorker(config:BoundMirrorWorkerConfig,transport:DiscordReceiptTransport,render:(error:unknown)=>string,report:(event:MirrorRunnerObservation)=>void,signal:AbortSignal):Promise<readonly MirrorTargetFinished[]>{
  if(types.isProxy(signal)||!(signal instanceof AbortSignal))throw new TypeError('Expected owned abort signal');if(signal.aborted)return [];
+ const captured=captureBoundMirrorWorkerConfig(config);
+ const {stateDatabasePath:state,bridgeDatabasePath:bridge,discovery,ready,poll}=captured;
+ return runMirrorWorker(()=>new MirrorSnapshotOwner(state,bridge,discovery,ready,(hint,channel,jobs,abort)=>pollBoundMirrorTarget(bridge,hint,channel,jobs,poll,transport,abort),render),render,report,signal);
+}
+
+/** Capture the complete worker configuration before a monitored task is queued. */
+export function captureBoundMirrorWorkerConfig(config:BoundMirrorWorkerConfig):BoundMirrorWorkerConfig{
  const state=resolve(boundedText(own(config,'stateDatabasePath'),32768)),bridge=resolve(boundedText(own(config,'bridgeDatabasePath'),32768));boundedText(state,32768);boundedText(bridge,32768);
  const raw=own(config,'discovery'),discovery=Object.freeze({threads:captureMirrorDiscoveryLimits(own(raw,'threads') as MirrorDiscoveryLimits),store:captureMirrorStoreDiscoveryLimits(own(raw,'store') as MirrorStoreDiscoveryLimits)});
  const readyInput=own(config,'ready'),maxTargets=own(readyInput,'maxTargets'),maxBytes=own(readyInput,'maxBytes');
  if(typeof maxTargets!=='number'||!Number.isSafeInteger(maxTargets)||maxTargets<1||maxTargets>4096||typeof maxBytes!=='number'||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>1048576)throw new RangeError('Invalid mirror ready limits');
  const ready=Object.freeze({maxTargets,maxBytes}),poll=snapshotBoundMirrorPollOptions(own(config,'poll') as BoundMirrorPollOptions);
- return runMirrorWorker(()=>new MirrorSnapshotOwner(state,bridge,discovery,ready,(hint,channel,jobs,abort)=>pollBoundMirrorTarget(bridge,hint,channel,jobs,poll,transport,abort),render),render,report,signal);
+ return Object.freeze({stateDatabasePath:state,bridgeDatabasePath:bridge,discovery,ready,poll});
 }
