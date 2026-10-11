@@ -1,0 +1,25 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 544,
+  "localCommit": "87e1e1cd97b51da9f030bbdcf240b5455efaf0dc",
+  "fullTests": 7005,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/core/serde-json.ts": "54502bcf8b4d5bccbe9f1a568edc87904c8797d8af7adbe6207f1dd3d98b17c2",
+    "src/remote-agent/bridge-serialize.ts": "9a51dd3a05fb9a429d9eb96437139b4941c3cdab6e4fc61c50e6c4c9b42a217d",
+    "src/remote-agent/datetime-format.ts": "9b7e7ccee409f8c28d5f24fea5079033ede94f2383ed477412fbc0ab7bbca097",
+    "test/core/serde-descriptor-passivity.test.ts": "d17a3380d9db325e14248fecc20c6484a432aceb1f0a15d151b8689615ddbc57",
+    "test/remote-agent/bridge-serialize.test.ts": "47447c1bb890a8a029620e99aea3a92af73c64a15eb668aa0f4dcadfa14c660e",
+    "test/remote-agent/datetime-format.test.ts": "f80296e803368184295d58ba936f5e408e5f5cce832a252d2e18343b93a53e3d"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

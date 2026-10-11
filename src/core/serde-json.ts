@@ -116,7 +116,7 @@ function serializeInternal(
 
     for (let i = 0; i < len; i++) {
       const desc = Object.getOwnPropertyDescriptor(value, String(i));
-      if (!desc || desc.get !== undefined || desc.set !== undefined || !('value' in desc)) {
+      if (!desc || !Object.hasOwn(desc, 'value')) {
         throw new TypeError(`Array getters are not supported: index ${i}`);
       }
       if (!desc.enumerable) {
@@ -150,7 +150,7 @@ function serializeInternal(
   const propNames = Object.getOwnPropertyNames(value);
   for (const key of propNames) {
     const desc = Object.getOwnPropertyDescriptor(value, key);
-    if (!desc || desc.get !== undefined || desc.set !== undefined || !('value' in desc)) {
+    if (!desc || !Object.hasOwn(desc, 'value')) {
       throw new TypeError(`Object getters are not supported: property "${key}"`);
     }
     if (!desc.enumerable) {
