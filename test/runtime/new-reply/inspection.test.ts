@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {writeFile,appendFile} from 'node:fs/promises';import {dirname,join} from 'node:path';
+import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {writeFile,appendFile,mkdir,symlink} from 'node:fs/promises';import {dirname,join} from 'node:path';
 import {storeFixture} from '../../helpers/store-fixture.ts';import {inspectNewReply,NewReplyInspection} from '../../../src/runtime/new-reply/inspection.ts';
 import type {NewReply} from '../../../src/store/new-reply-read.ts';import {decodeNewReplyFileCursor} from '../../../src/runtime/new-reply/file-observation.ts';
 function record(path:string):NewReply{return {identity:{ingress_id:'ing',job_id:'job',thread_id:'thread',cwd:'/p',state_db:path,channel_id:20n,origin_channel_id:10n,event_id:1n,kind:'message',creation_generation:1n,prompt_sha256:'be41aba2fd84362ba49d22d8635d6c05f86426ee40846f1354e944062c4557a8',acknowledgement:'ack'},turnId:'first',acceptedAt:1,state:'pending',version:1n,scan:{},lastError:'',confirmationDelivered:false,warningDue:0n,acknowledgementRecoveryAllowed:false};}
@@ -11,3 +11,14 @@ test('changed Codex project or rollout path refuses stored cursor and revalidati
 test('missing or archived original thread preserves old scan without granting verification',async()=>storeFixture(async path=>{await seed(path);edit(path,"UPDATE threads SET archived=1");const old=record(path),result=(await inspectNewReply(old)).captured();assert.equal(result.verified,false);assert.deepEqual(result.scan,{});}));
 test('legacy/malformed cursor and changed original turn/digest cannot be adopted',async()=>storeFixture(async path=>{await seed(path,prefix);const old=record(path),scan=(await inspectNewReply(old)).captured().scan;for(const bad of [{generation:'legacy',offset:1n},[],null])await assert.rejects(inspectNewReply({...old,scan:bad}));await assert.rejects(inspectNewReply({...old,scan,turnId:'later'}),/original request/);await assert.rejects(inspectNewReply({...old,scan,identity:{...old.identity,prompt_sha256:'other'}}),/original request/);}));
 test('already verified durable state retains source behavior; no file authority or forged inspection',async()=>storeFixture(async path=>{const old={...record(path),state:'verified',scan:{old:'retained'}};const result=await inspectNewReply(old);assert.equal(result.captured().verified,true);assert.deepEqual(result.captured().scan,{old:'retained'});await result.verifyCurrent();assert.throws(()=>NewReplyInspection.prototype.captured.call(Object.create(NewReplyInspection.prototype)),TypeError);}));
+
+test('raw native v2 anchor survives persisted new-reply continuation and exact input verification',async()=>storeFixture(async path=>{
+ const root=dirname(path),physical=root+'/physical';await mkdir(physical+'/child',{recursive:true});await symlink(physical+'/child',root+'/alias','dir');
+ const db=physical+'/state.sqlite',raw=root+'/alias/..',rollout=await seed(db,prefix+user.slice(0,-1));
+ const handle=new DatabaseSync(db);try{handle.prepare('UPDATE threads SET rollout_path=?').run(raw+'/rollout.jsonl');}finally{handle.close();}
+ await writeFile(root+'/rollout.jsonl','wrong sibling must never be adopted');
+ const old=record(raw+'/state.sqlite'),a=(await inspectNewReply(old)).captured();assert.equal(a.verified,false);
+ const first=decodeNewReplyFileCursor((a.scan as {cursor:string}).cursor);assert.equal(first.anchor.version,2);assert.equal(first.anchor.path,raw+'/rollout.jsonl');assert.equal(first.anchor.offset,BigInt(Buffer.byteLength(prefix)));
+ await appendFile(rollout,'\n');const inspection=await inspectNewReply({...old,scan:a.scan,version:2n});await inspection.verifyCurrent();const b=inspection.captured();assert.equal(b.verified,true);
+ const last=decodeNewReplyFileCursor((b.scan as {cursor:string}).cursor);assert.equal(last.anchor.version,2);assert.equal(last.anchor.path,first.anchor.path);assert.equal(last.anchor.offset,BigInt(Buffer.byteLength(prefix+user)));
+}));

@@ -1,10 +1,11 @@
-import assert from 'node:assert/strict';import {it} from 'node:test';import {join,dirname} from 'node:path';import {readFile,readdir,mkdir,writeFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';import {it} from 'node:test';import {join,dirname} from 'node:path';import {readFile,readdir,mkdir,writeFile,symlink} from 'node:fs/promises';
 import {storeFixture} from '../../helpers/store-fixture.ts';import {StateAccessFacade as state} from '../../../src/store/state-access-facade.ts';import {openInitialized} from '../../../src/store/owned-driver.ts';import {BridgeState} from '../../../src/runtime/bridge-state.ts';import {TargetLocks} from '../../../src/core/keyed-locks.ts';import {PortableResidentLifecycle} from '../../../src/app-server/portable-resident-lifecycle.ts';import {createMutationCustodyFence} from '../../../src/runtime/mutation-custody-fence.ts';import {AdmittedRepairExecutor,REPAIR_INIT,REPAIR_PROBE} from '../../../src/runtime/action-executor/repair-action.ts';
 import {installRuntimeIdleJournal} from '../../../src/runtime/idle-release-journal.ts';
 import {AdmittedStopExecutor} from '../../../src/runtime/action-executor/stop-custody.ts';
 import {StopActionExecutor} from '../../../src/runtime/action-executor/stop-action.ts';
 const actor={channelId:1n,userId:2n,discordMessageId:3n},render=(e:unknown)=>e instanceof Error?e.message:'fixture error';
 async function fixture(mode:string,run:(f:{path:string;bridge:BridgeState;locks:TargetLocks;server:PortableResidentLifecycle;action:AdmittedRepairExecutor;sql:(s:string)=>Promise<void>;raw:(method:string)=>Promise<any>;admit:(event:bigint)=>Promise<void>;receipt:()=>Promise<any>;replacement:()=>Promise<PortableResidentLifecycle>})=>Promise<void>){await storeFixture(async path=>{
+ if(mode==='native-path'){const root=dirname(path);await mkdir(root+'/physical/child',{recursive:true});await symlink(root+'/physical/child',root+'/alias','dir');path=root+'/alias/../store.sqlite';}
  const bridge=new BridgeState(join(dirname(path),'bridge.json')),locks=new TargetLocks();bridge.setSelectedThreadId('T');
  const sql=async(s:string)=>{const db=await openInitialized(path);try{db.exec(s);}finally{db.close();}};
  const admit=async(event:bigint)=>{await state.admitIngress(path,{ingressId:'message:'+event,kind:'message',eventId:event,applicationId:null,channelId:1n,ownerUserId:2n,sourceMessageId:event,targetThreadId:'T',canonicalOwner:null,now:Number(event),payload:{version:1n,plan:{Execute:{Repair:{reference:null}}},lifecycle_binding:{target:'T',route:'Selected',command:{Repair:{reference:null}}},stop_origin:{target:'T',stopRevision:0n}}});await sql("UPDATE discord_ingress_journal SET state='executing',phase='processing' WHERE ingress_id='message:"+event+"'");};
@@ -70,4 +71,12 @@ it('new admitted Stop during inventory revokes old repair without waiting behind
  // A mutation-fence error is not this guard's owned rejected-before-send flag.
  // Preserve the source conservative lease; elapsed time cannot release it.
  assert.equal(f.locks.tryAcquire('T'),undefined);assert.equal((await f.receipt()).phase,'outcome_unknown');
+}));
+
+it('repair receipt remains beside the actual native store through symlink-parent traversal',async()=>fixture('native-path',async f=>{
+ const result=await f.action.execute(actor,null,'message:3');assert.match(result.text,/도구 복구 완료/);
+ const directory=dirname(f.path)+'/maintenance_backups/tool-repair';const files=await readdir(directory);assert.equal(files.length,1);
+ const receipt=JSON.parse(await readFile(directory+'/'+files[0],'utf8'));assert.equal(receipt.phase,'verified');assert.equal(receipt.thread_id,'T');
+ await assert.rejects(readdir(join(dirname(f.path),'maintenance_backups/tool-repair')),{code:'ENOENT'});
+ assert.equal((await f.raw('seen')).filter((v:any)=>v.method==='mcpServer/tool/call').length,3);
 }));

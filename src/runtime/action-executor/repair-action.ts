@@ -1,5 +1,6 @@
 import {mkdir,writeFile} from 'node:fs/promises';
-import {dirname,join} from 'node:path';
+import {dirname} from 'node:path';
+import {joinRuntimePath} from '../runtime-paths/path-text.ts';
 import {randomUUID} from 'node:crypto';
 import {PortableResidentLifecycle} from '../../app-server/portable-resident-lifecycle.ts';
 import {ownedRequestFailure} from '../../app-server/request-client.ts';
@@ -49,7 +50,7 @@ export class AdmittedRepairExecutor{
    const status=await rpc('thread/read',{threadId:guard.target,includeTurns:false});if(field(status,'thread','status','type')!=='idle'||field(status,'thread','id')!==guard.target||this.#server.activeTurnId(guard.target)!==null)throw busy();
    let cursor:unknown=null,found=false;for(let page=0;page<4;page++){const inventory=await rpc('mcpServerStatus/list',{threadId:guard.target,detail:'toolsAndAuthOnly',limit:100n,cursor});found=available(inventory);cursor=serdeField(inventory,'nextCursor')??null;if(found||cursor===null)break;}
    if(!found)throw new InvalidActionRequestError('이 채팅에서 node_repl의 js/js_reset 연결을 확인하지 못했습니다. 지원되지 않는 도구는 초기화하지 않았습니다.');
-   guard.check();c.signal.throwIfAborted();this.#server.checkActualTargetMutation(null,generation,'mcpServer/tool/call',{threadId:guard.target,server:'node_repl',tool:'js_reset',arguments:{}});const folder=join(dirname(this.#path),'maintenance_backups','tool-repair');await mkdir(folder,{recursive:true});const operation=randomUUID(),receipt=join(folder,operation+'.json');
+   guard.check();c.signal.throwIfAborted();this.#server.checkActualTargetMutation(null,generation,'mcpServer/tool/call',{threadId:guard.target,server:'node_repl',tool:'js_reset',arguments:{}});const folder=joinRuntimePath(dirname(this.#path),'maintenance_backups/tool-repair',process.platform==='win32'?'win32':'posix');await mkdir(folder,{recursive:true});const operation=randomUUID(),receipt=joinRuntimePath(folder,operation+'.json',process.platform==='win32'?'win32':'posix');
    const record=async(phase:string)=>writeFile(receipt,serializeSerdeValue({phase,stage,operation_id:operation,thread_id:guard.target,generation,server_instance:this.#server.instanceId,app_restarted:false}),{encoding:'utf8',mode:0o600});
    const call=async(next:string,tool:string,args:unknown)=>{
     stage=next;await record('tool_call_pending');uncertain=true;const proof=guard.rpcCheck();let value:unknown;

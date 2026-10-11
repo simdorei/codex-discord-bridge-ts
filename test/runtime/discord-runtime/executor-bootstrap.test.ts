@@ -1,7 +1,8 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {join,dirname} from 'node:path';import {existsSync} from 'node:fs';
+import {selectJob} from '../../../src/store/queue-read.ts';
+import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {join,dirname} from 'node:path';import {existsSync,mkdirSync,symlinkSync} from 'node:fs';
 import {storeFixture} from '../../helpers/store-fixture.ts';import {startRuntimeFoundation} from '../../../src/runtime/discord-runtime/startup-foundation.ts';import {buildRuntimeCommandExecutor,type RuntimeExecutorBootstrapOptions} from '../../../src/runtime/discord-runtime/executor-bootstrap.ts';import {AdmissionGate} from '../../../src/admission/drain-gate.ts';import {openInitialized} from '../../../src/store/owned-driver.ts';import {StateAccessFacade as state} from '../../../src/store/state-access-facade.ts';
 const render=(e:unknown)=>e instanceof Error?e.message:'opaque';const limits={maxRows:128,maxBytes:1048576};
-const script="import readline from'node:readline';readline.createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line);if(m.id!==undefined)process.stdout.write(JSON.stringify({id:m.id,result:{}})+'\\n');});";
+const script="import readline from'node:readline';readline.createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line);if(m.id!==undefined)process.stdout.write(JSON.stringify({id:m.id,result:m.method==='turn/start'?{turn:{id:JSON.stringify(m.params.input)}}:{}})+'\\n');});";
 async function fixture(body:(paths:{root:string;stateDb:string;mirrorDb:string;bridgeState:string},owner:Awaited<ReturnType<typeof startRuntimeFoundation>>['owner'])=>Promise<void>,seed?:(path:string)=>Promise<void>){await storeFixture(async mirrorDb=>{
  const root=dirname(mirrorDb),stateDb=join(root,'codex.sqlite'),db=new DatabaseSync(stateDb);db.exec('CREATE TABLE original(value)');db.close();if(seed)await seed(mirrorDb);
  const foundation=await startRuntimeFoundation({stateDb,mirrorDb},{process:{executable:process.execPath,arguments:['--input-type=module','-e',script],environment:{}},clientInfo:{name:'executor-fixture',title:'fixture',version:'1'}},'runtime',null,render,limits);
@@ -32,4 +33,14 @@ test('missing explicit preprocessing and accessor options reject without callbac
 test('mandatory null timeouts reject before policy installation or any startup recovery writes',async()=>fixture(async(paths,owner)=>{
  await assert.rejects(buildRuntimeCommandExecutor(paths,owner,new AdmissionGate(),{...options(),resumeTimeoutMs:null} as never),RangeError);
  const db=new DatabaseSync(paths.mirrorDb,{readOnly:true});try{assert.equal(db.prepare('SELECT COUNT(*) AS n FROM cdr_async_recovery_policies').get()!.n,0);}finally{db.close();}
+}));
+
+test('executor sends exact native Pro skill path in the owned claimed turn request',async()=>fixture(async(paths,owner)=>{
+ mkdirSync(paths.root+'/physical/child',{recursive:true});symlinkSync(paths.root+'/physical/child',paths.root+'/alias','dir');
+ const rawRoot=paths.root+'/alias/..',result=await buildRuntimeCommandExecutor({...paths,root:rawRoot},owner,new AdmissionGate(),options());
+ const db=await openInitialized(paths.mirrorDb);try{
+ db.exec("INSERT INTO codex_turn_queue(job_id,target_thread_id,channel_id,owner_user_id,app_server_generation,execution_generation,prompt,queued,ack_sent,state,attempt_count,baseline_turn_ids,created_at,updated_at) VALUES('path-job','T',42,3,1,1,'$ask-chatgpt-pro [@Chrome](plugin://chrome@openai-bundled)',0,1,'starting',1,'[]',1,1)");
+ const input=JSON.parse(await result.backend.startClaimedTurn(selectJob(db,'path-job')));
+ assert.deepEqual(input[1],{type:'skill',name:'ask-chatgpt-pro',path:rawRoot+'/plugins/codex-discord-remote/skills/ask-chatgpt-pro/SKILL.md'});
+ }finally{db.close();result.disposeReceivers();}
 }));
