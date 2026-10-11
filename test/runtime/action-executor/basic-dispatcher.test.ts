@@ -1,4 +1,4 @@
-import {it} from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {dirname,join} from 'node:path';import {readFileSync} from 'node:fs';
+import {it} from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {dirname,join} from 'node:path';import {readFileSync,writeFileSync} from 'node:fs';
 import {storeFixture} from '../../helpers/store-fixture.ts';import {openInitialized} from '../../../src/store/owned-driver.ts';import {BridgeState} from '../../../src/runtime/bridge-state.ts';import {TargetLocks} from '../../../src/core/keyed-locks.ts';import {BasicActionDispatcher} from '../../../src/runtime/action-executor/basic-dispatcher.ts';import {actionExecutionErrorInfo} from '../../../src/runtime/action-executor/action-error.ts';import {MissingActionAppServerError} from '../../../src/runtime/action-executor/errors.ts';import {joinContextReader,joinThreadListReader} from '../../../src/codex-state/context-reader.ts';import {joinDiagnosticReaders} from '../../../src/runtime/diagnostic-report.ts';import type {CommandAction} from '../../../src/runtime/command-plan.ts';
 const actor={channelId:42n,userId:7n,discordMessageId:5n,autoQueueWhenBusy:false};
 async function fixture(run:(f:{dispatcher:BasicActionDispatcher;bridge:BridgeState;mirror:string;state:string})=>Promise<void>){await storeFixture(async mirror=>{
@@ -42,4 +42,19 @@ it('prefix Help now returns byte-exact pinned source text without selection muta
 it('QA-only route stays gated and enabled command returns the exact source contract notice without mutations',async()=>fixture(async f=>{
  const {decodeGatewayInteraction}=await import('../../../src/discord/gateway/decoded-interaction.ts'),{routeGatewayCommand,InteractionRouteError}=await import('../../../src/discord/interaction-routing.ts'),{planSlash}=await import('../../../src/runtime/command-plan.ts');const input=decodeGatewayInteraction(JSON.stringify({application_id:'4',authorizing_integration_owners:{},id:'5',token:'offline',type:2,data:{id:'6',name:'qa_buttons',type:1}})),before=readFileSync(f.bridge.path());
  assert.throws(()=>routeGatewayCommand(input,false),e=>e instanceof InteractionRouteError&&e.kind==='UnknownCommand');const route=routeGatewayCommand(input,true),action=planSlash(route.work);assert.equal(action,'QaButtons');assert.deepEqual(await f.dispatcher.execute(action,actor),{text:'Rust button QA contracts are enabled: busy, approval, input, one-use claim, and retry release.',waitsForFinal:false,ui:null});assert.deepEqual(readFileSync(f.bridge.path()),before);
+}));
+
+it('archive deletion preview uses native archived lookup with exact source text and no mutation',async()=>fixture(async f=>{
+ const before=readFileSync(f.bridge.path()),result=await f.dispatcher.execute({DeleteArchivePreview:{reference:'archived'}},actor);
+ assert.deepEqual(result,{text:'Archived thread deletion preview\nthread_id: archived\ntitle: Archived\ncwd: /work\nrollout_path: /absent-rollout\nTo delete, run !confirm_delete_archive archived',waitsForFinal:false,ui:null});
+ assert.deepEqual(readFileSync(f.bridge.path()),before);
+ const db=new DatabaseSync(f.state);try{assert.equal(db.prepare("SELECT archived FROM threads WHERE id='archived'").get()?.archived,1);}finally{db.close();}
+ await assert.rejects(f.dispatcher.execute({DeleteArchiveConfirm:{reference:'archived'}},actor),e=>actionExecutionErrorInfo(e)?.kind==='Unsupported');
+}));
+
+it('exact archive preview bypasses corrupt selected state but fallback retains original failure',async()=>fixture(async f=>{
+ writeFileSync(f.bridge.path(),'not json');
+ const result=await f.dispatcher.execute({DeleteArchivePreview:{reference:'archived'}},actor);assert.match(result.text,/thread_id: archived/);
+ await assert.rejects(f.dispatcher.execute({DeleteArchivePreview:{reference:'1'}},actor));
+ assert.equal(readFileSync(f.bridge.path(),'utf8'),'not json');
 }));

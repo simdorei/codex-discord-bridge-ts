@@ -51,6 +51,7 @@ export class BasicActionDispatcher{
    }
   }else if('Use'in action)result=immediate(this.#selection.select(action.Use.reference));
   else if('List'in action)result=await this.#list.list(action.List.limit,false,signal);
+  else if('DeleteArchivePreview'in action)result=immediate(await this.#selection.archiveDeletePreview(action.DeleteArchivePreview.reference,signal));
   else if('ArchivedList'in action)result=await this.#list.list(action.ArchivedList.limit,true,signal);
   else if('Status'in action)result=await this.#status.status(channel,action.Status.reference,signal);
   else if('Context'in action)result=await this.#context.context(channel,action.Context.all_threads,action.Context.refresh,action.Context.limit,signal);

@@ -1,3 +1,4 @@
+import {resolveThreadReferenceOffThread} from '../../codex-state/reference-reader.ts';
 import {CodexThreadStore} from '../../codex-state/store.ts';
 import {resolveThreadRefPosix, ThreadResolveError} from '../../codex-state/thread-reference.ts';
 import type {ThreadInfo} from '../../codex-state/thread.ts';
@@ -12,12 +13,13 @@ const mapped = StateAccessFacade.mirroredThreadId;
  * the production owned filesystem boundary; Windows reference parity pending. */
 export class ActionThreadSelection {
   readonly #statePath: string;
+  readonly #bridgePath:string;
   readonly #mirrorPath: string;
   readonly #selected: () => string | null;
   readonly #select: (id: string | null) => void;
   constructor(statePath: string, mirrorPath: string, bridge: BridgeState) {
     requireDiscordText(statePath); requireDiscordText(mirrorPath);
-    this.#statePath = statePath; this.#mirrorPath = mirrorPath;
+    this.#statePath = statePath; this.#mirrorPath = mirrorPath;this.#bridgePath=BridgeState.prototype.path.call(bridge);
     this.#selected = BridgeState.prototype.selectedThreadId.bind(bridge);
     this.#select = BridgeState.prototype.setSelectedThreadId.bind(bridge);
     Object.freeze(this);
@@ -41,6 +43,10 @@ export class ActionThreadSelection {
     if (exact !== null) return exact;
     const threads = archived ? store.loadArchivedThreads(0n) : store.loadRecentThreads(0n);
     return resolveThreadRefPosix(threads, reference, this.#selected(), archived);
+  }
+  async archiveDeletePreview(reference:string,signal?:AbortSignal):Promise<string>{
+    signal?.throwIfAborted();const thread=await resolveThreadReferenceOffThread(this.#statePath,reference,null,true,signal,6000,this.#bridgePath);
+    return `Archived thread deletion preview\nthread_id: ${thread.id}\ntitle: ${thread.title}\ncwd: ${thread.cwd}\nrollout_path: ${thread.rolloutPath}\nTo delete, run !confirm_delete_archive ${thread.id}`;
   }
   async resolveThread(channel: bigint, reference: string | null): Promise<ThreadInfo> {
     if (reference !== null) return this.resolveReference(reference, false);

@@ -1,4 +1,4 @@
-import {readFileSync,mkdirSync,openSync,writeFileSync,fsyncSync,closeSync,renameSync,lstatSync,unlinkSync,fstatSync} from "node:fs";
+import {constants,readFileSync,readSync,mkdirSync,openSync,writeFileSync,fsyncSync,closeSync,renameSync,lstatSync,unlinkSync,fstatSync} from "node:fs";
 import {dirname,join} from "node:path";
 import {randomUUID} from "node:crypto";
 import {parseSerdeValue} from "../core/serde-json-parse.ts";
@@ -28,6 +28,7 @@ export class BridgeState {
   constructor(path:string){this.#path=text(path);}
   path():string{return this.#path;}
   selectedThreadId():string|null{return clean(getOwn(this.#load(),"selected_thread_id"));}
+  selectedThreadIdBounded(maxBytes:number):string|null{if(!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>1048576)throw new RangeError("Invalid bridge read budget");return clean(getOwn(this.#load(maxBytes),"selected_thread_id"));}
   trackedThreadIds():string[]{
     const state=this.#load(),ids=new Set<string>(),selected=clean(getOwn(state,"selected_thread_id"));if(selected!==null)ids.add(selected);
     const settings=getOwn(state,"thread_settings");if(isObject(settings))for(const key of Object.keys(settings))if(key!=="")ids.add(key);
@@ -54,9 +55,9 @@ export class BridgeState {
     });
   }
   #update(mutate:(state:Record<string,unknown>)=>void):void{const state=this.#load();mutate(state);this.#save(state);}
-  #load():Record<string,unknown>{
+  #load(maxBytes?:number):Record<string,unknown>{
     let bytes:Buffer;
-    try{bytes=readFileSync(this.#path);}catch(error){if((error as NodeJS.ErrnoException).code==="ENOENT")return Object.create(null);throw new BridgeStateError("Io",this.#path,error);}
+    try{if(maxBytes===undefined)bytes=readFileSync(this.#path);else{const fd=openSync(this.#path,constants.O_RDONLY|constants.O_NONBLOCK);try{if(!fstatSync(fd).isFile())throw new TypeError('Expected regular bridge state file');const buffer=Buffer.alloc(maxBytes+1);let used=0;while(used<buffer.length){const n=readSync(fd,buffer,used,buffer.length-used,null);if(n===0)break;used+=n;}if(used>maxBytes)throw new RangeError('Bridge state exceeds byte budget');bytes=buffer.subarray(0,used);}finally{closeSync(fd);}}}catch(error){if((error as NodeJS.ErrnoException).code==="ENOENT")return Object.create(null);throw new BridgeStateError("Io",this.#path,error);}
     if(bytes.length>=3&&bytes[0]===0xef&&bytes[1]===0xbb&&bytes[2]===0xbf)bytes=bytes.subarray(3);
     let value:unknown;try{value=parseSerdeValue(new TextDecoder("utf-8",{fatal:true,ignoreBOM:true}).decode(bytes));}catch(error){throw new BridgeStateError("Json",this.#path,error);}
     if(!isObject(value))throw new BridgeStateError("NotObject",this.#path);return value;

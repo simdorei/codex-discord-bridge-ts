@@ -61,3 +61,15 @@ test("rename and fsync failures retain original bytes and reclaim only the owned
     assert.deepEqual(readFileSync(path),before);assert.deepEqual(readdirSync(dirname(path)),["store.sqlite"]);
   });}
 });
+
+test('bounded selected read shares original BOM, trim and corrupt-data semantics without writes',async()=>storeFixture(async path=>{
+ const state=new BridgeState(path);assert.equal(state.selectedThreadIdBounded(32),null);assert.equal(existsSync(path),false);
+ const bytes=Buffer.from('\uFEFF{"selected_thread_id":"\u0085 t \u0085","keep":18446744073709551615}');writeFileSync(path,bytes);
+ assert.equal(state.selectedThreadIdBounded(bytes.length),'t');assert.deepEqual(readFileSync(path),bytes);
+ assert.throws(()=>state.selectedThreadIdBounded(bytes.length-1),e=>e instanceof BridgeStateError&&e.kind==='Io');
+ for(const value of ['[]','not json','\uFEFF\uFEFF{}']){writeFileSync(path,value);assert.throws(()=>state.selectedThreadIdBounded(100),BridgeStateError);}
+}));
+test('bounded bridge input rejects invalid budgets before filesystem and nonregular handles',async()=>storeFixture(async path=>{
+ const state=new BridgeState(path);for(const n of [0,-1,1048577,Infinity])assert.throws(()=>state.selectedThreadIdBounded(n),RangeError);
+ assert.equal(existsSync(path),false);mkdirSync(path);assert.throws(()=>state.selectedThreadIdBounded(10),BridgeStateError);
+}));
