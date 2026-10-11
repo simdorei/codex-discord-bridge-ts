@@ -1,3 +1,4 @@
+import {RemoteFileFailure} from './error.ts';
 import {constants} from 'node:fs';
 import {open,lstat,realpath,type FileHandle} from 'node:fs/promises';
 import type {BigIntStats} from 'node:fs';
@@ -34,9 +35,9 @@ export class RemoteReadOwner{
    for(const part of parts.slice(0,-1)){current=joinRuntimePath(current,part,'posix');const handle=await open(current,constants.O_RDONLY|constants.O_DIRECTORY|constants.O_NOFOLLOW);retained.push(handle);const st=await handle.stat({bigint:true}),path=await lstat(current,{bigint:true});if(!st.isDirectory()||path.isSymbolicLink()||!same(st,path))throw unsafe(relative,'project parent changed identity');}
    const target=joinRuntimePath(this.#root,relative,'posix');const file=await open(target,constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);retained.push(file);
    const before=await file.stat({bigint:true});if(!before.isFile()||before.nlink!==1n)throw unsafe(relative,'path is not a single-link regular file');
-   if(before.size>BigInt(maxBytes))throw new RemoteFilePolicyError('Limit',relative,'file exceeds bounded size');
+   if(before.size>BigInt(maxBytes))throw new RemoteFileFailure('Size',relative,`file exceeds ${maxBytes} bytes`);
    const bytes=Buffer.alloc(maxBytes+1);let used=0;while(used<bytes.length){const result=await file.read(bytes,used,bytes.length-used,used);if(result.bytesRead===0)break;used+=result.bytesRead;}
-   if(used>maxBytes)throw new RemoteFilePolicyError('Limit',relative,'file exceeds bounded size');
+   if(used>maxBytes)throw new RemoteFileFailure('Size',relative,`file exceeds ${maxBytes} bytes`);
    const after=await file.stat({bigint:true}),observed=await lstat(target,{bigint:true});const canonical=await realpath(target);
    if(!same(before,after)||!same(after,observed)||observed.isSymbolicLink()||after.nlink!==1n||after.size!==before.size||after.mtimeNs!==before.mtimeNs||after.ctimeNs!==before.ctimeNs||!(canonical.startsWith(this.#root.endsWith('/')?this.#root:this.#root+'/')))throw unsafe(relative,'file changed during bounded read');
    await this.#verify();return Buffer.from(bytes.subarray(0,used));

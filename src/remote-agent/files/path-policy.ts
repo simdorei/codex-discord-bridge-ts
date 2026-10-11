@@ -1,8 +1,8 @@
 import {requireDiscordText} from '../../discord/text.ts';
 export type RemotePathPlatform='posix'|'win32';
-export class RemoteFilePolicyError extends Error{
- readonly kind:'UnsafePath'|'UnsafePattern'|'Limit';readonly value:string;readonly reason:string;
- constructor(kind:RemoteFilePolicyError['kind'],value:string,reason:string){super(`${value}: ${reason}`);this.name='RemoteFilePolicyError';this.kind=kind;this.value=value;this.reason=reason;}
+import {RemoteFileFailure} from './error.ts';
+export class RemoteFilePolicyError extends RemoteFileFailure{
+ constructor(kind:'UnsafePath'|'UnsafePattern'|'Limit',value:string,reason:string){super(kind,value,reason);this.name='RemoteFilePolicyError';}
 }
 const sensitive=new Set(['.aws','.codex-remote-mcp','.env','.git','.npmrc','.ssh','cookies.txt','credentials','id_ed25519','id_rsa','secrets','gcloud']);
 function platform(p:RemotePathPlatform):void{if(p!=='posix'&&p!=='win32')throw new TypeError('Expected remote path platform');}
