@@ -39,16 +39,32 @@ export function beginDeliveryReceiptIn(db:DatabaseSync,key:string,hash:string,in
 }
 
 export function confirmDeliveryReceipt(path:string,key:string,messageId:string):Promise<boolean>{
-  text(key);text(messageId);return owned(path,true,db=>{const changed=BigInt(db.prepare("UPDATE codex_delivery_receipts SET message_id=? WHERE receipt_key=? AND message_id IS NULL").run(messageId,key).changes)===1n;
-    if(changed)confirmNewReplyReceiptIn(db,key);return {value:changed,commit:true};});
+  text(key);text(messageId);return owned(path,true,db=>({value:confirmDeliveryReceiptIn(db,key,messageId),commit:true}));
+}
+/** Borrowed transaction; confirmation and /new acknowledgement effects stay atomic. */
+export function confirmDeliveryReceiptIn(db:DatabaseSync,key:string,messageId:string):boolean{
+  text(key);text(messageId);if(!db.isTransaction)throw new StoreIntegrityError("receipt confirmation requires an active transaction");
+  const changed=BigInt(db.prepare("UPDATE codex_delivery_receipts SET message_id=? WHERE receipt_key=? AND message_id IS NULL").run(messageId,key).changes)===1n;
+  if(changed)confirmNewReplyReceiptIn(db,key);return changed;
 }
 /** Caller must have authoritative evidence the failed request could not create a message. */
 export function releaseRejectedDelivery(path:string,key:string):Promise<boolean>{
-  text(key);return owned(path,true,db=>{const changed=BigInt(db.prepare("UPDATE codex_delivery_receipts SET retryable=1 WHERE receipt_key=? AND message_id IS NULL AND blocked_reason IS NULL").run(key).changes)===1n;
-    if(changed)newReplyNoticeRejectedIn(db,key);return {value:changed,commit:true};});
+  text(key);return owned(path,true,db=>({value:releaseRejectedDeliveryIn(db,key),commit:true}));
+}
+/** Borrowed transaction; never infer definite rejection from a timeout. */
+export function releaseRejectedDeliveryIn(db:DatabaseSync,key:string):boolean{
+  text(key);if(!db.isTransaction)throw new StoreIntegrityError("receipt rejection release requires an active transaction");
+  const changed=BigInt(db.prepare("UPDATE codex_delivery_receipts SET retryable=1 WHERE receipt_key=? AND message_id IS NULL AND blocked_reason IS NULL").run(key).changes)===1n;
+  if(changed)newReplyNoticeRejectedIn(db,key);return changed;
 }
 export function blockRejectedDelivery(path:string,key:string,reason:string):Promise<boolean>{
-  text(key);text(reason);const bounded=takeUnicodeScalarChars(reason,1000);return owned(path,false,db=>({value:BigInt(db.prepare("UPDATE codex_delivery_receipts SET blocked_reason=?,retryable=0 WHERE receipt_key=? AND message_id IS NULL").run(bounded,key).changes)===1n,commit:true}));
+  text(key);text(reason);const bounded=takeUnicodeScalarChars(reason,1000);return owned(path,false,db=>({value:blockRejectedDeliveryIn(db,key,bounded),commit:true}));
+}
+/** One borrowed SQL statement; works in caller transaction or original autocommit.
+ * It does not open, commit, roll back or close a connection. */
+export function blockRejectedDeliveryIn(db:DatabaseSync,key:string,reason:string):boolean{
+  text(key);text(reason);const bounded=takeUnicodeScalarChars(reason,1000);
+  return BigInt(db.prepare("UPDATE codex_delivery_receipts SET blocked_reason=?,retryable=0 WHERE receipt_key=? AND message_id IS NULL").run(bounded,key).changes)===1n;
 }
 export function unknownDeliveryReceiptCount(path:string):Promise<bigint>{return owned(path,false,db=>({value:decodeI64(receiptRow(db,"SELECT COUNT(*) AS n FROM codex_delivery_receipts WHERE message_id IS NULL AND retryable=0 AND blocked_reason IS NULL")?.n,"count"),commit:true}));}
 export function blockedDeliveryReceiptCount(path:string):Promise<bigint>{return owned(path,false,db=>({value:decodeI64(receiptRow(db,"SELECT COUNT(*) AS n FROM codex_delivery_receipts WHERE message_id IS NULL AND blocked_reason IS NOT NULL")?.n,"count"),commit:true}));}

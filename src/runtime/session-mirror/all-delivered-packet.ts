@@ -1,12 +1,9 @@
-import {createHash} from 'node:crypto';
-import {serializeSerdeValue} from '../../core/serde-json.ts';
 import {NativeMirrorCursorStore} from './cursor-store.ts';
 import {AnchoredMirrorBatch} from './continuity-observation.ts';
 import {encodeMirrorCursorAnchor,type MirrorCursorAnchor} from '../../core/mirror-cursor-anchor.ts';
 import {snapshotBoundMirrorCursor,type BoundMirrorCursor} from '../../store/mirror-cursor-journal.ts';
-import {snapshotExpectedReceiptBatch,type ExpectedReceipt} from '../../store/confirmed-receipt-batch.ts';
-import {formatMirrorItem} from './collect.ts';
-import {sessionMirrorIdentity,sessionMirrorReceiptExpectations} from './sender.ts';
+import type {ExpectedReceipt} from '../../store/confirmed-receipt-batch.ts';
+import {planMirrorReceiptsOffThread} from './receipt-plan.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 export interface AllDeliveredMirrorPacket{
  readonly expected:BoundMirrorCursor;readonly anchor:MirrorCursorAnchor;readonly turn:string;
@@ -43,22 +40,11 @@ export async function prepareAllDeliveredMirrorPacket(
  requireDiscordText(operationId);
  if(operationId.length===0||operationId.length>128||Buffer.byteLength(operationId)>128)throw new RangeError('Mirror operation identity budget exceeded');
  if(typeof updatedAt!=='number'||!Number.isFinite(updatedAt)||updatedAt<0)throw new TypeError('Invalid mirror packet timestamp');
- if(batch.items.length>4096)throw new RangeError('Mirror packet item budget exceeded');
- let textBytes=0,keyBytes=0;const receipts:ExpectedReceipt[]=[];
- for(const item of batch.items){
-  const text=formatMirrorItem(item);textBytes+=Buffer.byteLength(text);
-  if(textBytes>1048576)throw new RangeError('Mirror packet text budget exceeded');
-  for(const receipt of sessionMirrorReceiptExpectations(channel,sessionMirrorIdentity(batch.thread,item),text)){
-   keyBytes+=Buffer.byteLength(receipt.key)+64;
-   if(receipts.length>=4096||keyBytes>1048576)throw new RangeError('Mirror packet receipt budget exceeded');
-   receipts.push(receipt);
-  }
- }
- const captured=snapshotExpectedReceiptBatch(receipts);
+ const plan=await planMirrorReceiptsOffThread(observation,channel,signal),captured=plan.receipts;
  const next=await AnchoredMirrorBatch.prototype.observeNextBoundary.call(observation,signal);
  signal?.throwIfAborted();
  const result:AllDeliveredMirrorPacket=Object.freeze({expected,anchor:next.anchor,turn:batch.currentTurn??'',channel,updatedAt,operationId,receipts:captured,itemCount:batch.items.length,historyIntegrityVerified:false});
- packets.set(result,Object.freeze({observation,receiptSetHash:createHash('sha256').update(serializeSerdeValue(captured.map(r=>[r.key,r.contentHash]))).digest('hex')}));
+ packets.set(result,Object.freeze({observation,receiptSetHash:plan.receiptSetHash}));
  return result;
 }
 
