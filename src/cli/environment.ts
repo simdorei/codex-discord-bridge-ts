@@ -1,4 +1,4 @@
-import {dirname,join,resolve} from 'node:path';import {types} from 'node:util';
+import {dirname} from 'node:path';import {joinRuntimePath} from '../runtime/runtime-paths/path-text.ts';import {types} from 'node:util';
 import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../runtime/owned-worker-slot.ts';
 import {requireDiscordText} from '../discord/text.ts';
 const slot=new OwnedWorkerSlot('Control');
@@ -6,7 +6,7 @@ export class StartupEnvironmentError extends Error {readonly path:string;readonl
 function path(value:string):string{requireDiscordText(value);if(value.includes('\0')||value.length>32768)throw new TypeError('Invalid startup environment path');return value;}
 /** Native-host path semantics. Caller supplies its actual application entry or
  * packaged executable path, not implicitly the Node binary path. */
-export function defaultStartupEnvironmentPath(executablePath:string):string{return join(dirname(path(executablePath)),'.env');}
+export function defaultStartupEnvironmentPath(executablePath:string):string{return joinRuntimePath(dirname(path(executablePath)),'.env',process.platform==='win32'?'win32':'posix');}
 /** Source environment precedence and missing-file tolerance with bounded native
  * file reading/UTF8 decoding/merge. The caller supplies a process environment
  * snapshot; this module never implicitly reads/logs secrets from process.env.
@@ -20,7 +20,7 @@ export async function loadStartupEnvironmentOffThread(environment:ReadonlyMap<st
  Map.prototype.forEach.call(environment,(value:unknown,key:unknown)=>{if(++inspected>4096)throw new RangeError('Startup environment snapshot exceeds entry budget');if(typeof key!=='string'||typeof value!=='string')throw new TypeError('Expected environment strings');units+=key.length+value.length;if(entries.length>=4096||units>1048576)throw new RangeError('Startup environment snapshot exceeds budget');try{requireDiscordText(key);requireDiscordText(value);}catch{return;}entries.push([key,value]);});
  const selectedPath=explicitPath===null?defaultStartupEnvironmentPath(executablePath):path(explicitPath);
  // Empty explicit path is ENOENT in source, not the current directory.
- const filePath=selectedPath===''?'':resolve(selectedPath);if(filePath.length>32768)throw new RangeError('Startup environment path exceeds budget');
+ const filePath=selectedPath===''?'':joinRuntimePath(process.cwd(),selectedPath,process.platform==='win32'?'win32':'posix');if(filePath.length>32768)throw new RangeError('Startup environment path exceeds budget');
  if(slot.busy)throw new OwnedWorkerBusyError();const pending=slot.run(new URL('./environment-worker.ts',import.meta.url),{entries,filePath},timeoutMs,signal),joined=slot.join();let response:unknown;
  try{response=await pending;}finally{await joined;}signal?.throwIfAborted();
  if(response===null||typeof response!=='object')throw new TypeError('Invalid environment worker response');const r=response as {ok?:unknown;code?:unknown;entries?:unknown};if(r.ok===false){if(typeof r.code!=='string'||r.code.length>100)throw new TypeError('Invalid environment failure');throw new StartupEnvironmentError(filePath,r.code);}
