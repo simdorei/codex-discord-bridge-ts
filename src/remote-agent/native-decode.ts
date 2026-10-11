@@ -1,6 +1,7 @@
 import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../runtime/owned-worker-slot.ts';
 import {RemoteProtocolError} from './handshake.ts';
 import type {ProjectOperation} from './project-request.ts';
+import type {GatewayInboundMessage} from './gateway-inbound.ts';
 const slot=new OwnedWorkerSlot();
 export interface DecodedRemoteOperation{readonly operation:ProjectOperation;readonly lifetimeSeconds:bigint;}
 /** A trusted module's structured-cloned output is already privately owned. Bound
@@ -24,23 +25,40 @@ function freezeResult(value:unknown,maxStringUnits:number):void{
 /** One decode owner, no waiting queue, sharing the global Background budget.
  * Timeout/abort waits for actual worker exit before returning; there is no forced
  * termination, automatic retry, session authority, or operation execution. */
-export async function decodeProjectOperationOffThread(raw:string,maxBytes:number,signal?:AbortSignal,timeoutMs=6000):Promise<DecodedRemoteOperation>{
+async function decodeOwned(raw:string,maxBytes:number,mode:'operation'|'gateway',signal:AbortSignal|undefined,timeoutMs:number):Promise<Record<string,unknown>>{
  signal?.throwIfAborted();
  if(typeof raw!=='string')throw new TypeError('Expected remote JSON text');
  if(!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>12000000)throw new RangeError('Invalid remote frame byte budget');
  if(raw.length>maxBytes||Buffer.byteLength(raw)>maxBytes)throw new RangeError('Remote protocol frame exceeds byte budget');
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid remote decode timeout');
  if(slot.busy)throw new OwnedWorkerBusyError();
- const pending=slot.run(new URL('./decode-worker.ts',import.meta.url),{raw,maxBytes},timeoutMs,signal),joined=slot.join();let result:unknown;
+ const pending=slot.run(new URL('./decode-worker.ts',import.meta.url),{raw,maxBytes,mode},timeoutMs,signal),joined=slot.join();let result:unknown;
  try{result=await pending;}finally{await joined;}signal?.throwIfAborted();
  freezeResult(result,maxBytes+32768);
  if(result===null||typeof result!=='object'||!Object.hasOwn(result,'ok'))throw new TypeError('Invalid native remote decode envelope');
  const v=result as Record<string,unknown>;
  if(v.ok===false){
   if(typeof v.detail!=='string'||typeof v.kind!=='string')throw new TypeError('Invalid native remote error');
+  if(v.kind==='UnsupportedVersion'){if(typeof v.received!=='bigint'||v.received<0n||v.received>18446744073709551615n)throw new TypeError('Invalid native unsupported version');throw new RemoteProtocolError('UnsupportedVersion','',v.received);}
   if(v.kind==='Json'||v.kind==='Validation'){const error=new RemoteProtocolError(v.kind,'');error.message=v.detail;throw error;}
   if(v.kind==='Range')throw new RangeError(v.detail);if(v.kind==='Type')throw new TypeError(v.detail);throw new Error(v.detail);
  }
- if(v.ok!==true||typeof v.lifetimeSeconds!=='bigint'||v.lifetimeSeconds<1n||v.lifetimeSeconds>3615n||v.operation===null||typeof v.operation!=='object')throw new TypeError('Invalid native remote operation');
+ if(v.ok!==true)throw new TypeError('Invalid native remote decode status');
+ return v;
+}
+export async function decodeProjectOperationOffThread(raw:string,maxBytes:number,signal?:AbortSignal,timeoutMs=6000):Promise<DecodedRemoteOperation>{
+ const v=await decodeOwned(raw,maxBytes,'operation',signal,timeoutMs);
+ if(typeof v.lifetimeSeconds!=='bigint'||v.lifetimeSeconds<1n||v.lifetimeSeconds>3615n||v.operation===null||typeof v.operation!=='object')throw new TypeError('Invalid native remote operation');
  return Object.freeze({operation:v.operation as ProjectOperation,lifetimeSeconds:v.lifetimeSeconds});
+}
+
+/** Full gateway inbound envelope (two acknowledgements and seven commands),
+ * decoded in the same bounded native lane as project operations. Session and
+ * deadline data are not authorization or permission to execute an operation. */
+export async function decodeGatewayMessageOffThread(raw:string,maxBytes:number,signal?:AbortSignal,timeoutMs=6000):Promise<GatewayInboundMessage>{
+ const v=await decodeOwned(raw,maxBytes,'gateway',signal,timeoutMs),message=v.message;
+ if(message===null||typeof message!=='object'||!Object.hasOwn(message,'type'))throw new TypeError('Invalid native gateway message');
+ const type=(message as Record<string,unknown>).type;
+ if(typeof type!=='string'||!['hello_ack','project_ack','project_info','list_files','read_file','write_file','project_operation','project_session','device_session'].includes(type))throw new TypeError('Invalid native gateway message type');
+ return message as GatewayInboundMessage;
 }
