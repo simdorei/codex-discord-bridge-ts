@@ -3,11 +3,14 @@ import {parseProjectOperation,projectRequestLifetimeSeconds} from './project-req
 import {parseGatewayInboundMessage} from './gateway-inbound.ts';
 import {parseBridgeInboundMessage} from './bridge-inbound.ts';
 import {serializeBridgeInboundMessage} from './bridge-serialize.ts';
+import {fingerprintGatewayCommand} from './command-fingerprint.ts';
 import {RemoteProtocolError} from './handshake.ts';
 import {boundedSerdeByteCount} from '../core/serde-byte-count.ts';
 const port=parentPort;if(port===null)throw new Error('Remote decode requires a native owner');
 try{
- const result=workerData.mode==='serialize_bridge'
+ const result=workerData.mode==='fingerprint_command'
+  ? {ok:true,fingerprint:fingerprintGatewayCommand(workerData.value,workerData.maxBytes)}
+  : workerData.mode==='serialize_bridge'
   ? {ok:true,wire:serializeBridgeInboundMessage(workerData.value,workerData.maxBytes)}
   : workerData.mode==='bridge'
   ? {ok:true,message:parseBridgeInboundMessage(workerData.raw,workerData.maxBytes)}

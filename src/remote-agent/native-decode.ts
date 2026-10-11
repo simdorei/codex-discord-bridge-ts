@@ -3,6 +3,7 @@ import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../runtime/owned-worker-slot
 import {RemoteProtocolError} from './handshake.ts';
 import type {ProjectOperation} from './project-request.ts';
 import type {GatewayInboundMessage} from './gateway-inbound.ts';
+import type {GatewayCommand} from './gateway-command.ts';
 import type {BridgeInboundMessage} from './bridge-inbound.ts';
 const slot=new OwnedWorkerSlot();
 export interface DecodedRemoteOperation{readonly operation:ProjectOperation;readonly lifetimeSeconds:bigint;}
@@ -113,4 +114,16 @@ export async function serializeBridgeMessageOffThread(value:BridgeInboundMessage
  const result=await runOwned({mode:'serialize_bridge',value,maxBytes},maxBytes,signal,timeoutMs);
  if(typeof result.wire!=='string'||result.wire.length>maxBytes)throw new TypeError('Invalid native bridge wire output');
  return result.wire;
+}
+
+/** Heavy canonicalization and hashing of decoded command contents share the
+ * native lane and actual-exit accounting with wire codecs. No result cache or
+ * executable mutation is created by computing this identity. */
+export async function fingerprintGatewayCommandOffThread(value:GatewayCommand,maxBytes:number,signal?:AbortSignal,timeoutMs=6000):Promise<string>{
+ signal?.throwIfAborted();
+ if(!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>12000000)throw new RangeError('Invalid command fingerprint budget');
+ requireImmutableDto(value,maxBytes+32768);
+ const result=await runOwned({mode:'fingerprint_command',value,maxBytes},maxBytes,signal,timeoutMs);
+ if(typeof result.fingerprint!=='string'||!/[a-f0-9]{64}/u.test(result.fingerprint)||result.fingerprint.length!==64)throw new TypeError('Invalid native command fingerprint');
+ return result.fingerprint;
 }
