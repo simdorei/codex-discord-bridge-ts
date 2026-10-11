@@ -61,13 +61,15 @@ export class CompletionPipeline{
  }
  notifyDeliveryReady():void{this.#scheduler.notifyDeliveryReady();}
  get availableEventBytes():number{return this.#intake.availableBytes;}
- async run(signal:AbortSignal):Promise<void>{
+ /** Pass the exact receiver captured before startup recovery. Precondition failure
+  * retains caller ownership; an entered intake disposes it after joined stop. */
+ async run(signal:AbortSignal,startupReceiver?:ReturnType<PortableResidentLifecycle['subscribeNotifications']>):Promise<void>{
   if(this.#used)throw new TypeError('Completion pipeline already used');this.#used=true;
   if(!this.#server.observationTrackingEnabled())throw new TypeError('Install the runtime observation journal before completion intake');
   const cancel=new AbortController(),stop=()=>cancel.abort(signal.reason);signal.addEventListener('abort',stop,{once:true});if(signal.aborted)stop();
   const failures:unknown[]=[];const track=async(work:Promise<void>)=>{try{await work;}catch(error){if(!cancel.signal.aborted||error!==cancel.signal.reason){failures.push(error);cancel.abort(error);}}};
   try{
-   const intake=track(this.#intake.run(cancel.signal).finally(()=>this.#scheduler.finishInput()));
+   const intake=track(this.#intake.run(cancel.signal,undefined,startupReceiver).finally(()=>this.#scheduler.finishInput()));
    const reconcile=track(this.#reconciler.run(cancel.signal));
    const idle=track(this.#idle.run(cancel.signal));
    const typing=track(this.#typing.run(cancel.signal));

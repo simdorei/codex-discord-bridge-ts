@@ -80,13 +80,15 @@ export class CompletionSourceIntake{
   await yieldToRuntime(); // Explicit page boundary, like source yield_now; microtasks alone do not yield I/O.
  }
  /** Immediate initial scan then delayed 250ms/wakeup scans. Losing receives/ticks stay
-  * owned; shutdown cancels and joins them, never leaves a detached receiver task. */
- async run(signal:AbortSignal,ticks:TickSource=new DelayedTicks(250)):Promise<void>{
+  * owned; shutdown cancels and joins them, never leaves a detached receiver task.
+  * An explicit startup receiver transfers after the ownership precheck, including
+  * pre-abort. Never resubscribe and discard its pre-recovery event prefix. */
+ async run(signal:AbortSignal,ticks:TickSource=new DelayedTicks(250),startupReceiver?:ReturnType<Server['subscribeNotifications']>):Promise<void>{
   if(this.#closed||this.#running||this.#busy){ticks.close();throw new TypeError("Source intake already owned");}this.#running=true;
-  const cancel=new AbortController(),reason=Object.freeze({sourceIntakeStopped:true});let receiver:ReturnType<Server['subscribeNotifications']>|undefined;let pendingReceive:Promise<{kind:"event";event:ResidentNotificationEvent}|{kind:"error";error:unknown}>|undefined,pendingTick:Promise<{kind:"tick"}|{kind:"tick-error";error:unknown}>|undefined;let stopped!:()=>void;
+  const cancel=new AbortController(),reason=Object.freeze({sourceIntakeStopped:true});let receiver:ReturnType<Server['subscribeNotifications']>|undefined=startupReceiver;let pendingReceive:Promise<{kind:"event";event:ResidentNotificationEvent}|{kind:"error";error:unknown}>|undefined,pendingTick:Promise<{kind:"tick"}|{kind:"tick-error";error:unknown}>|undefined;let stopped!:()=>void;
   const stop=new Promise<{kind:"stop"}>(resolve=>{stopped=()=>resolve({kind:"stop"});});signal.addEventListener("abort",stopped,{once:true});
   try{
-   if(signal.aborted)return;receiver=this.#server.subscribeNotifications();
+   if(signal.aborted)return;receiver??=this.#server.subscribeNotifications();
    const receive=()=>receiver!.receive(cancel.signal).then(event=>({kind:"event" as const,event}),error=>({kind:"error" as const,error}));
    const tick=()=>ticks.wait().then(()=>({kind:"tick" as const}),error=>({kind:"tick-error" as const,error}));pendingReceive=receive();pendingTick=tick();await this.#scan(signal);
    while(!signal.aborted){const result=await Promise.race([pendingReceive,pendingTick,stop]);if(result.kind==="stop")break;if(result.kind==="tick-error")throw result.error;

@@ -67,3 +67,17 @@ test("activation and window failures do not advance cursor and activation is ret
 test("closed broadcast ends loop and returns all queued byte ownership",{timeout:10000},async t=>storeFixture(async path=>{
  const f=fake();f.notifications.record(unknown());const budget=new CompletionEventBudget(),intake=new CompletionSourceIntake(path,f.server,new TerminalFence(),false,()=>{},budget),tick=deferred();const run=intake.run(new AbortController().signal,{wait:()=>tick.promise,close:()=>tick.resolve()});while(f.broadcast.receiverCount!==1)await delay(1,undefined,{signal:t.signal});f.broadcast.close();await run;assert.equal(intake.queue.length,0);assert.equal(budget.availableBytes,budget.capacity);assert.equal(f.broadcast.pendingWaiters,0);
 }));
+
+test('transferred startup receiver retains old-generation terminal prefix without a second subscription',{timeout:10000},async t=>storeFixture(async path=>{
+ await running(path);const f=fake(),receiver=f.broadcast.subscribe();f.setGeneration(2n);f.broadcast.send(Object.freeze({kind:'Notification',generation:1n,notification:terminal}));f.server.subscribeNotifications=()=>{throw new Error('late resubscription loses prefix');};
+ const received=deferred(),tick=deferred(),shutdown=new AbortController(),events:ResidentNotificationEvent[]=[];
+ const intake=new CompletionSourceIntake(path,f.server,new TerminalFence(),false,x=>{f.reports.push(x);},new CompletionEventBudget(),state,event=>{events.push(event.payload);event.dispose();received.resolve();return true;});
+ const run=intake.run(shutdown.signal,{wait:()=>tick.promise,close:()=>tick.resolve()},receiver);
+ try{await Promise.race([received.promise,run]);assert.equal(events.length,1);assert.equal(events[0]?.generation,1n);assert.equal(await state.hasObservedCompletion(path,'target','turn'),true);assert.equal(intake.forwarded,0n);assert.deepEqual(f.reports,[]);}finally{shutdown.abort();try{await run;}finally{receiver.dispose();}}
+ assert.equal(f.broadcast.receiverCount,0);assert.equal(f.broadcast.pendingWaiters,0);
+}));
+
+test('pre-aborted source intake disposes transferred startup receiver without creating another subscription',async()=>storeFixture(async path=>{
+ const f=fake(),receiver=f.broadcast.subscribe(),tick=deferred(),shutdown=new AbortController();shutdown.abort('already stopped');f.server.subscribeNotifications=()=>{throw Error('must not subscribe');};const intake=new CompletionSourceIntake(path,f.server,new TerminalFence(),false,()=>{});
+ try{await intake.run(shutdown.signal,{wait:()=>tick.promise,close:()=>tick.resolve()},receiver);assert.equal(f.broadcast.receiverCount,0);assert.deepEqual(receiver.tryReceive(),{kind:'Closed'});}finally{receiver.dispose();}
+}));
