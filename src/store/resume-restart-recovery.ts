@@ -65,3 +65,11 @@ export function recoverIdleResume(path:string,runtime:string,resident:string,gen
   ownerIsCurrent(db,runtime);return commitStore(jobs.length);
  }));
 }
+
+/** Native transport evidence only. This is not a replay or release capability.
+ * The receiving worker rescans the pinned current store, compares these exact
+ * original bytes and then uses its own opaque candidate inside recovery. */
+export function resumeRecoveryCandidateEvidence(candidate:ResumeRecoveryCandidate):string{
+ const saved=candidate!==null&&typeof candidate==='object'?originals.get(candidate):undefined;
+ if(saved===undefined)refused('Expected owned resume recovery candidate');return saved.original;
+}

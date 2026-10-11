@@ -1,3 +1,4 @@
+import {recoverRuntimeResumesOffThread} from './resume-recovery.ts';
 import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
@@ -29,8 +30,8 @@ export async function startRuntimeFoundation(paths:Pick<RuntimePaths,'stateDb'|'
  const retirement=await retireRuntimeReserveOffThread(pinnedPaths.mirrorDb,pinnedLimits,timeoutMs,signal);signal?.throwIfAborted();
  const owner=await startRuntimeResident(pinnedConfig,pinnedPaths.mirrorDb,runtimeId,startupChannel,render,signal);
  try{
-  signal?.throwIfAborted();const heldIngress=await recoverRuntimeIngressOffThread(pinnedPaths.mirrorDb,runtimeId,Date.now()/1000,pinnedLimits,timeoutMs,signal);signal?.throwIfAborted();
-  return Object.freeze({owner,retirement,heldIngress});
+  signal?.throwIfAborted();const resumeRecovery=await recoverRuntimeResumesOffThread(owner,pinnedPaths.mirrorDb,runtimeId,render,signal);signal?.throwIfAborted();const heldIngress=await recoverRuntimeIngressOffThread(pinnedPaths.mirrorDb,runtimeId,Date.now()/1000,pinnedLimits,timeoutMs,signal);signal?.throwIfAborted();
+  return Object.freeze({owner,retirement,heldIngress,resumeRecovery});
  }catch(primary){
   try{await owner.dispose();}catch(cleanup){throw new RuntimeResidentStartupCleanupError(primary,cleanup,owner);}throw primary;
  }
