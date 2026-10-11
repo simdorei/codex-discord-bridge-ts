@@ -1,0 +1,26 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 560,
+  "localCommit": "2d7a141ccfd70ce09a8cff975f7a6aeea789daa3",
+  "fullTests": 7084,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/cli/environment-worker.ts": "a5fdb0aec34dc68ed6777a0470dfe1e6113eab650634aff09ac481e43904e922",
+    "src/cli/environment.ts": "a0e1d9b03b7e785abd978cfd9b45f71112623e299a0836b8fcb54b66de05f057",
+    "src/cli/preflight.ts": "6360116e490ac33fd9bcc7f20f619d25e70b529a2eb20bccf500092804e473d4",
+    "src/remote-agent/runner.ts": "a85a645eb4d772ee9b803fe0126e13ec19e2aaa4974a35404ffd702533caddd7",
+    "test/cli/environment.test.ts": "777a0e9e46003790bff320233c0bb06d7490da4508cc0147fe3e1f1c01576757",
+    "test/cli/preflight.test.ts": "44f248edd9a46885a6ff93856932885701fdd7819a6436fbac1f19ce8b2574e5",
+    "test/remote-agent/runner.test.ts": "d3428ef1785e2197dd8337613f17420f00bf7e0bbb2fbafcd936d6e832d49fcb"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

@@ -27,3 +27,7 @@ it('preabort has no port effects and diagnostic sink failure stops with status d
 it('active ports reject without executing accessors',async()=>{
  let calls=0;await assert.rejects(runRemoteAgentLoop(0n,new RemoteAgentStatus(),{get connectAndServe(){calls++;return async()=>{};},disconnected:async()=>{}},new AbortController().signal),TypeError);assert.equal(calls,0);
 });
+it('malformed non-Promise connection port is a contract failure, never a reconnectable transport result',async()=>{
+ let calls=0,hooks=0,reports=0;const connect=(()=>{calls++;return {then(){hooks++;}};}) as unknown as (generation:bigint,status:RemoteAgentStatus,shutdown:AbortSignal)=>Promise<void>;
+ await assert.rejects(runRemoteAgentLoop(0n,new RemoteAgentStatus(),{connectAndServe:connect,disconnected:async()=>{reports++;throw new Error('contract violation must not enter reconnect diagnostics');}},new AbortController().signal),e=>e instanceof TypeError&&e.message==='Remote runner port must return a Promise');assert.equal(calls,1);assert.equal(hooks,0);assert.equal(reports,0);
+});

@@ -11,7 +11,8 @@ export interface RemoteAgentLoopPorts {
   * failure stops this adapter, rather than creating an unobserved retry loop. */
  readonly disconnected:(event:RemoteDisconnect)=>Promise<void>;
 }
-function promise<T>(v:unknown):Promise<T>{if(!types.isPromise(v))throw new TypeError('Remote runner port must return a Promise');return v as Promise<T>;}
+class RemoteRunnerPortContractError extends TypeError {constructor(){super('Remote runner port must return a Promise');this.name='RemoteRunnerPortContractError';}}
+function promise<T>(v:unknown):Promise<T>{if(!types.isPromise(v))throw new RemoteRunnerPortContractError();return v as Promise<T>;}
 function fn<T>(ports:unknown,key:string):T{const v=own(ports,key);if(typeof v!=='function'||types.isProxy(v)||types.isGeneratorFunction(v))throw new TypeError('Expected owned remote runner port');return v as T;}
 function signal(value:AbortSignal):void{if(types.isProxy(value)||!(value instanceof AbortSignal))throw new TypeError('Expected owned remote shutdown signal');}
 function seconds(value:bigint):void{if(typeof value!=='bigint'||value<0n||value>18446744073709551615n)throw new RangeError('Invalid remote reconnect delay');}
@@ -39,7 +40,7 @@ export async function runRemoteAgentLoop(delaySeconds:bigint,status:RemoteAgentS
  try{
   while(!shutdown.aborted){
    generation=nextRemoteGeneration(generation);let outcome:RemoteDisconnect=Object.freeze({generation,ok:true});
-   try{await promise<void>(connect(generation,status,shutdown));}catch(error){outcome=Object.freeze({generation,ok:false,error});}
+   try{await promise<void>(connect(generation,status,shutdown));}catch(error){if(error instanceof RemoteRunnerPortContractError)throw error;outcome=Object.freeze({generation,ok:false,error});}
    RemoteAgentStatus.prototype.setDisconnected.call(status);if(shutdown.aborted)return;
    await promise<void>(disconnected(outcome));
    if(await waitRemoteReconnect(delaySeconds,shutdown))return;
