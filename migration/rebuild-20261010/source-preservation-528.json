@@ -1,0 +1,21 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 528,
+  "localCommit": "50434c45a4d5f15eebacfb01b0c05bf92877405e",
+  "fullTests": 6907,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/remote-agent/handshake.ts": "27431172b798007a9f4ac088d8a53b24dfa357f29dc85e10bc3d5de10da15376",
+    "test/remote-agent/handshake.test.ts": "436e45b489c3a38d8d04d5e6a9890eaa0caf5d7cf0319c51bb5d422280e2b7cc"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}
