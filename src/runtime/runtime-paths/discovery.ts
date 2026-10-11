@@ -1,3 +1,4 @@
+import {RuntimePathBudgetError} from './directory-reader.ts';
 import {types} from 'node:util';
 import {asciiLower,rustTrim} from '../../config/remote.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
@@ -18,8 +19,10 @@ function first(env:RuntimeEnvironment,keys:readonly string[],platform:PathPlatfo
 /** Native Windows PATH quote handling, including quoted semicolons inside a
  * component, empty entries and an unmatched closing region. POSIX has no quoting. */
 export function splitRuntimeSearchPath(raw:string,platform:PathPlatform):readonly string[]{
- requireDiscordText(raw);if(platform==='posix')return Object.freeze(raw.split(':'));if(platform!=='win32')throw new TypeError('Expected path platform');
- const output:string[]=[];let current='',quoted=false;for(const char of raw){if(char==='"')quoted=!quoted;else if(char===';'&&!quoted){output.push(current);current='';}else current+=char;}output.push(current);return Object.freeze(output);
+ if(typeof raw!=='string')throw new TypeError('Expected search path text');if(raw.length>1048576)throw new RuntimePathBudgetError('pathInput');requireDiscordText(raw);if(platform!=='win32'&&platform!=='posix')throw new TypeError('Expected path platform');
+ const output:string[]=[];let current='',quoted=false;
+ const append=()=>{if(output.length>=4096)throw new RuntimePathBudgetError('pathComponents');output.push(current);current='';};
+ for(const char of raw){if(platform==='win32'&&char==='"')quoted=!quoted;else if((platform==='posix'&&char===':')||(platform==='win32'&&char===';'&&!quoted))append();else current+=char;}append();return Object.freeze(output);
 }
 /** Environment is explicit and snapshotted. Discovery reads metadata only and
  * never executes discovered binaries or opens their databases. Native Windows

@@ -1,23 +1,17 @@
 import {joinRuntimePath as appendName} from './path-text.ts';
-import {readdir} from 'node:fs/promises';
+import {readRuntimeDirectory} from './directory-reader.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {nativeExecutableProbe,type ExecutableProbe} from './executable.ts';
 
 export interface StateDatabaseProbe extends ExecutableProbe {
-  /** Immediate entry names only; failed native directory reads become an empty list. */
+  /** Immediate names only; native open failure is empty, post-open read/budget/close errors reject. */
   entryNames(directory:string):Promise<readonly string[]>;
 }
 export const nativeStateDatabaseProbe:StateDatabaseProbe=Object.freeze({
   ...nativeExecutableProbe,
-  async entryNames(directory:string):Promise<readonly string[]> {
-    let entries:Buffer[];try { entries=await readdir(directory,{encoding:'buffer'}); } catch { return []; }
-    const names:string[]=[];const decoder=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true});
-    // Rust file_name().to_str() refuses invalid UTF-8 instead of replacing bytes.
-    for(const entry of entries){try{names.push(decoder.decode(entry));}catch{continue;}}
-    return names;
-  },
+  entryNames:readRuntimeDirectory,
 });
 /** Read-only selection shared by future online/offline path resolvers. Does not
  * open SQLite, initialize a database, or create the fallback file. Directory
