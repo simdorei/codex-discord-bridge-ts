@@ -1,3 +1,4 @@
+import * as PreparedMutationValidation from '../../src/store/prepared-mutation-validation.ts';
 import * as ResumeRestartRecovery from '../../src/store/resume-restart-recovery.ts';
 import * as NewReplyCheckpoint from '../../src/store/new-reply-checkpoint.ts';
 import * as NewReplyPending from '../../src/store/new-reply-pending.ts';
@@ -370,6 +371,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     );
     assert.strictEqual(StateAccessFacade.markRunning, QueueMarkRunning.markRunning);
     assert.strictEqual(StateAccessFacade.activate, MutationAttempt.activate);
+    assert.strictEqual(StateAccessFacade.revalidatePreparedMutation, PreparedMutationValidation.revalidatePreparedMutation);
     assert.strictEqual(StateAccessFacade.beginChecked, MutationAttempt.beginChecked);
     assert.strictEqual(StateAccessFacade.finish, MutationAttempt.finish);
     assert.strictEqual(StateAccessFacade.openCheckedRead, CheckedRead.open);
@@ -390,6 +392,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.checkResponseCustody, ResponseCustody.checkResponseCustody);
     assert.strictEqual(StateAccessFacade.checkAllResponseCustody, ResponseCustody.checkAllResponseCustody);
     assert.strictEqual(StateAccessFacade.validateQueueStartAuthorityIn, QueueStartAuthority.validateQueueStartAuthorityIn);
+    assert.strictEqual(StateAccessFacade.revalidateQueueStartAuthorityIn, QueueStartAuthority.revalidateQueueStartAuthorityIn);
     assert.strictEqual(StateAccessFacade.validateStopRequestIn, StopRevision.validateStopRequestIn);
     assert.strictEqual(StateAccessFacade.checkMutationCustody, MutationAttempt.check);
     assert.strictEqual(StateAccessFacade.scanResumeRecoveryCandidates, ResumeRestartRecovery.scanResumeRecoveryCandidates);
@@ -516,6 +519,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "asyncTargetDispatchHeld",
       "attachGoalTurnObservedIfOwned",
       "beginAppServerForkHandoff",
+      "revalidatePreparedMutation",
+      "revalidateQueueStartAuthorityIn",
       "beginChecked",
       "canonicalizePromptIntakeTarget",
       "captureAsyncHistorySnapshot",
@@ -702,7 +707,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 254);
+    assert.strictEqual(actual.length, 256);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

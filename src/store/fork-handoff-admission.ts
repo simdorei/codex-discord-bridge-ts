@@ -76,6 +76,11 @@ const RUST_WHITESPACE_ONLY=/^[\u0009-\u000d\u0020\u0085\u00a0\u1680\u2000-\u200a
 export function ensureNoUnresolvedHandoff(db: DatabaseSync, target: string): void {
   requireText(target);
   ensureForkHandoffTable(db);
+  requireNoUnresolvedHandoffExistingIn(db,target);
+}
+/** Read-only counterpart for an already initialized store. Missing schema fails closed. */
+export function requireNoUnresolvedHandoffExistingIn(db:DatabaseSync,target:string):void {
+  requireText(target);
   const stmt=db.prepare(`SELECT ${COLUMNS},${RAW_FIELDS},
     (SELECT encoding FROM pragma_encoding) AS encoding
     FROM codex_thread_fork_handoffs WHERE source_thread_id=?`);
@@ -100,11 +105,18 @@ export function ensureNoUnresolvedHandoff(db: DatabaseSync, target: string): voi
   }
 }
 export function ensureSourceNotMoved(db: DatabaseSync, source: string): void {
+  sourceNotMoved(db,source,true);
+}
+/** Uses existing schema only; never performs migration during final validation. */
+export function requireSourceNotMovedExistingIn(db:DatabaseSync,source:string):void {
+  sourceNotMoved(db,source,false);
+}
+function sourceNotMoved(db:DatabaseSync,source:string,initialize:boolean):void {
   requireText(source);
   const enabled=db.prepare("SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='codex_exact_thread_routing') AS enabled");
   enabled.setReadBigInts(true);
   if(decodeBool(enabled.get()!.enabled,"enabled")) return;
-  ensureForkHandoffTable(db);
+  if(initialize)ensureForkHandoffTable(db);
   const row=db.prepare(`SELECT target_thread_id,CAST(target_thread_id AS BLOB) AS raw,
     (SELECT encoding FROM pragma_encoding) AS encoding
     FROM codex_thread_fork_handoffs WHERE source_thread_id=? AND completed_at IS NOT NULL`).get(source);

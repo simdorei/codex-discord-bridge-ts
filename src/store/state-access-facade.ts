@@ -1,3 +1,4 @@
+import * as PreparedMutationValidation from './prepared-mutation-validation.ts';
 import * as ResumeRestartRecovery from './resume-restart-recovery.ts';
 import * as NewReplyCheckpoint from './new-reply-checkpoint.ts';
 import * as NewReplyPending from './new-reply-pending.ts';
@@ -264,6 +265,7 @@ export const checkResponseCustody: typeof ResponseCustody.checkResponseCustody =
 export const checkAllResponseCustody: typeof ResponseCustody.checkAllResponseCustody = ResponseCustody.checkAllResponseCustody;
 
 export const validateQueueStartAuthorityIn: typeof QueueStartAuthority.validateQueueStartAuthorityIn = QueueStartAuthority.validateQueueStartAuthorityIn;
+export const revalidateQueueStartAuthorityIn: typeof QueueStartAuthority.revalidateQueueStartAuthorityIn = QueueStartAuthority.revalidateQueueStartAuthorityIn;
 export const validateStopRequestIn: typeof StopRevision.validateStopRequestIn = StopRevision.validateStopRequestIn;
 
 export const scanResumeRecoveryCandidates: typeof ResumeRestartRecovery.scanResumeRecoveryCandidates = ResumeRestartRecovery.scanResumeRecoveryCandidates;
@@ -375,6 +377,7 @@ export const markRunning: typeof QueueMarkRunning.markRunning =
   QueueMarkRunning.markRunning;
 export const activate: typeof MutationAttempt.activate =
   MutationAttempt.activate;
+export const revalidatePreparedMutation: typeof PreparedMutationValidation.revalidatePreparedMutation = PreparedMutationValidation.revalidatePreparedMutation;
 export const beginChecked: typeof MutationAttempt.beginChecked =
   MutationAttempt.beginChecked;
 export const finish: typeof MutationAttempt.finish =
@@ -597,6 +600,7 @@ export interface IStateAccessFacade {
   readonly finishResponseCustody: typeof ResponseCustody.finishResponseCustody;
   readonly checkResponseCustody: typeof ResponseCustody.checkResponseCustody;
   readonly checkAllResponseCustody: typeof ResponseCustody.checkAllResponseCustody;
+  readonly revalidateQueueStartAuthorityIn: typeof QueueStartAuthority.revalidateQueueStartAuthorityIn;
   readonly validateQueueStartAuthorityIn: typeof QueueStartAuthority.validateQueueStartAuthorityIn;
   readonly validateStopRequestIn: typeof StopRevision.validateStopRequestIn;
   readonly scanResumeRecoveryCandidates: typeof ResumeRestartRecovery.scanResumeRecoveryCandidates;
@@ -671,6 +675,7 @@ export interface IStateAccessFacade {
   readonly enqueueInTransaction: typeof QueueEnqueue.enqueueInTransaction;
   readonly markRunning: typeof QueueMarkRunning.markRunning;
   readonly activate: typeof MutationAttempt.activate;
+  readonly revalidatePreparedMutation: typeof PreparedMutationValidation.revalidatePreparedMutation;
   readonly beginChecked: typeof MutationAttempt.beginChecked;
   readonly finish: typeof MutationAttempt.finish;
   readonly openCheckedRead: typeof CheckedRead.open;
@@ -866,6 +871,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   finishResponseCustody,
   checkResponseCustody,
   checkAllResponseCustody,
+  revalidateQueueStartAuthorityIn,
   validateQueueStartAuthorityIn,
   validateStopRequestIn,
   scanResumeRecoveryCandidates,
@@ -940,6 +946,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   enqueueInTransaction,
   markRunning,
   activate,
+  revalidatePreparedMutation,
   beginChecked,
   finish,
   openCheckedRead,

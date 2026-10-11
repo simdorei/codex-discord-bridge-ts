@@ -1,0 +1,25 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 628,
+  "localCommit": "8af61b4999b1079ab54eee52e97028953c10093f",
+  "fullTests": 7426,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/store/fork-handoff-admission.ts": "d0d4434964892653c82f945e63d1fe45250b4b9f6ccf9169c53eeda6d8618dcd",
+    "src/store/prepared-mutation-validation.ts": "7e3f10fc78ca30451d330e5afa2a42dfc1c2e0f7e239625c3e9587cf5fb52c32",
+    "src/store/queue-start-authority.ts": "bcc79e89b841b3215278b98a0473b0389895583f4da50ade4054c3134d3e038e",
+    "src/store/state-access-facade.ts": "85559f38027a11619a498c21cd096fe90d86a03032eee1ea68d96c22fb1844fd",
+    "test/store/prepared-mutation-validation.test.ts": "8f1630a688cae0ecffd09ef290dfcfc428a28e0c308890d183379260b251991f",
+    "test/store/state-access-facade.test.ts": "e1d1eceadc17cb404bfeaa4f99566d1bf9ea81c26b70b32646550727d267ad95"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}
