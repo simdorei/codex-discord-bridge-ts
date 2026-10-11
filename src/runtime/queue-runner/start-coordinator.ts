@@ -72,6 +72,8 @@ export class QueueStartCoordinator {
   }
 
   get dbPath():string{return this.#path;}
+  /** Runtime composition may bind only this coordinator's original backend. */
+  requireBackend(backend:QueueStartBackend):void{if(this.#backend!==backend)throw new TypeError('Queue backend differs from runtime resident binding');}
   notifyDeliveryReady():void{this.#notify();}
   enterBackgroundRecovery():readonly [AdmissionPermit,boolean]|null{return this.#gate?.tryEnterControlObserved()??null;}
 

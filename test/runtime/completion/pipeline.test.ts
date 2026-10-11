@@ -1,3 +1,6 @@
+import {startCompletionRuntimeWorker} from '../../../src/runtime/discord-runtime/completion-start.ts';
+import {RuntimeWorkerExitChannel,type RuntimeMonitoredWorker} from '../../../src/runtime/discord-runtime/monitored-worker.ts';
+import {AppServerTurnBackend} from '../../../src/runtime/app-server-turn-backend.ts';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import * as http from 'node:http';
@@ -58,19 +61,31 @@ test('native helper -> completion pipeline -> owned HTTP client -> full model ->
  const abort=new AbortController(),sent=deferred(),bodies:string[]=[],errors:unknown[]=[];
  const response={attachments:[],author:{id:'1',username:'fixture',discriminator:'0'},channel_id:'1',content:'',embeds:[],id:'991',type:0,mention_everyone:false,mention_roles:[],mentions:[],pinned:false,timestamp:'2020-01-01T00:00:00+00:00',tts:false};
  const server=http.createServer((request,res)=>{let body='';request.on('data',chunk=>{body+=String(chunk);});request.on('end',()=>{bodies.push(body);res.end(JSON.stringify(response));sent.resolve();});});
- let owner:PortableResidentLifecycle|undefined,client:DiscordChannelClient|undefined,running:Promise<void>|undefined;
+ let owner:PortableResidentLifecycle|undefined,client:DiscordChannelClient|undefined,running:Promise<void>|undefined,worker:RuntimeMonitoredWorker|undefined;const exits=new RuntimeWorkerExitChannel();
  try{
   await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const address=server.address();assert.ok(address&&typeof address!=='string');
   owner=await native(t.signal);const resident=owner;installRuntimeIdleJournal(resident,path,()=> 'safe');
   client=await DiscordChannelClient.create({token:null,testOrigin:`http://127.0.0.1:${address.port}/api/v10/`,report:e=>{errors.push(e);}});
-  const queue=new QueueStartCoordinator(path,{...backend,residentInstanceId:()=>resident.instanceId,generation:()=>resident.generation(),activeTurnId:async target=>resident.activeTurnId(target),readTurns:async()=>[{turnId:'turn',status:'Completed'}]});
-  const pipeline=new CompletionPipeline(resident,queue,{typing:client,commentaryEnabled:false,historyReadTimeoutMs:2000,render:()=> 'safe',report:e=>{errors.push(e);},delivery:{transport:client,failures:{render:()=> 'safe'},now:()=>1}});
-  const startupReceiver=resident.subscribeNotifications();Object.defineProperty(resident,'subscribeNotifications',{value:()=>{throw new Error('must retain startup receiver');}});await call(resident,'read',t.signal);running=pipeline.run(abort.signal,startupReceiver);await sent.promise;abort.abort(new Error('stop after response'));await running;
+  const actualBackend=new AppServerTurnBackend(resident,()=> 'safe',{resumeTimeoutMs:2000,historyTimeoutMs:2000}),queue=new QueueStartCoordinator(path,actualBackend);
+  const startupReceiver=resident.subscribeNotifications();Object.defineProperty(resident,'subscribeNotifications',{value:()=>{throw new Error('must retain startup receiver');}});await call(resident,'read',t.signal);const bound=await startCompletionRuntimeWorker({owner:resident,queue,backend:actualBackend,completionReceiver:startupReceiver},client,{commentaryEnabled:false,historyReadTimeoutMs:2000,render:()=> 'safe',report:e=>{errors.push(e);}},abort.signal,exits);worker=bound.worker;bound.notifyDeliveryReady();running=worker.join().then(result=>{assert.deepEqual(result,{kind:'Returned',result:{ok:true}});});await sent.promise;abort.abort(new Error('stop after response'));await running;
   assert.equal(bodies.length,1);const payload=JSON.parse(bodies[0]!);assert.equal(payload.content,'Final\nnative pipeline final');assert.equal(payload.enforce_nonce,true);
   const receipt=await usingInitializedStore(path,db=>db.prepare('SELECT message_id,retryable,blocked_reason FROM codex_delivery_receipts').get());assert.equal(receipt?.message_id,'991');assert.equal(receipt?.blocked_reason,null);
-  assert.deepEqual(await state.listPendingDeliveries(path),[]);assert.equal(queue.locks.activeTargetCount,0);assert.equal(pipeline.availableEventBytes,4*1024*1024);assert.deepEqual(errors,[]);
+  assert.deepEqual(await state.listPendingDeliveries(path),[]);assert.equal(queue.locks.activeTargetCount,0);assert.equal(startupReceiver.tryReceive().kind,'Closed');assert.deepEqual(errors,[]);
   await client.close();assert.equal(client.activeRequests,0);assert.equal(client.ownedSockets,0);assert.deepEqual(await call(resident,'ping',t.signal),{ping:true});
  }finally{
-  abort.abort();try{if(running)await running;}finally{try{if(client)await client.close();}finally{try{if(owner)await owner.dispose();}finally{server.closeAllConnections();if(server.listening)await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}}}
+  abort.abort();exits.close();try{if(running)await running;}finally{try{if(client)await client.close();}finally{try{if(owner)await owner.dispose();}finally{server.closeAllConnections();if(server.listening)await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}}}
  }
+}));
+
+test('completion runtime rejects foreign backend and missing journal before transferring receiver',{timeout:10000},async t=>storeFixture(async path=>{
+ const owner=await native(t.signal),client=await DiscordChannelClient.create({token:null,testOrigin:'http://127.0.0.1:1/api/v10/',report:()=>{}}),exits=new RuntimeWorkerExitChannel(),abort=new AbortController(),receiver=owner.subscribeNotifications(),actual=new AppServerTurnBackend(owner,()=> 'safe'),queue=new QueueStartCoordinator(path,actual),options={commentaryEnabled:false,historyReadTimeoutMs:2000,render:()=> 'safe',report:()=>{}};
+ try{await assert.rejects(startCompletionRuntimeWorker({owner,queue,backend:new AppServerTurnBackend(owner,()=> 'safe'),completionReceiver:receiver},client,options,abort.signal,exits),/Queue backend differs/);assert.equal(receiver.tryReceive().kind,'Empty');await assert.rejects(startCompletionRuntimeWorker({owner,queue,backend:actual,completionReceiver:receiver},client,options,abort.signal,exits),/observation journal/);assert.equal(receiver.tryReceive().kind,'Empty');assert.equal(client.activeRequests,0);}finally{receiver.dispose();exits.close();await client.close();await owner.dispose();}
+}));
+test('pre-aborted completion factory closes exact receiver, returns joined task and rejects duplicate consumption',{timeout:10000},async t=>storeFixture(async path=>{
+ const owner=await native(t.signal),client=await DiscordChannelClient.create({token:null,testOrigin:'http://127.0.0.1:1/api/v10/',report:()=>{}}),exits=new RuntimeWorkerExitChannel(),abort=new AbortController(),receiver=owner.subscribeNotifications(),actual=new AppServerTurnBackend(owner,()=> 'safe'),queue=new QueueStartCoordinator(path,actual),options={commentaryEnabled:false,historyReadTimeoutMs:2000,render:()=> 'safe',report:()=>{}};
+ try{await usingInitializedStore(path,()=>{});installRuntimeIdleJournal(owner,path,()=> 'safe');abort.abort('already stopped');const startup={owner,queue,backend:actual,completionReceiver:receiver},bound=await startCompletionRuntimeWorker(startup,client,options,abort.signal,exits);bound.worker.abort();assert.deepEqual(await bound.worker.join(),{kind:'Returned',result:{ok:true}});assert.equal(receiver.tryReceive().kind,'Closed');assert.equal(client.activeRequests,0);await assert.rejects(startCompletionRuntimeWorker(startup,client,options,abort.signal,exits),/already consumed/);assert.equal(owner.lifecycleSnapshot().healthy,true);}finally{receiver.dispose();exits.close();await client.close();await owner.dispose();}
+}));
+test('completion factory rejects accessor options without running hooks or taking receiver',{timeout:10000},async t=>storeFixture(async path=>{
+ const owner=await native(t.signal),client=await DiscordChannelClient.create({token:null,testOrigin:'http://127.0.0.1:1/api/v10/',report:()=>{}}),exits=new RuntimeWorkerExitChannel(),receiver=owner.subscribeNotifications(),actual=new AppServerTurnBackend(owner,()=> 'safe'),queue=new QueueStartCoordinator(path,actual);let hooks=0;const options={commentaryEnabled:false,historyReadTimeoutMs:2000,render:()=> 'safe',report:()=>{}};Object.defineProperty(options,'render',{get(){hooks++;return ()=> 'unsafe';}});
+ try{await assert.rejects(startCompletionRuntimeWorker({owner,queue,backend:actual,completionReceiver:receiver},client,options,new AbortController().signal,exits),TypeError);assert.equal(hooks,0);assert.equal(receiver.tryReceive().kind,'Empty');}finally{receiver.dispose();exits.close();await client.close();await owner.dispose();}
 }));
