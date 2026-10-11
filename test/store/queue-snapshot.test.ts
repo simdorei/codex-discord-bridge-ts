@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {boundedQueueJobsIn} from '../../src/store/queue-snapshot.ts';import {allJobs,COLUMNS,QUARANTINED_TURN_PREFIX,QUARANTINED_ERROR_PREFIX} from '../../src/store/queue-read.ts';import {ActiveTransactionError} from '../../src/store/owned-driver.ts';
+import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {boundedQueueJobsIn,boundedQueueJobsInTransaction} from '../../src/store/queue-snapshot.ts';import {allJobs,COLUMNS,QUARANTINED_TURN_PREFIX,QUARANTINED_ERROR_PREFIX} from '../../src/store/queue-read.ts';import {ActiveTransactionError} from '../../src/store/owned-driver.ts';
 function fixture(run:(db:DatabaseSync)=>void){const db=new DatabaseSync(':memory:');try{db.exec('CREATE TABLE codex_turn_queue('+COLUMNS+')');run(db);}finally{if(db.isOpen)db.close();}}
 function insert(db:DatabaseSync,id='j',created=1){db.prepare('INSERT INTO codex_turn_queue VALUES('+Array(19).fill('?').join(',')+')').run(id,'t',9223372036854775807n,null,null,1n,null,'한글',1n,0n,'pending',0n,null,'["x",18446744073709551615]', '',created,1,0n,null);}
 test('complete queue snapshot preserves source order, i64 and lossless baseline decoding',()=>fixture(db=>{insert(db,'b');insert(db,'a');db.exec('PRAGMA query_only=ON');const rows=boundedQueueJobsIn(db,2n,1000n);assert.deepEqual(rows,allJobs(db));assert.deepEqual(rows.map(x=>x.jobId),['a','b']);assert.equal(rows[0]!.channelId,9223372036854775807n);assert.deepEqual(rows[0]!.baselineTurnIds,['x','18446744073709551615']);assert.equal(db.isTransaction,false);}));
@@ -8,3 +8,14 @@ test('small malformed queue values keep source failures and transaction cleanup'
 test('quarantine encoding and nullable generations use existing source decoder',()=>fixture(db=>{insert(db);db.prepare("UPDATE codex_turn_queue SET state='running',turn_id=?,last_error=?").run(QUARANTINED_TURN_PREFIX+'turn',QUARANTINED_ERROR_PREFIX+'held');assert.equal(boundedQueueJobsIn(db,1n,1000n)[0]!.state,'Quarantined');}));
 test('borrowed caller transaction survives refusal and absent schema errors remain native',()=>fixture(db=>{db.exec('BEGIN');assert.throws(()=>boundedQueueJobsIn(db,1n,1n),ActiveTransactionError);assert.equal(db.isTransaction,true);db.exec('ROLLBACK; DROP TABLE codex_turn_queue');assert.throws(()=>boundedQueueJobsIn(db,1n,1n),/no such table/);assert.equal(db.isTransaction,false);}));
 test('empty snapshot and invalid budgets do not invent success or open closed connection',()=>fixture(db=>{assert.deepEqual(boundedQueueJobsIn(db,1n,1n),[]);db.close();assert.throws(()=>boundedQueueJobsIn(db,0n,1n),RangeError);assert.throws(()=>boundedQueueJobsIn(db,1n,1n));}));
+
+test('caller-owned complete snapshot requires transaction and never consumes its lifetime',()=>fixture(db=>{
+ assert.throws(()=>boundedQueueJobsInTransaction(db,2n,1000n),/active caller transaction/);
+ db.exec('BEGIN');insert(db);assert.equal(boundedQueueJobsInTransaction(db,2n,1000n)[0]!.jobId,'j');assert.equal(db.isTransaction,true);
+ insert(db,'k');assert.throws(()=>boundedQueueJobsInTransaction(db,1n,1000n),/exceeds budget/);assert.equal(db.isTransaction,true);
+ db.exec('ROLLBACK');assert.deepEqual(boundedQueueJobsIn(db,2n,1000n),[]);
+}));
+test('caller snapshot preserves native query failure without rollback',()=>fixture(db=>{
+ db.exec('BEGIN;DROP TABLE codex_turn_queue');assert.throws(()=>boundedQueueJobsInTransaction(db,1n,1000n),/no such table/);assert.equal(db.isTransaction,true);
+ db.exec('ROLLBACK');assert.deepEqual(boundedQueueJobsIn(db,1n,1000n),[]);
+}));

@@ -1,7 +1,7 @@
 import type {DatabaseSync} from 'node:sqlite';
-import {boundedQueueJobsIn} from '../../store/queue-snapshot.ts';
+import {boundedQueueJobsIn,boundedQueueJobsInTransaction} from '../../store/queue-snapshot.ts';
 import {hasObservedCompletionIn} from '../../store/observed-completion.ts';
-import {hasMirrorEventIn} from '../../store/mirror-event-read.ts';
+import {hasMirrorEventIn,turnOriginMarker} from '../../store/mirror-event-read.ts';
 import {types} from 'node:util';
 import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
 import {snapshotStoredQueueJob,type StoredQueueJob} from '../../store/queue-read.ts';
@@ -56,6 +56,9 @@ export async function currentDiscordMirrorOwner(path:string,thread:string,input:
  * separate observations as in the original path, not an atomic send certificate. */
 export function currentDiscordMirrorOwnerIn(db:DatabaseSync,thread:string,input:MirrorItem,maxJobs:bigint,maxValueBytes:bigint):boolean{
  requireDiscordText(thread);const item=snapshot(input),jobs=boundedQueueJobsIn(db,maxJobs,maxValueBytes,thread);
+ return currentOwnerWithJobsIn(db,thread,item,jobs);
+}
+function currentOwnerWithJobsIn(db:DatabaseSync,thread:string,item:OriginItem,jobs:readonly StoredQueueJob[]):boolean{
  for(const job of jobs)if(job.state==='Running'&&job.turnId!==null&&hasObservedCompletionIn(db,thread,job.turnId))throw new MirrorOwnershipPendingError();
  if(ownershipPendingState(jobs))throw new MirrorOwnershipPendingError();
  let userOrigin=false;
@@ -71,4 +74,21 @@ function promptOrigin(thread:string,item:OriginItem,jobs:readonly StoredQueueJob
 }
 function ownershipPendingState(jobs:readonly StoredQueueJob[]):boolean{
  return jobs.some(job=>job.state==='Starting'||(job.state==='Running'&&job.goalWaiting));
+}
+
+
+export type CurrentMirrorDisposition='CurrentOwner'|'TurnOrigin'|'RecordedEvent'|'Unclaimed';
+/** Fresh source gate followed by source's durable turn/event marker tail.
+ * Caller still owns poll-snapshot and recent-text policy between those stages.
+ * This is a point-in-time observation, not permanent skip/send authorization.
+ * Final cursor transaction must revalidate any skipped item's disposition. */
+export function currentMirrorDispositionIn(db:DatabaseSync,thread:string,input:MirrorItem,maxJobs:bigint,maxValueBytes:bigint):CurrentMirrorDisposition{
+ requireDiscordText(thread);
+ const captured=cloneOwnedSerdeValue(input) as MirrorItem,item=snapshot(captured),digest=serdeField(captured,'digest');requireDiscordText(digest);
+ if(digest.length>1024||Buffer.byteLength(digest)>1024)throw new RangeError('Mirror digest budget exceeded');
+ const owned=db.isTransaction?currentOwnerWithJobsIn(db,thread,item,boundedQueueJobsInTransaction(db,maxJobs,maxValueBytes,thread)):currentDiscordMirrorOwnerIn(db,thread,captured,maxJobs,maxValueBytes);
+ if(owned)return 'CurrentOwner';
+ if(item.kind!=='User'&&item.turnId!==null&&hasMirrorEventIn(db,turnOriginMarker(thread,item.turnId),thread))return 'TurnOrigin';
+ if(hasMirrorEventIn(db,digest,thread))return 'RecordedEvent';
+ return 'Unclaimed';
 }
