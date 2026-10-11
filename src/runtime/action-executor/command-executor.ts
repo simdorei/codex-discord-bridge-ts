@@ -1,3 +1,4 @@
+import {StopControlWorker,type StopWorkerFailure} from './stop-worker.ts';
 import {DiscordChannelClient} from '../../discord/channel-client.ts';
 import type {InteractionBusinessServices} from '../interaction-worker/processor.ts';
 import {createOrdinaryComponentHandler} from '../component-worker/ordinary-handler.ts';
@@ -52,6 +53,7 @@ export interface RuntimeExecutorDependencies{
  * A native server, queue backend and live gateway still require bootstrap and
  * ownership qualification; this constructor does not start any of them. */
 export class RuntimeCommandExecutor implements MessageBusinessServices{
+ readonly #stopWorkerFactory:(report:(event:StopWorkerFailure)=>void)=>StopControlWorker;
  readonly #intake:PromptIntakeProcessor;
  readonly #server:PortableResidentLifecycle|null;readonly #componentQueue:BusyQueueExecutor;readonly #control:ControlTurnVerifier;
  readonly #codex:string;readonly #database:string;#inspection:MirrorInspector|null=null;
@@ -65,6 +67,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   this.#codex=paths.state;this.#database=paths.mirror;
   const locks=queue.locks,selection=new ActionThreadSelection(paths.state,paths.mirror,bridge),control=new ControlTurnVerifier(paths.mirror,server,bridge,locks),busy=new BusyResultProducer(paths.mirror,control,queue.reads);
   const targets=new ActionTargetServices(paths.mirror,bridge,queue,{preparePrompt:prepare,busyResult:BusyResultProducer.prototype.busyResult.bind(busy)}),intake=new PromptIntakeProcessor(paths.mirror,queue,targets);
+  this.#stopWorkerFactory=report=>new StopControlWorker(paths.mirror,server,bridge,locks,render,report);
   this.#intake=intake;  this.#server=server;this.#control=control;this.#componentQueue=new BusyQueueExecutor(paths.mirror,Object.freeze({processAdmittedPrompt:PromptIntakeProcessor.prototype.processAdmittedPrompt.bind(intake)}));
   this.#queue=queue;this.#basic=new BasicActionDispatcher(paths,bridge,server,locks,render,timeout);
   this.#new=new NewThreadExecutor(paths.mirror,paths.state,queue,intake,bridge,server,backend,get('mirror'),get('reportNewAttempt'));
@@ -82,6 +85,8 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
  /** Periodic recovery shares the original processor and never releases foreign
   * intake claims. Own-data port captures this executor's private identity. */
  promptIntakeRecoveryServices(){const intake=this.#intake;return Object.freeze({recoverPromptIntakes:()=>PromptIntakeProcessor.prototype.recoverPromptIntakes.call(intake)});}
+ /** Shares the action executor's original resident, binding and queue locks. */
+ createStopControlWorker(report:(event:StopWorkerFailure)=>void):StopControlWorker{return this.#stopWorkerFactory(report);}
  configureMirrorInspection(inspector:MirrorInspector):void{if(this.#inspection!==null)throw new InvalidActionRequestError('mirror inspection is already configured');MirrorInspector.prototype.requireScope.call(inspector,this.#codex,this.#database);this.#inspection=inspector;}
  async #inspect(channel:bigint,limit:bigint|null,list:boolean,signal?:AbortSignal):Promise<ActionResult>{if(this.#inspection===null)throw new ActionExecutionError('Unsupported','mirror inspection transport is not configured; remote state was not checked');return snapshotActionResult({text:await MirrorInspector.prototype.inspect.call(this.#inspection,channel,limit,list,signal),waitsForFinal:false,ui:null});}
  targetThreadId(channel:bigint,signal?:AbortSignal):Promise<string>{return this.#basic.targetThreadId(channel,signal);}
