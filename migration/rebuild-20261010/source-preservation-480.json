@@ -1,0 +1,23 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 480,
+  "localCommit": "4a9b8d4f023ba72ea4b9a9681857a122b7915e75",
+  "fullTests": 6668,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/discord-runtime/ingress-recovery-worker.ts": "d19df2f7b4b244fd064289923f71fe84168a4162bb830847278f97dc017e5916",
+    "src/runtime/discord-runtime/native-ingress-recovery.ts": "7c009b1b9e44d58b27c1eec8dc58d6d8aecb984fd8cf79e07f0550b8711c1903",
+    "src/runtime/discord-runtime/startup-foundation.ts": "4512db8a3beb4c022cf7236e34580722f27d4cf0853ed371e2bcc7807481234b",
+    "test/runtime/discord-runtime/startup-foundation.test.ts": "d167ea27b6262c680d85bc53e9a5a1be27c5cf2e00f49cc9052a6b179c137fb4"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}
