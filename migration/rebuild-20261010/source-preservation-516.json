@@ -1,0 +1,21 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 516,
+  "localCommit": "87e7b7a6cc67d8e01d1466812d639cf8367d8988",
+  "fullTests": 6845,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/discord-runtime/interaction-ingress-bootstrap.ts": "c7d09240922adb9a4522c81379729ca8235baf6b15a04eddbca2a02b6e4aff71",
+    "test/runtime/discord-runtime/startup-context.test.ts": "0255f8fc935751afdadbb575b792a1955c9845accb235b74e6f8a63dec5e0b00"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}
