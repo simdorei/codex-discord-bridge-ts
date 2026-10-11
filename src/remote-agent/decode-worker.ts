@@ -1,11 +1,14 @@
 import {parentPort,workerData} from 'node:worker_threads';
 import {parseProjectOperation,projectRequestLifetimeSeconds} from './project-request.ts';
 import {parseGatewayInboundMessage} from './gateway-inbound.ts';
+import {parseBridgeInboundMessage} from './bridge-inbound.ts';
 import {RemoteProtocolError} from './handshake.ts';
 import {boundedSerdeByteCount} from '../core/serde-byte-count.ts';
 const port=parentPort;if(port===null)throw new Error('Remote decode requires a native owner');
 try{
- const result=workerData.mode==='gateway'
+ const result=workerData.mode==='bridge'
+  ? {ok:true,message:parseBridgeInboundMessage(workerData.raw,workerData.maxBytes)}
+  : workerData.mode==='gateway'
   ? {ok:true,message:parseGatewayInboundMessage(workerData.raw,workerData.maxBytes)}
   : (()=>{const operation=parseProjectOperation(workerData.raw,workerData.maxBytes);return {ok:true,operation,lifetimeSeconds:projectRequestLifetimeSeconds(operation)};})();
  // Added default/null fields consume a bounded allowance, not an unbounded output envelope.
