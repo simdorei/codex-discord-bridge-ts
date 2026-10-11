@@ -1,3 +1,4 @@
+import {types} from 'node:util';
 import {deliverChunksIndexed} from '../../discord/delivery.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {sendNativeMirrorReceiptChunk} from './native-sender.ts';
@@ -12,8 +13,8 @@ export class MirrorReceiptPlanningError extends Error{constructor(detail:string)
 const token=Symbol('native mirror send plan');
 interface ItemPlan{readonly domain:string;readonly logicalKey:string;readonly chunks:readonly string[]}
 export class MirrorReceiptPlan{
- readonly receipts:readonly ExpectedReceipt[];readonly receiptSetHash:string;readonly itemCount:number;readonly #items:readonly ItemPlan[];readonly #channel:bigint;
- constructor(key:symbol,receipts:readonly ExpectedReceipt[],receiptSetHash:string,items:readonly ItemPlan[],channel:bigint){
+ readonly receipts:readonly ExpectedReceipt[];readonly receiptSetHash:string;readonly itemCount:number;readonly #items:readonly (ItemPlan|null)[];readonly #channel:bigint;
+ constructor(key:symbol,receipts:readonly ExpectedReceipt[],receiptSetHash:string,items:readonly (ItemPlan|null)[],channel:bigint){
   if(key!==token)throw new TypeError('Expected native mirror send plan');
   this.receipts=receipts;this.receiptSetHash=receiptSetHash;this.#items=items;this.itemCount=items.length;this.#channel=channel;Object.freeze(this);
  }
@@ -23,16 +24,19 @@ export class MirrorReceiptPlan{
  async sendItem(store:NativeMirrorReceiptStore,transport:DiscordReceiptTransport,index:number,signal?:AbortSignal):Promise<void>{
   const items=this.#items;signal?.throwIfAborted();
   if(!Number.isSafeInteger(index)||index<0||index>=items.length)throw new RangeError('Invalid mirror item index');
-  const item=items[index]!;
+  const item=items[index];if(item===null||item===undefined)throw new TypeError('Skipped mirror item cannot be sent by this plan');
   await deliverChunksIndexed(item.chunks,{retryDelaysMs:[],chunkMarkers:true},(chunkIndex,content)=>sendNativeMirrorReceiptChunk(store,transport,this.#channel,{domain:item.domain,logicalKey:item.logicalKey,chunkIndex,content},signal));
   signal?.throwIfAborted();
  }
 }
 Object.freeze(MirrorReceiptPlan.prototype);
-function itemPlans(input:unknown,expected:number):readonly ItemPlan[]{
+function itemPlans(input:unknown,modes:readonly MirrorDeliveryMode[]):readonly (ItemPlan|null)[]{
+ const expected=modes.length;
  if(!Array.isArray(input)||input.length!==expected||input.length>4096)throw new TypeError('Invalid native mirror item plan');
- let chunks=0,bytes=0,keys=0;const result:ItemPlan[]=[];
- for(const value of input){
+ let chunks=0,bytes=0,keys=0;const result:(ItemPlan|null)[]=[];
+ for(let index=0;index<input.length;index++){
+  const value=input[index];
+  if(modes[index]==='Skip'){if(value!==null)throw new TypeError('Skipped native plan contains chunks');result.push(null);continue;}
   const identity=own(value,'identity'),domain=own(identity,'domain'),logicalKey=own(identity,'logicalKey'),raw=own(value,'chunks');
   if(domain!=='session-mirror/event/v1'&&domain!=='session-mirror/assistant-text/v1')throw new TypeError('Invalid native mirror domain');
   requireDiscordText(logicalKey);if(Buffer.byteLength(logicalKey)>65536)throw new RangeError('Mirror identity exceeds budget');keys+=Buffer.byteLength(logicalKey);
@@ -51,9 +55,28 @@ function itemPlans(input:unknown,expected:number):readonly ItemPlan[]{
  * normalized digest, chunking, serde keys and receipt-set hashing run off main.
  * One process-wide owner, shared global capacity, zero queue, actual exit joined
  * even on timeout/cancel. Returned receipts are bounded metadata, not delivery. */
+export type MirrorDeliveryMode='Deliver'|'Skip';
+/** Exact one decision for every authentic item; no holes, getters or omission. */
+export function snapshotMirrorDeliveryModes(input:readonly MirrorDeliveryMode[],count:number):readonly MirrorDeliveryMode[]{
+ if(!Number.isSafeInteger(count)||count<0||count>4096||types.isProxy(input)||!Array.isArray(input)||input.length!==count)throw new TypeError('Expected complete bounded mirror delivery modes');
+ const result:MirrorDeliveryMode[]=[];
+ for(let i=0;i<count;i++){const mode=own(input,String(i));if(mode!=='Deliver'&&mode!=='Skip')throw new TypeError('Invalid mirror delivery mode');result.push(mode);}
+ return Object.freeze(result);
+}
 export async function planMirrorReceiptsOffThread(observation:AnchoredMirrorBatch,channel:bigint,signal?:AbortSignal,timeoutMs=5000):Promise<MirrorReceiptPlan>{
  signal?.throwIfAborted();
  const {batch}=AnchoredMirrorBatch.prototype.captured.call(observation);
+ if(batch.items.length>4096)throw new RangeError('Mirror packet item budget exceeded');
+ return planMixedMirrorReceiptsOffThread(observation,channel,Array<MirrorDeliveryMode>(batch.items.length).fill('Deliver'),signal,timeoutMs);
+}
+/** Skip choices do not grant skip permission. Final atomic cursor guard must
+ * prove them all against the same authentic batch and current database state. */
+export async function planMixedMirrorReceiptsOffThread(observation:AnchoredMirrorBatch,channel:bigint,inputModes:readonly MirrorDeliveryMode[],signal?:AbortSignal,timeoutMs=5000):Promise<MirrorReceiptPlan>{
+
+ signal?.throwIfAborted();
+ const {batch}=AnchoredMirrorBatch.prototype.captured.call(observation);
+ if(batch.items.length>4096)throw new RangeError('Mirror packet item budget exceeded');
+ const modes=snapshotMirrorDeliveryModes(inputModes,batch.items.length);
  if(typeof channel!=='bigint'||channel<=0n||channel>=(1n<<63n))throw new RangeError('Expected mapped positive i64 channel');
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid mirror receipt deadline');
  if(batch.items.length>4096)throw new RangeError('Mirror packet item budget exceeded');
@@ -63,13 +86,13 @@ export async function planMirrorReceiptsOffThread(observation:AnchoredMirrorBatc
   if(bytes>1048576)throw new RangeError('Mirror receipt input exceeds one MiB');
  }
  if(slot.busy)throw new OwnedWorkerBusyError();
- const pending=slot.run(new URL('./receipt-plan-worker.ts',import.meta.url),{thread:batch.thread,items:batch.items,channel},timeoutMs,signal),exit=slot.join();
+ const pending=slot.run(new URL('./receipt-plan-worker.ts',import.meta.url),{thread:batch.thread,items:batch.items,channel,modes},timeoutMs,signal),exit=slot.join();
  let result:unknown;try{result=await pending}finally{await exit}
  signal?.throwIfAborted();
  if(own(result,'ok')!==true){const detail=own(result,'detail');throw new MirrorReceiptPlanningError(typeof detail==='string'?detail:'invalid native result');}
  const receipts=snapshotExpectedReceiptBatch(own(result,'receipts') as readonly ExpectedReceipt[]),receiptSetHash=own(result,'receiptSetHash');
  if(typeof receiptSetHash!=='string'||!/^[0-9a-f]{64}$/.test(receiptSetHash))throw new MirrorReceiptPlanningError('invalid receipt set hash');
- const items=itemPlans(own(result,'items'),batch.items.length);
- if(items.reduce((n,item)=>n+item.chunks.length,0)!==receipts.length)throw new MirrorReceiptPlanningError('native receipt/chunk count mismatch');
+ const items=itemPlans(own(result,'items'),modes);
+ if(items.reduce((n,item)=>n+(item?.chunks.length??0),0)!==receipts.length)throw new MirrorReceiptPlanningError('native receipt/chunk count mismatch');
  return new MirrorReceiptPlan(token,receipts,receiptSetHash,items,channel);
 }

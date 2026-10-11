@@ -8,7 +8,10 @@ import {serializeSerdeValue} from '../../core/serde-json.ts';
 if(parentPort===null)throw new Error('Mirror receipt planner requires an owned native worker');
 try{
  let textBytes=0,keyBytes=0;const receipts:ExpectedReceipt[]=[];const items=[];
- for(const item of q.items as readonly MirrorItem[]){
+ for(let index=0;index<(q.items as readonly MirrorItem[]).length;index++){
+  if(q.modes[index]==='Skip'){items.push(null);continue;}
+  if(q.modes[index]!=='Deliver')throw new TypeError('Invalid mirror native delivery mode');
+  const item=(q.items as readonly MirrorItem[])[index]!;
   const text=formatMirrorItem(item);textBytes+=Buffer.byteLength(text);
   if(textBytes>1048576)throw new RangeError('Mirror packet text budget exceeded');
   const identity=sessionMirrorIdentity(q.thread,item);items.push({identity,chunks:splitDeliveryChunks(text,true)});
