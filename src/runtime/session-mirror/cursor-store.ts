@@ -5,8 +5,8 @@ import {requireDiscordText} from '../../discord/text.ts';
 import {encodeMirrorCursorAnchor,decodeMirrorCursorAnchor,type MirrorCursorAnchor} from '../../core/mirror-cursor-anchor.ts';
 import {snapshotBoundMirrorCursor,type BoundMirrorCursor} from '../../store/mirror-cursor-journal.ts';
 import {snapshotExpectedReceiptBatch,type ExpectedReceipt} from '../../store/confirmed-receipt-batch.ts';
-type Kind='Read'|'Schema'|'Initialize'|'Advance';
-interface Request{kind:Kind;thread?:string;anchor?:MirrorCursorAnchor;turn?:string;updatedAt?:number;operationId?:string;expected?:BoundMirrorCursor;receipts?:readonly ExpectedReceipt[]}
+type Kind='Read'|'Schema'|'Initialize'|'Advance'|'MappedAdvance';
+interface Request{kind:Kind;channel?:bigint;thread?:string;anchor?:MirrorCursorAnchor;turn?:string;updatedAt?:number;operationId?:string;expected?:BoundMirrorCursor;receipts?:readonly ExpectedReceipt[]}
 export class MirrorCursorStoreReadError extends Error{constructor(detail:string){super('Mirror cursor read failed: '+detail);this.name='MirrorCursorStoreReadError';}}
 /** Diagnostic identity for explicit later reconciliation, never resend permission. */
 export class MirrorCursorWriteUnconfirmedError extends Error{
@@ -42,6 +42,11 @@ export class NativeMirrorCursorStore{
  async advance(expected:BoundMirrorCursor,input:MirrorCursorAnchor,turn:string,updatedAt:number,operationId:string,receipts:readonly ExpectedReceipt[],signal?:AbortSignal):Promise<BoundMirrorCursor>{
   const old=snapshotBoundMirrorCursor(expected),captured=snapshotExpectedReceiptBatch(receipts);
   return this.#required({kind:'Advance',expected:old,...values(input,turn,updatedAt,operationId),receipts:captured},signal);
+ }
+ async advanceMapped(expected:BoundMirrorCursor,input:MirrorCursorAnchor,turn:string,updatedAt:number,operationId:string,receipts:readonly ExpectedReceipt[],channel:bigint,signal?:AbortSignal):Promise<BoundMirrorCursor>{
+  if(typeof channel!=='bigint'||channel<=0n||channel>=(1n<<63n))throw new RangeError('Expected mapped positive i64 channel');
+  const old=snapshotBoundMirrorCursor(expected),captured=snapshotExpectedReceiptBatch(receipts);
+  return this.#required({kind:'MappedAdvance',channel,expected:old,...values(input,turn,updatedAt,operationId),receipts:captured},signal);
  }
  async #required(request:Request,signal?:AbortSignal):Promise<BoundMirrorCursor>{
   const result=await this.#run(request,signal);if(result===null)throw new MirrorCursorWriteUnconfirmedError(request,new TypeError('Missing committed cursor'));return result;
