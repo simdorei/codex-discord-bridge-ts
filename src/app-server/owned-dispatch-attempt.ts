@@ -16,14 +16,23 @@ export interface OwnedDispatchMutationFence {
  beginQueueMutation(claim:QueueMutationClaim):Promise<object>;
  beginStopMutation(claim:StopMutationClaim):Promise<object>;
  finishMutation(receipt:object,outcome:MaintenanceCompletion['outcome']):Promise<void>;
+ wasNotSubmitted?(error:unknown,attemptId:string,wire:RequestId,method:string):boolean;
 }
 export function pinOwnedDispatchMutationFence(input:OwnedDispatchMutationFence):OwnedDispatchMutationFence{
  if(input===null||typeof input!=='object'||types.isProxy(input))throw new TypeError('Expected owned native dispatch fence');
  const get=(key:string)=>{const d=Object.getOwnPropertyDescriptor(input,key);if(!d||!Object.hasOwn(d,'value')||typeof d.value!=='function'||types.isProxy(d.value)||types.isGeneratorFunction(d.value))throw new TypeError('Expected own native dispatch callback');return d.value as Function;};
  const begin=get('beginMutationWithOrigin'),queue=get('beginQueueMutation'),stop=get('beginStopMutation'),finish=get('finishMutation');
+ const descriptor=Object.getOwnPropertyDescriptor(input,'wasNotSubmitted');let proof:Function|null=null;
+ if(descriptor!==undefined){if(!Object.hasOwn(descriptor,'value')||typeof descriptor.value!=='function'||types.isProxy(descriptor.value)||types.isAsyncFunction(descriptor.value)||types.isGeneratorFunction(descriptor.value))throw new TypeError('Expected synchronous own native admission proof');proof=descriptor.value;}
+ const wasNotSubmitted=(error:unknown,attemptId:string,wire:RequestId,method:string):boolean=>{
+  if(proof===null)return false;const result=Reflect.apply(proof,input,[error,attemptId,wire,method]);
+  if(types.isPromise(result))void Promise.prototype.then.call(result,undefined,()=>undefined);
+  if(typeof result!=='boolean')throw new TypeError('Expected exact native admission proof boolean');return result;
+ };
+
  const invoke=async(fn:Function,args:unknown[]):Promise<unknown>=>{const p=Reflect.apply(fn,input,args);if(!types.isPromise(p))throw new TypeError('Native dispatch callback must return a Promise');return await p;};
  const receipt=async(fn:Function,c:unknown):Promise<object>=>{const r=await invoke(fn,[c]);if(r===null||typeof r!=='object'||types.isProxy(r)||!Object.isFrozen(r))throw new TypeError('Expected immutable native dispatch receipt');return r;};
- return Object.freeze({beginMutationWithOrigin:(c:MaintenanceClaim)=>receipt(begin,c),beginQueueMutation:(c:QueueMutationClaim)=>receipt(queue,c),beginStopMutation:(c:StopMutationClaim)=>receipt(stop,c),finishMutation:async(r:object,o:MaintenanceCompletion['outcome'])=>{if(await invoke(finish,[r,o])!==undefined)throw new TypeError('Native completion must resolve void');}});
+ return Object.freeze({wasNotSubmitted,beginMutationWithOrigin:(c:MaintenanceClaim)=>receipt(begin,c),beginQueueMutation:(c:QueueMutationClaim)=>receipt(queue,c),beginStopMutation:(c:StopMutationClaim)=>receipt(stop,c),finishMutation:async(r:object,o:MaintenanceCompletion['outcome'])=>{if(await invoke(finish,[r,o])!==undefined)throw new TypeError('Native completion must resolve void');}});
 }
 /** Phase-aware native intent owner. A successful begin does not authorize send.
  * The writer may dispose an unsent receipt after original-authority revalidation
@@ -31,7 +40,7 @@ export function pinOwnedDispatchMutationFence(input:OwnedDispatchMutationFence):
  * can finish it, and caller cancellation after writing has no synthetic result. */
 export class OwnedDispatchAttempt {
  readonly #input:DispatchAttemptInput;readonly #scoped:boolean;readonly #fence:OwnedDispatchMutationFence;readonly #render:(error:unknown)=>string;readonly #id=randomUUID();
- #begun=false;#beginInFlight=false;#started=false;#resultHandled=false;#receipt:object|null=null;#settlement:Promise<void>|null=null;#failure:MutationOutcomeUnknownError|null=null;
+ #refusal:unknown;#beginRefused=false;#begun=false;#beginInFlight=false;#started=false;#resultHandled=false;#receipt:object|null=null;#settlement:Promise<void>|null=null;#failure:MutationOutcomeUnknownError|null=null;
  constructor(input:DispatchAttemptInput,fence:OwnedDispatchMutationFence,render:(error:unknown)=>string){
   const captured=captureDispatchAttemptInput(input);this.#input=captured.input;this.#scoped=captured.scoped;this.#fence=pinOwnedDispatchMutationFence(fence);
   if(typeof render!=='function'||types.isProxy(render)||types.isAsyncFunction(render)||types.isGeneratorFunction(render))throw new TypeError('Expected synchronous safe renderer');this.#render=render;
@@ -44,9 +53,13 @@ export class OwnedDispatchAttempt {
   try{
    const r=i.stopClaim!==null?await this.#fence.beginStopMutation({...identity,params:i.params,claim:i.stopClaim}):i.queueClaim!==null?await this.#fence.beginQueueMutation({...identity,method:i.method,params:i.params,claim:i.queueClaim}):await this.#fence.beginMutationWithOrigin({...identity,method:i.method,params:i.params,scoped:this.#scoped,origin:i.origin});
    this.#receipt=r;return r;
-  }catch(error){this.#failure=this.#unknown('native begin result unavailable',error);throw this.#failure;}finally{this.#beginInFlight=false;}
+  }catch(error){
+   let refused=false;try{refused=this.#fence.wasNotSubmitted?.(error,this.#id,wire,i.method)===true;}catch{/* Invalid proof cannot downgrade uncertainty. */}
+   if(refused){this.#beginRefused=true;this.#refusal=error;throw error;}
+   this.#failure=this.#unknown('native begin result unavailable',error);throw this.#failure;
+  }finally{this.#beginInFlight=false;}
  }
- writeStarted():void{if(!this.#begun||this.#beginInFlight||this.#failure!==null||this.#resultHandled||this.#settlement!==null)throw new TypeError('Owned dispatch is not ready to write');this.#started=true;}
+ writeStarted():void{if(!this.#begun||this.#beginRefused||this.#beginInFlight||this.#failure!==null||this.#resultHandled||this.#settlement!==null)throw new TypeError('Owned dispatch is not ready to write');this.#started=true;}
  wasStarted():boolean{return this.#started;}
  isolatesTarget():boolean{return this.#scoped&&this.#receipt!==null;}
  async dispose(receipt:object|null):Promise<void>{
@@ -61,6 +74,7 @@ export class OwnedDispatchAttempt {
   const ok=serdeField(input,'ok');if(ok!==true&&ok!==false)throw new TypeError('Expected exact dispatch result');
   const result:DispatchResult=ok?{ok:true,value:cloneOwnedSerdeValue(serdeField(input,'value'))}:{ok:false,error:serdeField(input,'error')};this.#resultHandled=true;
   if(this.#settlement!==null)try{await this.#settlement;}catch{/* Return the exact owned unknown result below. */}
+  if(this.#beginRefused)return {ok:false,error:this.#refusal};
   if(this.#failure!==null)return {ok:false,error:this.#failure};
   if(this.#receipt===null||this.#settlement!==null)return result;
   const outcome=!this.#started?'not_sent':result.ok?'reply_ok':ownedRequestFailure(result.error)?.kind==='Remote'?'reply_error':null;

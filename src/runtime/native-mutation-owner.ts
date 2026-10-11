@@ -6,7 +6,7 @@ import {requireDiscordText} from '../discord/text.ts';
 import {gatewayOwnField as own} from '../discord/gateway/values.ts';
 import {boundedSerdeByteCount} from '../core/serde-byte-count.ts';
 import {cloneOwnedSerdeValue} from '../core/owned-serde-value.ts';
-import {validateRequestId} from '../protocol/ids.ts';
+import {validateRequestId,type RequestId} from '../protocol/ids.ts';
 import {MutationOutcomeUnknownError,type MaintenanceClaim,type MaintenanceCompletion} from '../app-server/maintenance-attempt.ts';
 import type {QueueMutationClaim,StopMutationClaim} from '../app-server/dispatch-attempt.ts';
 import {OwnedWorkerSlot,OwnedWorkerBusyError} from './owned-worker-slot.ts';
@@ -26,6 +26,7 @@ function text(value:unknown,limit=4096):string {
  * Accepted native failures are conservatively unknown, including rolled-back refusals.
  * There is no automatic retry, rollback inference, or completion from close/dispose. */
 export class NativeMutationOwner {
+ readonly #unsubmitted=new WeakMap<object,{attemptId:string;wire:RequestId;method:string}>();
  readonly #validate:ReturnType<typeof createNativeMutationRevalidator>;
  readonly #path:string;readonly #runtime:string;readonly #render:(text:string)=>string;readonly #timeout:number;
  readonly #slot=new OwnedWorkerSlot('Control');readonly #receipts=new WeakMap<object,ReceiptData>();
@@ -39,6 +40,15 @@ export class NativeMutationOwner {
   this.#validate=createNativeMutationRevalidator(this.#path,this.#runtime,error=>this.#render(passiveErrorText(error,'Original mutation authority unavailable')));
  }
  get busy():boolean{return this.#active!==null;}
+ /** Proof belongs to this owner AND this exact begin occurrence, not an error label. */
+ ownsUnsubmittedFailure(error:unknown,attemptId:string,wire:RequestId,method:string):boolean{
+  if(error===null||typeof error!=='object')return false;
+  const proof=this.#unsubmitted.get(error);return proof!==undefined&&proof.attemptId===attemptId&&proof.wire===wire&&proof.method===method;
+ }
+ #refusedBeforeSubmission(attemptId:string,wire:RequestId,method:string):OwnedWorkerBusyError{
+  const error=new OwnedWorkerBusyError();this.#unsubmitted.set(error,{attemptId,wire,method});return error;
+ }
+
  async close(reason:unknown=new Error('Native mutation owner closed')):Promise<void>{
   this.#closed=true;this.#controller?.abort(reason);
   if(this.#active!==null)await Promise.allSettled([this.#active]);
@@ -70,13 +80,14 @@ export class NativeMutationOwner {
   if(this.#active!==null)throw new OwnedWorkerBusyError();
  }
  #begin(operation:BeginOperation,input:MaintenanceClaim|QueueMutationClaim|StopMutationClaim,signal?:AbortSignal):Promise<NativeMutationReceipt>{
-  this.#ready(signal);
+  let busy=false;try{this.#ready(signal);}catch(error){if(!(error instanceof OwnedWorkerBusyError)||signal?.aborted)throw error;busy=true;}
   if(boundedSerdeByteCount(input,1048576)===null)throw new RangeError('Native mutation claim exceeds boundary');
   const captured=cloneOwnedSerdeValue(input) as typeof input;
   const attemptId=text(own(captured,'attemptId')),method=operation==='beginStopMutation'?'turn/interrupt':text(own(captured,'method'));
   if(attemptId===''||method==='')throw new TypeError('Expected mutation identity');
   text(own(captured,'ownerId'));validateRequestId(own(captured,'wire'));
   const g=own(captured,'generation');if(typeof g!=='bigint'||g<0n||g>=(1n<<63n))throw new TypeError('Expected signed i64 generation');
+  if(busy)throw this.#refusedBeforeSubmission(attemptId,validateRequestId(own(captured,'wire')),method);
   return this.#run(operation,captured,method,attemptId,signal).then(()=>{
    const receipt=Object.freeze({attemptId,method});
    this.#receipts.set(receipt,{input:captured,stop:operation==='beginStopMutation',operation,used:false});return receipt;
@@ -100,7 +111,10 @@ export class NativeMutationOwner {
      diagnostic=safe;throw new Error(safe);
     }
    }catch(error){
-    if(!admitted)throw error;
+    if(!admitted){
+     if((operation==='beginMutationWithOrigin'||operation==='beginQueueMutation'||operation==='beginStopMutation')&&error instanceof OwnedWorkerBusyError)throw this.#refusedBeforeSubmission(attemptId,validateRequestId(own(input,'wire')),method);
+     throw error;
+    }
     // Even a joined failed worker may have committed before its response was lost.
     // Do not infer not_sent from cancellation, timeout, or an exception message.
     throw new MutationOutcomeUnknownError(method,`native ${operation} result not confirmed; original attempt ${attemptId} requires reconciliation; ${diagnostic}; no automatic replay`);
