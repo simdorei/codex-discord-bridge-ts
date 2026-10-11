@@ -1,0 +1,30 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 601,
+  "localCommit": "2b5355af814b3ce5cba104f6e2666e7e3359d2d4",
+  "fullTests": 7259,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/remote-agent/files/path-policy.ts": "8a99cba5f5c8b37c7b1f86932b314d70f61c1c431ba0074b4ce750293dd3ae0d",
+    "test/remote-agent/file-path-policy.test.ts": "3721f7933aa8cd254ab8064d5e7eb8a4aca2be4a590858ff18f4fe35dd093bd6"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ],
+  "priorFullRun": {
+    "tests": 7259,
+    "pass": 7258,
+    "fail": 1,
+    "nativeSignal": "SIGTRAP",
+    "nativeAssertion": "jit_page_->allocations_.erase(addr) == 1",
+    "matchingUpstreamReport": "https://github.com/nodejs/node/issues/66366"
+  },
+  "runtimeQualification": "BLOCKED: subsequent unchanged full pass does not establish native engine crash remediation"
+}
