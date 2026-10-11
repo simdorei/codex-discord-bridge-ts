@@ -17,6 +17,9 @@ export interface RuntimeExecutorBootstrapOptions extends BusinessOptions{
 /** Source build_executor exact-ID branch. Borrowed resident and admission gate:
  * caller owns cleanup if this fails. Exclusive startup guard and completed
  * retirement are prerequisites; invoke before periodic/live intake workers.
+ * Success transfers both bounded event receivers to the caller, which must pass
+ * these exact receivers to workers and dispose them after joined shutdown. Failure
+ * releases subscriptions while retaining the borrowed resident owner.
  * The preprocessing/mirror ports are explicit mandatory inputs, not fabricated
  * Pro support. BridgeState remains the existing synchronous owner. Unsupported
  * host/archive-delete/mirror-sync features stay explicit in the basic dispatcher. */
@@ -30,8 +33,19 @@ export async function buildRuntimeCommandExecutor(paths:Pick<RuntimePaths,'root'
  // Pin mutable link objects before recovery awaits, using the existing contract.
  let pinnedMirror:RuntimeExecutorDependencies['mirror']=null;
  if(mirror!==null){const link=own(mirror,'linkNewThread');if(typeof link!=='function'||types.isProxy(link)||types.isGeneratorFunction(link))throw new TypeError('Expected explicit mirror link');pinnedMirror=Object.freeze({linkNewThread:(...args:Parameters<NonNullable<typeof mirror>['linkNewThread']>)=>Reflect.apply(link,mirror,args)});}
+ // Source subscribes before queue/intake recovery: those awaits may produce
+ // completion or approval events. Never resubscribe later and lose this prefix.
+ const completionReceiver=PortableResidentLifecycle.prototype.subscribeNotifications.call(server);
+ let serverRequestReceiver:ReturnType<PortableResidentLifecycle['subscribeServerRequests']>|undefined;
+ let transferred=false;
+ try{
+  serverRequestReceiver=PortableResidentLifecycle.prototype.subscribeServerRequests.call(server);
  const recovered=await buildRecoveredRuntimeQueue(mirrorDb as string,server,admission,render,reportPolicyFailure,notifyDeliveryReady,{resumeTimeoutMs,historyTimeoutMs,proSkillPath:join(root as string,'plugins/codex-discord-remote/skills/ask-chatgpt-pro/SKILL.md')});
  const bridge=new BridgeState(bridgePath as string),executor=new RuntimeCommandExecutor({paths:{state:stateDb as string,mirror:mirrorDb as string,bridge:bridgePath as string},bridge,server,backend:recovered.backend,queue:recovered.queue,render,preparePrompt,mirror:pinnedMirror,reportNewAttempt,resumeTimeoutMs});
  const intakes=await RuntimeCommandExecutor.prototype.recoverPromptIntakesOnStartup.call(executor);
- return Object.freeze({...recovered,bridge,executor,intakes});
+ const requests=serverRequestReceiver;
+ const disposeReceivers=()=>{completionReceiver.dispose();requests.dispose();};
+ const result=Object.freeze({...recovered,bridge,executor,intakes,completionReceiver,serverRequestReceiver:requests,disposeReceivers});
+ transferred=true;return result;
+ }finally{if(!transferred){completionReceiver.dispose();serverRequestReceiver?.dispose();}}
 }
