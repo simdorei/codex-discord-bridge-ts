@@ -419,6 +419,9 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.validateAsyncDispatchGuardsExisting, QuestionGuard.validateAsyncDispatchGuardsExisting);
     assert.strictEqual(StateAccessFacade.validateAsyncDispatchGuards, QuestionGuard.validateAsyncDispatchGuards);
     assert.strictEqual(StateAccessFacade.activateObservationExisting, ObservationLedger.activateObservationExisting);
+    assert.strictEqual(StateAccessFacade.nextObservationGapExisting, ObservationLedger.nextObservationGapExisting);
+    assert.strictEqual(StateAccessFacade.certifyObservationExisting, ObservationProof.certifyObservationExisting);
+    assert.strictEqual(StateAccessFacade.finishObservationPageExisting, ObservationProof.finishObservationPageExisting);
     assert.strictEqual(StateAccessFacade.discoverObservationExisting, ObservationLedger.discoverObservationExisting);
     assert.strictEqual(StateAccessFacade.markUnknownObservationExisting, ObservationLedger.markUnknownObservationExisting);
     assert.strictEqual(StateAccessFacade.observationScopeVerifiedExisting, ObservationLedger.observationScopeVerifiedExisting);
@@ -564,6 +567,9 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "validateAsyncDispatchGuardsExisting",
       "validateAsyncDispatchGuards",
       "activateObservationExisting",
+      "nextObservationGapExisting",
+      "certifyObservationExisting",
+      "finishObservationPageExisting",
       "discoverObservationExisting",
       "markUnknownObservationExisting",
       "observationScopeVerifiedExisting",
@@ -711,7 +717,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 258);
+    assert.strictEqual(actual.length, 261);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

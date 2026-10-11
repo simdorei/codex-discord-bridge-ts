@@ -6,7 +6,7 @@ import {parseAsyncQuestions,isAsyncAgentMessage} from "../../app-server/async-qu
 import {extractThreadId,extractTurnId} from "../../app-server/identity.ts";
 import {serdeField} from "../../app-server/value.ts";
 import {parseTurnCompletion,completionJournalPayload,extractCompletedFinalAnswer} from "../../app-server/outcomes.ts";
-import {StateAccessFacade as state} from "../../store/state-access-facade.ts";
+import {StateAccessFacade as state,type IStateAccessFacade} from "../../store/state-access-facade.ts";
 import {scope as copyScope,OBSERVATION_PAGE_SIZE,type ObservationScope} from "../../store/observation-gap-model.ts";
 import type {ObservationEffect} from "../../store/observation-proof.ts";
 import {serializeQuestionBody} from "../../store/async-question-body.ts";
@@ -21,8 +21,8 @@ function sequence(v:unknown):bigint{if(typeof v!=="bigint"||v<0n||v>=(1n<<63n))t
  * Broadcast wakeups, history JSON and caller-provided NoRequiredStore are not proofs.
  * Required journals are written before verifying the matching source sequence. */
 export class CompletionSourceCertifier{
- readonly #path:string;readonly #server:Server;readonly #commentary:boolean;readonly #clock:()=>number;
- constructor(path:string,server:Server,commentaryEnabled:boolean,clock:()=>number=()=>Date.now()/1000){if(typeof commentaryEnabled!=="boolean")throw new TypeError("Expected commentary flag");this.#path=path;this.#server=server;this.#commentary=commentaryEnabled;this.#clock=clock;}
+ readonly #path:string;readonly #server:Server;readonly #commentary:boolean;readonly #clock:()=>number;readonly #state:Pick<IStateAccessFacade,"certifyObservation">;
+ constructor(path:string,server:Server,commentaryEnabled:boolean,clock:()=>number=()=>Date.now()/1000,certificationState:Pick<IStateAccessFacade,"certifyObservation">=state){if(typeof commentaryEnabled!=="boolean")throw new TypeError("Expected commentary flag");this.#path=path;this.#server=server;this.#commentary=commentaryEnabled;this.#clock=clock;this.#state=certificationState;}
  currentScope():ObservationScope{return copyScope({ownerId:this.#server.instanceId,generation:sequence(this.#server.generation())});}
  async certifyEvent(inputScope:ObservationScope,seq:bigint,input:AppNotification):Promise<void>{
   const scope=copyScope(inputScope),notification=cloneOwnedSerdeValue(input) as AppNotification;
@@ -32,7 +32,7 @@ export class CompletionSourceCertifier{
   if(sequence(this.#server.generation())!==scope.generation)throw new CompletionHeldError("observation generation changed during journal");
   // False means effects or gap ownership are still unconfirmed, not permission.
   // The caller checks the durable verified scope before clearing source uncertainty.
-  await state.certifyObservation(this.#path,scope,sequence(seq),effects);
+  await this.#state.certifyObservation(this.#path,scope,sequence(seq),effects);
  }
  async #journal(scope:ObservationScope,n:AppNotification):Promise<readonly ObservationEffect[]>{
   await observeCompletionTerminal(this.#path,scope.ownerId,{kind:"Notification",generation:scope.generation,notification:n});

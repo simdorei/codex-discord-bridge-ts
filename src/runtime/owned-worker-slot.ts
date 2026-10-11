@@ -10,14 +10,16 @@ export function ownedWorkerModuleUrl(input:URL,ownerModule:string):URL{
  if(owner.protocol==='file:'&&owner.pathname.endsWith('.js')&&executable.protocol==='file:'&&executable.pathname.endsWith('.ts'))executable.pathname=executable.pathname.slice(0,-3)+'.js';
  return executable;
 }
-export type OwnedWorkerClass='Background'|'Control';
+export type OwnedWorkerClass='Background'|'Control'|'Observation';
 /** Initial finite adapter budget, not a measured throughput recommendation.
  * A reserved control lane prevents stalled display/context readers from consuming
- * restart-readiness capacity. No waiting queue; saturation is explicit refusal.
+ * restart-readiness capacity. Observation has two separate reserved slots so its
+ * continuous intake/reconciler cannot starve mirror discovery. Total native budget
+ * is six, not an unbounded pool. No waiting queue; saturation is explicit refusal.
  * All current production Worker construction is centralized through this module. */
-export const OWNED_WORKER_LIMITS=Object.freeze({Background:3,Control:1});
-const occupied={Background:0,Control:0};
-export function ownedWorkerUsage():Readonly<{Background:number;Control:number}>{return Object.freeze({...occupied});}
+export const OWNED_WORKER_LIMITS=Object.freeze({Background:3,Control:1,Observation:2});
+const occupied={Background:0,Control:0,Observation:0};
+export function ownedWorkerUsage():Readonly<{Background:number;Control:number;Observation:number}>{return Object.freeze({...occupied});}
 export class OwnedWorkerBudgetError extends OwnedWorkerBusyError{constructor(){super();this.name='OwnedWorkerBudgetError';this.message='Native worker class capacity is occupied; no additional worker submitted';}}
 /** Only already-owned durable completions may wait. New reads/begins keep zero queue. */
 export const OWNED_COMPLETION_QUEUE_LIMIT=128;
@@ -42,7 +44,7 @@ function waitCompletion(timeoutMs:number,signal?:AbortSignal):Promise<()=>void>{
  * the slot until native exit; late messages are never delivered to that caller. */
 export class OwnedWorkerSlot {
  #worker:Worker|null=null;#idle:Promise<void>=Promise.resolve();#completion:Promise<unknown>|null=null;readonly #class:OwnedWorkerClass;
- constructor(kind:OwnedWorkerClass='Background'){if(kind!=='Background'&&kind!=='Control')throw new TypeError('Invalid native worker class');this.#class=kind;}
+ constructor(kind:OwnedWorkerClass='Background'){if(kind!=='Background'&&kind!=='Control'&&kind!=='Observation')throw new TypeError('Invalid native worker class');this.#class=kind;}
  get busy():boolean{return this.#worker!==null||this.#completion!==null;}
  join():Promise<void>{return this.#completion===null?this.#idle:this.#completion.then(()=>undefined,()=>undefined);}
  run(url:URL,workerData:unknown,timeoutMs:number,signal?:AbortSignal):Promise<unknown>{if(this.#completion!==null)return Promise.reject(new OwnedWorkerBusyError());return this.#run(url,workerData,timeoutMs,signal,false);}

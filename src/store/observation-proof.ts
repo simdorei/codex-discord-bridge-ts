@@ -1,7 +1,7 @@
 import type {DatabaseSync} from "node:sqlite";
 import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
 import {StoreIntegrityError} from "./schema-assembly.ts";
-import {commitStore,rollbackStore,withStoreTransaction,usingInitializedStore} from "./owned-scope.ts";
+import {commitStore,rollbackStore,withStoreTransaction,usingInitializedStore,usingExistingStore} from "./owned-scope.ts";
 import {type ObservationScope,type ObservationGap,scope,integer,text,active,scalar,GAP_COLUMNS,readGapRow,readGap,saveGap,gapEqual,gapComplete,gapContains,addVerifiedSequence,cloneObservationGap} from "./observation-gap-model.ts";
 export type ObservationEffect={readonly kind:"NoRequiredStore"|"Unconfirmed"}|{readonly kind:"Started";readonly thread:string;readonly turn:string}|{readonly kind:"Terminal";readonly thread:string;readonly turn:string;readonly payload:string}|{readonly kind:"Final";readonly thread:string;readonly turn:string;readonly content:string}|{readonly kind:"Question";readonly id:string;readonly thread:string;readonly turn:string;readonly item:string;readonly body:string};
 function effectsSnapshot(input:readonly ObservationEffect[]):readonly ObservationEffect[]{
@@ -54,3 +54,7 @@ export function finishObservationPageOn(db:DatabaseSync,input:ObservationGap,thr
 }
 export function certifyObservation(path:string,input:ObservationScope,sequence:bigint,effects:readonly ObservationEffect[]):Promise<boolean>{const s=scope(input),owned=effectsSnapshot(effects);integer(sequence);return usingInitializedStore(path,db=>certifyObservationOn(db,s,sequence,owned));}
 export function finishObservationPage(path:string,input:ObservationGap,through:bigint):Promise<boolean>{const expected=cloneObservationGap(input);integer(through);return usingInitializedStore(path,db=>finishObservationPageOn(db,expected,through));}
+
+/** Existing-only native profile; never initializes/migrates missing schema. */
+export function certifyObservationExisting(path:string,input:ObservationScope,sequence:bigint,effects:readonly ObservationEffect[]):boolean{const s=scope(input),owned=effectsSnapshot(effects);integer(sequence);return usingExistingStore(path,db=>certifyObservationOn(db,s,sequence,owned));}
+export function finishObservationPageExisting(path:string,input:ObservationGap,through:bigint):boolean{const expected=cloneObservationGap(input);integer(through);return usingExistingStore(path,db=>finishObservationPageOn(db,expected,through));}

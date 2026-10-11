@@ -294,6 +294,9 @@ export const validateAsyncDispatchGuardsIn: typeof QuestionGuard.validateAsyncDi
 export const validateAsyncDispatchGuardsExisting: typeof QuestionGuard.validateAsyncDispatchGuardsExisting = QuestionGuard.validateAsyncDispatchGuardsExisting;
 export const validateAsyncDispatchGuards: typeof QuestionGuard.validateAsyncDispatchGuards = QuestionGuard.validateAsyncDispatchGuards;
 
+export const nextObservationGapExisting: typeof ObservationLedger.nextObservationGapExisting = ObservationLedger.nextObservationGapExisting;
+export const certifyObservationExisting: typeof ObservationProof.certifyObservationExisting = ObservationProof.certifyObservationExisting;
+export const finishObservationPageExisting: typeof ObservationProof.finishObservationPageExisting = ObservationProof.finishObservationPageExisting;
 export const activateObservationExisting: typeof ObservationLedger.activateObservationExisting = ObservationLedger.activateObservationExisting;
 export const discoverObservationExisting: typeof ObservationLedger.discoverObservationExisting = ObservationLedger.discoverObservationExisting;
 export const markUnknownObservationExisting: typeof ObservationLedger.markUnknownObservationExisting = ObservationLedger.markUnknownObservationExisting;
@@ -629,6 +632,9 @@ export interface IStateAccessFacade {
   readonly validateAsyncDispatchGuardsIn: typeof QuestionGuard.validateAsyncDispatchGuardsIn;
   readonly validateAsyncDispatchGuardsExisting: typeof QuestionGuard.validateAsyncDispatchGuardsExisting;
   readonly validateAsyncDispatchGuards: typeof QuestionGuard.validateAsyncDispatchGuards;
+  readonly nextObservationGapExisting: typeof ObservationLedger.nextObservationGapExisting;
+  readonly certifyObservationExisting: typeof ObservationProof.certifyObservationExisting;
+  readonly finishObservationPageExisting: typeof ObservationProof.finishObservationPageExisting;
   readonly activateObservationExisting: typeof ObservationLedger.activateObservationExisting;
   readonly discoverObservationExisting: typeof ObservationLedger.discoverObservationExisting;
   readonly markUnknownObservationExisting: typeof ObservationLedger.markUnknownObservationExisting;
@@ -902,6 +908,9 @@ export const StateAccessFacade: IStateAccessFacade = {
   validateAsyncDispatchGuardsIn,
   validateAsyncDispatchGuardsExisting,
   validateAsyncDispatchGuards,
+  nextObservationGapExisting,
+  certifyObservationExisting,
+  finishObservationPageExisting,
   activateObservationExisting,
   discoverObservationExisting,
   markUnknownObservationExisting,

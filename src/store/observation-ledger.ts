@@ -82,3 +82,6 @@ export function activateObservationExisting(path:string,input:ObservationScope):
 export function discoverObservationExisting(path:string,input:ObservationScope,upper:bigint):void{const s=scope(input);integer(upper);usingExistingStore(path,db=>discoverObservationOn(db,s,upper));}
 export function markUnknownObservationExisting(path:string,input:ObservationScope,detail:string):void{const s=scope(input);text(detail);usingExistingStore(path,db=>markUnknownObservationOn(db,s,detail));}
 export function observationScopeVerifiedExisting(path:string,input:ObservationScope,through:bigint):boolean{const s=scope(input);integer(through);return usingExistingStore(path,db=>observationScopeVerifiedOn(db,s,through));}
+
+/** Existing-only profile for owned native callers; preserves cursor mutation. */
+export function nextObservationGapExisting(path:string,input:ObservationScope):ObservationGap|null{const s=scope(input);return usingExistingStore(path,db=>nextObservationGapOn(db,s));}

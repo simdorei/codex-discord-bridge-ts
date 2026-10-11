@@ -1,3 +1,4 @@
+import {createNativeObservationState} from "./native-observation-state.ts";
 import type {PortableResidentLifecycle} from "../../app-server/portable-resident-lifecycle.ts";
 import {ResidentStateError} from "../../app-server/resident-state.ts";
 import {invokeSynchronousVoid} from "../../core/synchronous-void.ts";
@@ -32,6 +33,7 @@ export async function maintainCompletionPipeline(server:MaintenanceServer,queue:
  }finally{permit?.[0].release();}
 }
 export interface CompletionPipelineOptions{
+ readonly nativeObservation?:boolean;
  readonly commentaryEnabled:boolean;readonly historyReadTimeoutMs:number;
  readonly delivery:FinalDeliveryOptions;readonly typing:TypingTransport;
  /** Mandatory passive public-safe rendering/reporting; never inspect arbitrary getters. */
@@ -43,9 +45,11 @@ export interface CompletionPipelineOptions{
  * resident/queue backend, installs its journal first, and owns native process lifetime.
  * Production HTTP and service bootstrap remain separate. */
 export class CompletionPipeline{
- readonly #typing:CompletionTypingDriver;readonly #idle:CompletionIdleRelease;readonly #server:PortableResidentLifecycle;readonly #scheduler:CompletionScheduler<CompletionStateAdmission>;readonly #intake:CompletionSourceIntake;readonly #reconciler:CompletionSourceReconciler;readonly terminalFence:TerminalFence;#used=false;
+ readonly #nativeObservation:ReturnType<typeof createNativeObservationState>|undefined;readonly #typing:CompletionTypingDriver;readonly #idle:CompletionIdleRelease;readonly #server:PortableResidentLifecycle;readonly #scheduler:CompletionScheduler<CompletionStateAdmission>;readonly #intake:CompletionSourceIntake;readonly #reconciler:CompletionSourceReconciler;readonly terminalFence:TerminalFence;#used=false;
  constructor(server:PortableResidentLifecycle,queue:QueueStartCoordinator,options:CompletionPipelineOptions){
   this.#server=server;const path=queue.dbPath,render=options.render,reportCallback=options.report,report=(error:unknown)=>invokeSynchronousVoid(reportCallback,options,[error]),handler=new StagedCompletionHandler(server,queue,{commentaryEnabled:options.commentaryEnabled,historyReadTimeoutMs:options.historyReadTimeoutMs,render}),delivery=options.delivery;
+  if(options.nativeObservation!==undefined&&typeof options.nativeObservation!=="boolean")throw new TypeError("Expected native observation flag");
+  this.#nativeObservation=options.nativeObservation?createNativeObservationState(path):undefined;const observation=this.#nativeObservation?.state??state;
   this.terminalFence=options.terminalFence??new TerminalFence();
   this.#scheduler=new CompletionScheduler(path,{
    instanceId:()=>server.instanceId,generation:()=>server.generation(),prepare:work=>prepareCompletionState(path,queue.locks,work),
@@ -54,8 +58,8 @@ export class CompletionPipeline{
    prepareFailed:error=>{server.markIdleObservationGap(report);report(error);},gap:()=>{server.markIdleObservationGap(report);},report,
    freshHeads:target=>state.completionHeadsForTarget(path,target,server.instanceId,integer(server.generation())),maintain:signal=>maintainCompletionPipeline(server,queue,signal),
   });
-  this.#intake=new CompletionSourceIntake(path,server,this.terminalFence,options.commentaryEnabled,failure=>report(failure.error),undefined,state,event=>this.#scheduler.offer(event));
-  this.#reconciler=new CompletionSourceReconciler(path,server,options.commentaryEnabled,failure=>report(failure.error));
+  this.#intake=new CompletionSourceIntake(path,server,this.terminalFence,options.commentaryEnabled,failure=>report(failure.error),undefined,observation,event=>this.#scheduler.offer(event),observation);
+  this.#reconciler=new CompletionSourceReconciler(path,server,options.commentaryEnabled,failure=>report(failure.error),observation,observation);
   this.#idle=new CompletionIdleRelease(server,queue,render,failure=>report(failure.error));
   this.#typing=new CompletionTypingDriver(path,residentTypingBackend(server),this.terminalFence,options.typing,report);
  }
@@ -75,7 +79,7 @@ export class CompletionPipeline{
    const typing=track(this.#typing.run(cancel.signal));
    const scheduler=track(this.#scheduler.run(cancel.signal).finally(()=>cancel.abort(new Error('Completion scheduler finished'))));
    await Promise.all([intake,reconcile,idle,typing,scheduler]);
-  }finally{cancel.abort(new Error('Completion pipeline stopped'));signal.removeEventListener('abort',stop);}
+  }finally{cancel.abort(new Error('Completion pipeline stopped'));signal.removeEventListener('abort',stop);await this.#nativeObservation?.close();}
   if(failures.length===1)throw failures[0];if(failures.length>1)throw new AggregateError(failures,'Completion pipeline failed');
  }
 }

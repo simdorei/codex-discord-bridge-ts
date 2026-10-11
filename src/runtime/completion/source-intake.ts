@@ -9,6 +9,7 @@ import {extractThreadId} from "../../app-server/identity.ts";
 import {parseTurnCompletion} from "../../app-server/outcomes.ts";
 import {StateAccessFacade,type IStateAccessFacade} from "../../store/state-access-facade.ts";
 import type {ObservationScope} from "../../store/observation-gap-model.ts";
+import {CompletionHeldError} from "./receipt-sender.ts";
 import {CompletionSourceCertifier} from "./source-certifier.ts";
 import {observeCompletionTerminal} from "./observation.ts";
 import {TerminalFence} from "./terminal-fence.ts";
@@ -32,7 +33,7 @@ export class CompletionSourceQueue{
 export class CompletionSourceIntake{
  readonly queue=new CompletionSourceQueue();readonly #sink:(event:ReadyLive<CompletionNotification>)=>boolean;readonly #budget:CompletionEventBudget;readonly #path:string;readonly #server:Server;readonly #fence:TerminalFence;readonly #certifier:CompletionSourceCertifier;readonly #report:(failure:SourceIntakeFailure)=>void;readonly #state:Store;
  #current:ObservationScope|null=null;#forwarded=0n;#busy=false;#running=false;#closed=false;
- constructor(path:string,server:Server,fence:TerminalFence,commentaryEnabled:boolean,report:(failure:SourceIntakeFailure)=>void,budget=new CompletionEventBudget(),state:Store=StateAccessFacade,sink?:(event:ReadyLive<CompletionNotification>)=>boolean){if(sink!==undefined&&(typeof sink!=="function"||types.isProxy(sink)||types.isAsyncFunction(sink)||types.isGeneratorFunction(sink)))throw new TypeError("Expected synchronous owned source sink");this.#sink=sink??(event=>this.queue.offer(event));this.#path=path;this.#server=server;this.#fence=fence;this.#report=report;this.#budget=budget;this.#state=state;this.#certifier=new CompletionSourceCertifier(path,server,commentaryEnabled);}
+ constructor(path:string,server:Server,fence:TerminalFence,commentaryEnabled:boolean,report:(failure:SourceIntakeFailure)=>void,budget=new CompletionEventBudget(),state:Store=StateAccessFacade,sink?:(event:ReadyLive<CompletionNotification>)=>boolean,certificationState:Pick<IStateAccessFacade,"certifyObservation">=StateAccessFacade){if(sink!==undefined&&(typeof sink!=="function"||types.isProxy(sink)||types.isAsyncFunction(sink)||types.isGeneratorFunction(sink)))throw new TypeError("Expected synchronous owned source sink");this.#sink=sink??(event=>this.queue.offer(event));this.#path=path;this.#server=server;this.#fence=fence;this.#report=report;this.#budget=budget;this.#state=state;this.#certifier=new CompletionSourceCertifier(path,server,commentaryEnabled,undefined,certificationState);}
  close():void{if(this.#running||this.#busy)throw new TypeError("Source intake still owned");this.queue.close();this.#closed=true;}
  get forwarded():bigint{return this.#forwarded;}
  get availableBytes():number{return this.#budget.availableBytes;}
@@ -62,11 +63,13 @@ export class CompletionSourceIntake{
   try{scope=this.#certifier.currentScope();}catch(error){this.#notify("scope",error);return;}
   if(this.#current?.ownerId!==scope.ownerId||this.#current.generation!==scope.generation){
    try{await this.#state.activateObservation(this.#path,scope);}catch(error){this.#server.markIdleObservationGap(this.#gapError);this.#notify("activate",error);return;}
+   if(this.#server.generation()!==scope.generation){this.#server.markIdleObservationGap(this.#gapError);this.#notify("activate",new CompletionHeldError("original observation generation changed during activation"));return;}
    this.#current=scope;this.#forwarded=0n;
   }
   signal?.throwIfAborted();let page:ReturnType<Server['observationWindow']>;
-  try{page=this.#server.observationWindow(this.#server.generation(),this.#forwarded,null);}catch(error){this.#server.markIdleObservationGap(this.#gapError);this.#notify("window",error);return;}
+  try{page=this.#server.observationWindow(scope.generation,this.#forwarded,null);if(page.ownerId!==scope.ownerId||page.generation!==scope.generation)throw new CompletionHeldError("different original observation stream");}catch(error){this.#server.markIdleObservationGap(this.#gapError);this.#notify("window",error);return;}
   try{await this.#state.discoverObservation(this.#path,scope,page.sourceUpper);}catch(error){this.#server.markIdleObservationGap(this.#gapError);this.#notify("discover",error);}
+  if(this.#server.generation()!==scope.generation){this.#server.markIdleObservationGap(this.#gapError);this.#notify("discover",new CompletionHeldError("original observation generation changed during discovery"));return;}
   const next=page.scannedThrough===(1n<<64n)-1n?page.scannedThrough:page.scannedThrough+1n;
   if(page.firstAvailable>(page.events[0]?.sequence??next))this.#server.markSourceObservationGap(page.generation,this.#gapError);
   for(const original of page.events){
@@ -74,7 +77,7 @@ export class CompletionSourceIntake{
    if(notification===null){this.#server.markSourceObservationGap(page.generation,this.#gapError);continue;}
    if(notification.method==="turn/completed"){let completed;try{completed=parseTurnCompletion(notification.params,false);}catch{/* Invalid completion remains unconfirmed by the journal below. */}if(completed)this.#fence.stop(page.generation,completed.threadId,completed.turnId);}
    try{await this.#certifier.certifyEvent(scope,original.sequence,notification);}catch(error){this.#server.markSourceObservationGap(page.generation,this.#gapError);this.#notify("journal",error);}
-   signal?.throwIfAborted();this.#send({kind:"Notification",generation:page.generation,notification});
+   signal?.throwIfAborted();if(this.#server.generation()!==scope.generation){this.#server.markIdleObservationGap(this.#gapError);return;}this.#send({kind:"Notification",generation:page.generation,notification});
   }
   this.#forwarded=page.scannedThrough;
   await yieldToRuntime(); // Explicit page boundary, like source yield_now; microtasks alone do not yield I/O.
