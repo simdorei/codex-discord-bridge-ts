@@ -37,6 +37,23 @@ export class BoundedRemoteWorkers<T>{
  #take():RemoteWorkerResult<T>{
   const done=this.#completed.shift()!;this.#pending--;this.#bytes-=done.bytes;return done.result;
  }
+ /** Readiness observation never removes a result or releases its capacity.
+  * A single coordinator can race this with input/shutdown, then call takeReady
+  * only after choosing the worker branch. This models lazy JoinSet polling. */
+ async waitReady(signal?:AbortSignal):Promise<boolean>{
+  signal?.throwIfAborted();if(this.#joiner!==null)throw new RemoteWorkerJoinBusyError();
+  if(this.#completed.length>0)return true;if(this.#pending===0)return false;
+  return new Promise((resolve,reject)=>{
+   const clean=()=>{signal?.removeEventListener('abort',abort);this.#joiner=null;};
+   const abort=()=>{clean();reject(signal!.reason);};
+   this.#joiner={deliver:()=>{clean();resolve(true);}};
+   signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();
+  });
+ }
+ takeReady():RemoteWorkerResult<T>|null{
+  if(this.#joiner!==null)throw new RemoteWorkerJoinBusyError();
+  return this.#completed.length>0?this.#take():null;
+ }
  /** Aborting the wait never cancels the operation or releases its accounting. */
  async joinNext(signal?:AbortSignal):Promise<RemoteWorkerResult<T>|null>{
   signal?.throwIfAborted();if(this.#joiner!==null)throw new RemoteWorkerJoinBusyError();
