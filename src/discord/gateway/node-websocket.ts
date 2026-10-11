@@ -1,3 +1,5 @@
+import {SecretToken} from '../../config/remote.ts';
+import {gatewayOwnField as own} from './values.ts';
 import http from 'node:http';
 import https from 'node:https';
 import {Duplex} from 'node:stream';
@@ -34,11 +36,25 @@ export class NodeGatewayWebSocket{
  static async #connect(input:string,options:GatewaySocketConnectOptions,loopback:boolean):Promise<NodeGatewayWebSocket>{
   const url=new URL(input);if(url.username||url.password||url.hash)throw new TypeError('Unsupported Gateway URL authority');
   if(loopback?url.protocol!=='ws:'||url.hostname!=='127.0.0.1':url.protocol!=='wss:'||!/^gateway(?:-[a-z0-9-]+)?\.discord\.gg$/u.test(url.hostname)||url.port!==''&&url.port!=='443')throw new TypeError('Unsupported Gateway socket destination');
-  const timeout=options.timeoutMs??10000;if(!Number.isSafeInteger(timeout)||timeout<1||timeout>2147483647)throw new RangeError('Invalid Gateway handshake timeout');options.signal?.throwIfAborted();
-  const owner=new NodeGatewayWebSocket(!loopback);try{await owner.#open(url,timeout,options.signal);return owner;}catch(error){await owner.dispose();throw error;}
+  const timeout=options.timeoutMs??10000,signal=options.signal;if(!Number.isSafeInteger(timeout)||timeout<1||timeout>2147483647)throw new RangeError('Invalid Gateway handshake timeout');signal?.throwIfAborted();
+  const owner=new NodeGatewayWebSocket(!loopback);try{await owner.#open(url,timeout,signal);signal?.throwIfAborted();return owner;}catch(error){await owner.dispose();throw error;}
  }
- async #open(url:URL,timeout:number,signal?:AbortSignal):Promise<void>{
-  const ws=this.#ws=new WebSocket(url,{agent:this.#agent,handshakeTimeout:timeout,followRedirects:false,perMessageDeflate:false,maxPayload:0,maxFragments:0,maxBufferedChunks:0,allowSynchronousEvents:false});
+ /** Separate remote bridge profile. The Discord factories retain their exact
+  * allowlist and never accept headers. This factory uses source remote URL rules,
+  * no redirects, validated Bearer header and a fixed12MB message limit. */
+ static async connectRemote(input:string,token:SecretToken,options:GatewaySocketConnectOptions={}):Promise<NodeGatewayWebSocket>{
+  if(typeof input!=='string'||/[\uD800-\uDFFF]/u.test(input))throw new TypeError('Invalid remote WebSocket destination');
+  let url:URL;try{url=new URL(input);}catch{throw new TypeError('Invalid remote WebSocket destination');}
+  if(input.includes('#')||url.username||url.password||url.hash||!(url.protocol==='wss:'||url.protocol==='ws:'&&['127.0.0.1','localhost','[::1]'].includes(url.hostname)))throw new TypeError('Invalid remote WebSocket destination');
+  let authorization:string;try{if(types.isProxy(token))throw new TypeError();const raw=SecretToken.prototype.expose.call(token);if(typeof raw!=='string')throw new TypeError();authorization='Bearer '+raw;http.validateHeaderValue('Authorization',authorization);}catch{throw new GatewaySocketError('Invalid remote authorization header');}
+  if(options===null||typeof options!=='object'||types.isProxy(options))throw new TypeError('Invalid remote connection options');
+  const timeout=(Object.hasOwn(options,'timeoutMs')?own(options,'timeoutMs'):undefined)??10000,signal=(Object.hasOwn(options,'signal')?own(options,'signal'):undefined) as AbortSignal|undefined;
+  if(typeof timeout!=='number'||!Number.isSafeInteger(timeout)||timeout<1||timeout>10000)throw new RangeError('Invalid remote handshake timeout');
+  if(signal!==undefined&&(types.isProxy(signal)||!(signal instanceof AbortSignal)))throw new TypeError('Invalid remote cancellation signal');signal?.throwIfAborted();
+  const owner=new NodeGatewayWebSocket(url.protocol==='wss:');try{await owner.#open(url,timeout,signal,authorization);signal?.throwIfAborted();return owner;}catch(error){await owner.dispose();throw error;}
+ }
+ async #open(url:URL,timeout:number,signal?:AbortSignal,authorization?:string):Promise<void>{
+  const ws=this.#ws=new WebSocket(url,{agent:this.#agent,handshakeTimeout:timeout,followRedirects:false,perMessageDeflate:false,maxPayload:authorization===undefined?0:12000000,maxFragments:authorization===undefined?0:16384,maxBufferedChunks:authorization===undefined?0:262144,allowSynchronousEvents:false,...(authorization===undefined?{}:{headers:{Authorization:authorization}})});
   this.#wsClosed=new Promise<void>(resolve=>{ws.once('close',(code,reason)=>{this.#closed=true;this.#closeCode=code;this.#closeReason=new Uint8Array(reason);resolve();});});
   ws.on('error',()=>{this.#failure=true;});
   const stream=this.#stream=createWebSocketStream(ws,{readableObjectMode:true,readableHighWaterMark:1});
