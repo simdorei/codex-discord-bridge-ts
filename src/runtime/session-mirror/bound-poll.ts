@@ -1,3 +1,11 @@
+import {types} from 'node:util';
+import {MirrorSnapshotOwner} from './snapshot-owner.ts';
+import {runMirrorWorker,type MirrorRunnerObservation} from './runner.ts';
+import type {MirrorTargetFinished} from './execution.ts';
+import {captureMirrorDiscoveryLimits,type MirrorDiscoveryLimits} from './discovery.ts';
+import {captureMirrorStoreDiscoveryLimits,type MirrorStoreDiscoveryLimits} from './store-discovery.ts';
+import type {MirrorSnapshotLimits} from './discovery-snapshot.ts';
+import type {MirrorReadyLimits} from './ready.ts';
 import {resolve} from 'node:path';import {randomUUID} from 'node:crypto';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';import {requireDiscordText} from '../../discord/text.ts';
 import type {DiscordReceiptTransport} from '../completion/receipt-sender.ts';
@@ -24,10 +32,7 @@ export async function pollBoundMirrorTarget(databasePath:string,hint:MirrorThrea
  signal?.throwIfAborted();const path=resolve(boundedText(databasePath,32768));boundedText(path,32768);
  const thread=boundedText(own(hint,'id'),16384),rollout=resolve(boundedText(own(hint,'rolloutPath'),32768));boundedText(rollout,32768);
  if(typeof channel!=='bigint'||channel<=0n||channel>=(1n<<63n))throw new RangeError('Expected positive i64 mirror channel');
- captureMirrorPollJobs(path,thread,jobs);const read=snapshotMirrorReadLimits(own(options,'read') as MirrorReadLimits),raw=own(options,'ownership');
- const maxJobs=own(raw,'maxJobs'),maxValueBytes=own(raw,'maxValueBytes'),timeoutMs=own(raw,'timeoutMs');
- if(typeof maxJobs!=='bigint'||maxJobs<1n||maxJobs>4096n||typeof maxValueBytes!=='bigint'||maxValueBytes<1n||maxValueBytes>4194304n||typeof timeoutMs!=='number'||!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid bound mirror poll ownership limits');
- const ownership=Object.freeze({maxJobs,maxValueBytes,timeoutMs});const store=new NativeMirrorCursorStore(path,timeoutMs);
+ captureMirrorPollJobs(path,thread,jobs);const {read,ownership}=snapshotBoundMirrorPollOptions(options),timeoutMs=ownership.timeoutMs;const store=new NativeMirrorCursorStore(path,timeoutMs);
  let expected;try{expected=await store.read(thread,signal)}finally{await store.close()}
  if(expected===null)throw new MirrorBoundCursorRequiredError();if(expected.anchor.path!==rollout)throw new MirrorRolloutBindingError();
  const detail=await observeMirrorDetailMode(path,thread,timeoutMs,signal);
@@ -40,4 +45,29 @@ export async function pollBoundMirrorTarget(databasePath:string,hint:MirrorThrea
  }
  const result=await executeObservedMirrorBatch({databasePath:path,expected,observation,channel,updatedAt:Date.now(),operationId:randomUUID(),pollJobs:jobs,ownership},transport,signal);
  return result.counts;
+}
+
+export function snapshotBoundMirrorPollOptions(options:BoundMirrorPollOptions):BoundMirrorPollOptions{
+ const read=snapshotMirrorReadLimits(own(options,'read') as MirrorReadLimits),raw=own(options,'ownership');
+ const maxJobs=own(raw,'maxJobs'),maxValueBytes=own(raw,'maxValueBytes'),timeoutMs=own(raw,'timeoutMs');
+ if(typeof maxJobs!=='bigint'||maxJobs<1n||maxJobs>4096n||typeof maxValueBytes!=='bigint'||maxValueBytes<1n||maxValueBytes>4194304n||typeof timeoutMs!=='number'||!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid bound mirror poll ownership limits');
+ return Object.freeze({read,ownership:Object.freeze({maxJobs,maxValueBytes,timeoutMs})});
+}
+export interface BoundMirrorWorkerConfig{
+ readonly stateDatabasePath:string;readonly bridgeDatabasePath:string;
+ readonly discovery:MirrorSnapshotLimits;readonly ready:MirrorReadyLimits;readonly poll:BoundMirrorPollOptions;
+}
+/** Concrete mirror loop using the same shared runner, native discovery and target
+ * owner. Configuration is captured once before any async work and cannot retarget
+ * a later epoch. Still requires explicit preinitialized bindings, a validated
+ * transport, independent producer contract and application-owned abort lifetime.
+ * No service boot, schema creation, account login or independent retry mechanism. */
+export async function runBoundMirrorWorker(config:BoundMirrorWorkerConfig,transport:DiscordReceiptTransport,render:(error:unknown)=>string,report:(event:MirrorRunnerObservation)=>void,signal:AbortSignal):Promise<readonly MirrorTargetFinished[]>{
+ if(types.isProxy(signal)||!(signal instanceof AbortSignal))throw new TypeError('Expected owned abort signal');if(signal.aborted)return [];
+ const state=resolve(boundedText(own(config,'stateDatabasePath'),32768)),bridge=resolve(boundedText(own(config,'bridgeDatabasePath'),32768));boundedText(state,32768);boundedText(bridge,32768);
+ const raw=own(config,'discovery'),discovery=Object.freeze({threads:captureMirrorDiscoveryLimits(own(raw,'threads') as MirrorDiscoveryLimits),store:captureMirrorStoreDiscoveryLimits(own(raw,'store') as MirrorStoreDiscoveryLimits)});
+ const readyInput=own(config,'ready'),maxTargets=own(readyInput,'maxTargets'),maxBytes=own(readyInput,'maxBytes');
+ if(typeof maxTargets!=='number'||!Number.isSafeInteger(maxTargets)||maxTargets<1||maxTargets>4096||typeof maxBytes!=='number'||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>1048576)throw new RangeError('Invalid mirror ready limits');
+ const ready=Object.freeze({maxTargets,maxBytes}),poll=snapshotBoundMirrorPollOptions(own(config,'poll') as BoundMirrorPollOptions);
+ return runMirrorWorker(()=>new MirrorSnapshotOwner(state,bridge,discovery,ready,(hint,channel,jobs,abort)=>pollBoundMirrorTarget(bridge,hint,channel,jobs,poll,transport,abort),render),render,report,signal);
 }

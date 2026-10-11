@@ -3,7 +3,11 @@ import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {MAX_MIRROR_THREAD_BYTES,type MirrorTargetHint} from './ready.ts';
 export interface MirrorPollCounts{readonly targets:bigint;readonly events:bigint;readonly sent:bigint;}
-export type MirrorTargetOutcome={readonly kind:'Completed';readonly progress:MirrorPollCounts}|{readonly kind:'Failed';readonly error:unknown}|{readonly kind:'TimedOut';readonly error:unknown}|{readonly kind:'Cancelled';readonly reason:unknown};
+export type MirrorSettledOutcome={readonly kind:'Completed';readonly progress:MirrorPollCounts}|{readonly kind:'Failed';readonly error:unknown};
+/** Cancellation classification does not discard the actual joined result. Its
+ * opaque failure may own the exact packet required for read-only reconciliation.
+ * A late Completed result is evidence only, never normal completion permission. */
+export type MirrorTargetOutcome=MirrorSettledOutcome|{readonly kind:'TimedOut';readonly error:unknown;readonly settled:MirrorSettledOutcome}|{readonly kind:'Cancelled';readonly reason:unknown;readonly settled:MirrorSettledOutcome};
 export interface MirrorTargetFinished{readonly target:MirrorTargetHint;readonly outcome:MirrorTargetOutcome;}
 interface Task{readonly target:MirrorTargetHint;readonly abort:AbortController;promise:Promise<void>;result:MirrorTargetFinished|null;cancel:(reason:unknown)=>void;}
 function counts(value:unknown):MirrorPollCounts{const targets=own(value,'targets'),events=own(value,'events'),sent=own(value,'sent');for(const n of [targets,events,sent])if(typeof n!=='bigint'||n<0n||n>(1n<<64n)-1n)throw new TypeError('Expected u64 mirror poll counts');return Object.freeze({targets:targets as bigint,events:events as bigint,sent:sent as bigint});}
@@ -29,12 +33,13 @@ export class MirrorTargetExecution{
   const listener=()=>cancel(signal!.reason);signal?.addEventListener('abort',listener,{once:true});if(signal?.aborted)listener();
   const timer=setTimeout(()=>{if(abort.signal.aborted)return;interrupted='TimedOut';abort.abort(new Error('Mirror target deadline elapsed; actual work still owns its slot'));},this.#deadline);
   task.promise=Promise.resolve().then(async()=>{
-   let outcome:MirrorTargetOutcome;
+   let outcome:MirrorSettledOutcome;
    try{abort.signal.throwIfAborted();const pending=poll(target,abort.signal);if(!types.isPromise(pending))throw new TypeError('Mirror poll must return a native Promise');const value=await pending;outcome={kind:'Completed',progress:counts(value)};}catch(error){outcome={kind:'Failed',error};}
    finally{clearTimeout(timer);signal?.removeEventListener('abort',listener);}
-   if(interrupted==='TimedOut')outcome={kind:'TimedOut',error:outcome.kind==='Failed'?outcome.error:abort.signal.reason};
-   else if(interrupted==='Cancelled')outcome={kind:'Cancelled',reason:abort.signal.reason};
-   task.result=Object.freeze({target,outcome:Object.freeze(outcome)});this.#notify();
+   const settled=Object.freeze(outcome);let final:MirrorTargetOutcome=settled;
+   if(interrupted==='TimedOut')final={kind:'TimedOut',error:settled.kind==='Failed'?settled.error:abort.signal.reason,settled};
+   else if(interrupted==='Cancelled')final={kind:'Cancelled',reason:abort.signal.reason,settled};
+   task.result=Object.freeze({target,outcome:Object.freeze(final)});this.#notify();
   });return true;
  }
  /** One cancellable observation waiter, not another task or submission slot.
