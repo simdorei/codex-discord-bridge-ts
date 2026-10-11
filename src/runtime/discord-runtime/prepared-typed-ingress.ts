@@ -1,3 +1,4 @@
+import {captureNativeHistoryTargetLimits,type NativeHistoryTargetLimits} from './native-history-targets.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own,gatewayId} from '../../discord/gateway/values.ts';
 import type {GatewayRuntime} from '../../discord/gateway/runtime.ts';
@@ -32,6 +33,6 @@ export function startPreparedTypedIngress(input:RuntimeMessageStartup,gateway:Ga
  const callback=<T>(key:string)=>{const fn=own(options,key);if(typeof fn!=='function'||types.isProxy(fn)||types.isAsyncFunction(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected synchronous startup reporter');return fn as T;};
  const reportReady=callback<ReadySetupOptions['report']>('reportReady'),reportDispatch=callback<PreparedTypedIngressOptions['reportDispatch']>('reportDispatch'),reportInteraction=callback<TypedIngressStartOptions['reportInteraction']>('reportInteraction'),reportReceiveError=callback<TypedIngressStartOptions['reportReceiveError']>('reportReceiveError');
  const raw=own(options,'allowedChannelIds');if(raw===null||typeof raw!=='object'||types.isProxy(raw))throw new TypeError('Expected native allowed channel set');const allowedChannelIds=new Set<bigint>();Set.prototype.forEach.call(raw,(id:unknown)=>allowedChannelIds.add(gatewayId(id)));
- const message=createGatewayMessageHandler(captured),interaction=createPreparedInteractionIngress(input,gate,work,http,catalog,qa,reportDispatch),historyOptions=Object.freeze({...captured,allowedChannelIds,startupChannelId});
+ const message=createGatewayMessageHandler(captured),interaction=createPreparedInteractionIngress(input,gate,work,http,catalog,qa,reportDispatch),historyOptions=Object.freeze({...captured,allowedChannelIds,startupChannelId,nativeTargetLimits:captureNativeHistoryTargetLimits(own(options,'historyTargetLimits') as NativeHistoryTargetLimits)});
  return startTypedIngressWorkers(gateway,shutdown,notifier,{ready:Object.freeze({port:readyHttpPort(http),guildId,qaCommands:qa,startupNotify,startupChannelId,report:reportReady}),message,history:gaps=>createDiscordHistoryOperations(gaps,historyOptions),historyPeriodMs:own(options,'historyPeriodMs') as number|null,interaction,reportInteraction,reportReceiveError});
 }

@@ -1,3 +1,4 @@
+import {readHistoryTargetsOffThread,type NativeHistoryTargetLimits} from './native-history-targets.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {MessageGapFenceError,type MessageGapReceiver} from '../../discord/gateway/message-gaps.ts';
@@ -9,7 +10,7 @@ import {HistoryPollState} from '../history-poll/state.ts';
 import {HistoryPollRunError} from '../history-poll/runner.ts';
 import {pollDiscordHistoryChannel,isDiscordHistoryPolicyError,type DiscordHistoryGapOptions} from '../history-poll/discord-gap.ts';
 const sourceLabels={Startup:'startup',Allowed:'allowed',MirrorProject:'mirror_project',MirrorThread:'mirror_thread'} as const;
-export interface PeriodicHistoryOptions extends DiscordHistoryGapOptions{readonly allowedChannelIds:ReadonlySet<bigint>;readonly startupChannelId:bigint|null}
+export interface PeriodicHistoryOptions extends DiscordHistoryGapOptions{readonly allowedChannelIds:ReadonlySet<bigint>;readonly startupChannelId:bigint|null;readonly nativeTargetLimits?:NativeHistoryTargetLimits}
 /** One source-ordered periodic pass. Successful target lookup alone may prune
  * cursors. Each channel owns its permit and clear revision through the adapter.
  * Caller runs this serially under the Gateway identity cancellation guard. */
@@ -17,7 +18,7 @@ export async function runPeriodicDiscordHistory(history:HistoryPollState,gaps:Me
  signal?.throwIfAborted();const report=own(options,'report');if(typeof report!=='function'||types.isProxy(report)||types.isAsyncFunction(report)||types.isGeneratorFunction(report))throw new TypeError('Expected synchronous history reporter');
  const emit=(code:string,detail:string)=>invokeSynchronousVoid(report,{},[code,detail]);
  const database=own(own(options,'context'),'database') as string,allowed=own(options,'allowedChannelIds') as ReadonlySet<bigint>,startup=own(options,'startupChannelId') as bigint|null;
- let targets;try{targets=await state.historyPollTargets(database,allowed,startup);}catch(error){if(signal?.aborted&&error===signal.reason)throw error;signal?.throwIfAborted();emit('discord_history_targets_failed',passiveErrorText(error,'history target lookup failed'));return;}
+ let targets;try{targets=Object.hasOwn(options,'nativeTargetLimits')?await readHistoryTargetsOffThread(database,allowed,startup,own(options,'nativeTargetLimits') as NativeHistoryTargetLimits,signal):await state.historyPollTargets(database,allowed,startup);}catch(error){if(signal?.aborted&&error===signal.reason)throw error;signal?.throwIfAborted();emit('discord_history_targets_failed',passiveErrorText(error,'history target lookup failed'));return;}
  signal?.throwIfAborted();HistoryPollState.prototype.retainChannels.call(history,targets.map(t=>t.channelId));
  for(const target of targets){
   signal?.throwIfAborted();let outcome;

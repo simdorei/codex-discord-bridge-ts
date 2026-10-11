@@ -17,9 +17,14 @@ export async function readHistoryTargetsOffThread(path:string,allowedChannelIds:
  signal?.throwIfAborted();requireDiscordText(path);if(path.includes('\0')||path.length>32768||Buffer.byteLength(path)>32768)throw new RangeError('Invalid native history path');const full=resolve(path);if(full.length>32768||Buffer.byteLength(full)>32768)throw new RangeError('Invalid native history path');
  if(startup!==null)id(startup);if(allowedChannelIds===null||typeof allowedChannelIds!=='object'||types.isProxy(allowedChannelIds))throw new TypeError('Expected native history channel set');
  const size=Object.getOwnPropertyDescriptor(Set.prototype,'size')!.get!.call(allowedChannelIds) as number;if(size>4096)throw new RangeError('Too many configured history channels');const allowed:bigint[]=[];Set.prototype.forEach.call(allowedChannelIds,(value:unknown)=>{id(value);allowed.push(value);});
- const maxRows=own(limits,'maxRows'),timeoutMs=own(limits,'timeoutMs');if(typeof maxRows!=='number'||!Number.isSafeInteger(maxRows)||maxRows<1||maxRows>4096||typeof timeoutMs!=='number'||!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid native history limits');
+ const {maxRows,timeoutMs}=captureNativeHistoryTargetLimits(limits);
  if(slot.busy)throw new OwnedWorkerBusyError();const pending=slot.run(new URL('./history-target-worker.ts',import.meta.url),{path:full,allowed,startup,maxRows},timeoutMs,signal),joined=slot.join();let response:unknown;try{response=await pending;}finally{await joined;}signal?.throwIfAborted();
  if(own(response,'ok')!==true){const detail=own(response,'detail');throw new NativeHistoryTargetError(typeof detail==='string'?detail:'invalid native result');}
  const raw=own(response,'targets');if(!Array.isArray(raw)||raw.length>50)throw new NativeHistoryTargetError('invalid target count');const seen=new Set<bigint>(),targets:HistoryPollTarget[]=[];
  for(const row of raw){const source=own(row,'source'),channelId=own(row,'channelId');id(channelId);if(channelId===0n||seen.has(channelId)||!['Startup','Allowed','MirrorProject','MirrorThread'].includes(source as string))throw new NativeHistoryTargetError('invalid native target');seen.add(channelId);targets.push(Object.freeze({source:source as HistoryTargetSource,channelId}));}return Object.freeze(targets);
+}
+
+export function captureNativeHistoryTargetLimits(limits:NativeHistoryTargetLimits):NativeHistoryTargetLimits{
+const maxRows=own(limits,'maxRows'),timeoutMs=own(limits,'timeoutMs');if(typeof maxRows!=='number'||!Number.isSafeInteger(maxRows)||maxRows<1||maxRows>4096||typeof timeoutMs!=='number'||!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid native history limits');
+ return Object.freeze({maxRows,timeoutMs});
 }
