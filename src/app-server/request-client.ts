@@ -22,6 +22,23 @@ export class AppServerRequestError extends Error{
   }
 }
 export interface RequestHooks{preflight(id:RequestId):void;writeStarted():void;writeComplete():void}
+/** Explicit joined-native contract. No Promise is permitted through legacy hooks.
+ * Check must settle after native work stops; unknown durable outcomes remain held.
+ * Successful writes transfer the exact check value to writeComplete. */
+export interface OwnedAsyncRequestHooks<T>{
+  check(id:RequestId):Promise<T>;
+  validate(value:T):void;
+  dispose(value:T):Promise<void>;
+  writeStarted():void;
+  writeComplete(value:T):void;
+}
+function pinOwnedRequestHooks<T>(input:OwnedAsyncRequestHooks<T>):OwnedAsyncRequestHooks<T>{
+  if(input===null||typeof input!=="object"||types.isProxy(input))throw new TypeError("Expected owned request hooks");
+  const get=(key:string,synchronous:boolean):Function=>{const d=Object.getOwnPropertyDescriptor(input,key);if(!d||!Object.hasOwn(d,"value")||typeof d.value!=="function"||types.isProxy(d.value)||types.isGeneratorFunction(d.value)||(synchronous&&types.isAsyncFunction(d.value)))throw new TypeError("Expected own request hook callback");return d.value;};
+  const check=get("check",false),validate=get("validate",true),dispose=get("dispose",false),started=get("writeStarted",true),complete=get("writeComplete",true);
+  const promise=<V>(value:unknown):Promise<V>=>{if(!types.isPromise(value))throw new TypeError("Owned request hook must return a Promise");return value as Promise<V>;};
+  return Object.freeze({check:(id:RequestId)=>promise<T>(Reflect.apply(check,input,[id])),validate:(value:T)=>syncVoid(validate,input,[value]),dispose:(value:T)=>promise<void>(Reflect.apply(dispose,input,[value])),writeStarted:()=>syncVoid(started,input),writeComplete:(value:T)=>syncVoid(complete,input,[value])});
+}
 
 function awaitOwned<T>(result:Promise<T>,signal?:AbortSignal):Promise<T>{
   if(signal===undefined)return result;if(signal.aborted)return Promise.reject(signal.reason);
@@ -45,18 +62,38 @@ export class AppServerRequestClient{
   /** Internal resident caller retains this exact owned permit through its entire
    * durable workflow. This method neither creates nor releases a second outer lease. */
   async requestAdmitted(permit:ClientAdmissionPermit,method:string,params:unknown,waitMs:number,hooks:RequestHooks=noHooks,signal?:AbortSignal):Promise<unknown>{
+    return this.#performRequest(permit,method,waitMs,signal,(id,checkDeadline)=>this.#writer.write(requestValue(id,method,params),{check:()=>{checkDeadline();syncVoid(hooks.preflight,hooks,[id]);checkDeadline();},dispose(){}},()=>syncVoid(hooks.writeStarted,hooks),signal),()=>syncVoid(hooks.writeComplete,hooks));
+  }
+  async requestWithOwnedPreflight<T>(method:string,params:unknown,waitMs:number,hooks:OwnedAsyncRequestHooks<T>,signal?:AbortSignal):Promise<unknown>{
+    const permit=this.#gate.admit();
+    try{return await this.requestAdmittedWithOwnedPreflight(permit,method,params,waitMs,hooks,signal);}finally{permit.release();}
+  }
+  /** Uses the original owned admission across native settlement. Caller validation
+   * must additionally check its original runtime/generation/DB claim, not mint fresh
+   * permission. This primitive does not install a resident DB adapter. */
+  async requestAdmittedWithOwnedPreflight<T>(permit:ClientAdmissionPermit,method:string,params:unknown,waitMs:number,hooks:OwnedAsyncRequestHooks<T>,signal?:AbortSignal):Promise<unknown>{
+    const pinned=pinOwnedRequestHooks(hooks);
+    const checkOpen=()=>{this.#gate.requirePermit(permit);this.#gate.withOpen(()=>{});};
+    return this.#performRequest(permit,method,waitMs,signal,(id,checkDeadline)=>this.#writer.writeWithOwnedPreflight(requestValue(id,method,params),{
+      check:()=>{checkOpen();checkDeadline();return pinned.check(id);},
+      validate:(value:T)=>{checkOpen();checkDeadline();pinned.validate(value);checkOpen();checkDeadline();},
+      dispose:(value:T)=>pinned.dispose(value),
+    },()=>pinned.writeStarted(),signal),value=>pinned.writeComplete(value),true);
+  }
+  async #performRequest<T>(permit:ClientAdmissionPermit,method:string,waitMs:number,signal:AbortSignal|undefined,write:(id:RequestId,checkDeadline:()=>void)=>Promise<T>,complete:(value:T)=>void,requirePending=false):Promise<unknown>{
     this.#gate.requirePermit(permit);
       signal?.throwIfAborted();
       const id=randomUUID(),responsePermit=this.#gate.admit(),registration=this.#pending.registerForMethod(id,responsePermit,waitMs,method);
       try{
         const timeout=()=>new AppServerRequestError({kind:"Timeout",method,timeoutMs:waitMs});
+        let admitted:T;
         try{
           const began=this.#now();if(!Number.isFinite(began))throw new TypeError("Expected finite monotonic clock");const deadline=began+waitMs;
-          const checkDeadline=()=>{const now=this.#now();if(!Number.isFinite(now)||now<began)throw new TypeError("Monotonic clock moved backwards or became invalid");if(now>=deadline)throw timeout();};
-          await this.#writer.write(requestValue(id,method,params),{check:()=>{checkDeadline();syncVoid(hooks.preflight,hooks,[id]);checkDeadline();},dispose(){}},()=>syncVoid(hooks.writeStarted,hooks),signal);
+          const checkDeadline=()=>{if(requirePending){const state=registration.dispatchState();if(state==="Timeout")throw timeout();if(state!=="Pending")throw new AppServerRequestError({kind:"ResponseChannelClosed",method});}const now=this.#now();if(!Number.isFinite(now)||now<began)throw new TypeError("Monotonic clock moved backwards or became invalid");if(now>=deadline)throw timeout();};
+          admitted=await write(id,checkDeadline);
         }
         catch(error){registration.finish();throw error;}
-        syncVoid(hooks.writeComplete,hooks);
+        complete(admitted);
         let outcome:PendingOutcome;
         try{outcome=await awaitOwned(registration.result,signal);}
         catch(error){

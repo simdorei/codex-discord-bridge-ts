@@ -6,7 +6,7 @@ import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
 export type PendingOutcome={readonly kind:"Response";readonly result:ResponseResult}|{readonly kind:"TransportClosed";readonly reason:string}|{readonly kind:"Timeout"};
 export class PendingRegistrationError extends Error{readonly kind="InvalidReply";constructor(detail:string){super(`invalid app-server reply: ${detail}`);this.name="PendingRegistrationError";}}
 export class PendingReceiverClosedError extends Error{constructor(){super("pending response sender dropped");this.name="PendingReceiverClosedError";}}
-export interface PendingRegistration{readonly result:Promise<PendingOutcome>;finish():void;dispose():void}
+export interface PendingRegistration{readonly result:Promise<PendingOutcome>;dispatchState():"Pending"|"Timeout"|"Unavailable";finish():void;dispose():void}
 /** Explicit transferred sender ownership. Settle or dispose outside the lifecycle gate. */
 export interface PendingResponseClaim{respond(result:ResponseResult):void;dispose():void}
 interface Entry{occurrence:symbol;permit:ClientAdmissionPermit;resolve:(outcome:PendingOutcome)=>void;reject:(error:unknown)=>void;timer:ReturnType<typeof setTimeout>|null}
@@ -34,10 +34,11 @@ export class PendingResponses{
       // Awaiters still receive the original rejection through this same result Promise.
       void result.catch(()=>undefined);
       const occurrence=Symbol(),entry:Entry={occurrence,permit:ownedPermit,resolve,reject,timer:null};this.#entries.set(key,entry);registered={key,occurrence,entry};
-      const expire=()=>{const current=this.#take(key,occurrence);if(current!==undefined)this.#settle(current,{kind:"Timeout"});};
+      let expired=false;
+      const expire=()=>{const current=this.#take(key,occurrence);if(current!==undefined){expired=true;this.#settle(current,{kind:"Timeout"});}};
       if(waitMilliseconds===0)queueMicrotask(expire);else entry.timer=setTimeout(expire,waitMilliseconds);
       let removeOnDispose=observational,disposed=false;
-      const registration=Object.freeze({result,finish(){if(disposed)throw new TypeError("Pending registration is already disposed");removeOnDispose=true;},dispose:()=>{
+      const registration=Object.freeze({result,dispatchState:():"Pending"|"Timeout"|"Unavailable"=>expired?"Timeout":!disposed&&this.#entries.get(key)?.occurrence===occurrence?"Pending":"Unavailable",finish(){if(disposed)throw new TypeError("Pending registration is already disposed");removeOnDispose=true;},dispose:()=>{
         if(disposed)return;disposed=true;if(removeOnDispose){const current=this.#take(key,occurrence);if(current!==undefined)this.#settle(current,null);}
       }});
       accepted=true;return registration;

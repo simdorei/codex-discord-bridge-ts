@@ -1,0 +1,25 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 620,
+  "localCommit": "7a79b9cd89482e5939f59b2090ef81cb1ea6c760",
+  "fullTests": 7360,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/app-server/pending-responses.ts": "52cdc3be3c6b1ab8d7d078f00b00658786ba920fdaa3cd7f5793fc5a037cae5e",
+    "src/app-server/request-client.ts": "b5e02ff4404d30c0f8538c80a53ef5a72d1f0d96251bc43b8c36da292b0796c1",
+    "test/app-server/request-owned-preflight.test.ts": "b4d3b3200cfee864ce585fac76ea16608ba296fc1425d96648bc941e04545afc"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ],
+  "qualification": "Compiled final2 stage 7360 PASS; actual 1443 source/test hashes equal; actual focused56/TS0/build0",
+  "remoteTestTreeComplete": false,
+  "withheldTest": "test/remote-agent/redaction.test.ts"
+}
