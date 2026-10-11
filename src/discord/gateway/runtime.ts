@@ -38,6 +38,8 @@ export class GatewayRuntime<I extends object>{
   const ingress=new GatewayIngress<I>(options.ingressConfig);
   return new GatewayRuntime(captured,ingress,Object.freeze({clock,reportTriggerFailure,...(fatal===undefined?{}:{fatal})}),reportDrop);
  }
+ /** Read-only startup precondition; taking receivers immediately afterward owns the transfer. */
+ assertTypedStartupAvailable():void{if(this.#closed||this.#shutdown!==undefined||this.#taken)throw new TypeError('Gateway typed startup already consumed or stopping');}
  takeIngressReceivers():GatewayIngressReceivers<I>{if(this.#closed)throw new TypeError('Gateway runtime closed');const receivers=this.#activation.takeReceivers();this.#taken=true;return receivers;}
  activateTypedConsumers():void{this.#activation.activate();}
  beginStopping():void{this.#ingress.stopAccepting();}
