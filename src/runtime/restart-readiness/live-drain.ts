@@ -1,7 +1,8 @@
 import {types} from 'node:util';
+import {captureRestartSnapshot as snapshot} from '../../store/restart-snapshot-owned.ts';
 import {StateAccessFacade} from '../../store/state-access-facade.ts';
 import {joinRestartSnapshotReader} from '../../store/restart-readiness.ts';
-import {snapshotEquals,compareUtf8Bytes,validateTarget,type RestartReadinessSnapshot} from '../../store/restart-snapshot-pure.ts';
+import {snapshotEquals,type RestartReadinessSnapshot} from '../../store/restart-snapshot-pure.ts';
 import {PortableResidentLifecycle} from '../../app-server/portable-resident-lifecycle.ts';
 import {cloneOwnedSerdeValue} from '../../core/owned-serde-value.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
@@ -10,10 +11,7 @@ export interface DrainLifecycle {readonly generation:bigint;readonly healthy:boo
 export interface LiveDrainPorts {readonly snapshot:()=>Promise<RestartReadinessSnapshot>;readonly lifecycle:()=>Promise<DrainLifecycle>;readonly unsettled:()=>Promise<boolean>;readonly activeTurn:(thread:string)=>Promise<string|null>}
 export type LiveDrainState=Readonly<{kind:'Ready'}|{kind:'Blocked';reason:string}>;
 function capture(input:LiveDrainPorts){const result:Record<string,Function>=Object.create(null);for(const key of ['snapshot','lifecycle','unsettled','activeTurn']){const fn=own(input,key);if(typeof fn!=='function'||types.isProxy(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected owned live-drain port');result[key]=(...args:unknown[])=>{const p=Reflect.apply(fn,input,args);if(!types.isPromise(p))throw new TypeError('Expected native live-drain Promise');return p;};}return result as unknown as LiveDrainPorts;}
-function snapshot(value:unknown):RestartReadinessSnapshot{
- const v=cloneOwnedSerdeValue(value);const strings=(key:string,targets=false)=>{const a=own(v,key);if(!Array.isArray(a))throw new TypeError('Expected restart snapshot array');const out=a.map(x=>{requireDiscordText(x);if(targets)validateTarget(x);return x;});for(let i=1;i<out.length;i++)if(compareUtf8Bytes(out[i-1]!,out[i]!)>(targets?-1:0))throw new TypeError('Restart snapshot is not canonical');return Object.freeze(out);};
- return Object.freeze({targetThreadIds:strings('targetThreadIds',true),blockers:strings('blockers'),observations:strings('observations')});
-}
+
 function lifecycle(value:unknown):DrainLifecycle{
  const v=cloneOwnedSerdeValue(value),generation=own(v,'generation'),healthy=own(v,'healthy'),quarantined=own(v,'quarantined'),restartPending=own(v,'restartPending'),processId=own(v,'processId');
  if(typeof generation!=='bigint'||generation<0n||generation>=(1n<<64n)||typeof healthy!=='boolean'||typeof quarantined!=='boolean'||typeof restartPending!=='boolean'||(processId!==null&&(typeof processId!=='number'||!Number.isInteger(processId)||processId<0||processId>0xffffffff)))throw new TypeError('Malformed resident lifecycle');return Object.freeze({generation,healthy,quarantined,restartPending,processId});
