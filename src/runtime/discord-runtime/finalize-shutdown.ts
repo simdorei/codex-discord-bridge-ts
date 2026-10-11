@@ -38,7 +38,12 @@ export async function finalizeRuntimeShutdown(cause:RuntimeShutdownCause,cleanup
  invokeSynchronousVoid(stop as Function,heartbeat,[]);
  const end=drainKey===null?deadline:clock.now()+HEARTBEAT_JOIN_RESERVE_MS;
  let heartbeatResult:RuntimeWorkerResult;
- try{heartbeatResult=(await joinRuntimeWorkersForCause([worker],end,null,pinned)).cleanup;}catch(error){if(error instanceof RuntimeWorkerReportingError){heartbeatResult=error.report.cleanup;diagnosticFailures.push(error.reportingError);}else throw error;}
+ // Node heartbeat cleanup awaits real asynchronous marker IO. In the fresh 1s
+ // drained branch, subtracting the worker-set's 1s abort reserve leaves zero
+ // grace and falsely marks normal removal as a timeout. Join this exact worker
+ // over that existing 1s total budget; expiration still invokes fail-stop and
+ // never means termination. Ordinary shutdown keeps the source worker-set path.
+ try{const joined=await joinRuntimeWorkersForCause([worker],end,drainKey===null?null:'heartbeat',pinned);heartbeatResult=joined.trigger??joined.cleanup;}catch(error){if(error instanceof RuntimeWorkerReportingError){heartbeatResult=error.report.trigger??error.report.cleanup;diagnosticFailures.push(error.reportingError);}else throw error;}
  let decision:RuntimeShutdownDecision;
  if(drainKey===null)decision=resolveRuntimeShutdown(cause,{gateway,workers,serverClose,heartbeat:heartbeatResult});
  else decision=Object.freeze({result:drained.ok?heartbeatResult:drained,secondary:Object.freeze(!drained.ok&&!heartbeatResult.ok?[Object.freeze({component:'heartbeat' as const,error:heartbeatResult.error})]:[])});

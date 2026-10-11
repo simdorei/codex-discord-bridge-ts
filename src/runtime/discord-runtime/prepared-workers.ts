@@ -11,11 +11,15 @@ import {startPreparedTypedIngress,type PreparedTypedIngressOptions} from './prep
 import {startPreparedInteractionWorker} from './interaction-bootstrap.ts';
 import {capturePreparedMessageOptions,type RuntimeMessageStartup} from './message-bootstrap.ts';
 import {RuntimeDeliveryWake} from './delivery-wake.ts';
+import {QueueStartCoordinator} from '../queue-runner/start-coordinator.ts';
 import {startRuntimeCoreWorkers,type RuntimeCoreStartup,type RuntimeCoreInterleaving} from './core-workers-start.ts';
 import type {RuntimeCompletionOptions} from './completion-start.ts';
 import {captureRuntimeHeartbeatInput} from './heartbeat-start.ts';
 import {captureRuntimeMirrorInput} from './session-mirror-start.ts';
 const claimedResidents=new WeakSet<object>();
+const bindings=new WeakMap<object,Readonly<{gateway:GatewayRuntime<DecodedGatewayInteraction>;resident:RuntimeCoreStartup['owner'];gate:AdmissionGate;database:string}>>();
+export function preparedRuntimeWorkerBinding(owner:unknown){if(owner===null||typeof owner!=='object'||!bindings.has(owner))throw new TypeError('Expected actual prepared runtime worker owner');return bindings.get(owner)!;}
+export type PreparedRuntimeWorkerOwner=Awaited<ReturnType<typeof startPreparedRuntimeWorkers>>;
 export interface PreparedRuntimeWorkerOptions{
  readonly remoteEnabled:false;
  readonly ingress:PreparedTypedIngressOptions;
@@ -50,6 +54,7 @@ export async function startPreparedRuntimeWorkers(input:RuntimeCoreStartup&Runti
  const interleaving=Object.freeze({heartbeat,mirror}),ingress=own(options,'ingress') as PreparedTypedIngressOptions;
  capturePreparedMessageOptions(context,gate,http,ingress);RuntimeDeliveryWake.prototype.assertAvailable.call(context.deliveryWake);
  if(claimedResidents.has(context.owner))throw new TypeError('Prepared resident worker assembly already owned');claimedResidents.add(context.owner);
+ const database=Object.getOwnPropertyDescriptor(QueueStartCoordinator.prototype,'dbPath')!.get!.call(context.queue) as string;
  const stop=new AbortController(),signal=AbortSignal.any([shutdown,stop.signal]),notifier=new RuntimeWorkerExitChannel(),exits=notifier.receiver(),work=createInteractionWorkQueue();
  let typed:RuntimeMonitoredWorker[]=[],business:Awaited<ReturnType<typeof startPreparedInteractionWorker>>|undefined,core:Awaited<ReturnType<typeof startRuntimeCoreWorkers>>|undefined;
  const requestStop=()=>{GatewayRuntime.prototype.beginStopping.call(gateway);stop.abort();core?.requestStop();work.sender.dispose();};
@@ -58,7 +63,8 @@ export async function startPreparedRuntimeWorkers(input:RuntimeCoreStartup&Runti
   business=await startPreparedInteractionWorker(context,work,http,notifier,report);signal.throwIfAborted();
   core=await startRuntimeCoreWorkers(context,http,gate,signal,notifier,completion,interleaving);signal.throwIfAborted();
   const heartbeatOwner=core.heartbeat!;const workers=Object.freeze([...typed,business.worker,...core.workers]),startupOrder=Object.freeze([...typed,business.worker,...core.startupOrder]);notifier.close();let closing:Promise<readonly RuntimeWorkerJoin[]>|undefined;
-  return Object.freeze({workers,heartbeat:heartbeatOwner,startupOrder,exits,requestStop,close:()=>{if(closing===undefined){requestStop();closing=Promise.all(workers.map(w=>w.join())).then(results=>Object.freeze(results));}return closing;},disposeMonitor:()=>{if([...workers,heartbeatOwner.worker].some(w=>w.peek()===undefined))throw new TypeError('Join all runtime workers and heartbeat before disposing monitor');exits.dispose();work.sender.dispose();work.receiver.dispose();}});
+  const result=Object.freeze({workers,heartbeat:heartbeatOwner,startupOrder,exits,requestStop,close:()=>{if(closing===undefined){requestStop();closing=Promise.all(workers.map(w=>w.join())).then(results=>Object.freeze(results));}return closing;},disposeMonitor:()=>{if([...workers,heartbeatOwner.worker].some(w=>w.peek()===undefined))throw new TypeError('Join all runtime workers and heartbeat before disposing monitor');exits.dispose();work.sender.dispose();work.receiver.dispose();}});
+  bindings.set(result,Object.freeze({gateway,resident:context.owner,gate,database}));return result;
  }catch(primary){
   const cleanup:unknown[]=[];try{GatewayRuntime.prototype.beginStopping.call(gateway);}catch(error){cleanup.push(error);}try{requestStop();}catch(error){cleanup.push(error);}
   core?.heartbeat?.requestStop();const accepted=[...typed,...(business===undefined?[]:[business.worker]),...(core===undefined?[]:core.startupOrder)];for(const worker of accepted)worker.abort();

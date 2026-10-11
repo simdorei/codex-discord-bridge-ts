@@ -235,3 +235,51 @@ test('late core allocation failure retains inner cause and joins earlier typed i
  const o=await input(path),context=await prepareRuntimeContext(o),port=new PreparedPort(),gateway=GatewayRuntime.fromOwnedPorts([port],{reportReceiveErrorDrop:()=>{},reportTriggerFailure:()=>{}}),stop=new AbortController(),options=localWorkerOptions(o.paths.root,[]),primary=new Error('late core allocation failure'),original=RuntimeWorkerExitChannel.prototype.acquire;let calls=0,published=0,removed=0;options.interleaving.heartbeat.port.publish=async()=>{published++;};options.interleaving.heartbeat.port.removeIfOwned=async()=>{removed++;};RuntimeWorkerExitChannel.prototype.acquire=function(){if(++calls===14)throw primary;return original.call(this);};
  try{await httpFixture(async(http,seen)=>{const catalog=await loadRuntimeAutocomplete(context.owner);await assert.rejects(startPreparedRuntimeWorkers(context,gateway,o.admission,http,catalog,stop.signal,options),e=>{assert.ok(e instanceof PreparedRuntimeWorkerStartError);const inner=e.errors[0];assert.ok(inner instanceof RuntimeCoreWorkerStartError);assert.equal(inner.errors[0],primary);assert.equal(inner.joined.length,5);assert.equal(e.joined.length,8);return true;});assert.ok(published>0);assert.equal(removed,1);assert.equal(port.disposed,1);assert.equal(gateway.resourcesClosed,true);assert.equal(context.owner.lifecycleSnapshot().healthy,true);assert.equal(context.completionReceiver.tryReceive().kind,'Closed');assert.equal(context.serverRequestReceiver.tryReceive().kind,'Closed');assert.equal(http.activeRequests,0);assert.deepEqual(seen,[]);});}finally{RuntimeWorkerExitChannel.prototype.acquire=original;stop.abort();await gateway.shutdown(performance.now()+3000);await context.disposeBeforeWorkers();}
 }));
+
+import {runPreparedRuntimeLifetime,type PreparedRuntimeLifetimeOptions} from '../../../src/runtime/discord-runtime/prepared-lifetime.ts';
+import {startPreparedRuntimeWorkers,type PreparedRuntimeWorkerOwner} from '../../../src/runtime/discord-runtime/prepared-workers.ts';
+import {RuntimeDrainController,posixDrainMarkerPort} from '../../../src/runtime/restart-readiness/drain-controller.ts';
+import {PosixDrainMarkerStore,DRAIN_MARKER_NAMES} from '../../../src/runtime/restart-readiness/drain-marker.ts';
+import {GatewayRuntime} from '../../../src/discord/gateway/runtime.ts';
+interface LifetimeFixture{owner:PreparedRuntimeWorkerOwner;context:Awaited<ReturnType<typeof prepareRuntimeContext>>;controller:RuntimeDrainController;markers:PosixDrainMarkerStore;root:string;heartbeatPath:string;gateway:GatewayRuntime<DecodedGatewayInteraction>;stop:AbortController;options:PreparedRuntimeLifetimeOptions;}
+async function lifetimeFixture(run:(f:LifetimeFixture)=>Promise<void>){await storeFixture(async path=>{
+ const {httpFixture}=await import('../../helpers/interaction-worker-fixture.ts'),{loadRuntimeAutocomplete}=await import('../../../src/runtime/discord-runtime/autocomplete-bootstrap.ts'),{posixRuntimeHeartbeatPort,RUNTIME_HEARTBEAT_NAME}=await import('../../../src/runtime/runtime-heartbeat.ts');
+ const o=await input(path),root=o.paths.root,markers=new PosixDrainMarkerStore(root),controller=await RuntimeDrainController.initialize(posixDrainMarkerPort(markers),{runtimeId:'runtime',processId:123});o.admission=controller.admissionGate;let context:Awaited<ReturnType<typeof prepareRuntimeContext>>|undefined;
+ try{context=await prepareRuntimeContext(o);const prepared=context;
+  await httpFixture(async http=>{const gateway=GatewayRuntime.fromOwnedPorts([new PreparedPort()],{reportReceiveErrorDrop:()=>{},reportTriggerFailure:()=>{}}),stop=new AbortController(),opts=localWorkerOptions(root,[]),heartbeatPath=join(root,RUNTIME_HEARTBEAT_NAME),port=posixRuntimeHeartbeatPort(heartbeatPath);let published!:()=>void;const first=new Promise<void>(r=>published=r);opts.interleaving.heartbeat.port.publish=async text=>{await port.publish(text);published();};opts.interleaving.heartbeat.port.removeIfOwned=port.removeIfOwned;let owner:PreparedRuntimeWorkerOwner|undefined;
+   try{owner=await startPreparedRuntimeWorkers(prepared,gateway,o.admission,http,await loadRuntimeAutocomplete(prepared.owner),stop.signal,opts);await first;await run({owner,context:prepared,controller,markers,root,heartbeatPath,gateway,stop,options:{stopRequested:()=>markers.stopRequested(),reportControl:()=>{},reportTransition:()=>{},shutdown:{report:()=>{}}}});}
+   finally{stop.abort();owner?.requestStop();await gateway.shutdown(performance.now()+3000);await owner?.close();owner?.heartbeat.requestStop();await owner?.heartbeat.worker.join();owner?.disposeMonitor();}
+  });
+ }finally{await context?.disposeBeforeWorkers();await controller.dispose();}
+});}
+
+test('actual prepared lifetime observes stop marker, joins workers and resident, then removes heartbeat',{timeout:15000},async()=>lifetimeFixture(async f=>{
+ const {writeFile}=await import('node:fs/promises');await writeFile(join(f.root,DRAIN_MARKER_NAMES.stop),'stop');const result=await runPreparedRuntimeLifetime(f.owner,f.controller,f.stop.signal,f.options);
+ assert.deepEqual(result.selection.cause,{kind:'Control',result:{ok:true}});assert.equal(result.selection.drainKey,null);assert.equal(result.cleanup.serverClose.ok,true);assert.equal(result.finalized.decision.result.ok,true);assert.equal(result.deadline,result.selection.startedAt+30000);assert.equal(f.gateway.resourcesClosed,true);assert.equal(existsSync(f.heartbeatPath),false);gone(f.root);assert.equal(f.owner.exits.tryReceive().kind,'Closed');
+ await assert.rejects(runPreparedRuntimeLifetime(f.owner,f.controller,f.stop.signal,f.options),/already consumed/);
+}));
+
+test('prepared lifetime preserves exact marker failure while completing native cleanup',{timeout:15000},async()=>lifetimeFixture(async f=>{
+ const primary=Object.freeze({markerFailure:true});const result=await runPreparedRuntimeLifetime(f.owner,f.controller,f.stop.signal,{...f.options,stopRequested:async()=>{throw primary;}});assert.equal(result.selection.cause.kind,'Control');assert.equal(result.finalized.decision.result.ok,false);if(!result.finalized.decision.result.ok)assert.equal(result.finalized.decision.result.error,primary);assert.equal(result.cleanup.serverClose.ok,true);assert.equal(existsSync(f.heartbeatPath),false);gone(f.root);
+}));
+
+test('foreign drain gate and forged worker owner reject without consuming real lifetime',{timeout:15000},async()=>lifetimeFixture(async f=>{
+ const {mkdir,writeFile}=await import('node:fs/promises'),foreignRoot=join(f.root,'foreign');await mkdir(foreignRoot);const foreign=await RuntimeDrainController.initialize(posixDrainMarkerPort(new PosixDrainMarkerStore(foreignRoot)));
+ try{await assert.rejects(runPreparedRuntimeLifetime(f.owner,foreign,f.stop.signal,f.options),/gate differs/);await assert.rejects(runPreparedRuntimeLifetime({...f.owner},f.controller,f.stop.signal,f.options),/actual prepared/);assert.equal(f.gateway.resourcesClosed,false);assert.equal(f.owner.heartbeat.worker.peek(),undefined);await writeFile(join(f.root,DRAIN_MARKER_NAMES.stop),'stop');assert.equal((await runPreparedRuntimeLifetime(f.owner,f.controller,f.stop.signal,f.options)).finalized.decision.result.ok,true);}finally{await foreign.dispose();}
+}));
+
+test('prepared lifetime performs actual double live drain and publishes matching ACK before heartbeat retirement',{timeout:15000},async()=>lifetimeFixture(async f=>{
+ const {writeFile,readFile}=await import('node:fs/promises'),{checkRuntimeQuiescence}=await import('../../../src/runtime/restart-readiness/live-drain.ts');assert.deepEqual(await checkRuntimeQuiescence(f.context.queue.dbPath,f.context.owner),{kind:'Ready'});
+ const marker='version=1\nruntime_id=runtime\nprocess_identity=123|456\nnonce=lifetime\n';await writeFile(join(f.root,DRAIN_MARKER_NAMES.prepare),marker);await writeFile(join(f.root,DRAIN_MARKER_NAMES.restart),marker);
+ const result=await runPreparedRuntimeLifetime(f.owner,f.controller,f.stop.signal,f.options);assert.ok(result.selection.drainKey);assert.equal(result.cleanup.serverClose.ok,true);assert.equal(result.finalized.transition,'Restart');assert.equal(result.finalized.decision.result.ok,true);assert.equal(await readFile(join(f.root,DRAIN_MARKER_NAMES.ack),'utf8'),marker+'state=sealed\n');assert.equal(existsSync(f.heartbeatPath),false);gone(f.root);
+}));
+
+test('heartbeat early exit is a failed lifetime cause while all remaining native owners still close',{timeout:15000},async()=>lifetimeFixture(async f=>{
+ const {RuntimeEarlyExitError}=await import('../../../src/runtime/discord-runtime/shutdown-policy.ts');f.owner.heartbeat.requestStop();await f.owner.heartbeat.worker.join();const result=await runPreparedRuntimeLifetime(f.owner,f.controller,f.stop.signal,f.options);assert.deepEqual(result.selection.cause,{kind:'Worker',worker:'heartbeat'});assert.equal(result.finalized.decision.result.ok,false);if(!result.finalized.decision.result.ok){assert.ok(result.finalized.decision.result.error instanceof RuntimeEarlyExitError);assert.equal(result.finalized.decision.result.error.identity,'heartbeat');}assert.equal(result.cleanup.serverClose.ok,true);assert.equal(f.gateway.resourcesClosed,true);gone(f.root);
+}));
+
+test('unjoined losing control IO reaches fail-stop without fabricating resident or gateway cleanup',{timeout:15000},async()=>lifetimeFixture(async f=>{
+ const fatal=new Error('test-only fail-stop sentinel');let entered!:()=>void,release!:()=>void;const started=new Promise<void>(r=>entered=r),blocked=new Promise<void>(r=>release=r);let accepted=false;
+ const run=runPreparedRuntimeLifetime(f.owner,f.controller,f.stop.signal,{...f.options,stopRequested:async()=>{entered();await blocked;accepted=true;return false;},shutdown:{report:()=>{},clock:{now:()=>1000,sleepUntil:async()=>{}},fatal:()=>{throw fatal;}}});const checked=assert.rejects(run,e=>e===fatal);
+ try{await started;f.owner.heartbeat.requestStop();await f.owner.heartbeat.worker.join();await checked;assert.equal(accepted,false);assert.equal(f.gateway.resourcesClosed,false);assert.equal(f.context.owner.lifecycleSnapshot().healthy,true);release();await new Promise<void>(r=>setImmediate(r));assert.equal(accepted,true);}finally{release();await checked;}
+}));
