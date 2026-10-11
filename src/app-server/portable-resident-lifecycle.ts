@@ -151,7 +151,13 @@ export class PortableResidentLifecycle{
         if(token.ownerId!==this.instanceId)throw new IdleObservationError("idle release owner mismatch");
         admission=this.#state.admitRequest(token.generation);
         const transport=new MaintenanceTransport(this.#state,admission,this.#targetGate,permit,token,options.fence,origin,options.renderError,dispatchCheck);
-        return await run(new IdleMaintenanceWork(token,permit,transport.port()));
+        const originalAdmission=admission;
+        const transition=options.nativeIdle===undefined?undefined:async(old:IdleReleaseToken,state:string,detail:string)=>{
+          permit.requireHeld();originalAdmission.client.requireOwnedAdmission(originalAdmission.permit);
+          const next=await options.nativeIdle!.transition(old,state,detail);
+          permit.requireHeld();originalAdmission.client.requireOwnedAdmission(originalAdmission.permit);return next;
+        };
+        return await run(new IdleMaintenanceWork(token,permit,transport.port(),transition));
       }finally{try{admission?.release();}finally{permit.release();}}
     });
     this.#managedIdle.add(task);void task.then(()=>this.#managedIdle.delete(task),()=>this.#managedIdle.delete(task));return task;

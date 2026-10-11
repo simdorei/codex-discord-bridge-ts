@@ -1,0 +1,28 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 641,
+  "localCommit": "a660a1bc702df30ad1de01d1f182f9d16ab1d256",
+  "fullTests": 7510,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/app-server/idle-maintenance.ts": "e9d0acd2c37b56f69942506af96a62c2bb87767a63fda4e7581dcf32a5f0f6d3",
+    "src/app-server/portable-resident-lifecycle.ts": "0f2590fdc8c67a3cefcc0571431c91b38ed91026d147cd668f596b09fea54baf",
+    "src/app-server/resident-native-idle.ts": "2e589e33d0b1faa22ad546d938a342159d42bea75451d0734d77ce660935d2f0",
+    "src/runtime/discord-runtime/resident-startup.ts": "fde1e92a63462d3d6f09f1602136c52e47f5f27534a3ef1bc3de6022bf0653eb",
+    "src/runtime/native-idle-before-worker.ts": "94bdbe8d4c3fa40087b1d4aaebff66a4a5fa21126a94e4660b8702a999ca2c03",
+    "src/runtime/native-idle-before.ts": "a74b23c123178825d26d96b75472222bbe125ea6c183bda8b84e2e1821f7f455",
+    "test/app-server/owned-idle-transition-work.test.ts": "6fb6fced328542306dd825c82efb239f47aeb9daf003b292689b67f4047bcd40",
+    "test/runtime/native-idle-transition-binding.test.ts": "46e9257ebd40d4ebb83afe844be27bc24d6819f87a46b5665a1fd39db29f7ecd",
+    "test/runtime/native-idle-transition.test.ts": "079f4d08c3b32c78e0c6763c4358badc9beb17e0dffae6683310391190523774"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

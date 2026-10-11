@@ -50,14 +50,23 @@ function pin(input:IdleMaintenancePort):IdleMaintenancePort{
  * this promise settles. This coordinator never owns caller cancellation: stopping
  * waiting must not cancel already-started maintenance. Transport and task ownership
  * are adapter obligations, not proven by this bounded state machine. */
+export type NativeIdleTransition=(token:IdleReleaseToken,state:string,detail:string)=>Promise<IdleReleaseToken>;
 export class IdleMaintenanceWork{
-  #token:IdleReleaseToken;readonly #permit:TargetExclusivePermit;readonly #port:IdleMaintenancePort;#used=false;
-  constructor(token:IdleReleaseToken,permit:TargetExclusivePermit,port:IdleMaintenancePort){
+  readonly #transition:NativeIdleTransition|undefined;#token:IdleReleaseToken;readonly #permit:TargetExclusivePermit;readonly #port:IdleMaintenancePort;#used=false;
+  constructor(token:IdleReleaseToken,permit:TargetExclusivePermit,port:IdleMaintenancePort,transition?:NativeIdleTransition){
+    if(transition!==undefined&&(typeof transition!=="function"||types.isProxy(transition)||types.isGeneratorFunction(transition)))throw new TypeError("Expected native idle transition callback");this.#transition=transition;
     this.#token=cloneIdleReleaseToken(token);this.#permit=permit;this.#port=pin(port);
     permit.requireHeld();if(permit.thread!==this.#token.threadId)throw held("idle target permit mismatch");
   }
   #consume():void{if(this.#used)throw new TypeError("Maintenance work already consumed");this.#used=true;this.#permit.requireHeld();}
-  #advance(state:string,detail:string):void{this.#permit.requireHeld();this.#token=this.#permit.journal.transition(this.#token,state,detail);}
+  async #advance(state:string,detail:string):Promise<void>{
+    this.#permit.requireHeld();const original=this.#token;
+    if(this.#transition===undefined){this.#token=this.#permit.journal.transition(original,state,detail);return;}
+    const pending=this.#transition(original,state,detail);if(!types.isPromise(pending))throw new TypeError("Native transition must return Promise");
+    const next=cloneIdleReleaseToken(await pending);this.#permit.requireHeld();
+    for(const key of ["intentId","ownerId","generation","threadId","turnId","jobId"] as const)if(next[key]!==original[key])throw held("native transition changed original identity");
+    if(next.revision!==original.revision+1n||next.state!==state||next.detail!==Array.from(detail).slice(0,512).join(""))throw held("native transition changed original state/revision");this.#token=next;
+  }
   #rpc(method:string,params:unknown,timeoutMs:number,requireIdle:boolean,watermark:bigint|null):Promise<IdleRpcResult>{
     this.#permit.requireHeld();return this.#port.rpc(Object.freeze({token:this.#token,method,params:cloneOwnedSerdeValue(params),timeoutMs,requireIdle,watermark}));
   }
@@ -82,30 +91,30 @@ export class IdleMaintenanceWork{
       const response=await this.#rpc("thread/read",{threadId:this.#token.threadId,includeTurns:false},2000,false,null);
       if(!response.ok)throw response.error;const thread=serdeField(response.value,"thread");
       if(serdeField(thread,"id")!==this.#token.threadId)throw held("unload read returned a different or missing thread");
-      if(serdeField(serdeField(thread,"status"),"type")==="notLoaded")this.#advance("Settled","UnloadedConfirmed");return;
+      if(serdeField(serdeField(thread,"status"),"type")==="notLoaded")await this.#advance("Settled","UnloadedConfirmed");return;
     }
-    let watermark:bigint;try{watermark=await this.#proveIdle();}catch(e){this.#advance("Candidate",this.#port.renderError(e));throw e;}
-    this.#advance("Dispatching","exact unsubscribe permission committed");
+    let watermark:bigint;try{watermark=await this.#proveIdle();}catch(e){await this.#advance("Candidate",this.#port.renderError(e));throw e;}
+    await this.#advance("Dispatching","exact unsubscribe permission committed");
     const response=await this.#rpc("thread/unsubscribe",{threadId:this.#token.threadId},8000,true,watermark);
     if(response.ok&&["unsubscribed","notSubscribed","notLoaded"].includes(serdeField(response.value,"status") as string)){
-      this.#advance("AwaitUnload","unsubscribe acknowledged; unload unverified");return;
+      await this.#advance("AwaitUnload","unsubscribe acknowledged; unload unverified");return;
     }
     const error=response.ok?held("unclassifiable unsubscribe reply"):response.error;
-    this.#recordFailure(response.phase,"release",error);throw error;
+    await this.#recordFailure(response.phase,"release",error);throw error;
   }
   async resubscribe(params:unknown):Promise<unknown>{
     this.#consume();const owned=cloneOwnedSerdeValue(params);
     if(this.#token.state!=="Resubscribing")throw held("missing durable resume permission");
     const response=await this.#rpc("thread/resume",owned,8000,false,null);
     if(response.ok&&serdeField(serdeField(response.value,"thread"),"id")===this.#token.threadId&&this.#port.generation()===this.#token.generation){
-      this.#advance("Settled","SupersededByConfirmedResubscribe");return response.value;
+      await this.#advance("Settled","SupersededByConfirmedResubscribe");return response.value;
     }
     const error=response.ok?held("resume returned wrong identity or owner changed"):response.error;
-    this.#recordFailure(response.phase,"resume",error);throw error;
+    await this.#recordFailure(response.phase,"resume",error);throw error;
   }
-  #recordFailure(phase:IdleWritePhase,operation:"release"|"resume",error:unknown):void{
+  async #recordFailure(phase:IdleWritePhase,operation:"release"|"resume",error:unknown):Promise<void>{
     const notStarted=phase==="NotStarted",state=notStarted?(operation==="release"?"Settled":"AwaitUnload"):"Unknown";
     const detail=notStarted?(operation==="release"?"CancelledBeforeSend":"ResumeCancelledBeforeSend"):this.#port.renderError(error);
-    try{this.#advance(state,detail);}catch(recording){throw held(`${this.#port.renderError(error)}; recording failed: ${this.#port.renderError(recording)}; durable ${operation==="release"?"dispatch":"resume"} hold retained`);}
+    try{await this.#advance(state,detail);}catch(recording){throw held(`${this.#port.renderError(error)}; recording failed: ${this.#port.renderError(recording)}; durable ${operation==="release"?"dispatch":"resume"} hold retained`);}
   }
 }

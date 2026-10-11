@@ -1,3 +1,4 @@
+import type {IdleReleaseToken} from '../../app-server/idle-release-journal.ts';
 import {NativeIdleBeforeOwner} from '../native-idle-before.ts';
 import {NativeMutationOwner,type NativeMutationReceipt} from '../native-mutation-owner.ts';
 import type {ResidentNativeDispatch} from '../../app-server/resident-native-dispatch.ts';
@@ -27,7 +28,7 @@ export async function startRuntimeResident(config:PortableSessionConfig,path:str
  const custody=await initializeRuntimeCustody(path,runtimeId,startupChannel,render);
  signal?.throwIfAborted();
  const native=new NativeMutationOwner(path,runtimeId,render),idle=new NativeIdleBeforeOwner(path,render);
- const nativeIdle=Object.freeze({before:(owner:string,generation:bigint,thread:string)=>idle.before(owner,generation,thread),close:()=>idle.close()});
+ const nativeIdle=Object.freeze({before:(owner:string,generation:bigint,thread:string)=>idle.before(owner,generation,thread),transition:(token:IdleReleaseToken,state:string,detail:string)=>idle.transition(token,state,detail),close:()=>idle.close()});
  const nativeDispatch=Object.freeze<ResidentNativeDispatch>({
   beginMutationWithOrigin:c=>native.begin(c),beginQueueMutation:c=>native.beginQueue(c),beginStopMutation:c=>native.beginStop(c),
   finishMutation:(receipt,outcome)=>native.finish(receipt as NativeMutationReceipt,outcome),
