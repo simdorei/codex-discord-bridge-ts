@@ -1,4 +1,4 @@
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import type {MirrorDetail,MirrorCollection} from './collect.ts';
@@ -32,7 +32,7 @@ export function snapshotMirrorItemOptions(input:MirrorItemOptions):MirrorItemOpt
  if(Buffer.byteLength(thread)>16384||(typeof currentTurn==='string'&&Buffer.byteLength(currentTurn)>16384))throw new RangeError('Mirror context exceeds bounded identity budget');
  if(detail==='Send'||detail==='All')return Object.freeze({thread,detail,currentTurn});
  const rawPath=own(detail,'databasePath');requireDiscordText(rawPath);if(rawPath.includes('\0')||rawPath.length>32768||Buffer.byteLength(rawPath)>32768)throw new RangeError('Invalid mirror detail database path');
- const databasePath=resolve(rawPath);if(databasePath.length>32768||Buffer.byteLength(databasePath)>32768)throw new RangeError('Invalid mirror detail database path');
+ const databasePath=pinNativeRuntimePath(rawPath);if(databasePath.length>32768||Buffer.byteLength(databasePath)>32768)throw new RangeError('Invalid mirror detail database path');
  return Object.freeze({thread,detail:Object.freeze({databasePath}),currentTurn});
 }
 /** Shares the exact decoder slot: parse, digest, deduplicate, and transform all run

@@ -1,4 +1,4 @@
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {types} from 'node:util';
 import {deliverChunksIndexed} from '../../discord/delivery.ts';
 import {requireDiscordText} from '../../discord/text.ts';
@@ -83,7 +83,7 @@ export async function planMirrorReceiptsOffThread(observation:AnchoredMirrorBatc
 export async function planMixedMirrorReceiptsOffThread(observation:AnchoredMirrorBatch,channel:bigint,inputModes:readonly MirrorDeliveryMode[],signal?:AbortSignal,timeoutMs=5000,receiptDatabasePath?:string):Promise<MirrorReceiptPlan>{
 
  signal?.throwIfAborted();
- let receiptPath:string|null=null;if(receiptDatabasePath!==undefined){requireDiscordText(receiptDatabasePath);if(receiptDatabasePath.includes('\0')||receiptDatabasePath.length>32768||Buffer.byteLength(receiptDatabasePath)>32768)throw new RangeError('Invalid receipt snapshot path');receiptPath=resolve(receiptDatabasePath);if(receiptPath.length>32768||Buffer.byteLength(receiptPath)>32768)throw new RangeError('Invalid receipt snapshot path');}
+ let receiptPath:string|null=null;if(receiptDatabasePath!==undefined){requireDiscordText(receiptDatabasePath);if(receiptDatabasePath.includes('\0')||receiptDatabasePath.length>32768||Buffer.byteLength(receiptDatabasePath)>32768)throw new RangeError('Invalid receipt snapshot path');receiptPath=pinNativeRuntimePath(receiptDatabasePath);if(receiptPath.length>32768||Buffer.byteLength(receiptPath)>32768)throw new RangeError('Invalid receipt snapshot path');}
  const {batch}=AnchoredMirrorBatch.prototype.captured.call(observation);
  if(batch.items.length>4096)throw new RangeError('Mirror packet item budget exceeded');
  const modes=snapshotMirrorDeliveryModes(inputModes,batch.items.length);

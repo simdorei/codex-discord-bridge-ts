@@ -1,6 +1,6 @@
 import type {MirrorFileStamp} from '../../core/mirror-cursor-anchor.ts';
 import {open,stat,type FileHandle} from 'node:fs/promises';
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import type {BigIntStats} from 'node:fs';
 import {requireDiscordText} from '../../discord/text.ts';
 const TOKEN=Symbol('owned mirror file observation');
@@ -57,7 +57,7 @@ export class MirrorFileWindow {
   requireDiscordText(path);if(path.includes('\0'))throw new TypeError('NUL mirror path');
   if(typeof offset!=='bigint'||offset<0n||offset>=(1n<<64n))throw new RangeError('Expected u64 file offset');
   if(!Number.isSafeInteger(maximumBytes)||maximumBytes<1||maximumBytes>MAX_BYTES)throw new RangeError('Expected mirror byte window from 1 to 1048576');
-  const pinned=resolve(path);
+  const pinned=pinNativeRuntimePath(path);
   return owned(pinned,signal,async handle=>{
    const before=stamp(await handle.stat({bigint:true}));if(offset>before.size)throw new MirrorFileChangedError();
    const remaining=before.size-offset,length=Number(remaining<BigInt(maximumBytes)?remaining:BigInt(maximumBytes)),bytes=new Uint8Array(length);let used=0;

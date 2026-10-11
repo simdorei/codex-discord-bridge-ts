@@ -41,3 +41,9 @@ export function joinRuntimePath(base:string,child:string,platform:PathPlatform):
  const sep=base!==''&&!separator(base.at(-1))&&!(a?.drive&&a.length===base.length);
  return base+(sep?'\\':'')+child;
 }
+
+/** Capture cwd before an asynchronous native operation without changing native
+ * symlink/parent traversal. This is a path spelling, not a secure file identity. */
+export function pinNativeRuntimePath(path:string):string{
+ return joinRuntimePath(process.cwd(),path,process.platform==='win32'?'win32':'posix');
+}

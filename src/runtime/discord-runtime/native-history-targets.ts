@@ -1,4 +1,4 @@
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
@@ -14,7 +14,7 @@ function id(value:unknown):asserts value is bigint{if(typeof value!=='bigint'||v
  * sorting may outlive the caller deadline; this does not promise hard preemption.
  * Legacy periodic callers remain unchanged until this profile is explicitly wired. */
 export async function readHistoryTargetsOffThread(path:string,allowedChannelIds:ReadonlySet<bigint>,startup:bigint|null,limits:NativeHistoryTargetLimits,signal?:AbortSignal):Promise<readonly HistoryPollTarget[]>{
- signal?.throwIfAborted();requireDiscordText(path);if(path.includes('\0')||path.length>32768||Buffer.byteLength(path)>32768)throw new RangeError('Invalid native history path');const full=resolve(path);if(full.length>32768||Buffer.byteLength(full)>32768)throw new RangeError('Invalid native history path');
+ signal?.throwIfAborted();requireDiscordText(path);if(path.includes('\0')||path.length>32768||Buffer.byteLength(path)>32768)throw new RangeError('Invalid native history path');const full=pinNativeRuntimePath(path);if(full.length>32768||Buffer.byteLength(full)>32768)throw new RangeError('Invalid native history path');
  if(startup!==null)id(startup);if(allowedChannelIds===null||typeof allowedChannelIds!=='object'||types.isProxy(allowedChannelIds))throw new TypeError('Expected native history channel set');
  const size=Object.getOwnPropertyDescriptor(Set.prototype,'size')!.get!.call(allowedChannelIds) as number;if(size>4096)throw new RangeError('Too many configured history channels');const allowed:bigint[]=[];Set.prototype.forEach.call(allowedChannelIds,(value:unknown)=>{id(value);allowed.push(value);});
  const {maxRows,timeoutMs}=captureNativeHistoryTargetLimits(limits);

@@ -1,4 +1,4 @@
-import {snapshotMirrorCursorAnchor as captureExpected,type MirrorCursorAnchor} from '../../core/mirror-cursor-anchor.ts';
+import {snapshotMirrorCursorAnchor as captureExpected,mirrorCursorAnchorVersionForPath,type MirrorCursorAnchor} from '../../core/mirror-cursor-anchor.ts';
 import {observeMirrorBatch,type MirrorBatchObservation} from './batch-observation.ts';
 import {snapshotMirrorReadLimits,type MirrorReadLimits} from './read-window.ts';
 import {snapshotMirrorItemOptions,type MirrorItemOptions} from './decode-reader.ts';
@@ -38,7 +38,7 @@ export async function captureMirrorCursorAnchor(path:string,offset:bigint,signal
   if(!sameStamp(tail.generation,prefix.generation))throw new MirrorFileChangedError();
   prefixBytes=prefix.copyBytes();
  }
- const anchor=captureExpected({version:1,path:tail.path,offset,stamp:tail.generation,prefixHash:hash(prefixBytes),tailHash:hash(tailBytes)});
+ const anchor=captureExpected({version:mirrorCursorAnchorVersionForPath(tail.path),path:tail.path,offset,stamp:tail.generation,prefixHash:hash(prefixBytes),tailHash:hash(tailBytes)});
  signal?.throwIfAborted();return new MirrorContinuityObservation(token,anchor,tail);
 }
 /** Replacement, observed shrink, changed anchors, or same-size metadata change

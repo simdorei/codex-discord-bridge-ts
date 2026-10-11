@@ -1,4 +1,4 @@
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
@@ -13,7 +13,7 @@ function text(v:string,limit:number):void{requireDiscordText(v);if(v.includes('\
 export async function readNewReplyThreadOffThread(path:string,id:string,signal?:AbortSignal,timeoutMs=6000):Promise<ThreadInfo|null>{
  signal?.throwIfAborted();if(slot.busy)throw new OwnedWorkerBusyError();text(path,32768);text(id,16384);
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<0||timeoutMs>10000)throw new RangeError('Invalid exact thread native timeout');
- const pinned=resolve(path);text(pinned,32768);const pending=slot.run(new URL('./thread-worker.ts',import.meta.url),{path:pinned,id},timeoutMs,signal),exited=slot.join();let raw:unknown;try{raw=await pending;}finally{await exited;}
+ const pinned=pinNativeRuntimePath(path);text(pinned,32768);const pending=slot.run(new URL('./thread-worker.ts',import.meta.url),{path:pinned,id},timeoutMs,signal),exited=slot.join();let raw:unknown;try{raw=await pending;}finally{await exited;}
  signal?.throwIfAborted();if(boundedSerdeByteCount(raw,1048576)===null)throw new RangeError('Exact native thread response exceeds budget');
  const response=cloneOwnedSerdeValue(raw);if(own(response,'ok')!==true){const detail=own(response,'detail');throw new Error(typeof detail==='string'?detail:'Exact thread read failed');}
  const value=own(response,'value');if(value===null)return null;

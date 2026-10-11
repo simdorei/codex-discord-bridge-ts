@@ -1,4 +1,4 @@
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {InteractionAccessPolicy} from '../../discord/interaction-access.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
@@ -18,7 +18,7 @@ const slot=new OwnedWorkerSlot();
 export async function refreshMirrorPolicyOffThread(policy:InteractionAccessPolicy,path:string,limits:NativeMirrorPolicyLimits,signal?:AbortSignal):Promise<InteractionAccessPolicy>{
  signal?.throwIfAborted();requireDiscordText(path);
  if(path.includes('\0')||path.length>32768||Buffer.byteLength(path)>32768)throw new RangeError('Invalid native policy path');
- const resolved=resolve(path);if(resolved.length>32768||Buffer.byteLength(resolved)>32768)throw new RangeError('Invalid native policy path');
+ const resolved=pinNativeRuntimePath(path);if(resolved.length>32768||Buffer.byteLength(resolved)>32768)throw new RangeError('Invalid native policy path');
  const maxRows=own(limits,'maxRows'),maxValueBytes=own(limits,'maxValueBytes'),maxOutputIds=own(limits,'maxOutputIds'),timeoutMs=own(limits,'timeoutMs');
  if(typeof maxRows!=='bigint'||maxRows<1n||maxRows>4096n||typeof maxValueBytes!=='bigint'||maxValueBytes<1n||maxValueBytes>4194304n||typeof maxOutputIds!=='number'||!Number.isSafeInteger(maxOutputIds)||maxOutputIds<1||maxOutputIds>16384||typeof timeoutMs!=='number'||!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid native policy limits');
  // Validate the private policy receiver before any native work, without reading

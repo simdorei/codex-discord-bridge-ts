@@ -1,4 +1,4 @@
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
@@ -17,7 +17,7 @@ const slot=new OwnedWorkerSlot('Control');
  * Submitted cancellation/commit uncertainty joins exit and never retries. */
 export async function recoverRuntimeIngressOffThread(path:string,runtime:string,now:number,limits:StartupIngressRecoveryLimits,timeoutMs=10000,signal?:AbortSignal):Promise<number>{
  if(signal!==undefined&&(types.isProxy(signal)||!(signal instanceof AbortSignal)))throw new TypeError('Expected startup abort signal');signal?.throwIfAborted();
- requireDiscordText(path);if(path.includes('\0')||path.length>32768||Buffer.byteLength(path)>32768)throw new RangeError('Invalid ingress recovery path');const pinned=resolve(path);if(pinned.length>32768||Buffer.byteLength(pinned)>32768)throw new RangeError('Invalid ingress recovery path');
+ requireDiscordText(path);if(path.includes('\0')||path.length>32768||Buffer.byteLength(path)>32768)throw new RangeError('Invalid ingress recovery path');const pinned=pinNativeRuntimePath(path);if(pinned.length>32768||Buffer.byteLength(pinned)>32768)throw new RangeError('Invalid ingress recovery path');
  requireDiscordText(runtime);if(runtime.includes('\0')||Buffer.byteLength(runtime)>4096||!Number.isFinite(now)||now<0)throw new RangeError('Invalid startup recovery identity or timestamp');
  const maxRows=own(limits,'maxRows'),maxBytes=own(limits,'maxBytes');
  if(typeof maxRows!=='number'||!Number.isSafeInteger(maxRows)||maxRows<1||maxRows>4096||typeof maxBytes!=='number'||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>4194304)throw new RangeError('Invalid ingress recovery resource limits');

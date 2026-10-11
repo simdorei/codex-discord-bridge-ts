@@ -1,4 +1,4 @@
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
@@ -24,7 +24,7 @@ export async function startRuntimeFoundation(paths:Pick<RuntimePaths,'stateDb'|'
  if(typeof render!=='function'||types.isProxy(render)||types.isAsyncFunction(render)||types.isGeneratorFunction(render))throw new TypeError('Expected synchronous startup diagnostic renderer');
  const maxRows=own(limits,'maxRows'),maxBytes=own(limits,'maxBytes');if(typeof maxRows!=='number'||!Number.isSafeInteger(maxRows)||maxRows<1||maxRows>4096||typeof maxBytes!=='number'||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>4194304)throw new RangeError('Invalid startup resource limits');
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>30000)throw new RangeError('Invalid startup store deadline');
- const pinnedPaths=Object.freeze({stateDb:resolve(state as string),mirrorDb:resolve(mirror as string)}),pinnedConfig=cloneOwnedSerdeValue(config) as PortableSessionConfig,pinnedLimits=Object.freeze({maxRows,maxBytes});
+ const pinnedPaths=Object.freeze({stateDb:pinNativeRuntimePath(state as string),mirrorDb:pinNativeRuntimePath(mirror as string)}),pinnedConfig=cloneOwnedSerdeValue(config) as PortableSessionConfig,pinnedLimits=Object.freeze({maxRows,maxBytes});
  await prepareRuntimeStorageOffThread(pinnedPaths,timeoutMs,signal);signal?.throwIfAborted();
  const retirement=await retireRuntimeReserveOffThread(pinnedPaths.mirrorDb,pinnedLimits,timeoutMs,signal);signal?.throwIfAborted();
  const owner=await startRuntimeResident(pinnedConfig,pinnedPaths.mirrorDb,runtimeId,startupChannel,render,signal);

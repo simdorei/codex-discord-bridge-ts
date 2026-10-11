@@ -1,4 +1,4 @@
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
@@ -13,7 +13,7 @@ export class RuntimeStoragePreparationUnconfirmed extends Error{
  constructor(cause:unknown,stateDb:string,mirrorDb:string){super('Runtime storage preparation interrupted after submission; inspect store before another startup',{cause});this.name='RuntimeStoragePreparationUnconfirmed';this.stateDb=stateDb;this.mirrorDb=mirrorDb;}
 }
 const slot=new OwnedWorkerSlot('Control');
-function path(value:unknown):string{requireDiscordText(value);if(value.includes('\0')||value.length>32768||Buffer.byteLength(value)>32768)throw new RangeError('Invalid startup storage path');const result=resolve(value);if(result.length>32768||Buffer.byteLength(result)>32768)throw new RangeError('Invalid startup storage path');return result;}
+function path(value:unknown):string{requireDiscordText(value);if(value.includes('\0')||value.length>32768||Buffer.byteLength(value)>32768)throw new RangeError('Invalid startup storage path');const result=pinNativeRuntimePath(value);if(result.length>32768||Buffer.byteLength(result)>32768)throw new RangeError('Invalid startup storage path');return result;}
 /** Source prepare_storage ordering in a fixed owned worker: existing Codex open
  * probe then the existing bridge initializer/backups/migrations. Caller must hold
  * its single-instance guard and explicitly choose these paths. Preparation may

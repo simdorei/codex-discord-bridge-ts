@@ -1,4 +1,4 @@
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../owned-worker-slot.ts';
@@ -14,7 +14,7 @@ const slot=new OwnedWorkerSlot();
 export async function readArchiveRowsOffThread(path:string,kind:ArchiveRows,id:string,limits:NativeArchiveRowLimits,signal?:AbortSignal):Promise<readonly string[]>{
  signal?.throwIfAborted();requireDiscordText(path);requireDiscordText(id);
  if(path.includes('\0')||path.length>32768||Buffer.byteLength(path)>32768||id.length>4096||Buffer.byteLength(id)>4096)throw new RangeError('Invalid archive evidence input');
- const full=resolve(path);if(full.length>32768||Buffer.byteLength(full)>32768)throw new RangeError('Invalid archive evidence path');
+ const full=pinNativeRuntimePath(path);if(full.length>32768||Buffer.byteLength(full)>32768)throw new RangeError('Invalid archive evidence path');
  if(kind!=='thread'&&kind!=='edges'&&kind!=='logs')throw new TypeError('Unknown archive evidence query');
  const maxRows=own(limits,'maxRows'),maxBytes=own(limits,'maxBytes'),timeoutMs=own(limits,'timeoutMs');
  if(typeof maxRows!=='number'||!Number.isSafeInteger(maxRows)||maxRows<1||maxRows>4096||typeof maxBytes!=='number'||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>4194304||typeof timeoutMs!=='number'||!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid native archive evidence limits');

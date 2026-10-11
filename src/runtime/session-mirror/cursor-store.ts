@@ -1,6 +1,6 @@
 import {snapshotMirrorSkippedItems} from './ownership.ts';
 import type {MirrorItem} from './collect.ts';
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../owned-worker-slot.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
@@ -32,7 +32,7 @@ export class NativeMirrorCursorStore{
  constructor(path:string,timeoutMs=5000){
   bounded(path,32768);if(path.includes('\0'))throw new TypeError('NUL mirror store path');
   if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid mirror cursor worker deadline');
-  const pinned=resolve(path);bounded(pinned,32768);this.#path=pinned;this.#timeout=timeoutMs;
+  const pinned=pinNativeRuntimePath(path);bounded(pinned,32768);this.#path=pinned;this.#timeout=timeoutMs;
  }
  get busy():boolean{return this.#inflight!==null;}
  async close(reason:unknown=new Error('Mirror cursor store closed')):Promise<void>{this.#closed=true;this.#controller?.abort(reason);if(this.#inflight!==null)await Promise.allSettled([this.#inflight]);}

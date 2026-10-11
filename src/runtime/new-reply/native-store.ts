@@ -1,4 +1,4 @@
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
@@ -21,7 +21,7 @@ export class NativeNewReplyStore{
  constructor(path:string,timeoutMs=5000){
   requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new RangeError('Invalid new reply store path');
   if(!Number.isSafeInteger(timeoutMs)||timeoutMs<0||timeoutMs>10000)throw new RangeError('Invalid new reply native timeout');
-  this.#path=resolve(path);this.#timeout=timeoutMs;
+  this.#path=pinNativeRuntimePath(path);this.#timeout=timeoutMs;
  }
  get busy():boolean{return this.#inflight!==null;}
  async close(reason:unknown=new Error('New reply store closed')):Promise<void>{this.#closed=true;this.#controller?.abort(reason);if(this.#inflight!==null)await Promise.allSettled([this.#inflight]);}

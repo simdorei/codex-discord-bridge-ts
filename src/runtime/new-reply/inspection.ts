@@ -1,4 +1,4 @@
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {cloneOwnedSerdeValue} from '../../core/owned-serde-value.ts';
 import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {serializeSerdeValue} from '../../core/serde-json.ts';
@@ -54,7 +54,7 @@ export async function inspectNewReply(input:NewReply,signal?:AbortSignal):Promis
  else{
   if(own(scan,'format')!==FORMAT||typeof own(scan,'cursor')!=='string')throw new Error('Unsupported new reply checkpoint; legacy cursor adoption requires review');
   cursor=decodeNewReplyFileCursor(own(scan,'cursor') as string);
-  if(cursor.anchor.path!==resolve(before.rolloutPath)||cursor.identity.threadId!==identity.threadId||cursor.identity.cwd!==identity.cwd||cursor.identity.turnId!==identity.turnId||cursor.identity.promptSha256!==identity.promptSha256)throw new Error('new reply cursor original request or source changed');
+  if(cursor.anchor.path!==pinNativeRuntimePath(before.rolloutPath)||cursor.identity.threadId!==identity.threadId||cursor.identity.cwd!==identity.cwd||cursor.identity.turnId!==identity.turnId||cursor.identity.promptSha256!==identity.promptSha256)throw new Error('new reply cursor original request or source changed');
  }
  const file=await observeNewReplyFile(cursor,undefined,signal),next=Object.freeze({format:FORMAT,cursor:encodeNewReplyFileCursor(file.cursor)}),result=new NewReplyInspection(TOKEN,record,next,file.cursor.state.matched,before,file,false);
  await result.verifyCurrent(signal);return result;

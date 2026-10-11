@@ -1,4 +1,4 @@
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime/runtime-paths/path-text.ts';
 import {requireDiscordText} from '../discord/text.ts';
 import {gatewayOwnField as own} from '../discord/gateway/values.ts';
 import {cloneOwnedSerdeValue} from '../core/owned-serde-value.ts';
@@ -15,7 +15,7 @@ export async function resolveThreadReferenceOffThread(path:string,reference:stri
  signal?.throwIfAborted();if(process.platform==='win32')throw new Error('Windows action reference resolution is not yet qualified');
  text(path,32768);if(path.includes('\0'))throw new TypeError('Invalid state path');text(reference,16384);if(bridgePath!==undefined){text(bridgePath,32768);if(bridgePath.includes('\0'))throw new TypeError('Invalid bridge path');}if(selected!==null)text(selected,16384);if(typeof archived!=='boolean')throw new TypeError('Expected archived flag');
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid native reference timeout');
- const full=resolve(path);text(full,32768);if(slot.busy)throw new OwnedWorkerBusyError();
+ const full=pinNativeRuntimePath(path);text(full,32768);if(slot.busy)throw new OwnedWorkerBusyError();
  const pending=slot.run(new URL('./reference-worker.ts',import.meta.url),{path:full,reference,selected,archived,bridgePath},timeoutMs,signal),joined=slot.join();let raw:unknown;
  try{raw=await pending;}finally{await joined;}signal?.throwIfAborted();
  if(boundedSerdeByteCount(raw,1048576)===null)throw new RangeError('Native reference response exceeds budget');const response=cloneOwnedSerdeValue(raw);
@@ -35,7 +35,7 @@ export async function resolveThreadReferenceOffThread(path:string,reference:stri
  * fails as a whole. Shares the same native reader slot and original DB ordering. */
 export async function readThreadInventoryOffThread(path:string,archived:boolean,signal?:AbortSignal):Promise<readonly ThreadInfo[]>{
  signal?.throwIfAborted();text(path,32768);if(path.includes('\0'))throw new TypeError('Invalid state path');if(typeof archived!=='boolean')throw new TypeError('Expected archived flag');
- const full=resolve(path);text(full,32768);if(slot.busy)throw new OwnedWorkerBusyError();
+ const full=pinNativeRuntimePath(path);text(full,32768);if(slot.busy)throw new OwnedWorkerBusyError();
  const pending=slot.run(new URL('./reference-worker.ts',import.meta.url),{path:full,archived,inventory:true},6000,signal),joined=slot.join();let raw:unknown;
  try{raw=await pending;}finally{await joined;}signal?.throwIfAborted();
  if(boundedSerdeByteCount(raw,4194304)===null)throw new RangeError('Native inventory exceeds output budget');

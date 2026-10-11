@@ -1,5 +1,5 @@
 import {encodeMirrorCursorAnchor} from '../../core/mirror-cursor-anchor.ts';
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {snapshotBoundMirrorCursor,type BoundMirrorCursor} from '../../store/mirror-cursor-journal.ts';
@@ -32,7 +32,7 @@ export class MirrorBatchExecutionError extends Error{
 export async function executeObservedMirrorBatch(request:ObservedMirrorBatchRequest,transport:DiscordReceiptTransport,signal?:AbortSignal):Promise<Readonly<{packet:MixedMirrorPacket;cursor:BoundMirrorCursor;counts:MirrorPollCounts}>>{
  signal?.throwIfAborted();const rawPath=own(request,'databasePath');requireDiscordText(rawPath);
  if(rawPath.includes('\0')||rawPath.length>32768||Buffer.byteLength(rawPath)>32768)throw new RangeError('Mirror database path exceeds budget');
- const path=resolve(rawPath),expected=snapshotBoundMirrorCursor(own(request,'expected') as BoundMirrorCursor),observation=own(request,'observation') as AnchoredMirrorBatch;
+ const path=pinNativeRuntimePath(rawPath),expected=snapshotBoundMirrorCursor(own(request,'expected') as BoundMirrorCursor),observation=own(request,'observation') as AnchoredMirrorBatch;
  const {batch,expectedAnchor}=AnchoredMirrorBatch.prototype.captured.call(observation),jobs=own(request,'pollJobs') as MirrorStoreSnapshot['jobs'];captureMirrorPollJobs(path,expected.thread,jobs);
  const channel=own(request,'channel'),updatedAt=own(request,'updatedAt'),operationId=own(request,'operationId'),rawLimits=own(request,'ownership');requireDiscordText(operationId);
  if(typeof channel!=='bigint'||channel<=0n||channel>=(1n<<63n)||typeof updatedAt!=='number'||!Number.isFinite(updatedAt)||updatedAt<0||operationId.length===0||operationId.length>128||Buffer.byteLength(operationId)>128)throw new TypeError('Invalid observed mirror batch request');

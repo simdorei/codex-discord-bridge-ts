@@ -1,4 +1,4 @@
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
@@ -19,7 +19,7 @@ const slot=new OwnedWorkerSlot('Control');
  * Initializer may have changed schema even when retirement itself rolls back. */
 export async function retireRuntimeReserveOffThread(path:string,limits:ReserveRetirementLimits,timeoutMs=10000,signal?:AbortSignal):Promise<ReserveRetirement>{
  if(signal!==undefined&&(types.isProxy(signal)||!(signal instanceof AbortSignal)))throw new TypeError('Expected startup abort signal');signal?.throwIfAborted();
- requireDiscordText(path);if(path.includes('\0')||path.length>32768||Buffer.byteLength(path)>32768)throw new RangeError('Invalid retirement path');const pinned=resolve(path);if(pinned.length>32768||Buffer.byteLength(pinned)>32768)throw new RangeError('Invalid retirement path');
+ requireDiscordText(path);if(path.includes('\0')||path.length>32768||Buffer.byteLength(path)>32768)throw new RangeError('Invalid retirement path');const pinned=pinNativeRuntimePath(path);if(pinned.length>32768||Buffer.byteLength(pinned)>32768)throw new RangeError('Invalid retirement path');
  const maxRows=own(limits,'maxRows'),maxBytes=own(limits,'maxBytes');
  if(typeof maxRows!=='number'||!Number.isSafeInteger(maxRows)||maxRows<1||maxRows>4096||typeof maxBytes!=='number'||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>4194304)throw new RangeError('Invalid retirement resource limits');
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>30000)throw new RangeError('Invalid retirement deadline');

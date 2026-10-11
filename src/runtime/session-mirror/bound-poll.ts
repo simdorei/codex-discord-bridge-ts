@@ -6,7 +6,7 @@ import {captureMirrorDiscoveryLimits,type MirrorDiscoveryLimits} from './discove
 import {captureMirrorStoreDiscoveryLimits,type MirrorStoreDiscoveryLimits} from './store-discovery.ts';
 import type {MirrorSnapshotLimits} from './discovery-snapshot.ts';
 import type {MirrorReadyLimits} from './ready.ts';
-import {resolve} from 'node:path';import {randomUUID} from 'node:crypto';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';import {randomUUID} from 'node:crypto';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';import {requireDiscordText} from '../../discord/text.ts';
 import type {DiscordReceiptTransport} from '../completion/receipt-sender.ts';
 import type {MirrorThreadHint} from './discovery.ts';import type {MirrorPollCounts} from './execution.ts';
@@ -29,8 +29,8 @@ function boundedText(value:unknown,max:number):string{requireDiscordText(value);
  * exist, preserving the Rust empty-tail short circuit without a second parse.
  * No volatile text-cache skip is treated as durable evidence. */
 export async function pollBoundMirrorTarget(databasePath:string,hint:MirrorThreadHint,channel:bigint,jobs:MirrorStoreSnapshot['jobs'],options:BoundMirrorPollOptions,transport:DiscordReceiptTransport,signal?:AbortSignal):Promise<MirrorPollCounts>{
- signal?.throwIfAborted();const path=resolve(boundedText(databasePath,32768));boundedText(path,32768);
- const thread=boundedText(own(hint,'id'),16384),rollout=resolve(boundedText(own(hint,'rolloutPath'),32768));boundedText(rollout,32768);
+ signal?.throwIfAborted();const path=pinNativeRuntimePath(boundedText(databasePath,32768));boundedText(path,32768);
+ const thread=boundedText(own(hint,'id'),16384),rollout=pinNativeRuntimePath(boundedText(own(hint,'rolloutPath'),32768));boundedText(rollout,32768);
  if(typeof channel!=='bigint'||channel<=0n||channel>=(1n<<63n))throw new RangeError('Expected positive i64 mirror channel');
  captureMirrorPollJobs(path,thread,jobs);const {read,ownership}=snapshotBoundMirrorPollOptions(options),timeoutMs=ownership.timeoutMs;const store=new NativeMirrorCursorStore(path,timeoutMs);
  let expected;try{expected=await store.read(thread,signal)}finally{await store.close()}
@@ -70,7 +70,7 @@ export async function runBoundMirrorWorker(config:BoundMirrorWorkerConfig,transp
 
 /** Capture the complete worker configuration before a monitored task is queued. */
 export function captureBoundMirrorWorkerConfig(config:BoundMirrorWorkerConfig):BoundMirrorWorkerConfig{
- const state=resolve(boundedText(own(config,'stateDatabasePath'),32768)),bridge=resolve(boundedText(own(config,'bridgeDatabasePath'),32768));boundedText(state,32768);boundedText(bridge,32768);
+ const state=pinNativeRuntimePath(boundedText(own(config,'stateDatabasePath'),32768)),bridge=pinNativeRuntimePath(boundedText(own(config,'bridgeDatabasePath'),32768));boundedText(state,32768);boundedText(bridge,32768);
  const raw=own(config,'discovery'),discovery=Object.freeze({threads:captureMirrorDiscoveryLimits(own(raw,'threads') as MirrorDiscoveryLimits),store:captureMirrorStoreDiscoveryLimits(own(raw,'store') as MirrorStoreDiscoveryLimits)});
  const readyInput=own(config,'ready'),maxTargets=own(readyInput,'maxTargets'),maxBytes=own(readyInput,'maxBytes');
  if(typeof maxTargets!=='number'||!Number.isSafeInteger(maxTargets)||maxTargets<1||maxTargets>4096||typeof maxBytes!=='number'||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>1048576)throw new RangeError('Invalid mirror ready limits');

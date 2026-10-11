@@ -16,7 +16,7 @@ export function openExisting(path: string, timeoutMs = 5000): DatabaseSync {
   // native POSIX traversal intact. Encode each component so ?/#/% remain names.
   // Windows retains the previous URI adapter; native Windows traversal is unqualified.
   const native=joinRuntimePath(process.cwd(),path,'posix');
-  const url=process.platform==='win32'?pathToFileURL(resolve(path)).href+'?mode=rw':'file:'+native.split('/').map(encodeURIComponent).join('/')+'?mode=rw';
+  const url=process.platform==='win32'?pathToFileURL(resolve(path)).href+'?mode=rw':'file://'+native.split('/').map(encodeURIComponent).join('/')+'?mode=rw';
 
   return new DatabaseSync(url, {
     timeout: timeoutMs,

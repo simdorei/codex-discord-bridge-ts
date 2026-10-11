@@ -1,4 +1,4 @@
-import {resolve} from 'node:path';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../owned-worker-slot.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
@@ -16,16 +16,17 @@ export class MirrorStoreDiscoveryError extends Error{constructor(detail:string){
  * Timeout/abort awaits actual native exit; no queued successor or partial result. */
 export async function discoverMirrorStore(path:string,limits:MirrorStoreDiscoveryLimits,signal?:AbortSignal):Promise<MirrorStoreSnapshot>{
  signal?.throwIfAborted();requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new RangeError('Invalid mirror store path');
+ const pinned=pinNativeRuntimePath(path);if(Buffer.byteLength(pinned)>32768)throw new RangeError('Invalid mirror store path');
  const {maxTargets,maxJobs,maxValueBytes,maxOutputBytes,timeoutMs}=captureMirrorStoreDiscoveryLimits(limits);
  if(slot.busy)throw new OwnedWorkerBusyError();
- const pending=slot.run(new URL('./store-discovery-worker.ts',import.meta.url),{path,maxTargets,maxJobs,maxValueBytes,maxOutputBytes},timeoutMs,signal),exited=slot.join();let response:unknown;try{response=await pending;}finally{await exited;}signal?.throwIfAborted();
+ const pending=slot.run(new URL('./store-discovery-worker.ts',import.meta.url),{path:pinned,maxTargets,maxJobs,maxValueBytes,maxOutputBytes},timeoutMs,signal),exited=slot.join();let response:unknown;try{response=await pending;}finally{await exited;}signal?.throwIfAborted();
  if(own(response,'ok')!==true){const detail=own(response,'detail');throw new MirrorStoreDiscoveryError(typeof detail==='string'?detail:'invalid worker response');}
  const targets=own(response,'targets'),jobs=own(response,'jobs');
  if(!Array.isArray(targets)||!Array.isArray(jobs)||BigInt(targets.length)>(maxTargets as bigint)||BigInt(jobs.length)>(maxJobs as bigint))throw new MirrorStoreDiscoveryError('invalid worker row counts');
  // These values can only originate from the fixed native worker's strict source
  // decoders, never a caller-supplied transport, callback, or alternate worker URL.
  for(const target of targets)Object.freeze(target);for(const job of jobs){Object.freeze(job.baselineTurnIds);Object.freeze(job);}
- const frozenJobs=Object.freeze(jobs);ownedJobs.set(frozenJobs,resolve(path));
+ const frozenJobs=Object.freeze(jobs);ownedJobs.set(frozenJobs,pinned);
  return Object.freeze({targets:Object.freeze(targets),jobs:frozenJobs});
 }
 
@@ -44,6 +45,6 @@ export function captureMirrorPollJobs(path:string,thread:string,jobs:MirrorStore
  if(jobs===null||typeof jobs!=='object'||!ownedJobs.has(jobs))throw new TypeError('Expected native mirror poll jobs');
  requireDiscordText(path);requireDiscordText(thread);
  if(path.includes('\0')||path.length>32768||Buffer.byteLength(path)>32768||thread.length>16384||Buffer.byteLength(thread)>16384)throw new RangeError('Mirror poll snapshot identity exceeds budget');
- if(ownedJobs.get(jobs)!==resolve(path))throw new TypeError('Mirror poll jobs belong to a different database path');
+ if(ownedJobs.get(jobs)!==pinNativeRuntimePath(path))throw new TypeError('Mirror poll jobs belong to a different database path');
  return Object.freeze(jobs.filter(job=>job.targetThreadId===thread));
 }
