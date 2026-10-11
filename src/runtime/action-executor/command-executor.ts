@@ -79,6 +79,9 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
  /** Startup-only lease release/recovery; caller owns singleton and has not
   * started the live or periodic intake workers. No new recovery authority. */
  recoverPromptIntakesOnStartup(){return PromptIntakeProcessor.prototype.recoverPromptIntakesOnStartup.call(this.#intake);}
+ /** Periodic recovery shares the original processor and never releases foreign
+  * intake claims. Own-data port captures this executor's private identity. */
+ promptIntakeRecoveryServices(){const intake=this.#intake;return Object.freeze({recoverPromptIntakes:()=>PromptIntakeProcessor.prototype.recoverPromptIntakes.call(intake)});}
  configureMirrorInspection(inspector:MirrorInspector):void{if(this.#inspection!==null)throw new InvalidActionRequestError('mirror inspection is already configured');MirrorInspector.prototype.requireScope.call(inspector,this.#codex,this.#database);this.#inspection=inspector;}
  async #inspect(channel:bigint,limit:bigint|null,list:boolean,signal?:AbortSignal):Promise<ActionResult>{if(this.#inspection===null)throw new ActionExecutionError('Unsupported','mirror inspection transport is not configured; remote state was not checked');return snapshotActionResult({text:await MirrorInspector.prototype.inspect.call(this.#inspection,channel,limit,list,signal),waitsForFinal:false,ui:null});}
  targetThreadId(channel:bigint,signal?:AbortSignal):Promise<string>{return this.#basic.targetThreadId(channel,signal);}
