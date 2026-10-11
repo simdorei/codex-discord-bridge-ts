@@ -11,7 +11,7 @@ import {gatewayOwnField as own} from '../../discord/gateway/values.ts';import {r
 import type {DiscordReceiptTransport} from '../completion/receipt-sender.ts';
 import type {MirrorThreadHint} from './discovery.ts';import type {MirrorPollCounts} from './execution.ts';
 import {captureMirrorPollJobs,type MirrorStoreSnapshot} from './store-discovery.ts';
-import {NativeMirrorCursorStore} from './cursor-store.ts';import {observeMirrorDetailMode,type MirrorOwnershipReadLimits} from './ownership-reader.ts';
+import {NativeMirrorCursorStore} from './cursor-store.ts';import type {MirrorOwnershipReadLimits} from './ownership-reader.ts';
 import {snapshotMirrorReadLimits,type MirrorReadLimits} from './read-window.ts';
 import {observeAnchoredMirrorBatch} from './continuity-observation.ts';
 import {executeObservedMirrorBatch} from './observed-batch-executor.ts';
@@ -25,8 +25,8 @@ function boundedText(value:unknown,max:number):string{requireDiscordText(value);
  * a legacy cursor or resets on changed files. Missing bindings require a separate
  * explicit startup/reconciliation policy. The independent append-only producer
  * contract and real HTTP/queue ownership integration are still required.
- * Detail is validated before reading the window (including empty windows), a
- * conservative TS preflight rather than the Rust empty-tail error order.
+ * Stored detail is read inside the native decoder only after object events
+ * exist, preserving the Rust empty-tail short circuit without a second parse.
  * No volatile text-cache skip is treated as durable evidence. */
 export async function pollBoundMirrorTarget(databasePath:string,hint:MirrorThreadHint,channel:bigint,jobs:MirrorStoreSnapshot['jobs'],options:BoundMirrorPollOptions,transport:DiscordReceiptTransport,signal?:AbortSignal):Promise<MirrorPollCounts>{
  signal?.throwIfAborted();const path=resolve(boundedText(databasePath,32768));boundedText(path,32768);
@@ -35,8 +35,7 @@ export async function pollBoundMirrorTarget(databasePath:string,hint:MirrorThrea
  captureMirrorPollJobs(path,thread,jobs);const {read,ownership}=snapshotBoundMirrorPollOptions(options),timeoutMs=ownership.timeoutMs;const store=new NativeMirrorCursorStore(path,timeoutMs);
  let expected;try{expected=await store.read(thread,signal)}finally{await store.close()}
  if(expected===null)throw new MirrorBoundCursorRequiredError();if(expected.anchor.path!==rollout)throw new MirrorRolloutBindingError();
- const detail=await observeMirrorDetailMode(path,thread,timeoutMs,signal);
- const observation=await observeAnchoredMirrorBatch(expected.anchor,read,{thread,detail,currentTurn:expected.turn===''?null:expected.turn},signal);
+ const observation=await observeAnchoredMirrorBatch(expected.anchor,read,{thread,detail:{databasePath:path},currentTurn:expected.turn===''?null:expected.turn},signal);
  // An unfinished tail can wait for its producer. Invalid or oversized records
  // must surface to the caller's failure/backoff path, never silently look idle.
  if(observation.batch.nextOffset===expected.anchor.offset){

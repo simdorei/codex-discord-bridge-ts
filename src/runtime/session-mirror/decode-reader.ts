@@ -1,3 +1,4 @@
+import {resolve} from 'node:path';
 import {requireDiscordText} from '../../discord/text.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import type {MirrorDetail,MirrorCollection} from './collect.ts';
@@ -22,15 +23,17 @@ export async function decodeMirrorWindowOffThread(input:Uint8Array,startOffset:b
  return value as MirrorRecordWindow;
 }
 
-export interface MirrorItemOptions {readonly thread:string;readonly detail:MirrorDetail;readonly currentTurn:string|null;}
+export interface MirrorItemOptions {readonly thread:string;readonly detail:MirrorDetail|Readonly<{databasePath:string}>;readonly currentTurn:string|null;}
 export interface MirrorItemsWindow {readonly collection:MirrorCollection;readonly eventCount:number;readonly nextOffset:bigint;readonly scannedRecords:number;readonly stop:MirrorWindowStop;}
 /** Validation precedes file IO and worker submission. No inherited/accessor options. */
 export function snapshotMirrorItemOptions(input:MirrorItemOptions):MirrorItemOptions{
  const thread=own(input,'thread'),detail=own(input,'detail'),currentTurn=own(input,'currentTurn');
  requireDiscordText(thread);if(currentTurn!==null)requireDiscordText(currentTurn);
  if(Buffer.byteLength(thread)>16384||(typeof currentTurn==='string'&&Buffer.byteLength(currentTurn)>16384))throw new RangeError('Mirror context exceeds bounded identity budget');
- if(detail!=='Send'&&detail!=='All')throw new TypeError('Expected mirror detail');
- return Object.freeze({thread,detail,currentTurn});
+ if(detail==='Send'||detail==='All')return Object.freeze({thread,detail,currentTurn});
+ const rawPath=own(detail,'databasePath');requireDiscordText(rawPath);if(rawPath.includes('\0')||rawPath.length>32768||Buffer.byteLength(rawPath)>32768)throw new RangeError('Invalid mirror detail database path');
+ const databasePath=resolve(rawPath);if(databasePath.length>32768||Buffer.byteLength(databasePath)>32768)throw new RangeError('Invalid mirror detail database path');
+ return Object.freeze({thread,detail:Object.freeze({databasePath}),currentTurn});
 }
 /** Shares the exact decoder slot: parse, digest, deduplicate, and transform all run
  * in the owned worker. Only bounded display items return, never the decoded AST.
