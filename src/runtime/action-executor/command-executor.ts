@@ -54,7 +54,7 @@ export interface RuntimeExecutorDependencies{
  * ownership qualification; this constructor does not start any of them. */
 export class RuntimeCommandExecutor implements MessageBusinessServices{
  readonly #stopWorkerFactory:(report:(event:StopWorkerFailure)=>void)=>StopControlWorker;
- readonly #intake:PromptIntakeProcessor;
+ readonly #intake:PromptIntakeProcessor;readonly #settingsResolver:SettingsTargetResolver;
  readonly #server:PortableResidentLifecycle|null;readonly #componentQueue:BusyQueueExecutor;readonly #control:ControlTurnVerifier;
  readonly #codex:string;readonly #database:string;#inspection:MirrorInspector|null=null;
  readonly #basic:BasicActionDispatcher;readonly #queue:QueueStartCoordinator;readonly #new:NewThreadExecutor;readonly #prompts:QueuePromptExecutor;readonly #retract:RetractAction;readonly #controls:PromptControlActions;readonly #open:OpenThreadAction;readonly #settings:AdmittedSettingsExecutor;readonly #archive:AdmittedArchiveExecutor|null;readonly #resume:AdmittedResumeExecutor|null;readonly #stop:AdmittedStopExecutor;readonly #repair:AdmittedRepairExecutor|null;
@@ -73,7 +73,8 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   this.#new=new NewThreadExecutor(paths.mirror,paths.state,queue,intake,bridge,server,backend,get('mirror'),get('reportNewAttempt'));
   this.#prompts=new QueuePromptExecutor(paths.mirror,selection,targets,queue,intake,busy);this.#retract=new RetractAction(paths.mirror,selection);
   this.#controls=new PromptControlActions(paths.mirror,selection,targets,control,server);this.#open=new OpenThreadAction(selection,targets,bridge,server,timeout);
-  this.#settings=new AdmittedSettingsExecutor(paths.mirror,new SettingsAction(selection,new SettingsTargetResolver(paths.state,paths.mirror,bridge),bridge,server,control,timeout));
+  this.#settingsResolver=new SettingsTargetResolver(paths.state,paths.mirror,bridge);
+  this.#settings=new AdmittedSettingsExecutor(paths.mirror,new SettingsAction(selection,this.#settingsResolver,bridge,server,control,timeout));
   this.#stop=new AdmittedStopExecutor(paths.mirror,bridge,new StopActionExecutor(paths.mirror,server,bridge,locks,render));
   this.#archive=server===null?null:new AdmittedArchiveExecutor(paths.mirror,paths.state,bridge,server,locks,timeout);
   this.#resume=server===null?null:new AdmittedResumeExecutor(paths.mirror,paths.state,bridge,server,locks,timeout);
@@ -94,6 +95,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
  requireRuntimeResident(server:PortableResidentLifecycle):void{if(this.#server!==server)throw new TypeError('Action executor resident differs from runtime binding');}
  notifyDeliveryReady():void{invokeSynchronousVoid(QueueStartCoordinator.prototype.notifyDeliveryReady,this.#queue,[]);}
  /** Own-data functions match the processor's strict service capture contract. */
+ messageRuntimeBinding(){return Object.freeze({services:RuntimeCommandExecutor.prototype.messageServices.call(this),resolver:this.#settingsResolver,controlVerifier:this.#control});}
  messageServices():MessageBusinessServices{return Object.freeze({targetThreadId:RuntimeCommandExecutor.prototype.targetThreadId.bind(this),executeWithIngressContext:RuntimeCommandExecutor.prototype.executeWithIngressContext.bind(this),notifyDeliveryReady:RuntimeCommandExecutor.prototype.notifyDeliveryReady.bind(this)});}
  /** Slash commands and components use this same queue, target locks and native
   * owner. Preparation never sends confirmation before the processor commits its
