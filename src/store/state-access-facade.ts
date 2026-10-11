@@ -297,6 +297,8 @@ export const validateAsyncDispatchGuards: typeof QuestionGuard.validateAsyncDisp
 export const nextObservationGapExisting: typeof ObservationLedger.nextObservationGapExisting = ObservationLedger.nextObservationGapExisting;
 export const certifyObservationExisting: typeof ObservationProof.certifyObservationExisting = ObservationProof.certifyObservationExisting;
 export const finishObservationPageExisting: typeof ObservationProof.finishObservationPageExisting = ObservationProof.finishObservationPageExisting;
+export const recordObservedCompletionForResidentExisting: typeof ObservedCompletion.recordObservedCompletionForResidentExisting = ObservedCompletion.recordObservedCompletionForResidentExisting;
+export const recordObservedFinalAnswerExisting: typeof ObservedFinalAnswer.recordObservedFinalAnswerExisting = ObservedFinalAnswer.recordObservedFinalAnswerExisting;
 export const activateObservationExisting: typeof ObservationLedger.activateObservationExisting = ObservationLedger.activateObservationExisting;
 export const discoverObservationExisting: typeof ObservationLedger.discoverObservationExisting = ObservationLedger.discoverObservationExisting;
 export const markUnknownObservationExisting: typeof ObservationLedger.markUnknownObservationExisting = ObservationLedger.markUnknownObservationExisting;
@@ -635,6 +637,8 @@ export interface IStateAccessFacade {
   readonly nextObservationGapExisting: typeof ObservationLedger.nextObservationGapExisting;
   readonly certifyObservationExisting: typeof ObservationProof.certifyObservationExisting;
   readonly finishObservationPageExisting: typeof ObservationProof.finishObservationPageExisting;
+  readonly recordObservedCompletionForResidentExisting: typeof ObservedCompletion.recordObservedCompletionForResidentExisting;
+  readonly recordObservedFinalAnswerExisting: typeof ObservedFinalAnswer.recordObservedFinalAnswerExisting;
   readonly activateObservationExisting: typeof ObservationLedger.activateObservationExisting;
   readonly discoverObservationExisting: typeof ObservationLedger.discoverObservationExisting;
   readonly markUnknownObservationExisting: typeof ObservationLedger.markUnknownObservationExisting;
@@ -911,6 +915,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   nextObservationGapExisting,
   certifyObservationExisting,
   finishObservationPageExisting,
+  recordObservedCompletionForResidentExisting,
+  recordObservedFinalAnswerExisting,
   activateObservationExisting,
   discoverObservationExisting,
   markUnknownObservationExisting,

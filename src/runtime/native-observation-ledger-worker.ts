@@ -5,6 +5,8 @@ const port=parentPort;if(port===null)throw new Error('Observation ledger require
 try{
  let value:unknown=null;
  switch(q.operation){
+  case 'terminal':value=state.recordObservedCompletionForResidentExisting(q.path,q.thread,q.turn,q.generation,q.payload,q.resident);break;
+  case 'final':value=state.recordObservedFinalAnswerExisting(q.path,q.thread,q.turn,q.generation,q.content);break;
   case 'activate':state.activateObservationExisting(q.path,q.scope);break;
   case 'discover':state.discoverObservationExisting(q.path,q.scope,q.upper);break;
   case 'unknown':state.markUnknownObservationExisting(q.path,q.scope,q.detail);break;

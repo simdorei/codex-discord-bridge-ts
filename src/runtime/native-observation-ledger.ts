@@ -22,13 +22,13 @@ function scope(input:ObservationScope):ObservationScope {
 function same(a:ObservationScope,b:ObservationScope):boolean{return a.ownerId===b.ownerId&&a.generation===b.generation;}
 function boolean(value:unknown):boolean{if(typeof value!=='boolean')throw new TypeError('Expected native observation boolean');return value;}
 function nothing(value:unknown):void{if(value!==null)throw new TypeError('Expected native observation acknowledgement');}
-type Operation='activate'|'discover'|'unknown'|'next'|'certify'|'finish'|'verified';
+type Operation='activate'|'discover'|'unknown'|'next'|'certify'|'finish'|'verified'|'terminal'|'final';
 
 /** Closed existing-store ledger operations for the owned event producer.
  * Two concurrent intake/reconciler calls may occupy Observation lanes, never
  * Background or reserved Control. There is no hidden retry or unbounded pending queue.
  * Accepted failures may have committed: keep uncertainty until reconciliation.
- * This does not journal Terminal/Final/Question effects or bind pipeline shutdown. */
+ * Question journaling and synchronous resident gap callbacks remain separate. */
 export class NativeObservationLedgerOwner {
  readonly #path:string;readonly #timeout:number;
  readonly #tasks=new Set<Promise<unknown>>();readonly #controllers=new Set<AbortController>();#closed=false;
@@ -64,6 +64,15 @@ export class NativeObservationLedgerOwner {
   return this.#run('finish',{gap,through},boolean,signal);
  }
  verified(input:ObservationScope,through:bigint,signal?:AbortSignal):Promise<boolean>{integer(through);return this.#run('verified',{scope:scope(input),through},boolean,signal);}
+ /** Original live producer only; terminal proof and raw journal retain separate commits. */
+ recordTerminal(thread:string,turn:string,generation:bigint,payload:string,resident:string,signal?:AbortSignal):Promise<boolean>{
+  integer(generation);for(const value of [thread,turn,payload,resident])requireDiscordText(value);
+  return this.#run('terminal',{thread,turn,generation,payload,resident},boolean,signal);
+ }
+ recordFinal(thread:string,turn:string,generation:bigint,content:string,signal?:AbortSignal):Promise<boolean>{
+  integer(generation);for(const value of [thread,turn,content])requireDiscordText(value);
+  return this.#run('final',{thread,turn,generation,content},boolean,signal);
+ }
  #run<T>(operation:Operation,input:object,decode:(value:unknown)=>T,signal?:AbortSignal):Promise<T>{
   if(signal!==undefined&&(types.isProxy(signal)||!(signal instanceof AbortSignal)))throw new TypeError('Expected AbortSignal');
   signal?.throwIfAborted();if(this.#closed)throw new Error('Native observation owner is closed');

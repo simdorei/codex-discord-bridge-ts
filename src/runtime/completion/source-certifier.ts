@@ -21,8 +21,8 @@ function sequence(v:unknown):bigint{if(typeof v!=="bigint"||v<0n||v>=(1n<<63n))t
  * Broadcast wakeups, history JSON and caller-provided NoRequiredStore are not proofs.
  * Required journals are written before verifying the matching source sequence. */
 export class CompletionSourceCertifier{
- readonly #path:string;readonly #server:Server;readonly #commentary:boolean;readonly #clock:()=>number;readonly #state:Pick<IStateAccessFacade,"certifyObservation">;
- constructor(path:string,server:Server,commentaryEnabled:boolean,clock:()=>number=()=>Date.now()/1000,certificationState:Pick<IStateAccessFacade,"certifyObservation">=state){if(typeof commentaryEnabled!=="boolean")throw new TypeError("Expected commentary flag");this.#path=path;this.#server=server;this.#commentary=commentaryEnabled;this.#clock=clock;this.#state=certificationState;}
+ readonly #path:string;readonly #server:Server;readonly #commentary:boolean;readonly #clock:()=>number;readonly #state:Pick<IStateAccessFacade,"certifyObservation"|"recordObservedCompletionForResident"|"recordObservedFinalAnswer">;
+ constructor(path:string,server:Server,commentaryEnabled:boolean,clock:()=>number=()=>Date.now()/1000,certificationState:Pick<IStateAccessFacade,"certifyObservation"|"recordObservedCompletionForResident"|"recordObservedFinalAnswer">=state){if(typeof commentaryEnabled!=="boolean")throw new TypeError("Expected commentary flag");this.#path=path;this.#server=server;this.#commentary=commentaryEnabled;this.#clock=clock;this.#state=certificationState;}
  currentScope():ObservationScope{return copyScope({ownerId:this.#server.instanceId,generation:sequence(this.#server.generation())});}
  async certifyEvent(inputScope:ObservationScope,seq:bigint,input:AppNotification):Promise<void>{
   const scope=copyScope(inputScope),notification=cloneOwnedSerdeValue(input) as AppNotification;
@@ -35,7 +35,7 @@ export class CompletionSourceCertifier{
   await this.#state.certifyObservation(this.#path,scope,sequence(seq),effects);
  }
  async #journal(scope:ObservationScope,n:AppNotification):Promise<readonly ObservationEffect[]>{
-  await observeCompletionTerminal(this.#path,scope.ownerId,{kind:"Notification",generation:scope.generation,notification:n});
+  await observeCompletionTerminal(this.#path,scope.ownerId,{kind:"Notification",generation:scope.generation,notification:n},this.#state);
   switch(n.method){
    case "turn/completed":{const c=parseTurnCompletion(n.params,false);return [{kind:"Terminal",thread:c.threadId,turn:c.turnId,payload:serializeSerdeValue(completionJournalPayload(c))}];}
    case "turn/started":{const thread=extractThreadId(n.params),turn=extractTurnId(n.params);return thread!==null&&turn!==null?[{kind:"Started",thread,turn}]:[{kind:"Unconfirmed"}];}

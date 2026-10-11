@@ -1,3 +1,4 @@
+import {openExisting} from "./existing-store.ts";
 import { createHash } from "node:crypto";
 import { openInitialized } from "./owned-driver.ts";
 import { trimUnicodeWhitespace as trim } from "./queue-preflight-failure.ts";
@@ -128,11 +129,22 @@ function captureNotification(db: DatabaseSync,row: AsyncObligation,owner: Execut
   return false;
 }
 /** Owned proof transaction; conflict evidence is committed before the conflict error is returned. */
-export async function recordAsyncTerminalNotification(path: string,thread: string,turn: string,generation: bigint,observer: string,payload: string): Promise<void> {
+function validateTerminalInput(path:string,thread:string,turn:string,generation:bigint,observer:string,payload:string):void{
   for(const value of [path,thread,turn,observer,payload])
     if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value)) throw new TypeError("Expected well-formed text");
   if(typeof generation!=="bigint"||generation<-(1n<<63n)||generation>=(1n<<63n)) throw new TypeError("Expected i64 generation");
-  const db=await openInitialized(path);let committed=false,conflict=false;
+}
+export async function recordAsyncTerminalNotification(path:string,thread:string,turn:string,generation:bigint,observer:string,payload:string):Promise<void>{
+ validateTerminalInput(path,thread,turn,generation,observer,payload);
+ return recordTerminalProofOwned(await openInitialized(path),thread,turn,generation,observer,payload);
+}
+/** Existing-only profile preserves committed conflict evidence and exact original checks. */
+export function recordAsyncTerminalNotificationExisting(path:string,thread:string,turn:string,generation:bigint,observer:string,payload:string):void{
+ validateTerminalInput(path,thread,turn,generation,observer,payload);
+ return recordTerminalProofOwned(openExisting(path),thread,turn,generation,observer,payload);
+}
+function recordTerminalProofOwned(db:DatabaseSync,thread:string,turn:string,generation:bigint,observer:string,payload:string):void{
+ let committed=false,conflict=false;
   try {
     db.exec("BEGIN IMMEDIATE");const matching: [AsyncObligation,ExecutionOwner][]=[];
     for(const row of readAsyncObligationsIn(db,thread)) {

@@ -1,6 +1,7 @@
+import {openExisting} from "./existing-store.ts";
 import type { DatabaseSync } from "node:sqlite";
 import { openInitialized } from "./owned-driver.ts";
-import { recordAsyncTerminalNotification, asyncJournalObservationAllowedIn } from "./async-resolution-terminal.ts";
+import { recordAsyncTerminalNotificationExisting, recordAsyncTerminalNotification, asyncJournalObservationAllowedIn } from "./async-resolution-terminal.ts";
 import { StoreIntegrityError } from "./schema-assembly.ts";
 import { parseSerdeValue } from "../core/serde-json-parse.ts";
 import { getOwn } from "./async-resolution-json-helpers.ts";
@@ -38,7 +39,16 @@ export async function recordObservedCompletionForResident(
   // Deliberately two transactions, matching Rust: accepted proof survives a later journal failure.
   await recordAsyncTerminalNotification(path,thread,turn,generation,resident,payload);
   if(resident==="") throw new StoreIntegrityError("empty completion resident");
-  const db=await openInitialized(path);let committed=false;
+  return recordObservedCompletionOwned(await openInitialized(path),thread,turn,generation,payload,resident);
+}
+/** Preserves two separate commits: prior accepted proof survives raw journal failure. */
+export function recordObservedCompletionForResidentExisting(path:string,thread:string,turn:string,generation:bigint,payload:string,resident:string):boolean{
+ recordAsyncTerminalNotificationExisting(path,thread,turn,generation,resident,payload);
+ if(resident==="")throw new StoreIntegrityError("empty completion resident");
+ return recordObservedCompletionOwned(openExisting(path),thread,turn,generation,payload,resident);
+}
+function recordObservedCompletionOwned(db:DatabaseSync,thread:string,turn:string,generation:bigint,payload:string,resident:string):boolean{
+ let committed=false;
   try {
     db.exec("BEGIN IMMEDIATE");
     if(!asyncJournalObservationAllowedIn(db,thread,turn,generation,resident,payload)) return false;

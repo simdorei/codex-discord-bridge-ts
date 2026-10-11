@@ -16,7 +16,7 @@ function sequence(v:unknown):bigint{if(typeof v!=="bigint"||v<0n||v>=(1n<<63n))t
 export class CompletionSourceReconciler{
  readonly #path:string;readonly #server:Server;readonly #certifier:CompletionSourceCertifier;readonly #state:Store;readonly #report:(failure:SourceReconcileFailure)=>void;
  #current:ObservationScope|null=null;#busy=false;#running=false;#closed=false;
- constructor(path:string,server:Server,commentaryEnabled:boolean,report:(failure:SourceReconcileFailure)=>void,state:Store=StateAccessFacade,certificationState:Pick<IStateAccessFacade,"certifyObservation">=StateAccessFacade){this.#path=path;this.#server=server;this.#certifier=new CompletionSourceCertifier(path,server,commentaryEnabled,undefined,certificationState);this.#report=report;this.#state=state;}
+ constructor(path:string,server:Server,commentaryEnabled:boolean,report:(failure:SourceReconcileFailure)=>void,state:Store=StateAccessFacade,certificationState:Pick<IStateAccessFacade,"certifyObservation"|"recordObservedCompletionForResident"|"recordObservedFinalAnswer">=StateAccessFacade){this.#path=path;this.#server=server;this.#certifier=new CompletionSourceCertifier(path,server,commentaryEnabled,undefined,certificationState);this.#report=report;this.#state=state;}
  #notify(stage:SourceReconcileFailure['stage'],error:unknown):void{invokeSynchronousVoid(this.#report,{},[{stage,error}]);}
  #gapError=(error:unknown):void=>{this.#notify("gap",error);};
  async scanOnce(signal?:AbortSignal):Promise<void>{if(this.#closed||this.#running||this.#busy)throw new TypeError("Source reconciler already owned or closed");this.#busy=true;try{await this.#pass(signal);}finally{this.#busy=false;}}
