@@ -9,7 +9,7 @@ try{
  if(context===undefined)parentPort.postMessage({ok:true,value:decoded});
  else{
   const collection=collectSessionItems(context.thread,decoded.events.map(event=>event.value),context.detail,context.currentTurn);
-  const value={collection,nextOffset:decoded.nextOffset,scannedRecords:decoded.scannedRecords,stop:decoded.stop};
+  const value={collection,eventCount:decoded.events.length,nextOffset:decoded.nextOffset,scannedRecords:decoded.scannedRecords,stop:decoded.stop};
   if(collection.items.length>16384||Buffer.byteLength(serializeSerdeValue(value))>8388608)throw new RangeError('Mirror display output exceeds bounded window budget; cursor retained');
   parentPort.postMessage({ok:true,value});
  }

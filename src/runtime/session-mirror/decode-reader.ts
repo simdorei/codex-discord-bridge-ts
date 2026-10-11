@@ -23,7 +23,7 @@ export async function decodeMirrorWindowOffThread(input:Uint8Array,startOffset:b
 }
 
 export interface MirrorItemOptions {readonly thread:string;readonly detail:MirrorDetail;readonly currentTurn:string|null;}
-export interface MirrorItemsWindow {readonly collection:MirrorCollection;readonly nextOffset:bigint;readonly scannedRecords:number;readonly stop:MirrorWindowStop;}
+export interface MirrorItemsWindow {readonly collection:MirrorCollection;readonly eventCount:number;readonly nextOffset:bigint;readonly scannedRecords:number;readonly stop:MirrorWindowStop;}
 /** Validation precedes file IO and worker submission. No inherited/accessor options. */
 export function snapshotMirrorItemOptions(input:MirrorItemOptions):MirrorItemOptions{
  const thread=own(input,'thread'),detail=own(input,'detail'),currentTurn=own(input,'currentTurn');
@@ -41,7 +41,7 @@ export async function collectMirrorWindowOffThread(input:Uint8Array,startOffset:
  const context=snapshotMirrorItemOptions(options),bytes=copyBoundedMirrorRecordWindow(input,startOffset,maxWindowBytes,maxRecordBytes,maxRecords);
  const response=cloneOwnedSerdeValue(await slot.run(new URL('./decode-worker.ts',import.meta.url),{bytes,startOffset,maxWindowBytes,maxRecordBytes,maxRecords,context},timeoutMs,signal));
  if(serdeField(response,'ok')!==true){const message=serdeField(response,'message');throw new Error(typeof message==='string'?message:'Mirror item worker failed');}
- const value=serdeField(response,'value'),offset=serdeField(value,'nextOffset'),records=serdeField(value,'scannedRecords'),stop=serdeField(value,'stop'),collection=serdeField(value,'collection'),items=serdeField(collection,'items'),turn=serdeField(collection,'currentTurn');
- if(typeof offset!=='bigint'||offset<startOffset||offset>startOffset+BigInt(bytes.length)||typeof records!=='number'||!Number.isSafeInteger(records)||records<0||records>maxRecords||!Array.isArray(items)||items.length>16384||(turn!==null&&typeof turn!=='string')||typeof stop!=='string'||!['WindowEnd','IncompleteRecord','RecordLimit','OversizedRecord','InvalidUtf8','InvalidJson'].includes(stop))throw new Error('Invalid mirror item worker response');
+ const value=serdeField(response,'value'),eventCount=serdeField(value,'eventCount'),offset=serdeField(value,'nextOffset'),records=serdeField(value,'scannedRecords'),stop=serdeField(value,'stop'),collection=serdeField(value,'collection'),items=serdeField(collection,'items'),turn=serdeField(collection,'currentTurn');
+ if(typeof offset!=='bigint'||offset<startOffset||offset>startOffset+BigInt(bytes.length)||typeof records!=='number'||!Number.isSafeInteger(records)||records<0||records>maxRecords||typeof eventCount!=='number'||!Number.isSafeInteger(eventCount)||eventCount<0||eventCount>records||!Array.isArray(items)||items.length>16384||(turn!==null&&typeof turn!=='string')||typeof stop!=='string'||!['WindowEnd','IncompleteRecord','RecordLimit','OversizedRecord','InvalidUtf8','InvalidJson'].includes(stop))throw new Error('Invalid mirror item worker response');
  return value as MirrorItemsWindow;
 }
