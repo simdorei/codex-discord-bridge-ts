@@ -1,0 +1,21 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 512,
+  "localCommit": "fdd1fdf5e5f3f2ed0a8a966765aeca6ac97eee75",
+  "fullTests": 6839,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/discord-runtime/interaction-start.ts": "94b58f14bd89e7543e75aa9362bd949f4f0d11fe813cefef9f2ba9ba63abf22e",
+    "test/runtime/discord-runtime/interaction-start.test.ts": "93af83fbc1c5df9eb2bed14b9e88f63808ccdbfcb62079472951edab949c4175"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}
