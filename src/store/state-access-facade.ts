@@ -1,3 +1,5 @@
+import * as NewReplyCheckpoint from './new-reply-checkpoint.ts';
+import * as NewReplyPending from './new-reply-pending.ts';
 import * as ReviewedPolicy from './reviewed-recovery-policy.ts';
 import * as RestartReadiness from './restart-readiness.ts';
 import * as HistoryTargets from './history-targets.ts';
@@ -189,6 +191,8 @@ export const mirrorThreadChannels: typeof MirrorSync.mirrorThreadChannels = Mirr
 export const mirrorProjectForChannel: typeof MirrorSync.mirrorProjectForChannel = MirrorSync.mirrorProjectForChannel;
 export const commitNewThreadSync: typeof MirrorSync.commitNewThreadSync = MirrorSync.commitNewThreadSync;
 export const admitPromptIntakeWithIngress: typeof NewPromptIntake.admitPromptIntakeWithIngress = NewPromptIntake.admitPromptIntakeWithIngress;
+export const checkpointNewReply: typeof NewReplyCheckpoint.checkpointNewReply = NewReplyCheckpoint.checkpointNewReply;
+export const pendingNewReplies: typeof NewReplyPending.pendingNewReplies = NewReplyPending.pendingNewReplies;
 export const validateNewReplyCurrent: typeof NewReplyClaims.validateNewReplyCurrent = NewReplyClaims.validateNewReplyCurrent;
 export const getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress = NewReplyRead.getNewReplyByIngress;
 export const newReplyOutputHold: typeof NewReplyClaims.newReplyOutputHold = NewReplyClaims.newReplyOutputHold;
@@ -477,6 +481,8 @@ export interface IStateAccessFacade {
   readonly mirrorProjectForChannel: typeof MirrorSync.mirrorProjectForChannel;
   readonly commitNewThreadSync: typeof MirrorSync.commitNewThreadSync;
   readonly admitPromptIntakeWithIngress: typeof NewPromptIntake.admitPromptIntakeWithIngress;
+  readonly checkpointNewReply: typeof NewReplyCheckpoint.checkpointNewReply;
+  readonly pendingNewReplies: typeof NewReplyPending.pendingNewReplies;
   readonly validateNewReplyCurrent: typeof NewReplyClaims.validateNewReplyCurrent;
   readonly getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress;
   readonly newReplyOutputHold: typeof NewReplyClaims.newReplyOutputHold;
@@ -771,6 +777,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   mirrorProjectForChannel,
   commitNewThreadSync,
   admitPromptIntakeWithIngress,
+  checkpointNewReply,
+  pendingNewReplies,
   validateNewReplyCurrent,
   getNewReplyByIngress,
   newReplyOutputHold,

@@ -1,3 +1,5 @@
+import * as NewReplyCheckpoint from '../../src/store/new-reply-checkpoint.ts';
+import * as NewReplyPending from '../../src/store/new-reply-pending.ts';
 import * as ReviewedPolicy from '../../src/store/reviewed-recovery-policy.ts';
 import * as RestartReadiness from '../../src/store/restart-readiness.ts';
 import * as HistoryTargets from '../../src/store/history-targets.ts';
@@ -161,6 +163,10 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.commitNewThreadSync, MirrorSync.commitNewThreadSync);
     assert.strictEqual(FacadeExports.commitNewThreadSync, MirrorSync.commitNewThreadSync);
     assert.strictEqual(StateAccessFacade.admitPromptIntakeWithIngress, NewPromptIntake.admitPromptIntakeWithIngress);
+    assert.strictEqual(StateAccessFacade.checkpointNewReply, NewReplyCheckpoint.checkpointNewReply);
+    assert.strictEqual(FacadeExports.checkpointNewReply, NewReplyCheckpoint.checkpointNewReply);
+    assert.strictEqual(StateAccessFacade.pendingNewReplies, NewReplyPending.pendingNewReplies);
+    assert.strictEqual(FacadeExports.pendingNewReplies, NewReplyPending.pendingNewReplies);
     assert.strictEqual(StateAccessFacade.validateNewReplyCurrent, NewReplyClaims.validateNewReplyCurrent);
     assert.strictEqual(StateAccessFacade.getNewReplyByIngress, NewReplyRead.getNewReplyByIngress);
     assert.strictEqual(FacadeExports.getNewReplyByIngress, NewReplyRead.getNewReplyByIngress);
@@ -607,6 +613,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "blockRejectedDelivery",
       "unknownDeliveryReceiptCount",
       "blockedDeliveryReceiptCount",
+      "checkpointNewReply",
+      "pendingNewReplies",
       "newReplyOutputHold",
       "newReplyAcknowledgementSendable",
       "releaseNewReplyAcknowledgement",
@@ -686,7 +694,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 249);
+    assert.strictEqual(actual.length, 251);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

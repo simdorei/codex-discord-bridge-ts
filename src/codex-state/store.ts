@@ -72,6 +72,23 @@ export class CodexThreadStore {
       return row === undefined ? null : decode(row, archived);
     });
   }
+  /** Exact source row conversion with one bounded read snapshot. No whole DB
+   * inventory; the value budget does not bound SQLite internal work or wall time. */
+  loadThreadBounded(id:string,archived:boolean,maxValueBytes=262144n):ThreadInfo|null{
+    requireDiscordText(id);if(typeof archived!=='boolean')throw new TypeError('Expected archived flag');
+    if(typeof maxValueBytes!=='bigint'||maxValueBytes<1n||maxValueBytes>1048576n)throw new RangeError('Invalid exact thread value budget');
+    return connection(this.#path,db=>{
+      db.exec('BEGIN');
+      try{
+        const size=(fields+',archived_at').split(',').map(name=>`COALESCE(length(CAST(${name} AS BLOB)),0)`).join('+');
+        const measure=db.prepare(`SELECT ${size} AS bytes FROM threads WHERE id=? AND archived=?`);measure.setReadBigInts(true);
+        const measured=measure.get(id,archived?1n:0n);if(measured===undefined)return null;
+        if(typeof measured.bytes!=='bigint'||measured.bytes<0n||measured.bytes>maxValueBytes)throw new RangeError('Exact Codex thread exceeds value-byte budget');
+        const query=db.prepare(`SELECT ${fields},archived_at,${rawFields},(SELECT encoding FROM pragma_encoding) AS encoding FROM threads WHERE id=? AND archived=?`);query.setReadBigInts(true);
+        const row=query.get(id,archived?1n:0n);return row===undefined?null:decode(row,archived);
+      }finally{db.exec('ROLLBACK');}
+    });
+  }
   loadRecentThreads(limit = 0n): readonly ThreadInfo[] {
     return this.#query('WHERE archived = 0 ORDER BY updated_at DESC, id', limit, false);
   }
