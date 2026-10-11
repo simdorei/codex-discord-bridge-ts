@@ -9,7 +9,7 @@ import {PendingResponses} from "./pending-responses.ts";
 import {ClientCloseCoordinator} from "./close-coordinator.ts";
 import {ClientProcessCloser} from "./process-close.ts";
 import {AppServerWriter} from "./writer.ts";
-import {AppServerRequestClient,type RequestHooks} from "./request-client.ts";
+import {AppServerRequestClient,type RequestHooks,type OwnedAsyncRequestHooks} from "./request-client.ts";
 import {AppServerResponseClient,type ResponseHooks} from "./response-client.ts";
 import {BoundedBroadcast,type BroadcastReceiver} from "./broadcast.ts";
 import {BoundedDiagnostics} from "./diagnostics.ts";
@@ -33,6 +33,8 @@ export interface PortableResidentClientPort extends ResidentDeadClientPort{
   observationWindow(after:bigint,upper:bigint|null):ReturnType<ClientRuntimeState["observationWindow"]>;
   certifyObservationPrefix(through:bigint):boolean;
   requestAdmitted(permit:ClientAdmissionPermit,method:string,params:unknown,waitMs:number,hooks?:RequestHooks,signal?:AbortSignal):Promise<unknown>;
+  /** Explicit native-wait capability. New callers must reject an absent legacy port. */
+  requestAdmittedWithOwnedPreflight?<T>(permit:ClientAdmissionPermit,method:string,params:unknown,waitMs:number,hooks:OwnedAsyncRequestHooks<T>,signal?:AbortSignal):Promise<unknown>;
   notifyAdmitted(permit:ClientAdmissionPermit,method:string,params:unknown,signal?:AbortSignal):Promise<void>;
   respondAdmitted(permit:ClientAdmissionPermit,id:RequestId,occurrence:ServerRequestOccurrence,result:unknown,hooks?:ResponseHooks,signal?:AbortSignal):Promise<void>;
   respondErrorAdmitted(permit:ClientAdmissionPermit,id:RequestId,occurrence:ServerRequestOccurrence,error:RpcErrorPayload,hooks?:ResponseHooks,signal?:AbortSignal):Promise<void>;
@@ -83,6 +85,7 @@ export class PortableAppServerSession{
       observationWindow:(after,upper)=>this.#readStateResult(()=>this.#state.observationWindow(after,upper)),
       certifyObservationPrefix:through=>this.#gate.withOpen(()=>this.#state.certifyObservationPrefix(through)),
       requestAdmitted:(permit,method,params,waitMs,hooks,signal)=>this.#requests.requestAdmitted(permit,method,params,waitMs,hooks,signal),
+      requestAdmittedWithOwnedPreflight:(permit,method,params,waitMs,hooks,signal)=>this.#requests.requestAdmittedWithOwnedPreflight(permit,method,params,waitMs,hooks,signal),
       notifyAdmitted:(permit,method,params,signal)=>this.#requests.notifyAdmitted(permit,method,params,signal),
       respondAdmitted:(permit,id,occurrence,result,hooks,signal)=>this.#responses.respondAdmitted(permit,id,occurrence,result,hooks,signal),
       respondErrorAdmitted:(permit,id,occurrence,error,hooks,signal)=>this.#responses.respondErrorAdmitted(permit,id,occurrence,error,hooks,signal),
