@@ -12,8 +12,9 @@ export type TerminalRequest =
 const shell = enumeration(['auto','powershell','cmd','sh','bash'] as const);
 const windowShell = enumeration(['powershell','cmd'] as const);
 const optionalText = nullable(text), u16 = integer(0n,65_535n);
-function decode(raw:string,maxBytes:number):TerminalRequest {
- const v=requestObject(raw,maxBytes), kind=required(v,'kind',text);
+/** Internal: input must be a freshly parsed, owned JSON object. */
+export function decodeTerminalRequestObject(v:Record<string,unknown>):TerminalRequest {
+ const kind=required(v,'kind',text);
  switch(kind) {
   case 'terminal_exec':
    fields(v,['terminal_id','shell','command','cwd','environment','timeout_seconds','cancel_previous']);
@@ -35,7 +36,10 @@ function decode(raw:string,maxBytes:number):TerminalRequest {
 /** Full terminal request family: decode every field before semantic validation.
  * No shell/process/window action is performed. Owner must offload large frames. */
 export function parseTerminalRequest(raw:string,maxBytes:number):TerminalRequest {
- const v=decode(raw,maxBytes);
+ return validateTerminalRequest(decodeTerminalRequestObject(requestObject(raw,maxBytes)));
+}
+/** Internal semantic phase for an already decoded family DTO. */
+export function validateTerminalRequest(v:TerminalRequest):TerminalRequest {
  if(v.kind==='terminal_exec') {
   if(v.terminal_id!==null)identifier('terminal_id',v.terminal_id,/^term_[a-f0-9]{16}$/u);
   length('command',v.command,1,32_768);if(v.cwd!==null)length('cwd',v.cwd,1,1_000);

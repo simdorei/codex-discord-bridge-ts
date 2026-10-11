@@ -21,8 +21,9 @@ function decodeChange(value:unknown):FileChange {
  return Object.freeze({action:required(v,'action',action),path:required(v,'path',text),content:defaulted(v,'content',optionalText,null),destination:defaulted(v,'destination',optionalText,null),expected_sha256:defaulted(v,'expected_sha256',optionalText,null)});
 }
 function changes(value:unknown):readonly FileChange[]{if(!Array.isArray(value))return jsonError('expected file change array');return Object.freeze(value.map(decodeChange));}
-function decode(raw:string,maxBytes:number):CoreRequest {
- const v=requestObject(raw,maxBytes),kind=required(v,'kind',text);
+/** Internal: input must be a freshly parsed, owned JSON object. */
+export function decodeCoreRequestObject(v:Record<string,unknown>):CoreRequest {
+ const kind=required(v,'kind',text);
  switch(kind){
   case 'project_rules':case 'project_status':case 'command_list':case 'repo_status':case 'repo_diff':case 'list_images':case 'checkpoint_list':fields(v,[]);return Object.freeze({kind});
   case 'code_search':fields(v,['query','max_results']);return Object.freeze({kind,query:required(v,'query',text),max_results:defaulted(v,'max_results',u16,100n)});
@@ -54,7 +55,10 @@ function validateChange(v:FileChange):void {
  * WHATWG implementation; exhaustive Rust url-crate edge parity is unqualified.
  * No network, file, Git, command, checkpoint or image operation is performed. */
 export function parseCoreRequest(raw:string,maxBytes:number):CoreRequest {
- const v=decode(raw,maxBytes);
+ return validateCoreRequest(decodeCoreRequestObject(requestObject(raw,maxBytes)));
+}
+/** Internal semantic phase for an already decoded family DTO. */
+export function validateCoreRequest(v:CoreRequest):CoreRequest {
  switch(v.kind){
   case 'code_search':length('query',v.query,1,500);range('max_results',v.max_results,1n,200n);break;
   case 'file_apply_patch':{

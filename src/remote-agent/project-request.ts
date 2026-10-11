@@ -1,16 +1,24 @@
 import {requestObject,required,text} from './request-input.ts';
-import {parseCoreRequest,type CoreRequest} from './core-request.ts';
-import {parseComputerRequest,type ComputerRequest} from './computer-request.ts';
-import {parseTerminalRequest,type TerminalRequest} from './terminal-request.ts';
+import {decodeCoreRequestObject,validateCoreRequest,type CoreRequest} from './core-request.ts';
+import {decodeComputerRequestObject,validateComputerRequest,type ComputerRequest} from './computer-request.ts';
+import {decodeTerminalRequestObject,validateTerminalRequest,type TerminalRequest} from './terminal-request.ts';
 export type ProjectOperation=CoreRequest|ComputerRequest|TerminalRequest;
-/** Complete operation-family routing. The initial discriminator parse and final
- * family decode are both bounded; large-frame callers must use a native owner.
- * This is not the enclosing GatewayCommand or session-authorization contract. */
+/** Internal decode phase takes only a freshly parsed owned JSON object. */
+export function decodeProjectOperationObject(value:Record<string,unknown>):ProjectOperation {
+ const kind=required(value,'kind',text);
+ if(kind.startsWith('terminal_'))return decodeTerminalRequestObject(value);
+ if(kind.startsWith('computer_'))return decodeComputerRequestObject(value);
+ return decodeCoreRequestObject(value);
+}
+/** Separated so a gateway can deserialize completely, then validate its session
+ * before operation semantics, matching the original caller's error ordering. */
+export function validateProjectOperation(value:ProjectOperation):ProjectOperation {
+ if(value.kind.startsWith('terminal_'))return validateTerminalRequest(value as TerminalRequest);
+ if(value.kind.startsWith('computer_'))return validateComputerRequest(value as ComputerRequest);
+ return validateCoreRequest(value as CoreRequest);
+}
 export function parseProjectOperation(raw:string,maxBytes:number):ProjectOperation {
- const kind=required(requestObject(raw,maxBytes),'kind',text);
- if(kind.startsWith('terminal_'))return parseTerminalRequest(raw,maxBytes);
- if(kind.startsWith('computer_'))return parseComputerRequest(raw,maxBytes);
- return parseCoreRequest(raw,maxBytes);
+ return validateProjectOperation(decodeProjectOperationObject(requestObject(raw,maxBytes)));
 }
 /** Relative lifetime only. A validated DTO is required. No wall-clock deadline,
  * timer, cancellation, permission, retry or connection lifetime is created. */

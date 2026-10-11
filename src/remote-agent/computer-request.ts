@@ -15,8 +15,9 @@ export type ComputerRequest=
  | Readonly<{kind:'computer_close'}&Observed>;
 const u64=integer(0n,18_446_744_073_709_551_615n),u32=integer(0n,4_294_967_295n),u8=integer(0n,255n),i32=integer(-2_147_483_648n,2_147_483_647n);
 const app=enumeration(['chrome','notepad'] as const),button=enumeration(['left','right','middle'] as const);
-function decode(raw:string,maxBytes:number):ComputerRequest {
- const v=requestObject(raw,maxBytes),kind=required(v,'kind',text);
+/** Internal: input must be a freshly parsed, owned JSON object. */
+export function decodeComputerRequestObject(v:Record<string,unknown>):ComputerRequest {
+ const kind=required(v,'kind',text);
  const observed=()=>({window_id:required(v,'window_id',u64),observation_id:required(v,'observation_id',text)});
  switch(kind){
   case 'computer_list_windows':case 'computer_stop':fields(v,[]);return Object.freeze({kind});
@@ -34,7 +35,10 @@ function decode(raw:string,maxBytes:number):ComputerRequest {
 /** All twelve computer request shapes and their source validation. This only
  * returns frozen data; no UI access, session authority, or execution is granted. */
 export function parseComputerRequest(raw:string,maxBytes:number):ComputerRequest {
- const v=decode(raw,maxBytes);
+ return validateComputerRequest(decodeComputerRequestObject(requestObject(raw,maxBytes)));
+}
+/** Internal semantic phase for an already decoded family DTO. */
+export function validateComputerRequest(v:ComputerRequest):ComputerRequest {
  if('window_id' in v&&v.window_id===0n)validationError('window_id','must be positive');
  if('observation_id' in v)length('observation_id',v.observation_id,8,100);
  const coordinate=(field:string,value:bigint)=>{if(value>100_000n)validationError(field,'must not exceed 100000');};
