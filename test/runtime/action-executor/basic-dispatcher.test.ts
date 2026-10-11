@@ -35,3 +35,6 @@ it('pre-abort prevents Use mutation and keeps exact cancellation reason',async()
 it('command and actor mutations after invocation cannot redirect asynchronous query',async()=>fixture(async f=>{
  const action={Status:{reference:'selected'}},context={...actor};const pending=f.dispatcher.execute(action,context);action.Status.reference='mapped';context.channelId=99n;const result=await pending;assert.match(result.text,/selected/);assert.ok(!result.text.includes('title: Mapped'));
 }));
+it('prefix Help now returns byte-exact pinned source text without selection mutation',async()=>fixture(async f=>{
+ const {RUNTIME_HELP}=await import('../../../src/runtime/action-executor/help.ts'),{createHash}=await import('node:crypto'),{planPrefix}=await import('../../../src/runtime/prefix-plan.ts');const before=readFileSync(f.bridge.path());assert.equal(createHash('sha256').update(RUNTIME_HELP).digest('hex'),'17725b0d646c3c1e96860ccadf52e493721b4e5eac4a27aa998977dd65183b8a');assert.equal(Buffer.byteLength(RUNTIME_HELP),5759);assert.equal(planPrefix('help'),'Help');assert.deepEqual(await f.dispatcher.execute('Help',actor),{text:RUNTIME_HELP,waitsForFinal:false,ui:null});assert.deepEqual(readFileSync(f.bridge.path()),before);
+}));

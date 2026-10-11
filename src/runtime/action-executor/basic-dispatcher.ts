@@ -1,3 +1,4 @@
+import {RUNTIME_HELP} from './help.ts';
 import {PortableResidentLifecycle} from '../../app-server/portable-resident-lifecycle.ts';
 import {TargetLocks} from '../../core/keyed-locks.ts';
 import {cloneOwnedSerdeValue} from '../../core/owned-serde-value.ts';
@@ -38,6 +39,7 @@ export class BasicActionDispatcher{
   let result:ActionResult;
   if(typeof action==='string'){
    switch(action){
+    case 'Help':result=immediate(RUNTIME_HELP);break;
     case 'Where':result=immediate(await this.#selection.whereMessage(channel));break;
     case 'Identity':result=immediate(`Discord identity\nuser_id: ${user}\nchannel_id: ${channel}\nthread_id: ${await this.#selection.targetThreadId(channel)}`);break;
     case 'Runners':result=immediate(await this.#runners.runners(channel,user,signal));break;
