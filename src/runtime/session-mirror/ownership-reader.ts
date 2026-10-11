@@ -3,7 +3,7 @@ import {captureMirrorPollJobs,type MirrorStoreSnapshot} from './store-discovery.
 import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../owned-worker-slot.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
-import {MirrorOwnershipPendingError,type CurrentMirrorDisposition,type SourceMirrorDisposition} from './ownership.ts';
+import {MirrorOwnershipPendingError,snapshotMirrorSkippedItems,type CurrentMirrorDisposition,type SourceMirrorDisposition} from './ownership.ts';
 import type {MirrorItem,MirrorKind} from './collect.ts';
 export interface MirrorOwnershipReadLimits {readonly maxJobs:bigint;readonly maxValueBytes:bigint;readonly timeoutMs:number}
 const slot=new OwnedWorkerSlot();
@@ -55,4 +55,17 @@ async function runNativeRead(request:unknown,timeoutMs:number,signal?:AbortSigna
  let result:unknown;try{result=await pending;}finally{await exited;}signal?.throwIfAborted();
  if(own(result,'ok')!==true){if(own(result,'pending')===true)throw new MirrorOwnershipPendingError();const detail=own(result,'detail');throw new MirrorOwnershipReadError(typeof detail==='string'?detail:'invalid worker result');}
  return own(result,'owned');
+}
+
+/** Same source policy, one provisional native snapshot for the complete batch.
+ * The fixed worker returns bounded enums only; fresh pre-send and final cursor
+ * checks remain mandatory. Uses the same read slot, no additional worker queue. */
+export async function observeSourceMirrorDispositions(path:string,thread:string,input:readonly MirrorItem[],limits:MirrorOwnershipReadLimits,jobs:MirrorStoreSnapshot['jobs'],signal?:AbortSignal):Promise<readonly SourceMirrorDisposition[]>{
+ signal?.throwIfAborted();const captured=captureMirrorPollJobs(path,thread,jobs),items=snapshotMirrorSkippedItems(thread,input);
+ const maxJobs=own(limits,'maxJobs'),maxValueBytes=own(limits,'maxValueBytes'),timeoutMs=own(limits,'timeoutMs');
+ if(typeof maxJobs!=='bigint'||maxJobs<1n||maxJobs>4096n||typeof maxValueBytes!=='bigint'||maxValueBytes<1n||maxValueBytes>4194304n||typeof timeoutMs!=='number'||!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid mirror ownership read limits');
+ if(items.length===0)return Object.freeze([]);
+ const result=await runNativeRead({path,thread,items,maxJobs,maxValueBytes,pollJobs:captured,batch:true},timeoutMs,signal);
+ if(!Array.isArray(result)||result.length!==items.length||result.some(v=>!['CurrentOwner','HistoricalOwner','TurnOrigin','RecordedEvent','Unclaimed'].includes(v)))throw new MirrorOwnershipReadError('invalid native batch policy result');
+ return Object.freeze(result as SourceMirrorDisposition[]);
 }

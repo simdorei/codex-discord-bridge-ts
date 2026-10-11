@@ -36,10 +36,10 @@ export async function prepareAllDeliveredMirrorPacket(
 /** Every item is accounted for as Deliver or Skip. Skip decisions are provisional:
  * final native transaction revalidates all of them. Neither this factory nor its
  * chunk plan permits sending without a fresh ownership check by the coordinator. */
-export async function prepareMixedMirrorPacket(input:BoundMirrorCursor,observation:AnchoredMirrorBatch,channel:bigint,updatedAt:number,operationId:string,modes:readonly MirrorDeliveryMode[],signal?:AbortSignal):Promise<MixedMirrorPacket>{
- return await preparePacket(input,observation,channel,updatedAt,operationId,'Mixed',modes,signal) as MixedMirrorPacket;
+export async function prepareMixedMirrorPacket(input:BoundMirrorCursor,observation:AnchoredMirrorBatch,channel:bigint,updatedAt:number,operationId:string,modes:readonly MirrorDeliveryMode[],signal?:AbortSignal,receiptDatabasePath?:string):Promise<MixedMirrorPacket>{
+ return await preparePacket(input,observation,channel,updatedAt,operationId,'Mixed',modes,signal,receiptDatabasePath) as MixedMirrorPacket;
 }
-async function preparePacket(input:BoundMirrorCursor,observation:AnchoredMirrorBatch,channel:bigint,updatedAt:number,operationId:string,profile:Profile,inputModes:readonly MirrorDeliveryMode[]|undefined,signal?:AbortSignal):Promise<AllDeliveredMirrorPacket>{
+async function preparePacket(input:BoundMirrorCursor,observation:AnchoredMirrorBatch,channel:bigint,updatedAt:number,operationId:string,profile:Profile,inputModes:readonly MirrorDeliveryMode[]|undefined,signal?:AbortSignal,receiptDatabasePath?:string):Promise<AllDeliveredMirrorPacket>{
  signal?.throwIfAborted();
  const expected=snapshotBoundMirrorCursor(input);
  // Calling the frozen prototype method checks the private brand first, rejecting
@@ -54,7 +54,7 @@ async function preparePacket(input:BoundMirrorCursor,observation:AnchoredMirrorB
  if(typeof updatedAt!=='number'||!Number.isFinite(updatedAt)||updatedAt<0)throw new TypeError('Invalid mirror packet timestamp');
  const modes=profile==='Mixed'?snapshotMirrorDeliveryModes(inputModes as readonly MirrorDeliveryMode[],batch.items.length):undefined;
  const skipped=modes===undefined?Object.freeze([]):snapshotMirrorSkippedItems(expected.thread,batch.items.filter((_item,index)=>modes[index]==='Skip'));
- const plan=modes===undefined?await planMirrorReceiptsOffThread(observation,channel,signal):await planMixedMirrorReceiptsOffThread(observation,channel,modes,signal),captured=plan.receipts;
+ const plan=modes===undefined?await planMirrorReceiptsOffThread(observation,channel,signal):await planMixedMirrorReceiptsOffThread(observation,channel,modes,signal,5000,receiptDatabasePath),captured=plan.receipts;
  const next=await AnchoredMirrorBatch.prototype.observeNextBoundary.call(observation,signal);
  signal?.throwIfAborted();
  const result:AllDeliveredMirrorPacket=Object.freeze({...(modes===undefined?{}:{deliveryModes:modes}),expected,anchor:next.anchor,turn:batch.currentTurn??'',channel,updatedAt,operationId,receipts:captured,itemCount:batch.items.length,historyIntegrityVerified:false});

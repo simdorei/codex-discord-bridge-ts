@@ -1,3 +1,4 @@
+import {withStoreTransaction,rollbackStore} from '../../store/owned-scope.ts';
 import type {DatabaseSync} from 'node:sqlite';
 import {boundedQueueJobsIn,boundedQueueJobsInTransaction} from '../../store/queue-snapshot.ts';
 import {hasObservedCompletionIn} from '../../store/observed-completion.ts';
@@ -155,4 +156,25 @@ export function sourceMirrorDispositionIn(db:DatabaseSync,thread:string,input:Mi
  if(item.kind!=='User'&&item.turnId!==null&&hasMirrorEventIn(db,turnOriginMarker(thread,item.turnId),thread))return 'TurnOrigin';
  if(hasMirrorEventIn(db,digest,thread))return 'RecordedEvent';
  return 'Unclaimed';
+}
+
+/** Provisional whole-window classification. One complete queue snapshot and one
+ * pending gate are shared by the bounded batch, in one short read transaction.
+ * Each actual delivery must still perform its fresh single-item pre-send check;
+ * all skipped items must still pass final atomic cursor proof. This snapshot
+ * cannot authorize sending or permanent advancement on its own. */
+export function sourceMirrorDispositionsIn(db:DatabaseSync,thread:string,input:readonly MirrorItem[],pollJobs:readonly StoredQueueJob[],maxJobs:bigint,maxValueBytes:bigint):readonly SourceMirrorDisposition[]{
+ const items=snapshotMirrorSkippedItems(thread,input);
+ if(types.isProxy(pollJobs)||!Array.isArray(pollJobs)||pollJobs.length>4096)throw new RangeError('Historical mirror job count exceeds budget');
+ const historical=snapshotJobs(pollJobs);if(items.length===0)return Object.freeze([]);
+ return withStoreTransaction(db,'DEFERRED',()=>{
+  const current=boundedQueueJobsInTransaction(db,maxJobs,maxValueBytes,thread);requireSettledOwnershipIn(db,thread,current);
+  const results=items.map(item=>{
+   if(ownerAfterGateIn(db,thread,item,current))return 'CurrentOwner' as const;
+   if(ownerAfterGateIn(db,thread,item,historical))return 'HistoricalOwner' as const;
+   if(item.kind!=='User'&&item.turnId!==null&&hasMirrorEventIn(db,turnOriginMarker(thread,item.turnId),thread))return 'TurnOrigin' as const;
+   if(hasMirrorEventIn(db,item.digest,thread))return 'RecordedEvent' as const;
+   return 'Unclaimed' as const;
+  });return rollbackStore(Object.freeze(results));
+ });
 }

@@ -1,8 +1,9 @@
+import {resolve} from 'node:path';
 import {types} from 'node:util';
 import {deliverChunksIndexed} from '../../discord/delivery.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {sendNativeMirrorReceiptChunk} from './native-sender.ts';
-import type {NativeMirrorReceiptStore} from './receipt-store.ts';
+import {NativeMirrorReceiptStore} from './receipt-store.ts';
 import type {DiscordReceiptTransport} from '../completion/receipt-sender.ts';
 import {AnchoredMirrorBatch} from './continuity-observation.ts';
 import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../owned-worker-slot.ts';
@@ -11,26 +12,33 @@ import {snapshotExpectedReceiptBatch,type ExpectedReceipt} from '../../store/con
 const slot=new OwnedWorkerSlot();
 export class MirrorReceiptPlanningError extends Error{constructor(detail:string){super('Mirror receipt planning failed: '+detail);this.name='MirrorReceiptPlanningError';}}
 const token=Symbol('native mirror send plan');
-interface ItemPlan{readonly domain:string;readonly logicalKey:string;readonly chunks:readonly string[]}
+interface ItemPlan{readonly domain:string;readonly logicalKey:string;readonly chunks:readonly string[];readonly confirmed:readonly boolean[]}
 export class MirrorReceiptPlan{
- readonly receipts:readonly ExpectedReceipt[];readonly receiptSetHash:string;readonly itemCount:number;readonly #items:readonly (ItemPlan|null)[];readonly #channel:bigint;
- constructor(key:symbol,receipts:readonly ExpectedReceipt[],receiptSetHash:string,items:readonly (ItemPlan|null)[],channel:bigint){
+ readonly receipts:readonly ExpectedReceipt[];readonly receiptSetHash:string;readonly itemCount:number;readonly #items:readonly (ItemPlan|null)[];readonly #channel:bigint;readonly #receiptPath:string|null;readonly #thread:string;
+ constructor(key:symbol,receipts:readonly ExpectedReceipt[],receiptSetHash:string,items:readonly (ItemPlan|null)[],channel:bigint,receiptPath:string|null,thread:string){
   if(key!==token)throw new TypeError('Expected native mirror send plan');
-  this.receipts=receipts;this.receiptSetHash=receiptSetHash;this.#items=items;this.itemCount=items.length;this.#channel=channel;Object.freeze(this);
+  this.receipts=receipts;this.receiptSetHash=receiptSetHash;this.#items=items;this.itemCount=items.length;this.#channel=channel;this.#receiptPath=receiptPath;this.#thread=thread;Object.freeze(this);
  }
  /** One explicit item after caller ownership checks. No automatic skips/retries.
   * Exact marked chunks were created off-thread. Earlier receipts are reused and
   * every native storage/transport operation settles before another part starts. */
  async sendItem(store:NativeMirrorReceiptStore,transport:DiscordReceiptTransport,index:number,signal?:AbortSignal):Promise<void>{
-  const items=this.#items;signal?.throwIfAborted();
+  const items=this.#items;signal?.throwIfAborted();if(this.#receiptPath!==null)NativeMirrorReceiptStore.prototype.assertOwner.call(store,this.#receiptPath,this.#thread,this.#channel);
   if(!Number.isSafeInteger(index)||index<0||index>=items.length)throw new RangeError('Invalid mirror item index');
   const item=items[index];if(item===null||item===undefined)throw new TypeError('Skipped mirror item cannot be sent by this plan');
-  await deliverChunksIndexed(item.chunks,{retryDelaysMs:[],chunkMarkers:true},(chunkIndex,content)=>sendNativeMirrorReceiptChunk(store,transport,this.#channel,{domain:item.domain,logicalKey:item.logicalKey,chunkIndex,content},signal));
+  await deliverChunksIndexed(item.chunks,{retryDelaysMs:[],chunkMarkers:true},async(chunkIndex,content)=>{signal?.throwIfAborted();if(item.confirmed[chunkIndex])return;await sendNativeMirrorReceiptChunk(store,transport,this.#channel,{domain:item.domain,logicalKey:item.logicalKey,chunkIndex,content},signal)});
   signal?.throwIfAborted();
+ }
+ /** Point-in-time receipt evidence only; caller's final transaction must still
+  * prove the complete packet. Does not authorize an HTTP operation. */
+ itemAlreadyConfirmed(store:NativeMirrorReceiptStore,index:number):boolean{
+  const items=this.#items;if(!Number.isSafeInteger(index)||index<0||index>=items.length)throw new RangeError('Invalid mirror item index');
+  if(this.#receiptPath===null)return false;NativeMirrorReceiptStore.prototype.assertOwner.call(store,this.#receiptPath,this.#thread,this.#channel);
+  const item=items[index];if(item===null||item===undefined)throw new TypeError('Skipped item has no receipt snapshot');return item.confirmed.every(Boolean);
  }
 }
 Object.freeze(MirrorReceiptPlan.prototype);
-function itemPlans(input:unknown,modes:readonly MirrorDeliveryMode[]):readonly (ItemPlan|null)[]{
+function itemPlans(input:unknown,modes:readonly MirrorDeliveryMode[],hasSnapshot:boolean):readonly (ItemPlan|null)[]{
  const expected=modes.length;
  if(!Array.isArray(input)||input.length!==expected||input.length>4096)throw new TypeError('Invalid native mirror item plan');
  let chunks=0,bytes=0,keys=0;const result:(ItemPlan|null)[]=[];
@@ -41,12 +49,13 @@ function itemPlans(input:unknown,modes:readonly MirrorDeliveryMode[]):readonly (
   if(domain!=='session-mirror/event/v1'&&domain!=='session-mirror/assistant-text/v1')throw new TypeError('Invalid native mirror domain');
   requireDiscordText(logicalKey);if(Buffer.byteLength(logicalKey)>65536)throw new RangeError('Mirror identity exceeds budget');keys+=Buffer.byteLength(logicalKey);
   if(keys>1048576||!Array.isArray(raw)||raw.length===0||raw.length>4096)throw new RangeError('Mirror native chunk plan exceeds budget');
+  const flags=own(value,'confirmed');if(!Array.isArray(flags)||flags.length!==raw.length||flags.some(x=>typeof x!=='boolean'||(!hasSnapshot&&x)))throw new TypeError('Invalid native receipt snapshot flags');
   const copy:string[]=[];
   for(const text of raw){
    requireDiscordText(text);const size=Buffer.byteLength(text);bytes+=size;chunks++;
    if(size>8192||bytes>2097152||chunks>4096)throw new RangeError('Mirror native chunk bytes exceed budget');copy.push(text);
   }
-  result.push(Object.freeze({domain,logicalKey,chunks:Object.freeze(copy)}));
+  result.push(Object.freeze({domain,logicalKey,chunks:Object.freeze(copy),confirmed:Object.freeze([...flags] as boolean[])}));
  }
  return Object.freeze(result);
 }
@@ -71,9 +80,10 @@ export async function planMirrorReceiptsOffThread(observation:AnchoredMirrorBatc
 }
 /** Skip choices do not grant skip permission. Final atomic cursor guard must
  * prove them all against the same authentic batch and current database state. */
-export async function planMixedMirrorReceiptsOffThread(observation:AnchoredMirrorBatch,channel:bigint,inputModes:readonly MirrorDeliveryMode[],signal?:AbortSignal,timeoutMs=5000):Promise<MirrorReceiptPlan>{
+export async function planMixedMirrorReceiptsOffThread(observation:AnchoredMirrorBatch,channel:bigint,inputModes:readonly MirrorDeliveryMode[],signal?:AbortSignal,timeoutMs=5000,receiptDatabasePath?:string):Promise<MirrorReceiptPlan>{
 
  signal?.throwIfAborted();
+ let receiptPath:string|null=null;if(receiptDatabasePath!==undefined){requireDiscordText(receiptDatabasePath);if(receiptDatabasePath.includes('\0')||receiptDatabasePath.length>32768||Buffer.byteLength(receiptDatabasePath)>32768)throw new RangeError('Invalid receipt snapshot path');receiptPath=resolve(receiptDatabasePath);if(receiptPath.length>32768||Buffer.byteLength(receiptPath)>32768)throw new RangeError('Invalid receipt snapshot path');}
  const {batch}=AnchoredMirrorBatch.prototype.captured.call(observation);
  if(batch.items.length>4096)throw new RangeError('Mirror packet item budget exceeded');
  const modes=snapshotMirrorDeliveryModes(inputModes,batch.items.length);
@@ -86,13 +96,13 @@ export async function planMixedMirrorReceiptsOffThread(observation:AnchoredMirro
   if(bytes>1048576)throw new RangeError('Mirror receipt input exceeds one MiB');
  }
  if(slot.busy)throw new OwnedWorkerBusyError();
- const pending=slot.run(new URL('./receipt-plan-worker.ts',import.meta.url),{thread:batch.thread,items:batch.items,channel,modes},timeoutMs,signal),exit=slot.join();
+ const pending=slot.run(new URL('./receipt-plan-worker.ts',import.meta.url),{thread:batch.thread,items:batch.items,channel,modes,receiptDatabasePath:receiptPath??undefined},timeoutMs,signal),exit=slot.join();
  let result:unknown;try{result=await pending}finally{await exit}
  signal?.throwIfAborted();
  if(own(result,'ok')!==true){const detail=own(result,'detail');throw new MirrorReceiptPlanningError(typeof detail==='string'?detail:'invalid native result');}
  const receipts=snapshotExpectedReceiptBatch(own(result,'receipts') as readonly ExpectedReceipt[]),receiptSetHash=own(result,'receiptSetHash');
  if(typeof receiptSetHash!=='string'||!/^[0-9a-f]{64}$/.test(receiptSetHash))throw new MirrorReceiptPlanningError('invalid receipt set hash');
- const items=itemPlans(own(result,'items'),modes);
+ const items=itemPlans(own(result,'items'),modes,receiptPath!==null);
  if(items.reduce((n,item)=>n+(item?.chunks.length??0),0)!==receipts.length)throw new MirrorReceiptPlanningError('native receipt/chunk count mismatch');
- return new MirrorReceiptPlan(token,receipts,receiptSetHash,items,channel);
+ return new MirrorReceiptPlan(token,receipts,receiptSetHash,items,channel,receiptPath,batch.thread);
 }

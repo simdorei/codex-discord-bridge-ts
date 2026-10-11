@@ -32,6 +32,8 @@ export class NativeMirrorReceiptStore{
   if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid mirror receipt deadline');
   this.#path=resolve(path);text(this.#path,32768,true);this.#thread=thread;this.#channel=channel;this.#timeout=timeoutMs;
  }
+ /** Bind cached read evidence to this exact native owner before omitting work. */
+ assertOwner(path:string,thread:string,channel:bigint):void{const pinned=this.#path;if(pinned!==resolve(path)||this.#thread!==thread||this.#channel!==channel)throw new TypeError('Mirror receipt snapshot belongs to a different owner');if(this.#closed)throw new Error('Mirror receipt store is closed');}
  get busy():boolean{return this.#inflight!==null;}
  async close(reason:unknown=new Error('Mirror receipt store closed')):Promise<void>{this.#closed=true;this.#controller?.abort(reason);if(this.#inflight!==null)await Promise.allSettled([this.#inflight]);}
  async begin(key:string,hash:string,signal?:AbortSignal):Promise<ReceiptState>{

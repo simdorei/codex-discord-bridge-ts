@@ -6,7 +6,7 @@ import {snapshotBoundMirrorCursor,type BoundMirrorCursor} from '../../store/mirr
 import type {DiscordReceiptTransport} from '../completion/receipt-sender.ts';
 import {AnchoredMirrorBatch} from './continuity-observation.ts';
 import {captureMirrorPollJobs,type MirrorStoreSnapshot} from './store-discovery.ts';
-import {observeSourceMirrorDisposition,type MirrorOwnershipReadLimits} from './ownership-reader.ts';
+import {observeSourceMirrorDisposition,observeSourceMirrorDispositions,type MirrorOwnershipReadLimits} from './ownership-reader.ts';
 import {NativeMirrorCursorStore} from './cursor-store.ts';import {NativeMirrorReceiptStore} from './receipt-store.ts';
 import {prepareMixedMirrorPacket,mixedMirrorPacketSendPlan,commitMixedMirrorPacket,type MixedMirrorPacket} from './all-delivered-packet.ts';
 import type {MirrorDeliveryMode} from './receipt-plan.ts';import type {MirrorPollCounts} from './execution.ts';
@@ -44,14 +44,14 @@ export async function executeObservedMirrorBatch(request:ObservedMirrorBatchRequ
  const cursor=new NativeMirrorCursorStore(path,timeoutMs),receipt=new NativeMirrorReceiptStore(path,expected.thread,channel,timeoutMs);let packet:MixedMirrorPacket|null=null;
  try{
   const modes:MirrorDeliveryMode[]=[];
-  for(const item of batch.items){
-   signal?.throwIfAborted();const disposition=await observeSourceMirrorDisposition(path,expected.thread,item,limits,jobs,signal);
+  for(const disposition of await observeSourceMirrorDispositions(path,expected.thread,batch.items,limits,jobs,signal)){
+   signal?.throwIfAborted();
    if(disposition==='HistoricalOwner')throw new MirrorBatchPolicyChangedError();
    modes.push(disposition==='Unclaimed'?'Deliver':'Skip');
   }
-  packet=await prepareMixedMirrorPacket(expected,observation,channel,updatedAt,operationId,modes,signal);const plan=mixedMirrorPacketSendPlan(packet);let sent=0n;
+  packet=await prepareMixedMirrorPacket(expected,observation,channel,updatedAt,operationId,modes,signal,path);const plan=mixedMirrorPacketSendPlan(packet);let sent=0n;
   for(let index=0;index<modes.length;index++)if(modes[index]==='Deliver'){
-   signal?.throwIfAborted();const current=await observeSourceMirrorDisposition(path,expected.thread,batch.items[index]!,limits,jobs,signal);
+   signal?.throwIfAborted();if(plan.itemAlreadyConfirmed(receipt,index)){sent++;continue;}const current=await observeSourceMirrorDisposition(path,expected.thread,batch.items[index]!,limits,jobs,signal);
    if(current!=='Unclaimed')throw new MirrorBatchPolicyChangedError();
    await plan.sendItem(receipt,transport,index,signal);sent++;
   }

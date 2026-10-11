@@ -1,3 +1,5 @@
+import {usingExistingReadOnlyStore,withStoreTransaction,rollbackStore} from '../../store/owned-scope.ts';
+import {requireConfirmedReceiptBatchIn,UnconfirmedReceiptBatchError} from '../../store/confirmed-receipt-batch.ts';
 import {splitDeliveryChunks} from '../../discord/text.ts';
 import {parentPort,workerData as q} from 'node:worker_threads';
 import {createHash} from 'node:crypto';
@@ -23,6 +25,11 @@ try{
  }
  const captured=snapshotExpectedReceiptBatch(receipts);
  const receiptSetHash=createHash('sha256').update(serializeSerdeValue(captured.map(r=>[r.key,r.contentHash]))).digest('hex');
- parentPort.postMessage({ok:true,receipts:captured,receiptSetHash,items});
+ // Snapshot only: final cursor transaction still revalidates every delivered
+ // receipt. Missing/unknown/conflicting receipts are not guessed as delivered.
+ const confirmed=q.receiptDatabasePath===undefined?captured.map(()=>false):usingExistingReadOnlyStore(q.receiptDatabasePath,db=>withStoreTransaction(db,'DEFERRED',()=>rollbackStore(captured.map(receipt=>{try{requireConfirmedReceiptBatchIn(db,[receipt]);return true}catch(error){if(error instanceof UnconfirmedReceiptBatchError)return false;throw error}}))));
+ let position=0;const planned=items.map(item=>{if(item===null)return null;const flags=confirmed.slice(position,position+item.chunks.length);position+=item.chunks.length;return {...item,confirmed:flags}});
+ if(position!==captured.length)throw new TypeError('Native receipt snapshot shape mismatch');
+ parentPort.postMessage({ok:true,receipts:captured,receiptSetHash,items:planned});
 }catch(error){parentPort.postMessage({ok:false,detail:[...(error instanceof Error?error.message:'Mirror receipt planning failed')].slice(0,2048).join('')});}
 finally{parentPort.close();}
