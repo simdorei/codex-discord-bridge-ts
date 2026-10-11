@@ -1,3 +1,4 @@
+import {StoreIntegrityError} from './schema-assembly.ts';
 import type {DatabaseSync} from 'node:sqlite';
 import {usingInitializedStore} from './owned-scope.ts';
 import {decodeI64, decodeOptionalI64, decodeTextField, textDecoderFor} from './sqlite-values.ts';
@@ -59,4 +60,30 @@ export function mirrorTargetsIn(db:DatabaseSync,limit:bigint):readonly MirrorTar
       if (codexThreadId !== '' && discordThreadId !== 0n) result.push(Object.freeze({codexThreadId, threadTitle, discordChannelId, discordThreadId}));
     }
     return Object.freeze(result);
+}
+
+export type MirrorDetailMode='Send'|'All';
+export class InvalidMirrorDetailError extends Error {
+  readonly value:string;
+  constructor(value:string){super('invalid session mirror detail mode: '+value);this.name='InvalidMirrorDetailError';this.value=value;}
+}
+/** Source mapping/detail.rs read, on a borrowed connection. A single statement
+ * bounds corrupt TEXT before transferring it from SQLite; oversize values hold
+ * rather than manufacture a default. No initialization or transaction lifecycle.
+ * Caller must execute this synchronous SQLite boundary in its native owner. */
+export function mirrorDetailModeIn(db:DatabaseSync,thread:string):MirrorDetailMode {
+  requireDiscordText(thread);
+  if(thread.length>16384||Buffer.byteLength(thread)>16384)throw new RangeError('Mirror detail target exceeds budget');
+  const q=db.prepare(`SELECT typeof(detail_mode) AS kind,length(CAST(detail_mode AS BLOB)) AS bytes,
+    CASE WHEN length(CAST(detail_mode AS BLOB))<=256 THEN detail_mode END AS value,
+    CASE WHEN length(CAST(detail_mode AS BLOB))<=256 THEN CAST(detail_mode AS BLOB) END AS raw,
+    (SELECT encoding FROM pragma_encoding) AS encoding
+    FROM session_mirror_details WHERE codex_thread_id=? LIMIT 1`);
+  q.setReadBigInts(true);const row=q.get(thread);
+  if(row===undefined)return 'Send';
+  if(row.kind!=='text')throw new StoreIntegrityError('Expected text mirror detail mode');
+  if(typeof row.bytes!=='bigint'||row.bytes<0n||row.bytes>256n)throw new StoreIntegrityError('Mirror detail mode exceeds byte budget');
+  const value=decodeTextField(row.value,row.raw,'detail_mode',false,textDecoderFor(row.encoding))!;
+  if(value==='send')return 'Send';if(value==='all')return 'All';
+  throw new InvalidMirrorDetailError(value);
 }

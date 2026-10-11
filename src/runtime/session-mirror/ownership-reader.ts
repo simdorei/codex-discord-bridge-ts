@@ -1,3 +1,4 @@
+import type {MirrorDetailMode} from '../../store/mirror-policy-read.ts';
 import {captureMirrorPollJobs,type MirrorStoreSnapshot} from './store-discovery.ts';
 import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../owned-worker-slot.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
@@ -35,10 +36,23 @@ async function read(path:string,thread:string,input:MirrorItem,limits:MirrorOwne
  if(typeof maxJobs!=='bigint'||maxJobs<1n||maxJobs>4096n||typeof maxValueBytes!=='bigint'||maxValueBytes<1n||maxValueBytes>4194304n||typeof timeoutMs!=='number'||!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid mirror ownership read limits');
  const digest=disposition?own(input,'digest'):'';requireDiscordText(digest);if(digest.length>1024||Buffer.byteLength(digest)>1024)throw new RangeError('Mirror digest budget exceeded');
  const item:MirrorItem={kind:kind as MirrorKind,text,turnId:turn,digest,phase:'',dedupeRecentText:false};
+ const owned=await runNativeRead({path,thread,item,maxJobs,maxValueBytes,disposition,pollJobs},timeoutMs,signal);if(disposition){if(pollJobs!==undefined&&owned==='HistoricalOwner')return owned;if(owned==='CurrentOwner'||owned==='TurnOrigin'||owned==='RecordedEvent'||owned==='Unclaimed')return owned;throw new MirrorOwnershipReadError('invalid worker disposition');}
+ if(typeof owned!=='boolean')throw new MirrorOwnershipReadError('invalid worker ownership flag');return owned;
+}
+
+/** Detail lookup shares the fixed native read owner and resource accounting.
+ * Existing DB only; absent row defaults to Send, corrupt schema/value never does. */
+export async function observeMirrorDetailMode(path:string,thread:string,timeoutMs=5000,signal?:AbortSignal):Promise<MirrorDetailMode>{
+ signal?.throwIfAborted();requireDiscordText(path);requireDiscordText(thread);
+ if(path.includes('\0')||path.length>32768||Buffer.byteLength(path)>32768||thread.length>16384||Buffer.byteLength(thread)>16384)throw new RangeError('Invalid mirror detail path or target budget');
+ if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid mirror detail deadline');
+ const value=await runNativeRead({path,thread,detailMode:true},timeoutMs,signal);
+ if(value!=='Send'&&value!=='All')throw new MirrorOwnershipReadError('invalid worker detail mode');return value;
+}
+async function runNativeRead(request:unknown,timeoutMs:number,signal?:AbortSignal):Promise<unknown>{
  if(slot.busy)throw new OwnedWorkerBusyError();
- const pending=slot.run(new URL('./ownership-worker.ts',import.meta.url),{path,thread,item,maxJobs,maxValueBytes,disposition,pollJobs},timeoutMs,signal),exited=slot.join();
+ const pending=slot.run(new URL('./ownership-worker.ts',import.meta.url),request,timeoutMs,signal),exited=slot.join();
  let result:unknown;try{result=await pending;}finally{await exited;}signal?.throwIfAborted();
  if(own(result,'ok')!==true){if(own(result,'pending')===true)throw new MirrorOwnershipPendingError();const detail=own(result,'detail');throw new MirrorOwnershipReadError(typeof detail==='string'?detail:'invalid worker result');}
- const owned=own(result,'owned');if(disposition){if(pollJobs!==undefined&&owned==='HistoricalOwner')return owned;if(owned==='CurrentOwner'||owned==='TurnOrigin'||owned==='RecordedEvent'||owned==='Unclaimed')return owned;throw new MirrorOwnershipReadError('invalid worker disposition');}
- if(typeof owned!=='boolean')throw new MirrorOwnershipReadError('invalid worker ownership flag');return owned;
+ return own(result,'owned');
 }
