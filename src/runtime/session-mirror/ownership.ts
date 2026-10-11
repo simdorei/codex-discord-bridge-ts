@@ -140,3 +140,19 @@ export function requireCurrentMirrorSkipsIn(db:DatabaseSync,thread:string,input:
   throw new MirrorSkipUnprovenError(i);
  }
 }
+
+export type SourceMirrorDisposition=CurrentMirrorDisposition|'HistoricalOwner';
+/** Source order: fresh current gate, historical poll snapshot suppression, then
+ * durable marker tail. HistoricalOwner alone cannot authorize cursor progress;
+ * the coordinator must retain the cursor until current/durable proof exists.
+ * Volatile recent-text cache is intentionally not accepted as durable evidence. */
+export function sourceMirrorDispositionIn(db:DatabaseSync,thread:string,input:MirrorItem,pollJobs:readonly StoredQueueJob[],maxJobs:bigint,maxValueBytes:bigint):SourceMirrorDisposition{
+ requireDiscordText(thread);const item=snapshot(input),jobs=snapshotJobs(pollJobs);
+ const digest=serdeField(cloneOwnedSerdeValue(input),'digest');requireDiscordText(digest);
+ if(digest.length>1024||Buffer.byteLength(digest)>1024)throw new RangeError('Mirror digest budget exceeded');
+ if(currentDiscordMirrorOwnerIn(db,thread,input,maxJobs,maxValueBytes))return 'CurrentOwner';
+ if(ownerAfterGateIn(db,thread,item,jobs))return 'HistoricalOwner';
+ if(item.kind!=='User'&&item.turnId!==null&&hasMirrorEventIn(db,turnOriginMarker(thread,item.turnId),thread))return 'TurnOrigin';
+ if(hasMirrorEventIn(db,digest,thread))return 'RecordedEvent';
+ return 'Unclaimed';
+}

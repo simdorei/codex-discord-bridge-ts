@@ -1,3 +1,4 @@
+import {resolve} from 'node:path';
 import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../owned-worker-slot.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
@@ -6,6 +7,7 @@ import type {StoredQueueJob} from '../../store/queue-read.ts';
 export interface MirrorStoreDiscoveryLimits{readonly maxTargets:bigint;readonly maxJobs:bigint;readonly maxValueBytes:bigint;readonly maxOutputBytes:number;readonly timeoutMs:number;}
 export interface MirrorStoreSnapshot{readonly targets:readonly MirrorTarget[];readonly jobs:readonly Readonly<Omit<StoredQueueJob,'baselineTurnIds'>&{baselineTurnIds:readonly string[]}>[];}
 const slot=new OwnedWorkerSlot();
+const ownedJobs=new WeakMap<object,string>();
 export function mirrorStoreDiscoveryBusy():boolean{return slot.busy;}
 export class MirrorStoreDiscoveryError extends Error{constructor(detail:string){super('Mirror store discovery failed: '+detail);this.name='MirrorStoreDiscoveryError';}}
 /** Existing initialized bridge store only. Full source decoding stays in the
@@ -23,7 +25,8 @@ export async function discoverMirrorStore(path:string,limits:MirrorStoreDiscover
  // These values can only originate from the fixed native worker's strict source
  // decoders, never a caller-supplied transport, callback, or alternate worker URL.
  for(const target of targets)Object.freeze(target);for(const job of jobs){Object.freeze(job.baselineTurnIds);Object.freeze(job);}
- return Object.freeze({targets:Object.freeze(targets),jobs:Object.freeze(jobs)});
+ const frozenJobs=Object.freeze(jobs);ownedJobs.set(frozenJobs,resolve(path));
+ return Object.freeze({targets:Object.freeze(targets),jobs:frozenJobs});
 }
 
 export function captureMirrorStoreDiscoveryLimits(limits:MirrorStoreDiscoveryLimits):MirrorStoreDiscoveryLimits{
@@ -31,4 +34,16 @@ export function captureMirrorStoreDiscoveryLimits(limits:MirrorStoreDiscoveryLim
  for(const n of [maxTargets,maxJobs])if(typeof n!=='bigint'||n<1n||n>4096n)throw new RangeError('Invalid mirror store row limit');
  if(typeof maxValueBytes!=='bigint'||maxValueBytes<1n||maxValueBytes>4194304n||typeof maxOutputBytes!=='number'||!Number.isSafeInteger(maxOutputBytes)||maxOutputBytes<1||maxOutputBytes>4194304||typeof timeoutMs!=='number'||!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid mirror store resource limits');
  return Object.freeze({maxTargets:maxTargets as bigint,maxJobs:maxJobs as bigint,maxValueBytes,maxOutputBytes,timeoutMs});
+}
+
+/** Only fixed native discovery can mint this bounded, frozen queue snapshot.
+ * Target projection performs no JSON parsing/hash and cannot retarget the source
+ * database. Historical jobs are suppression hints, never current send authority.
+ * A copied array or cross-database snapshot is rejected before any property read. */
+export function captureMirrorPollJobs(path:string,thread:string,jobs:MirrorStoreSnapshot['jobs']):MirrorStoreSnapshot['jobs']{
+ if(jobs===null||typeof jobs!=='object'||!ownedJobs.has(jobs))throw new TypeError('Expected native mirror poll jobs');
+ requireDiscordText(path);requireDiscordText(thread);
+ if(path.includes('\0')||path.length>32768||Buffer.byteLength(path)>32768||thread.length>16384||Buffer.byteLength(thread)>16384)throw new RangeError('Mirror poll snapshot identity exceeds budget');
+ if(ownedJobs.get(jobs)!==resolve(path))throw new TypeError('Mirror poll jobs belong to a different database path');
+ return Object.freeze(jobs.filter(job=>job.targetThreadId===thread));
 }
