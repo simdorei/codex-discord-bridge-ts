@@ -27,8 +27,8 @@ for(const [name,sql] of [
 test('final read operation is pinned before native wait despite later facade property replacement',async()=>fixture(async(_p,_db,o,c)=>{
  const r=await o.begin(c),old=StateAccessFacade.revalidatePreparedMutation;let calls=0;Object.defineProperty(StateAccessFacade,'revalidatePreparedMutation',{value:()=>{calls++;throw Error('substituted');},writable:true,configurable:true,enumerable:true});try{o.validateForDispatch(r);assert.equal(calls,0);}finally{Object.defineProperty(StateAccessFacade,'revalidatePreparedMutation',{value:old,writable:true,configurable:true,enumerable:true});}
 }));
-test('busy owner cannot validate another receipt while an accepted native operation runs',async()=>fixture(async(_p,_db,o,c)=>{
- const r=await o.begin(c),pending=o.begin({...c,attemptId:'other',params:{threadId:'other'},origin:{target:'other',stopRevision:0n}});assert.throws(()=>o.validateForDispatch(r));await pending;o.validateForDispatch(r);
+test('unrelated owned work does not replace exact synchronous receipt validation',async()=>fixture(async(_p,_db,o,c)=>{
+ const r=await o.begin(c),pending=o.begin({...c,attemptId:'other',params:{threadId:'other'},origin:{target:'other',stopRevision:0n}});o.validateForDispatch(r);await pending;o.validateForDispatch(r);
 }));
 test('accepted stop uses exact original token, wire and job; it never substitutes ordinary prepared evidence',async()=>{
  for(const drift of [null,"UPDATE cdr_stop_controls SET wire_id='other'","UPDATE cdr_stop_controls SET claim_token='other'","UPDATE codex_turn_queue SET owner_user_id=99","UPDATE codex_mutation_runtime SET runtime_id='new'"])await fixture(async(path,db,o,c)=>{

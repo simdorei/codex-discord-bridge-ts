@@ -29,8 +29,8 @@ export class NativeMutationOwner {
  readonly #unsubmitted=new WeakMap<object,{attemptId:string;wire:RequestId;method:string}>();
  readonly #validate:ReturnType<typeof createNativeMutationRevalidator>;
  readonly #path:string;readonly #runtime:string;readonly #render:(text:string)=>string;readonly #timeout:number;
- readonly #slot=new OwnedWorkerSlot('Control');readonly #receipts=new WeakMap<object,ReceiptData>();
- #active:Promise<unknown>|null=null;#controller:AbortController|null=null;#closed=false;
+ readonly #receipts=new WeakMap<object,ReceiptData>();
+ readonly #tasks=new Set<Promise<unknown>>();readonly #controllers=new Set<AbortController>();#closed=false;
  constructor(path:string,runtime:string,render:(text:string)=>string,timeoutMs=5000){
   this.#path=pinNativeRuntimePath(text(path,32768));this.#runtime=text(runtime);
   if(runtime==='')throw new TypeError('Expected runtime identity');
@@ -39,7 +39,7 @@ export class NativeMutationOwner {
   this.#render=render;this.#timeout=timeoutMs;
   this.#validate=createNativeMutationRevalidator(this.#path,this.#runtime,error=>this.#render(passiveErrorText(error,'Original mutation authority unavailable')));
  }
- get busy():boolean{return this.#active!==null;}
+ get busy():boolean{return this.#tasks.size>0;}
  /** Proof belongs to this owner AND this exact begin occurrence, not an error label. */
  ownsUnsubmittedFailure(error:unknown,attemptId:string,wire:RequestId,method:string):boolean{
   if(error===null||typeof error!=='object')return false;
@@ -50,13 +50,13 @@ export class NativeMutationOwner {
  }
 
  async close(reason:unknown=new Error('Native mutation owner closed')):Promise<void>{
-  this.#closed=true;this.#controller?.abort(reason);
-  if(this.#active!==null)await Promise.allSettled([this.#active]);
+  this.#closed=true;for(const controller of this.#controllers)controller.abort(reason);
+  await Promise.allSettled([...this.#tasks]);
  }
  /** Immediate final read of this owner's exact unused receipt. Caller still
   * revalidates original in-memory admission before starting the wire. */
  validateForDispatch(receipt:NativeMutationReceipt):void{
-  this.#ready();const data=this.#receipts.get(receipt);
+  this.#ready(undefined,true);const data=this.#receipts.get(receipt);
   if(data===undefined||data.used)throw new TypeError('Expected unused receipt from this native mutation owner');
   this.#validate(data.input,data.operation);
  }
@@ -64,7 +64,7 @@ export class NativeMutationOwner {
  beginQueue(input:QueueMutationClaim,signal?:AbortSignal):Promise<NativeMutationReceipt>{return this.#begin('beginQueueMutation',input,signal);}
  beginStop(input:StopMutationClaim,signal?:AbortSignal):Promise<NativeMutationReceipt>{return this.#begin('beginStopMutation',input,signal);}
  finish(receipt:NativeMutationReceipt,outcome:MaintenanceCompletion['outcome'],signal?:AbortSignal):Promise<void>{
-  this.#ready(signal);
+  this.#ready(signal,true);
   const data=this.#receipts.get(receipt);
   if(data===undefined||data.used)throw new TypeError('Expected unused receipt from this native mutation owner');
   if(outcome!=='not_sent'&&outcome!=='reply_ok'&&outcome!=='reply_error')throw new TypeError('Expected explicit observed mutation outcome');
@@ -73,11 +73,11 @@ export class NativeMutationOwner {
   data.used=true;
   return this.#run(data.stop?'finishStopMutation':'finishMutation',completion,receipt.method,c.attemptId,signal);
  }
- #ready(signal?:AbortSignal):void{
+ #ready(signal?:AbortSignal,allowOwnedWork=false):void{
   if(signal!==undefined&&(types.isProxy(signal)||!(signal instanceof AbortSignal)))throw new TypeError('Expected owned AbortSignal');
   signal?.throwIfAborted();
   if(this.#closed)throw new Error('Native mutation owner is closed');
-  if(this.#active!==null)throw new OwnedWorkerBusyError();
+  if(!allowOwnedWork&&this.#tasks.size>0)throw new OwnedWorkerBusyError();
  }
  #begin(operation:BeginOperation,input:MaintenanceClaim|QueueMutationClaim|StopMutationClaim,signal?:AbortSignal):Promise<NativeMutationReceipt>{
   let busy=false;try{this.#ready(signal);}catch(error){if(!(error instanceof OwnedWorkerBusyError)||signal?.aborted)throw error;busy=true;}
@@ -94,14 +94,15 @@ export class NativeMutationOwner {
   });
  }
  #run(operation:Operation,input:unknown,method:string,attemptId:string,signal?:AbortSignal):Promise<void>{
-  const controller=new AbortController();this.#controller=controller;
+  const controller=new AbortController(),slot=new OwnedWorkerSlot('Control');this.#controllers.add(controller);
   const abort=()=>controller.abort(signal!.reason);signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();
   const task=(async()=>{
    let admitted=false;let diagnostic='Native mutation result unavailable';
    try{
-    const pending=this.#slot.run(new URL('./native-mutation-worker.ts',import.meta.url),{path:this.#path,runtime:this.#runtime,operation,input},this.#timeout,controller.signal);
-    admitted=this.#slot.busy;
-    let raw:unknown;try{raw=await pending;}finally{await this.#slot.join();}
+    const complete=operation==='finishMutation'||operation==='finishStopMutation';
+    const pending=complete?slot.runControlCompletion(new URL('./native-mutation-worker.ts',import.meta.url),{path:this.#path,runtime:this.#runtime,operation,input},this.#timeout,controller.signal):slot.run(new URL('./native-mutation-worker.ts',import.meta.url),{path:this.#path,runtime:this.#runtime,operation,input},this.#timeout,controller.signal);
+    admitted=slot.busy;
+    let raw:unknown;try{raw=await pending;}finally{await slot.join();}
     controller.signal.throwIfAborted();
     if(boundedSerdeByteCount(raw,16384)===null||own(raw,'ok')!==true){
      const detail=own(raw,'detail');let safe='Native mutation result unavailable';
@@ -120,7 +121,7 @@ export class NativeMutationOwner {
     throw new MutationOutcomeUnknownError(method,`native ${operation} result not confirmed; original attempt ${attemptId} requires reconciliation; ${diagnostic}; no automatic replay`);
    }finally{signal?.removeEventListener('abort',abort);}
   })();
-  this.#active=task;const clear=()=>{if(this.#active===task){this.#active=null;this.#controller=null;}};void task.then(clear,clear);return task;
+  this.#tasks.add(task);const clear=()=>{this.#tasks.delete(task);this.#controllers.delete(controller);};void task.then(clear,clear);return task;
  }
 }
 Object.freeze(NativeMutationOwner.prototype);
