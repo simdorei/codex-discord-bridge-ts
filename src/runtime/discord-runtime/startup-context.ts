@@ -1,3 +1,5 @@
+import {RuntimeDeliveryWake} from './delivery-wake.ts';
+import {invokeSynchronousVoid} from '../../core/synchronous-void.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {cloneOwnedSerdeValue} from '../../core/owned-serde-value.ts';
@@ -33,16 +35,18 @@ async function prepareContext(input:RuntimeStartupContextOptions|RuntimeProStart
  const initialPolicy=captureRuntimeAccessPolicy(get('access')),reserveLimits=cloneOwnedSerdeValue(get('reserveLimits')) as ReserveRetirementLimits,policyLimits=cloneOwnedSerdeValue(get('policyLimits')) as NativeMirrorPolicyLimits,timeout=get('storageTimeoutMs');
  if(proMode&&(executorOptions as RuntimeProExecutorBootstrapOptions).pro.executable!==own(own(process,'process'),'executable'))throw new TypeError('Pro inventory and resident must use the same executable');
  AdmissionGate.prototype.isSealed.call(admission);
+ const deliveryWake=new RuntimeDeliveryWake(),originalNotify=executorOptions.notifyDeliveryReady;
+ const wiredOptions={...executorOptions,notifyDeliveryReady:function(this:object){deliveryWake.notify();invokeSynchronousVoid(originalNotify,this,[]);}};
  const foundation=await startRuntimeFoundation(paths,process,runtimeId,startupChannel,executorOptions.render,reserveLimits,timeout,signal);
  let built:Awaited<ReturnType<typeof buildRuntimeCommandExecutor>>|undefined;
  try{
-  signal?.throwIfAborted();built=proMode?await buildRuntimeProCommandExecutor(paths,foundation.owner,admission,executorOptions as RuntimeProExecutorBootstrapOptions):await buildRuntimeCommandExecutor(paths,foundation.owner,admission,executorOptions as RuntimeExecutorBootstrapOptions);signal?.throwIfAborted();
+  signal?.throwIfAborted();built=proMode?await buildRuntimeProCommandExecutor(paths,foundation.owner,admission,wiredOptions as RuntimeProExecutorBootstrapOptions):await buildRuntimeCommandExecutor(paths,foundation.owner,admission,wiredOptions as RuntimeExecutorBootstrapOptions);signal?.throwIfAborted();
   const policy=await refreshMirrorPolicyOffThread(initialPolicy,paths.mirrorDb,policyLimits,signal);signal?.throwIfAborted();
   const executor=built;
-  const disposeBeforeWorkers=async()=>{try{await foundation.owner.dispose();}finally{executor.disposeReceivers();}};
-  return Object.freeze({...foundation,...executor,policy,disposeBeforeWorkers});
+  const disposeBeforeWorkers=async()=>{try{await foundation.owner.dispose();}finally{deliveryWake.close();executor.disposeReceivers();}};
+  return Object.freeze({...foundation,...executor,policy,deliveryWake,disposeBeforeWorkers});
  }catch(primary){
-  built?.disposeReceivers();
+  deliveryWake.close();built?.disposeReceivers();
   try{await foundation.owner.dispose();}catch(cleanup){throw new RuntimeResidentStartupCleanupError(primary,cleanup,foundation.owner);}throw primary;
  }
 }

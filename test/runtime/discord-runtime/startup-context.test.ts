@@ -10,10 +10,10 @@ async function mappings(path:string){const db=await openInitialized(path);try{db
 function gone(root:string){const pid=Number(readFileSync(join(root,'pid'),'utf8'));assert.throws(()=>process.kill(pid,0),{code:'ESRCH'});}
 
 test('actual pre-gateway context captures all paths, static policy and callbacks before native preparation',async()=>storeFixture(async path=>{
- const o=await input(path),originalRoot=o.paths.root,originalBridge=o.paths.bridgeState;let wakes=0;o.executor.notifyDeliveryReady=()=>{wakes++;};await mappings(path);
+ const o=await input(path),originalRoot=o.paths.root,originalBridge=o.paths.bridgeState;let wakes=0,callbackThis:unknown;o.executor.notifyDeliveryReady=function(this:object){callbackThis=this;wakes++;};await mappings(path);
  const pending=prepareRuntimeContext(o);o.paths.bridgeState=join(originalRoot,'foreign.json');o.access.allowedChannelIds.clear();o.access.allowedChannelIds.add(99n);o.access.allowedUserIds.clear();o.access.allowAllChannels=true;o.executor.notifyDeliveryReady=()=>assert.fail('replaced callback');o.policyLimits.maxRows=0n;o.process.process.executable='/does-not-exist';
  const context=await pending;
- try{assert.equal(context.queue.dbPath,path);assert.equal(context.bridge.path(),originalBridge);assert.equal(context.owner.instanceId,context.backend.residentInstanceId());assert.equal(decision(context.policy,'1'),'Allowed');assert.equal(decision(context.policy,'7'),'Allowed');assert.equal(decision(context.policy,'99'),'DeniedChannel');assert.equal(decision(context.policy,'1','3'),'DeniedUser');context.executor.notifyDeliveryReady();assert.equal(wakes,1);assert.equal(existsSync(o.paths.bridgeState),false);}
+ try{assert.equal(context.queue.dbPath,path);assert.equal(context.bridge.path(),originalBridge);assert.equal(context.owner.instanceId,context.backend.residentInstanceId());assert.equal(decision(context.policy,'1'),'Allowed');assert.equal(decision(context.policy,'7'),'Allowed');assert.equal(decision(context.policy,'99'),'DeniedChannel');assert.equal(decision(context.policy,'1','3'),'DeniedUser');context.executor.notifyDeliveryReady();assert.equal(wakes,1);assert.equal(callbackThis,context.queue);let delivered=0;context.deliveryWake.bind(()=>{delivered++;});assert.equal(delivered,1);context.executor.notifyDeliveryReady();assert.equal(delivered,2);assert.equal(wakes,2);assert.equal(existsSync(o.paths.bridgeState),false);}
  finally{await context.disposeBeforeWorkers();}gone(originalRoot);assert.deepEqual(context.completionReceiver.tryReceive(),{kind:'Closed'});assert.deepEqual(context.serverRequestReceiver.tryReceive(),{kind:'Closed'});await context.disposeBeforeWorkers();
 }));
 
@@ -32,4 +32,14 @@ test('cleanup failure retains the owned resident and both errors for explicit cl
 
 test('invalid explicit preprocessor and preabort reject before bridge creation or child launch',async()=>storeFixture(async path=>{
  const o=await input(path);const a=new AbortController(),reason=new Error('stop');a.abort(reason);await assert.rejects(prepareRuntimeContext(o,a.signal),e=>e===reason);await assert.rejects(prepareRuntimeContext({...o,executor:{...o.executor,preparePrompt:undefined}} as never),TypeError);assert.equal(existsSync(path),false);assert.equal(existsSync(join(o.paths.root,'pid')),false);
+}));
+
+test('actual startup queue wake binds once to actual completion pipeline and detaches after joined stop',{timeout:15000},async()=>storeFixture(async path=>{
+ const {httpFixture}=await import('../../helpers/interaction-worker-fixture.ts'),{startCompletionRuntimeWorker}=await import('../../../src/runtime/discord-runtime/completion-start.ts'),{RuntimeWorkerExitChannel}=await import('../../../src/runtime/discord-runtime/monitored-worker.ts'),{CompletionPipeline}=await import('../../../src/runtime/completion/pipeline.ts');
+ const options=await input(path);let userWakes=0;options.executor.notifyDeliveryReady=()=>{userWakes++;};const context=await prepareRuntimeContext(options),stop=new AbortController(),exits=new RuntimeWorkerExitChannel();
+ const original=CompletionPipeline.prototype.notifyDeliveryReady;let pipelineWakes=0;CompletionPipeline.prototype.notifyDeliveryReady=function(){pipelineWakes++;return original.call(this);};
+ try{await httpFixture(async(http,seen)=>{context.queue.notifyDeliveryReady();assert.equal(userWakes,1);assert.equal(pipelineWakes,0);const bound=await startCompletionRuntimeWorker(context,http,{commentaryEnabled:false,historyReadTimeoutMs:1000,render:()=> 'safe',report:()=>{}},stop.signal,exits);
+  try{assert.equal(pipelineWakes,1);context.executor.notifyDeliveryReady();assert.equal(pipelineWakes,2);assert.equal(userWakes,2);}finally{stop.abort();await bound.worker.join();}
+  context.queue.notifyDeliveryReady();assert.equal(pipelineWakes,2);assert.equal(userWakes,3);assert.deepEqual(seen,[]);assert.equal(http.activeRequests,0);
+ });}finally{stop.abort();CompletionPipeline.prototype.notifyDeliveryReady=original;exits.close();await context.disposeBeforeWorkers();}gone(options.paths.root);
 }));
