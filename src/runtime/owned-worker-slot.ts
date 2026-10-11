@@ -26,12 +26,19 @@ export class OwnedWorkerSlot {
  constructor(kind:OwnedWorkerClass='Background'){if(kind!=='Background'&&kind!=='Control')throw new TypeError('Invalid native worker class');this.#class=kind;}
  get busy():boolean{return this.#worker!==null;}
  join():Promise<void>{return this.#idle;}
- run(url:URL,workerData:unknown,timeoutMs:number,signal?:AbortSignal):Promise<unknown>{
+ run(url:URL,workerData:unknown,timeoutMs:number,signal?:AbortSignal):Promise<unknown>{return this.#run(url,workerData,timeoutMs,signal,false);}
+ /** Only for trusted pure CPU modules with no external I/O or mutation. Caller
+  * cancellation requests native termination; budget remains owned until exit.
+  * Never use this method to make a blocked database/file operation look joined. */
+ runCpu(url:URL,workerData:unknown,timeoutMs:number,signal?:AbortSignal):Promise<unknown>{return this.#run(url,workerData,timeoutMs,signal,true);}
+ #run(url:URL,workerData:unknown,timeoutMs:number,signal:AbortSignal|undefined,terminateCpu:boolean):Promise<unknown>{
   signal?.throwIfAborted();if(this.#worker!==null)return Promise.reject(new OwnedWorkerBusyError());if(!Number.isSafeInteger(timeoutMs)||timeoutMs<0||timeoutMs>2147483647)throw new TypeError('Expected bounded worker deadline');
   const releaseBudget=acquire(this.#class);if(releaseBudget===null)return Promise.reject(new OwnedWorkerBudgetError());let worker:Worker;try{worker=new Worker(ownedWorkerModuleUrl(url,import.meta.url),{workerData});}catch(error){releaseBudget();throw error;}this.#worker=worker;let release!:()=>void;this.#idle=new Promise<void>(r=>{release=r;});
   return new Promise((resolve,reject)=>{
    let settled=false,count=0,value:unknown,failure:unknown;const settle=(error:unknown,result?:unknown)=>{if(settled)return;settled=true;clearTimeout(timer);signal?.removeEventListener('abort',abort);if(error!==undefined)reject(error);else resolve(result);};
-   const abort=()=>settle(signal!.reason),timer=setTimeout(()=>settle(new OwnedWorkerTimeoutError()),timeoutMs);signal?.addEventListener('abort',abort,{once:true});
+   let terminationRequested=false;
+   const cancel=(reason:unknown)=>{if(settled)return;settle(reason);if(terminateCpu&&!terminationRequested){terminationRequested=true;void worker.terminate().catch(error=>{failure??=error;});}};
+   const abort=()=>cancel(signal!.reason),timer=setTimeout(()=>cancel(new OwnedWorkerTimeoutError()),timeoutMs);signal?.addEventListener('abort',abort,{once:true});
    worker.on('message',message=>{count++;if(count===1)value=message;else failure=new Error('context worker emitted multiple results');});worker.on('error',error=>{failure=error;});
    worker.once('exit',code=>{this.#worker=null;releaseBudget();release();settle(failure??(code!==0?new Error(`context worker exited ${code}`):count!==1?new Error('context worker returned no result'):undefined),value);});
    if(signal?.aborted)abort();
