@@ -58,10 +58,14 @@ export async function observeMirrorCursorContinuity(expected:MirrorCursorAnchor,
 /** Couples the checked old boundary to the exact native decoded file window.
  * Both anchors are still observations: no receipt/ownership/DB commit authority. */
 export class AnchoredMirrorBatch{
- readonly continuity:MirrorContinuity;readonly prior:MirrorCursorAnchor;readonly batch:MirrorBatchObservation;readonly historyIntegrityVerified=false;readonly #batch:MirrorBatchObservation;
- constructor(key:symbol,continuity:MirrorContinuity,prior:MirrorCursorAnchor,batch:MirrorBatchObservation){
+ readonly continuity:MirrorContinuity;readonly expectedAnchor:MirrorCursorAnchor;readonly prior:MirrorCursorAnchor;readonly batch:MirrorBatchObservation;readonly historyIntegrityVerified=false;readonly #batch:MirrorBatchObservation;
+ constructor(key:symbol,continuity:MirrorContinuity,prior:MirrorCursorAnchor,batch:MirrorBatchObservation,expectedAnchor:MirrorCursorAnchor=prior){
   if(key!==token)throw new TypeError('Expected owned anchored mirror batch');
-  this.continuity=continuity;this.prior=prior;this.batch=batch;this.#batch=batch;Object.freeze(this);
+  this.continuity=continuity;this.expectedAnchor=expectedAnchor;this.prior=prior;this.batch=batch;this.#batch=batch;Object.freeze(this);
+ }
+ /** Private-field brand check before any public property is observed. */
+ captured():Readonly<{expectedAnchor:MirrorCursorAnchor;batch:MirrorBatchObservation}>{
+  const batch=this.#batch;return Object.freeze({expectedAnchor:this.expectedAnchor,batch});
  }
  async verifyCurrent(signal?:AbortSignal):Promise<void>{await this.#batch.verifyCurrent(signal);}
  /** Capture only the decoded complete-prefix boundary. Any intervening append
@@ -75,9 +79,9 @@ export class AnchoredMirrorBatch{
 }
 Object.freeze(AnchoredMirrorBatch.prototype);
 export async function observeAnchoredMirrorBatch(expected:MirrorCursorAnchor,limits:MirrorReadLimits,options:MirrorItemOptions,signal?:AbortSignal):Promise<AnchoredMirrorBatch>{
- const bounds=snapshotMirrorReadLimits(limits),context=snapshotMirrorItemOptions(options);
- const observed=await observeMirrorCursorContinuity(expected,signal),anchor=observed.observation.anchor;
+ const pinned=captureExpected(expected),bounds=snapshotMirrorReadLimits(limits),context=snapshotMirrorItemOptions(options);
+ const observed=await observeMirrorCursorContinuity(pinned,signal),anchor=observed.observation.anchor;
  const batch=await observeMirrorBatch(anchor.path,anchor.offset,bounds,context,signal);
  if(!sameStamp(anchor.stamp,batch.fileStamp))throw new MirrorFileChangedError();
- signal?.throwIfAborted();return new AnchoredMirrorBatch(token,observed.kind,anchor,batch);
+ signal?.throwIfAborted();return new AnchoredMirrorBatch(token,observed.kind,anchor,batch,pinned);
 }
