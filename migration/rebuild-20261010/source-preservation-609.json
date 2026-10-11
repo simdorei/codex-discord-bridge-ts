@@ -1,0 +1,38 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 609,
+  "localCommit": "1c04220ae6e862828087cc0349f636ab04ecfe46",
+  "fullTests": 7273,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "test/admission/drain-gate-instrumentation.test.ts": "97ab87da46c99947272bc9d07ba3ab13fe3ad0335cbdab7a2cb48faccaf52938",
+    "test/classifier/pollution-regression.test.ts": "a648ed10fbc9460c826b12d9d0b81587ae00469612694ae2a4c8e9cbb7fef29f",
+    "test/runtime/discord-runtime/shutdown-deadline.test.ts": "8c4cb2dcb6a2819fe907661bd36780cb2621070894a5f793146425061f1fad5b",
+    "test/runtime/discord-runtime/stop-signal.test.ts": "a960311451381f260efe2a02a3558b55f84ee0a3b3684c74b30042acd5f574d3",
+    "test/store/state-access-facade-portability.test.ts": "69658b5bc63d1f7624667478caccc6d41e0cc7e5ba4738a336f1dbf08b143fed"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ],
+  "fullTestProfile": "compiled JS; NODE_OPTIONS=--no-strip-types inherited by all child processes",
+  "sourceProfileBaseline": {
+    "checkpoint": 606,
+    "fullTests": 7273,
+    "productionSrcUnchanged": true,
+    "changedSourceTestsFocused": 40
+  },
+  "priorCompiledFailure": {
+    "checkpoint": 608,
+    "pass": 7253,
+    "fail": 8,
+    "cancelled": 12
+  },
+  "runtimeQualification": "Whole compiled regression passed; intermittent source-profile engine fault not proven fixed; Windows/24h/product main unqualified"
+}

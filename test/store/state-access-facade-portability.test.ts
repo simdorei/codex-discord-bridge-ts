@@ -1,3 +1,4 @@
+import {ownedWorkerModuleUrl} from '../../src/runtime/owned-worker-slot.ts';
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { mkdtempSync, realpathSync, rmSync } from "node:fs";
@@ -136,9 +137,9 @@ test("facade reference identity and cross-process persistence proof", async () =
     assert.strictEqual(res2.job.jobId, job2.jobId);
     assert.strictEqual(res2.job.targetThreadId, job2.targetThreadId);
 
-    const facadeUrl = new URL("../../src/store/state-access-facade.ts", import.meta.url).href;
-    const leafUrl = new URL("../../src/store/queue-enqueue.ts", import.meta.url).href;
-    const driverUrl = new URL("../../src/store/owned-driver.ts", import.meta.url).href;
+    const facadeUrl = ownedWorkerModuleUrl(new URL("../../src/store/state-access-facade.ts", import.meta.url),import.meta.url).href;
+    const leafUrl = ownedWorkerModuleUrl(new URL("../../src/store/queue-enqueue.ts", import.meta.url),import.meta.url).href;
+    const driverUrl = ownedWorkerModuleUrl(new URL("../../src/store/owned-driver.ts", import.meta.url),import.meta.url).href;
 
     await execFileAsync(
       process.execPath,

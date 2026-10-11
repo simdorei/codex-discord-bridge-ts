@@ -21,3 +21,9 @@ Node's built-in TypeScript type stripping uses Amaro. Compiling before execution
 Source and compiled tests are separate execution profiles. Record both, preserve failed runs, and do not call a later pass a repair of a native engine crash. Literal worker module URLs inside data-URL test fixtures must use the same graph-selection helper; TypeScript does not rewrite arbitrary string values. Test expectations and worker ownership/budget assertions are unchanged.
 
 Native diagnostic, worker cancellation/timeout/exit and reserved control capacity tests must pass with type stripping disabled. Broader compiled graph integration, native Windows behavior, whole-runtime startup/shutdown, 24-hour operation and production deployment remain pending.
+
+## Complete compiled test profile
+
+`npm run build:test` creates a fresh `.runtime/compiled-tests-*` directory and prints its output/fixture-manifest paths as JSON. It compiles all source and tests, copies explicit read-only fixtures, and preserves each earlier build. Run its generated test files with `NODE_OPTIONS=--no-strip-types` so spawned child processes inherit the same restriction. The instrumentation fixture verifies the original source hashes and compiles its unchanged inserted code with the existing compiler; it does not enable runtime TS fallback.
+
+The initial608 compiled run had7253 passes,8 failures and12 cancelled tests caused by absent fixture source/data or literal TS child module URLs. The fixed609 staged compiled run passed all7273, with no failures/cancellations/skips. This is one complete run under that profile, not a proof of24-hour engine stability. Initial failures and unchanged source-profile results remain preserved.

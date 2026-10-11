@@ -17,6 +17,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:test": "node tools/build-test-profile.mjs"
   }
 }
