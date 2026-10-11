@@ -1,7 +1,8 @@
 import * as crypto from "node:crypto";
 import type * as fs from "node:fs";
 import { open as fsOpen, mkdir, stat, unlink } from "node:fs/promises";
-import { dirname, join, parse, resolve } from "node:path";
+import { dirname, parse } from "node:path";
+import {joinRuntimePath} from "../runtime/runtime-paths/path-text.ts";
 import { DatabaseSync, backup as sqliteBackup } from "node:sqlite";
 
 import {
@@ -56,6 +57,8 @@ async function backupBeforeMigration(
   dbPath: string,
   fromVersion: bigint,
 ): Promise<string | null> {
+  const platform=process.platform==='win32'?'win32':'posix';
+  dbPath=joinRuntimePath(process.cwd(),dbPath,platform);
   let stats: fs.Stats;
   try {
     stats = await stat(dbPath);
@@ -75,7 +78,7 @@ async function backupBeforeMigration(
   }
 
   const parent = dirname(dbPath);
-  const directory = join(parent, BACKUP_DIRECTORY);
+  const directory = joinRuntimePath(parent, BACKUP_DIRECTORY,platform);
   await mkdir(directory, { recursive: true });
 
   const parsed = parse(dbPath);
@@ -83,7 +86,7 @@ async function backupBeforeMigration(
   const timestamp = formatUtcTimestamp(new Date());
   const unique = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
   const filename = `${stem}.v${fromVersion}-to-v${LATEST_STORE_SCHEMA_VERSION}.${timestamp}.${unique}.sqlite`;
-  const backupPath = resolve(join(directory, filename));
+  const backupPath = joinRuntimePath(directory, filename,platform);
 
   const handle = await fsOpen(backupPath, "wx");
   try {
