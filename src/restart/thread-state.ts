@@ -135,8 +135,7 @@ export function classifyThreadState(
   const threadDesc = Object.getOwnPropertyDescriptor(result, "thread");
   if (
     !threadDesc ||
-    threadDesc.get !== undefined ||
-    threadDesc.set !== undefined ||
+    !Object.hasOwn(threadDesc, "value") ||
     !isPlainJsonObject(threadDesc.value)
   ) {
     throw new InvalidThreadStateError(expectedThreadId, "missing thread object");
@@ -147,8 +146,7 @@ export function classifyThreadState(
   const idDesc = Object.getOwnPropertyDescriptor(thread, "id");
   if (
     !idDesc ||
-    idDesc.get !== undefined ||
-    idDesc.set !== undefined ||
+    !Object.hasOwn(idDesc, "value") ||
     typeof idDesc.value !== "string"
   ) {
     throw new InvalidThreadStateError(expectedThreadId, "missing thread id");
@@ -162,8 +160,7 @@ export function classifyThreadState(
   const updatedAtDesc = Object.getOwnPropertyDescriptor(thread, "updatedAt");
   if (
     !updatedAtDesc ||
-    updatedAtDesc.get !== undefined ||
-    updatedAtDesc.set !== undefined
+    !Object.hasOwn(updatedAtDesc, "value")
   ) {
     throw new InvalidThreadStateError(
       expectedThreadId,
@@ -186,8 +183,7 @@ export function classifyThreadState(
   const statusDesc = Object.getOwnPropertyDescriptor(thread, "status");
   if (
     !statusDesc ||
-    statusDesc.get !== undefined ||
-    statusDesc.set !== undefined ||
+    !Object.hasOwn(statusDesc, "value") ||
     !isPlainJsonObject(statusDesc.value)
   ) {
     throw new InvalidThreadStateError(expectedThreadId, "missing status object");
@@ -198,8 +194,7 @@ export function classifyThreadState(
   const typeDesc = Object.getOwnPropertyDescriptor(status, "type");
   if (
     !typeDesc ||
-    typeDesc.get !== undefined ||
-    typeDesc.set !== undefined ||
+    !Object.hasOwn(typeDesc, "value") ||
     typeof typeDesc.value !== "string"
   ) {
     throw new InvalidThreadStateError(expectedThreadId, "missing status type");
@@ -212,8 +207,7 @@ export function classifyThreadState(
       const flagsDesc = Object.getOwnPropertyDescriptor(status, "activeFlags");
       if (
         !flagsDesc ||
-        flagsDesc.get !== undefined ||
-        flagsDesc.set !== undefined ||
+        !Object.hasOwn(flagsDesc, "value") ||
         !isPlainJsonArray(flagsDesc.value)
       ) {
         throw new InvalidThreadStateError(
@@ -229,8 +223,7 @@ export function classifyThreadState(
         const flagDesc = Object.getOwnPropertyDescriptor(activeFlags, String(i));
         if (
           !flagDesc ||
-          flagDesc.get !== undefined ||
-          flagDesc.set !== undefined ||
+          !Object.hasOwn(flagDesc, "value") ||
           typeof flagDesc.value !== "string"
         ) {
           throw new InvalidThreadStateError(
