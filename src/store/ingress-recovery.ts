@@ -42,10 +42,15 @@ export function holdIngress(path:string,key:string,reason:string,notExecuted:boo
 }
 /** PRECONDITION: exclusive runtime guard, before intake. Not wired to startup until that guard exists. */
 export function recoverPriorRuntimeIngress(path:string,runtime:string,now:number):Promise<number>{
-  text(path);text(runtime);if(typeof now!=="number")throw new TypeError("Expected numeric timestamp");return writer(path,db=>{
-    const records=unfinishedPriorIngressesIn(db,runtime);
-    db.prepare("UPDATE codex_new_first_replies SET ack_recovery_allowed=1 WHERE confirmation_delivered=0 AND ingress_id IN (SELECT ingress_id FROM discord_ingress_journal WHERE runtime_id IS NOT ?)").run(runtime);
-    for(const record of records)holdIngressIn(db,record.ingressId,"runtime ended before custody handoff or confirmation was recorded",record.state==="staged"||record.state==="acknowledged",now);
-    return records.length;
-  });
+  text(path);text(runtime);if(typeof now!=="number")throw new TypeError("Expected numeric timestamp");return writer(path,db=>recoverPriorRuntimeIngressIn(db,runtime,now));
+}
+/** Borrowed startup transaction. Caller owns the exclusive runtime guard and
+ * rollback on failure; no queue execution or connection lifecycle is transferred. */
+export function recoverPriorRuntimeIngressIn(db:DatabaseSync,runtime:string,now:number):number{
+  text(runtime);if(typeof now!=="number")throw new TypeError("Expected numeric timestamp");
+  if(!db.isTransaction)throw new StoreIntegrityError("Borrowed mutation requires an active transaction");
+  const records=unfinishedPriorIngressesIn(db,runtime);
+  db.prepare("UPDATE codex_new_first_replies SET ack_recovery_allowed=1 WHERE confirmation_delivered=0 AND ingress_id IN (SELECT ingress_id FROM discord_ingress_journal WHERE runtime_id IS NOT ?)").run(runtime);
+  for(const record of records)holdIngressIn(db,record.ingressId,"runtime ended before custody handoff or confirmation was recorded",record.state==="staged"||record.state==="acknowledged",now);
+  return records.length;
 }
