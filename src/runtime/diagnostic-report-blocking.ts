@@ -1,5 +1,6 @@
+import {joinRuntimePath} from './runtime-paths/path-text.ts';
 import {openSync,fstatSync,readSync,closeSync} from 'node:fs';
-import {dirname,join} from 'node:path';
+import {dirname} from 'node:path';
 import {StateAccessFacade as state} from '../store/state-access-facade.ts';
 import {parseSerdeValue} from '../core/serde-json-parse.ts';
 import {serdeObject} from '../app-server/value.ts';
@@ -26,6 +27,6 @@ export function diagnosticReportBlocking(paths:DiagnosticPaths):string {
  const arch=process.arch==='x64'?'x86_64':process.arch==='arm64'?'aarch64':process.arch;
  const lines=[`TypeScript diagnostic · ${process.platform} ${arch} · version 0.0.0`,database('state_db',paths.state,'State'),database('mirror_db',paths.mirror,'Mirror'),jsonFile('bridge_state',paths.bridge)];
  try{lines.push(state.diagnosticIdleRelease(paths.mirror));}catch(error){lines.push(`봇 연결 해제 상태: 조회 실패 · ${errorText(error)}`);}
- const home=dirname(paths.state);lines.push(readable('session_index',join(home,'session_index.jsonl')),jsonFile('global_state',join(home,'.codex-global-state.json')));
+ const home=dirname(paths.state);lines.push(readable('session_index',joinRuntimePath(home,'session_index.jsonl',process.platform==='win32'?'win32':'posix')),jsonFile('global_state',joinRuntimePath(home,'.codex-global-state.json',process.platform==='win32'?'win32':'posix')));
  lines.push('권한: 읽기 검사만 수행; 쓰기/삭제 권한과 DB 전체 무결성은 미검증','codex_protocol_registration: 이 OS의 등록 검사 미구현 · 앱 열기 성공을 뜻하지 않음','Codex 앱 창·앱 업데이트: 미검증 (서버 연결·프로토콜 등록과 별도)');return lines.join('\n');
 }

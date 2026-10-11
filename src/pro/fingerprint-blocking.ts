@@ -21,10 +21,10 @@ export function pluginTreeDigestBlocking(input:string):string{
  if(!['x64','arm64'].includes(process.arch))throw new TypeError('Expected supported 64-bit plugin fingerprint platform');
  if(process.platform==='win32')throw new TypeError('Windows reparse-point evidence requires its native implementation');
  try{
-  const root=realpathSync(input),initial=statSync(root,{bigint:true});if(!initial.isDirectory())content('plugin source is not a directory');
+  const root=realpathSync.native(input),initial=statSync(root,{bigint:true});if(!initial.isDirectory())content('plugin source is not a directory');
   const digest=createHash('sha256'),deadline=performance.now()+10000;let entries=0,bytes=0n;
   const budget=()=>{if(performance.now()>deadline)content('plugin source observation exceeded 10 seconds');};
-  const check=(path:string,rel:string)=>{const s=lstatSync(path,{bigint:true});if(s.isSymbolicLink())content(`plugin source contains a link: ${rel}`);const resolved=realpathSync(path),part=relative(root,resolved);if(part==='..'||part.startsWith('..'+sep)||isAbsolute(part))content(`plugin source escapes root: ${rel}`);return s;};
+  const check=(path:string,rel:string)=>{const s=lstatSync(path,{bigint:true});if(s.isSymbolicLink())content(`plugin source contains a link: ${rel}`);const resolved=realpathSync.native(path),part=relative(root,resolved);if(part==='..'||part.startsWith('..'+sep)||isAbsolute(part))content(`plugin source escapes root: ${rel}`);return s;};
   const hashFile=(path:string,rel:string,before:BigIntStats)=>{
    bytes+=before.size;if(bytes>2147483648n)content('plugin source exceeds 2 GiB observation budget');
    const fd=openSync(path,constants.O_RDONLY|constants.O_NOFOLLOW);
@@ -57,7 +57,7 @@ export function fingerprintRequiredPluginsBlocking(raw:string):string{
   if(serdeField(record,'installed')!==true||serdeField(record,'enabled')!==true)inventory(`plugin '${id}' is not installed and enabled`);
   const version=serdeField(record,'version');if(typeof version!=='string'||version==='')inventory(`plugin '${id}' version`);
   const source=serdeField(record,'source'),rawPath=serdeObject(source)?serdeField(source,'path'):undefined;if(typeof rawPath!=='string'||rawPath==='')inventory(`plugin '${id}' source.path`);
-  let root:string;try{root=realpathSync(rawPath);}catch(error){content(`plugin '${id}' source unavailable: ${message(error)}`);}
+  let root:string;try{root=realpathSync.native(rawPath);}catch(error){content(`plugin '${id}' source unavailable: ${message(error)}`);}
   if(!statSync(root,{bigint:true}).isDirectory())content(`plugin '${id}' source is not a directory`);
   const tree=pluginTreeDigestBlocking(root);
   // serde_json struct serialization preserves declaration order, unlike Value maps.

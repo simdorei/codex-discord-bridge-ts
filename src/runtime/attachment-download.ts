@@ -1,5 +1,5 @@
 import {open, readFile, unlink} from 'node:fs/promises';
-import {join} from 'node:path';
+import {joinRuntimePath,pinNativeRuntimePath} from './runtime-paths/path-text.ts';
 import {createHash} from 'node:crypto';
 import {types} from 'node:util';
 import {passiveErrorText} from '../core/passive-error-text.ts';
@@ -40,13 +40,14 @@ export async function downloadAttachment(index:bigint, input:DownloadAttachment,
  const filename=sanitizeAttachmentFilename(raw,index);
  const skipped=(why:string):AttachmentDownload=>Object.freeze({detail:`${index}. ${filename} skipped: ${why}.`,preview:null});
  if(size>maxBytes){const reason=`file is ${size} bytes; limit is ${maxBytes} bytes`;if(required)throw new Error(reason);return skipped(reason);}
+ const destination=joinRuntimePath(pinNativeRuntimePath(directory),`${String(index).padStart(2,'0')}-${filename}`,process.platform==='win32'?'win32':'posix');
  const getter=transport.get;if(typeof getter!=='function'||types.isProxy(getter)||types.isGeneratorFunction(getter))throw new TypeError('Expected attachment transport');
  const request=getter.call(transport,url,signal);if(!types.isPromise(request))throw new TypeError('Expected native attachment request Promise');
  const response=await request;
  try {
   signal?.throwIfAborted();
   if(response.contentLength!==null){u64(response.contentLength);if(response.contentLength>maxBytes){const reason=`response exceeds ${maxBytes} bytes`;if(required)throw new Error(reason);return skipped(reason);}}
-  const destination=join(directory,`${String(index).padStart(2,'0')}-${filename}`),file=await open(destination,'w');
+  const file=await open(destination,'w');
   const digest=createHash('sha256');let written=0n,oversize=false;
   try {
    for await(const inputChunk of response.chunks){

@@ -1,4 +1,4 @@
-import {join} from 'node:path';import {types} from 'node:util';
+import {joinRuntimePath} from '../runtime/runtime-paths/path-text.ts';import {types} from 'node:util';
 import {PortableResidentLifecycle} from '../app-server/portable-resident-lifecycle.ts';
 import {gatewayOwnField as own} from '../discord/gateway/values.ts';
 import {requireDiscordText} from '../discord/text.ts';
@@ -19,7 +19,7 @@ function callback(value:unknown):asserts value is (...args:any[])=>unknown{if(ty
 export class ProPromptRuntime{
  readonly #state:string;readonly #executable:string;readonly #manifest:string;readonly #server:PortableResidentLifecycle;readonly #remote:ProRemoteConnection|null;readonly #render:(e:unknown)=>string;readonly #report:(d:ProRuntimeDiagnostic)=>void;
  #generation:bigint;#fingerprint:string|null;#captureError:string|null;
- private constructor(token:symbol,input:ProRuntimeOptions,generation:bigint,fingerprint:string|null,error:string|null){if(token!==TOKEN)throw new TypeError('Use ProPromptRuntime.capture');this.#state=input.stateDatabase;this.#executable=input.executable;this.#manifest=join(input.root,'plugins/codex-discord-remote/.codex-plugin/plugin.json');this.#server=input.server;this.#remote=input.remote;this.#render=input.render;this.#report=input.report;this.#generation=generation;this.#fingerprint=fingerprint;this.#captureError=error;}
+ private constructor(token:symbol,input:ProRuntimeOptions,generation:bigint,fingerprint:string|null,error:string|null){if(token!==TOKEN)throw new TypeError('Use ProPromptRuntime.capture');this.#state=input.stateDatabase;this.#executable=input.executable;this.#manifest=joinRuntimePath(input.root,'plugins/codex-discord-remote/.codex-plugin/plugin.json',process.platform==='win32'?'win32':'posix');this.#server=input.server;this.#remote=input.remote;this.#render=input.render;this.#report=input.report;this.#generation=generation;this.#fingerprint=fingerprint;this.#captureError=error;}
  static async capture(input:ProRuntimeOptions,signal?:AbortSignal):Promise<ProPromptRuntime>{
   signal?.throwIfAborted();const root=own(input,'root'),state=own(input,'stateDatabase'),executable=own(input,'executable'),server=own(input,'server') as PortableResidentLifecycle,rawRemote=own(input,'remote'),render=own(input,'render'),report=own(input,'report');
   for(const value of [root,state,executable]){requireDiscordText(value);if(value.includes('\0'))throw new TypeError('NUL Pro runtime path');}callback(render);callback(report);

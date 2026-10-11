@@ -1,7 +1,7 @@
 import {types} from 'node:util';
 import {gatewayOwnField} from '../discord/gateway/values.ts';
 import {mkdir} from 'node:fs/promises';
-import {join} from 'node:path';
+import {joinRuntimePath,pinNativeRuntimePath} from './runtime-paths/path-text.ts';
 import {isDecodedGatewayMessage,type DecodedGatewayMessage} from '../discord/gateway/decoded-message.ts';
 import {requireDiscordText} from '../discord/text.ts';
 import {passiveErrorText} from '../core/passive-error-text.ts';
@@ -24,7 +24,7 @@ export async function enrichMessageAttachments(message:DecodedGatewayMessage,bas
  if(attachments.length===0||!enabled)return basePrompt;
  if(process.platform==='win32')throw new TypeError('Windows attachment path profile is not implemented');
  if(typeof report!=='function'||types.isProxy(report)||types.isAsyncFunction(report)||types.isGeneratorFunction(report))throw new TypeError('Expected synchronous attachment reporter');
- const directory=join(root,String(message.channel_id),String(message.id));try{await mkdir(directory,{recursive:true});}catch(error){throw new AttachmentError('Io',error);}
+ const directory=joinRuntimePath(pinNativeRuntimePath(root),`${message.channel_id}/${message.id}`,'posix');try{await mkdir(directory,{recursive:true});}catch(error){throw new AttachmentError('Io',error);}
  const details:string[]=[],previews:(readonly [string,string])[]=[];
  for(let offset=0;offset<attachments.length;offset++){
   signal?.throwIfAborted();

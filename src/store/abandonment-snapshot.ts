@@ -85,7 +85,7 @@ const queries=[
 ] as const;
 
 export function abandonmentDatabaseIdentity(path:string):string {
-  let raw:Buffer;try{raw=realpathSync(path,{encoding:'buffer'});}catch{return invalid('database identity is unavailable');}
+  let raw:Buffer;try{raw=realpathSync.native(path,{encoding:'buffer'});}catch{return invalid('database identity is unavailable');}
   try{return new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(raw);}catch{return invalid('database identity is not UTF-8');}
 }
 export interface AbandonmentSnapshot {readonly target:AbandonmentTarget;readonly evidence:unknown}

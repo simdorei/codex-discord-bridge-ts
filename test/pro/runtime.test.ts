@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {writeFile,mkdir,chmod,unlink} from 'node:fs/promises';import {dirname,join} from 'node:path';import {DatabaseSync} from 'node:sqlite';
+import test from 'node:test';import assert from 'node:assert/strict';import {writeFile,mkdir,chmod,unlink,symlink} from 'node:fs/promises';import {dirname,join} from 'node:path';import {DatabaseSync} from 'node:sqlite';
 import {storeFixture} from '../helpers/store-fixture.ts';
 import {startRuntimeResident} from '../../src/runtime/discord-runtime/resident-startup.ts';
 import {ProPromptRuntime,type ProRemoteConnection} from '../../src/pro/runtime.ts';
@@ -23,3 +23,11 @@ test('changed installed content triggers one actual quiescent native replacement
 test('active native admission prevents replacement and retains stale diagnostic',async()=>fixture(async f=>{const runtime=await f.capture(),lease=f.server.admitRequest(),pid=f.server.lifecycleSnapshot().processId;try{await writeFile(join(f.plugin,'plugin.json'),'changed');await assert.rejects(runtime.prepare('!pro inspect','original'),PromptPreprocessError);assert.equal(f.server.generation(),1n);assert.equal(f.server.lifecycleSnapshot().processId,pid);assert.equal(f.reports.at(-1)!.code,'ResidentStale');}finally{lease.release();}}));
 test('failed startup snapshot is not silently blessed in same generation after repair',async()=>fixture(async f=>{await unlink(f.executable);const runtime=await f.capture();await f.repairInventory();await assert.rejects(runtime.prepare('!pro inspect','original'),PromptPreprocessError);assert.equal(f.reports.at(-1)!.code,'ResidentSnapshotFailed');assert.equal(f.server.generation(),1n);assert.equal(await f.server.forceRestartIfQuiescent(),true);assert.match(await runtime.prepare('!pro inspect','original'),/local-device-mcp/);}));
 test('missing original thread never acquires another valid project after otherwise valid preflight',async()=>fixture(async f=>{const runtime=await f.capture();await assert.rejects(runtime.prepare('!pro inspect','missing'),(e:unknown)=>e instanceof PromptPreprocessError&&e.publicMessage.includes('original active thread was not found'));assert.equal(f.server.generation(),1n);}));
+
+test('Pro manifest uses native root traversal rather than a wrong lexical installation',async()=>fixture(async f=>{
+ const physical=f.root+'/physical';await mkdir(physical+'/child',{recursive:true});await symlink(physical+'/child',f.root+'/alias','dir');
+ await mkdir(physical+'/plugins/codex-discord-remote/.codex-plugin',{recursive:true});await writeFile(physical+'/plugins/codex-discord-remote/.codex-plugin/plugin.json','{"version":"1"}');
+ await writeFile(f.root+'/plugins/codex-discord-remote/.codex-plugin/plugin.json','{"version":"wrong"}');
+ const runtime=await ProPromptRuntime.capture({root:f.root+'/alias/..',stateDatabase:f.state,executable:f.executable,server:f.server,remote:{deviceId:'device-1',isConnected:()=>true},render,report:d=>{f.reports.push(d);}});
+ assert.match(await runtime.prepare('!pro inspect','original'),/conversation_scope=/);assert.equal(f.reports.length,0);
+}));

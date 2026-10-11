@@ -1,5 +1,6 @@
+import {joinRuntimePath} from './runtime-paths/path-text.ts';
 import {constants,readFileSync,readSync,mkdirSync,openSync,writeFileSync,fsyncSync,closeSync,renameSync,lstatSync,unlinkSync,fstatSync} from "node:fs";
-import {dirname,join} from "node:path";
+import {dirname} from "node:path";
 import {randomUUID} from "node:crypto";
 import {parseSerdeValue} from "../core/serde-json-parse.ts";
 import {serializePrettySerdeValue} from "../core/serde-json-pretty.ts";
@@ -65,7 +66,7 @@ export class BridgeState {
   #save(state:Record<string,unknown>):void{
     const parent=dirname(this.#path);try{mkdirSync(parent,{recursive:true});}catch(error){throw new BridgeStateError("Io",this.#path,error);}
     let bytes:string;try{bytes=serializePrettySerdeValue(state)+'\n';}catch(error){throw new BridgeStateError("Json",this.#path,error);}
-    const temporary=join(parent,`.cdr-state-${randomUUID()}.tmp`);let fd:number|undefined,identity:ReturnType<typeof fstatSync>|undefined,renamed=false;
+    const temporary=joinRuntimePath(parent,`.cdr-state-${randomUUID()}.tmp`,process.platform==='win32'?'win32':'posix');let fd:number|undefined,identity:ReturnType<typeof fstatSync>|undefined,renamed=false;
     try{fd=openSync(temporary,"wx",0o600);identity=fstatSync(fd);writeFileSync(fd,bytes,"utf8");fsyncSync(fd);closeSync(fd);fd=undefined;renameSync(temporary,this.#path);renamed=true;}
     catch(error){throw new BridgeStateError("Io",this.#path,error);}
     finally{
