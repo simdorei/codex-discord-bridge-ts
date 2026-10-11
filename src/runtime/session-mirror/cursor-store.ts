@@ -1,3 +1,5 @@
+import {snapshotMirrorSkippedItems} from './ownership.ts';
+import type {MirrorItem} from './collect.ts';
 import {resolve} from 'node:path';
 import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../owned-worker-slot.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
@@ -5,8 +7,8 @@ import {requireDiscordText} from '../../discord/text.ts';
 import {encodeMirrorCursorAnchor,decodeMirrorCursorAnchor,type MirrorCursorAnchor} from '../../core/mirror-cursor-anchor.ts';
 import {snapshotBoundMirrorCursor,type BoundMirrorCursor} from '../../store/mirror-cursor-journal.ts';
 import {snapshotExpectedReceiptBatch,type ExpectedReceipt} from '../../store/confirmed-receipt-batch.ts';
-type Kind='Read'|'Schema'|'Initialize'|'Advance'|'MappedAdvance';
-interface Request{kind:Kind;channel?:bigint;thread?:string;anchor?:MirrorCursorAnchor;turn?:string;updatedAt?:number;operationId?:string;expected?:BoundMirrorCursor;receipts?:readonly ExpectedReceipt[]}
+type Kind='Read'|'Schema'|'Initialize'|'Advance'|'MappedAdvance'|'MixedAdvance';
+interface Request{kind:Kind;skipped?:readonly MirrorItem[];maxJobs?:bigint;maxValueBytes?:bigint;channel?:bigint;thread?:string;anchor?:MirrorCursorAnchor;turn?:string;updatedAt?:number;operationId?:string;expected?:BoundMirrorCursor;receipts?:readonly ExpectedReceipt[]}
 export class MirrorCursorStoreReadError extends Error{constructor(detail:string){super('Mirror cursor read failed: '+detail);this.name='MirrorCursorStoreReadError';}}
 /** Diagnostic identity for explicit later reconciliation, never resend permission. */
 export class MirrorCursorWriteUnconfirmedError extends Error{
@@ -47,6 +49,15 @@ export class NativeMirrorCursorStore{
   if(typeof channel!=='bigint'||channel<=0n||channel>=(1n<<63n))throw new RangeError('Expected mapped positive i64 channel');
   const old=snapshotBoundMirrorCursor(expected),captured=snapshotExpectedReceiptBatch(receipts);
   return this.#required({kind:'MappedAdvance',channel,expected:old,...values(input,turn,updatedAt,operationId),receipts:captured},signal);
+ }
+ /** Complete receipt and current skip proof checked with mapping and cursor CAS
+  * inside one fixed native transaction. Authentic partition remains caller-owned. */
+ async advanceWithSkips(expected:BoundMirrorCursor,input:MirrorCursorAnchor,turn:string,updatedAt:number,operationId:string,receipts:readonly ExpectedReceipt[],channel:bigint,items:readonly MirrorItem[],limits:{readonly maxJobs:bigint;readonly maxValueBytes:bigint},signal?:AbortSignal):Promise<BoundMirrorCursor>{
+  if(typeof channel!=='bigint'||channel<=0n||channel>=(1n<<63n))throw new RangeError('Expected mapped positive i64 channel');
+  const old=snapshotBoundMirrorCursor(expected),skipped=snapshotMirrorSkippedItems(old.thread,items),captured=snapshotExpectedReceiptBatch(receipts);
+  const maxJobs=own(limits,'maxJobs'),maxValueBytes=own(limits,'maxValueBytes');
+  if(typeof maxJobs!=='bigint'||maxJobs<1n||maxJobs>4096n||typeof maxValueBytes!=='bigint'||maxValueBytes<1n||maxValueBytes>4194304n)throw new RangeError('Invalid mirror skip queue limits');
+  return this.#required({kind:'MixedAdvance',channel,expected:old,...values(input,turn,updatedAt,operationId),receipts:captured,skipped,maxJobs,maxValueBytes},signal);
  }
  async #required(request:Request,signal?:AbortSignal):Promise<BoundMirrorCursor>{
   const result=await this.#run(request,signal);if(result===null)throw new MirrorCursorWriteUnconfirmedError(request,new TypeError('Missing committed cursor'));return result;

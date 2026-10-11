@@ -3,7 +3,7 @@ import {types} from 'node:util';
 import type {DatabaseSync} from 'node:sqlite';
 import {encodeMirrorCursorAnchor,decodeMirrorCursorAnchor,type MirrorCursorAnchor} from '../core/mirror-cursor-anchor.ts';
 import {serializeSerdeValue} from '../core/serde-json.ts';
-import {withStoreTransaction,commitStore,rollbackStore} from './owned-scope.ts';
+import {withStoreTransaction,commitStore,rollbackStore,type TransactionResult} from './owned-scope.ts';
 import {receiptText,receiptTextColumns} from './delivery-receipt-key.ts';
 import {decodeI64,decodeTimestamp} from './sqlite-values.ts';
 import {requireExactMirrorChannelIn} from './mirror-cursor-mapping.ts';
@@ -106,19 +106,46 @@ export function advanceMappedMirrorCursor(db:DatabaseSync,input:BoundMirrorCurso
  if(typeof channel!=='bigint'||channel<=0n||channel>=(1n<<63n))throw new RangeError('Expected mapped positive i64 channel');
  return advance(db,input,nextInput,turn,updatedAt,operationId,expectedReceipts,channel);
 }
+export interface PreparedMappedMirrorCursorAdvance{readonly operationId:string;readonly expectedRevision:bigint;}
+const mappedPlans=new WeakMap<object,{prepared:ReturnType<typeof prepareAdvance>;channel:bigint}>();
+/** Validate, snapshot and hash before opening the cursor transaction. The opaque
+ * factory identity prevents caller mutation, getters, or omitted receipt substitution. */
+export function prepareMappedMirrorCursorAdvance(input:BoundMirrorCursor,nextInput:MirrorCursorAnchor,turn:string,updatedAt:number,operationId:string,expectedReceipts:readonly ExpectedReceipt[],channel:bigint):PreparedMappedMirrorCursorAdvance{
+ if(typeof channel!=='bigint'||channel<=0n||channel>=(1n<<63n))throw new RangeError('Expected mapped positive i64 channel');
+ const prepared=prepareAdvance(input,nextInput,turn,updatedAt,operationId,expectedReceipts);
+ const plan=Object.freeze({operationId:prepared.desired.operationId,expectedRevision:prepared.expected.revision});
+ mappedPlans.set(plan,{prepared,channel});return plan;
+}
+/** Apply the authentic prepared CAS in a caller-owned active transaction.
+ * No hashing, input cloning, BEGIN/COMMIT/ROLLBACK/CLOSE, network or filesystem.
+ * Caller owns enclosing rollback/commit and any additional skip postconditions.
+ * Does not prove complete item coverage, skip authority or file continuity. */
+export function advancePreparedMappedMirrorCursorInTransaction(db:DatabaseSync,plan:PreparedMappedMirrorCursorAdvance):BoundMirrorCursor{
+ if(plan===null||typeof plan!=='object')throw new TypeError('Expected factory-created mapped cursor plan');
+ const owned=mappedPlans.get(plan);if(owned===undefined)throw new TypeError('Expected factory-created mapped cursor plan');
+ return advanceIn(db,owned.prepared,owned.channel).value;
+}
 function advance(db:DatabaseSync,input:BoundMirrorCursor,nextInput:MirrorCursorAnchor,turn:string,updatedAt:number,operationId:string,expectedReceipts:readonly ExpectedReceipt[],channel:bigint|null):BoundMirrorCursor{
+ const prepared=prepareAdvance(input,nextInput,turn,updatedAt,operationId,expectedReceipts);
+ return withStoreTransaction(db,'IMMEDIATE',()=>advanceIn(db,prepared,channel));
+}
+function prepareAdvance(input:BoundMirrorCursor,nextInput:MirrorCursorAnchor,turn:string,updatedAt:number,operationId:string,expectedReceipts:readonly ExpectedReceipt[]){
  const expected=snapshotBoundMirrorCursor(input),next=anchor(nextInput),proof=receiptSet(expectedReceipts);text(turn,16384);text(operationId,128,true);time(updatedAt);
  if(expected.revision===(1n<<63n)-1n||operationId===expected.operationId||next.value.path!==expected.anchor.path||next.value.offset<expected.anchor.offset||next.value.stamp.size<expected.anchor.stamp.size||(['dev','ino','birthtimeNs'] as const).some(k=>next.value.stamp[k]!==expected.anchor.stamp[k]))throw new MirrorCursorConflictError();
  const desired=snapshotBoundMirrorCursor({thread:expected.thread,anchor:next.value,turn,updatedAt,revision:expected.revision+1n,operationId,receiptSetHash:proof.hash});
- return withStoreTransaction(db,'IMMEDIATE',()=>{
+ return {expected,next,proof,desired};
+}
+function advanceIn(db:DatabaseSync,prepared:ReturnType<typeof prepareAdvance>,channel:bigint|null):TransactionResult<BoundMirrorCursor>{
+ if(!db.isTransaction)throw new TypeError('Mirror cursor advance requires active caller transaction');
+ const {expected,next,proof,desired}=prepared;
   if(channel!==null)requireExactMirrorChannelIn(db,expected.thread,channel);
   const current=readIn(db,expected.thread);
   if(current!==null&&same(current,desired))return rollbackStore(current);
   if(current===null||!same(current,expected))throw new MirrorCursorConflictError();
   requireConfirmedReceiptBatchIn(db,proof.receipts);
-  if(BigInt(db.prepare('UPDATE codex_session_mirror_offsets SET cursor=?,updated_at=?,turn_context=? WHERE codex_thread_id=?').run(next.value.offset,updatedAt,turn,expected.thread).changes)!==1n)throw new MirrorCursorConflictError();
-  if(BigInt(db.prepare(`UPDATE ${TABLE} SET anchor_json=?,turn_context=?,updated_at=?,revision=?,operation_id=?,receipt_set_hash=? WHERE thread_id=? AND revision=?`).run(next.json,turn,updatedAt,desired.revision,operationId,proof.hash,expected.thread,expected.revision).changes)!==1n)throw new MirrorCursorConflictError();
+  if(BigInt(db.prepare('UPDATE codex_session_mirror_offsets SET cursor=?,updated_at=?,turn_context=? WHERE codex_thread_id=?').run(next.value.offset,desired.updatedAt,desired.turn,expected.thread).changes)!==1n)throw new MirrorCursorConflictError();
+  if(BigInt(db.prepare(`UPDATE ${TABLE} SET anchor_json=?,turn_context=?,updated_at=?,revision=?,operation_id=?,receipt_set_hash=? WHERE thread_id=? AND revision=?`).run(next.json,desired.turn,desired.updatedAt,desired.revision,desired.operationId,proof.hash,expected.thread,expected.revision).changes)!==1n)throw new MirrorCursorConflictError();
   if(channel!==null)requireExactMirrorChannelIn(db,expected.thread,channel);
+  requireConfirmedReceiptBatchIn(db,proof.receipts);
   const actual=readIn(db,expected.thread);if(actual===null||!same(actual,desired))throw new MirrorCursorConflictError();return commitStore(actual);
- });
 }

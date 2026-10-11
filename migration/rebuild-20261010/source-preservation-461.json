@@ -1,0 +1,27 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 461,
+  "localCommit": "0416e80701210e6dff1dc5cd36cf8ef7b9f8f563",
+  "fullTests": 6551,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/session-mirror/cursor-store-worker.ts": "6e12d683e9c3cff30365d981e199c7fce6bed81c5da33a7b5930c945947e6c30",
+    "src/runtime/session-mirror/cursor-store.ts": "6c9994524162e4e1056c9785f03dec3ba6861d62ac5df80412b861b9111fde6a",
+    "src/runtime/session-mirror/mixed-cursor-transaction.ts": "ce7fb3008551f37cea549e393a99f031ea8df53a46d9e47a1e06887592524aad",
+    "src/runtime/session-mirror/ownership.ts": "14a479e83b828d75d72fa7d62f97fdce538d9d2b87687f3cddadef34250c58d1",
+    "src/store/mirror-cursor-journal.ts": "235abc79e65eec597ce93efc91a7730e643f5f1aa9a48955687344c563e19e3c",
+    "test/runtime/session-mirror/mixed-cursor-transaction.test.ts": "0b3a4ece2fbfc496c3f54478b32f7630caf41ceb247f26e944f1688c944fb1d2",
+    "test/runtime/session-mirror/native-mixed-cursor.test.ts": "23a1d172ccc5295d6a25ceb41fb6e53f0c6dfdfd445b8f44f613d0448297ac38",
+    "test/store/prepared-mirror-cursor.test.ts": "adb3d0ac660d490340e242a0e2e92a7de56e444389ce8e89a2ed7e84203219da"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}
