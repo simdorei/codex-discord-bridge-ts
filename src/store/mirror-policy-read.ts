@@ -26,13 +26,15 @@ function collect(db: DatabaseSync, sql: string): bigint[] {
  * its owned store. This is not the separate read-only original Codex state DB. */
 export async function remainingDiscordIds(path: string): Promise<RemainingDiscordIds> {
   requireDiscordText(path);
-  return usingInitializedStore(path, db => {
-    const ids = collect(db, 'SELECT discord_thread_id AS id FROM mirror_threads');
-    const projects = collect(db, 'SELECT discord_channel_id AS id FROM mirror_projects');
-    return Object.freeze({
-      threadIds: Object.freeze([...new Set(ids)].sort((a, b) => a < b ? -1 : a > b ? 1 : 0)),
-      projectChannelIds: Object.freeze(projects),
-    });
+  return usingInitializedStore(path, remainingDiscordIdsIn);
+}
+/** Same source decoder on a borrowed connection; does not own its lifetime. */
+export function remainingDiscordIdsIn(db: DatabaseSync): RemainingDiscordIds {
+  const ids = collect(db, 'SELECT discord_thread_id AS id FROM mirror_threads');
+  const projects = collect(db, 'SELECT discord_channel_id AS id FROM mirror_projects');
+  return Object.freeze({
+    threadIds: Object.freeze([...new Set(ids)].sort((a, b) => a < b ? -1 : a > b ? 1 : 0)),
+    projectChannelIds: Object.freeze(projects),
   });
 }
 export async function mirrorTargets(path: string, limit: bigint): Promise<readonly MirrorTarget[]> {
