@@ -1,0 +1,21 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 508,
+  "localCommit": "321c484238b8b527ef70d0ca7a031c9a11f0d4cf",
+  "fullTests": 6819,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/discord-runtime/stop-monitor.ts": "7e119849238c74f21849c048e9f5adca086430d1be81e9177690e9ef7e103f6f",
+    "test/runtime/discord-runtime/stop-monitor.test.ts": "b5a5930b04d3947360f146562d3917cc1a291100690b90c13eb5779dd1a90350"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}
