@@ -31,6 +31,15 @@ export function pinDispatchMutationFence(input:DispatchMutationFence):Required<D
   const done=(f:Function,v:unknown):void=>{if(sync(f,input,[v])!==undefined)throw new TypeError("Expected synchronous void dispatch completion");};
   return Object.freeze({beginMutationWithOrigin:(c:MaintenanceClaim)=>bool(begin,c),finishMutation:(c:MaintenanceCompletion)=>done(finish,c),beginQueueMutation:(c:QueueMutationClaim)=>bool(queue,c),beginStopMutation:(c:StopMutationClaim)=>bool(stop,c),finishStopMutation:(c:StopMutationCompletion)=>done(finishStop,c)});
 }
+export function captureDispatchAttemptInput(input:DispatchAttemptInput):Readonly<{input:DispatchAttemptInput;scoped:boolean}>{
+    const raw=cloneOwnedSerdeValue(input),keys=["ownerId","generation","method","params","repair","queueClaim","stopClaim","origin"];
+    if(raw===null||typeof raw!=="object"||Array.isArray(raw)||Object.keys(raw).length!==keys.length||keys.some(key=>!Object.hasOwn(raw,key)))throw new TypeError("Expected exact own dispatch metadata fields");
+    const value=raw as DispatchAttemptInput;
+    if(typeof value.ownerId!=="string"||typeof value.method!=="string"||typeof value.generation!=="bigint"||value.generation<0n||value.generation>=(1n<<64n)||typeof value.repair!=="boolean")throw new TypeError("Expected exact dispatch attempt identity");
+    const thread=serdeField(value.params,"threadId"),identified=typeof thread==="string"&&rustTrim(thread)!=="",known=["thread/resume","thread/settings/update","turn/start","turn/steer","thread/archive","thread/backgroundTerminals/clean","thread/unsubscribe"].includes(value.method)||(value.repair&&value.method==="mcpServer/tool/call");
+    const scoped=identified&&(known||value.stopClaim!==null);
+    return Object.freeze({input:value,scoped});
+}
 /** Ordinary dispatch attempt. A committed intent outlives caller cancellation; no
  * destructor/dispose path writes a fabricated result. The outer coordinator validates
  * original queue/stop claims before construction and retains the actual writer lease. */
@@ -38,15 +47,11 @@ export class DispatchAttempt{
   readonly #input:DispatchAttemptInput;readonly #fence:Required<DispatchMutationFence>|null;readonly #render:(e:unknown)=>string;readonly #id=randomUUID();readonly #scoped:boolean;
   #wire:RequestId|null=null;#started=false;#begun=false;#finished=false;
   constructor(input:DispatchAttemptInput,fence:DispatchMutationFence|null,render:(e:unknown)=>string){
-    const raw=cloneOwnedSerdeValue(input),keys=["ownerId","generation","method","params","repair","queueClaim","stopClaim","origin"];
-    if(raw===null||typeof raw!=="object"||Array.isArray(raw)||Object.keys(raw).length!==keys.length||keys.some(key=>!Object.hasOwn(raw,key)))throw new TypeError("Expected exact own dispatch metadata fields");
-    const value=raw as DispatchAttemptInput;
-    if(typeof value.ownerId!=="string"||typeof value.method!=="string"||typeof value.generation!=="bigint"||value.generation<0n||value.generation>=(1n<<64n)||typeof value.repair!=="boolean")throw new TypeError("Expected exact dispatch attempt identity");
+    const captured=captureDispatchAttemptInput(input),value=captured.input;
     this.#input=value;this.#fence=fence===null?null:pinDispatchMutationFence(fence);
     if(typeof render!=="function"||types.isProxy(render)||types.isAsyncFunction(render)||types.isGeneratorFunction(render))throw new TypeError("Expected synchronous dispatch renderer");
     this.#render=e=>{const r=sync(render,{},[e]);if(typeof r!=="string"||/[\uD800-\uDFFF]/u.test(r))throw new TypeError("Expected public-safe dispatch diagnostic");return r;};
-    const thread=serdeField(value.params,"threadId"),identified=typeof thread==="string"&&rustTrim(thread)!=="",known=["thread/resume","thread/settings/update","turn/start","turn/steer","thread/archive","thread/backgroundTerminals/clean","thread/unsubscribe"].includes(value.method)||(value.repair&&value.method==="mcpServer/tool/call");
-    this.#scoped=identified&&(known||value.stopClaim!==null);
+    this.#scoped=captured.scoped;
   }
   begin(wire:RequestId):void{
     if(this.#begun||this.#finished)throw new TypeError("Dispatch attempt already begun or finished");wire=validateRequestId(wire);this.#begun=true;const i=this.#input,f=this.#fence;
