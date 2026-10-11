@@ -352,6 +352,7 @@ export const getPromptIntake: typeof PromptIntakeLease.getPromptIntake = PromptI
 export const tryClaimPromptIntake: typeof PromptIntakeLease.tryClaimPromptIntake = PromptIntakeLease.tryClaimPromptIntake;
 export const removePromptIntakeIfQueued: typeof PromptIntakeWrite.removePromptIntakeIfQueued = PromptIntakeWrite.removePromptIntakeIfQueued;
 export const recordPromptIntakeFailureIfClaimed: typeof PromptIntakeLease.recordPromptIntakeFailureIfClaimed = PromptIntakeLease.recordPromptIntakeFailureIfClaimed;
+export const releaseAllPromptIntakeClaims: typeof PromptIntakeLease.releaseAllPromptIntakeClaims = PromptIntakeLease.releaseAllPromptIntakeClaims;
 export const listPromptIntakes: typeof PromptIntakeLease.listPromptIntakes = PromptIntakeLease.listPromptIntakes;
 export const executionHoldReason: typeof ExecutionHold.executionHoldReason = ExecutionHold.executionHoldReason;
 export const canonicalizePromptIntakeTarget: typeof PromptIntakeWrite.canonicalizePromptIntakeTarget = PromptIntakeWrite.canonicalizePromptIntakeTarget;
@@ -533,6 +534,7 @@ export interface IStateAccessFacade {
   readonly tryClaimPromptIntake: typeof PromptIntakeLease.tryClaimPromptIntake;
   readonly removePromptIntakeIfQueued: typeof PromptIntakeWrite.removePromptIntakeIfQueued;
   readonly recordPromptIntakeFailureIfClaimed: typeof PromptIntakeLease.recordPromptIntakeFailureIfClaimed;
+  readonly releaseAllPromptIntakeClaims: typeof PromptIntakeLease.releaseAllPromptIntakeClaims;
   readonly listPromptIntakes: typeof PromptIntakeLease.listPromptIntakes;
   readonly executionHoldReason: typeof ExecutionHold.executionHoldReason;
 
@@ -722,6 +724,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   tryClaimPromptIntake,
   removePromptIntakeIfQueued,
   recordPromptIntakeFailureIfClaimed,
+  releaseAllPromptIntakeClaims,
   listPromptIntakes,
   executionHoldReason,
 

@@ -52,6 +52,7 @@ export interface RuntimeExecutorDependencies{
  * A native server, queue backend and live gateway still require bootstrap and
  * ownership qualification; this constructor does not start any of them. */
 export class RuntimeCommandExecutor implements MessageBusinessServices{
+ readonly #intake:PromptIntakeProcessor;
  readonly #server:PortableResidentLifecycle|null;readonly #componentQueue:BusyQueueExecutor;readonly #control:ControlTurnVerifier;
  readonly #codex:string;readonly #database:string;#inspection:MirrorInspector|null=null;
  readonly #basic:BasicActionDispatcher;readonly #queue:QueueStartCoordinator;readonly #new:NewThreadExecutor;readonly #prompts:QueuePromptExecutor;readonly #retract:RetractAction;readonly #controls:PromptControlActions;readonly #open:OpenThreadAction;readonly #settings:AdmittedSettingsExecutor;readonly #archive:AdmittedArchiveExecutor|null;readonly #resume:AdmittedResumeExecutor|null;readonly #stop:AdmittedStopExecutor;readonly #repair:AdmittedRepairExecutor|null;
@@ -64,7 +65,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   this.#codex=paths.state;this.#database=paths.mirror;
   const locks=queue.locks,selection=new ActionThreadSelection(paths.state,paths.mirror,bridge),control=new ControlTurnVerifier(paths.mirror,server,bridge,locks),busy=new BusyResultProducer(paths.mirror,control,queue.reads);
   const targets=new ActionTargetServices(paths.mirror,bridge,queue,{preparePrompt:prepare,busyResult:BusyResultProducer.prototype.busyResult.bind(busy)}),intake=new PromptIntakeProcessor(paths.mirror,queue,targets);
-  this.#server=server;this.#control=control;this.#componentQueue=new BusyQueueExecutor(paths.mirror,Object.freeze({processAdmittedPrompt:PromptIntakeProcessor.prototype.processAdmittedPrompt.bind(intake)}));
+  this.#intake=intake;  this.#server=server;this.#control=control;this.#componentQueue=new BusyQueueExecutor(paths.mirror,Object.freeze({processAdmittedPrompt:PromptIntakeProcessor.prototype.processAdmittedPrompt.bind(intake)}));
   this.#queue=queue;this.#basic=new BasicActionDispatcher(paths,bridge,server,locks,render,timeout);
   this.#new=new NewThreadExecutor(paths.mirror,paths.state,queue,intake,bridge,server,backend,get('mirror'),get('reportNewAttempt'));
   this.#prompts=new QueuePromptExecutor(paths.mirror,selection,targets,queue,intake,busy);this.#retract=new RetractAction(paths.mirror,selection);
@@ -75,6 +76,9 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   this.#resume=server===null?null:new AdmittedResumeExecutor(paths.mirror,paths.state,bridge,server,locks,timeout);
   this.#repair=server===null?null:new AdmittedRepairExecutor(paths.mirror,bridge,server,locks,render);Object.freeze(this);
  }
+ /** Startup-only lease release/recovery; caller owns singleton and has not
+  * started the live or periodic intake workers. No new recovery authority. */
+ recoverPromptIntakesOnStartup(){return PromptIntakeProcessor.prototype.recoverPromptIntakesOnStartup.call(this.#intake);}
  configureMirrorInspection(inspector:MirrorInspector):void{if(this.#inspection!==null)throw new InvalidActionRequestError('mirror inspection is already configured');MirrorInspector.prototype.requireScope.call(inspector,this.#codex,this.#database);this.#inspection=inspector;}
  async #inspect(channel:bigint,limit:bigint|null,list:boolean,signal?:AbortSignal):Promise<ActionResult>{if(this.#inspection===null)throw new ActionExecutionError('Unsupported','mirror inspection transport is not configured; remote state was not checked');return snapshotActionResult({text:await MirrorInspector.prototype.inspect.call(this.#inspection,channel,limit,list,signal),waitsForFinal:false,ui:null});}
  targetThreadId(channel:bigint,signal?:AbortSignal):Promise<string>{return this.#basic.targetThreadId(channel,signal);}

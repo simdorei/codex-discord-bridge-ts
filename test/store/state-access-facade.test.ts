@@ -345,6 +345,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.tryClaimPromptIntake, PromptIntakeLease.tryClaimPromptIntake);
     assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueued, PromptIntakeWrite.removePromptIntakeIfQueued);
     assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureIfClaimed, PromptIntakeLease.recordPromptIntakeFailureIfClaimed);
+    assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaims, PromptIntakeLease.releaseAllPromptIntakeClaims);
     assert.strictEqual(StateAccessFacade.listPromptIntakes, PromptIntakeLease.listPromptIntakes);
     assert.strictEqual(StateAccessFacade.executionHoldReason, ExecutionHold.executionHoldReason);
     assert.strictEqual(StateAccessFacade.canonicalizePromptIntakeTarget, PromptIntakeWrite.canonicalizePromptIntakeTarget);
@@ -566,6 +567,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "isAppServerManagedTarget",
       "listFiltered",
       "listPendingDeliveries",
+      "releaseAllPromptIntakeClaims",
       "listPromptIntakes",
       "markGoalWaiting",
       "markRunning",
@@ -684,7 +686,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 248);
+    assert.strictEqual(actual.length, 249);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

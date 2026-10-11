@@ -86,3 +86,17 @@ test('external shutdown joins real durable intake preparation and preserves the 
   });
 });
 test('pre-aborted intake creates no durable request',async()=>{await storeFixture(async path=>{const f=fixture(path),controller=new AbortController(),reason=new Error('before admission');controller.abort(reason);await assert.rejects(f.processor.admitPrompt(request(),controller.signal),e=>e===reason);assert.deepEqual(await state.listPromptIntakes(path),[]);assert.deepEqual(f.starts,[]);});});
+
+test('startup releases prior lease and only then recovers through ordinary durable promotion',async()=>storeFixture(async path=>{
+ await seed(path);await sql(path,"UPDATE codex_prompt_intakes SET claim_token='former-owner',claim_expires_at=10000");const f=fixture(path);
+ assert.equal(await f.processor.recoverPromptIntakes(),0);assert.deepEqual(f.starts,[]);
+ assert.deepEqual(await f.processor.recoverPromptIntakesOnStartup(),{releasedClaims:1n,recovered:1});assert.deepEqual(f.starts,['job']);assert.equal(await state.getPromptIntake(path,'job'),null);
+}));
+test('startup lease release preserves manual holds and future retry deadlines without dispatch',async()=>storeFixture(async path=>{
+ await seed(path,'held','held','held-target');await seed(path,'later','later','later-target');await sql(path,"UPDATE codex_prompt_intakes SET claim_token='former-owner',claim_expires_at=10000;UPDATE codex_prompt_intakes SET retry_after=200 WHERE job_id='later';INSERT INTO cdr_execution_holds VALUES('held','held-target','original hold','{}',1)");const f=fixture(path);
+ assert.deepEqual(await f.processor.recoverPromptIntakesOnStartup(),{releasedClaims:2n,recovered:0});assert.deepEqual(f.starts,[]);assert.equal((await state.getPromptIntake(path,'held'))?.rawPrompt,'held');assert.equal((await state.getPromptIntake(path,'later'))?.retryAfter,200);assert.equal(await state.executionHoldReason(path,'held'),'original hold');
+}));
+test('startup claim-release failure prevents all recovery and preserves exact failure identity',async()=>storeFixture(async path=>{
+ await seed(path);const failure={writeFailed:true};let reads=0;const f=fixture(path,{...state,releaseAllPromptIntakeClaims:async()=>{throw failure;},listPromptIntakes:async()=>{reads++;return [];}});
+ await assert.rejects(f.processor.recoverPromptIntakesOnStartup(),e=>e===failure);assert.equal(reads,0);assert.deepEqual(f.starts,[]);
+}));

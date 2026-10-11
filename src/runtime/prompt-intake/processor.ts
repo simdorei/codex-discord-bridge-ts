@@ -71,6 +71,14 @@ export class PromptIntakeProcessor{
     if(current===null){const raced=await this.#queue.replaySubmissionWithTargetForJob(intake.jobId);if(raced!==null)return submissionResult(raced[0],source(intake),raced[1],intake.rawPrompt);throw missing(intake.jobId);}
     return {text:`Accepted Codex request; durable preparation or retry is already pending\nthread_id: ${current.targetThreadId}\njob_id: ${current.jobId}`,waitsForFinal:true,ui:null};
   }
+  /** Call once under exclusive startup ownership, after retirement and before
+   * periodic/live intake workers. Releasing an old lease never removes a manual
+   * execution hold or retry deadline; the normal recovery path still enforces both.
+   * Existing synchronous facade store profile is retained, not global DB offload. */
+  async recoverPromptIntakesOnStartup():Promise<Readonly<{releasedClaims:bigint;recovered:number}>>{
+    const releasedClaims=await this.#state.releaseAllPromptIntakeClaims(this.#path);
+    const recovered=await this.recoverPromptIntakes();return Object.freeze({releasedClaims,recovered});
+  }
   async recoverPromptIntakes():Promise<number>{
     for(const intake of await this.#state.listPromptIntakes(this.#path))await this.#state.removePromptIntakeIfQueued(this.#path,intake.jobId);
     const ready=await this.#state.listPromptIntakes(this.#path,this.#now());let recovered=0,recordingError:unknown,hasRecordingError=false;
