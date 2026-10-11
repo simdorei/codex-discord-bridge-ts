@@ -47,7 +47,7 @@ test("stale claimed start remains ambiguous and cannot send native bytes or rewi
 }));
 test("real QueueStartCoordinator resumes, reads, claims, dispatches and persists Running",{timeout:15000},async t=>fixture(t,async f=>{
   f.db.exec("UPDATE codex_turn_queue SET state='pending',execution_generation=NULL,attempt_count=0");const q=new QueueStartCoordinator(f.path,f.backend);await q.kickTarget("T");
-  assert.equal(selectJob(f.db,"job").state,"Running");assert.equal(selectJob(f.db,"job").turnId,"started");assert.deepEqual((await f.seen()).map(v=>v.method),["thread/resume","thread/read","turn/start"]);
+  assert.equal(selectJob(f.db,"job").state,"Running");assert.equal(selectJob(f.db,"job").turnId,"started");assert.deepEqual((await f.seen()).map(v=>v.method),["thread/resume","thread/read","turn/start"]);assert.equal((await f.seen())[0].params.excludeTurns,true);
 }));
 test("native fork must be distinct and structured usage limit stays definite",{timeout:15000},async t=>fixture(t,async f=>{
   assert.equal(await f.backend.forkThread("T"),"forked");await f.mode("same");await assert.rejects(f.backend.forkThread("T"),check("Other",true));await f.mode("usage");await assert.rejects(f.backend.startTurn("T","p"),check("UsageLimit",false));

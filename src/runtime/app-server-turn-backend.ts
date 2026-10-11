@@ -41,7 +41,9 @@ export class AppServerTurnBackend implements QueueStartBackend{
   }
   async resumeThread(thread:string,signal?:AbortSignal):Promise<void>{
     text(thread);signal?.throwIfAborted();const g=this.generation();if(this.#fresh.get(thread)===g)return;
-    const result=await this.#errors.run("resume",()=>this.#server.execute(resumeThreadWithTimeout(thread,this.#resumeMs),g,signal),signal);
+    const base=resumeThreadWithTimeout(thread,this.#resumeMs);
+    const request={...base,params:{threadId:thread,excludeTurns:true}};
+    const result=await this.#errors.run("resume",()=>this.#server.execute(request,g,signal),signal);
     if(serdeField(serdeField(result,"thread"),"id")!==thread)invalid("thread/resume returned a different or invalid thread");
   }
   async forkThread(thread:string):Promise<string>{

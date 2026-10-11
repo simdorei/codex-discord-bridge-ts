@@ -1,3 +1,4 @@
+import * as ResumeRestartRecovery from '../../src/store/resume-restart-recovery.ts';
 import * as NewReplyCheckpoint from '../../src/store/new-reply-checkpoint.ts';
 import * as NewReplyPending from '../../src/store/new-reply-pending.ts';
 import * as ReviewedPolicy from '../../src/store/reviewed-recovery-policy.ts';
@@ -391,6 +392,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.validateQueueStartAuthorityIn, QueueStartAuthority.validateQueueStartAuthorityIn);
     assert.strictEqual(StateAccessFacade.validateStopRequestIn, StopRevision.validateStopRequestIn);
     assert.strictEqual(StateAccessFacade.checkMutationCustody, MutationAttempt.check);
+    assert.strictEqual(StateAccessFacade.scanResumeRecoveryCandidates, ResumeRestartRecovery.scanResumeRecoveryCandidates);
+    assert.strictEqual(StateAccessFacade.recoverIdleResume, ResumeRestartRecovery.recoverIdleResume);
     assert.strictEqual(StateAccessFacade.requireResponseUnheldIn, ResponseCustody.requireResponseUnheldIn);
     assert.strictEqual(StateAccessFacade.requireAllResponsesResolvedIn, ResponseCustody.requireAllResponsesResolvedIn);
     assert.strictEqual(StateAccessFacade.requireStopControlUnheldIn, RuntimeFenceReads.requireStopControlUnheldIn);
@@ -530,6 +533,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "validateQueueStartAuthorityIn",
       "validateStopRequestIn",
       "checkMutationCustody",
+      "scanResumeRecoveryCandidates",
+      "recoverIdleResume",
       "requireResponseUnheldIn",
       "requireAllResponsesResolvedIn",
       "requireStopControlUnheldIn",
@@ -697,7 +702,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 252);
+    assert.strictEqual(actual.length, 254);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

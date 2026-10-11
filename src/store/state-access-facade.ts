@@ -1,3 +1,4 @@
+import * as ResumeRestartRecovery from './resume-restart-recovery.ts';
 import * as NewReplyCheckpoint from './new-reply-checkpoint.ts';
 import * as NewReplyPending from './new-reply-pending.ts';
 import * as ReviewedPolicy from './reviewed-recovery-policy.ts';
@@ -265,6 +266,8 @@ export const checkAllResponseCustody: typeof ResponseCustody.checkAllResponseCus
 export const validateQueueStartAuthorityIn: typeof QueueStartAuthority.validateQueueStartAuthorityIn = QueueStartAuthority.validateQueueStartAuthorityIn;
 export const validateStopRequestIn: typeof StopRevision.validateStopRequestIn = StopRevision.validateStopRequestIn;
 
+export const scanResumeRecoveryCandidates: typeof ResumeRestartRecovery.scanResumeRecoveryCandidates = ResumeRestartRecovery.scanResumeRecoveryCandidates;
+export const recoverIdleResume: typeof ResumeRestartRecovery.recoverIdleResume = ResumeRestartRecovery.recoverIdleResume;
 export const checkMutationCustody: typeof MutationAttempt.check = MutationAttempt.check;
 export const requireResponseUnheldIn: typeof ResponseCustody.requireResponseUnheldIn = ResponseCustody.requireResponseUnheldIn;
 export const requireAllResponsesResolvedIn: typeof ResponseCustody.requireAllResponsesResolvedIn = ResponseCustody.requireAllResponsesResolvedIn;
@@ -596,6 +599,8 @@ export interface IStateAccessFacade {
   readonly checkAllResponseCustody: typeof ResponseCustody.checkAllResponseCustody;
   readonly validateQueueStartAuthorityIn: typeof QueueStartAuthority.validateQueueStartAuthorityIn;
   readonly validateStopRequestIn: typeof StopRevision.validateStopRequestIn;
+  readonly scanResumeRecoveryCandidates: typeof ResumeRestartRecovery.scanResumeRecoveryCandidates;
+  readonly recoverIdleResume: typeof ResumeRestartRecovery.recoverIdleResume;
   readonly checkMutationCustody: typeof MutationAttempt.check;
   readonly requireResponseUnheldIn: typeof ResponseCustody.requireResponseUnheldIn;
   readonly requireAllResponsesResolvedIn: typeof ResponseCustody.requireAllResponsesResolvedIn;
@@ -863,6 +868,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   checkAllResponseCustody,
   validateQueueStartAuthorityIn,
   validateStopRequestIn,
+  scanResumeRecoveryCandidates,
+  recoverIdleResume,
   checkMutationCustody,
   requireResponseUnheldIn,
   requireAllResponsesResolvedIn,
