@@ -36,7 +36,7 @@ export function captureSqliteEvidenceRows(db: DatabaseSync, sql: string, paramet
         let text:string;try{text=decodeTextField(value,raw,columns[index]!,false,decoder)!;}catch{return invalid('encoding');}
         if(Buffer.byteLength(text,'utf8')>MAX_BYTES)return invalid('cell');cell=['text',text];
       }else if(type==='blob'){
-        if(decodeI64(size,'evidence blob size')>BigInt(MAX_BYTES/2))return invalid('blob');
+        if(decodeI64(size,'evidence blob size')>BigInt(Math.floor(MAX_BYTES/2)))return invalid('blob');
         if(!(value instanceof Uint8Array))throw new TypeError('Expected native blob');cell=['blob_hex',Buffer.from(value).toString('hex')];
       }else throw new TypeError('Unknown SQLite storage class');
       budget.bytes+=Buffer.byteLength(serializeSerdeValue(cell),'utf8');if(budget.bytes>MAX_BYTES)return invalid('budget');cells.push(cell);
