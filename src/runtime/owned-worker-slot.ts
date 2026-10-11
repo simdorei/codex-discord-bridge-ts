@@ -1,6 +1,14 @@
 import {Worker,isMainThread} from 'node:worker_threads';
 export class OwnedWorkerBusyError extends Error {constructor(){super('context reader is still running; no extra reader started');this.name='OwnedWorkerBusyError';}}
 export class OwnedWorkerTimeoutError extends Error {constructor(){super('context read timed out; snapshot unavailable, OS read may still be finishing');this.name='OwnedWorkerTimeoutError';}}
+/** Resolve tsc's extension-rewritten graph without falling back to source TS.
+ * Source execution keeps its original worker URL; emitted JS maps only local
+ * .ts worker modules to their corresponding emitted .js file. */
+export function ownedWorkerModuleUrl(input:URL,ownerModule:string):URL{
+ const executable=new URL(input.href),owner=new URL(ownerModule);
+ if(owner.protocol==='file:'&&owner.pathname.endsWith('.js')&&executable.protocol==='file:'&&executable.pathname.endsWith('.ts'))executable.pathname=executable.pathname.slice(0,-3)+'.js';
+ return executable;
+}
 export type OwnedWorkerClass='Background'|'Control';
 /** Initial finite adapter budget, not a measured throughput recommendation.
  * A reserved control lane prevents stalled display/context readers from consuming
@@ -20,7 +28,7 @@ export class OwnedWorkerSlot {
  join():Promise<void>{return this.#idle;}
  run(url:URL,workerData:unknown,timeoutMs:number,signal?:AbortSignal):Promise<unknown>{
   signal?.throwIfAborted();if(this.#worker!==null)return Promise.reject(new OwnedWorkerBusyError());if(!Number.isSafeInteger(timeoutMs)||timeoutMs<0||timeoutMs>2147483647)throw new TypeError('Expected bounded worker deadline');
-  const releaseBudget=acquire(this.#class);if(releaseBudget===null)return Promise.reject(new OwnedWorkerBudgetError());let worker:Worker;try{worker=new Worker(new URL(url.href),{workerData});}catch(error){releaseBudget();throw error;}this.#worker=worker;let release!:()=>void;this.#idle=new Promise<void>(r=>{release=r;});
+  const releaseBudget=acquire(this.#class);if(releaseBudget===null)return Promise.reject(new OwnedWorkerBudgetError());let worker:Worker;try{worker=new Worker(ownedWorkerModuleUrl(url,import.meta.url),{workerData});}catch(error){releaseBudget();throw error;}this.#worker=worker;let release!:()=>void;this.#idle=new Promise<void>(r=>{release=r;});
   return new Promise((resolve,reject)=>{
    let settled=false,count=0,value:unknown,failure:unknown;const settle=(error:unknown,result?:unknown)=>{if(settled)return;settled=true;clearTimeout(timer);signal?.removeEventListener('abort',abort);if(error!==undefined)reject(error);else resolve(result);};
    const abort=()=>settle(signal!.reason),timer=setTimeout(()=>settle(new OwnedWorkerTimeoutError()),timeoutMs);signal?.addEventListener('abort',abort,{once:true});

@@ -1,0 +1,35 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 606,
+  "localCommit": "07f51ef8446a278325c2f0e82e1f2c6a17995ab0",
+  "fullTests": 7273,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/remote-agent/files/read-owner.ts": "38a4d68f84ecb164249c852fa539b9719e2ee630055d9f842657b4efa06f77fd",
+    "src/runtime/owned-worker-slot.ts": "a4e0b238139ce0dcc3254a5492c323023b620f8820a90d3883549e7403a713dd",
+    "test/remote-agent/read-owner.test.ts": "6d72c32b90dd8b58133b0fa6e77c4db9ba7a37ecf254a915d8811edcc309a8dc",
+    "test/runtime/owned-worker-budget.test.ts": "932a641126116b7b2cd2db32f8723d22e8476d2c682abf177e02b753d25db390",
+    "test/runtime/owned-worker-module-url.test.ts": "17461acf1743f5eb72dafa04b786bb7b0d766d5e53740f37e70e54d78b888559"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ],
+  "runtimeQualification": "UNVERIFIED: intermittent Node24.21.0 V8 SIGTRAP retained from601, not conclusively fixed",
+  "compiledVerification": {
+    "focused": 19,
+    "expanded": 75,
+    "stripTypes": false
+  },
+  "nativeReadLimits": [
+    "POSIX only; Windows rejected",
+    "No hostile rename-and-restore atomic confinement claim",
+    "Not activated in remote project dispatcher"
+  ]
+}
