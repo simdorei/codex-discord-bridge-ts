@@ -1,3 +1,4 @@
+import {runAdminStore} from './admin-store.ts';
 import {snapshotCutoverStore} from '../store/cutover-backup.ts';
 import {prepareStartup,type PreparedStartup} from './preflight.ts';
 import {discoverRuntimePathInputs} from '../runtime/runtime-paths/discovery.ts';
@@ -8,11 +9,15 @@ type ConfiguredStartup=Extract<PreparedStartup,{kind:'backupStore'|'gateway'}>;
 export type PreparedMaintenanceStartup=Exclude<PreparedStartup,{kind:'restartReadiness'}|ConfiguredStartup>|Readonly<Omit<ConfiguredStartup,'kind'>&{kind:'gateway'}>;
 /** Source CLI branch composition. Readiness owns a temporary actual native client
  * and returns its success text only after disposal. Backup uses an owned native
- * snapshot and returns only confirmed output; admin/gateway remain plans.
+ * snapshot and returns only confirmed output; store admin commands execute,
+ * other admin/gateway branches remain plans.
  * Caller supplies application entry path, current root and actual build version.
- * No executable main/singleton/gateway/admin effects are implemented here.
+ * No executable main/singleton/gateway or other admin effects are implemented here.
  * Native directory discovery and Windows ownership retain their existing limits. */
 export async function prepareMaintenanceStartup(argv:readonly string[],environment:ReadonlyMap<string,string>,applicationPath:string,root:string,version:string,signal?:AbortSignal):Promise<PreparedMaintenanceStartup>{
+ // Invoke the owned admin store executor before yielding so caller argv/env
+ // are captured before any asynchronous boundary. Other admin effects stay plans.
+ if(argv[0]==='--admin'&&(argv[1]==='backup-store'||argv[1]==='active-queue-count'))return Object.freeze({kind:'output',text:await runAdminStore(argv.slice(1),environment,root,signal)});
  const prepared=await prepareStartup(argv,environment,applicationPath,signal);
  if(prepared.kind==='admin'||prepared.kind==='output')return prepared;
  if(prepared.kind==='gateway')return Object.freeze({...prepared,kind:'gateway' as const});
