@@ -6,7 +6,7 @@ import {cloneOwnedSerdeValue} from '../../core/owned-serde-value.ts';
 import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../owned-worker-slot.ts';
 import type {NewReply} from '../../store/new-reply-read.ts';
 import type {NewReplyCheckpointUpdate} from '../../store/new-reply-checkpoint.ts';
-type Request={kind:'Pending';limit:number}|{kind:'Checkpoint';original:NewReply;update:NewReplyCheckpointUpdate};
+type Request={kind:'Pending';limit:number}|{kind:'Read';job:string}|{kind:'Checkpoint';original:NewReply;update:NewReplyCheckpointUpdate};
 export class NewReplyStoreWriteUnconfirmedError extends Error{
  readonly jobId:string;readonly expectedVersion:bigint;
  constructor(original:NewReply,cause:unknown){super('New reply checkpoint outcome is unconfirmed; reconcile original revision after native exit',{cause});this.name='NewReplyStoreWriteUnconfirmedError';this.jobId=original.identity.job_id;this.expectedVersion=original.version;}
@@ -28,6 +28,7 @@ export class NativeNewReplyStore{
  async pending(limit=8,signal?:AbortSignal):Promise<readonly NewReply[]>{
   if(!Number.isSafeInteger(limit)||limit<0)throw new RangeError('Invalid new reply batch limit');return this.#run({kind:'Pending',limit:Math.min(limit,32)},signal) as Promise<readonly NewReply[]>;
  }
+ async read(job:string,signal?:AbortSignal):Promise<NewReply|null>{requireDiscordText(job);if(Buffer.byteLength(job)>16384)throw new RangeError('New reply job identity exceeds budget');return this.#run({kind:'Read',job},signal) as Promise<NewReply|null>;}
  async checkpoint(original:NewReply,update:NewReplyCheckpointUpdate,signal?:AbortSignal):Promise<boolean>{
   if(boundedSerdeByteCount(original,1048576)===null||boundedSerdeByteCount(update,524288)===null)throw new RangeError('New reply native checkpoint input budget exceeded');
   const captured=cloneOwnedSerdeValue({original,update}) as {original:NewReply;update:NewReplyCheckpointUpdate};
@@ -47,6 +48,7 @@ export class NativeNewReplyStore{
     const response=cloneOwnedSerdeValue(raw);if(own(response,'ok')!==true){const detail=own(response,'detail');throw new Error(typeof detail==='string'?detail:'Invalid native new reply response');}
     const value=own(response,'value');
     if(request.kind==='Checkpoint'){if(typeof value!=='boolean')throw new TypeError('Invalid checkpoint result');return value;}
+    if(request.kind==='Read'){if(value!==null&&own(own(value,'identity'),'job_id')!==request.job)throw new Error('Native new reply exact job mismatch');return value;}
     if(!Array.isArray(value)||value.length>request.limit)throw new TypeError('Invalid pending batch result');return value;
    }catch(error){if(request.kind==='Checkpoint'&&submitted)throw new NewReplyStoreWriteUnconfirmedError(request.original,error);throw error;}
    finally{signal?.removeEventListener('abort',abort);}

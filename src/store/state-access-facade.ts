@@ -192,6 +192,7 @@ export const mirrorProjectForChannel: typeof MirrorSync.mirrorProjectForChannel 
 export const commitNewThreadSync: typeof MirrorSync.commitNewThreadSync = MirrorSync.commitNewThreadSync;
 export const admitPromptIntakeWithIngress: typeof NewPromptIntake.admitPromptIntakeWithIngress = NewPromptIntake.admitPromptIntakeWithIngress;
 export const checkpointNewReply: typeof NewReplyCheckpoint.checkpointNewReply = NewReplyCheckpoint.checkpointNewReply;
+export const getNewReplyBounded: typeof NewReplyPending.getNewReplyBounded = NewReplyPending.getNewReplyBounded;
 export const pendingNewReplies: typeof NewReplyPending.pendingNewReplies = NewReplyPending.pendingNewReplies;
 export const validateNewReplyCurrent: typeof NewReplyClaims.validateNewReplyCurrent = NewReplyClaims.validateNewReplyCurrent;
 export const getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress = NewReplyRead.getNewReplyByIngress;
@@ -482,6 +483,7 @@ export interface IStateAccessFacade {
   readonly commitNewThreadSync: typeof MirrorSync.commitNewThreadSync;
   readonly admitPromptIntakeWithIngress: typeof NewPromptIntake.admitPromptIntakeWithIngress;
   readonly checkpointNewReply: typeof NewReplyCheckpoint.checkpointNewReply;
+  readonly getNewReplyBounded: typeof NewReplyPending.getNewReplyBounded;
   readonly pendingNewReplies: typeof NewReplyPending.pendingNewReplies;
   readonly validateNewReplyCurrent: typeof NewReplyClaims.validateNewReplyCurrent;
   readonly getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress;
@@ -779,6 +781,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   admitPromptIntakeWithIngress,
   checkpointNewReply,
   pendingNewReplies,
+  getNewReplyBounded,
   validateNewReplyCurrent,
   getNewReplyByIngress,
   newReplyOutputHold,

@@ -4,6 +4,7 @@ const port=parentPort;if(port===null)throw new Error('New reply store requires o
 try{
  let value:unknown;
  if(q.kind==='Pending')value=await StateAccessFacade.pendingNewReplies(q.path,q.limit);
+ else if(q.kind==='Read')value=await StateAccessFacade.getNewReplyBounded(q.path,q.job);
  else if(q.kind==='Checkpoint')value=await StateAccessFacade.checkpointNewReply(q.path,q.original,q.update);
  else throw new TypeError('Unsupported new reply store operation');
  port.postMessage({ok:true,value});

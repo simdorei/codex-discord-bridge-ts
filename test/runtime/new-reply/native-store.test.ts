@@ -24,3 +24,5 @@ test('preabort does not start native work and getter input cannot run hooks',asy
 }));
 
 test('missing diagnostic ownership is rejected before native submission',async()=>storeFixture(async path=>{const store=new NativeNewReplyStore(path);try{const pending=store.checkpoint({} as never,update);assert.equal(ownedWorkerUsage().Background,0);await assert.rejects(pending,TypeError);assert.equal(store.busy,false);}finally{await store.close();}}));
+
+test('native exact read reconciles verified record even after pending discovery stops selecting it',async()=>storeFixture(async path=>{await newReply(path);await usingInitializedStore(path,d=>d.exec("UPDATE codex_new_first_replies SET confirmation_delivered=1,warning_due=2"));const store=new NativeNewReplyStore(path);try{assert.deepEqual(await store.pending(),[]);assert.equal((await store.read('job'))!.identity.job_id,'job');assert.equal(await store.read('other'),null);}finally{await store.close();}}));

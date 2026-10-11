@@ -165,6 +165,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.admitPromptIntakeWithIngress, NewPromptIntake.admitPromptIntakeWithIngress);
     assert.strictEqual(StateAccessFacade.checkpointNewReply, NewReplyCheckpoint.checkpointNewReply);
     assert.strictEqual(FacadeExports.checkpointNewReply, NewReplyCheckpoint.checkpointNewReply);
+    assert.strictEqual(StateAccessFacade.getNewReplyBounded, NewReplyPending.getNewReplyBounded);
+    assert.strictEqual(FacadeExports.getNewReplyBounded, NewReplyPending.getNewReplyBounded);
     assert.strictEqual(StateAccessFacade.pendingNewReplies, NewReplyPending.pendingNewReplies);
     assert.strictEqual(FacadeExports.pendingNewReplies, NewReplyPending.pendingNewReplies);
     assert.strictEqual(StateAccessFacade.validateNewReplyCurrent, NewReplyClaims.validateNewReplyCurrent);
@@ -615,6 +617,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "blockedDeliveryReceiptCount",
       "checkpointNewReply",
       "pendingNewReplies",
+      "getNewReplyBounded",
       "newReplyOutputHold",
       "newReplyAcknowledgementSendable",
       "releaseNewReplyAcknowledgement",
@@ -694,7 +697,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 251);
+    assert.strictEqual(actual.length, 252);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

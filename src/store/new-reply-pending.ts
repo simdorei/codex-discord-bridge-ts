@@ -29,3 +29,15 @@ export function pendingNewRepliesIn(db:DatabaseSync,inputLimit:number):NewReply[
  });
 }
 export async function pendingNewReplies(path:string,limit:number):Promise<NewReply[]>{requireDiscordText(path);const pinned=limitValue(limit);return usingInitializedStore(path,db=>pendingNewRepliesIn(db,pinned));}
+
+/** Exact original job read, including verified rows no longer in pending().
+ * The byte probe and decode share one read snapshot; no fallback by ingress. */
+export function getNewReplyBoundedIn(db:DatabaseSync,job:string):NewReply|null{
+ requireDiscordText(job);if(Buffer.byteLength(job)>KEY_BYTES)throw new RangeError('New reply job identity exceeds budget');
+ return withStoreTransaction(db,'DEFERRED',()=>{
+  const query=db.prepare(costSql);query.setReadBigInts(true);const row=query.get(job);if(row===undefined)return commitStore(null);
+  const bytes=decodeI64(row.bytes,'new reply persisted text size');if(bytes<0n||bytes>ROW_BYTES)throw new StoreIntegrityError('new reply exact row exceeds text budget');
+  return commitStore(getIn(db,job));
+ });
+}
+export async function getNewReplyBounded(path:string,job:string):Promise<NewReply|null>{requireDiscordText(path);requireDiscordText(job);if(Buffer.byteLength(job)>KEY_BYTES)throw new RangeError('New reply job identity exceeds budget');return usingInitializedStore(path,db=>getNewReplyBoundedIn(db,job));}
