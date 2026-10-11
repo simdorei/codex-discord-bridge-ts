@@ -85,7 +85,7 @@ function throwErrors(errors:unknown[],message:string):void{if(errors.length===1)
  * Supervisor is explicit owner-started/joined; no 45s startup envelope or descendant-pipe cleanup. */
 export class PortableResidentLifecycle{
   readonly #targetGate=new IdleTargetGate();
-  readonly #maintenance:ResidentMaintenanceOptions|null;readonly #managedIdle=new Set<Promise<unknown>>();readonly #managedDispatch=new Set<Promise<unknown>>();
+  readonly #maintenance:ResidentMaintenanceOptions|null;readonly #managedIdle=new Set<Promise<unknown>>();readonly #managedDispatch=new Set<Promise<unknown>>();readonly #managedPreparation=new Set<Promise<unknown>>();
   readonly instanceId=randomUUID();readonly #config:PortableSessionConfig;readonly #render:SessionDiagnosticRenderer;readonly #persistence:ResidentPersistence;
   readonly #lock=new TargetLocks();readonly #generation=new GenerationWatch(1n);
   readonly #notifications=new BoundedBroadcast<ResidentNotificationEvent>(1000);readonly #requests=new BoundedBroadcast<ResidentServerRequestEvent>(500);
@@ -159,19 +159,33 @@ export class PortableResidentLifecycle{
   /** Internal preparation only: caller retains/releases Ready.permit and invokes
    * checkActualTargetMutation at the actual writer. It is not permission to bypass
    * original queue/stop authority. an existing task scope wins over an explicit origin; otherwise origin is the first captured snapshot. */
-  async prepareTargetMutation(method:string,input:unknown,generation:bigint,origin:unknown|null=null,check:()=>void=()=>{}):Promise<PreparedTargetMutation>{
+  prepareTargetMutation(method:string,input:unknown,generation:bigint,origin:unknown|null=null,check:()=>void=()=>{}):Promise<PreparedTargetMutation>{
+    const task=this.#prepareTargetMutation(method,input,generation,origin,check);
+    if(this.#maintenance?.nativeIdle!==undefined){this.#managedPreparation.add(task);void task.then(()=>this.#managedPreparation.delete(task),()=>this.#managedPreparation.delete(task));}
+    return task;
+  }
+  async #admitTarget(generation:bigint,target:string|null,check:()=>void){
+    const native=this.#maintenance?.nativeIdle;if(native===undefined)return this.#targetGate.admit(this.instanceId,generation,target);
+    const admission=this.#state.admitRequest(generation);
+    try{return await this.#targetGate.admitOwned(this.instanceId,generation,target,native.before,()=>{
+      admission.client.requireOwnedAdmission(admission.permit);const s=this.#state.snapshot();
+      if(s.generation!==generation||!s.accepting||s.quarantined||s.client?.identity!==admission.client.identity)throw new IdleObservationError("original native idle admission changed");
+      invokeSynchronousVoid(check,{},[]);
+    });}finally{admission.release();}
+  }
+  async #prepareTargetMutation(method:string,input:unknown,generation:bigint,origin:unknown|null,check:()=>void):Promise<PreparedTargetMutation>{
     if(typeof method!=="string"||/[\uD800-\uDFFF]/u.test(method)||typeof generation!=="bigint"||generation<0n||generation>=(1n<<64n))throw new TypeError("Expected target preparation identity");
     const params=cloneOwnedSerdeValue(input),frozenOrigin=hasStopOriginScope()?currentStopOrigin():origin===null?null:cloneOwnedSerdeValue(origin);syncFunction(check);invokeSynchronousVoid(check,{},[]);
     if(["thread/read","thread/turns/list","thread/goal/get","thread/list","thread/loaded/list","model/list","account/rateLimits/read","account/usage/read","thread/start"].includes(method))return Object.freeze({kind:"Ready",permit:null});
     const options=this.#maintenance;
     if(options===null&&this.#targetGate.journal()!==null)throw new IdleObservationError("maintenance adapter is not installed");
     options?.fence?.checkRequest(generation,method,params);
-    const target=extractThreadId(params),admitted=this.#targetGate.admit(this.instanceId,generation,target);
+    const target=extractThreadId(params),admitted=options?.nativeIdle===undefined?this.#targetGate.admit(this.instanceId,generation,target):await this.#admitTarget(generation,target,check);
     if(admitted.kind==="Ordinary")return Object.freeze({kind:"Ready",permit:admitted.permit});
     const resume=method==="thread/resume"?params:{threadId:admitted.token.threadId};
     const value=await this.#runIdle(admitted.permit,admitted.token,frozenOrigin,work=>work.resubscribe(resume),check);
     if(method==="thread/resume")return Object.freeze({kind:"Completed" as const,value});
-    const next=this.#targetGate.admit(this.instanceId,generation,target);
+    const next=options?.nativeIdle===undefined?this.#targetGate.admit(this.instanceId,generation,target):await this.#admitTarget(generation,target,check);
     if(next.kind==="Resubscribe"){next.permit.release();throw new IdleObservationError("unexpected second resubscription; target remains held");}
     return Object.freeze({kind:"Ready",permit:next.permit});
   }
@@ -415,9 +429,11 @@ export class PortableResidentLifecycle{
     if(plan.replacement)try{await this.#cleanupDebt(plan.replacement);}catch(error){errors.push(error);}
     if(plan.current){const session=this.#session(plan.current),generation=this.generation();let cleaned=false,journaled=false;
       try{await session.dispose();cleaned=true;}catch(error){errors.push(error);}
+      await Promise.allSettled([...this.#managedPreparation]);
       await Promise.allSettled([...this.#managedIdle]);
       await Promise.allSettled([...this.#managedDispatch]);
       let nativeClosed=true;try{await this.#maintenance?.nativeDispatch?.close();}catch(error){nativeClosed=false;errors.push(error);}
+      try{await this.#maintenance?.nativeIdle?.close();}catch(error){nativeClosed=false;errors.push(error);}
       if(nativeClosed)try{this.#journalExit(session,generation);journaled=true;}catch(error){errors.push(error);}
       if(cleaned&&journaled)try{this.#state.finishCurrentClose(plan.current);this.#sessions.delete(plan.current);}catch(error){errors.push(error);}
     }

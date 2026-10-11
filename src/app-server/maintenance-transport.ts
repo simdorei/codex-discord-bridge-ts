@@ -1,3 +1,4 @@
+import {pinResidentNativeIdle,type ResidentNativeIdle} from './resident-native-idle.ts';
 import {pinResidentNativeDispatch,type ResidentNativeDispatch} from './resident-native-dispatch.ts';
 import {pinResponseFence,type ResponseFence} from "./response-attempt.ts";
 import {pinDispatchMutationFence,type DispatchMutationFence} from "./dispatch-attempt.ts";
@@ -80,6 +81,7 @@ export interface ResidentMaintenanceFence extends MaintenanceTransportFence,Disp
   requestOrigin(method:string,params:unknown):unknown|null;
 }
 export interface ResidentMaintenanceOptions{
+  readonly nativeIdle?:ResidentNativeIdle;
   readonly nativeDispatch?:ResidentNativeDispatch;
   readonly fence:ResidentMaintenanceFence|null;
   readonly renderError:(error:unknown)=>string;
@@ -90,11 +92,14 @@ export function pinResidentMaintenanceOptions(input:ResidentMaintenanceOptions):
   const own=(o:object,k:string):unknown=>{const d=Object.getOwnPropertyDescriptor(o,k);if(!d||!Object.hasOwn(d,"value"))throw new TypeError("Expected own maintenance option");return d.value;};
   const source=own(input,"fence"),render=own(input,"renderError");fn(render);
   const renderError=(e:unknown):string=>{const r=Reflect.apply(render,undefined,[e]);if(types.isPromise(r))void Promise.prototype.then.call(r,undefined,()=>undefined);if(typeof r!=="string"||/[\uD800-\uDFFF]/u.test(r))throw new TypeError("Expected maintenance diagnostic text");return r;};
+  const idleDescriptor=Object.getOwnPropertyDescriptor(input,"nativeIdle");
+  if(idleDescriptor&&!Object.hasOwn(idleDescriptor,"value"))throw new TypeError("Expected own native idle option");
+  const nativeIdle=idleDescriptor===undefined?undefined:pinResidentNativeIdle(idleDescriptor.value);
   const nativeDescriptor=Object.getOwnPropertyDescriptor(input,"nativeDispatch");
   if(nativeDescriptor&&!Object.hasOwn(nativeDescriptor,"value"))throw new TypeError("Expected own native dispatch option");
   const nativeDispatch=nativeDescriptor===undefined?undefined:pinResidentNativeDispatch(nativeDescriptor.value);
-  if(source===null){if(nativeDispatch!==undefined)throw new TypeError("Native dispatch requires original authority fence");return Object.freeze({fence:null,renderError});}
+  if(source===null){if(nativeDispatch!==undefined||nativeIdle!==undefined)throw new TypeError("Native dispatch requires original authority fence");return Object.freeze({fence:null,renderError});}
   if(typeof source!=="object"||types.isProxy(source))throw new TypeError("Expected resident maintenance fence");
   const origin=own(source,"requestOrigin");fn(origin);const base=pinFence(source as ResidentMaintenanceFence)!,dispatch=pinDispatchMutationFence(source as ResidentMaintenanceFence),responses=pinResponseFence(source as ResidentMaintenanceFence);
-  return Object.freeze({renderError,...(nativeDispatch===undefined?{}:{nativeDispatch}),fence:Object.freeze({...base,...dispatch,...responses,requestOrigin:(method:string,params:unknown)=>{const result=Reflect.apply(origin,source,[method,cloneOwnedSerdeValue(params)]);if(types.isPromise(result))void Promise.prototype.then.call(result,undefined,()=>undefined);return result===null?null:cloneOwnedSerdeValue(result);}})});
+  return Object.freeze({renderError,...(nativeIdle===undefined?{}:{nativeIdle}),...(nativeDispatch===undefined?{}:{nativeDispatch}),fence:Object.freeze({...base,...dispatch,...responses,requestOrigin:(method:string,params:unknown)=>{const result=Reflect.apply(origin,source,[method,cloneOwnedSerdeValue(params)]);if(types.isPromise(result))void Promise.prototype.then.call(result,undefined,()=>undefined);return result===null?null:cloneOwnedSerdeValue(result);}})});
 }
