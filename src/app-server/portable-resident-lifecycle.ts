@@ -1,3 +1,4 @@
+import {OwnedDispatchAttempt} from './owned-dispatch-attempt.ts';
 import type {PendingServerRequest} from "./server-request-state.ts";
 import {performance} from "node:perf_hooks";
 import {collectRecoveryObservation} from "./recovery-collector.ts";
@@ -84,7 +85,7 @@ function throwErrors(errors:unknown[],message:string):void{if(errors.length===1)
  * Supervisor is explicit owner-started/joined; no 45s startup envelope or descendant-pipe cleanup. */
 export class PortableResidentLifecycle{
   readonly #targetGate=new IdleTargetGate();
-  readonly #maintenance:ResidentMaintenanceOptions|null;readonly #managedIdle=new Set<Promise<unknown>>();
+  readonly #maintenance:ResidentMaintenanceOptions|null;readonly #managedIdle=new Set<Promise<unknown>>();readonly #managedDispatch=new Set<Promise<unknown>>();
   readonly instanceId=randomUUID();readonly #config:PortableSessionConfig;readonly #render:SessionDiagnosticRenderer;readonly #persistence:ResidentPersistence;
   readonly #lock=new TargetLocks();readonly #generation=new GenerationWatch(1n);
   readonly #notifications=new BoundedBroadcast<ResidentNotificationEvent>(1000);readonly #requests=new BoundedBroadcast<ResidentServerRequestEvent>(500);
@@ -267,9 +268,11 @@ export class PortableResidentLifecycle{
     const params=cloneOwnedSerdeValue(input),options=this.#maintenance;
     if(options===null)return Promise.reject(new ResidentStateError({kind:"MutationHeld",message:"resident dispatch adapter is not installed"}));
     if(typeof method!=="string"||/[\uD800-\uDFFF]/u.test(method)||!Number.isSafeInteger(waitMs)||waitMs<0||waitMs>2147483647)throw new TypeError("Expected resident request fields");
-    if(hasStopOriginScope())return this.#requestInner(method,params,waitMs,expectedGeneration,isolate,context,signal);
-    const origin=options.fence?.requestOrigin(method,params)??null;
-    return withStopOrigin(origin,()=>this.#requestInner(method,params,waitMs,expectedGeneration,isolate,context,signal));
+    const run=()=>this.#requestInner(method,params,waitMs,expectedGeneration,isolate,context,signal);
+    const task=hasStopOriginScope()?run():withStopOrigin(options.fence?.requestOrigin(method,params)??null,run);
+    // Retain even caller-cancelled work until its owned preflight/completion joined.
+    if(options.nativeDispatch!==undefined){this.#managedDispatch.add(task);void task.then(()=>this.#managedDispatch.delete(task),()=>this.#managedDispatch.delete(task));}
+    return task;
   }
   async #requestInner(method:string,params:unknown,waitMs:number,expectedGeneration:bigint|null,isolate:boolean,context:DispatchContext,signal:AbortSignal|undefined):Promise<unknown>{
     signal?.throwIfAborted();const options=this.#maintenance!,check=context.check??(()=>{});invokeSynchronousVoid(check,{},[]);
@@ -280,13 +283,34 @@ export class PortableResidentLifecycle{
       if(prepared.kind==="Completed")return prepared.value;target=prepared.permit;signal?.throwIfAborted();
       options.fence?.checkRequest(admission.generation,method,params);
       written=new WrittenRequestGuard(this.#state,admission.generation);const guard=written,flushed=guard.isolateAfterFlush(),observational=isObservationalRequest(method);
-      const attempt=new DispatchAttempt({ownerId:this.instanceId,generation:admission.generation,method,params,repair:isolate,queueClaim:context.queueClaim,stopClaim:context.stopClaim,origin:currentStopOrigin()},options.fence,options.renderError);
+      const input={ownerId:this.instanceId,generation:admission.generation,method,params,repair:isolate,queueClaim:context.queueClaim,stopClaim:context.stopClaim,origin:currentStopOrigin()};
+      const native=observational?undefined:options.nativeDispatch;
+      const attempt=native===undefined?new DispatchAttempt(input,options.fence,options.renderError):new OwnedDispatchAttempt(input,native,options.renderError);
       let result:DispatchResult;
       try{
-        const value=await admission.client.requestAdmitted(admission.permit,method,params,waitMs,{
-          preflight:wire=>{invokeSynchronousVoid(check,{},[]);this.checkActualTargetMutation(target,admission.generation,method,params);attempt.begin(wire);invokeSynchronousVoid(check,{},[]);},
-          writeStarted:()=>{if(Object.hasOwn(context,"writeWatermark"))context.writeWatermark!(this.#session(admission.client).notificationRevision);attempt.writeStarted();guard.confirmWriteStarted();},
-          writeComplete:()=>{if(isolate||observational||attempt.isolatesTarget())flushed.confirmFlushed();},
+        const started=()=>{if(Object.hasOwn(context,"writeWatermark"))context.writeWatermark!(this.#session(admission.client).notificationRevision);attempt.writeStarted();guard.confirmWriteStarted();};
+        const complete=()=>{if(isolate||observational||attempt.isolatesTarget())flushed.confirmFlushed();};
+        let value:unknown;
+        if(attempt instanceof OwnedDispatchAttempt){
+          const send=admission.client.requestAdmittedWithOwnedPreflight;
+          if(send===undefined)throw new TypeError("Owned native session preflight is unavailable");
+          value=await send(admission.permit,method,params,waitMs,{
+            check:async wire=>{invokeSynchronousVoid(check,{},[]);this.checkActualTargetMutation(target,admission.generation,method,params);return await attempt.begin(wire);},
+            validate:receipt=>{
+              // The original prepared receipt must not trip the blanket custody
+              // hold. Its exact durable authority is checked by its native owner.
+              invokeSynchronousVoid(check,{},[]);
+              if(receipt===null)this.checkActualTargetMutation(target,admission.generation,method,params);
+              else native!.validate(receipt);
+              admission.client.requireOwnedAdmission(admission.permit);
+              const snapshot=this.#state.snapshot();
+              if(snapshot.generation!==admission.generation||!snapshot.accepting||snapshot.quarantined||snapshot.client?.identity!==admission.client.identity)throw new ResidentStateError({kind:"MutationHeld",message:"original native dispatch admission changed"});
+              target?.preflight();invokeSynchronousVoid(check,{},[]);
+            },
+            dispose:receipt=>attempt.dispose(receipt),writeStarted:started,writeComplete:complete,
+          },signal);
+        }else value=await admission.client.requestAdmitted(admission.permit,method,params,waitMs,{
+          preflight:wire=>{invokeSynchronousVoid(check,{},[]);this.checkActualTargetMutation(target,admission.generation,method,params);attempt.begin(wire);invokeSynchronousVoid(check,{},[]);},writeStarted:started,writeComplete:complete,
         },signal);
         guard.finish("Success");result={ok:true,value};
       }catch(error){
@@ -297,7 +321,7 @@ export class PortableResidentLifecycle{
         if(failure!==null)guard.finish(failure.kind==="Remote"?"OtherError":failure.kind);
         result={ok:false,error};
       }
-      const outcome=attempt.finish(result);
+      const outcome=attempt instanceof OwnedDispatchAttempt?await attempt.finish(result):attempt.finish(result);
       if(!outcome.ok){if(isOwnedMutationOutcomeUnknown(outcome.error)&&attempt.wasStarted()&&!guard.isIsolated())this.#state.markTimeout(admission.generation);throw outcome.error;}return outcome.value;
     }finally{try{written?.dispose();}finally{try{target?.release();}finally{admission.release();}}}
   }
@@ -392,7 +416,9 @@ export class PortableResidentLifecycle{
     if(plan.current){const session=this.#session(plan.current),generation=this.generation();let cleaned=false,journaled=false;
       try{await session.dispose();cleaned=true;}catch(error){errors.push(error);}
       await Promise.allSettled([...this.#managedIdle]);
-      try{this.#journalExit(session,generation);journaled=true;}catch(error){errors.push(error);}
+      await Promise.allSettled([...this.#managedDispatch]);
+      let nativeClosed=true;try{await this.#maintenance?.nativeDispatch?.close();}catch(error){nativeClosed=false;errors.push(error);}
+      if(nativeClosed)try{this.#journalExit(session,generation);journaled=true;}catch(error){errors.push(error);}
       if(cleaned&&journaled)try{this.#state.finishCurrentClose(plan.current);this.#sessions.delete(plan.current);}catch(error){errors.push(error);}
     }
     throwErrors(errors,"Resident terminal close failed");
