@@ -1,0 +1,29 @@
+{
+  "files": [
+    {
+      "path": "src/store/observed-completion.ts",
+      "sha256": "abe8bb6011fe824e080e22c4f231ad65ec6a27ed1d282b2bb6560cafcf78d2e8"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "sha256": "6ef86f8a334a989103882a0fe8a2b6850880457a1f1486a801426ccde5fee791"
+    },
+    {
+      "path": "src/store/owned-scope.ts",
+      "sha256": "11056d4d91487120391349fe10019100c4598d442a6a6c32c4571d6c5653b0fa"
+    },
+    {
+      "path": "src/store/existing-store.ts",
+      "sha256": "278fb43e11c747edc0e7387d5999ead578c8a76f31dfd8b62e3ad1dfce71268b"
+    },
+    {
+      "path": "src/runtime/action-executor/control-turn.ts",
+      "sha256": "d480c4a2aa49b5302f7aadfde56005a338a32a5dbab9d54bd777f36bf33778e6"
+    },
+    {
+      "path": "src/runtime/owned-worker-slot.ts",
+      "sha256": "8847bd560e98c757fe1f0048c19318795c86a9af881177a4131b06fba0c1ab0e"
+    }
+  ],
+  "scope": "PLAN776 bounded read foundation only; refreshed actual775 sources; no runtime install"
+}
