@@ -1,3 +1,5 @@
+import {gatewayOwnField} from '../discord/gateway/values.ts';
+import type {ThreadInfo} from '../codex-state/thread.ts';
 import {passiveErrorText} from '../core/passive-error-text.ts';
 import {types} from 'node:util';
 import {CodexThreadStore} from '../codex-state/store.ts';
@@ -13,6 +15,19 @@ import {snapshotSettingsBinding, validateSettingsSnapshot, validateLifecycleSett
   type FrozenSettingsBinding} from './action-executor/settings-snapshot.ts';
 
 const mapped = state.mirroredThreadId;
+export interface SettingsBindingReads {
+ readonly openSelected:()=>Promise<string|null>;
+ readonly resolve:(reference:string,selected:string|null)=>Promise<ThreadInfo>;
+ readonly exact:(id:string)=>Promise<ThreadInfo|null>;
+ readonly mapped:(path:string,channel:bigint|null)=>Promise<string|null>;
+}
+function captureReads(input:SettingsBindingReads|undefined):SettingsBindingReads|undefined{
+ if(input===undefined)return undefined;
+ const capture=<K extends keyof SettingsBindingReads>(key:K):SettingsBindingReads[K]=>{const fn=gatewayOwnField(input,key);if(typeof fn!=='function'||types.isProxy(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected passive settings read');return fn as SettingsBindingReads[K];};
+ return Object.freeze({openSelected:capture('openSelected'),resolve:capture('resolve'),exact:capture('exact'),mapped:capture('mapped')});
+}
+function promise<T>(p:Promise<T>):Promise<T>{if(!types.isPromise(p))throw new TypeError('Expected native settings read Promise');return p;}
+
 type Settings = Extract<SlashCommandAction, {Settings: unknown}>['Settings'];
 function settings(action: CommandAction): Settings | null {
   if (typeof action === 'string' || !Object.hasOwn(action, 'Settings')) return null;
@@ -39,10 +54,12 @@ export function isSlashSettingsMutation(action: SlashCommandAction): boolean {
  * No canonical fork, fallback replacement or execution. Full message settings
  * and lifecycle descriptions share this same original-target resolver. */
 export class SlashSettingsTargetResolver {
+  readonly #reads: SettingsBindingReads|undefined;
   readonly #statePath: string;
   readonly #mirrorPath: string;
   readonly #bridge: Pick<BridgeState, 'selectedThreadId'>;
-  constructor(statePath: string, mirrorPath: string, bridge: BridgeState) {
+  constructor(statePath: string, mirrorPath: string, bridge: BridgeState, reads?: SettingsBindingReads) {
+    this.#reads=captureReads(reads);
     requireDiscordText(statePath); requireDiscordText(mirrorPath);
     this.#statePath = statePath; this.#mirrorPath = mirrorPath;
     this.#bridge = Object.freeze({selectedThreadId: BridgeState.prototype.selectedThreadId.bind(bridge)});
@@ -75,23 +92,28 @@ export class SlashSettingsTargetResolver {
   async #bindReference(command: CommandAction, inputReference: string | null, channel: bigint, label: 'settings' | 'lifecycle'): Promise<FrozenSettingsBinding> {
     channelId(channel);
     if (process.platform === 'win32') throw new Error('Windows original-thread reference binding is not yet qualified');
-    const store = CodexThreadStore.open(this.#statePath), selected = this.#bridge.selectedThreadId();
+    const store = this.#reads===undefined?CodexThreadStore.open(this.#statePath):null;
+    const selected = this.#reads===undefined?this.#bridge.selectedThreadId():await promise(this.#reads.openSelected());
+    if(selected!==null)requireDiscordText(selected);
     let target: string, route: FrozenSettingsBinding['route'];
     if (inputReference !== null) {
       const reference = rustTrim(inputReference);
-      const exact = store.loadThread(reference, false);
-      target = (exact ?? resolveThreadRefPosix(store.loadRecentThreads(0n), reference, selected, false)).id;
+      if(this.#reads!==undefined){const resolved=cloneOwnedSerdeValue(await promise(this.#reads.resolve(reference,selected))) as ThreadInfo;requireDiscordText(resolved.id);target=resolved.id;}
+      else {const exact=store!.loadThread(reference,false);target=(exact??resolveThreadRefPosix(store!.loadRecentThreads(0n),reference,selected,false)).id;}
       route = 'Explicit';
     } else {
       sqliteChannel(channel);
-      const mirror = await mapped(this.#mirrorPath, channel);
+      const mirror = this.#reads===undefined?await mapped(this.#mirrorPath,channel):await promise(this.#reads.mapped(this.#mirrorPath,channel));
+      if(mirror!==null)requireDiscordText(mirror);
       if (mirror !== null) {target = mirror; route = 'Mapped';}
       else {
         if (selected === null) throw new NoActionTargetError();
         target = selected; route = 'Selected';
       }
     }
-    if (store.loadThread(target, false) === null) throw new InvalidActionRequestError(`${label} admission target is not an active original thread`);
+    const active=this.#reads===undefined?store!.loadThread(target,false):cloneOwnedSerdeValue(await promise(this.#reads.exact(target))) as ThreadInfo|null;
+    if(active!==null&&(active.id!==target||active.archivedAt!==0n))throw new TypeError('Settings exact read differs from original target');
+    if (active === null) throw new InvalidActionRequestError(`${label} admission target is not an active original thread`);
     const binding = Object.freeze({target, route, command});
     await this.#validateRoute(binding, channel, label);
     return binding;
@@ -102,7 +124,7 @@ export class SlashSettingsTargetResolver {
     const binding = snapshotSettingsBinding(input); channelId(channel);
     if (binding.route !== 'Explicit') sqliteChannel(channel);
     const validate = label === 'settings' ? validateSettingsSnapshot : validateLifecycleSettingsSnapshot;
-    await validate(this.#mirrorPath, binding, channel, this.#bridge, {mirroredThreadId: mapped});
+    await validate(this.#mirrorPath, binding, channel, this.#bridge, {mirroredThreadId:this.#reads===undefined?mapped:(path,channel)=>promise(this.#reads!.mapped(path,channel))});
   }
   validateSelectedSnapshot(input: FrozenSettingsBinding): void {
     validateSelectedSettingsSnapshot(snapshotSettingsBinding(input), this.#bridge);

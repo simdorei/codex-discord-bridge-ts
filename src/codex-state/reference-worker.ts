@@ -5,13 +5,14 @@ import {resolveThreadRefPosix,ThreadResolveError} from './thread-reference.ts';
 import {rustTrim} from '../app-server/value.ts';
 import {boundedSerdeByteCount} from '../core/serde-byte-count.ts';
 const port=parentPort;if(port===null)throw new Error('Thread reference requires native owner');
-const reply=(value:object)=>port.postMessage(q.contextRead!==undefined?{...value,binding:{mode:q.contextRead,path:q.path,limit:q.limit}}:q.archiveScope!==undefined?{...value,binding:{mode:'ArchiveScope',path:q.path,scope:q.archiveScope}}:q.exact===true?{...value,binding:{mode:'Exact',path:q.path,id:q.id,archived:q.archived}}:value);
+const reply=(value:object)=>port.postMessage(q.openSelected===true?{...value,binding:{mode:'BindingOpenSelected',path:q.path,bridgePath:q.bridgePath}}:q.contextRead!==undefined?{...value,binding:{mode:q.contextRead,path:q.path,limit:q.limit}}:q.archiveScope!==undefined?{...value,binding:{mode:'ArchiveScope',path:q.path,scope:q.archiveScope}}:q.exact===true?{...value,binding:{mode:'Exact',path:q.path,id:q.id,archived:q.archived}}:value);
 try{
  if(q.inventory!==true&&process.platform==='win32')throw new Error('Windows action reference resolution is not yet qualified');
  const store=CodexThreadStore.open(q.path);
  const inventory=()=>q.archived?store.loadArchivedThreadsBounded(4096n,4194304n):store.loadRecentThreadsBounded(4096n,4194304n);
  let value:unknown;
- if(q.contextRead==='ContextProbe')value=[];
+ if(q.openSelected===true)value=new BridgeState(q.bridgePath).selectedThreadIdBounded(1048576);
+ else if(q.contextRead==='ContextProbe')value=[];
  else if(q.contextRead==='ContextRecent')value=store.loadRecentThreadsLimitedBounded(q.limit);
  else if(q.archiveScope!==undefined){const missing:string[]=[];for(const id of q.archiveScope){const row=store.loadThreadBounded(id,true,262144n);if(row===null)missing.push(id);else if(row.id!==id)throw new TypeError('Archived row differs from requested identity');}value=missing;}
  else if(q.inventory===true)value=inventory();

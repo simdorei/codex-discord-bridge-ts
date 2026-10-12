@@ -1,3 +1,4 @@
+import {createNativeSettingsBindingReads} from '../settings-binding-native.ts';
 import {readArchivedScopeOffThread} from '../../codex-state/reference-reader.ts';
 import {createNativeActionThreadReads} from './thread-selection-native.ts';
 import {createNativeQueueReadState} from '../queue-runner/native-read-state.ts';
@@ -79,7 +80,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   this.#new=new NewThreadExecutor(paths.mirror,paths.state,queue,intake,bridge,server,backend,get('mirror'),get('reportNewAttempt'),undefined,intakeState.admitPromptIntakeWithIngress,intakeState.getNewFirstReplyFinish,intakeState,createNativeNewProjectLookup(paths.state));
   this.#prompts=new QueuePromptExecutor(paths.mirror,selection,targets,queue,intake,busy);this.#retract=new RetractAction(paths.mirror,selection);
   this.#controls=new PromptControlActions(paths.mirror,selection,targets,control,server);this.#open=new OpenThreadAction(selection,targets,bridge,server,timeout);
-  this.#settingsResolver=new SettingsTargetResolver(paths.state,paths.mirror,bridge);
+  this.#settingsResolver=new SettingsTargetResolver(paths.state,paths.mirror,bridge,createNativeSettingsBindingReads(paths.state,BridgeState.prototype.path.call(bridge),intakeState.mirroredThreadId));
   this.#settings=new AdmittedSettingsExecutor(paths.mirror,new SettingsAction(selection,this.#settingsResolver,bridge,server,control,timeout));
   this.#stop=new AdmittedStopExecutor(paths.mirror,bridge,new StopActionExecutor(paths.mirror,server,bridge,locks,render));
   this.#archive=server===null?null:new AdmittedArchiveExecutor(paths.mirror,paths.state,bridge,server,locks,timeout,intakeState.mirroredThreadId,threadReads,{unfinishedArchiveRequest:intakeState.unfinishedArchiveRequest,listFiltered:createNativeQueueReadState(paths.mirror).listFiltered,listPromptIntakes:intakeState.listPromptIntakes,exact:threadReads.exact},readArchivedScopeOffThread);

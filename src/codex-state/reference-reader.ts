@@ -110,3 +110,17 @@ async function contextStoreRead(path:string,limit:bigint|null,signal?:AbortSigna
  for(const row of rows){for(const key of ['id','title','cwd','rolloutPath','model','reasoningEffort'])requireDiscordText(own(row,key));for(const key of ['updatedAt','archivedAt']){const n=own(row,key);if(typeof n!=='bigint'||n<-(1n<<63n)||n>=(1n<<63n))throw new TypeError('Invalid Context thread integer');}if(own(row,'archivedAt')!==0n)throw new TypeError('Context inventory contains archived row');const tokens=own(row,'tokensUsed');if(tokens!==null&&(typeof tokens!=='bigint'||tokens<-(1n<<63n)||tokens>=(1n<<63n)))throw new TypeError('Invalid Context thread token count');}
  return rows as readonly ThreadInfo[];
 }
+
+/** Settings binding reads selected state even for an exact explicit reference.
+ * Preserve Codex-open-before-Bridge-read order in one readonly native operation. */
+export async function openSelectedForBindingOffThread(path:string,bridgePath:string,signal?:AbortSignal,timeoutMs=6000):Promise<string|null>{
+ signal?.throwIfAborted();if(process.platform==='win32')throw new Error('Windows settings binding reads are not yet qualified');
+ for(const p of [path,bridgePath]){text(p,32768);if(p.includes('\0'))throw new TypeError('Invalid binding store path');}if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid binding read timeout');
+ const fixed=pinNativeRuntimePath(path),bridge=pinNativeRuntimePath(bridgePath);text(fixed,32768);text(bridge,32768);if(slot.busy)throw new OwnedWorkerBusyError();
+ const pending=slot.run(new URL('./reference-worker.ts',import.meta.url),{path:fixed,bridgePath:bridge,openSelected:true},timeoutMs,signal),joined=slot.join();let raw:unknown;
+ try{raw=await pending;}finally{await joined;}signal?.throwIfAborted();
+ if(boundedSerdeByteCount(raw,1048576)===null)throw new RangeError('Native binding response exceeds budget');const response=cloneOwnedSerdeValue(raw),binding=own(response,'binding');
+ if(own(binding,'mode')!=='BindingOpenSelected'||own(binding,'path')!==fixed||own(binding,'bridgePath')!==bridge)throw new TypeError('Binding selected response differs from original request');
+ if(own(response,'ok')!==true){const detail=own(response,'detail');throw new Error(typeof detail==='string'?detail:'Native selected binding read failed');}
+ const selected=own(response,'value');if(selected!==null)text(selected,16384);return selected;
+}
