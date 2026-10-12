@@ -1,0 +1,10 @@
+{
+  "status": "WIP_NOT_APPLIED",
+  "typecheck": 0,
+  "build": 0,
+  "focused": 457,
+  "whole": "RUNNING_EXPECTED8250_FILES800",
+  "actualProduct": "770 standalone8239PASS, no runtime installation",
+  "focusedExit": 0,
+  "focusedDurationMs": 187096.14184
+}

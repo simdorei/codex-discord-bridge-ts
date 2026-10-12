@@ -1,0 +1,117 @@
+[
+  {
+    "path": "src/runtime/action-executor/action-target.ts",
+    "sha256": "d343e05929b5580e66f2b76d85e9454079e4a58e58f8f00fac92dc28fd87b689",
+    "baselineSha256": "3c3be175cca7adb133ae44013c8dffc5b222136b5f788b77d7b70ef7252e9a80"
+  },
+  {
+    "path": "src/runtime/action-executor/archive-action.ts",
+    "sha256": "4e7e0e9032a1e87299941f11e055c8cca97086fdafa822abcc1e3553228245d7",
+    "baselineSha256": "b70796eb7bddc4b07988232055b9c46ac52ac2917a13c52f763523278812bda3"
+  },
+  {
+    "path": "src/runtime/action-executor/basic-dispatcher.ts",
+    "sha256": "151d46eba14e2340688e20bab5294b8c07070cee6b7f081da74fb5e0d8baeb88",
+    "baselineSha256": "10355b3f6d31498b7ac5799737cc5fac57dbef0e0d1874f1d700dd6a5f1c932b"
+  },
+  {
+    "path": "src/runtime/action-executor/command-executor.ts",
+    "sha256": "18134f05cbecf2fa429b34d48804ff66a34a5e15eee57aa842c2076824eeaa27",
+    "baselineSha256": "99a4d5a0aa85964a7da4b28ad1502e4092b50d493396d8064b188dc50a47ce3e"
+  },
+  {
+    "path": "src/runtime/action-executor/control-turn.ts",
+    "sha256": "d480c4a2aa49b5302f7aadfde56005a338a32a5dbab9d54bd777f36bf33778e6",
+    "baselineSha256": "d7a25e660b39c0a6adcf5c8003183d3ab75d377ade834ff8c02440a0130c0c5f"
+  },
+  {
+    "path": "src/runtime/action-executor/new-executor.ts",
+    "sha256": "bc1bfa7606c3bafc324ee73b8ba1cbe2a75e754c00efe30f367c61c3ffe4105f",
+    "baselineSha256": "cc9750a9b53cdcf57f91966aae13d2eb730dfbba0465d027369d868042d90bd3"
+  },
+  {
+    "path": "src/runtime/action-executor/open-thread.ts",
+    "sha256": "eb3d4ac7a7c2352253e663879465948457f9772605df6fb641cf7d2fbd38b1c3",
+    "baselineSha256": "df800b721c3e4c48d1940b0e50bce28f1990a6392e36d77e640b5767e817818e"
+  },
+  {
+    "path": "src/runtime/action-executor/recovery-custody.ts",
+    "sha256": "e889ee118d34a393a194cf75a322583725e404505ecb2c9f22cf0f9cb6d72001",
+    "baselineSha256": "56c5a70ea6521551df8a08a20b8b5642ea6b51390c7788359e642f96129bd7a6"
+  },
+  {
+    "path": "src/runtime/action-executor/repair-action.ts",
+    "sha256": "0927f50e0e53f941ee03c21be6ae0a5652f862ade370bfb5ae255fd09072215c",
+    "baselineSha256": "d2fc0b2c563ef9c29b90055bbb002d9e10e109962833741ca137facea7a23f27"
+  },
+  {
+    "path": "src/runtime/action-executor/resume-action.ts",
+    "sha256": "6f7f58db1037c55c898b7dcaa357f33b962520330a384aca0f9c7d1485eed332",
+    "baselineSha256": "b2c3e95b49f5c3db0d7d00610cb64894b4c4d8956c960d0231707abc9ccd3aee"
+  },
+  {
+    "path": "src/runtime/action-executor/settings-action.ts",
+    "sha256": "d064c4d72cf66bbb8c7067e3ada1cc746d6345f2f35cb52449e0b735fb4268a9",
+    "baselineSha256": "60f856e599c3fe511e32e5f88d60ea5f3904556bc662599c56be8e2f82d77b8d"
+  },
+  {
+    "path": "src/runtime/action-executor/settings-snapshot.ts",
+    "sha256": "08ee59b2a27a716d14ee6b8f7a65459b42a29f7ab95eb85b0481aa3874c29542",
+    "baselineSha256": "694efe4e59b8cf96f6c7a2c7f4650a33390a6be9a62c78afc1a068918fa36c32"
+  },
+  {
+    "path": "src/runtime/action-executor/stop-action.ts",
+    "sha256": "37262cb5b129145120d16e214b2d34ba313de602553ca87238f6696d9bb1158f",
+    "baselineSha256": "73b7faae4392ec9eed4144bf9f7bd2613a27bab74ca3e5bb2c85ed08706694f2"
+  },
+  {
+    "path": "src/runtime/action-executor/stop-custody.ts",
+    "sha256": "1d5558ef2f4914c9977187ea6f8faa0b9f4b3bc7305239b0dc29e62ab57f1faf",
+    "baselineSha256": "2722a291129d85bc2940f3f1b1060cf290e424e0f12b7e66afb77bc87df5b36f"
+  },
+  {
+    "path": "src/runtime/action-executor/stop-worker.ts",
+    "sha256": "ea29c0996dabb0ff17a05215888182bcd6adc07cec332de7f553093760cce8c4",
+    "baselineSha256": "b39ad50f2952848348a7d7719837cf6a52004bcb5dbbcc4daa5200b8bab25024"
+  },
+  {
+    "path": "src/runtime/action-executor/thread-list.ts",
+    "sha256": "91ed16d05c0aabf3d255b6b25c4bd842aae047b245f2cc96b3c2fd15921809fe",
+    "baselineSha256": "77448605d4bf233e8cbe7f1bf5fd830968b28e34c89483ce61fc6e4ce4580606"
+  },
+  {
+    "path": "src/runtime/action-executor/thread-selection.ts",
+    "sha256": "ecc2b1de558a5e56d828463fdf30b6dba45bc74d7bfb58e25b50c667a9d8e48a",
+    "baselineSha256": "5eba7487a20c160ba984be8465dd9eae74c1bc5ae8b4f790c66dcc20c084ed90"
+  },
+  {
+    "path": "src/runtime/bridge-state-native.ts",
+    "sha256": "084beafea86db939e5e3109325157373bf90c6e5ec98d087edb53bca4589e122",
+    "baselineSha256": "084beafea86db939e5e3109325157373bf90c6e5ec98d087edb53bca4589e122"
+  },
+  {
+    "path": "src/runtime/settings-binding.ts",
+    "sha256": "ea778b451297eb36f39381d2c202ef625d3903d0d3416298378c36f9cebd2b09",
+    "baselineSha256": "9d25434d6998554d8a2dc43f121e67b4dc71b79f03507b96eab8c3ef326ffea5"
+  },
+  {
+    "path": "test/runtime/action-executor/bridge-fork-native.test.ts",
+    "sha256": "f8823cb7efd12596c218c0d063c6c85278768d8e56f5ad323e65f3c22486344e",
+    "baselineSha256": null
+  },
+  {
+    "path": "test/runtime/action-executor/command-executor.test.ts",
+    "sha256": "486ea128efbc623269155a592abadadddfe7e81fc1f5cbdad40573619e2d135b",
+    "baselineSha256": "f1dbad5f4fd7537255fc9dc1df76795b4ed29c66de194f24e38ba8f3b1d06344"
+  },
+  {
+    "path": "test/runtime/bridge-runtime-selected-guard.test.ts",
+    "sha256": "79b1e511001061b93d24ac63d90597c6e27a812afd17912605b7164c32b723d1",
+    "baselineSha256": null
+  },
+  {
+    "path": "test/runtime/bridge-selection-epoch.test.ts",
+    "sha256": "32bb7f12c31d42afd65b3d314a7afd45927277fef29f329e9b3b3b774addbf03",
+    "baselineSha256": "32bb7f12c31d42afd65b3d314a7afd45927277fef29f329e9b3b3b774addbf03"
+  }
+]
