@@ -1,0 +1,99 @@
+{
+  "beforeHead": "4689aec0cefa08e6f0025c2306ed74570c22b56c",
+  "stageFileCount": 1553,
+  "scope": [
+    {
+      "path": "src/runtime/discord-runtime/queue-bootstrap.ts",
+      "beforeSha256": "5045108644010a29126e7ef82833514e824487f8ee60ed32000e0a58a72a6d53",
+      "afterSha256": "082c4161a739598cd53200fb00369a315a2d54d340909296ada3c88ae77f9d48"
+    },
+    {
+      "path": "src/runtime/queue-runner/native-attempt-worker.ts",
+      "beforeSha256": null,
+      "afterSha256": "d443caa329542858cb9382fea7193353d22355e4d984d6f1ee23984a3b0cd84b"
+    },
+    {
+      "path": "src/runtime/queue-runner/native-state.ts",
+      "beforeSha256": null,
+      "afterSha256": "571b3e900dfe576c4413906cb91c365569f469eeb00b7cb27648433fe2f9f107"
+    },
+    {
+      "path": "src/store/queue-claims.ts",
+      "beforeSha256": "b2a230cecad9a6d8d2e18bdb3175c09fba84f87a673bbf0dba91cf3b9a2e7ec4",
+      "afterSha256": "5d009e57868fad7313d8de69ea175d101596277c94a64fd845549b7d50bd0df5"
+    },
+    {
+      "path": "src/store/queue-preflight-failure.ts",
+      "beforeSha256": "acc2163093f6a9d1b729ca5142619f80beeba935a4d441b8af51eb20a8991337",
+      "afterSha256": "4cf91a887e5271d5a451754cf02b37e1e47d9f086bb8f5b99c2e9863110ee687"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "b8529c682fbe9c3d280809023098366aece6c097f9532ddbdd0fd8468709ff75",
+      "afterSha256": "b2e3525a08da45eb6e975db2f0bec99bb9bdc95e8e5844c9b36e0f0997b7f24d"
+    },
+    {
+      "path": "test/runtime/discord-runtime/native-queue-read-wiring.test.ts",
+      "beforeSha256": "f5511de24d5322c1d40b993bc6e3b209e75c1f25b0599e45cb04bd0a84370cf5",
+      "afterSha256": "b86bbc400be00a92ac4ca4722939dddb0f2ac14190f0e024f0929424228337b5"
+    },
+    {
+      "path": "test/runtime/queue-runner/native-attempt.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "47bdb6016dcab9fa26bd6cb0e7b600c0949ef26bc4fd54741ac6e9b111221761"
+    },
+    {
+      "path": "test/store/queue-attempt-existing.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "c540635ee7ed1f3ada584463ca1d2387a2ac236cd44c6dde5701b17a94112e7e"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "971e3f5ccf17534962a510a18831f233ae9db00276a65bd6ae3ef58d6aa692bb",
+      "afterSha256": "1aee850af56f5c80927fea5ad80d1923f4bba506db5ba219da1abfa93a002b39"
+    },
+    {
+      "path": "test/runtime/queue-runner/native-intake-cancellation.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "ba78fab54b97cd13f641870cc9bf1c54dd7d414b7eee409386ce9d9e8cc9b5a4"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 7811,
+    "pass": 7811,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 749,
+    "logSha256": "b6c88cd203947e829f20d5d8726b19f6e9e1085a3527c1eb0b26389971cff0f0",
+    "tapSha256": "5889c038b18b627278d8c708d65fe38c812bd4a392d6f6098e3ac9e4f269483c"
+  },
+  "claim": "Qualified staged whole7811PASS plus actual945PASS/TS0/build0 and all1553source/test hashes identical. No separate actual whole rerun/Windows/performance claim.",
+  "remoteWrite": "Authorized publication active; baseline700 verified5c8b2a1b; candidate703 not published.",
+  "actualAll1553HashesMatchQualifiedStage": true,
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 945,
+      "pass": 945,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1553
+  },
+  "evidence": {
+    ".runtime/queue-attempt-native-703/full.log": "b6c88cd203947e829f20d5d8726b19f6e9e1085a3527c1eb0b26389971cff0f0",
+    ".runtime/queue-attempt-native-703/full.tap": "5889c038b18b627278d8c708d65fe38c812bd4a392d6f6098e3ac9e4f269483c",
+    ".runtime/queue-attempt-native-703/full-exit.json": "823b3b61c8985ab9d1d7689cbf43ff544cd9e641846f28f7bc8434915e9344e8",
+    ".runtime/queue-attempt-native-703/scope-proof.json": "fcb6bceab2cad74be42df4f479c302cc6c49889c68822ec4357936fd34d160e8",
+    ".runtime/queue-attempt-native-703/stage-inputs.json": "6f5e17571ab5ba23bcf73dbdcd1c66de81aa7462df87ef3d92664240765a8fa3",
+    ".runtime/queue-attempt-native-703/source-inputs.json": "36cad0b3d13d929105db00f19172093466d90c2dcbe62263072f1e9d4e7436ba",
+    ".runtime/queue-attempt-native-703/rust-source-identity.json": "56f5dbaf8c3af17382ee9970dcafce9804f32f27a75155f3cf9e2a697fa57cfc",
+    ".runtime/queue-attempt-store-foundation-702/body-identity-proof.json": "5fccd27393468eee66dc5d23e5987123f9bf66d6ea45d20ce0b522b6cb530a52",
+    ".runtime/queue-attempt-native-703/oracle-correction.json": "7d64087cdc5f0ade02407fece8b8af7a6ed892cc3dfb7475e13b32c462e47798",
+    ".runtime/queue-attempt-native-703/initial-oracle-red/focused.log": "d4e51e785a4573ee67656d85a99620d13d78e2d7cbadb7d0c646da679c005ed7",
+    ".runtime/queue-attempt-native-703/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/queue-attempt-native-703/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/queue-attempt-native-703/applied/focused.log": "6064f9ebed7eec8b5f4a17e3b2939e72cc033ea4221d9c19d7ca061bfe1f02dc"
+  }
+}

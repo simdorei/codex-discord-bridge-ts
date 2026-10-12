@@ -329,13 +329,17 @@ export const settleExitedIdleOwnerExisting: typeof IdleReleaseStore.settleExited
 
 export const deadTargetHeld: typeof DeadGeneration.targetIsHeld = DeadGeneration.targetIsHeld;
 export const recordPreflightFailure: typeof Preflight.recordPreflightFailure = Preflight.recordPreflightFailure;
+export const recordPreflightFailureExisting: typeof Preflight.recordPreflightFailureExisting = Preflight.recordPreflightFailureExisting;
 
 export const holdStartingForAmbiguousCandidatesIfClaimed: typeof QueueClaims.holdStartingForAmbiguousCandidatesIfClaimed = QueueClaims.holdStartingForAmbiguousCandidatesIfClaimed;
 
 export const tryBeginAttempt: typeof QueueClaims.tryBeginAttempt = QueueClaims.tryBeginAttempt;
+export const tryBeginAttemptExisting: typeof QueueClaims.tryBeginAttemptExisting = QueueClaims.tryBeginAttemptExisting;
 export const recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed = QueueClaims.recordStartFailureIfClaimed;
+export const recordStartFailureIfClaimedExisting: typeof QueueClaims.recordStartFailureIfClaimedExisting = QueueClaims.recordStartFailureIfClaimedExisting;
 export const markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed = QueueClaims.markRunningIfClaimed;
 export const markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed = QueueClaims.markRunningWithResidentIfClaimed;
+export const markRunningWithResidentIfClaimedExisting: typeof QueueClaims.markRunningWithResidentIfClaimedExisting = QueueClaims.markRunningWithResidentIfClaimedExisting;
 
 export const proposeAbandonment: typeof AbandonmentProposalStore.proposeAbandonment = AbandonmentProposalStore.proposeAbandonment;
 export const bindAbandonmentDelivery: typeof AbandonmentProposalStore.bindAbandonmentDelivery = AbandonmentProposalStore.bindAbandonmentDelivery;
@@ -691,10 +695,14 @@ export interface IStateAccessFacade {
   readonly settleExitedIdleOwnerExisting: typeof IdleReleaseStore.settleExitedIdleOwnerExisting;
   readonly deadTargetHeld: typeof DeadGeneration.targetIsHeld;
   readonly recordPreflightFailure: typeof Preflight.recordPreflightFailure;
+  readonly recordPreflightFailureExisting: typeof Preflight.recordPreflightFailureExisting;
   readonly tryBeginAttempt: typeof QueueClaims.tryBeginAttempt;
+  readonly tryBeginAttemptExisting: typeof QueueClaims.tryBeginAttemptExisting;
   readonly recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed;
+  readonly recordStartFailureIfClaimedExisting: typeof QueueClaims.recordStartFailureIfClaimedExisting;
   readonly markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed;
   readonly markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed;
+  readonly markRunningWithResidentIfClaimedExisting: typeof QueueClaims.markRunningWithResidentIfClaimedExisting;
   readonly proposeAbandonment: typeof AbandonmentProposalStore.proposeAbandonment;
   readonly bindAbandonmentDelivery: typeof AbandonmentProposalStore.bindAbandonmentDelivery;
   readonly recordAbandonmentDecision: typeof AbandonmentDecisionStore.recordAbandonmentDecision;
@@ -990,10 +998,14 @@ export const StateAccessFacade: IStateAccessFacade = {
   settleExitedIdleOwnerExisting,
   deadTargetHeld,
   recordPreflightFailure,
+  recordPreflightFailureExisting,
   tryBeginAttempt,
+  tryBeginAttemptExisting,
   recordStartFailureIfClaimed,
+  recordStartFailureIfClaimedExisting,
   markRunningIfClaimed,
   markRunningWithResidentIfClaimed,
+  markRunningWithResidentIfClaimedExisting,
   proposeAbandonment,
   bindAbandonmentDelivery,
   recordAbandonmentDecision,

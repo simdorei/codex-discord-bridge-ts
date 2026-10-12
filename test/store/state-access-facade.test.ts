@@ -418,9 +418,15 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.eligibleJobs, ExecutionHold.eligibleJobs);
     assert.strictEqual(StateAccessFacade.holdStartingForAmbiguousCandidatesIfClaimed, QueueClaims.holdStartingForAmbiguousCandidatesIfClaimed);
     assert.strictEqual(StateAccessFacade.tryBeginAttempt, QueueClaims.tryBeginAttempt);
+    assert.strictEqual(StateAccessFacade.tryBeginAttemptExisting, QueueClaims.tryBeginAttemptExisting);
+    assert.strictEqual(FacadeExports.tryBeginAttemptExisting, QueueClaims.tryBeginAttemptExisting);
     assert.strictEqual(StateAccessFacade.recordStartFailureIfClaimed, QueueClaims.recordStartFailureIfClaimed);
+    assert.strictEqual(StateAccessFacade.recordStartFailureIfClaimedExisting, QueueClaims.recordStartFailureIfClaimedExisting);
+    assert.strictEqual(FacadeExports.recordStartFailureIfClaimedExisting, QueueClaims.recordStartFailureIfClaimedExisting);
     assert.strictEqual(StateAccessFacade.markRunningIfClaimed, QueueClaims.markRunningIfClaimed);
     assert.strictEqual(StateAccessFacade.markRunningWithResidentIfClaimed, QueueClaims.markRunningWithResidentIfClaimed);
+    assert.strictEqual(StateAccessFacade.markRunningWithResidentIfClaimedExisting, QueueClaims.markRunningWithResidentIfClaimedExisting);
+    assert.strictEqual(FacadeExports.markRunningWithResidentIfClaimedExisting, QueueClaims.markRunningWithResidentIfClaimedExisting);
     assert.strictEqual(StateAccessFacade.activateDeadGenerationRuntime, DeadCapture.activateDeadGenerationRuntime);
     assert.strictEqual(StateAccessFacade.captureDeadGeneration, DeadCapture.captureDeadGeneration);
     assert.strictEqual(StateAccessFacade.captureResponseCustody, ResponseCustody.captureResponseCustody);
@@ -470,6 +476,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.settleExitedIdleOwnerExisting, IdleReleaseStore.settleExitedIdleOwnerExisting);
     assert.strictEqual(StateAccessFacade.deadTargetHeld, DeadGeneration.targetIsHeld);
     assert.strictEqual(StateAccessFacade.recordPreflightFailure, Preflight.recordPreflightFailure);
+    assert.strictEqual(StateAccessFacade.recordPreflightFailureExisting, Preflight.recordPreflightFailureExisting);
+    assert.strictEqual(FacadeExports.recordPreflightFailureExisting, Preflight.recordPreflightFailureExisting);
   });
 
   it("exposes exact direct function references via named whole-function aliases", () => {
@@ -647,7 +655,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "markGoalWaiting",
       "markRunning",
       "markRunningIfClaimed",
-      "markRunningWithResidentIfClaimed",
+      "markRunningWithResidentIfClaimed", "markRunningWithResidentIfClaimedExisting",
       "mirroredThreadId",
       "newThreadOrigin",
       "acknowledgeIngress",
@@ -755,9 +763,9 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "recordGoalProgressError", "recordGoalProgressErrorExisting",
       "recordObservedCompletionError",
       "recordObservedCompletionForResident",
-      "recordPreflightFailure",
+      "recordPreflightFailure", "recordPreflightFailureExisting",
       "recordPromptIntakeFailureIfClaimed",
-      "recordStartFailureIfClaimed",
+      "recordStartFailureIfClaimed", "recordStartFailureIfClaimedExisting",
       "removePromptIntakeIfQueued",
       "renewPromptIntakeClaimIfCurrent",
       "repairLegacyDefiniteForkFailures",
@@ -767,13 +775,13 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "stageAppServerForkTarget",
       "stageOwnedGoalProgress",
       "stageOwnedQueueCompletion",
-      "tryBeginAttempt",
+      "tryBeginAttempt", "tryBeginAttemptExisting",
       "tryClaimPromptIntake",
       "unresolvedAppServerForkHandoffForSource",
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 284);
+    assert.strictEqual(actual.length, 288);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

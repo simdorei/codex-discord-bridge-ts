@@ -1,3 +1,4 @@
+import {openExisting} from './existing-store.ts';
 import { snapshotStoredQueueJob, STARTING_CANDIDATE_HOLD_PREFIX } from "./queue-read.ts";
 import type { DatabaseSync } from "node:sqlite";
 import { types } from "node:util";
@@ -20,8 +21,7 @@ import { bindLateStartIn } from "./stop-late-start.ts";
 
 interface Decision<T> { readonly value: T; readonly commit: boolean; }
 
-async function withWriter<T>(path: string, work: (db: DatabaseSync) => Decision<T>): Promise<T> {
-  const db = await openInitialized(path);
+function finishWriter<T>(db: DatabaseSync, work: (db: DatabaseSync) => Decision<T>): T {
   let committed = false;
   try {
     db.exec("BEGIN IMMEDIATE");
@@ -34,6 +34,14 @@ async function withWriter<T>(path: string, work: (db: DatabaseSync) => Decision<
     }
     db.close();
   }
+}
+
+async function withWriter<T>(path: string, work: (db: DatabaseSync) => Decision<T>): Promise<T> {
+  return finishWriter(await openInitialized(path), work);
+}
+
+function withExistingWriter<T>(path: string, work: (db: DatabaseSync) => Decision<T>): T {
+  return finishWriter(openExisting(path), work);
 }
 
 function text(value: unknown): asserts value is string {
@@ -75,14 +83,14 @@ function claimedResult(db: DatabaseSync, jobId: string, changes: number | bigint
 }
 
 /** Atomic pending→starting claim. A failed comparison never becomes a new attempt. */
-export async function tryBeginAttempt(
+function prepareBeginAttempt(
   path: string, jobId: string, baselineTurnIds: readonly string[], generation: bigint,
-): Promise<StoredQueueJob | null> {
+): (db: DatabaseSync) => Decision<StoredQueueJob | null> {
   text(path); text(jobId);
   if (typeof generation !== "bigint" || generation < I64_MIN || generation > I64_MAX)
     throw new TypeError("Expected a signed i64 generation");
   const baseline = JSON.stringify(baselineSnapshot(baselineTurnIds));
-  return withWriter(path, db => {
+  return db => {
     ensureForkHandoffTable(db);
     let candidate: StoredQueueJob;
     try { candidate = selectJob(db, jobId); }
@@ -95,7 +103,21 @@ export async function tryBeginAttempt(
       || candidate.lastError.startsWith(LEGACY_RESERVE_HOLD_PREFIX)) return {value: null, commit: false};
     const updated = db.prepare(CLAIM_SQL).run(generation, baseline, now(), jobId, generation);
     return claimedResult(db, jobId, updated.changes);
-  });
+  };
+}
+
+export async function tryBeginAttempt(
+  path: string, jobId: string, baselineTurnIds: readonly string[], generation: bigint,
+): Promise<StoredQueueJob | null> {
+  const work = prepareBeginAttempt(path, jobId, baselineTurnIds, generation);
+  return withWriter(path, work);
+}
+
+export function tryBeginAttemptExisting(
+  path: string, jobId: string, baselineTurnIds: readonly string[], generation: bigint,
+): StoredQueueJob | null {
+  const work = prepareBeginAttempt(path, jobId, baselineTurnIds, generation);
+  return withExistingWriter(path, work);
 }
 
 const CLAIMED_WHERE = `WHERE job_id=? AND target_thread_id=? AND app_server_generation=? AND attempt_count=?
@@ -104,14 +126,14 @@ const CLAIMED_WHERE = `WHERE job_id=? AND target_thread_id=? AND app_server_gene
       WHERE handoff.source_thread_id=codex_turn_queue.target_thread_id AND handoff.target_thread_id IS NULL)`;
 const FAILURE_SQL = `UPDATE codex_turn_queue SET state=?, last_error=?, updated_at=? ${CLAIMED_WHERE}`;
 
-export async function recordStartFailureIfClaimed(
+function prepareStartFailure(
   path: string, claimed: StoredQueueJob, error: string, ambiguous: boolean,
-): Promise<StoredQueueJob | null> {
+): (db: DatabaseSync) => Decision<StoredQueueJob | null> {
   text(path); text(error);
   if (typeof ambiguous !== "boolean") throw new TypeError("Expected ambiguity boolean");
   const claim = snapshotStoredQueueJob(claimed);
   const bounded = takeUnicodeScalarChars(trimUnicodeWhitespace(error), 1000);
-  return withWriter(path, db => {
+  return db => {
     ensureForkHandoffTable(db);
     if (!jobCanMutate(db, claim)) return {value: null, commit: false};
     const baseline = matchingBaselineJsonIn(db, claim);
@@ -123,7 +145,21 @@ export async function recordStartFailureIfClaimed(
       stageStartNoticeIn(db, claim, bounded);
     }
     return claimedResult(db, claim.jobId, updated.changes);
-  });
+  };
+}
+
+export async function recordStartFailureIfClaimed(
+  path: string, claimed: StoredQueueJob, error: string, ambiguous: boolean,
+): Promise<StoredQueueJob | null> {
+  const work = prepareStartFailure(path, claimed, error, ambiguous);
+  return withWriter(path, work);
+}
+
+export function recordStartFailureIfClaimedExisting(
+  path: string, claimed: StoredQueueJob, error: string, ambiguous: boolean,
+): StoredQueueJob | null {
+  const work = prepareStartFailure(path, claimed, error, ambiguous);
+  return withExistingWriter(path, work);
 }
 
 /** Non-resident Rust mark_running_if_claimed only; never substitutes for resident stop binding. */
@@ -133,13 +169,13 @@ export async function markRunningIfClaimed(
   return markRunningWithResidentIfClaimed(path, claimed, turnId, null);
 }
 
-export async function markRunningWithResidentIfClaimed(
+function prepareRunning(
   path: string, claimed: StoredQueueJob, turnId: string, resident: string | null,
-): Promise<StoredQueueJob | null> {
+): (db: DatabaseSync) => Decision<StoredQueueJob | null> {
   text(path); text(turnId);
   if (resident !== null) text(resident);
   const claim = snapshotStoredQueueJob(claimed);
-  return withWriter(path, db => {
+  return db => {
     ensureForkHandoffTable(db);
     if (!jobCanMutate(db, claim)) return {value: null, commit: false};
     const baseline = matchingBaselineJsonIn(db, claim);
@@ -154,7 +190,21 @@ export async function markRunningWithResidentIfClaimed(
       if (resident !== null) bindLateStartIn(db, claim, running, resident);
     }
     return claimedResult(db, claim.jobId, updated.changes);
-  });
+  };
+}
+
+export async function markRunningWithResidentIfClaimed(
+  path: string, claimed: StoredQueueJob, turnId: string, resident: string | null,
+): Promise<StoredQueueJob | null> {
+  const work = prepareRunning(path, claimed, turnId, resident);
+  return withWriter(path, work);
+}
+
+export function markRunningWithResidentIfClaimedExisting(
+  path: string, claimed: StoredQueueJob, turnId: string, resident: string | null,
+): StoredQueueJob | null {
+  const work = prepareRunning(path, claimed, turnId, resident);
+  return withExistingWriter(path, work);
 }
 
 

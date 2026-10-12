@@ -1,4 +1,4 @@
-import {createNativeQueueReadState} from '../queue-runner/native-read-state.ts';
+import {createNativeQueueState} from '../queue-runner/native-state.ts';
 import {PortableResidentLifecycle} from '../../app-server/portable-resident-lifecycle.ts';
 import {AdmissionGate} from '../../admission/drain-gate.ts';
 import {AppServerTurnBackend} from '../app-server-turn-backend.ts';
@@ -22,7 +22,7 @@ export async function buildRecoveredRuntimeQueue(path:string,server:PortableResi
  for(const fn of [reportPolicyFailure,notifyDeliveryReady])if(typeof fn!=='function'||types.isProxy(fn)||types.isAsyncFunction(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected synchronous runtime queue callback');
  PortableResidentLifecycle.prototype.lifecycleSnapshot.call(server);AdmissionGate.prototype.isSealed.call(admission);
  const backend=new AppServerTurnBackend(server,render,cloneOwnedSerdeValue(options) as BackendOptions);
- const queue=new QueueStartCoordinator(path,backend,{state:createNativeQueueReadState(path),admission,notifyDeliveryReady:()=>invokeSynchronousVoid(notifyDeliveryReady,queue,[])});
+ const queue=new QueueStartCoordinator(path,backend,{state:createNativeQueueState(path),admission,notifyDeliveryReady:()=>invokeSynchronousVoid(notifyDeliveryReady,queue,[])});
  try{await queue.installReviewedRecoveryPolicy();}catch(error){invokeSynchronousVoid(reportPolicyFailure,queue,[REVIEWED_INCIDENT_THREAD,error]);}
  const recovery=await queue.recover();
  const restarted=await stabilizeAfterQueueRecovery(runtimeQueueRecoveryServer(server));
