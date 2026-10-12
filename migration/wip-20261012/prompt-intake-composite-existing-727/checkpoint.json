@@ -1,0 +1,35 @@
+{
+  "status": "WIP_AUTHORED_UNTESTED_UNAPPLIED",
+  "utc": "2026-10-12T08:03:15.216132+00:00",
+  "actualQualifiedCheckpoint": 720,
+  "actualQualifiedTests": 7943,
+  "requiresQualified725": true,
+  "files": [
+    {
+      "path": "src/store/prompt-intake-busy.ts",
+      "sha256": "a5ff22e40c9c8055cb6a040b6d3a2ac9ff8b5ced29c0da5fcb2a5dd3643408f1"
+    },
+    {
+      "path": "src/store/prompt-intake-new-thread.ts",
+      "sha256": "97386df6fe1a8907a6016a734692316816b16a9fcd59a2f529cfb8e999685914"
+    },
+    {
+      "path": "test/store/prompt-intake-busy.test.ts",
+      "sha256": "42c0fc6254e585f021a8427b5b52ecb0a5443209be2971a257e8935acb53c05f"
+    },
+    {
+      "path": "test/store/prompt-intake-composite-existing.test.ts",
+      "sha256": "d969737b3fd928b82af8b431fbfaa633e1e47d26d79146ff401a77b41024d93e"
+    },
+    {
+      "path": "test/store/prompt-intake-new-thread.test.ts",
+      "sha256": "4d87cebfe627bd56ebe5117dce4fb5038972cb18c6a9e99a5d057098ef25b580"
+    }
+  ],
+  "tests": "NOT_RUN",
+  "limitations": [
+    "No runtime native injection yet",
+    "No TS/build/test qualification",
+    "No Windows/live/performance claim"
+  ]
+}

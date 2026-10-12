@@ -1,16 +1,20 @@
 {
-  "status": "WIP_UNAPPLIED_FULL_RUNNING",
-  "utc": "2026-10-12T07:46:48.003586+00:00",
+  "status": "WIP_UNAPPLIED_INITIAL_FULL_RED_CORRECTED_FOCUS_RUNNING",
+  "utc": "2026-10-12T08:03:15.216132+00:00",
   "baselineLocal": "12926e42ba8a9f1e1898deca1f397c45834321f9",
   "baselineRemote": "39e33f3640e6e7e46706b5b0459c2a6cb4fed4da",
   "actualQualifiedTests": 7943,
   "candidateChecks": {
-    "typecheckExit": 0,
-    "buildExit": 0,
-    "focusedPass": 1527,
-    "focusedFail": 0,
-    "focusedSkip": 0,
-    "whole": "RUNNING; no whole PASS claimed"
+    "previousFocusedPass": 1527,
+    "initialWhole": {
+      "tests": 7967,
+      "pass": 7966,
+      "fail": 1,
+      "skip": 0
+    },
+    "sameRegressionBodyOldHelper": "FAIL reproduced before dispatch after4000event turns",
+    "correctedFocused": "RUNNING",
+    "correctedWhole": "NOT_RUN"
   },
   "limitations": [
     "Candidate not applied to src/test",
@@ -84,14 +88,13 @@
       "path": "migration/wip-20261012/prompt-intake-complete-native-725/candidate/test/store/state-access-facade.test.ts",
       "target": "test/store/state-access-facade.test.ts",
       "sha256": "1931562d118e8a7e325f92b342d6d2e921e98f8f63153edf71c734a8a37426d5"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-complete-native-725/candidate/test/runtime/discord-dispatch/ordinary-dispatcher.test.ts",
+      "target": "test/runtime/discord-dispatch/ordinary-dispatcher.test.ts",
+      "sha256": "c157727b1f518e7c733148f16f588791bdeb98b45448ca539447ef3405584b22"
     }
   ],
-  "evidenceHashes": {
-    "focused.log": "a19fd08391465ddf8c3772ebbb16cfd4f2ff485da2e4442f757e6ddeb15b43ec",
-    "typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "stage-inputs.json": "f372a45cdd2b359619721f2b0188b671f66b29c36753d910a08d9055b1ce4b85",
-    "scope-proof.json": "3a486082cb672890aee7f496ad847a88ca4a6c0d9ebc8b9f764ccf192787ca45",
-    "source-inputs.json": "8443c090ef8819e5f973ec05089d7026aa5400599a80f7357fb9b80c1fa91d95"
-  }
+  "evidenceHashes": {},
+  "priorEvidence": "Previous commit25a69972 preserves pre-full result. Initial wholeRED and raw logs retained locally, not uploaded."
 }
