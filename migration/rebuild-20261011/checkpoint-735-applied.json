@@ -1,0 +1,103 @@
+{
+  "beforeHead": "92d85b1c40a049fdbfa4c942e9414af1dda9d6b4",
+  "stageFileCount": 1580,
+  "scope": [
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "beforeSha256": "03887c339e2c75c41390207ab7e8ce4bf7baba5098a7c817522a11e1ee33fd1a",
+      "afterSha256": "de16de87a832726b7c928ab687d091115bda23faf38bf9b391c3d98e461627a3"
+    },
+    {
+      "path": "src/runtime/action-executor/new-executor.ts",
+      "beforeSha256": "6f47bc85b039c0bd8279a944c6c5ee09bc1cc9593c547f93edc16564ad171012",
+      "afterSha256": "785f9433b71abb7521bd3f15975517d29d1ba299c3922a6d532d1807b6939648"
+    },
+    {
+      "path": "src/runtime/action-executor/new-first-reply.ts",
+      "beforeSha256": "731a03e2735c7bcbc708f574f3f1032172706af5243a0fb102316de00212cd5b",
+      "afterSha256": "dafbfc4fd45563472285f4ec0891dfee3f25dbac909ed5ab351ef8402395a105"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state-worker.ts",
+      "beforeSha256": "f733a4be1c91e2b2228a28a177c456f9dac40c36440e675713eb559d5975b12c",
+      "afterSha256": "ac299a8f2336a43f16b29a7c98e2a90e1515125df2bde1819fa020011bac7273"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state.ts",
+      "beforeSha256": "87029a29f24ec74512ea1e09dfdc8fee98ea267f11463fe02d8b0696bf294a7e",
+      "afterSha256": "0b80d2c39b8934d20fc1b6c030c50f5ca6e092f42da9cbfc14ce18d4e83bacda"
+    },
+    {
+      "path": "src/store/new-reply-finish.ts",
+      "beforeSha256": null,
+      "afterSha256": "9c4828d0cac387edf84503271205da541679abd63abaf2ddd5ab79b8de55db84"
+    },
+    {
+      "path": "src/store/new-reply-read.ts",
+      "beforeSha256": "4c51a813b79660e341f7feffaf988558e592ba048ffdffad3b9ffabaa4caa70f",
+      "afterSha256": "a8e6aaf80e5f4fff260b258b32921172743ef82e6ccb46415a1d8a66fbf2c9fc"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "ff102779a2122caff8cec1c7c77e0d2b1a8c0b3982436b577bbbcc82313429bb",
+      "afterSha256": "116036fbcb30a2fbc6fe5c7124a9806ff3015452e27df799f43835288a5774d1"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-first-reply.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "081d7be8b74592145b59965d1b99ada0f53aa8c1166a09b3c5f4a98ff4de9b87"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-state.test.ts",
+      "beforeSha256": "f768c44d6d1c0cce7b883a583d1906c2280a2f1a57a9ca18385cd8282da785c2",
+      "afterSha256": "f8ba3029f51f491df3e4dbbd679ff3e7d9eae7dd4a311f776564b3cd12bb4da7"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "2649e52d09428459f865622dd0f5bde2a4f9783492528bce6f6bc796c164c63c",
+      "afterSha256": "7b7affcffc9523039a8efd9c1103ded5c9110f1fc106e9cf18b892c980651ee0"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 8007,
+    "pass": 8007,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 770,
+    "logSha256": "ddfcf7d8cbbd16505f6ee3ca77e605b9406d519d6877dcb5e5ba3a5356ab1d1b",
+    "tapSha256": "ab69af1c36dc7ab4f00bccf17c5de243a14ec26f2dc65a72f785041a5cd02447"
+  },
+  "claim": "Staged whole8007PASS plus actual193PASS/TS0/build0 and all1580source/test hashes identical. No separate actual whole rerun or Windows/live/performance certification.",
+  "remoteWrite": "Qualified733 remote340428 verified;735 WIP separately recorded.",
+  "actualAll1580HashesMatchQualifiedStage": true,
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 193,
+      "pass": 193,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1580
+  },
+  "limitations": [
+    "Remaining mirror mapping, new-reply/journal/project/replay reads not all offloaded",
+    "Existing catalog name/column checks are not exact DDL certification",
+    "Protected redaction fixture is absent and neither executed nor counted as skip",
+    "No Windows, live Discord/appserver, G1-G7, 24h, or deployment approval"
+  ],
+  "evidence": {
+    ".runtime/new-first-reply-native-735/full.log": "ddfcf7d8cbbd16505f6ee3ca77e605b9406d519d6877dcb5e5ba3a5356ab1d1b",
+    ".runtime/new-first-reply-native-735/full.tap": "ab69af1c36dc7ab4f00bccf17c5de243a14ec26f2dc65a72f785041a5cd02447",
+    ".runtime/new-first-reply-native-735/full-exit.json": "2c6fb55275f4187eba99a03c06a8acb6705aa0936698be954c9052d54d0b8c18",
+    ".runtime/new-first-reply-native-735/scope-proof.json": "358e1d2c4764d756cf4aeb7451d2d7b164ef0bbe4aa826c8d90814d15d58d565",
+    ".runtime/new-first-reply-native-735/stage-inputs.json": "922446cede71c9cadc21dae95ad1675d9513fe941a08ff3af0306fc344679ca5",
+    ".runtime/new-first-reply-native-735/authored-manifest.json": "0e9ee3ea632e7c8c6a70020344d2443be99ce204794c247b5d30162fb51d2975",
+    ".runtime/new-first-reply-native-735/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/new-first-reply-native-735/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/new-first-reply-native-735/applied/focused.log": "a60eb8fdfcc6b449456903d05c7a5e58779cf6b57fe4c127ad7ea86a36933871",
+    ".runtime/new-first-reply-native-735/body-identity-proof.json": "a8e7bd7e1ebb4c8b9e82e240bc3e1d707a599bdfb31f7b104fa6b7f2198a9351",
+    ".runtime/new-first-reply-native-plan-734/source-inputs.json": "b8b048310a764804ccfa09d191ed359eacbecfa48d039b70705599780bdc3128"
+  }
+}

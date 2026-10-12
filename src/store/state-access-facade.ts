@@ -1,3 +1,4 @@
+import * as NewReplyFinish from './new-reply-finish.ts';
 import * as PreparedMutationValidation from './prepared-mutation-validation.ts';
 import * as ResumeRestartRecovery from './resume-restart-recovery.ts';
 import * as NewReplyCheckpoint from './new-reply-checkpoint.ts';
@@ -203,6 +204,8 @@ export const checkpointNewReply: typeof NewReplyCheckpoint.checkpointNewReply = 
 export const getNewReplyBounded: typeof NewReplyPending.getNewReplyBounded = NewReplyPending.getNewReplyBounded;
 export const pendingNewReplies: typeof NewReplyPending.pendingNewReplies = NewReplyPending.pendingNewReplies;
 export const validateNewReplyCurrent: typeof NewReplyClaims.validateNewReplyCurrent = NewReplyClaims.validateNewReplyCurrent;
+export const getNewFirstReplyFinish: typeof NewReplyFinish.getNewFirstReplyFinish = NewReplyFinish.getNewFirstReplyFinish;
+export const getNewFirstReplyFinishExisting: typeof NewReplyFinish.getNewFirstReplyFinishExisting = NewReplyFinish.getNewFirstReplyFinishExisting;
 export const getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress = NewReplyRead.getNewReplyByIngress;
 export const newReplyOutputHold: typeof NewReplyClaims.newReplyOutputHold = NewReplyClaims.newReplyOutputHold;
 export const newReplyOutputHoldExisting: typeof NewReplyClaims.newReplyOutputHoldExisting = NewReplyClaims.newReplyOutputHoldExisting;
@@ -558,6 +561,8 @@ export interface IStateAccessFacade {
   readonly getNewReplyBounded: typeof NewReplyPending.getNewReplyBounded;
   readonly pendingNewReplies: typeof NewReplyPending.pendingNewReplies;
   readonly validateNewReplyCurrent: typeof NewReplyClaims.validateNewReplyCurrent;
+  readonly getNewFirstReplyFinish: typeof NewReplyFinish.getNewFirstReplyFinish;
+  readonly getNewFirstReplyFinishExisting: typeof NewReplyFinish.getNewFirstReplyFinishExisting;
   readonly getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress;
   readonly newReplyOutputHold: typeof NewReplyClaims.newReplyOutputHold;
   readonly newReplyOutputHoldExisting: typeof NewReplyClaims.newReplyOutputHoldExisting;
@@ -914,6 +919,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   pendingNewReplies,
   getNewReplyBounded,
   validateNewReplyCurrent,
+  getNewFirstReplyFinish,
+  getNewFirstReplyFinishExisting,
   getNewReplyByIngress,
   newReplyOutputHold,
   newReplyOutputHoldExisting,

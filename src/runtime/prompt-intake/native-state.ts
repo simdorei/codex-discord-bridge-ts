@@ -14,7 +14,7 @@ import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {intakeNumberWire,intakeFromWire} from './native-wire.ts';
 const LIMIT=16*1024*1024;
-type Operation='Get'|'List'|'DurableOwner'|'Claim'|'Renew'|'RecordFailure'|'RemoveQueued'|'Admit'|'Canonicalize'|'ReleaseAll'|'AdmitBusy'|'AdmitWithIngress'|'MirrorTarget';
+type Operation='Get'|'List'|'DurableOwner'|'Claim'|'Renew'|'RecordFailure'|'RemoveQueued'|'Admit'|'Canonicalize'|'ReleaseAll'|'AdmitBusy'|'AdmitWithIngress'|'MirrorTarget'|'FirstReplyFinish';
 export class NativePromptIntakeUnavailableError extends Error{
  readonly operation:Operation;
  constructor(operation:Operation,cause:unknown){super('Prompt intake result unavailable after actual native join; no partial result or automatic retry',{cause});this.name='NativePromptIntakeUnavailableError';this.operation=operation;}
@@ -23,7 +23,7 @@ function lease(now:number,expires:number):void{
  if(typeof now!=='number'||typeof expires!=='number')throw new TypeError('Expected lease timestamps');
  if(!Number.isFinite(now)||!Number.isFinite(expires)||expires<=now)throw new InvalidPromptIntakeLeaseError(now,expires);
 }
-/** Exactly thirteen intake/mapping operations; all other state functions retain their identities. Shared finite Control admission; no new pool, retry or detached I/O. */
+/** Exactly fourteen intake/mapping/first-reply operations; all other state functions retain their identities. Shared finite Control admission; no new pool, retry or detached I/O. */
 export function createNativePromptIntakeState(path:string,timeoutMs=5000):IStateAccessFacade{
  requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new TypeError('Invalid intake store path');
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid intake deadline');const fixed=pinNativeRuntimePath(path);
@@ -52,6 +52,12 @@ export function createNativePromptIntakeState(path:string,timeoutMs=5000):IState
   return {intake,claimToken:current};
  }
  return Object.freeze({...StateAccessFacade,
+  async getNewFirstReplyFinish(given:string,ingress:string){
+   requirePath(given);identity(ingress);return run('FirstReplyFinish',{ingress},raw=>{
+    if(own(raw,'ingress')!==ingress)throw new TypeError('First-reply projection differs from requested ingress');const record=own(raw,'record');if(record===null)return null;
+    const jobId=own(record,'jobId'),turnId=own(record,'turnId'),acknowledgement=own(record,'acknowledgement');requireDiscordText(jobId);if(turnId!==null)requireDiscordText(turnId);requireDiscordText(acknowledgement);return {jobId,turnId,acknowledgement};
+   });
+  },
   async mirroredThreadId(given:string,channel:bigint|null){
    requirePath(given);if(channel!==null&&(typeof channel!=='bigint'||channel<-(1n<<63n)||channel>=(1n<<63n)))throw new TypeError('Expected optional i64 channel');
    if(channel===null||channel===0n)return null;

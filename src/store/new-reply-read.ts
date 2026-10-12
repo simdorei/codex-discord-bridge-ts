@@ -144,12 +144,16 @@ export function getIn(db: DatabaseSync, jobId: string): NewReply | null {
 /** Source get_by_ingress: one job lookup then full record decoding on the same
  * initialized connection. No fallback by event ID or reconstructed identity. */
 export function getNewReplyByIngress(path: string, ingress: string): Promise<NewReply | null> {
-  if (typeof ingress !== 'string') throw new TypeError('Expected ingress identity');
-  assertWellFormedUnicode(ingress, 'ingress');
-  return usingInitializedStore(path, db => {
+  validateNewReplyIngress(ingress);
+  return usingInitializedStore(path, db => getNewReplyByIngressIn(db,ingress));
+}
+/** Original same-connection lookup and complete decoding, for trusted existing readers. */
+export function getNewReplyByIngressIn(db:DatabaseSync,ingress:string):NewReply|null{
+  validateNewReplyIngress(ingress);
     const row = db.prepare("SELECT job_id,CAST(job_id AS BLOB) AS raw,(SELECT encoding FROM pragma_encoding) AS encoding FROM codex_new_first_replies WHERE ingress_id=?").get(ingress);
     if (row === undefined) return null;
     const job = decodeTextField(row.job_id, row.raw, 'job_id', false, textDecoderFor(row.encoding))!;
     return getIn(db, job);
-  });
 }
+
+export function validateNewReplyIngress(ingress:string):void{if(typeof ingress!=='string')throw new TypeError('Expected ingress identity');assertWellFormedUnicode(ingress,'ingress');}
