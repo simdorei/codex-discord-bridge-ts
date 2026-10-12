@@ -755,7 +755,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
   "hasObservedCompletionResidentEvidenceExisting",
       "pendingObservedCompletions",
       "pendingObservedCompletionsExisting",
-      "promotePromptIntakeToQueue",
+      "promotePromptIntakeToQueue", "promotePromptIntakeToQueueExisting",
       "promptIntakeHasDurableOwner",
       "recordAndCancelDefiniteForkFailure",
       "recordAppServerForkFailure",
@@ -795,7 +795,9 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.enqueueExisting, QueueEnqueue.enqueueExisting);
     assert.strictEqual(StateAccessFacade.enqueueIfMirrorMatchesExisting, QueueEnqueue.enqueueIfMirrorMatchesExisting);
     assert.strictEqual(FacadeExports.enqueueIfMirrorMatchesExisting, QueueEnqueue.enqueueIfMirrorMatchesExisting);
-    assert.strictEqual(actual.length, 294);
+    assert.strictEqual(StateAccessFacade.promotePromptIntakeToQueueExisting, PromptIntakePromotion.promotePromptIntakeToQueueExisting);
+    assert.strictEqual(FacadeExports.promotePromptIntakeToQueueExisting, PromptIntakePromotion.promotePromptIntakeToQueueExisting);
+    assert.strictEqual(actual.length, 295);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

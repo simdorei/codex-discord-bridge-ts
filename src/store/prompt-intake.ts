@@ -1,6 +1,7 @@
 import type {DatabaseSync,SQLInputValue} from "node:sqlite";
 import {randomUUID} from "node:crypto";
-import {openInitialized} from "./owned-driver.ts";
+import {openInitialized,verifyCurrentCatalogIn} from "./owned-driver.ts";
+import {openExisting} from "./existing-store.ts";
 import {migratePromptIntake} from "./schema-extensions-b1.ts";
 import {decodeI64,decodeOptionalI64,decodeTimestamp,decodeTextField,textDecoderFor} from "./sqlite-values.ts";
 import {reasonIn} from "./execution-hold.ts";
@@ -71,10 +72,18 @@ export async function promptIntakeHasDurableOwner(path:string,id:string):Promise
     query.setReadBigInts(true);return decodeI64(query.get(id)?.owned,"owned")!==0n;
   }finally{db.close();}
 }
-async function writer<T>(path:string,work:(db:DatabaseSync)=>{value:T;commit:boolean},ensureSchema=true):Promise<T>{
-  validText(path);const db=await openInitialized(path);let committed=false;
-  try{db.exec("BEGIN IMMEDIATE");if(ensureSchema)migratePromptIntake(db);const result=work(db);if(result.commit){db.exec("COMMIT");committed=true;}return result.value;}
+function finishPromptIntakeWriter<T>(db:DatabaseSync,work:(db:DatabaseSync)=>{value:T;commit:boolean},ensureSchema:boolean,existing:boolean):T{
+  let committed=false;
+  try{db.exec("BEGIN IMMEDIATE");if(existing)verifyCurrentCatalogIn(db);else if(ensureSchema)migratePromptIntake(db);const result=work(db);if(result.commit){db.exec("COMMIT");committed=true;}return result.value;}
   finally{if(!committed&&db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
+}
+async function writer<T>(path:string,work:(db:DatabaseSync)=>{value:T;commit:boolean},ensureSchema=true):Promise<T>{
+  validText(path);const db=await openInitialized(path);return finishPromptIntakeWriter(db,work,ensureSchema,false);
+}
+/** Trusted local synchronous callback only. Existing catalog is checked in the
+ * same IMMEDIATE transaction; no missing-file creation or schema repair. */
+export function withPromptIntakeWriterExisting<T>(path:string,work:(db:DatabaseSync)=>{value:T;commit:boolean}):T{
+  validText(path);return finishPromptIntakeWriter(openExisting(path),work,false,true);
 }
 function lease(now:number,expires:number):void{
   if(typeof now!=="number"||typeof expires!=="number")throw new TypeError("Expected lease timestamps");

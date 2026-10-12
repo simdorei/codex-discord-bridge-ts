@@ -21,7 +21,7 @@ function baseline(input:readonly string[]):string[]{
  if(types.isProxy(input)||!Array.isArray(input)||boundedSerdeByteCount(input,LIMIT)===null)throw new TypeError('Expected bounded baseline data array');
  const result:string[]=[];for(let i=0;i<input.length;i++){const value=own(input,String(i));requireDiscordText(value);result.push(value);}return result;
 }
-/** Four reads, two submissions and eight explicit serializable lifecycle writes. Original store functions
+/** Four reads, three submissions and eight explicit serializable lifecycle writes. Original store functions
  * own the entire synchronous transaction. No backend awaits occur inside a TX.
  * An admitted operation is joined even after its result deadline. */
 export function createNativeQueueState(path:string,timeoutMs=5000):IStateAccessFacade{

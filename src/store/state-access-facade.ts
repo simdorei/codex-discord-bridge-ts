@@ -396,6 +396,7 @@ export const listPromptIntakes: typeof PromptIntakeLease.listPromptIntakes = Pro
 export const executionHoldReason: typeof ExecutionHold.executionHoldReason = ExecutionHold.executionHoldReason;
 export const canonicalizePromptIntakeTarget: typeof PromptIntakeWrite.canonicalizePromptIntakeTarget = PromptIntakeWrite.canonicalizePromptIntakeTarget;
 export const promotePromptIntakeToQueue: typeof PromptIntakePromotion.promotePromptIntakeToQueue = PromptIntakePromotion.promotePromptIntakeToQueue;
+export const promotePromptIntakeToQueueExisting: typeof PromptIntakePromotion.promotePromptIntakeToQueueExisting = PromptIntakePromotion.promotePromptIntakeToQueueExisting;
 
 export const enqueue: typeof QueueEnqueue.enqueue = QueueEnqueue.enqueue;
 export const enqueueExisting: typeof QueueEnqueue.enqueueExisting = QueueEnqueue.enqueueExisting;
@@ -744,6 +745,7 @@ export interface IStateAccessFacade {
   readonly asyncTargetDispatchHeld: typeof AsyncAdmission.asyncQuestionTargetDispatchHeld;
   readonly canonicalizePromptIntakeTarget: typeof PromptIntakeWrite.canonicalizePromptIntakeTarget;
   readonly promotePromptIntakeToQueue: typeof PromptIntakePromotion.promotePromptIntakeToQueue;
+  readonly promotePromptIntakeToQueueExisting: typeof PromptIntakePromotion.promotePromptIntakeToQueueExisting;
   readonly enqueue: typeof QueueEnqueue.enqueue;
   readonly enqueueExisting: typeof QueueEnqueue.enqueueExisting;
   readonly enqueueIfMirrorMatchesExisting: typeof QueueEnqueue.enqueueIfMirrorMatchesExisting;
@@ -1053,6 +1055,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   asyncTargetDispatchHeld,
   canonicalizePromptIntakeTarget,
   promotePromptIntakeToQueue,
+  promotePromptIntakeToQueueExisting,
   enqueue,
   enqueueExisting,
   enqueueIfMirrorMatchesExisting,

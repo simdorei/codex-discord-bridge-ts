@@ -1,5 +1,5 @@
 import type {DatabaseSync,SQLInputValue} from "node:sqlite";
-import {getPromptIntakeIn,withPromptIntakeWriter,InvalidPromptIntakeLeaseError,type PromptIntakeClaim,type StoredPromptIntake} from "./prompt-intake.ts";
+import {getPromptIntakeIn,withPromptIntakeWriter,withPromptIntakeWriterExisting,InvalidPromptIntakeLeaseError,type PromptIntakeClaim,type StoredPromptIntake} from "./prompt-intake.ts";
 import {snapshotPromptIntakeClaim,PromptIntakeClaimLostError,PromptIntakeIdentityConflictError} from "./prompt-intake-write.ts";
 import {snapshotNewQueueJob,enqueueInTransaction,ensureMirrorMatches,type NewQueueJob,type QueueEnqueueResult} from "./queue-enqueue.ts";
 import {selectJob,type StoredQueueJob} from "./queue-read.ts";
@@ -36,7 +36,10 @@ export async function promotePromptIntakeToQueue(path:string,input:PromptIntakeC
   const claim=snapshotPromptIntakeClaim(input),job=snapshotNewQueueJob(newJob);
   if(typeof now!=="number")throw new TypeError("Expected numeric timestamp");
   if(!Number.isFinite(now))throw new InvalidPromptIntakeLeaseError(now,claim.intake.claimExpiresAt);
-  return withPromptIntakeWriter(path,db=>{
+  return withPromptIntakeWriter(path,db=>promoteIn(db,claim,job,now));
+}
+
+function promoteIn(db:DatabaseSync,claim:PromptIntakeClaim,job:NewQueueJob,now:number):{value:QueueEnqueueResult;commit:boolean}{
     requireUnheldIn(db,claim.intake.jobId);
     const current=getPromptIntakeIn(db,claim.intake.jobId);if(current===null)throw new PromptIntakeClaimLostError(claim.intake.jobId);
     for(const target of [current.targetThreadId,job.targetThreadId])if(targetIsHeldIn(db,target))throw new DeadGenerationTargetHeldError(target);
@@ -50,5 +53,11 @@ export async function promotePromptIntakeToQueue(path:string,input:PromptIntakeC
     const removed=db.prepare("DELETE FROM codex_prompt_intakes WHERE job_id=? AND claim_token=? AND claim_expires_at>?").run(current.jobId,claim.claimToken,now).changes;
     if(BigInt(removed)!==1n)throw new PromptIntakeClaimLostError(current.jobId);
     return {value:enqueued,commit:true};
-  });
+}
+/** Existing-only transaction wrapper; original callback ordering is shared. */
+export function promotePromptIntakeToQueueExisting(path:string,input:PromptIntakeClaim,newJob:NewQueueJob,now:number):QueueEnqueueResult{
+  const claim=snapshotPromptIntakeClaim(input),job=snapshotNewQueueJob(newJob);
+  if(typeof now!=="number")throw new TypeError("Expected numeric timestamp");
+  if(!Number.isFinite(now))throw new InvalidPromptIntakeLeaseError(now,claim.intake.claimExpiresAt);
+  return withPromptIntakeWriterExisting(path,db=>promoteIn(db,claim,job,now));
 }
