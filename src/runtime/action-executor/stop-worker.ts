@@ -1,3 +1,4 @@
+import {NativeStopPendingReader} from './stop-pending-native.ts';
 import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
 import {snapshotSettingsBinding,validateSelectedSettingsSnapshot,captureSelectedSettingsCheck} from "./settings-snapshot.ts";
 import {types} from "node:util";
@@ -19,17 +20,17 @@ function sync(fn:unknown):void{if(typeof fn!=="function"||types.isProxy(fn)||typ
 /** One serial keyset owner. Busy targets are skipped after advancing the cursor;
  * no detached task per Stop and no retry of claimed/unknown original authority. */
 export class StopControlWorker{
- readonly #nativeBridge:NativeBridgeStateOwner|undefined;
+ readonly #nativeBridge:NativeBridgeStateOwner|undefined;readonly #pendingReader:NativeStopPendingReader|undefined;
   readonly #path:string;readonly #server:Server|null;readonly #bridge:Pick<BridgeState,"selectedThreadId">;readonly #locks:TargetLocks;readonly #state:Store;readonly #verify:ControlTurnVerifier;readonly #render:(e:unknown)=>string;readonly #report:(e:StopWorkerFailure)=>void;readonly #mapped:ReturnType<typeof createRuntimeFenceErrors>;
   #cursor=0n;#processing=false;#running=false;
-  constructor(path:string,server:Server|null,bridge:Pick<BridgeState,"selectedThreadId">,locks:TargetLocks,render:(e:unknown)=>string,report:(e:StopWorkerFailure)=>void,state:Store=StateAccessFacade,nativeBridge?:NativeBridgeStateOwner){this.#nativeBridge=nativeBridge;sync(render);sync(report);this.#path=path;this.#server=server;this.#bridge=bridge;this.#locks=locks;this.#state=state;this.#render=render;this.#report=report;this.#verify=new ControlTurnVerifier(path,server,bridge,locks,state,nativeBridge);this.#mapped=createRuntimeFenceErrors(render);}
+  constructor(path:string,server:Server|null,bridge:Pick<BridgeState,"selectedThreadId">,locks:TargetLocks,render:(e:unknown)=>string,report:(e:StopWorkerFailure)=>void,state:Store=StateAccessFacade,nativeBridge?:NativeBridgeStateOwner,pendingReader?:NativeStopPendingReader){if(pendingReader!==undefined)NativeStopPendingReader.prototype.assertPath.call(pendingReader,path);this.#pendingReader=pendingReader;this.#nativeBridge=nativeBridge;sync(render);sync(report);this.#path=path;this.#server=server;this.#bridge=bridge;this.#locks=locks;this.#state=state;this.#render=render;this.#report=report;this.#verify=new ControlTurnVerifier(path,server,bridge,locks,state,nativeBridge);this.#mapped=createRuntimeFenceErrors(render);}
   get cursor():bigint{return this.#cursor;}
   #diagnostic(error:unknown):string{const s=this.#render(error);if(types.isPromise(s))void Promise.prototype.then.call(s,undefined,()=>undefined);if(typeof s!=="string"||/[\uD800-\uDFFF]/u.test(s))throw new TypeError("Expected public-safe stop diagnostic");return s;}
   #notify(event:StopWorkerFailure):void{invokeSynchronousVoid(this.#report,{},[Object.freeze(event)]);}
   async process(signal?:AbortSignal):Promise<number>{
     if(this.#processing)throw new TypeError("A stop cycle is already active");this.#processing=true;
     try{
-      signal?.throwIfAborted();const server=this.#server;if(server===null)throw new MissingActionAppServerError();const pending=this.#state.pendingStopControlsAfter(this.#path,this.#cursor);if(pending.length===0){this.#cursor=0n;return 0;}let dispatched=0;
+      signal?.throwIfAborted();const server=this.#server;if(server===null)throw new MissingActionAppServerError();const pending=this.#pendingReader===undefined?this.#state.pendingStopControlsAfter(this.#path,this.#cursor):await NativeStopPendingReader.prototype.pending.call(this.#pendingReader,this.#cursor,signal);signal?.throwIfAborted();if(pending.length===0){this.#cursor=0n;return 0;}let dispatched=0;
       for(const [sequence,original] of pending){
         signal?.throwIfAborted();this.#cursor=sequence;if(original.resident!==server.instanceId||original.generation<0n||original.generation!==server.generation())continue;
         const lease=this.#locks.tryAcquire(original.target);if(!lease)continue;

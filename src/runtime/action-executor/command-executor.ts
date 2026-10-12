@@ -1,3 +1,4 @@
+import {NativeStopPendingReader} from './stop-pending-native.ts';
 import {createNativeControlReads} from './control-evidence-state.ts';
 import {StateAccessFacade as controlStore} from '../../store/state-access-facade.ts';
 import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
@@ -79,7 +80,8 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   const bridgeOwner=new NativeBridgeStateOwner(BridgeState.prototype.path.call(bridge));
   const locks=queue.locks,selection=new ActionThreadSelection(paths.state,paths.mirror,bridge,intakeState.mirroredThreadId,threadReads,bridgeOwner),control=new ControlTurnVerifier(paths.mirror,server,bridge,locks,controlReads,bridgeOwner),busy=new BusyResultProducer(paths.mirror,control,queue.reads);
   const targets=new ActionTargetServices(paths.mirror,bridge,queue,{preparePrompt:prepare,busyResult:BusyResultProducer.prototype.busyResult.bind(busy)},undefined,bridgeOwner),intake=new PromptIntakeProcessor(paths.mirror,queue,targets,{state:intakeState});
-  this.#stopWorkerFactory=report=>new StopControlWorker(paths.mirror,server,bridge,locks,render,report,stopWorkerState,bridgeOwner);
+  const pendingStopReader=new NativeStopPendingReader(paths.mirror);
+  this.#stopWorkerFactory=report=>new StopControlWorker(paths.mirror,server,bridge,locks,render,report,stopWorkerState,bridgeOwner,pendingStopReader);
   this.#intake=intake;  this.#server=server;this.#control=control;this.#componentQueue=new BusyQueueExecutor(paths.mirror,Object.freeze({processAdmittedPrompt:PromptIntakeProcessor.prototype.processAdmittedPrompt.bind(intake)}),undefined,intakeState.admitBusyQueue,intakeState.mirroredThreadId);
   this.#queue=queue;this.#basic=new BasicActionDispatcher(paths,bridge,server,locks,render,timeout,intakeState.mirroredThreadId,threadReads,bridgeOwner,controlReads);
   this.#new=new NewThreadExecutor(paths.mirror,paths.state,queue,intake,bridge,server,backend,get('mirror'),get('reportNewAttempt'),undefined,intakeState.admitPromptIntakeWithIngress,intakeState.getNewFirstReplyFinish,intakeState,createNativeNewProjectLookup(paths.state),bridgeOwner);
