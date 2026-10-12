@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {createServer, type ServerResponse} from 'node:http';
+import {EventEmitter, once} from 'node:events';
 import {existsSync, writeFileSync} from 'node:fs';
 import {setImmediate as tick} from 'node:timers/promises';
 import {storeFixture} from '../../helpers/store-fixture.ts';
@@ -41,7 +42,7 @@ type Seen = {url: string; body: Record<string, any>; authorization: string | und
 type Context = {
   path: string; client: DiscordChannelClient; queue: ReturnType<typeof createInteractionWorkQueue>;
   clock: Clock; gate: AdmissionGate; fence: DrainFenceKey; claims: InteractionClaimCache; force: AbortController;
-  requests: Seen[]; reports: InteractionDispatchReport[]; dispatcher: OrdinaryInteractionDispatcher;
+  requests: Seen[]; requestEvents: EventEmitter; reports: InteractionDispatchReport[]; dispatcher: OrdinaryInteractionDispatcher;
   make: (options: Partial<OrdinaryDispatcherOptions>) => OrdinaryInteractionDispatcher;
   dispatch: (input?: DecodedGatewayInteraction, tag?: 'Normal' | 'Busy' | 'Stopping', received?: number, instance?: OrdinaryInteractionDispatcher) => ReturnType<OrdinaryInteractionDispatcher['dispatch']>;
 };
@@ -53,12 +54,17 @@ async function fixture(run: (ctx: Context) => Promise<void>, options: {
     let ctx!: Context;
     const handlerErrors: unknown[] = [], tasks: Promise<unknown>[] = [], instances: OrdinaryInteractionDispatcher[] = [];
     const requests: Seen[] = [], reports: InteractionDispatchReport[] = [];
+    const requestEvents = new EventEmitter();
     const server = createServer((req, res) => {
       let raw = ''; req.on('data', chunk => {raw += chunk;});
       req.on('end', () => {
         const seen = {url: req.url!, body: JSON.parse(raw), authorization: req.headers.authorization};
         requests.push(seen);
-        void Promise.resolve().then(() => options.handler ? options.handler(ctx, res, seen) : (() => {res.statusCode = 204; res.end();})())
+        void Promise.resolve().then(() => {
+          const handled = options.handler ? options.handler(ctx, res, seen) : (() => {res.statusCode = 204; res.end();})();
+          requestEvents.emit('request'); // Handler has installed any held-response release callback.
+          return handled;
+        })
           .catch(error => {handlerErrors.push(error); if (!res.headersSent) res.statusCode = 500; res.end('{}');});
       });
     });
@@ -80,7 +86,7 @@ async function fixture(run: (ctx: Context) => Promise<void>, options: {
     const dispatch: Context['dispatch'] = (value = interaction(), tag = 'Normal', received = clock.value, instance = dispatcher) => {
       const task = instance.dispatch(value, received, tag, force.signal); tasks.push(task); void task.catch(() => {}); return task;
     };
-    ctx = {path, client, queue, clock, gate, fence, claims, force, requests, reports, dispatcher, make, dispatch};
+    ctx = {path, client, queue, clock, gate, fence, claims, force, requests, requestEvents, reports, dispatcher, make, dispatch};
     try {await run(ctx); assert.deepEqual(handlerErrors, []);}
     finally {
       force.abort(new Error('fixture cleanup')); await Promise.allSettled(tasks);
@@ -93,12 +99,30 @@ async function fixture(run: (ctx: Context) => Promise<void>, options: {
   });
 }
 async function seen(ctx: Context, count = 1) {
-  for (let i = 0; i < 3000 && ctx.requests.length < count; i++) await tick();
+  // An event-loop turn count is not an HTTP/SQLite completion deadline.
+  // Bound missing-request failures in real time and join through fixture cleanup.
+  const signal = AbortSignal.any([ctx.force.signal, AbortSignal.timeout(8000)]);
+  while (ctx.requests.length < count) await once(ctx.requestEvents, 'request', {signal});
   assert.equal(ctx.requests.length, count);
 }
 async function edit(path: string, sql: string) {
   const db = await openInitialized(path); try {db.exec(sql);} finally {db.close();}
 }
+
+
+test('ACK observation waits for the request event rather than an event-loop iteration count', async () => {
+  await fixture(async ctx => {
+    let settled = false;
+    const observed = seen(ctx).then(() => {settled = true; return {ok: true};}, error => {settled = true; return {ok: false, error};});
+    // Force more turns than the old 3000-turn poll before any dispatch starts.
+    for (let i = 0; i < 4000; i++) await tick();
+    assert.equal(settled, false);
+    assert.equal(ctx.requests.length, 0);
+    assert.equal(await ctx.dispatch(), 'Queued');
+    assert.deepEqual(await observed, {ok: true});
+    assert.equal(ctx.requests.length, 1);
+  });
+});
 
 test('native ACK occurs after durable stage and reservation, before custody confirmation and enqueue', {timeout: 8000}, async () => {
   await fixture(async ctx => {

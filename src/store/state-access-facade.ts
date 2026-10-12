@@ -387,6 +387,7 @@ export const mirroredThreadId: typeof MirrorMapping.mirroredThreadId = MirrorMap
 export const renewPromptIntakeClaimIfCurrent: typeof PromptIntakeLease.renewPromptIntakeClaimIfCurrent = PromptIntakeLease.renewPromptIntakeClaimIfCurrent;
 export const promptIntakeHasDurableOwner: typeof PromptIntakeLease.promptIntakeHasDurableOwner = PromptIntakeLease.promptIntakeHasDurableOwner;
 export const admitPromptIntake: typeof PromptIntakeWrite.admitPromptIntake = PromptIntakeWrite.admitPromptIntake;
+export const admitPromptIntakeExisting: typeof PromptIntakeWrite.admitPromptIntakeExisting = PromptIntakeWrite.admitPromptIntakeExisting;
 export const getPromptIntakeExisting: typeof PromptIntakeLease.getPromptIntakeExisting = PromptIntakeLease.getPromptIntakeExisting;
 export const listPromptIntakesExisting: typeof PromptIntakeLease.listPromptIntakesExisting = PromptIntakeLease.listPromptIntakesExisting;
 export const promptIntakeHasDurableOwnerExisting: typeof PromptIntakeLease.promptIntakeHasDurableOwnerExisting = PromptIntakeLease.promptIntakeHasDurableOwnerExisting;
@@ -403,6 +404,7 @@ export const releaseAllPromptIntakeClaims: typeof PromptIntakeLease.releaseAllPr
 export const listPromptIntakes: typeof PromptIntakeLease.listPromptIntakes = PromptIntakeLease.listPromptIntakes;
 export const executionHoldReason: typeof ExecutionHold.executionHoldReason = ExecutionHold.executionHoldReason;
 export const canonicalizePromptIntakeTarget: typeof PromptIntakeWrite.canonicalizePromptIntakeTarget = PromptIntakeWrite.canonicalizePromptIntakeTarget;
+export const canonicalizePromptIntakeTargetExisting: typeof PromptIntakeWrite.canonicalizePromptIntakeTargetExisting = PromptIntakeWrite.canonicalizePromptIntakeTargetExisting;
 export const promotePromptIntakeToQueue: typeof PromptIntakePromotion.promotePromptIntakeToQueue = PromptIntakePromotion.promotePromptIntakeToQueue;
 export const promotePromptIntakeToQueueExisting: typeof PromptIntakePromotion.promotePromptIntakeToQueueExisting = PromptIntakePromotion.promotePromptIntakeToQueueExisting;
 
@@ -605,6 +607,7 @@ export interface IStateAccessFacade {
   readonly acceptUnresolvedStop: typeof StopAcceptance.acceptUnresolvedStop;
   readonly captureStopOrigin: typeof StopRevision.captureStopOrigin;
   readonly admitPromptIntake: typeof PromptIntakeWrite.admitPromptIntake;
+  readonly admitPromptIntakeExisting: typeof PromptIntakeWrite.admitPromptIntakeExisting;
   readonly getPromptIntakeExisting: typeof PromptIntakeLease.getPromptIntakeExisting;
   readonly listPromptIntakesExisting: typeof PromptIntakeLease.listPromptIntakesExisting;
   readonly promptIntakeHasDurableOwnerExisting: typeof PromptIntakeLease.promptIntakeHasDurableOwnerExisting;
@@ -760,6 +763,7 @@ export interface IStateAccessFacade {
   readonly asyncTargetDispatchHeldExisting: typeof AsyncAdmission.asyncQuestionTargetDispatchHeldExisting;
   readonly asyncTargetDispatchHeld: typeof AsyncAdmission.asyncQuestionTargetDispatchHeld;
   readonly canonicalizePromptIntakeTarget: typeof PromptIntakeWrite.canonicalizePromptIntakeTarget;
+  readonly canonicalizePromptIntakeTargetExisting: typeof PromptIntakeWrite.canonicalizePromptIntakeTargetExisting;
   readonly promotePromptIntakeToQueue: typeof PromptIntakePromotion.promotePromptIntakeToQueue;
   readonly promotePromptIntakeToQueueExisting: typeof PromptIntakePromotion.promotePromptIntakeToQueueExisting;
   readonly enqueue: typeof QueueEnqueue.enqueue;
@@ -839,6 +843,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   observationScopeVerified,
 
   admitPromptIntake,
+  admitPromptIntakeExisting,
   getPromptIntakeExisting,
   listPromptIntakesExisting,
   promptIntakeHasDurableOwnerExisting,
@@ -1078,6 +1083,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   asyncTargetDispatchHeldExisting,
   asyncTargetDispatchHeld,
   canonicalizePromptIntakeTarget,
+  canonicalizePromptIntakeTargetExisting,
   promotePromptIntakeToQueue,
   promotePromptIntakeToQueueExisting,
   enqueue,

@@ -1,3 +1,4 @@
+import {NativePromptIntakeUnavailableError} from '../../../src/runtime/prompt-intake/native-state.ts';
 import {selectJob} from '../../../src/store/queue-read.ts';
 import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {join,dirname} from 'node:path';import {existsSync,mkdirSync,symlinkSync} from 'node:fs';
 import {storeFixture} from '../../helpers/store-fixture.ts';import {startRuntimeFoundation} from '../../../src/runtime/discord-runtime/startup-foundation.ts';import {buildRuntimeCommandExecutor,type RuntimeExecutorBootstrapOptions} from '../../../src/runtime/discord-runtime/executor-bootstrap.ts';import {AdmissionGate} from '../../../src/admission/drain-gate.ts';import {openInitialized} from '../../../src/store/owned-driver.ts';import {StateAccessFacade as state} from '../../../src/store/state-access-facade.ts';
@@ -24,7 +25,8 @@ test('all path and function bindings survive caller mutation across queue recove
 }));
 test('intake startup failure returns to caller without silently disposing borrowed resident or granting recovery',async()=>fixture(async(paths,owner)=>{
  const db=await openInitialized(paths.mirrorDb);try{db.exec("CREATE TRIGGER reject_release BEFORE UPDATE OF claim_token ON codex_prompt_intakes BEGIN SELECT RAISE(ABORT,'reject old lease release');END");}finally{db.close();}
- await assert.rejects(buildRuntimeCommandExecutor(paths,owner,new AdmissionGate(),options()),/reject old lease release/);assert.equal(owner.lifecycleSnapshot().healthy,true);assert.equal((await state.getPromptIntake(paths.mirrorDb,'held'))?.claimToken,'prior');
+ await assert.rejects(state.releaseAllPromptIntakeClaims(paths.mirrorDb),/reject old lease release/);
+ await assert.rejects(buildRuntimeCommandExecutor(paths,owner,new AdmissionGate(),options()),e=>e instanceof NativePromptIntakeUnavailableError&&e.operation==='ReleaseAll');assert.equal(owner.lifecycleSnapshot().healthy,true);assert.equal((await state.getPromptIntake(paths.mirrorDb,'held'))?.claimToken,'prior');
 },held));
 test('missing explicit preprocessing and accessor options reject without callback execution',async()=>fixture(async(paths,owner)=>{
  await assert.rejects(buildRuntimeCommandExecutor(paths,owner,new AdmissionGate(),{...options(),preparePrompt:undefined} as never),TypeError);let hooks=0;const o=options();Object.defineProperty(o,'render',{get(){hooks++;return render;}});await assert.rejects(buildRuntimeCommandExecutor(paths,owner,new AdmissionGate(),o),TypeError);assert.equal(hooks,0);

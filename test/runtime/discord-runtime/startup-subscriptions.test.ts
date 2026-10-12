@@ -47,7 +47,7 @@ for(const mode of ['release','claim'] as const)test(`failed ${mode} intake recov
  const p=PortableResidentLifecycle.prototype,originalN=p.subscribeNotifications,originalR=p.subscribeServerRequests;
  const seen:Array<ReturnType<typeof originalN>|ReturnType<typeof originalR>>=[];
  p.subscribeNotifications=function(){const r=originalN.call(this);seen.push(r);return r;};p.subscribeServerRequests=function(){const r=originalR.call(this);seen.push(r);return r;};
- try{await assert.rejects(buildRuntimeCommandExecutor(paths,owner,new AdmissionGate(),options()),mode==='release'?/release blocked/:(e:unknown)=>e instanceof NativePromptIntakeUnavailableError&&e.operation==='Claim');}finally{p.subscribeNotifications=originalN;p.subscribeServerRequests=originalR;}
+ try{await assert.rejects(buildRuntimeCommandExecutor(paths,owner,new AdmissionGate(),options()),(e:unknown)=>e instanceof NativePromptIntakeUnavailableError&&e.operation===(mode==='release'?'ReleaseAll':'Claim'));}finally{p.subscribeNotifications=originalN;p.subscribeServerRequests=originalR;}
  assert.equal(seen.length,2);for(const r of seen)assert.deepEqual(r.tryReceive(),{kind:'Closed'});assert.equal(owner.lifecycleSnapshot().healthy,true);
 }));
 

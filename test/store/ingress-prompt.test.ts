@@ -5,13 +5,15 @@ import {storeFixture} from "../helpers/store-fixture.ts";
 import {openInitialized} from "../../src/store/owned-driver.ts";
 import {getIngressIn,ingressByOriginIn,getIngress} from "../../src/store/ingress-read.ts";
 import {newCommandPrompt,newExecutionPrompt,frozenSlashTarget,recordNewInput} from "../../src/store/ingress-new-input.ts";
-import {admitPromptIntake,type NewPromptIntake} from "../../src/store/prompt-intake-write.ts";
+import {admitPromptIntake as initializedAdmit,admitPromptIntakeExisting,type NewPromptIntake} from "../../src/store/prompt-intake-write.ts";
 import {getPromptIntake} from "../../src/store/prompt-intake.ts";
 const intake=(overrides:Partial<NewPromptIntake>={}):NewPromptIntake=>({jobId:"job",targetThreadId:"target",channelId:1n,ownerUserId:2n,discordMessageId:3n,rawPrompt:"raw",autoQueueWhenBusy:true,requireCurrentMirror:false,createdAt:1,...overrides});
 const envelope=()=>({version:1,plan:{Execute:{New:{prompt:"raw"}}},attachments:[{id:"a"}]});
 async function seed(path:string,payload:unknown=envelope(),kind="message",phase="processing"):Promise<void>{const db=await openInitialized(path);try{
   db.prepare("INSERT INTO discord_ingress_journal(ingress_id,kind,event_id,channel_id,owner_user_id,payload_json,state,phase,target_thread_id,created_at,updated_at) VALUES ('i',?,3,1,2,?,'executing',?,'target',0,0)").run(kind,JSON.stringify(payload),phase);
 }finally{db.close();}}
+for(const existing of [false,true]){
+const admitPromptIntake:typeof initializedAdmit=async(...args)=>(existing?admitPromptIntakeExisting:initializedAdmit)(...args);
 test("attachment preparation preserves original envelope and exact UTF-8 fingerprint",async()=>{
   await storeFixture(async path=>{await seed(path);const before=await getIngress(path,"i");assert.ok(before);assert.throws(()=>newExecutionPrompt(before),/no durable prepared input/);
     await recordNewInput(path,"i","raw","prepared",5);const after=await getIngress(path,"i");assert.ok(after);
@@ -63,3 +65,5 @@ test("cross-kind duplicate origin is ambiguous and corrupt outcome text precedes
     assert.throws(()=>getIngressIn(db,"i"),/Invalid text encoding in column outcome_json/);
   }finally{db.close();}});
 });
+
+}

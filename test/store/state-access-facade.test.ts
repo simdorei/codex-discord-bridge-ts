@@ -388,6 +388,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimIfCurrent, PromptIntakeLease.renewPromptIntakeClaimIfCurrent);
     assert.strictEqual(StateAccessFacade.promptIntakeHasDurableOwner, PromptIntakeLease.promptIntakeHasDurableOwner);
     assert.strictEqual(StateAccessFacade.admitPromptIntake, PromptIntakeWrite.admitPromptIntake);
+    assert.strictEqual(StateAccessFacade.admitPromptIntakeExisting, PromptIntakeWrite.admitPromptIntakeExisting);
     assert.strictEqual(StateAccessFacade.getPromptIntake, PromptIntakeLease.getPromptIntake);
     assert.strictEqual(StateAccessFacade.tryClaimPromptIntake, PromptIntakeLease.tryClaimPromptIntake);
     assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueued, PromptIntakeWrite.removePromptIntakeIfQueued);
@@ -396,6 +397,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.listPromptIntakes, PromptIntakeLease.listPromptIntakes);
     assert.strictEqual(StateAccessFacade.executionHoldReason, ExecutionHold.executionHoldReason);
     assert.strictEqual(StateAccessFacade.canonicalizePromptIntakeTarget, PromptIntakeWrite.canonicalizePromptIntakeTarget);
+    assert.strictEqual(StateAccessFacade.canonicalizePromptIntakeTargetExisting, PromptIntakeWrite.canonicalizePromptIntakeTargetExisting);
     assert.strictEqual(StateAccessFacade.promotePromptIntakeToQueue, PromptIntakePromotion.promotePromptIntakeToQueue);
     assert.strictEqual(StateAccessFacade.enqueue, QueueEnqueue.enqueue);
     assert.strictEqual(
@@ -573,6 +575,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "stageCommentary", "pendingCommentary", "hasPendingCommentary", "hasPendingCommentaryExisting", "completeCommentary", "completeCommentaryExisting",
       "activate",
       "admitPromptIntake",
+      "admitPromptIntakeExisting",
       "adoptTargetGeneration",
       "asyncAdmissionHeld",
       "asyncTargetDispatchHeld", "asyncTargetDispatchHeldExisting",
@@ -584,6 +587,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "revalidateQueueStartAuthorityIn",
       "beginChecked",
       "canonicalizePromptIntakeTarget",
+      "canonicalizePromptIntakeTargetExisting",
       "captureAsyncHistorySnapshot",
       "captureTerminalHistorySnapshot",
       "completeDelivery",
@@ -805,7 +809,7 @@ assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimExisting, PromptIntak
     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
 assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
 assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
-    assert.strictEqual(actual.length, 303);
+    assert.strictEqual(actual.length, 305);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

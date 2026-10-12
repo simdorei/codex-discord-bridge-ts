@@ -1,4 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';
+import {openInitialized} from '../../../src/store/owned-driver.ts';
 import {storeFixture} from '../../helpers/store-fixture.ts';import {StateAccessFacade as state} from '../../../src/store/state-access-facade.ts';
 import {createNativePromptIntakeState,NativePromptIntakeUnavailableError} from '../../../src/runtime/prompt-intake/native-state.ts';
 import {createNativeQueueState} from '../../../src/runtime/queue-runner/native-state.ts';
@@ -26,6 +27,7 @@ test('native maintenance rejects malformed ACK, passive identity and oversized e
  let raw:unknown;t.mock.method(OwnedWorkerSlot.prototype,'run',async()=>raw);raw={ok:true,operation:'RemoveQueued',value:1};await assert.rejects(native.removePromptIntakeIfQueued(path,'id'));raw={ok:true,operation:'RecordFailure',value:intakeToWire({...claim.intake,jobId:'other'})};await assert.rejects(native.recordPromptIntakeFailureIfClaimed(path,claim,'error',30));
 }));
 test('actual processor records native failure backoff and later recovers exactly one original request',async()=>storeFixture(async path=>{
+ const initialized=await openInitialized(path);initialized.close(); // Same startup prerequisite as production native profile.
  let now=11,fail=true,starts=0;const native=createNativePromptIntakeState(path),queue=new QueueStartCoordinator(path,{generation:()=>1n,residentInstanceId:()=>null,activeTurnId:async()=>null,resumeThread:async()=>{},readTurns:async()=>[],startClaimedTurn:async()=>{starts++;return 'turn';}},{state:createNativeQueueState(path),clock:()=>now});
  const processor=new PromptIntakeProcessor(path,queue,{requiresAppServerFork:()=>false,preparePrompt:async raw=>{if(fail)throw Error('prepare failed');return raw+' prepared';},busyResult:async()=>assert.fail('busy'),canonicalizeCompletedTarget:async t=>t,currentMirrorTarget:async(_,t)=>[t,'selected'],prepareActionTarget:async(threadId,sourceLabel)=>({threadId,sourceLabel,mirrorMapping:false}),recoverActiveWriterSubmission:async(t,s)=>[t,s]},{state:native,clock:()=>now});
  await assert.rejects(processor.admitPrompt({targetThreadId:'target',source:'selected',channelId:1n,userId:2n,discordMessageId:3n,autoQueueWhenBusy:true,rawPrompt:'original'}),/saved for automatic recovery/);const rows=await state.listPromptIntakes(path);assert.equal(rows.length,1);assert.equal(rows[0]!.attemptCount,1n);assert.equal(rows[0]!.claimToken,null);assert.equal(rows[0]!.rawPrompt,'original');assert.ok(rows[0]!.retryAfter>now);assert.equal(starts,0);assert.equal(await processor.recoverPromptIntakes(),0);

@@ -71,15 +71,26 @@ export async function admitPromptIntake(path:string,input:NewPromptIntake):Promi
   const request=snapshotNewPromptIntake(input);validateIdentity(request);
   return withPromptIntakeWriter(path,db=>({value:admitPromptIntakeIn(db,request),commit:true}),false);
 }
-export async function canonicalizePromptIntakeTarget(path:string,id:string):Promise<StoredPromptIntake|null>{
-  return withPromptIntakeWriter(path,db=>{
+function canonicalizeIntakeIn(db:DatabaseSync,id:string):{value:StoredPromptIntake|null;commit:boolean}{
     const intake=getPromptIntakeIn(db,id);if(intake===null)return {value:null,commit:true};
     const canonical=canonicalCompletedTargetIn(db,intake.targetThreadId);
     if(canonical!==intake.targetThreadId){const ms=Date.now();if(ms<0)throw new SystemTimeError(-ms);if(!Number.isFinite(ms))throw new TypeError("system clock must be finite");
       db.prepare("UPDATE codex_prompt_intakes SET target_thread_id=?,updated_at=? WHERE job_id=? AND target_thread_id=?").run(canonical,ms/1000,id,intake.targetThreadId);}
     return {value:getPromptIntakeIn(db,id),commit:true};
-  });
 }
+export async function canonicalizePromptIntakeTarget(path:string,id:string):Promise<StoredPromptIntake|null>{
+  return withPromptIntakeWriter(path,db=>canonicalizeIntakeIn(db,id));
+}
+/** Existing initialized store only. Original transaction-local admission and fork/ingress semantics are unchanged. */
+export function admitPromptIntakeExisting(path:string,input:NewPromptIntake):PromptIntakeAdmission{
+  const request=snapshotNewPromptIntake(input);validateIdentity(request);
+  return withPromptIntakeWriterExisting(path,db=>({value:admitPromptIntakeIn(db,request),commit:true}));
+}
+/** Same callback and conditional clock observation as the initialized entry. */
+export function canonicalizePromptIntakeTargetExisting(path:string,id:string):StoredPromptIntake|null{
+  return withPromptIntakeWriterExisting(path,db=>canonicalizeIntakeIn(db,id));
+}
+
 function removeIntakeIfQueuedIn(db:DatabaseSync,id:string):{value:boolean;commit:boolean}{return ({value:BigInt(db.prepare(`DELETE FROM codex_prompt_intakes WHERE job_id=?1
     AND NOT EXISTS(SELECT 1 FROM codex_dead_generation_holds hold WHERE hold.target_thread_id=codex_prompt_intakes.target_thread_id)
     AND (EXISTS(SELECT 1 FROM codex_turn_queue WHERE job_id=?1) OR EXISTS(SELECT 1 FROM codex_delivery_outbox WHERE job_id=?1))`).run(id).changes)===1n,commit:true});}

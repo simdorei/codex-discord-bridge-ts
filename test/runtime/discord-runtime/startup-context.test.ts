@@ -164,6 +164,8 @@ test('prepared typed gateway consumers deliver actual prefix and slash help thro
 
 test('source interleaving captures heartbeat and mirror before await and leaves heartbeat alive after core join',{timeout:15000},async()=>storeFixture(async path=>{
  const {httpFixture}=await import('../../helpers/interaction-worker-fixture.ts'),{startRuntimeCoreWorkers}=await import('../../../src/runtime/discord-runtime/core-workers-start.ts'),{RuntimeWorkerExitChannel}=await import('../../../src/runtime/discord-runtime/monitored-worker.ts'),{setTimeout:delay}=await import('node:timers/promises');
+ const {OwnedWorkerBudgetError,ownedWorkerUsage,OWNED_WORKER_LIMITS}=await import('../../../src/runtime/owned-worker-slot.ts');
+ const budgetDeferrals:Readonly<ReturnType<typeof ownedWorkerUsage>>[]=[];
  const o=await input(path),context=await prepareRuntimeContext(o),stop=new AbortController(),exits=new RuntimeWorkerExitChannel(),errors:unknown[]=[],publications:string[]=[];let removed=0,mirrorPolls=0,sends=0;
  try{
  const {writeFile,appendFile}=await import('node:fs/promises'),{captureMirrorCursorAnchor}=await import('../../../src/runtime/session-mirror/continuity-observation.ts'),{NativeMirrorCursorStore}=await import('../../../src/runtime/session-mirror/cursor-store.ts');
@@ -175,16 +177,16 @@ test('source interleaving captures heartbeat and mirror before await and leaves 
  const config={stateDatabasePath:o.paths.stateDb,bridgeDatabasePath:path,discovery:{threads:{maxRows:32n,maxValueBytes:1048576n,maxOutputBytes:1048576,timeoutMs:5000},store:{maxTargets:32n,maxJobs:32n,maxValueBytes:1048576n,maxOutputBytes:1048576,timeoutMs:5000}},ready:{maxTargets:32,maxBytes:1048576},poll:{read:{maxWindowBytes:65536,maxRecordBytes:32768,maxRecords:20,decodeTimeoutMs:5000},ownership:{maxJobs:32n,maxValueBytes:1048576n,timeoutMs:5000}}};
  const h={port:{publish:async(text:string)=>{publications.push(text);},removeIfOwned:async()=>{removed++;}},options:{pid:123,seconds:()=>456n,periodMs:10,report:()=>{}}},m={config,transport:{sendValidated:async()=>{sends++;return 123n;}},render:()=> 'safe',report:(event:import('../../../src/runtime/discord-runtime/session-mirror-start.ts').RuntimeMirrorObservation)=>{if(event.kind==='Targets')mirrorPolls++;if(event.kind==='SharedFailure')errors.push(event.failure);}};
  await httpFixture(async(http,seen)=>{
-  const pending=startRuntimeCoreWorkers(context,http,o.admission,stop.signal,exits,{commentaryEnabled:false,historyReadTimeoutMs:1000,render:()=> 'safe',report:e=>{errors.push(e);}},{heartbeat:h,mirror:m});
+  const pending=startRuntimeCoreWorkers(context,http,o.admission,stop.signal,exits,{commentaryEnabled:false,historyReadTimeoutMs:1000,render:()=> 'safe',report:e=>{if(e instanceof OwnedWorkerBudgetError&&Object.getPrototypeOf(e)===OwnedWorkerBudgetError.prototype)budgetDeferrals.push(ownedWorkerUsage());else errors.push(e);}},{heartbeat:h,mirror:m});
   h.port.publish=async()=>assert.fail('replaced heartbeat');h.options.pid=999;h.options.seconds=()=>999n;config.stateDatabasePath+='-wrong';config.poll.read.maxRecords=0;m.transport.sendValidated=async()=>assert.fail('replaced mirror transport');m.report=()=>assert.fail('replaced mirror report');m.render=()=>assert.fail('replaced render');
   const core=await pending;try{
    assert.deepEqual(core.startupOrder.map(w=>w.name),['app-server-supervisor','heartbeat','completion','new-first-reply-verification','stop-control','prompt-intake-recovery','session-mirror','server-request']);assert.equal(core.workers.length,7);assert.ok(core.heartbeat);assert.equal(core.startupOrder[1],core.heartbeat.worker);assert.equal(core.workers.includes(core.heartbeat.worker),false);
    const deadline=performance.now()+5000;while(publications.length===0||mirrorPolls===0){assert.ok(performance.now()<deadline);await delay(2);}
    const a=core.close(),b=core.close();assert.equal(a,b);for(const result of await a)assert.deepEqual(result,{kind:'Returned',result:{ok:true}});
-   assert.equal(core.heartbeat.worker.peek(),undefined);assert.equal(removed,0);assert.ok(publications.every(text=>text==='pid=123\nupdated_at=456\n'));assert.equal(context.owner.lifecycleSnapshot().healthy,true);assert.deepEqual(errors,[]);assert.deepEqual(seen,[]);
+   assert.equal(core.heartbeat.worker.peek(),undefined);assert.equal(removed,0);assert.ok(publications.every(text=>text==='pid=123\nupdated_at=456\n'));assert.equal(context.owner.lifecycleSnapshot().healthy,true);assert.deepEqual(errors,[]);assert.deepEqual(seen,[]);for(const usage of budgetDeferrals)for(const lane of Object.keys(OWNED_WORKER_LIMITS) as (keyof typeof OWNED_WORKER_LIMITS)[])assert.ok(usage[lane]<=OWNED_WORKER_LIMITS[lane]);
    core.heartbeat.requestStop();assert.deepEqual(await core.heartbeat.worker.join(),{kind:'Returned',result:{ok:true}});assert.equal(removed,1);assert.equal(sends,1);
   }finally{core.requestStop();await core.close();core.heartbeat?.requestStop();await core.heartbeat?.worker.join();}
- });}finally{stop.abort();exits.close();await context.disposeBeforeWorkers();}gone(o.paths.root);
+ });}finally{stop.abort();exits.close();await context.disposeBeforeWorkers();}gone(o.paths.root);assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0});
 }));
 
 test('disabled mirror interleaving preserves seven source-ordered tasks with separate heartbeat ownership',{timeout:15000},async()=>storeFixture(async path=>{
