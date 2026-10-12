@@ -8,6 +8,8 @@ try{
  if(q.operation==='Get'){const row=state.getPromptIntakeExisting(q.path,q.id);value=row===null?null:intakeToWire(row);}
  else if(q.operation==='List')value=state.listPromptIntakesExisting(q.path,q.readyAt===null?null:intakeNumberFromWire(q.readyAt)).map(intakeToWire);
  else if(q.operation==='DurableOwner')value=state.promptIntakeHasDurableOwnerExisting(q.path,q.id);
+ else if(q.operation==='RecordFailure'){const row=state.recordPromptIntakeFailureExisting(q.path,q.id,q.token,q.error,q.retryAfter);value=row===null?null:intakeToWire(row);}
+ else if(q.operation==='RemoveQueued')value=state.removePromptIntakeIfQueuedExisting(q.path,q.id);
  else if(q.operation==='Claim'||q.operation==='Renew'){
   const claim=q.operation==='Claim'?state.tryClaimPromptIntakeExisting(q.path,q.id,q.now,q.expires):state.renewPromptIntakeClaimExisting(q.path,q.id,q.token,q.now,q.expires);
   value=claim===null?null:{claimToken:claim.claimToken,intake:intakeToWire(claim.intake)};

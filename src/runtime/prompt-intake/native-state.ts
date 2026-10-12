@@ -1,6 +1,6 @@
 import {types} from 'node:util';
 import {StateAccessFacade,type IStateAccessFacade} from '../../store/state-access-facade.ts';
-import {InvalidPromptIntakeLeaseError,type PromptIntakeClaim,type StoredPromptIntake} from '../../store/prompt-intake.ts';
+import {InvalidPromptIntakeLeaseError,InvalidPromptIntakeRetryError,type PromptIntakeClaim,type StoredPromptIntake} from '../../store/prompt-intake.ts';
 import {OwnedWorkerSlot} from '../owned-worker-slot.ts';
 import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {requireDiscordText} from '../../discord/text.ts';
@@ -8,7 +8,7 @@ import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {intakeNumberWire,intakeFromWire} from './native-wire.ts';
 const LIMIT=16*1024*1024;
-type Operation='Get'|'List'|'DurableOwner'|'Claim'|'Renew';
+type Operation='Get'|'List'|'DurableOwner'|'Claim'|'Renew'|'RecordFailure'|'RemoveQueued';
 export class NativePromptIntakeUnavailableError extends Error{
  readonly operation:Operation;
  constructor(operation:Operation,cause:unknown){super('Prompt intake result unavailable after actual native join; no partial result or automatic retry',{cause});this.name='NativePromptIntakeUnavailableError';this.operation=operation;}
@@ -17,7 +17,7 @@ function lease(now:number,expires:number):void{
  if(typeof now!=='number'||typeof expires!=='number')throw new TypeError('Expected lease timestamps');
  if(!Number.isFinite(now)||!Number.isFinite(expires)||expires<=now)throw new InvalidPromptIntakeLeaseError(now,expires);
 }
-/** Exactly three reads and two lease writes. Other state functions retain their
+/** Exactly three reads, two lease writes and two maintenance writes. Other state functions retain their
  * identities. Shared finite Control admission; no new pool, retry or detached I/O. */
 export function createNativePromptIntakeState(path:string,timeoutMs=5000):IStateAccessFacade{
  requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new TypeError('Invalid intake store path');
@@ -38,6 +38,12 @@ export function createNativePromptIntakeState(path:string,timeoutMs=5000):IState
   return {intake,claimToken:current};
  }
  return Object.freeze({...StateAccessFacade,
+  async recordPromptIntakeFailureIfClaimed(given:string,claim:PromptIntakeClaim,error:string,retryAfter:number){
+   requirePath(given);if(typeof retryAfter!=='number')throw new TypeError('Expected retry timestamp');if(!Number.isFinite(retryAfter))throw new InvalidPromptIntakeRetryError(retryAfter);requireDiscordText(error);
+   const id=identity(own(own(claim,'intake'),'jobId')),token=identity(own(claim,'claimToken'));
+   return run('RecordFailure',{id,token,error,retryAfter},raw=>{if(raw===null)return null;const row=intakeFromWire(raw);if(row.jobId!==id)throw new TypeError('Failure result differs from captured intake');return row;});
+  },
+  async removePromptIntakeIfQueued(given:string,id:string){requirePath(given);const key=identity(id);return run('RemoveQueued',{id:key},raw=>{if(typeof raw!=='boolean')throw new TypeError('Expected exact intake removal result');return raw;});},
   async getPromptIntake(given:string,id:string){requirePath(given);const key=identity(id);return run('Get',{id:key},raw=>{if(raw===null)return null;const value=intakeFromWire(raw);if(value.jobId!==key)throw new TypeError('Intake result differs from requested job');return value;});},
   async listPromptIntakes(given:string,readyAt:number|null=null){requirePath(given);if(readyAt!==null&&typeof readyAt!=='number')throw new TypeError('Expected readiness timestamp');
    return run('List',{readyAt:readyAt===null?null:intakeNumberWire(readyAt)},raw=>{if(types.isProxy(raw)||!Array.isArray(raw))throw new TypeError('Expected complete intake vector');const result:StoredPromptIntake[]=[];for(let i=0;i<raw.length;i++)result.push(intakeFromWire(own(raw,String(i))));return result;});},

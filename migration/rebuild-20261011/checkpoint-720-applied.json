@@ -1,0 +1,93 @@
+{
+  "beforeHead": "e8e9b86e3def63adb2d50fd84ffe7aad8137c21d",
+  "stageFileCount": 1571,
+  "scope": [
+    {
+      "path": "src/runtime/prompt-intake/native-state-worker.ts",
+      "beforeSha256": "6dc8b8fa2b5484d073c3e5c64afc22c089c33441a2bca50c76f82ee4f7fda0a9",
+      "afterSha256": "86b147fd6e51b21d83ac5ec1981dd4c394307a25250e02149a8e386eaabcabe1"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state.ts",
+      "beforeSha256": "a4707f32017dfeb0ba087366ab5c06364d878b0a64207f5d21b0c5f13a9f9462",
+      "afterSha256": "514fb88237cbfd45fea9db3be8ceaa01e3bd8ba4a03730730460568fab8d9082"
+    },
+    {
+      "path": "src/store/prompt-intake-write.ts",
+      "beforeSha256": "ad411756ea3d086a4f090d682fc59bb5ad9ef85c3e511cbacda171ed7644a9a6",
+      "afterSha256": "7d0cec620a22eb675b96d1260685806eae5ee6a430318015207a014ac555d38f"
+    },
+    {
+      "path": "src/store/prompt-intake.ts",
+      "beforeSha256": "277a4041e1e22fea2defc4a0dad2727f9d8b68d8c470a5bea61f37e1a7e8f380",
+      "afterSha256": "675b8ea3913c7b02c0116989aeb2c7ea42367fc3635cfa091c99379d1542f301"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "c0343c548f9f6bbba4288dad6eed084bd89b0b3c6ccc4ff82849323f20d8b254",
+      "afterSha256": "b642b1c376cc1918aed387e0c88ffbf49e2655ba6afe8bc0aa42d11cd032cd5b"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-maintenance.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "05c533d3b60e08a344ac436c2d3242688ea31cd61858e92d4e5b904bee2b549e"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-state.test.ts",
+      "beforeSha256": "3473a91b7acadf27741da60e4788a28aac0f2a423a5d4a18b5a68023eccb6599",
+      "afterSha256": "503b8d753fe5ffda27b17c9491c7b6c5b53c4d08acda122fec6304a848f1f2d8"
+    },
+    {
+      "path": "test/store/prompt-intake-maintenance-existing.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "ded1cc3ee9dd8ed8f6dc70a99e6c9c8eed60d99fd606eecc9ee67f26996ebc13"
+    },
+    {
+      "path": "test/store/prompt-intake.test.ts",
+      "beforeSha256": "2376b4647b77b44130702dbd32304018b5d9af5e496736eb624fb082134f24f4",
+      "afterSha256": "13e82a50a386962c98c2b82b69f2e5b0e10561cfff3e452b0b72980140c95b70"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "017cbb543dd229d53faf3d73c4f57eb7374077ff836e3ee6e4821f9f0e34c1d1",
+      "afterSha256": "bdd527f310d137f55617613db6543d20422aad138d12d981c396b8f4ce23e862"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 7943,
+    "pass": 7943,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 762,
+    "logSha256": "24889371bfc05e51f51a0bd9c28e16ef7de911cbecc5048f0f481d1ca7fa0c3e",
+    "tapSha256": "2515e201e42705ef0d61661809fc2c3306e11db08a12c797b2a9be2cf7cb5385"
+  },
+  "claim": "Qualified staged whole7943PASS plus actual1490PASS/TS0/build0 and all1571source/test hashes identical. No separate actual whole rerun/Windows/performance claim.",
+  "remoteWrite": "Qualified717 verified 967f34fd; WIP720 verified 7dc6ba7e; candidate720 unapplied.",
+  "actualAll1571HashesMatchQualifiedStage": true,
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 1490,
+      "pass": 1490,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1571
+  },
+  "evidence": {
+    ".runtime/prompt-intake-maintenance-native-720/full.log": "24889371bfc05e51f51a0bd9c28e16ef7de911cbecc5048f0f481d1ca7fa0c3e",
+    ".runtime/prompt-intake-maintenance-native-720/full.tap": "2515e201e42705ef0d61661809fc2c3306e11db08a12c797b2a9be2cf7cb5385",
+    ".runtime/prompt-intake-maintenance-native-720/full-exit.json": "06b396b76b653c319c31b14aed7a7de0eed0928c95c2517ab7b6f1c4636315cd",
+    ".runtime/prompt-intake-maintenance-native-720/scope-proof.json": "f7d4e4c822f3e589174ea3860d2f74bdf10d6960766ee1a7d01e8a307966cccc",
+    ".runtime/prompt-intake-maintenance-native-720/stage-inputs.json": "07ce45251df10a96fa8b50ce34120bef052b102fdfc2cc3b2aa79fe5923c9307",
+    ".runtime/prompt-intake-maintenance-native-720/source-inputs.json": "489cc62697a1b6ab29d2f94f7abd1958197779db05748ceac10db4fa9e98bd04",
+    ".runtime/prompt-intake-maintenance-native-720/foundation-identity.json": "de9c069992f6ee47fb6501c78a3013590e18570dc947611517fd34d3563af536",
+    ".runtime/prompt-intake-maintenance-existing-719/body-identity-proof.json": "68aec9a6fcdac7015c0bc10ddce81353efce9cccf1b8b317d795ea994a10c95b",
+    ".runtime/prompt-intake-maintenance-plan-718/source-inputs.json": "2601a795eeff6d4d4911b1b0a640b5cf106616b561ee541ef8ba47772553d014",
+    ".runtime/prompt-intake-maintenance-native-720/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/prompt-intake-maintenance-native-720/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/prompt-intake-maintenance-native-720/applied/focused.log": "b5397248d29e0272bf6019b43613b34e6ae85ba09bab33737f96159a13b27beb"
+  }
+}

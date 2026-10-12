@@ -133,23 +133,37 @@ export async function renewPromptIntakeClaimIfCurrent(path:string,claim:PromptIn
 export function renewPromptIntakeClaimExisting(path:string,id:string,token:string,now:number,expires:number):PromptIntakeClaim|null{
   lease(now,expires);validText(id);validText(token);return withPromptIntakeWriterExisting(path,db=>renewIntakeIn(db,id,token,now,expires));
 }
+function releaseAllIntakesIn(db:DatabaseSync):{value:bigint;commit:boolean}{return ({value:BigInt(db.prepare("UPDATE codex_prompt_intakes SET claim_token=NULL,claim_expires_at=0 WHERE claim_token IS NOT NULL OR claim_expires_at!=0").run().changes),commit:true});}
 /** Startup only, after the process has acquired the singleton runtime guard. Never periodic recovery. */
 export async function releaseAllPromptIntakeClaims(path:string):Promise<bigint>{
-  return writer(path,db=>({value:BigInt(db.prepare("UPDATE codex_prompt_intakes SET claim_token=NULL,claim_expires_at=0 WHERE claim_token IS NOT NULL OR claim_expires_at!=0").run().changes),commit:true}));
+  return writer(path,releaseAllIntakesIn);
 }
-export async function recordPromptIntakeFailureIfClaimed(path:string,claim:PromptIntakeClaim,error:string,retryAfter:number):Promise<StoredPromptIntake|null>{
+/** Caller must already own exclusive singleton startup; never periodic recovery. */
+export function releaseAllPromptIntakeClaimsExisting(path:string):bigint{
+  return withPromptIntakeWriterExisting(path,releaseAllIntakesIn);
+}
+function failureValues(error:string,retryAfter:number):{bounded:string;ms:number}{
   if(typeof retryAfter!=="number")throw new TypeError("Expected retry timestamp");
   if(!Number.isFinite(retryAfter))throw new InvalidPromptIntakeRetryError(retryAfter);
   if(typeof error!=="string"||/[\uD800-\uDFFF]/u.test(error))throw new TypeError("Expected well-formed error");
   const bounded=takeUnicodeScalarChars(trimUnicodeWhitespace(error)||"prompt intake processing failed without an error message",1000),ms=Date.now();
   if(ms<0)throw new SystemTimeError(-ms);if(!Number.isFinite(ms))throw new TypeError("system clock must be finite");
-  const id=claim.intake.jobId,token=claim.claimToken;validText(id);validText(token);
-  return writer(path,db=>{
+  return {bounded,ms};
+}
+function recordFailureIn(db:DatabaseSync,id:string,token:string,bounded:string,retryAfter:number,ms:number):{value:StoredPromptIntake|null;commit:boolean}{
     const changed=db.prepare(`UPDATE codex_prompt_intakes SET attempt_count=CASE WHEN attempt_count<9223372036854775807 THEN attempt_count+1 ELSE attempt_count END,
       last_error=CASE WHEN instr(last_error,?)=1 THEN last_error ELSE ? END,retry_after=?,claim_token=NULL,claim_expires_at=0,updated_at=? WHERE job_id=? AND claim_token=?`)
       .run(UNRESOLVED_FORK_ERROR_PREFIX,bounded,retryAfter,ms/1000,id,token).changes;
     return {value:BigInt(changed)===1n?getPromptIntakeIn(db,id):null,commit:true};
-  });
+}
+export async function recordPromptIntakeFailureIfClaimed(path:string,claim:PromptIntakeClaim,error:string,retryAfter:number):Promise<StoredPromptIntake|null>{
+  const {bounded,ms}=failureValues(error,retryAfter);const id=claim.intake.jobId,token=claim.claimToken;validText(id);validText(token);
+  return writer(path,db=>recordFailureIn(db,id,token,bounded,retryAfter,ms));
+}
+/** Explicit primitive claim identity; original clock is sampled once before DB open. */
+export function recordPromptIntakeFailureExisting(path:string,id:string,token:string,error:string,retryAfter:number):StoredPromptIntake|null{
+  const {bounded,ms}=failureValues(error,retryAfter);validText(id);validText(token);
+  return withPromptIntakeWriterExisting(path,db=>recordFailureIn(db,id,token,bounded,retryAfter,ms));
 }
 
 export {writer as withPromptIntakeWriter};

@@ -1,6 +1,6 @@
 import {types} from "node:util";
 import type {DatabaseSync} from "node:sqlite";
-import {getPromptIntakeIn,promptIntakeByMessageIn,withPromptIntakeWriter,PromptIntakeNotFoundError,type StoredPromptIntake,type PromptIntakeClaim} from "./prompt-intake.ts";
+import {getPromptIntakeIn,promptIntakeByMessageIn,withPromptIntakeWriter,withPromptIntakeWriterExisting,PromptIntakeNotFoundError,type StoredPromptIntake,type PromptIntakeClaim} from "./prompt-intake.ts";
 import {migratePromptIntake} from "./schema-extensions-b1.ts";
 import {canonicalCompletedTargetIn} from "./fork-canonical-target.ts";
 import {linkPromptOwnerIn} from "./ingress-prompt-ownership.ts";
@@ -80,8 +80,12 @@ export async function canonicalizePromptIntakeTarget(path:string,id:string):Prom
     return {value:getPromptIntakeIn(db,id),commit:true};
   });
 }
-export async function removePromptIntakeIfQueued(path:string,id:string):Promise<boolean>{
-  return withPromptIntakeWriter(path,db=>({value:BigInt(db.prepare(`DELETE FROM codex_prompt_intakes WHERE job_id=?1
+function removeIntakeIfQueuedIn(db:DatabaseSync,id:string):{value:boolean;commit:boolean}{return ({value:BigInt(db.prepare(`DELETE FROM codex_prompt_intakes WHERE job_id=?1
     AND NOT EXISTS(SELECT 1 FROM codex_dead_generation_holds hold WHERE hold.target_thread_id=codex_prompt_intakes.target_thread_id)
-    AND (EXISTS(SELECT 1 FROM codex_turn_queue WHERE job_id=?1) OR EXISTS(SELECT 1 FROM codex_delivery_outbox WHERE job_id=?1))`).run(id).changes)===1n,commit:true}));
+    AND (EXISTS(SELECT 1 FROM codex_turn_queue WHERE job_id=?1) OR EXISTS(SELECT 1 FROM codex_delivery_outbox WHERE job_id=?1))`).run(id).changes)===1n,commit:true});}
+export async function removePromptIntakeIfQueued(path:string,id:string):Promise<boolean>{
+  return withPromptIntakeWriter(path,db=>removeIntakeIfQueuedIn(db,id));
+}
+export function removePromptIntakeIfQueuedExisting(path:string,id:string):boolean{
+  return withPromptIntakeWriterExisting(path,db=>removeIntakeIfQueuedIn(db,id));
 }

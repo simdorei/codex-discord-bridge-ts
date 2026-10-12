@@ -4,11 +4,13 @@ import {storeFixture} from "../helpers/store-fixture.ts";
 import {openInitialized} from "../../src/store/owned-driver.ts";
 import {getPromptIntake as initializedGet,listPromptIntakes as initializedList,promptIntakeHasDurableOwner as initializedOwner,tryClaimPromptIntake as initializedClaim,renewPromptIntakeClaimIfCurrent as initializedRenew,
   getPromptIntakeExisting,listPromptIntakesExisting,promptIntakeHasDurableOwnerExisting,tryClaimPromptIntakeExisting,renewPromptIntakeClaimExisting,
-  recordPromptIntakeFailureIfClaimed,releaseAllPromptIntakeClaims,InvalidPromptIntakeLeaseError,InvalidPromptIntakeRetryError} from "../../src/store/prompt-intake.ts";
+  recordPromptIntakeFailureIfClaimed as initializedFailure,releaseAllPromptIntakeClaims as initializedRelease,recordPromptIntakeFailureExisting,releaseAllPromptIntakeClaimsExisting,InvalidPromptIntakeLeaseError,InvalidPromptIntakeRetryError} from "../../src/store/prompt-intake.ts";
 async function seed(path:string,extra=""):Promise<void>{const db=await openInitialized(path);try{
   db.exec("INSERT INTO codex_prompt_intakes(job_id,target_thread_id,channel_id,owner_user_id,discord_message_id,raw_prompt,auto_queue_when_busy,require_current_mirror,created_at,updated_at) VALUES ('intake','target',9007199254740993,2,3,'prompt',1,0,1,1)");if(extra)db.exec(extra);
 }finally{db.close();}}
 for(const existing of [false,true]){
+const recordPromptIntakeFailureIfClaimed:typeof initializedFailure=async(path,claim,error,retryAfter)=>existing?recordPromptIntakeFailureExisting(path,claim.intake.jobId,claim.claimToken,error,retryAfter):initializedFailure(path,claim,error,retryAfter);
+const releaseAllPromptIntakeClaims:typeof initializedRelease=async path=>(existing?releaseAllPromptIntakeClaimsExisting:initializedRelease)(path);
 const getPromptIntake:typeof initializedGet=async(...args)=>(existing?getPromptIntakeExisting:initializedGet)(...args);
 const listPromptIntakes:typeof initializedList=async(...args)=>(existing?listPromptIntakesExisting:initializedList)(...args);
 const promptIntakeHasDurableOwner:typeof initializedOwner=async(...args)=>(existing?promptIntakeHasDurableOwnerExisting:initializedOwner)(...args);

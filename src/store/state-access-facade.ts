@@ -392,6 +392,9 @@ export const listPromptIntakesExisting: typeof PromptIntakeLease.listPromptIntak
 export const promptIntakeHasDurableOwnerExisting: typeof PromptIntakeLease.promptIntakeHasDurableOwnerExisting = PromptIntakeLease.promptIntakeHasDurableOwnerExisting;
 export const tryClaimPromptIntakeExisting: typeof PromptIntakeLease.tryClaimPromptIntakeExisting = PromptIntakeLease.tryClaimPromptIntakeExisting;
 export const renewPromptIntakeClaimExisting: typeof PromptIntakeLease.renewPromptIntakeClaimExisting = PromptIntakeLease.renewPromptIntakeClaimExisting;
+export const releaseAllPromptIntakeClaimsExisting: typeof PromptIntakeLease.releaseAllPromptIntakeClaimsExisting = PromptIntakeLease.releaseAllPromptIntakeClaimsExisting;
+export const recordPromptIntakeFailureExisting: typeof PromptIntakeLease.recordPromptIntakeFailureExisting = PromptIntakeLease.recordPromptIntakeFailureExisting;
+export const removePromptIntakeIfQueuedExisting: typeof PromptIntakeWrite.removePromptIntakeIfQueuedExisting = PromptIntakeWrite.removePromptIntakeIfQueuedExisting;
 export const getPromptIntake: typeof PromptIntakeLease.getPromptIntake = PromptIntakeLease.getPromptIntake;
 export const tryClaimPromptIntake: typeof PromptIntakeLease.tryClaimPromptIntake = PromptIntakeLease.tryClaimPromptIntake;
 export const removePromptIntakeIfQueued: typeof PromptIntakeWrite.removePromptIntakeIfQueued = PromptIntakeWrite.removePromptIntakeIfQueued;
@@ -607,6 +610,9 @@ export interface IStateAccessFacade {
   readonly promptIntakeHasDurableOwnerExisting: typeof PromptIntakeLease.promptIntakeHasDurableOwnerExisting;
   readonly tryClaimPromptIntakeExisting: typeof PromptIntakeLease.tryClaimPromptIntakeExisting;
   readonly renewPromptIntakeClaimExisting: typeof PromptIntakeLease.renewPromptIntakeClaimExisting;
+  readonly releaseAllPromptIntakeClaimsExisting: typeof PromptIntakeLease.releaseAllPromptIntakeClaimsExisting;
+  readonly recordPromptIntakeFailureExisting: typeof PromptIntakeLease.recordPromptIntakeFailureExisting;
+  readonly removePromptIntakeIfQueuedExisting: typeof PromptIntakeWrite.removePromptIntakeIfQueuedExisting;
   readonly getPromptIntake: typeof PromptIntakeLease.getPromptIntake;
   readonly tryClaimPromptIntake: typeof PromptIntakeLease.tryClaimPromptIntake;
   readonly removePromptIntakeIfQueued: typeof PromptIntakeWrite.removePromptIntakeIfQueued;
@@ -838,6 +844,9 @@ export const StateAccessFacade: IStateAccessFacade = {
   promptIntakeHasDurableOwnerExisting,
   tryClaimPromptIntakeExisting,
   renewPromptIntakeClaimExisting,
+  releaseAllPromptIntakeClaimsExisting,
+  recordPromptIntakeFailureExisting,
+  removePromptIntakeIfQueuedExisting,
   getPromptIntake,
   tryClaimPromptIntake,
   removePromptIntakeIfQueued,
