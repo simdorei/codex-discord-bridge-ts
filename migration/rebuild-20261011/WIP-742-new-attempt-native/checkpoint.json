@@ -1,0 +1,102 @@
+{
+  "status": "WIP_UNAPPLIED_FOCUSED_RED",
+  "at": "2026-10-12T11:08:23.257456+00:00",
+  "actualProduct": "Qualified739:8052 whole/512 actual focused",
+  "typecheckExit": 0,
+  "buildExit": 0,
+  "candidateFocused": {
+    "status": "FAILED",
+    "tests": 540,
+    "pass": 538,
+    "fail": 2,
+    "skip": 0,
+    "exit": 1,
+    "failures": [
+      "Gateway cancellation fixture did not observe thread/start within its bounded wait; cause still under investigation.",
+      "Disposal-report test callback returned Array.push number, violating synchronous void hook contract."
+    ]
+  },
+  "fullRegression": "NOT_RUN",
+  "files": [
+    {
+      "path": "src/runtime/action-executor/new-attempt.ts",
+      "sha256": "39510e99f63a33df670a2d8ecde65fe7d776f245313e13031e352997fe708153"
+    },
+    {
+      "path": "src/runtime/action-executor/new-executor.ts",
+      "sha256": "7e3b0b2c44888e5ca3908d3100067c36b15b947810229d9f236ca9f49e983794"
+    },
+    {
+      "path": "src/runtime/action-executor/new-project.ts",
+      "sha256": "cc592ef32d8c73e04f8e1c55635557601a2c761792b55b33142b076c2a49bf7e"
+    },
+    {
+      "path": "src/runtime/action-executor/new-state-call.ts",
+      "sha256": "748c0ebd966a67c1353292e4fac8e84a2c325cc343cb63e60496a8653a092fad"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state-worker.ts",
+      "sha256": "1b9b787923ada9f981c0f35f1d2a563f500cd360baf96071448d66da9a1e93e5"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state.ts",
+      "sha256": "c6778987f38a561bdecf7a9cf7a33f6674babcd010917c3089939816a59200b8"
+    },
+    {
+      "path": "src/store/ingress-lifecycle.ts",
+      "sha256": "c42fcb39d0238e677f27c35b0c5f8a65dc7b659d6180daf3429d743e51706200"
+    },
+    {
+      "path": "src/store/ingress-read.ts",
+      "sha256": "205dd22be1fb9a0908bef287c626297cdca5ad8d6dccc7b58e00e9e6feb3f6b6"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "sha256": "828a435bb4efce9fee50907bb8f4045247fb29110e772623daeb4df0d72f69b5"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "sha256": "8c23f144dc25e4da7565f389e6a5dfd9cdee0844ba6455a0e7df55bfbaacab87"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-attempt.test.ts",
+      "sha256": "36a7b57f9e93d345c1e3ca25e98aceb3b482107906f32ba9408a5d4c81944357"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-state.test.ts",
+      "sha256": "8d22a8a0a6bedb39ed12b694d87e9b6517ecdb8ba501b33f9abd683c7b13f0b7"
+    },
+    {
+      "path": "test/store/ingress-attempt-existing-boundary.test.ts",
+      "sha256": "9bca3d4fe09b3c81158e1c46f85c68f7ca32342b9d9e5dac90a7666df4749b4c"
+    },
+    {
+      "path": "test/store/ingress-lifecycle-existing.test.ts",
+      "sha256": "e5b3a8bb4071add8fb941c4dad200e795d809c52406fafedaeecc5f97605daea"
+    },
+    {
+      "path": "test/store/ingress-routing-existing.test.ts",
+      "sha256": "f457789b194e733ec3ee94d724496e0ca17b61fd3959567585506c63309c2199"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "sha256": "24047f0a65f08f28996b0797bbd419927a39ca9f1e631b5e7851f6465338210a"
+    }
+  ],
+  "prerequisite741": {
+    "firstTests": 163,
+    "firstPass": 161,
+    "firstFail": 2,
+    "defect": "catalog verification required active snapshot in single-statement writer",
+    "fix": "DEFERRED catalog read finishes before original autocommit UPDATE",
+    "correctedTests": 164,
+    "correctedPass": 164
+  },
+  "initial742Compiler": "Generic return inference corrected to exact P[K] without changing runtime behavior",
+  "limits": [
+    "Native candidate not applied",
+    "Original project CodexThreadStore/statSync remain synchronous",
+    "Windows/live Discord/appserver/performance/24h unverified"
+  ],
+  "excluded": "No secrets, actual databases, raw logs or protected redaction fixture"
+}
