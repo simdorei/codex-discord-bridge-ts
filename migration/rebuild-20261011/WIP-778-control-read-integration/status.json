@@ -1,0 +1,20 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "focused": {
+    "tests": 45,
+    "pass": 45,
+    "fail": 0,
+    "skip": 0,
+    "durationMs": 53989.104279
+  },
+  "typecheckExit": 0,
+  "buildExit": 0,
+  "fullIntegration": "NOT_RUN",
+  "dependency777Full": "RUNNING_AT_PRESERVATION",
+  "actualAppliedBaseline": "775: 8250 full tests PASS; no live deployment qualification",
+  "limitations": [
+    "Synchronous Stop acceptance and claim writes remain synchronous.",
+    "Native read error semantics and six-second timeout are bounded adapter contracts.",
+    "Windows, live deployment, crash and 24-hour performance are unverified."
+  ]
+}
