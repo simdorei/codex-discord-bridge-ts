@@ -99,20 +99,27 @@ export class CodexThreadStore {
   loadRecentThreadsBounded(maxRows:bigint,maxValueBytes:bigint):readonly ThreadInfo[]{
     return this.#completeBounded(false,maxRows,maxValueBytes);
   }
+  /** Source SQL limit is applied before both measurement and row decoding.
+   * Zero still means all rows; budget overflow refuses, never silently truncates. */
+  loadRecentThreadsLimitedBounded(limit:bigint,maxRows=4096n,maxValueBytes=4194304n):readonly ThreadInfo[]{
+    limitValue(limit);return this.#completeBounded(false,maxRows,maxValueBytes,limit);
+  }
   loadArchivedThreadsBounded(maxRows:bigint,maxValueBytes:bigint):readonly ThreadInfo[]{
     return this.#completeBounded(true,maxRows,maxValueBytes);
   }
-  #completeBounded(archived:boolean,maxRows:bigint,maxValueBytes:bigint):readonly ThreadInfo[]{
+  #completeBounded(archived:boolean,maxRows:bigint,maxValueBytes:bigint,limit=0n):readonly ThreadInfo[]{
     if(typeof maxRows!=='bigint'||maxRows<1n||maxRows>65536n||typeof maxValueBytes!=='bigint'||maxValueBytes<1n||maxValueBytes>16777216n)throw new RangeError('Invalid complete Codex snapshot budget');
     return connection(this.#path,db=>{
       db.exec('BEGIN');
       try{
         const columns=(fields+(archived?',archived_at':'')).split(',');
         const size=columns.map(name=>`COALESCE(length(CAST(${name} AS BLOB)),0)`).join('+');
-        const query=db.prepare(`SELECT COUNT(*) AS rows,COALESCE(SUM(${size}),0) AS bytes FROM threads WHERE archived=${archived?1:0}`);query.setReadBigInts(true);const measured=query.get();
+        const clause=archived?'WHERE archived = 1 ORDER BY archived_at DESC, updated_at DESC, id':'WHERE archived = 0 ORDER BY updated_at DESC, id';
+        const source=limit>0n?`(SELECT ${columns.join(',')} FROM threads ${clause} LIMIT ?)`:`threads WHERE archived=${archived?1:0}`;
+        const query=db.prepare(`SELECT COUNT(*) AS rows,COALESCE(SUM(${size}),0) AS bytes FROM ${source}`);query.setReadBigInts(true);const measured=limit>0n?query.get(limit):query.get();
         if(measured===undefined||typeof measured.rows!=='bigint'||typeof measured.bytes!=='bigint'||measured.rows<0n||measured.bytes<0n)throw new TypeError('Invalid Codex snapshot measurement');
         if(measured.rows>maxRows||measured.bytes>maxValueBytes)throw new RangeError('Complete Codex snapshot exceeds row or value-byte budget');
-        return queryRows(db,archived?'WHERE archived = 1 ORDER BY archived_at DESC, updated_at DESC, id':'WHERE archived = 0 ORDER BY updated_at DESC, id',0n,archived);
+        return queryRows(db,clause,limit,archived);
       }finally{db.exec('ROLLBACK');}
     });
   }

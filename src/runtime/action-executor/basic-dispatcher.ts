@@ -1,3 +1,4 @@
+import {createNativeContextStoreReads} from './context-store-native.ts';
 import {RUNTIME_HELP} from './help.ts';
 import {PortableResidentLifecycle} from '../../app-server/portable-resident-lifecycle.ts';
 import {TargetLocks} from '../../core/keyed-locks.ts';
@@ -30,7 +31,7 @@ export class BasicActionDispatcher{
  constructor(input:DiagnosticPaths,bridge:BridgeState,server:PortableResidentLifecycle|null,locks:TargetLocks,render:(error:unknown)=>string,resumeTimeoutMs:number,mapped?:ActionMappingRead,reads?:ActionThreadReads){
   const paths=cloneOwnedSerdeValue(input);for(const key of ['state','mirror','bridge'])requireDiscordText(serdeField(paths,key));
   const p=paths as DiagnosticPaths;this.#mirror=p.mirror;this.#selection=new ActionThreadSelection(p.state,p.mirror,bridge,mapped,reads);
-  this.#list=new ThreadListAction(p.state,bridge,server,render);this.#status=new ThreadStatusAction(this.#selection,server,render);this.#context=new ContextAction(p.state,this.#selection);this.#usage=new UsageAction(server);
+  this.#list=new ThreadListAction(p.state,bridge,server,render);this.#status=new ThreadStatusAction(this.#selection,server,render);this.#context=new ContextAction(p.state,this.#selection,createNativeContextStoreReads(p.state));this.#usage=new UsageAction(server);
   this.#runners=new RunnerInspection(p.mirror,this.#selection,new ControlTurnVerifier(p.mirror,server,bridge,locks));this.#options=new SettingsOptionsAction(this.#selection,server,resumeTimeoutMs);this.#services=new RuntimeServiceActions(p,server);Object.freeze(this);
  }
  async targetThreadId(channel:bigint,signal?:AbortSignal):Promise<string>{signal?.throwIfAborted();const target=await this.#selection.targetThreadId(channel);signal?.throwIfAborted();return target;}
