@@ -89,3 +89,9 @@ it('gateway cancellation after native creation dispatch preserves unknown attemp
  try{const deadline=AbortSignal.timeout(8000);for(;;){if((await f.seen()).some(x=>x.method==='thread/start'))break;deadline.throwIfAborted();await new Promise<void>(r=>setTimeout(r,5));}c.abort(reason);await observed;}finally{c.abort(reason);await observed;}
  assert.equal(p.posts.length,0);assert.equal((await state.getIngress(f.path,'message:5'))?.state,'held');assert.deepEqual(await state.listQueueJobs(f.path),[]);await p.handle('!new raw');assert.equal((await f.seen()).filter(x=>x.method==='thread/start').length,1);
 })));
+
+it('concrete Repair installs native queue and intake preflight reads in that order',async t=>{
+ const reads:string[]=[],original=OwnedWorkerSlot.prototype.run;
+ t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof original>){const url=String(args[0]),operation=(args[1] as {operation?:unknown})?.operation;if(operation==='List'&&url.endsWith('/queue-runner/native-read-state-worker.ts'))reads.push('queue');if(operation==='List'&&url.endsWith('/prompt-intake/native-state-worker.ts'))reads.push('intake');return original.apply(this,args);});
+ return fixture(true,async f=>{await admit(f.path,'Repair');await assert.rejects(f.executor.executeWithIngressContext({Repair:{reference:null}},actor,'message:5'),/unsupported fixture call/);assert.deepEqual(reads,['queue','intake']);assert.deepEqual((await f.seen()).map(v=>v.method),['thread/read','mcpServerStatus/list']);assert.equal(f.queue.locks.activeTargetCount,0);});
+});

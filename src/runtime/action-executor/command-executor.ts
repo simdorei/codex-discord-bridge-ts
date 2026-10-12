@@ -1,3 +1,4 @@
+import {createNativeQueueReadState} from '../queue-runner/native-read-state.ts';
 import {createNativeNewProjectLookup} from './new-project-native.ts';
 import {StopControlWorker,type StopWorkerFailure} from './stop-worker.ts';
 import {DiscordChannelClient} from '../../discord/channel-client.ts';
@@ -80,7 +81,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   this.#stop=new AdmittedStopExecutor(paths.mirror,bridge,new StopActionExecutor(paths.mirror,server,bridge,locks,render));
   this.#archive=server===null?null:new AdmittedArchiveExecutor(paths.mirror,paths.state,bridge,server,locks,timeout);
   this.#resume=server===null?null:new AdmittedResumeExecutor(paths.mirror,paths.state,bridge,server,locks,timeout);
-  this.#repair=server===null?null:new AdmittedRepairExecutor(paths.mirror,bridge,server,locks,render);Object.freeze(this);
+  this.#repair=server===null?null:new AdmittedRepairExecutor(paths.mirror,bridge,server,locks,render,undefined,{listFiltered:createNativeQueueReadState(paths.mirror).listFiltered,listPromptIntakes:intakeState.listPromptIntakes});Object.freeze(this);
  }
  /** Startup-only lease release/recovery; caller owns singleton and has not
   * started the live or periodic intake workers. No new recovery authority. */

@@ -1,3 +1,5 @@
+import {types} from 'node:util';
+import {gatewayOwnField} from '../../discord/gateway/values.ts';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {dirname} from 'node:path';
 import {joinRuntimePath} from '../runtime-paths/path-text.ts';
@@ -23,15 +25,21 @@ function contentText(value:unknown):string{const c=serdeField(value,'content');r
 function available(value:unknown):boolean{const data=serdeField(value,'data');return Array.isArray(data)&&data.some(s=>serdeField(s,'name')==='node_repl'&&serdeField(s,'runtimeStatus')==='connected'&&(serdeField(s,'toolsError')===undefined||serdeField(s,'toolsError')===null)&&field(s,'tools','js','name')==='js'&&field(s,'tools','js_reset','name')==='js_reset');}
 function probeReady(value:unknown):boolean{return contentText(value).split(/\r?\n/u).some(line=>{let v;try{v=parseSerdeValue(line);}catch{return false;}return serdeField(v,'cdrRepair')==='ready'&&asU64(serdeField(v,'apps'))!==undefined;});}
 function busy():InvalidActionRequestError{return new InvalidActionRequestError('이 채팅에 진행 중·대기 중 요청이 있거나 유휴 상태를 확인할 수 없어 도구를 초기화하지 않았습니다. 요청 취소와 앱 재시작은 !recover를 사용하세요.');}
+export type RepairPreflightReads=Pick<typeof state,'listFiltered'|'listPromptIntakes'>;
+function captureReads(port:RepairPreflightReads):RepairPreflightReads {
+ const capture=<K extends keyof RepairPreflightReads>(key:K):RepairPreflightReads[K]=>{const fn=gatewayOwnField(port,key);if(typeof fn!=='function'||types.isProxy(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected owned Repair read function');return fn as RepairPreflightReads[K];};
+ return Object.freeze({listFiltered:capture('listFiltered'),listPromptIntakes:capture('listPromptIntakes')});
+}
+function readPromise<T>(value:Promise<T>):Promise<T>{if(!types.isPromise(value))throw new TypeError('Expected native Repair read Promise');return value;}
 interface Budgets{readonly totalMs:number;readonly callMs:number;readonly lockMs:number;}
 /** Original admitted Repair only. Never starts a model turn or restarts the app.
  * Diagnostic JSON is not recovery authority; native mutation ledger retains
  * uncertain effects across cold coordinators, new instances and late replies. */
 export class AdmittedRepairExecutor{
- readonly #path:string;readonly #bridge:BridgeState;readonly #server:PortableResidentLifecycle;readonly #locks:TargetLocks;readonly #render:(e:unknown)=>string;readonly #budgets:Budgets;
+ readonly #reads:RepairPreflightReads;readonly #path:string;readonly #bridge:BridgeState;readonly #server:PortableResidentLifecycle;readonly #locks:TargetLocks;readonly #render:(e:unknown)=>string;readonly #budgets:Budgets;
  readonly #held=new Map<TargetLease,{generation:bigint;timer:ReturnType<typeof setInterval>}>();
- constructor(path:string,bridge:BridgeState,server:PortableResidentLifecycle,locks:TargetLocks,render:(e:unknown)=>string,budgets:Budgets={totalMs:25000,callMs:12000,lockMs:1000}){
-  requireDiscordText(path);for(const [v,max] of [[budgets.totalMs,25000],[budgets.callMs,12000],[budgets.lockMs,1000]])if(!Number.isSafeInteger(v)||v!<=0||v!>max!)throw new TypeError('Expected positive bounded repair budgets');this.#path=path;this.#bridge=bridge;this.#server=server;this.#locks=locks;this.#render=render;this.#budgets=Object.freeze({...budgets});Object.freeze(this);
+ constructor(path:string,bridge:BridgeState,server:PortableResidentLifecycle,locks:TargetLocks,render:(e:unknown)=>string,budgets:Budgets={totalMs:25000,callMs:12000,lockMs:1000},reads:RepairPreflightReads=state){
+  this.#reads=captureReads(reads);requireDiscordText(path);for(const [v,max] of [[budgets.totalMs,25000],[budgets.callMs,12000],[budgets.lockMs,1000]])if(!Number.isSafeInteger(v)||v!<=0||v!>max!)throw new TypeError('Expected positive bounded repair budgets');this.#path=path;this.#bridge=bridge;this.#server=server;this.#locks=locks;this.#render=render;this.#budgets=Object.freeze({...budgets});Object.freeze(this);
  }
  async execute(actor:LifecycleActor,reference:string|null,key:string,signal?:AbortSignal):Promise<ActionResult>{
   signal?.throwIfAborted();const guard=await claimAdmittedRecovery(this.#path,this.#bridge,actor,'Repair',reference,key,this.#render,signal);
@@ -44,7 +52,7 @@ export class AdmittedRepairExecutor{
    const wait=new AbortController(),lockTimer=setTimeout(()=>wait.abort(busy()),this.#budgets.lockMs);
    try{lease=await this.#locks.acquire(guard.target,AbortSignal.any([c.signal,wait.signal]));}finally{clearTimeout(lockTimer);}
    guard.check();c.signal.throwIfAborted();
-   if((await state.listFiltered(this.#path,guard.target,null)).length!==0||(await state.listPromptIntakes(this.#path)).some(v=>v.targetThreadId===guard.target))throw busy();
+   if((await readPromise(this.#reads.listFiltered(this.#path,guard.target,null))).length!==0||(await readPromise(this.#reads.listPromptIntakes(this.#path))).some(v=>v.targetThreadId===guard.target))throw busy();
    c.signal.throwIfAborted();generation=this.#server.generation();const health=this.#server.lifecycleSnapshot();if(!health.healthy||health.quarantined||health.restartPending)throw new InvalidActionRequestError('앱서버 연결이 비정상이라 채팅별 도구 초기화를 보낼 수 없습니다. !recover를 사용하세요.');
    const rpc=(method:string,params:unknown,check=guard.rpcCheck().check)=>this.#server.requestForToolRepairChecked(method,params,this.#budgets.callMs,generation,check,c.signal);
    const status=await rpc('thread/read',{threadId:guard.target,includeTurns:false});if(field(status,'thread','status','type')!=='idle'||field(status,'thread','id')!==guard.target||this.#server.activeTurnId(guard.target)!==null)throw busy();
