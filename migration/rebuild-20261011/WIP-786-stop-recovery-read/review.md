@@ -1,0 +1,3 @@
+# Bounded recovery inventory only
+
+Source is immutable Rust PR5 recovery_after at merge3ebf4223b75b9d36237a73a78ce52ce794aee4ca. Exact can_settle SQL filter, nonsettled or original queued job EXISTS, signed sequence keyset, LIMIT16, all raw row decoding before typed JSON. Existing-only open with500ms busy timeout and native error propagation. No initialization, claim, settlement, replay or runtime installation. Six tests pass, strict TypeScript/build0. Full suite not run for this isolated candidate. SQLite may bypass malformed nested job JSON when queue is empty; tests preserve this inherited SQL behavior and require native refusal when a queue row makes evaluation reachable. No schema or SQL weakening.
