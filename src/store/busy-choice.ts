@@ -1,5 +1,5 @@
 import {parseSerdeStruct,type StructShape} from "../core/serde-struct-json.ts";
-import {openInitialized} from "./owned-driver.ts";
+import {openInitialized,CheckedRead} from "./owned-driver.ts";
 import type {DatabaseSync} from "node:sqlite";
 import {types} from "node:util";
 import {StoreIntegrityError} from "./schema-assembly.ts";
@@ -47,6 +47,13 @@ export async function mirroredThreadId(path:string,channel:bigint|null):Promise<
   if(channel!==null&&(typeof channel!=="bigint"||channel<-(1n<<63n)||channel>=(1n<<63n)))throw new TypeError("Expected optional i64 channel");
   if(channel===null||channel===0n)return null;
   const db=await openInitialized(path);try{return mirroredThreadIdIn(db,channel);}finally{db.close();}
+}
+
+/** Current initialized profile only; no creation or repair. Null/zero retain the source no-open shortcut. */
+export function mirroredThreadIdExisting(path:string,channel:bigint|null):string|null{
+  if(channel!==null&&(typeof channel!=="bigint"||channel<-(1n<<63n)||channel>=(1n<<63n)))throw new TypeError("Expected optional i64 channel");
+  if(channel===null||channel===0n)return null;
+  const read=CheckedRead.open(path);try{const result=mirroredThreadIdIn(read.connection(),channel);read.finish();return result;}finally{read.close();}
 }
 
 const BUSY_SHAPE:StructShape={fields:[["choice_id","string"],["owner_user_id","i64"],["channel_id","i64"],["target_thread_id","string?"],["prompt","string"],["allow_steer","bool"],["created_at","f64"],["expires_at","f64"]]};

@@ -69,7 +69,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   const locks=queue.locks,selection=new ActionThreadSelection(paths.state,paths.mirror,bridge),control=new ControlTurnVerifier(paths.mirror,server,bridge,locks),busy=new BusyResultProducer(paths.mirror,control,queue.reads);
   const targets=new ActionTargetServices(paths.mirror,bridge,queue,{preparePrompt:prepare,busyResult:BusyResultProducer.prototype.busyResult.bind(busy)}),intakeState=createNativePromptIntakeState(paths.mirror),intake=new PromptIntakeProcessor(paths.mirror,queue,targets,{state:intakeState});
   this.#stopWorkerFactory=report=>new StopControlWorker(paths.mirror,server,bridge,locks,render,report);
-  this.#intake=intake;  this.#server=server;this.#control=control;this.#componentQueue=new BusyQueueExecutor(paths.mirror,Object.freeze({processAdmittedPrompt:PromptIntakeProcessor.prototype.processAdmittedPrompt.bind(intake)}),undefined,intakeState.admitBusyQueue);
+  this.#intake=intake;  this.#server=server;this.#control=control;this.#componentQueue=new BusyQueueExecutor(paths.mirror,Object.freeze({processAdmittedPrompt:PromptIntakeProcessor.prototype.processAdmittedPrompt.bind(intake)}),undefined,intakeState.admitBusyQueue,intakeState.mirroredThreadId);
   this.#queue=queue;this.#basic=new BasicActionDispatcher(paths,bridge,server,locks,render,timeout);
   this.#new=new NewThreadExecutor(paths.mirror,paths.state,queue,intake,bridge,server,backend,get('mirror'),get('reportNewAttempt'),undefined,intakeState.admitPromptIntakeWithIngress);
   this.#prompts=new QueuePromptExecutor(paths.mirror,selection,targets,queue,intake,busy);this.#retract=new RetractAction(paths.mirror,selection);

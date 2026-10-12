@@ -13,20 +13,21 @@ export interface AdmittedBusyPromptProcessor {processAdmittedPrompt(intake: Stor
 /** Atomic intake and confirmation receipt are committed by admitBusyQueue before
  * prompt preparation. Do not preclaim busy_choices or retry a returned receipt. */
 export class BusyQueueExecutor {
-  readonly #admit:typeof state.admitBusyQueue;
+  readonly #admit:typeof state.admitBusyQueue;readonly #mapping:typeof state.mirroredThreadId;
   readonly #database: string; readonly #receiver: AdmittedBusyPromptProcessor; readonly #process: Function; readonly #now: () => number;
-  constructor(database: string, processor: AdmittedBusyPromptProcessor, now: () => number = systemNow, admit:typeof state.admitBusyQueue=state.admitBusyQueue) {
+  constructor(database: string, processor: AdmittedBusyPromptProcessor, now: () => number = systemNow, admit:typeof state.admitBusyQueue=state.admitBusyQueue, mapping:typeof state.mirroredThreadId=state.mirroredThreadId) {
     requireDiscordText(database); const process = gatewayOwnField(processor, 'processAdmittedPrompt');
     if (typeof process !== 'function' || types.isProxy(process) || types.isGeneratorFunction(process)) throw new TypeError('Expected admitted prompt processor');
     if (typeof now !== 'function' || types.isProxy(now) || types.isAsyncFunction(now) || types.isGeneratorFunction(now)) throw new TypeError('Expected synchronous busy queue clock');
     if(typeof admit!=='function'||types.isProxy(admit)||types.isGeneratorFunction(admit))throw new TypeError('Expected owned busy admission function');this.#admit=admit;
+    if(typeof mapping!=='function'||types.isProxy(mapping)||types.isGeneratorFunction(mapping))throw new TypeError('Expected owned mirror lookup function');this.#mapping=mapping;
     this.#database = database; this.#receiver = processor; this.#process = process; this.#now = now; Object.freeze(this);
   }
   async enqueueBusyChoice(input: BusyChoice): Promise<ActionResult> {
     const choice = snapshotBusyChoice(input), target = choice.targetThreadId;
     if (target === null) throw new ActionExecutionError('NoTarget');
     let mapped: boolean;
-    try {mapped = await state.mirroredThreadId(this.#database, choice.channelId) !== null;}
+    try {const pending=Reflect.apply(this.#mapping,undefined,[this.#database,choice.channelId]);if(!types.isPromise(pending))throw new TypeError('Expected native mirror lookup Promise');mapped = await pending !== null;}
     catch (error) {throw new ActionExecutionError('Store', error);}
     if (choice.channelId < 0n || choice.ownerUserId < 0n) throw new ActionExecutionError('IntegerRange');
     let now: number; try {now = readCustodyTimestamp(this.#now);} catch (error) {throw new ActionExecutionError('SystemTime', error);}

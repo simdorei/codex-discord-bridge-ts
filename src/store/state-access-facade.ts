@@ -386,6 +386,7 @@ export const recordAndCancelDefiniteForkFailure: typeof ForkFailure.recordAndCan
 export const completedAppServerForkTargetForSource: typeof ForkCompleted.completedAppServerForkTargetForSource = ForkCompleted.completedAppServerForkTargetForSource;
 export const isAppServerManagedTarget: typeof ForkManaged.isAppServerManagedTarget = ForkManaged.isAppServerManagedTarget;
 export const mirroredThreadId: typeof MirrorMapping.mirroredThreadId = MirrorMapping.mirroredThreadId;
+export const mirroredThreadIdExisting: typeof MirrorMapping.mirroredThreadIdExisting = MirrorMapping.mirroredThreadIdExisting;
 export const renewPromptIntakeClaimIfCurrent: typeof PromptIntakeLease.renewPromptIntakeClaimIfCurrent = PromptIntakeLease.renewPromptIntakeClaimIfCurrent;
 export const promptIntakeHasDurableOwner: typeof PromptIntakeLease.promptIntakeHasDurableOwner = PromptIntakeLease.promptIntakeHasDurableOwner;
 export const admitPromptIntake: typeof PromptIntakeWrite.admitPromptIntake = PromptIntakeWrite.admitPromptIntake;
@@ -631,6 +632,7 @@ export interface IStateAccessFacade {
   readonly promptIntakeHasDurableOwner: typeof PromptIntakeLease.promptIntakeHasDurableOwner;
 
   readonly mirroredThreadId: typeof MirrorMapping.mirroredThreadId;
+  readonly mirroredThreadIdExisting: typeof MirrorMapping.mirroredThreadIdExisting;
   readonly beginAppServerForkHandoff: typeof ForkBegin.beginAppServerForkHandoff;
   readonly stageAppServerForkTarget: typeof ForkTarget.stageAppServerForkTarget;
   readonly finalizeAppServerForkHandoff: typeof ForkTarget.finalizeAppServerForkHandoff;
@@ -953,6 +955,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   acceptUnresolvedStop,
   captureStopOrigin,
   mirroredThreadId,
+  mirroredThreadIdExisting,
   beginAppServerForkHandoff,
   stageAppServerForkTarget,
   finalizeAppServerForkHandoff,

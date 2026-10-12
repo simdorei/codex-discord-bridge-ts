@@ -6,7 +6,8 @@ import {DeadGenerationTargetHeldError} from '../../store/fork-completed-target.t
 const port=parentPort;if(port===null)throw new Error('Intake state requires owned native worker');
 try{
  let value:unknown;
- if(q.operation==='AdmitBusy'){const admitted=state.admitBusyQueueExisting(q.path,{...q.choice,createdAt:intakeNumberFromWire(q.choice.createdAt),expiresAt:intakeNumberFromWire(q.choice.expiresAt)},q.target,q.requireCurrentMirror,q.confirmationKey,q.now);value={jobId:admitted.jobId,intake:admitted.intake===null?null:intakeToWire(admitted.intake)};}
+ if(q.operation==='MirrorTarget')value={channel:q.channel,target:state.mirroredThreadIdExisting(q.path,q.channel)};
+ else if(q.operation==='AdmitBusy'){const admitted=state.admitBusyQueueExisting(q.path,{...q.choice,createdAt:intakeNumberFromWire(q.choice.createdAt),expiresAt:intakeNumberFromWire(q.choice.expiresAt)},q.target,q.requireCurrentMirror,q.confirmationKey,q.now);value={jobId:admitted.jobId,intake:admitted.intake===null?null:intakeToWire(admitted.intake)};}
  else if(q.operation==='AdmitWithIngress'){const admitted=state.admitPromptIntakeWithIngressExisting(q.path,{...q.request,createdAt:intakeNumberFromWire(q.request.createdAt)},q.key,q.generation,q.seed);value={created:admitted.created,intake:intakeToWire(admitted.intake)};}
  else if(q.operation==='ReleaseAll')value=state.releaseAllPromptIntakeClaimsExisting(q.path);
  else if(q.operation==='Admit'){const valueIn=state.admitPromptIntakeExisting(q.path,{...q.request,createdAt:intakeNumberFromWire(q.request.createdAt)});value={created:valueIn.created,intake:intakeToWire(valueIn.intake)};}
