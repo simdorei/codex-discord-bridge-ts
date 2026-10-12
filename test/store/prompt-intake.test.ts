@@ -2,11 +2,18 @@ import assert from "node:assert/strict";
 import {test} from "node:test";
 import {storeFixture} from "../helpers/store-fixture.ts";
 import {openInitialized} from "../../src/store/owned-driver.ts";
-import {getPromptIntake,listPromptIntakes,promptIntakeHasDurableOwner,tryClaimPromptIntake,renewPromptIntakeClaimIfCurrent,
+import {getPromptIntake as initializedGet,listPromptIntakes as initializedList,promptIntakeHasDurableOwner as initializedOwner,tryClaimPromptIntake as initializedClaim,renewPromptIntakeClaimIfCurrent as initializedRenew,
+  getPromptIntakeExisting,listPromptIntakesExisting,promptIntakeHasDurableOwnerExisting,tryClaimPromptIntakeExisting,renewPromptIntakeClaimExisting,
   recordPromptIntakeFailureIfClaimed,releaseAllPromptIntakeClaims,InvalidPromptIntakeLeaseError,InvalidPromptIntakeRetryError} from "../../src/store/prompt-intake.ts";
 async function seed(path:string,extra=""):Promise<void>{const db=await openInitialized(path);try{
   db.exec("INSERT INTO codex_prompt_intakes(job_id,target_thread_id,channel_id,owner_user_id,discord_message_id,raw_prompt,auto_queue_when_busy,require_current_mirror,created_at,updated_at) VALUES ('intake','target',9007199254740993,2,3,'prompt',1,0,1,1)");if(extra)db.exec(extra);
 }finally{db.close();}}
+for(const existing of [false,true]){
+const getPromptIntake:typeof initializedGet=async(...args)=>(existing?getPromptIntakeExisting:initializedGet)(...args);
+const listPromptIntakes:typeof initializedList=async(...args)=>(existing?listPromptIntakesExisting:initializedList)(...args);
+const promptIntakeHasDurableOwner:typeof initializedOwner=async(...args)=>(existing?promptIntakeHasDurableOwnerExisting:initializedOwner)(...args);
+const tryClaimPromptIntake:typeof initializedClaim=async(...args)=>(existing?tryClaimPromptIntakeExisting:initializedClaim)(...args);
+const renewPromptIntakeClaimIfCurrent:typeof initializedRenew=async(path,claim,now,expires)=>existing?renewPromptIntakeClaimExisting(path,claim.intake.jobId,claim.claimToken,now,expires):initializedRenew(path,claim,now,expires);
 test("intake reads preserve 64-bit identity and filter both retry and lease deadlines",async()=>{
   await storeFixture(async path=>{await seed(path,"UPDATE codex_prompt_intakes SET retry_after=10,claim_expires_at=20");
     assert.equal((await getPromptIntake(path,"intake"))?.channelId,9007199254740993n);assert.equal((await listPromptIntakes(path)).length,1);
@@ -59,3 +66,5 @@ test("durable owner requires intake removal and a matching queue/outbox occurren
     assert.equal(await promptIntakeHasDurableOwner(path,"intake"),true);assert.equal(await promptIntakeHasDurableOwner(path,"other"),false);
   });
 });
+
+}

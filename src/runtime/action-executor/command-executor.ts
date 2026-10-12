@@ -13,6 +13,7 @@ import {requireDiscordText} from '../../discord/text.ts';
 import {QueueStartCoordinator} from '../queue-runner/start-coordinator.ts';
 import {AppServerTurnBackend} from '../app-server-turn-backend.ts';
 import {PromptIntakeProcessor} from '../prompt-intake/processor.ts';
+import {createNativePromptIntakeState} from '../prompt-intake/native-state.ts';
 import {BridgeState} from '../bridge-state.ts';
 import {SettingsTargetResolver} from '../settings-binding.ts';
 import type {DiagnosticPaths} from '../diagnostic-report.ts';
@@ -66,7 +67,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   if(typeof prepare!=='function'||types.isProxy(prepare)||types.isGeneratorFunction(prepare))throw new TypeError('Expected prompt preparation function');
   this.#codex=paths.state;this.#database=paths.mirror;
   const locks=queue.locks,selection=new ActionThreadSelection(paths.state,paths.mirror,bridge),control=new ControlTurnVerifier(paths.mirror,server,bridge,locks),busy=new BusyResultProducer(paths.mirror,control,queue.reads);
-  const targets=new ActionTargetServices(paths.mirror,bridge,queue,{preparePrompt:prepare,busyResult:BusyResultProducer.prototype.busyResult.bind(busy)}),intake=new PromptIntakeProcessor(paths.mirror,queue,targets);
+  const targets=new ActionTargetServices(paths.mirror,bridge,queue,{preparePrompt:prepare,busyResult:BusyResultProducer.prototype.busyResult.bind(busy)}),intake=new PromptIntakeProcessor(paths.mirror,queue,targets,{state:createNativePromptIntakeState(paths.mirror)});
   this.#stopWorkerFactory=report=>new StopControlWorker(paths.mirror,server,bridge,locks,render,report);
   this.#intake=intake;  this.#server=server;this.#control=control;this.#componentQueue=new BusyQueueExecutor(paths.mirror,Object.freeze({processAdmittedPrompt:PromptIntakeProcessor.prototype.processAdmittedPrompt.bind(intake)}));
   this.#queue=queue;this.#basic=new BasicActionDispatcher(paths,bridge,server,locks,render,timeout);

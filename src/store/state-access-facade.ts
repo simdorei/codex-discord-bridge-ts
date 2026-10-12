@@ -387,6 +387,11 @@ export const mirroredThreadId: typeof MirrorMapping.mirroredThreadId = MirrorMap
 export const renewPromptIntakeClaimIfCurrent: typeof PromptIntakeLease.renewPromptIntakeClaimIfCurrent = PromptIntakeLease.renewPromptIntakeClaimIfCurrent;
 export const promptIntakeHasDurableOwner: typeof PromptIntakeLease.promptIntakeHasDurableOwner = PromptIntakeLease.promptIntakeHasDurableOwner;
 export const admitPromptIntake: typeof PromptIntakeWrite.admitPromptIntake = PromptIntakeWrite.admitPromptIntake;
+export const getPromptIntakeExisting: typeof PromptIntakeLease.getPromptIntakeExisting = PromptIntakeLease.getPromptIntakeExisting;
+export const listPromptIntakesExisting: typeof PromptIntakeLease.listPromptIntakesExisting = PromptIntakeLease.listPromptIntakesExisting;
+export const promptIntakeHasDurableOwnerExisting: typeof PromptIntakeLease.promptIntakeHasDurableOwnerExisting = PromptIntakeLease.promptIntakeHasDurableOwnerExisting;
+export const tryClaimPromptIntakeExisting: typeof PromptIntakeLease.tryClaimPromptIntakeExisting = PromptIntakeLease.tryClaimPromptIntakeExisting;
+export const renewPromptIntakeClaimExisting: typeof PromptIntakeLease.renewPromptIntakeClaimExisting = PromptIntakeLease.renewPromptIntakeClaimExisting;
 export const getPromptIntake: typeof PromptIntakeLease.getPromptIntake = PromptIntakeLease.getPromptIntake;
 export const tryClaimPromptIntake: typeof PromptIntakeLease.tryClaimPromptIntake = PromptIntakeLease.tryClaimPromptIntake;
 export const removePromptIntakeIfQueued: typeof PromptIntakeWrite.removePromptIntakeIfQueued = PromptIntakeWrite.removePromptIntakeIfQueued;
@@ -597,6 +602,11 @@ export interface IStateAccessFacade {
   readonly acceptUnresolvedStop: typeof StopAcceptance.acceptUnresolvedStop;
   readonly captureStopOrigin: typeof StopRevision.captureStopOrigin;
   readonly admitPromptIntake: typeof PromptIntakeWrite.admitPromptIntake;
+  readonly getPromptIntakeExisting: typeof PromptIntakeLease.getPromptIntakeExisting;
+  readonly listPromptIntakesExisting: typeof PromptIntakeLease.listPromptIntakesExisting;
+  readonly promptIntakeHasDurableOwnerExisting: typeof PromptIntakeLease.promptIntakeHasDurableOwnerExisting;
+  readonly tryClaimPromptIntakeExisting: typeof PromptIntakeLease.tryClaimPromptIntakeExisting;
+  readonly renewPromptIntakeClaimExisting: typeof PromptIntakeLease.renewPromptIntakeClaimExisting;
   readonly getPromptIntake: typeof PromptIntakeLease.getPromptIntake;
   readonly tryClaimPromptIntake: typeof PromptIntakeLease.tryClaimPromptIntake;
   readonly removePromptIntakeIfQueued: typeof PromptIntakeWrite.removePromptIntakeIfQueued;
@@ -823,6 +833,11 @@ export const StateAccessFacade: IStateAccessFacade = {
   observationScopeVerified,
 
   admitPromptIntake,
+  getPromptIntakeExisting,
+  listPromptIntakesExisting,
+  promptIntakeHasDurableOwnerExisting,
+  tryClaimPromptIntakeExisting,
+  renewPromptIntakeClaimExisting,
   getPromptIntake,
   tryClaimPromptIntake,
   removePromptIntakeIfQueued,

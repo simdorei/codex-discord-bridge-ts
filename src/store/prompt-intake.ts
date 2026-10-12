@@ -1,6 +1,6 @@
 import type {DatabaseSync,SQLInputValue} from "node:sqlite";
 import {randomUUID} from "node:crypto";
-import {openInitialized,verifyCurrentCatalogIn} from "./owned-driver.ts";
+import {openInitialized,verifyCurrentCatalogIn,CheckedRead} from "./owned-driver.ts";
 import {openExisting} from "./existing-store.ts";
 import {migratePromptIntake} from "./schema-extensions-b1.ts";
 import {decodeI64,decodeOptionalI64,decodeTimestamp,decodeTextField,textDecoderFor} from "./sqlite-values.ts";
@@ -58,19 +58,34 @@ export function promptIntakeByMessageIn(db:DatabaseSync,id:bigint):StoredPromptI
 export async function getPromptIntake(path:string,id:string):Promise<StoredPromptIntake|null>{
   validText(path);validText(id);const db=await openInitialized(path);try{migratePromptIntake(db);return getPromptIntakeIn(db,id);}finally{db.close();}
 }
+function listIntakesIn(db:DatabaseSync,readyAt:number|null):StoredPromptIntake[]{
+const query=db.prepare(SELECT+(readyAt===null?"":" WHERE retry_after<=? AND claim_expires_at<=?")+" ORDER BY created_at,job_id");
+    query.setReadBigInts(true);const rows=readyAt===null?query.iterate():query.iterate(readyAt,readyAt);const result:StoredPromptIntake[]=[];for(const row of rows)result.push(decode(row));return result;
+}
 export async function listPromptIntakes(path:string,readyAt:number|null=null):Promise<StoredPromptIntake[]>{
   validText(path);if(readyAt!==null&&typeof readyAt!=="number")throw new TypeError("Expected readiness timestamp");
-  const db=await openInitialized(path);try{
-    migratePromptIntake(db);const query=db.prepare(SELECT+(readyAt===null?"":" WHERE retry_after<=? AND claim_expires_at<=?")+" ORDER BY created_at,job_id");
-    query.setReadBigInts(true);const rows=readyAt===null?query.iterate():query.iterate(readyAt,readyAt);const result:StoredPromptIntake[]=[];for(const row of rows)result.push(decode(row));return result;
-  }finally{db.close();}
+  const db=await openInitialized(path);try{migratePromptIntake(db);return listIntakesIn(db,readyAt);}finally{db.close();}
 }
-export async function promptIntakeHasDurableOwner(path:string,id:string):Promise<boolean>{
-  validText(path);validText(id);
-  const db=await openInitialized(path);try{migratePromptIntake(db);
+function durableOwnerIn(db:DatabaseSync,id:string):boolean{
     const query=db.prepare("SELECT NOT EXISTS(SELECT 1 FROM codex_prompt_intakes WHERE job_id=?1) AND (EXISTS(SELECT 1 FROM codex_turn_queue WHERE job_id=?1) OR EXISTS(SELECT 1 FROM codex_delivery_outbox WHERE job_id=?1)) AS owned");
     query.setReadBigInts(true);return decodeI64(query.get(id)?.owned,"owned")!==0n;
-  }finally{db.close();}
+}
+export async function promptIntakeHasDurableOwner(path:string,id:string):Promise<boolean>{
+  validText(path);validText(id);const db=await openInitialized(path);try{migratePromptIntake(db);return durableOwnerIn(db,id);}finally{db.close();}
+}
+function checkedIntakeRead<T>(path:string,work:(db:DatabaseSync)=>T):T{
+  const read=CheckedRead.open(path);try{const result=work(read.connection());read.finish();return result;}finally{read.close();}
+}
+/** Explicit current-profile reads: owned read-only snapshot, no initialization or repair. */
+export function getPromptIntakeExisting(path:string,id:string):StoredPromptIntake|null{
+  validText(path);validText(id);return checkedIntakeRead(path,db=>getPromptIntakeIn(db,id));
+}
+export function listPromptIntakesExisting(path:string,readyAt:number|null=null):StoredPromptIntake[]{
+  validText(path);if(readyAt!==null&&typeof readyAt!=="number")throw new TypeError("Expected readiness timestamp");
+  return checkedIntakeRead(path,db=>listIntakesIn(db,readyAt));
+}
+export function promptIntakeHasDurableOwnerExisting(path:string,id:string):boolean{
+  validText(path);validText(id);return checkedIntakeRead(path,db=>durableOwnerIn(db,id));
 }
 function finishPromptIntakeWriter<T>(db:DatabaseSync,work:(db:DatabaseSync)=>{value:T;commit:boolean},ensureSchema:boolean,existing:boolean):T{
   let committed=false;
@@ -89,9 +104,7 @@ function lease(now:number,expires:number):void{
   if(typeof now!=="number"||typeof expires!=="number")throw new TypeError("Expected lease timestamps");
   if(!Number.isFinite(now)||!Number.isFinite(expires)||expires<=now)throw new InvalidPromptIntakeLeaseError(now,expires);
 }
-export async function tryClaimPromptIntake(path:string,id:string,now:number,expires:number):Promise<PromptIntakeClaim|null>{
-  validText(id);lease(now,expires);const token=randomUUID();
-  return writer(path,db=>{
+function claimIntakeIn(db:DatabaseSync,id:string,token:string,now:number,expires:number):{value:PromptIntakeClaim|null;commit:boolean}{
     if(reasonIn(db,id)!==null)return {value:null,commit:false};
     const changed=db.prepare(`UPDATE codex_prompt_intakes SET claim_token=?,claim_expires_at=?,updated_at=?
       WHERE job_id=? AND retry_after<=? AND claim_expires_at<=? AND NOT EXISTS(SELECT 1 FROM codex_dead_generation_holds hold
@@ -99,16 +112,26 @@ export async function tryClaimPromptIntake(path:string,id:string,now:number,expi
     if(BigInt(changed)!==1n)return {value:null,commit:true};
     const intake=getPromptIntakeIn(db,id);if(intake===null)throw new PromptIntakeNotFoundError(id);
     return {value:{intake,claimToken:token},commit:true};
-  });
 }
-export async function renewPromptIntakeClaimIfCurrent(path:string,claim:PromptIntakeClaim,now:number,expires:number):Promise<PromptIntakeClaim|null>{
-  lease(now,expires);const id=claim.intake.jobId,token=claim.claimToken;validText(id);validText(token);
-  return writer(path,db=>{
+export async function tryClaimPromptIntake(path:string,id:string,now:number,expires:number):Promise<PromptIntakeClaim|null>{
+  validText(id);lease(now,expires);const token=randomUUID();return writer(path,db=>claimIntakeIn(db,id,token,now,expires));
+}
+export function tryClaimPromptIntakeExisting(path:string,id:string,now:number,expires:number):PromptIntakeClaim|null{
+  validText(id);lease(now,expires);const token=randomUUID();return withPromptIntakeWriterExisting(path,db=>claimIntakeIn(db,id,token,now,expires));
+}
+function renewIntakeIn(db:DatabaseSync,id:string,token:string,now:number,expires:number):{value:PromptIntakeClaim|null;commit:boolean}{
     const changed=db.prepare("UPDATE codex_prompt_intakes SET claim_expires_at=?,updated_at=? WHERE job_id=? AND claim_token=? AND claim_expires_at>? AND claim_expires_at<?").run(expires,now,id,token,now,expires).changes;
     if(BigInt(changed)!==1n)return {value:null,commit:true};
     const intake=getPromptIntakeIn(db,id);if(intake===null)throw new PromptIntakeNotFoundError(id);
     return {value:{intake,claimToken:token},commit:true};
-  });
+}
+export async function renewPromptIntakeClaimIfCurrent(path:string,claim:PromptIntakeClaim,now:number,expires:number):Promise<PromptIntakeClaim|null>{
+  lease(now,expires);const id=claim.intake.jobId,token=claim.claimToken;validText(id);validText(token);
+  return writer(path,db=>renewIntakeIn(db,id,token,now,expires));
+}
+/** Primitive captured identity only: the original renewal query never reads other claim fields. */
+export function renewPromptIntakeClaimExisting(path:string,id:string,token:string,now:number,expires:number):PromptIntakeClaim|null{
+  lease(now,expires);validText(id);validText(token);return withPromptIntakeWriterExisting(path,db=>renewIntakeIn(db,id,token,now,expires));
 }
 /** Startup only, after the process has acquired the singleton runtime guard. Never periodic recovery. */
 export async function releaseAllPromptIntakeClaims(path:string):Promise<bigint>{

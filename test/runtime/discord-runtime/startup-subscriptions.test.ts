@@ -9,6 +9,7 @@ import {PortableResidentLifecycle} from '../../../src/app-server/portable-reside
 import {AdmissionGate} from '../../../src/admission/drain-gate.ts';
 import {StateAccessFacade as state} from '../../../src/store/state-access-facade.ts';
 import {openInitialized} from '../../../src/store/owned-driver.ts';
+import {NativePromptIntakeUnavailableError} from '../../../src/runtime/prompt-intake/native-state.ts';
 const render=(e:unknown)=>e instanceof Error?e.message:'opaque';
 const script=`import readline from 'node:readline';
 const send=x=>process.stdout.write(JSON.stringify(x)+'\\n');
@@ -37,13 +38,16 @@ test('startup retains native notifications and approval requests emitted during 
  assert.deepEqual(result.completionReceiver.tryReceive(),{kind:'Closed'});assert.deepEqual(result.serverRequestReceiver.tryReceive(),{kind:'Closed'});result.disposeReceivers();assert.equal(owner.lifecycleSnapshot().healthy,true);
 }));
 
-test('failed intake recovery releases both exact subscriptions without closing borrowed resident',async()=>fixture(async(paths,owner)=>{
- const db=await openInitialized(paths.mirrorDb);db.exec("CREATE TRIGGER reject_release BEFORE UPDATE OF claim_token ON codex_prompt_intakes BEGIN SELECT RAISE(ABORT,'release blocked');END");db.close();
+for(const mode of ['release','claim'] as const)test(`failed ${mode} intake recovery releases both exact subscriptions without closing borrowed resident`,async()=>fixture(async(paths,owner)=>{
  await state.admitPromptIntake(paths.mirrorDb,{jobId:'intake',targetThreadId:'thread',channelId:1n,ownerUserId:2n,discordMessageId:null,rawPrompt:'original',autoQueueWhenBusy:true,requireCurrentMirror:false,createdAt:1});
+ const db=await openInitialized(paths.mirrorDb);try{
+  if(mode==='release')db.exec("UPDATE codex_prompt_intakes SET claim_token='startup-owned',claim_expires_at=99");
+  db.exec("CREATE TRIGGER reject_release BEFORE UPDATE OF claim_token ON codex_prompt_intakes BEGIN SELECT RAISE(ABORT,'release blocked');END");
+ }finally{db.close();}
  const p=PortableResidentLifecycle.prototype,originalN=p.subscribeNotifications,originalR=p.subscribeServerRequests;
  const seen:Array<ReturnType<typeof originalN>|ReturnType<typeof originalR>>=[];
  p.subscribeNotifications=function(){const r=originalN.call(this);seen.push(r);return r;};p.subscribeServerRequests=function(){const r=originalR.call(this);seen.push(r);return r;};
- try{await assert.rejects(buildRuntimeCommandExecutor(paths,owner,new AdmissionGate(),options()),/release blocked/);}finally{p.subscribeNotifications=originalN;p.subscribeServerRequests=originalR;}
+ try{await assert.rejects(buildRuntimeCommandExecutor(paths,owner,new AdmissionGate(),options()),mode==='release'?/release blocked/:(e:unknown)=>e instanceof NativePromptIntakeUnavailableError&&e.operation==='Claim');}finally{p.subscribeNotifications=originalN;p.subscribeServerRequests=originalR;}
  assert.equal(seen.length,2);for(const r of seen)assert.deepEqual(r.tryReceive(),{kind:'Closed'});assert.equal(owner.lifecycleSnapshot().healthy,true);
 }));
 
