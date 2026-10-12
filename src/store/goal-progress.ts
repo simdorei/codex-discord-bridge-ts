@@ -20,10 +20,13 @@ function read(row:Record<string,unknown>):PendingGoalProgress{
 function validText(value:unknown):asserts value is string{
   if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed text");
 }
-export async function stageOwnedGoalProgress(path:string,input:StoredQueueJob,content:string):Promise<PendingGoalProgress|null>{
+function prepareOwnedGoalProgress(path:string,input:StoredQueueJob,content:string):StoredQueueJob & {turnId:string}{
   validText(path);validText(content);const expected=snapshotStoredQueueJob(input);
   if(expected.turnId===null)throw new InvalidQueueStateError("goal progress owner has no turn");
-  const db=await openInitialized(path);let committed=false;
+  return expected as StoredQueueJob & {turnId:string};
+}
+
+function stageGoalProgressOwned(db:DatabaseSync,expected:StoredQueueJob & {turnId:string},content:string):PendingGoalProgress|null{let committed=false;
   try{
     db.exec("BEGIN IMMEDIATE");const job=selectJob(db,expected.jobId);
     const count=db.prepare("SELECT count(*) AS n FROM codex_turn_queue WHERE target_thread_id=? AND state='running'");count.setReadBigInts(true);
@@ -47,6 +50,17 @@ export async function stageOwnedGoalProgress(path:string,input:StoredQueueJob,co
     db.exec("COMMIT");committed=true;return pending;
   }finally{if(!committed&&db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
 }
+
+export async function stageOwnedGoalProgress(path:string,input:StoredQueueJob,content:string):Promise<PendingGoalProgress|null>{
+  const expected=prepareOwnedGoalProgress(path,input,content);
+  return stageGoalProgressOwned(await openInitialized(path),expected,content);
+}
+
+export function stageOwnedGoalProgressExisting(path:string,input:StoredQueueJob,content:string):PendingGoalProgress|null{
+  const expected=prepareOwnedGoalProgress(path,input,content);
+  return stageGoalProgressOwned(openExisting(path),expected,content);
+}
+
 export async function pendingGoalProgress(path:string):Promise<PendingGoalProgress[]>{
   const db=await openInitialized(path);try{const query=db.prepare(SELECT+" ORDER BY rowid");query.setReadBigInts(true);return [...query.iterate()].map(read);}finally{db.close();}
 }

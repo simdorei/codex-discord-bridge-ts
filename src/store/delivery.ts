@@ -54,9 +54,9 @@ function validText(text:unknown):asserts text is string {
   if(typeof text!=="string"||/[\uD800-\uDFFF]/u.test(text)) throw new TypeError("Expected well-formed text");
 }
 /** Exact owner check, outbox, inbox, terminal evidence and release candidate commit together. */
-export async function stageOwnedQueueCompletion(
+function prepareOwnedCompletion(
   path:string, expectedInput:StoredQueueJob, content:string, now:number, releaseInput:TerminalReleaseOwner|null=null,
-):Promise<StoredDelivery> {
+): {expected:StoredQueueJob;release:TerminalReleaseOwner|null} {
   validText(path);validText(content);if(typeof now!=="number") throw new TypeError("Expected timestamp number");
   const expected=snapshotStoredQueueJob(expectedInput);
   const release=releaseInput===null?null:{observer:releaseInput.observer,generation:releaseInput.generation};
@@ -64,7 +64,10 @@ export async function stageOwnedQueueCompletion(
     validText(release.observer);
     if(typeof release.generation!=="bigint"||release.generation<-(1n<<63n)||release.generation>=(1n<<63n)) throw new TypeError("Expected i64 generation");
   }
-  const db=await openInitialized(path);let committed=false;
+  return {expected,release};
+}
+
+function stageCompletionOwned(db:DatabaseSync,expected:StoredQueueJob,content:string,now:number,release:TerminalReleaseOwner|null):StoredDelivery{let committed=false;
   try {
     db.exec("BEGIN IMMEDIATE");const job=selectJob(db,expected.jobId);
     const count=db.prepare("SELECT count(*) AS n FROM codex_turn_queue WHERE target_thread_id=? AND turn_id=? AND state='running'");
@@ -93,6 +96,21 @@ export async function stageOwnedQueueCompletion(
     db.close();
   }
 }
+
+export async function stageOwnedQueueCompletion(
+  path:string, expectedInput:StoredQueueJob, content:string, now:number, releaseInput:TerminalReleaseOwner|null=null,
+):Promise<StoredDelivery> {
+  const q=prepareOwnedCompletion(path,expectedInput,content,now,releaseInput);
+  return stageCompletionOwned(await openInitialized(path),q.expected,content,now,q.release);
+}
+
+export function stageOwnedQueueCompletionExisting(
+  path:string, expectedInput:StoredQueueJob, content:string, now:number, releaseInput:TerminalReleaseOwner|null=null,
+):StoredDelivery {
+  const q=prepareOwnedCompletion(path,expectedInput,content,now,releaseInput);
+  return stageCompletionOwned(openExisting(path),q.expected,content,now,q.release);
+}
+
 
 
 export async function listPendingDeliveries(path: string): Promise<StoredDelivery[]> {

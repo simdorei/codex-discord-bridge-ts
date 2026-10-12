@@ -271,6 +271,7 @@ export const completeDelivery: typeof Delivery.completeDelivery = Delivery.compl
 export const completeDeliveryExisting: typeof Delivery.completeDeliveryExisting = Delivery.completeDeliveryExisting;
 
 export const stageOwnedQueueCompletion: typeof Delivery.stageOwnedQueueCompletion = Delivery.stageOwnedQueueCompletion;
+export const stageOwnedQueueCompletionExisting: typeof Delivery.stageOwnedQueueCompletionExisting = Delivery.stageOwnedQueueCompletionExisting;
 
 export const activateDeadGenerationRuntime: typeof DeadCapture.activateDeadGenerationRuntime = DeadCapture.activateDeadGenerationRuntime;
 export const captureDeadGeneration: typeof DeadCapture.captureDeadGeneration = DeadCapture.captureDeadGeneration;
@@ -422,6 +423,7 @@ export const retireCopyOnlyHandoffs: typeof ForkRetirement.retireCopyOnlyHandoff
 export const repairLegacyDefiniteForkFailures: typeof ForkRepair.repairLegacyDefiniteForkFailures = ForkRepair.repairLegacyDefiniteForkFailures;
 
 export const stageOwnedGoalProgress: typeof GoalProgress.stageOwnedGoalProgress = GoalProgress.stageOwnedGoalProgress;
+export const stageOwnedGoalProgressExisting: typeof GoalProgress.stageOwnedGoalProgressExisting = GoalProgress.stageOwnedGoalProgressExisting;
 
 export const pendingGoalProgress: typeof GoalProgress.pendingGoalProgress = GoalProgress.pendingGoalProgress;
 
@@ -624,6 +626,7 @@ export interface IStateAccessFacade {
   readonly recordGoalProgressErrorExisting: typeof GoalProgress.recordGoalProgressErrorExisting;
   readonly pendingGoalProgress: typeof GoalProgress.pendingGoalProgress;
   readonly stageOwnedGoalProgress: typeof GoalProgress.stageOwnedGoalProgress;
+  readonly stageOwnedGoalProgressExisting: typeof GoalProgress.stageOwnedGoalProgressExisting;
   readonly repairLegacyDefiniteForkFailures: typeof ForkRepair.repairLegacyDefiniteForkFailures;
   readonly retireCopyOnlyHandoffs: typeof ForkRetirement.retireCopyOnlyHandoffs;
   readonly unresolvedAppServerForkHandoffForSource: typeof ForkRead.unresolvedAppServerForkHandoffForSource;
@@ -650,6 +653,7 @@ export interface IStateAccessFacade {
   readonly completeDeliveryExisting: typeof Delivery.completeDeliveryExisting;
   readonly recordObservedCompletionForResident: typeof ObservedCompletion.recordObservedCompletionForResident;
   readonly stageOwnedQueueCompletion: typeof Delivery.stageOwnedQueueCompletion;
+  readonly stageOwnedQueueCompletionExisting: typeof Delivery.stageOwnedQueueCompletionExisting;
   readonly activateDeadGenerationRuntime: typeof DeadCapture.activateDeadGenerationRuntime;
   readonly captureDeadGeneration: typeof DeadCapture.captureDeadGeneration;
   readonly captureResponseCustody: typeof ResponseCustody.captureResponseCustody;
@@ -929,6 +933,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   recordGoalProgressErrorExisting,
   pendingGoalProgress,
   stageOwnedGoalProgress,
+  stageOwnedGoalProgressExisting,
   repairLegacyDefiniteForkFailures,
   retireCopyOnlyHandoffs,
   unresolvedAppServerForkHandoffForSource,
@@ -955,6 +960,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   completeDeliveryExisting,
   recordObservedCompletionForResident,
   stageOwnedQueueCompletion,
+  stageOwnedQueueCompletionExisting,
   activateDeadGenerationRuntime,
   captureDeadGeneration,
   captureResponseCustody,

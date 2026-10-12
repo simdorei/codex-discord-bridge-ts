@@ -775,8 +775,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "retireCopyOnlyHandoffs",
       "settleTerminalHistory",
       "stageAppServerForkTarget",
-      "stageOwnedGoalProgress",
-      "stageOwnedQueueCompletion",
+      "stageOwnedGoalProgress", "stageOwnedGoalProgressExisting",
+      "stageOwnedQueueCompletion", "stageOwnedQueueCompletionExisting",
       "tryBeginAttempt", "tryBeginAttemptExisting",
       "tryClaimPromptIntake",
       "unresolvedAppServerForkHandoffForSource",
@@ -787,7 +787,11 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.markGoalWaitingExisting, GoalWaiting.markGoalWaitingExisting);
     assert.strictEqual(StateAccessFacade.attachGoalTurnObservedIfOwnedExisting, GoalAttach.attachGoalTurnObservedIfOwnedExisting);
     assert.strictEqual(FacadeExports.attachGoalTurnObservedIfOwnedExisting, GoalAttach.attachGoalTurnObservedIfOwnedExisting);
-    assert.strictEqual(actual.length, 290);
+    assert.strictEqual(StateAccessFacade.stageOwnedQueueCompletionExisting, Delivery.stageOwnedQueueCompletionExisting);
+    assert.strictEqual(FacadeExports.stageOwnedQueueCompletionExisting, Delivery.stageOwnedQueueCompletionExisting);
+    assert.strictEqual(StateAccessFacade.stageOwnedGoalProgressExisting, GoalProgress.stageOwnedGoalProgressExisting);
+    assert.strictEqual(FacadeExports.stageOwnedGoalProgressExisting, GoalProgress.stageOwnedGoalProgressExisting);
+    assert.strictEqual(actual.length, 292);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
