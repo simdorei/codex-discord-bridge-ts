@@ -1,3 +1,4 @@
+import {NativeProgressStateOwner} from './native-progress-state.ts';
 import {types} from "node:util";
 import {StateAccessFacade as state} from "../../store/state-access-facade.ts";
 import type {PendingCommentary} from "../../store/commentary-outbox.ts";
@@ -24,9 +25,13 @@ export async function ensureDeliveryOrder(path:string,job:string,before:bigint|n
 }
 export async function deliverCommentary(path:string,input:PendingCommentary,transport:DiscordReceiptTransport,native=false):Promise<void>{
   const pending=snapshot(input);
-  await ensureDeliveryOrder(path,pending.jobId,pending.sequence);
+  if(typeof native!=="boolean")throw new TypeError("Expected native progress profile");
+  const owner=native?new NativeProgressStateOwner(path,{kind:"Commentary",job:pending.jobId,sequence:pending.sequence}):undefined;
+  try{
+  if(owner)await owner.ensure();else await ensureDeliveryOrder(path,pending.jobId,pending.sequence);
   await sendCompletionText(path,transport,pending.channelId,commentaryIdentity(pending.threadId,pending.turnId,pending.text),commentaryMessage(pending.text),{jobId:pending.jobId,threadId:pending.threadId,turnId:pending.turnId},native);
-  await state.completeCommentary(path,pending.sequence);
+  if(owner)await owner.complete();else await state.completeCommentary(path,pending.sequence);
+  }finally{await owner?.close();}
 }
 /** Continue unrelated jobs after an error; later same-job entries remain behind the failed one. */
 export async function deliverPendingCommentary(path:string,transport:DiscordReceiptTransport):Promise<void>{

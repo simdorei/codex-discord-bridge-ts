@@ -1,3 +1,6 @@
+import * as StartNoticeOutbox from "../../src/store/start-notice-outbox.ts";
+import * as CommentaryOutbox from "../../src/store/commentary-outbox.ts";
+import * as GoalProgress from "../../src/store/goal-progress.ts";
 import * as CompletionPayload from "../../src/store/completion-payload.ts";
 import * as PreparedMutationValidation from '../../src/store/prepared-mutation-validation.ts';
 import * as ResumeRestartRecovery from '../../src/store/resume-restart-recovery.ts';
@@ -106,6 +109,20 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.recordGoalProgressErrorExisting, GoalProgress.recordGoalProgressErrorExisting);
+    assert.strictEqual(FacadeExports.recordGoalProgressErrorExisting, GoalProgress.recordGoalProgressErrorExisting);
+    assert.strictEqual(StateAccessFacade.completeGoalProgressExisting, GoalProgress.completeGoalProgressExisting);
+    assert.strictEqual(FacadeExports.completeGoalProgressExisting, GoalProgress.completeGoalProgressExisting);
+    assert.strictEqual(StateAccessFacade.hasPendingCommentaryExisting, CommentaryOutbox.hasPendingCommentaryExisting);
+    assert.strictEqual(FacadeExports.hasPendingCommentaryExisting, CommentaryOutbox.hasPendingCommentaryExisting);
+    assert.strictEqual(StateAccessFacade.completeCommentaryExisting, CommentaryOutbox.completeCommentaryExisting);
+    assert.strictEqual(FacadeExports.completeCommentaryExisting, CommentaryOutbox.completeCommentaryExisting);
+    assert.strictEqual(StateAccessFacade.completeStartNoticeExisting, StartNoticeOutbox.completeStartNoticeExisting);
+    assert.strictEqual(FacadeExports.completeStartNoticeExisting, StartNoticeOutbox.completeStartNoticeExisting);
+    assert.strictEqual(StateAccessFacade.newReplyOutputHoldExisting, NewReplyClaims.newReplyOutputHoldExisting);
+    assert.strictEqual(FacadeExports.newReplyOutputHoldExisting, NewReplyClaims.newReplyOutputHoldExisting);
+    assert.strictEqual(StateAccessFacade.pendingFirstReplyExisting, DeliveryPreflight.pendingFirstReplyExisting);
+    assert.strictEqual(FacadeExports.pendingFirstReplyExisting, DeliveryPreflight.pendingFirstReplyExisting);
     assert.strictEqual(StateAccessFacade.proposeAbandonment, AbandonmentProposalStore.proposeAbandonment);
     assert.strictEqual(FacadeExports.proposeAbandonment, AbandonmentProposalStore.proposeAbandonment);
     assert.strictEqual(StateAccessFacade.bindAbandonmentDelivery, AbandonmentProposalStore.bindAbandonmentDelivery);
@@ -538,8 +555,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "loadCompletionPayloadExisting",
       "readCompletionMetadataRound",
       "completionPage", "completionHeadsForTarget", "completionHeadsForTargetExisting",
-      "pendingStartNotices", "completeStartNotice",
-      "stageCommentary", "pendingCommentary", "hasPendingCommentary", "completeCommentary",
+      "pendingStartNotices", "completeStartNotice", "completeStartNoticeExisting",
+      "stageCommentary", "pendingCommentary", "hasPendingCommentary", "hasPendingCommentaryExisting", "completeCommentary", "completeCommentaryExisting",
       "activate",
       "admitPromptIntake",
       "adoptTargetGeneration",
@@ -557,7 +574,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "captureTerminalHistorySnapshot",
       "completeDelivery",
       "completeDeliveryExisting",
-      "completeGoalProgress",
+      "completeGoalProgress", "completeGoalProgressExisting",
       "completedAppServerForkTargetForSource",
       "activateDeadGenerationRuntime",
       "captureDeadGeneration",
@@ -664,11 +681,11 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "checkpointNewReply",
       "pendingNewReplies",
       "getNewReplyBounded",
-      "newReplyOutputHold",
+      "newReplyOutputHold", "newReplyOutputHoldExisting",
       "newReplyAcknowledgementSendable",
       "releaseNewReplyAcknowledgement",
       "finalDeliveryPreflight",
-      "pendingFirstReply",
+      "pendingFirstReply", "pendingFirstReplyExisting",
       "admitIngress",
       "installReviewedRecoveryPolicy",
       "restartReadinessSnapshot",
@@ -731,7 +748,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "recordAppServerForkFinalizeFailure",
       "recordDeliveryFailure",
       "recordDeliveryFailureExisting",
-      "recordGoalProgressError",
+      "recordGoalProgressError", "recordGoalProgressErrorExisting",
       "recordObservedCompletionError",
       "recordObservedCompletionForResident",
       "recordPreflightFailure",
@@ -752,7 +769,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 275);
+    assert.strictEqual(actual.length, 282);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

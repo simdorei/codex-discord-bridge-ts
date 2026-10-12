@@ -1,3 +1,4 @@
+import {openExisting} from './existing-store.ts';
 import {hasPendingCommentaryIn} from "./commentary-outbox.ts";
 import type {DatabaseSync} from "node:sqlite";
 import {CheckedRead,openInitialized} from "./owned-driver.ts";
@@ -27,4 +28,9 @@ export function finalDeliveryPreflightIn(db:DatabaseSync,pending:StoredDelivery)
 export function finalDeliveryPreflight(path:string,input:StoredDelivery):FinalReadiness{
   const pending=snapshotStoredDelivery(input),snapshot=CheckedRead.open(path);
   try{snapshot.ensureActive();const result=finalDeliveryPreflightIn(snapshot.connection(),pending);snapshot.ensureActive();snapshot.finish();return result;}finally{snapshot.close();}
+}
+
+export function pendingFirstReplyExisting(path:string,job:string):string|null{
+ for(const value of [path,job])if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed text");
+ const db=openExisting(path);try{return pendingFirstReplyIn(db,job);}finally{db.close();}
 }

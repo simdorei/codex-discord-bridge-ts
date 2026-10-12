@@ -1,3 +1,4 @@
+import type {DatabaseSync} from 'node:sqlite';import {openExisting} from './existing-store.ts';
 import {openInitialized} from "./owned-driver.ts";
 import {receiptText,receiptTextColumns} from "./delivery-receipt-key.ts";
 import {decodeI64} from "./sqlite-values.ts";
@@ -12,5 +13,13 @@ export async function pendingStartNotices(path:string):Promise<StartNotice[]>{
 }
 export async function completeStartNotice(path:string,job:string):Promise<void>{
   if(typeof job!=="string"||/[\uD800-\uDFFF]/u.test(job))throw new TypeError("Expected well-formed job identity");
-  const db=await openInitialized(path);try{db.prepare("DELETE FROM codex_reserve_start_notices WHERE job_id=?").run(job);}finally{db.close();}
+  completeStartOwned(await openInitialized(path),job);
+}
+
+export function completeStartNoticeExisting(path:string,job:string):void{
+ if(typeof job!=="string"||/[\uD800-\uDFFF]/u.test(job))throw new TypeError("Expected well-formed job identity");
+ completeStartOwned(openExisting(path),job);
+}
+function completeStartOwned(db:DatabaseSync,job:string):void{
+ try{db.prepare("DELETE FROM codex_reserve_start_notices WHERE job_id=?").run(job);}finally{db.close();}
 }

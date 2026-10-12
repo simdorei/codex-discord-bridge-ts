@@ -1,3 +1,4 @@
+import {openExisting} from './existing-store.ts';
 import {requireDiscordText} from '../discord/text.ts';
 import {decodeI64} from "./sqlite-values.ts";
 import type {DatabaseSync} from "node:sqlite";
@@ -89,3 +90,5 @@ export async function releaseNewReplyAcknowledgement(path:string,ingress:string)
   if(typeof ingress!=="string"||/[\uD800-\uDFFF]/u.test(ingress))throw new TypeError("Expected well-formed text");
   const db=await openInitialized(path);try{db.prepare("UPDATE codex_new_first_replies SET ack_recovery_allowed=1 WHERE ingress_id=? AND confirmation_delivered=0").run(ingress);}finally{db.close();}
 }
+
+export function newReplyOutputHoldExisting(path:string,job:string):string|null{const db=openExisting(path);try{return newReplyOutputHoldIn(db,job);}finally{db.close();}}

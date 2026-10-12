@@ -1,3 +1,4 @@
+import {openExisting} from './existing-store.ts';
 import type {DatabaseSync} from "node:sqlite";
 import {openInitialized} from "./owned-driver.ts";
 import {selectJob,snapshotStoredQueueJob,storedQueueJobsEqual,InvalidQueueStateError,type StoredQueueJob} from "./queue-read.ts";
@@ -51,11 +52,11 @@ export async function pendingGoalProgress(path:string):Promise<PendingGoalProgre
 }
 export async function recordGoalProgressError(path:string,p:PendingGoalProgress,error:string):Promise<void>{
   validText(error);const bounded=takeUnicodeScalarChars(error,1000),thread=p.thread,turn=p.turn,db=await openInitialized(path);
-  try{db.prepare("UPDATE codex_goal_progress SET last_error=? WHERE thread=? AND turn=?").run(bounded,thread,turn);}finally{db.close();}
+  recordGoalErrorOwned(db,bounded,thread,turn);
 }
 export async function completeGoalProgress(path:string,p:PendingGoalProgress):Promise<void>{
   const thread=p.thread,turn=p.turn,db=await openInitialized(path);
-  try{db.prepare("DELETE FROM codex_goal_progress WHERE thread=? AND turn=?").run(thread,turn);}finally{db.close();}
+  completeGoalOwned(db,thread,turn);
 }
 export function hasPendingGoalProgressIn(db:DatabaseSync,job:string,thread:string):boolean{
   const query=db.prepare("SELECT EXISTS(SELECT 1 FROM codex_goal_progress WHERE job_id=?1 OR (job_id IS NULL AND thread=?2)) AS present");
@@ -63,4 +64,19 @@ export function hasPendingGoalProgressIn(db:DatabaseSync,job:string,thread:strin
 }
 export async function hasPendingGoalProgress(path:string,job:string,thread:string):Promise<boolean>{
   const db=await openInitialized(path);try{return hasPendingGoalProgressIn(db,job,thread);}finally{db.close();}
+}
+
+/** Existing-only native adapters preserve original thread/turn predicates. */
+export function recordGoalProgressErrorExisting(path:string,p:Pick<PendingGoalProgress,'thread'|'turn'>,error:string):void{
+ validText(error);const bounded=takeUnicodeScalarChars(error,1000),thread=p.thread,turn=p.turn;
+ recordGoalErrorOwned(openExisting(path),bounded,thread,turn);
+}
+export function completeGoalProgressExisting(path:string,p:Pick<PendingGoalProgress,'thread'|'turn'>):void{
+ const thread=p.thread,turn=p.turn;completeGoalOwned(openExisting(path),thread,turn);
+}
+function recordGoalErrorOwned(db:DatabaseSync,bounded:string,thread:string,turn:string):void{
+  try{db.prepare("UPDATE codex_goal_progress SET last_error=? WHERE thread=? AND turn=?").run(bounded,thread,turn);}finally{db.close();}
+}
+function completeGoalOwned(db:DatabaseSync,thread:string,turn:string):void{
+  try{db.prepare("DELETE FROM codex_goal_progress WHERE thread=? AND turn=?").run(thread,turn);}finally{db.close();}
 }

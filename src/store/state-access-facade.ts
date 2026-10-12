@@ -204,15 +204,19 @@ export const pendingNewReplies: typeof NewReplyPending.pendingNewReplies = NewRe
 export const validateNewReplyCurrent: typeof NewReplyClaims.validateNewReplyCurrent = NewReplyClaims.validateNewReplyCurrent;
 export const getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress = NewReplyRead.getNewReplyByIngress;
 export const newReplyOutputHold: typeof NewReplyClaims.newReplyOutputHold = NewReplyClaims.newReplyOutputHold;
+export const newReplyOutputHoldExisting: typeof NewReplyClaims.newReplyOutputHoldExisting = NewReplyClaims.newReplyOutputHoldExisting;
 export const newReplyAcknowledgementSendable: typeof NewReplyClaims.newReplyAcknowledgementSendable = NewReplyClaims.newReplyAcknowledgementSendable;
 export const releaseNewReplyAcknowledgement: typeof NewReplyClaims.releaseNewReplyAcknowledgement = NewReplyClaims.releaseNewReplyAcknowledgement;
 
 export const stageCommentary: typeof CommentaryOutbox.stageCommentary = CommentaryOutbox.stageCommentary;
 export const pendingCommentary: typeof CommentaryOutbox.pendingCommentary = CommentaryOutbox.pendingCommentary;
 export const hasPendingCommentary: typeof CommentaryOutbox.hasPendingCommentary = CommentaryOutbox.hasPendingCommentary;
+export const hasPendingCommentaryExisting: typeof CommentaryOutbox.hasPendingCommentaryExisting = CommentaryOutbox.hasPendingCommentaryExisting;
 export const completeCommentary: typeof CommentaryOutbox.completeCommentary = CommentaryOutbox.completeCommentary;
+export const completeCommentaryExisting: typeof CommentaryOutbox.completeCommentaryExisting = CommentaryOutbox.completeCommentaryExisting;
 export const pendingStartNotices: typeof StartNoticeOutbox.pendingStartNotices = StartNoticeOutbox.pendingStartNotices;
 export const completeStartNotice: typeof StartNoticeOutbox.completeStartNotice = StartNoticeOutbox.completeStartNotice;
+export const completeStartNoticeExisting: typeof StartNoticeOutbox.completeStartNoticeExisting = StartNoticeOutbox.completeStartNoticeExisting;
 export const completionPage: typeof CompletionMetadata.completionPage = CompletionMetadata.completionPage;
 export const completionHeadsForTarget: typeof CompletionMetadata.completionHeadsForTarget = CompletionMetadata.completionHeadsForTarget;
 export const completionHeadsForTargetExisting: typeof CompletionMetadata.completionHeadsForTargetExisting = CompletionMetadata.completionHeadsForTargetExisting;
@@ -221,6 +225,7 @@ export const loadCompletionPayloadExisting: typeof CompletionPayload.loadComplet
 export const loadCompletionPayload: typeof CompletionPayload.loadCompletionPayload = CompletionPayload.loadCompletionPayload;
 export const finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight = DeliveryPreflight.finalDeliveryPreflight;
 export const pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply = DeliveryPreflight.pendingFirstReply;
+export const pendingFirstReplyExisting: typeof DeliveryPreflight.pendingFirstReplyExisting = DeliveryPreflight.pendingFirstReplyExisting;
 
 export const recordNewInput: typeof NewInput.recordNewInput = NewInput.recordNewInput;
 export const installReviewedRecoveryPolicy: typeof ReviewedPolicy.installReviewedRecoveryPolicy = ReviewedPolicy.installReviewedRecoveryPolicy;
@@ -415,8 +420,10 @@ export const stageOwnedGoalProgress: typeof GoalProgress.stageOwnedGoalProgress 
 export const pendingGoalProgress: typeof GoalProgress.pendingGoalProgress = GoalProgress.pendingGoalProgress;
 
 export const recordGoalProgressError: typeof GoalProgress.recordGoalProgressError = GoalProgress.recordGoalProgressError;
+export const recordGoalProgressErrorExisting: typeof GoalProgress.recordGoalProgressErrorExisting = GoalProgress.recordGoalProgressErrorExisting;
 
 export const completeGoalProgress: typeof GoalProgress.completeGoalProgress = GoalProgress.completeGoalProgress;
+export const completeGoalProgressExisting: typeof GoalProgress.completeGoalProgressExisting = GoalProgress.completeGoalProgressExisting;
 
 export const hasPendingGoalProgress: typeof GoalProgress.hasPendingGoalProgress = GoalProgress.hasPendingGoalProgress;
 
@@ -490,9 +497,12 @@ export interface IStateAccessFacade {
   readonly stageCommentary: typeof CommentaryOutbox.stageCommentary;
   readonly pendingCommentary: typeof CommentaryOutbox.pendingCommentary;
   readonly hasPendingCommentary: typeof CommentaryOutbox.hasPendingCommentary;
+  readonly hasPendingCommentaryExisting: typeof CommentaryOutbox.hasPendingCommentaryExisting;
   readonly completeCommentary: typeof CommentaryOutbox.completeCommentary;
+  readonly completeCommentaryExisting: typeof CommentaryOutbox.completeCommentaryExisting;
   readonly pendingStartNotices: typeof StartNoticeOutbox.pendingStartNotices;
   readonly completeStartNotice: typeof StartNoticeOutbox.completeStartNotice;
+  readonly completeStartNoticeExisting: typeof StartNoticeOutbox.completeStartNoticeExisting;
   readonly completionPage: typeof CompletionMetadata.completionPage;
   readonly completionHeadsForTarget: typeof CompletionMetadata.completionHeadsForTarget;
   readonly completionHeadsForTargetExisting: typeof CompletionMetadata.completionHeadsForTargetExisting;
@@ -501,6 +511,7 @@ export interface IStateAccessFacade {
   readonly loadCompletionPayload: typeof CompletionPayload.loadCompletionPayload;
   readonly finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight;
   readonly pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply;
+  readonly pendingFirstReplyExisting: typeof DeliveryPreflight.pendingFirstReplyExisting;
 
   readonly beginDeliveryReceipt: typeof DeliveryReceipts.beginDeliveryReceipt;
   readonly confirmDeliveryReceipt: typeof DeliveryReceipts.confirmDeliveryReceipt;
@@ -522,6 +533,7 @@ export interface IStateAccessFacade {
   readonly validateNewReplyCurrent: typeof NewReplyClaims.validateNewReplyCurrent;
   readonly getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress;
   readonly newReplyOutputHold: typeof NewReplyClaims.newReplyOutputHold;
+  readonly newReplyOutputHoldExisting: typeof NewReplyClaims.newReplyOutputHoldExisting;
   readonly newReplyAcknowledgementSendable: typeof NewReplyClaims.newReplyAcknowledgementSendable;
   readonly releaseNewReplyAcknowledgement: typeof NewReplyClaims.releaseNewReplyAcknowledgement;
 
@@ -597,7 +609,9 @@ export interface IStateAccessFacade {
   readonly attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObservedIfOwned;
   readonly hasPendingGoalProgress: typeof GoalProgress.hasPendingGoalProgress;
   readonly completeGoalProgress: typeof GoalProgress.completeGoalProgress;
+  readonly completeGoalProgressExisting: typeof GoalProgress.completeGoalProgressExisting;
   readonly recordGoalProgressError: typeof GoalProgress.recordGoalProgressError;
+  readonly recordGoalProgressErrorExisting: typeof GoalProgress.recordGoalProgressErrorExisting;
   readonly pendingGoalProgress: typeof GoalProgress.pendingGoalProgress;
   readonly stageOwnedGoalProgress: typeof GoalProgress.stageOwnedGoalProgress;
   readonly repairLegacyDefiniteForkFailures: typeof ForkRepair.repairLegacyDefiniteForkFailures;
@@ -840,14 +854,18 @@ export const StateAccessFacade: IStateAccessFacade = {
   validateNewReplyCurrent,
   getNewReplyByIngress,
   newReplyOutputHold,
+  newReplyOutputHoldExisting,
   newReplyAcknowledgementSendable,
   releaseNewReplyAcknowledgement,
   stageCommentary,
   pendingCommentary,
   hasPendingCommentary,
+  hasPendingCommentaryExisting,
   completeCommentary,
+  completeCommentaryExisting,
   pendingStartNotices,
   completeStartNotice,
+  completeStartNoticeExisting,
   completionPage,
   completionHeadsForTarget,
   completionHeadsForTargetExisting,
@@ -856,6 +874,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   loadCompletionPayload,
   finalDeliveryPreflight,
   pendingFirstReply,
+  pendingFirstReplyExisting,
   recordNewInput,
   installReviewedRecoveryPolicy,
   restartReadinessSnapshot,
@@ -887,7 +906,9 @@ export const StateAccessFacade: IStateAccessFacade = {
   attachGoalTurnObservedIfOwned,
   hasPendingGoalProgress,
   completeGoalProgress,
+  completeGoalProgressExisting,
   recordGoalProgressError,
+  recordGoalProgressErrorExisting,
   pendingGoalProgress,
   stageOwnedGoalProgress,
   repairLegacyDefiniteForkFailures,

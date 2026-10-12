@@ -1,3 +1,4 @@
+import {openExisting} from './existing-store.ts';
 import {createHash} from "node:crypto";
 import type {DatabaseSync} from "node:sqlite";
 import {openInitialized} from "./owned-driver.ts";
@@ -46,5 +47,15 @@ export async function hasPendingCommentary(path:string,job:string,before:bigint|
   text(path);text(job);if(before!==null)i64(before);const db=await openInitialized(path);try{return hasPendingCommentaryIn(db,job,before);}finally{db.close();}
 }
 export async function completeCommentary(path:string,sequence:bigint):Promise<void>{
-  text(path);i64(sequence);const db=await openInitialized(path);try{db.prepare("DELETE FROM codex_commentary_outbox WHERE sequence=?").run(sequence);}finally{db.close();}
+  text(path);i64(sequence);completeCommentaryOwned(await openInitialized(path),sequence);
+}
+
+export function hasPendingCommentaryExisting(path:string,job:string,before:bigint|null=null):boolean{
+ text(path);text(job);if(before!==null)i64(before);const db=openExisting(path);try{return hasPendingCommentaryIn(db,job,before);}finally{db.close();}
+}
+export function completeCommentaryExisting(path:string,sequence:bigint):void{
+ text(path);i64(sequence);completeCommentaryOwned(openExisting(path),sequence);
+}
+function completeCommentaryOwned(db:DatabaseSync,sequence:bigint):void{
+ try{db.prepare("DELETE FROM codex_commentary_outbox WHERE sequence=?").run(sequence);}finally{db.close();}
 }

@@ -1,3 +1,4 @@
+import {NativeProgressStateOwner} from './native-progress-state.ts';
 import {types} from "node:util";
 import {StateAccessFacade as state} from "../../store/state-access-facade.ts";
 import type {PendingGoalProgress} from "../../store/goal-progress.ts";
@@ -17,12 +18,16 @@ function snapshot(input:PendingGoalProgress):PendingGoalProgress{
 export async function deliverGoalProgress(path:string,input:PendingGoalProgress,transport:DiscordReceiptTransport,failures:CompletionFailureRenderer,native=false):Promise<void>{
   const pending=snapshot(input);
   if(pending.jobId===null)throw new CompletionDeliveryError("legacy goal progress has no durable request identity; saved for review without sending");
-  await ensureFirstReply(path,pending.jobId);
+  if(typeof native!=="boolean")throw new TypeError("Expected native progress profile");
+  const owner=native?new NativeProgressStateOwner(path,{kind:"Goal",job:pending.jobId,thread:pending.thread,turn:pending.turn}):undefined;
+  try{
+  if(owner)await owner.ensure();else await ensureFirstReply(path,pending.jobId);
   const identity=goalProgressIdentity(pending.thread,pending.turn);
   validateCompletionChannel(pending.channel);
   try{await sendCompletionText(path,transport,pending.channel,identity,pending.content,{jobId:pending.jobId,threadId:pending.thread,turnId:pending.turn},native);}
-  catch(error){const display=failures.render(error,Object.freeze({deliveryId:identity.logicalKey,stage:"goal-send"}));requireDiscordText(display);await state.recordGoalProgressError(path,pending,display);throw error;}
-  await state.completeGoalProgress(path,pending);
+  catch(error){const display=failures.render(error,Object.freeze({deliveryId:identity.logicalKey,stage:"goal-send"}));requireDiscordText(display);if(owner)await owner.recordFailure(display);else await state.recordGoalProgressError(path,pending,display);throw error;}
+  if(owner)await owner.complete();else await state.completeGoalProgress(path,pending);
+  }finally{await owner?.close();}
 }
 /** Recovery utility, not an installed runtime scheduler. */
 export async function recoverGoalProgress(path:string,transport:DiscordReceiptTransport,failures:CompletionFailureRenderer):Promise<void>{

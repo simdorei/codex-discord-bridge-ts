@@ -1,3 +1,4 @@
+import {NativeProgressStateOwner} from './native-progress-state.ts';
 import {StateAccessFacade as state} from "../../store/state-access-facade.ts";
 import {START_NOTICE_DOMAIN,type StartNotice} from "../../store/start-notice-outbox.ts";
 import {sendReceiptChunk,type DiscordReceiptTransport} from "./receipt-sender.ts";
@@ -25,6 +26,10 @@ export async function deliverPendingOutputs(path:string,options:FinalDeliveryOpt
 export async function deliverStartNotice(path:string,notice:StartNotice,transport:DiscordReceiptTransport,native=false):Promise<void>{
   const channel=notice.channelId,job=notice.jobId,content=notice.content;
   validateCompletionChannel(channel);
+  if(typeof native!=="boolean")throw new TypeError("Expected native progress profile");
+  const owner=native?new NativeProgressStateOwner(path,{kind:"StartFailure",job}):undefined;
+  try{
   await sendReceiptChunk(path,transport,channel,{domain:START_NOTICE_DOMAIN,logicalKey:job,chunkIndex:0,content},[],null,undefined,native);
-  await state.completeStartNotice(path,job);
+  if(owner)await owner.complete();else await state.completeStartNotice(path,job);
+  }finally{await owner?.close();}
 }
