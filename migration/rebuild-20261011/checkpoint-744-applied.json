@@ -1,0 +1,94 @@
+{
+  "beforeHead": "4527398a41b1f2926685ecedb56a49e46c89fc9e",
+  "scope": [
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "beforeSha256": "38fb59c8bdd4f7c39884da0f9cfbc84e7860ec3b47d9356e5db8fc06fa996c9d",
+      "afterSha256": "117275e7d1d602335a8619c0b91bcfece285b4bafa8079df72356d5fbdec768f"
+    },
+    {
+      "path": "src/runtime/action-executor/new-executor.ts",
+      "beforeSha256": "7e3b0b2c44888e5ca3908d3100067c36b15b947810229d9f236ca9f49e983794",
+      "afterSha256": "cc9750a9b53cdcf57f91966aae13d2eb730dfbba0465d027369d868042d90bd3"
+    },
+    {
+      "path": "src/runtime/action-executor/new-project-cwd.ts",
+      "beforeSha256": null,
+      "afterSha256": "853de614d165875e3a9b45e9732ea51ee87322a740e4a3309a556157a2574f8a"
+    },
+    {
+      "path": "src/runtime/action-executor/new-project-native.ts",
+      "beforeSha256": null,
+      "afterSha256": "9bfc08063932d04bed53a361b19f3ad1ac045057ba86ad4cdc9bd088e1538fe1"
+    },
+    {
+      "path": "src/runtime/action-executor/new-project-worker.ts",
+      "beforeSha256": null,
+      "afterSha256": "70c94933c94387cdb8f1ed6a765c8eedda97e93c46286f04b9b3940ef15621fb"
+    },
+    {
+      "path": "src/runtime/action-executor/new-project.ts",
+      "beforeSha256": "cc592ef32d8c73e04f8e1c55635557601a2c761792b55b33142b076c2a49bf7e",
+      "afterSha256": "82141c4e39e17aeb269814e5be1073578b8ef77e3b7c69a9071bfd836443a6ff"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "beforeSha256": "10c6412a6a42bca77b6b3dce9c4c033fff454e05355d82d1b292fb85acd2f69b",
+      "afterSha256": "bf02b687ecf936bd378208684e779e6a3fa0389c488640558a66a86ec57836e1"
+    },
+    {
+      "path": "test/runtime/action-executor/new-project-native-paired.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "1209a38ba7f7da6d925a80d14d11417bf347981e47f15b714dcc5e38e3f074a9"
+    },
+    {
+      "path": "test/runtime/action-executor/new-project-native.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "6982aa152a733beb31a290e4133aa1499f15e780fec97fd413ed144e0383c2dd"
+    }
+  ],
+  "stageFileCount": 1596,
+  "full": {
+    "tests": 8095,
+    "pass": 8095,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "fileCount": 781,
+  "fullLogSha256": "72d840c98ff16cdad61f42abc0f031d9e7e055abdc9b217b7e1e087eb884b77f",
+  "focused": 555,
+  "status": "STAGED_QUALIFIED_ACTUAL_RECHECK_PENDING",
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 555,
+      "pass": 555,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1596
+  },
+  "claim": "Staged sequential whole8095PASS plus actual555PASS/TS0/build0 and all1596source/test hashes identical. No separate actual whole rerun.",
+  "limitations": [
+    "Original recent-thread scan still materializes full inventory; offload is not memory/throughput certification.",
+    "Expected InvalidActionRequestError is preserved; other native failures become unavailable, not serialized raw errors.",
+    "Checkpoint742 parallel-test timeout remains an unresolved timing/performance qualification limit.",
+    "Protected redaction fixture is absent and neither executed nor counted as skip.",
+    "No Windows/live Discord/appserver/G1-G7/24h/deployment approval."
+  ],
+  "evidence": {
+    ".runtime/new-project-cwd-native-744/full.log": "72d840c98ff16cdad61f42abc0f031d9e7e055abdc9b217b7e1e087eb884b77f",
+    ".runtime/new-project-cwd-native-744/full.tap": "b39688a903a2e01037877e41a897c77c48c87372846ad1d823b165fa383cd49b",
+    ".runtime/new-project-cwd-native-744/full-exit.json": "c19fc634329ae678400f47ce4e11ea2ebe05da65f999ed0d06d1b7f610475e3c",
+    ".runtime/new-project-cwd-native-744/stage-inputs.json": "f9b17bd0fd31b8e689e03e2776e64c3bb69868c85cee7022b927f2eb38f2b949",
+    ".runtime/new-project-cwd-native-744/authored-manifest.json": "0b7e354c652ede39435f1fdf5aa5790a5ec0070256fdc115b3b28fd31615ccce",
+    ".runtime/new-project-cwd-native-744/review.md": "3adaeb6b878aa13bc9c91f620a606b2653d796f00dd5bba74d85397d2f654471",
+    ".runtime/new-project-cwd-native-744/test-correction.json": "19a98ae89d483557b28081108252bbc83fbb9197c178eb84e98604ec9643cbcb",
+    ".runtime/new-project-cwd-native-744/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/new-project-cwd-native-744/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/new-project-cwd-native-744/applied/focused.log": "e0c6312ca0c5b6ac673a2a8e66cab5ac55f1f9e09510239d28b883534886ae2d",
+    ".runtime/new-project-cwd-native-plan-743/source-inputs.json": "c8b28a761a7ef7376e1dbc09a98eadd2655301c99b4651f29f6be47d1c57a987"
+  }
+}

@@ -1,3 +1,4 @@
+import {directNewProjectLookup,type NewProjectLookup} from './new-project-cwd.ts';
 import {newStateFunction,newStatePromise} from './new-state-call.ts';
 import {randomUUID} from 'node:crypto';
 import {types} from 'node:util';
@@ -32,14 +33,14 @@ export interface NewMirrorLink {linkNewThread(channel:bigint,thread:string,promp
 export class NewThreadExecutor {
  readonly #state:NewThreadState;
  readonly #database:string;readonly #journal:NewThreadJournal;readonly #project:NewThreadProject;readonly #reply:NewFirstReply;readonly #queue:QueueStartCoordinator;readonly #intake:PromptIntakeProcessor;readonly #bridge:BridgeState;readonly #server:PortableResidentLifecycle|null;readonly #backend:AppServerTurnBackend|null;readonly #mirror:NewMirrorLink|null;readonly #link:NewMirrorLink['linkNewThread']|null;readonly #report:(value:NewAttemptReport)=>void;readonly #now:()=>number;
- constructor(database:string,statePath:string,queue:QueueStartCoordinator,intake:PromptIntakeProcessor,bridge:BridgeState,server:PortableResidentLifecycle|null,backend:AppServerTurnBackend|null,mirror:NewMirrorLink|null,report:(value:NewAttemptReport)=>void,now:()=>number=systemNow,admit:typeof state.admitPromptIntakeWithIngress=state.admitPromptIntakeWithIngress,finishRead:typeof state.getNewFirstReplyFinish=state.getNewFirstReplyFinish,journalState:NewThreadState=state){
+ constructor(database:string,statePath:string,queue:QueueStartCoordinator,intake:PromptIntakeProcessor,bridge:BridgeState,server:PortableResidentLifecycle|null,backend:AppServerTurnBackend|null,mirror:NewMirrorLink|null,report:(value:NewAttemptReport)=>void,now:()=>number=systemNow,admit:typeof state.admitPromptIntakeWithIngress=state.admitPromptIntakeWithIngress,finishRead:typeof state.getNewFirstReplyFinish=state.getNewFirstReplyFinish,journalState:NewThreadState=state,projectLookup:NewProjectLookup=directNewProjectLookup){
   requireDiscordText(database);requireDiscordText(statePath);if((server===null)!==(backend===null))throw new TypeError('Expected matching resident/backend availability');
   if(server!==null&&backend!==null&&backend.residentInstanceId()!==server.instanceId)throw new TypeError('New executor resident/backend mismatch');
   for(const fn of [report,now])if(typeof fn!=='function'||types.isProxy(fn)||types.isAsyncFunction(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected synchronous new executor callback');
   if(mirror!==null&&(typeof mirror!=='object'||types.isProxy(mirror)))throw new TypeError('Expected mirror-link object');
   const link=mirror===null?null:Object.getOwnPropertyDescriptor(mirror,'linkNewThread');if(mirror!==null&&(link===null||link===undefined||!Object.hasOwn(link,'value')||typeof link.value!=='function'||types.isProxy(link.value)))throw new TypeError('Expected owned mirror-link function');
   this.#state=captureThreadState(journalState);this.#database=database;this.#queue=queue;this.#intake=intake;this.#bridge=bridge;this.#server=server;this.#backend=backend;this.#mirror=mirror;this.#link=link?.value??null;this.#report=report;this.#now=now;
-  this.#journal=new NewThreadJournal(database,now,this.#state);this.#project=new NewThreadProject(database,statePath,this.#journal,mirror!==null,now,this.#state);this.#reply=new NewFirstReply(database,statePath,this.#journal,mirror!==null,()=>QueueStartCoordinator.prototype.notifyDeliveryReady.call(queue),admit,finishRead);Object.freeze(this);
+  this.#journal=new NewThreadJournal(database,now,this.#state);this.#project=new NewThreadProject(database,statePath,this.#journal,mirror!==null,now,this.#state,projectLookup);this.#reply=new NewFirstReply(database,statePath,this.#journal,mirror!==null,()=>QueueStartCoordinator.prototype.notifyDeliveryReady.call(queue),admit,finishRead);Object.freeze(this);
  }
  async #replay(ingress:StoredIngress,signal?:AbortSignal):Promise<ActionResult|null>{
   if(ingress.ownerId===null)return null;const intake=await newStatePromise(Reflect.apply(this.#state.getPromptIntake,undefined,[this.#database,ingress.ownerId]));signal?.throwIfAborted();if(intake!==null)return this.#intake.processAdmittedPrompt(intake,signal);
@@ -54,7 +55,7 @@ export class NewThreadExecutor {
   const generation=server.generation();if(generation<0n||generation>=(1n<<63n))throw new ActionIntegerRangeError();
   const attempt=await beginNewThreadAttempt(this.#database,this.#journal,ingress,generation,this.#report,this.#now,signal,this.#state);
   try{return await attempt.run(async()=>{
-   const cwd=await this.#project.freeze(ingress,context.channelId,generation);signal?.throwIfAborted();let value:unknown;
+   const cwd=await this.#project.freeze(ingress,context.channelId,generation,signal);signal?.throwIfAborted();let value:unknown;
    try{value=await server.execute(startThread(cwd),generation,signal);}catch(error){throw await this.#journal.hold(ingress,error,false);}
    const thread=extractThreadId(value);if(thread===null)throw await this.#journal.hold(ingress,new InvalidActionRequestError('thread/start returned no thread id'),false);
    backend.rememberNewThread(thread,generation);
