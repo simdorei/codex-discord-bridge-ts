@@ -1,0 +1,37 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "baselineProduct": 747,
+  "baselineFullTests": 8115,
+  "focused": {
+    "tests": 45,
+    "pass": 45,
+    "fail": 0,
+    "skip": 0
+  },
+  "strictTypecheck": 0,
+  "wholeRegression": "RUNNING",
+  "node": "24.21.0",
+  "scope": "Mapping read installation only. No new worker capacity; synchronous Codex/bridge reads and reference methods unchanged. Windows/live/24h UNVERIFIED.",
+  "files": [
+    {
+      "path": "src/runtime/action-executor/basic-dispatcher.ts",
+      "sha256": "119874742eddec08c3fa433705f732c2822d53121857dea64725cc4bac85a99b"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "bf3c9e8c392f32d12e6427f93c7e8ab8aaa2489cdd918918dffd87a236ecd2d6"
+    },
+    {
+      "path": "src/runtime/action-executor/thread-selection.ts",
+      "sha256": "2056149c965cc8c31d567350c4db95cd3352b2a7d09a8bf25210687ed82705ea"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "sha256": "aa6b60e00ba21cd63e78eccddcd146f1f6b5a0f0df430c64567edef91d524ae2"
+    },
+    {
+      "path": "test/runtime/action-executor/thread-selection-native-paired.test.ts",
+      "sha256": "2b40d5f8657ee9db6cd68a0ea472f9d0d6b1934f0b3a574f6043f3ea37c398d5"
+    }
+  ]
+}
