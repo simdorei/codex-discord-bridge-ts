@@ -1,4 +1,5 @@
-import {snapshotSettingsBinding,validateSelectedSettingsSnapshot} from "./settings-snapshot.ts";
+import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
+import {snapshotSettingsBinding,validateSelectedSettingsSnapshot,captureSelectedSettingsCheck} from "./settings-snapshot.ts";
 import {types} from "node:util";
 import type {PortableResidentLifecycle} from "../../app-server/portable-resident-lifecycle.ts";
 import {interruptTurn} from "../../app-server/requests.ts";
@@ -18,9 +19,10 @@ function sync(fn:unknown):void{if(typeof fn!=="function"||types.isProxy(fn)||typ
 /** One serial keyset owner. Busy targets are skipped after advancing the cursor;
  * no detached task per Stop and no retry of claimed/unknown original authority. */
 export class StopControlWorker{
+ readonly #nativeBridge:NativeBridgeStateOwner|undefined;
   readonly #path:string;readonly #server:Server|null;readonly #bridge:Pick<BridgeState,"selectedThreadId">;readonly #locks:TargetLocks;readonly #state:Store;readonly #verify:ControlTurnVerifier;readonly #render:(e:unknown)=>string;readonly #report:(e:StopWorkerFailure)=>void;readonly #mapped:ReturnType<typeof createRuntimeFenceErrors>;
   #cursor=0n;#processing=false;#running=false;
-  constructor(path:string,server:Server|null,bridge:Pick<BridgeState,"selectedThreadId">,locks:TargetLocks,render:(e:unknown)=>string,report:(e:StopWorkerFailure)=>void,state:Store=StateAccessFacade){sync(render);sync(report);this.#path=path;this.#server=server;this.#bridge=bridge;this.#locks=locks;this.#state=state;this.#render=render;this.#report=report;this.#verify=new ControlTurnVerifier(path,server,bridge,locks,state);this.#mapped=createRuntimeFenceErrors(render);}
+  constructor(path:string,server:Server|null,bridge:Pick<BridgeState,"selectedThreadId">,locks:TargetLocks,render:(e:unknown)=>string,report:(e:StopWorkerFailure)=>void,state:Store=StateAccessFacade,nativeBridge?:NativeBridgeStateOwner){this.#nativeBridge=nativeBridge;sync(render);sync(report);this.#path=path;this.#server=server;this.#bridge=bridge;this.#locks=locks;this.#state=state;this.#render=render;this.#report=report;this.#verify=new ControlTurnVerifier(path,server,bridge,locks,state,nativeBridge);this.#mapped=createRuntimeFenceErrors(render);}
   get cursor():bigint{return this.#cursor;}
   #diagnostic(error:unknown):string{const s=this.#render(error);if(types.isPromise(s))void Promise.prototype.then.call(s,undefined,()=>undefined);if(typeof s!=="string"||/[\uD800-\uDFFF]/u.test(s))throw new TypeError("Expected public-safe stop diagnostic");return s;}
   #notify(event:StopWorkerFailure):void{invokeSynchronousVoid(this.#report,{},[Object.freeze(event)]);}
@@ -32,7 +34,7 @@ export class StopControlWorker{
         signal?.throwIfAborted();this.#cursor=sequence;if(original.resident!==server.instanceId||original.generation<0n||original.generation!==server.generation())continue;
         const lease=this.#locks.tryAcquire(original.target);if(!lease)continue;
         try{
-          const binding=snapshotSettingsBinding(original.binding),check=()=>validateSelectedSettingsSnapshot(binding,this.#bridge);check();try{await this.#verify.owned(original.target,original.turn);}catch(error){if(signal?.aborted)throw signal.reason;continue;}
+          const binding=snapshotSettingsBinding(original.binding),check=this.#nativeBridge===undefined?()=>validateSelectedSettingsSnapshot(binding,this.#bridge):await captureSelectedSettingsCheck(binding,this.#nativeBridge,signal);check();try{await this.#verify.owned(original.target,original.turn);}catch(error){if(signal?.aborted)throw signal.reason;continue;}
           signal?.throwIfAborted();const claim=this.#state.claimStopControl(this.#path,original,storeActionCheck(check,this.#render));if(claim===null)continue;signal?.throwIfAborted();let failed=false,error:unknown;
           try{await server.executeStopControl({...interruptTurn(original.target,original.turn),timeoutMs:2000},original.generation,claim,()=>this.#mapped.run("MutationHeld",check),signal);}catch(e){if(signal?.aborted&&e===signal.reason)throw e;failed=true;error=e;}
           dispatched++;if(failed){this.#state.recordStopControlError(this.#path,claim,this.#diagnostic(error));this.#notify({stage:"dispatch",operationId:original.operation_id,error});}

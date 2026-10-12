@@ -1,3 +1,4 @@
+import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
 import {types} from 'node:util';
 import {gatewayOwnField} from '../../discord/gateway/values.ts';
 import {mkdir,writeFile} from 'node:fs/promises';
@@ -36,13 +37,14 @@ interface Budgets{readonly totalMs:number;readonly callMs:number;readonly lockMs
  * Diagnostic JSON is not recovery authority; native mutation ledger retains
  * uncertain effects across cold coordinators, new instances and late replies. */
 export class AdmittedRepairExecutor{
+ readonly #nativeBridge:NativeBridgeStateOwner|undefined;
  readonly #reads:RepairPreflightReads;readonly #path:string;readonly #bridge:BridgeState;readonly #server:PortableResidentLifecycle;readonly #locks:TargetLocks;readonly #render:(e:unknown)=>string;readonly #budgets:Budgets;
  readonly #held=new Map<TargetLease,{generation:bigint;timer:ReturnType<typeof setInterval>}>();
- constructor(path:string,bridge:BridgeState,server:PortableResidentLifecycle,locks:TargetLocks,render:(e:unknown)=>string,budgets:Budgets={totalMs:25000,callMs:12000,lockMs:1000},reads:RepairPreflightReads=state){
+ constructor(path:string,bridge:BridgeState,server:PortableResidentLifecycle,locks:TargetLocks,render:(e:unknown)=>string,budgets:Budgets={totalMs:25000,callMs:12000,lockMs:1000},reads:RepairPreflightReads=state,nativeBridge?:NativeBridgeStateOwner){this.#nativeBridge=nativeBridge;
   this.#reads=captureReads(reads);requireDiscordText(path);for(const [v,max] of [[budgets.totalMs,25000],[budgets.callMs,12000],[budgets.lockMs,1000]])if(!Number.isSafeInteger(v)||v!<=0||v!>max!)throw new TypeError('Expected positive bounded repair budgets');this.#path=path;this.#bridge=bridge;this.#server=server;this.#locks=locks;this.#render=render;this.#budgets=Object.freeze({...budgets});Object.freeze(this);
  }
  async execute(actor:LifecycleActor,reference:string|null,key:string,signal?:AbortSignal):Promise<ActionResult>{
-  signal?.throwIfAborted();const guard=await claimAdmittedRecovery(this.#path,this.#bridge,actor,'Repair',reference,key,this.#render,signal);
+  signal?.throwIfAborted();const guard=await claimAdmittedRecovery(this.#path,this.#bridge,actor,'Repair',reference,key,this.#render,signal,this.#nativeBridge);
   return guard.runWithOriginalStopOrigin(()=>this.#run(guard,signal));
  }
  async #run(guard:RecoveryGuard,signal?:AbortSignal):Promise<ActionResult>{

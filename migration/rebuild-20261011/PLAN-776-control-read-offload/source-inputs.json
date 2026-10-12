@@ -1,0 +1,52 @@
+{
+  "sourcePins": [
+    {
+      "path": "src/runtime/action-executor/control-turn.ts",
+      "sha256": "d7a25e660b39c0a6adcf5c8003183d3ab75d377ade834ff8c02440a0130c0c5f"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-action.ts",
+      "sha256": "73b7faae4392ec9eed4144bf9f7bd2613a27bab74ca3e5bb2c85ed08706694f2"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-worker.ts",
+      "sha256": "b39ad50f2952848348a7d7719837cf6a52004bcb5dbbcc4daa5200b8bab25024"
+    },
+    {
+      "path": "src/store/observed-completion.ts",
+      "sha256": "abe8bb6011fe824e080e22c4f231ad65ec6a27ed1d282b2bb6560cafcf78d2e8"
+    },
+    {
+      "path": "src/store/owned-scope.ts",
+      "sha256": "11056d4d91487120391349fe10019100c4598d442a6a6c32c4571d6c5653b0fa"
+    },
+    {
+      "path": "src/store/existing-store.ts",
+      "sha256": "278fb43e11c747edc0e7387d5999ead578c8a76f31dfd8b62e3ad1dfce71268b"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "sha256": "6ef86f8a334a989103882a0fe8a2b6850880457a1f1486a801426ccde5fee791"
+    },
+    {
+      "path": "src/runtime/completion/native-history-read.ts",
+      "sha256": "073638825d831f3371a1e87d0360c13478eca1388bce129af001c0bc99553b6e"
+    },
+    {
+      "path": "src/runtime/completion/native-history-read-worker.ts",
+      "sha256": "44661c69c8426b10404f5093ef0fa48e82dd3dde9b0bd81acfe6045a97a72363"
+    },
+    {
+      "path": ".runtime/rust-authority/crates/cdr-runtime/src/action_executor/control_turn.rs",
+      "sha256": "03d364147ce384d5c84b51ad77384dd47a2914e6ca21f5beb1f1a3d57229a2b8"
+    },
+    {
+      "path": ".runtime/rust-authority/crates/cdr-store/src/observed_completion.rs",
+      "sha256": "7490234565d2c8af0793ad1b51393f6c74580802afd2533ca4278b10f8f34e98"
+    }
+  ],
+  "note": "Bounded plan sources; facade read relevant export/interface/object sections, not entire facade review",
+  "upstreamMain": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+  "remoteChecked": "2026-10-12T19:22:21Z",
+  "frozenRust": "4e213aa69dc89bed1552d8b83e12471d7664b7ae"
+}

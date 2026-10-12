@@ -1,3 +1,4 @@
+import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
 import {withStopOrigin} from '../../app-server/dispatch-origin.ts';
 import {stopOriginForIngress} from '../../store/stop-revision-read.ts';
 import type {DatabaseSync} from 'node:sqlite';
@@ -6,7 +7,7 @@ import type {RecoveryClaim} from '../../store/ingress-recovery-custody.ts';
 import {BridgeState} from '../bridge-state.ts';
 import {createRuntimeFenceErrors} from '../fence-errors.ts';
 import {loadLifecycleAdmission,type LifecycleActor} from './lifecycle-admission.ts';
-import {validateSelectedSettingsSnapshot,type FrozenSettingsBinding} from './settings-snapshot.ts';
+import {validateSelectedSettingsSnapshot,captureSelectedSettingsCheck,type FrozenSettingsBinding} from './settings-snapshot.ts';
 import {storeActionCheck} from './errors.ts';
 const TOKEN=Symbol('admitted recovery guard');
 /** One-use server-stored recovery custody; checks are synchronous at actual
@@ -14,8 +15,8 @@ const TOKEN=Symbol('admitted recovery guard');
  * migrate a database in a transport callback. Sync DB offload remains pending. */
 export class RecoveryGuard{
  readonly #origin:unknown;readonly #path:string;readonly #binding:FrozenSettingsBinding;readonly #channel:bigint;readonly #claim:RecoveryClaim|null;readonly #selected:()=>void;readonly #errors:ReturnType<typeof createRuntimeFenceErrors>;
- constructor(token:typeof TOKEN,path:string,binding:FrozenSettingsBinding,channel:bigint,claim:RecoveryClaim|null,origin:unknown,bridge:BridgeState,render:(error:unknown)=>string){
-  if(token!==TOKEN)throw new TypeError('Recovery guard requires admitted custody');this.#origin=origin;this.#path=path;this.#binding=binding;this.#channel=channel;this.#claim=claim;this.#errors=createRuntimeFenceErrors(render);this.#selected=storeActionCheck(()=>validateSelectedSettingsSnapshot(binding,bridge),render);Object.freeze(this);
+ constructor(token:typeof TOKEN,path:string,binding:FrozenSettingsBinding,channel:bigint,claim:RecoveryClaim|null,origin:unknown,bridge:BridgeState,render:(error:unknown)=>string,selectedCheck?:()=>void){
+  if(token!==TOKEN)throw new TypeError('Recovery guard requires admitted custody');this.#origin=origin;this.#path=path;this.#binding=binding;this.#channel=channel;this.#claim=claim;this.#errors=createRuntimeFenceErrors(render);this.#selected=storeActionCheck(selectedCheck??(()=>validateSelectedSettingsSnapshot(binding,bridge)),render);Object.freeze(this);
  }
  runWithOriginalStopOrigin<T>(work:()=>Promise<T>):Promise<T>{return withStopOrigin(this.#origin,work);}
  get target():string{return this.#binding.target;}
@@ -27,9 +28,11 @@ export class RecoveryGuard{
  }
 }
 Object.freeze(RecoveryGuard.prototype);
-export async function claimAdmittedRecovery(path:string,bridge:BridgeState,actor:LifecycleActor,kind:'Recover'|'Repair',reference:string|null,key:string,render:(error:unknown)=>string,signal?:AbortSignal):Promise<RecoveryGuard>{
+export async function claimAdmittedRecovery(path:string,bridge:BridgeState,actor:LifecycleActor,kind:'Recover'|'Repair',reference:string|null,key:string,render:(error:unknown)=>string,signal?:AbortSignal,nativeBridge?:NativeBridgeStateOwner):Promise<RecoveryGuard>{
  const {record,binding}=await loadLifecycleAdmission(path,actor,kind,reference,key,signal);
- const before=new RecoveryGuard(TOKEN,path,binding,record.channelId,null,stopOriginForIngress(record)??null,bridge,render);before.check();signal?.throwIfAborted();
+ const beforeCheck=nativeBridge===undefined?undefined:await captureSelectedSettingsCheck(binding,nativeBridge,signal);
+ const before=new RecoveryGuard(TOKEN,path,binding,record.channelId,null,stopOriginForIngress(record)??null,bridge,render,beforeCheck);before.check();signal?.throwIfAborted();
  const claim=await state.claimIngressRecovery(path,record);
- const guard=new RecoveryGuard(TOKEN,path,binding,record.channelId,claim,stopOriginForIngress(record)??null,bridge,render);guard.check();signal?.throwIfAborted();return guard;
+ const claimedCheck=nativeBridge===undefined?undefined:await captureSelectedSettingsCheck(binding,nativeBridge,signal);
+ const guard=new RecoveryGuard(TOKEN,path,binding,record.channelId,claim,stopOriginForIngress(record)??null,bridge,render,claimedCheck);guard.check();signal?.throwIfAborted();return guard;
 }

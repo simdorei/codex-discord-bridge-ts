@@ -1,3 +1,4 @@
+import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
 import {parseSerdeStruct,type StructShape} from "../../core/serde-struct-json.ts";
 import {serializeSerdeValue} from "../../core/serde-json.ts";
 import {cloneOwnedSerdeValue} from "../../core/owned-serde-value.ts";
@@ -19,13 +20,19 @@ export function validateSelectedSettingsSnapshot(binding:FrozenSettingsBinding,b
   if(binding.route==="Selected"&&bridge.selectedThreadId()!==binding.target)throw new InvalidActionRequestError("selected target changed after admission; no replacement will be used");
 }
 /** Current route check only. Full Codex thread-reference resolution is separate. */
-export async function validateLifecycleSettingsSnapshot(path:string,binding:FrozenSettingsBinding,channel:bigint,bridge:Pick<BridgeState,"selectedThreadId">,state:Pick<IStateAccessFacade,"mirroredThreadId">=StateAccessFacade):Promise<void>{
-  return validateRouteSnapshot(path,binding,channel,bridge,state,"lifecycle");
+export async function validateLifecycleSettingsSnapshot(path:string,binding:FrozenSettingsBinding,channel:bigint,bridge:Pick<BridgeState,"selectedThreadId">,state:Pick<IStateAccessFacade,"mirroredThreadId">=StateAccessFacade,nativeBridge?:NativeBridgeStateOwner):Promise<void>{
+  return validateRouteSnapshot(path,binding,channel,bridge,state,"lifecycle",nativeBridge);
 }
-export async function validateSettingsSnapshot(path:string,binding:FrozenSettingsBinding,channel:bigint,bridge:Pick<BridgeState,"selectedThreadId">,state:Pick<IStateAccessFacade,"mirroredThreadId">=StateAccessFacade):Promise<void>{
-  return validateRouteSnapshot(path,binding,channel,bridge,state,"settings");
+export async function validateSettingsSnapshot(path:string,binding:FrozenSettingsBinding,channel:bigint,bridge:Pick<BridgeState,"selectedThreadId">,state:Pick<IStateAccessFacade,"mirroredThreadId">=StateAccessFacade,nativeBridge?:NativeBridgeStateOwner):Promise<void>{
+  return validateRouteSnapshot(path,binding,channel,bridge,state,"settings",nativeBridge);
 }
-async function validateRouteSnapshot(path:string,binding:FrozenSettingsBinding,channel:bigint,bridge:Pick<BridgeState,"selectedThreadId">,state:Pick<IStateAccessFacade,"mirroredThreadId">,label:"settings"|"lifecycle"):Promise<void>{
-  const valid=binding.route==="Explicit"?true:binding.route==="Mapped"?(await state.mirroredThreadId(path,channel))===binding.target:(await state.mirroredThreadId(path,channel))===null&&bridge.selectedThreadId()===binding.target;
+async function validateRouteSnapshot(path:string,binding:FrozenSettingsBinding,channel:bigint,bridge:Pick<BridgeState,"selectedThreadId">,state:Pick<IStateAccessFacade,"mirroredThreadId">,label:"settings"|"lifecycle",nativeBridge?:NativeBridgeStateOwner):Promise<void>{
+  const valid=binding.route==="Explicit"?true:binding.route==="Mapped"?(await state.mirroredThreadId(path,channel))===binding.target:(await state.mirroredThreadId(path,channel))===null&&(nativeBridge===undefined?bridge.selectedThreadId():await nativeBridge.execute({kind:"Selected"}))===binding.target;
   if(!valid)throw new InvalidActionRequestError(`${label} target changed after admission; no replacement target will be used`);
+}
+
+/** Capture only at an asynchronous preparation point; returned check stays synchronous. */
+export async function captureSelectedSettingsCheck(input:FrozenSettingsBinding,owner:NativeBridgeStateOwner,signal?:AbortSignal):Promise<()=>void>{
+ const binding=snapshotSettingsBinding(input);if(binding.route!=='Selected')return ()=>{};
+ const token=await owner.captureSelected(signal);signal?.throwIfAborted();return ()=>owner.validateSelected(token,binding.target);
 }

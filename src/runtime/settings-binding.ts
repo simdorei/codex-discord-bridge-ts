@@ -1,3 +1,4 @@
+import {NativeBridgeStateOwner} from './bridge-state-native.ts';
 import {gatewayOwnField} from '../discord/gateway/values.ts';
 import type {ThreadInfo} from '../codex-state/thread.ts';
 import {passiveErrorText} from '../core/passive-error-text.ts';
@@ -54,11 +55,13 @@ export function isSlashSettingsMutation(action: SlashCommandAction): boolean {
  * No canonical fork, fallback replacement or execution. Full message settings
  * and lifecycle descriptions share this same original-target resolver. */
 export class SlashSettingsTargetResolver {
+  readonly #nativeBridge:NativeBridgeStateOwner|undefined;
   readonly #reads: SettingsBindingReads|undefined;
   readonly #statePath: string;
   readonly #mirrorPath: string;
   readonly #bridge: Pick<BridgeState, 'selectedThreadId'>;
-  constructor(statePath: string, mirrorPath: string, bridge: BridgeState, reads?: SettingsBindingReads) {
+  constructor(statePath: string, mirrorPath: string, bridge: BridgeState, reads?: SettingsBindingReads,nativeBridge?:NativeBridgeStateOwner) {
+    this.#nativeBridge=nativeBridge;
     this.#reads=captureReads(reads);
     requireDiscordText(statePath); requireDiscordText(mirrorPath);
     this.#statePath = statePath; this.#mirrorPath = mirrorPath;
@@ -124,9 +127,10 @@ export class SlashSettingsTargetResolver {
     const binding = snapshotSettingsBinding(input); channelId(channel);
     if (binding.route !== 'Explicit') sqliteChannel(channel);
     const validate = label === 'settings' ? validateSettingsSnapshot : validateLifecycleSettingsSnapshot;
-    await validate(this.#mirrorPath, binding, channel, this.#bridge, {mirroredThreadId:this.#reads===undefined?mapped:(path,channel)=>promise(this.#reads!.mapped(path,channel))});
+    await validate(this.#mirrorPath, binding, channel, this.#bridge, {mirroredThreadId:this.#reads===undefined?mapped:(path,channel)=>promise(this.#reads!.mapped(path,channel))},this.#nativeBridge);
   }
   validateSelectedSnapshot(input: FrozenSettingsBinding): void {
+    if(this.#nativeBridge!==undefined)throw new TypeError("Native final selected check requires captured owner token");
     validateSelectedSettingsSnapshot(snapshotSettingsBinding(input), this.#bridge);
   }
 }

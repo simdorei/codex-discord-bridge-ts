@@ -1,3 +1,4 @@
+import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
 import {PortableResidentLifecycle} from '../../app-server/portable-resident-lifecycle.ts';
 import {listModels,rateLimits,resumeThreadWithTimeout,type ServiceTierUpdate,type ThreadSettingsUpdate} from '../../app-server/requests.ts';
 import {ownedRequestFailure} from '../../app-server/request-client.ts';
@@ -26,8 +27,9 @@ function requestedTier(speed:string|null):ServiceTierUpdate {
 /** Original-thread settings leaf. Admitted callers must separately establish the
  * stored command/actor binding and run this inside the original stop-origin scope. */
 export class SettingsAction {
+ readonly #nativeBridge:NativeBridgeStateOwner|undefined;
  readonly #selection:ActionThreadSelection;readonly #resolver:SettingsTargetResolver;readonly #bridge:BridgeState;readonly #server:PortableResidentLifecycle|null;readonly #control:ControlTurnVerifier;readonly #budget:number;
- constructor(selection:ActionThreadSelection,resolver:SettingsTargetResolver,bridge:BridgeState,server:PortableResidentLifecycle|null,control:ControlTurnVerifier,resumeTimeoutMs:number){
+ constructor(selection:ActionThreadSelection,resolver:SettingsTargetResolver,bridge:BridgeState,server:PortableResidentLifecycle|null,control:ControlTurnVerifier,resumeTimeoutMs:number,nativeBridge?:NativeBridgeStateOwner){this.#nativeBridge=nativeBridge;
   resumeThreadWithTimeout('',resumeTimeoutMs);this.#selection=selection;this.#resolver=resolver;this.#bridge=bridge;this.#server=server;this.#control=control;this.#budget=Math.min(resumeTimeoutMs,20000);Object.freeze(this);
  }
  async settings(channel:bigint,input:SettingsChange,bindingInput:FrozenSettingsBinding|null=null,signal?:AbortSignal):Promise<ActionResult>{
@@ -65,7 +67,7 @@ export class SettingsAction {
   }else if(effort!==null)validateModelEffort(catalog,model??current.model,effort);
   const update:ThreadSettingsUpdate={model,effort:appliedEffort,effortClear:false,serviceTier:tier};settingsReady(server,generation);await this.#route(channel,reference,thread,binding,signal);
   const applied=await applyOrConfirmSettings(server,thread,generation,resumed,update,signal);signal.throwIfAborted();settingsReady(server,generation);await this.#route(channel,reference,thread,binding,signal);
-  BridgeState.prototype.rememberThreadSettings.call(this.#bridge,thread,model,appliedEffort,storedSpeed);
+  if(this.#nativeBridge===undefined)BridgeState.prototype.rememberThreadSettings.call(this.#bridge,thread,model,appliedEffort,storedSpeed);else await this.#nativeBridge.execute({kind:'Remember',id:thread,model,reasoning:appliedEffort,speed:storedSpeed},signal);
   const text=applied.alreadyApplied?applied.settings.display(thread,'이미 적용된 설정 확인 · 변경 요청을 보내지 않음'):isReserve?applied.settings.display(thread,'Luna Reserve 설정 변경 확인 · 다음 요청부터 적용 (이전 실패 요청은 재실행하지 않음)'):model!==null&&effort===null&&speed===null?`모델이 변경되었습니다: ${applied.settings.model}`:applied.settings.display(thread,'설정 변경 확인 · 다음 요청부터 적용');
   return snapshotActionResult({text,waitsForFinal:false,ui:null});
  }

@@ -1,3 +1,4 @@
+import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
 import {types} from 'node:util';
 import {gatewayOwnField} from '../../discord/gateway/values.ts';
 import {resolveThreadReferenceOffThread} from '../../codex-state/reference-reader.ts';
@@ -17,6 +18,7 @@ function nativePromise<T>(p:Promise<T>):Promise<T>{if(!types.isPromise(p))throw 
  * selected target for a stale room mapping. Synchronous Codex/bridge reads need
  * the production owned filesystem boundary; Windows reference parity pending. */
 export class ActionThreadSelection {
+ readonly #nativeBridge:NativeBridgeStateOwner|undefined;
   readonly #reads:ActionThreadReads|undefined;
   readonly #mapped: ActionMappingRead;
   readonly #statePath: string;
@@ -24,7 +26,7 @@ export class ActionThreadSelection {
   readonly #mirrorPath: string;
   readonly #selected: () => string | null;
   readonly #select: (id: string | null) => void;
-  constructor(statePath: string, mirrorPath: string, bridge: BridgeState, mapped: ActionMappingRead = StateAccessFacade.mirroredThreadId, reads?:ActionThreadReads) {
+  constructor(statePath: string, mirrorPath: string, bridge: BridgeState, mapped: ActionMappingRead = StateAccessFacade.mirroredThreadId, reads?:ActionThreadReads,nativeBridge?:NativeBridgeStateOwner) {this.#nativeBridge=nativeBridge;
     this.#reads=captureReads(reads);
     if(typeof mapped!=='function'||types.isProxy(mapped)||types.isGeneratorFunction(mapped))throw new TypeError('Expected passive mapping read function');this.#mapped=mapped;
     requireDiscordText(statePath); requireDiscordText(mirrorPath);
@@ -39,7 +41,7 @@ export class ActionThreadSelection {
     const pending=this.#mapped(this.#mirrorPath,channel);if(!types.isPromise(pending))throw new TypeError('Expected native mapping read Promise');const mirror=await pending;
     if(mirror!==null)requireDiscordText(mirror);
     if (mirror !== null) return Object.freeze([mirror, 'mirror'] as const);
-    const selected = this.#selected();
+    const selected = this.#nativeBridge===undefined?this.#selected():await this.#nativeBridge.execute({kind:'Selected'}) as string|null;
     if (selected === null) throw new NoActionTargetError();
     return Object.freeze([selected, 'selected'] as const);
   }
@@ -70,10 +72,11 @@ export class ActionThreadSelection {
     return thread;
   }
   async selectAsync(reference:string,signal?:AbortSignal):Promise<string>{
-    const thread=await this.resolveReferenceAsync(reference,false,signal);signal?.throwIfAborted();this.#select(thread.id);
+    const thread=await this.resolveReferenceAsync(reference,false,signal);signal?.throwIfAborted();if(this.#nativeBridge===undefined)this.#select(thread.id);else await this.#nativeBridge.execute({kind:'Select',id:thread.id},signal);
     const workspace=thread.cwd.split(/[\\/]/u).filter(part=>part!=='').at(-1)??'-';return `Selected Codex thread\nthread_id: ${thread.id}\nworkspace: ${workspace}\ntitle: ${thread.title}`;
   }
   select(reference: string): string {
+    if(this.#nativeBridge!==undefined)throw new TypeError("Synchronous selection is unavailable with native Bridge owner");
     const thread = this.resolveReference(reference, false);
     this.#select(thread.id);
     const workspace = thread.cwd.split(/[\\/]/u).filter(part => part !== '').at(-1) ?? '-';

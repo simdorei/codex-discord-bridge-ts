@@ -1,3 +1,4 @@
+import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
 import {directNewProjectLookup,type NewProjectLookup} from './new-project-cwd.ts';
 import {newStateFunction,newStatePromise} from './new-state-call.ts';
 import {randomUUID} from 'node:crypto';
@@ -31,9 +32,10 @@ export interface NewMirrorLink {linkNewThread(channel:bigint,thread:string,promp
  * null mirror is an explicit headless profile, never an uncertain-create fallback.
  * A concrete production mirror-link implementation is still required separately. */
 export class NewThreadExecutor {
+ readonly #nativeBridge:NativeBridgeStateOwner|undefined;
  readonly #state:NewThreadState;
  readonly #database:string;readonly #journal:NewThreadJournal;readonly #project:NewThreadProject;readonly #reply:NewFirstReply;readonly #queue:QueueStartCoordinator;readonly #intake:PromptIntakeProcessor;readonly #bridge:BridgeState;readonly #server:PortableResidentLifecycle|null;readonly #backend:AppServerTurnBackend|null;readonly #mirror:NewMirrorLink|null;readonly #link:NewMirrorLink['linkNewThread']|null;readonly #report:(value:NewAttemptReport)=>void;readonly #now:()=>number;
- constructor(database:string,statePath:string,queue:QueueStartCoordinator,intake:PromptIntakeProcessor,bridge:BridgeState,server:PortableResidentLifecycle|null,backend:AppServerTurnBackend|null,mirror:NewMirrorLink|null,report:(value:NewAttemptReport)=>void,now:()=>number=systemNow,admit:typeof state.admitPromptIntakeWithIngress=state.admitPromptIntakeWithIngress,finishRead:typeof state.getNewFirstReplyFinish=state.getNewFirstReplyFinish,journalState:NewThreadState=state,projectLookup:NewProjectLookup=directNewProjectLookup){
+ constructor(database:string,statePath:string,queue:QueueStartCoordinator,intake:PromptIntakeProcessor,bridge:BridgeState,server:PortableResidentLifecycle|null,backend:AppServerTurnBackend|null,mirror:NewMirrorLink|null,report:(value:NewAttemptReport)=>void,now:()=>number=systemNow,admit:typeof state.admitPromptIntakeWithIngress=state.admitPromptIntakeWithIngress,finishRead:typeof state.getNewFirstReplyFinish=state.getNewFirstReplyFinish,journalState:NewThreadState=state,projectLookup:NewProjectLookup=directNewProjectLookup,nativeBridge?:NativeBridgeStateOwner){this.#nativeBridge=nativeBridge;
   requireDiscordText(database);requireDiscordText(statePath);if((server===null)!==(backend===null))throw new TypeError('Expected matching resident/backend availability');
   if(server!==null&&backend!==null&&backend.residentInstanceId()!==server.instanceId)throw new TypeError('New executor resident/backend mismatch');
   for(const fn of [report,now])if(typeof fn!=='function'||types.isProxy(fn)||types.isAsyncFunction(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected synchronous new executor callback');
@@ -64,7 +66,7 @@ export class NewThreadExecutor {
    if(this.#link!==null){try{const linked=Reflect.apply(this.#link,this.#mirror,[context.channelId,thread,prompt,cwd,signal]);if(!types.isPromise(linked))throw new TypeError('Expected native mirror-link Promise');destination=await linked as bigint;}catch(error){throw await this.#journal.hold(ingress,error,false);}}
    signal?.throwIfAborted();let admitted;
    try{admitted=await this.#reply.admit({jobId:randomUUID(),targetThreadId:thread,channelId:destination,ownerUserId:context.userId,discordMessageId:context.discordMessageId,rawPrompt:executionPrompt,autoQueueWhenBusy:context.autoQueueWhenBusy,requireCurrentMirror:this.#mirror!==null,createdAt:readCustodyTimestamp(this.#now)},ingress,generation);}catch(error){throw await this.#journal.hold(ingress,new InvalidActionRequestError(`thread ${thread} was created but its prompt ownership could not be saved: ${passiveErrorText(error,'ownership failed')}`),false);}
-   BridgeState.prototype.setSelectedThreadId.call(this.#bridge,thread);const result=await this.#intake.processAdmittedPrompt(admitted.intake,signal);return this.#reply.finish(ingress,result);
+   if(this.#nativeBridge===undefined)BridgeState.prototype.setSelectedThreadId.call(this.#bridge,thread);else await this.#nativeBridge.execute({kind:'Select',id:thread},signal);const result=await this.#intake.processAdmittedPrompt(admitted.intake,signal);return this.#reply.finish(ingress,result);
   });}finally{await attempt.dispose();}
  }
 }

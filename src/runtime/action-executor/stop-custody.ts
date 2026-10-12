@@ -1,3 +1,4 @@
+import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
 import {withStopOrigin} from '../../app-server/dispatch-origin.ts';
 import {stopOriginForIngress} from '../../store/stop-revision-read.ts';
 import {BridgeState} from '../bridge-state.ts';
@@ -9,10 +10,11 @@ import {snapshotActionResult,type ActionResult} from '../action-result.ts';
 /** Admitted message wrapper. Local durable stop receipt is not execution-end
  * evidence. Never invents a missing lifecycle target or fresh stop revision. */
 export class AdmittedStopExecutor {
+ readonly #nativeBridge:NativeBridgeStateOwner|undefined;
  readonly #path:string;readonly #bridge:BridgeState;readonly #stop:StopActionExecutor;
- constructor(path:string,bridge:BridgeState,stop:StopActionExecutor){requireDiscordText(path);this.#path=path;this.#bridge=bridge;this.#stop=stop;Object.freeze(this);}
+ constructor(path:string,bridge:BridgeState,stop:StopActionExecutor,nativeBridge?:NativeBridgeStateOwner){this.#nativeBridge=nativeBridge;requireDiscordText(path);this.#path=path;this.#bridge=bridge;this.#stop=stop;Object.freeze(this);}
  async execute(input:LifecycleActor,reference:string|null,key:string,signal?:AbortSignal):Promise<ActionResult>{
-  const {actor,record,binding}=await loadLifecycleAdmission(this.#path,input,'Stop',reference,key,signal);await validateLifecycleSettingsSnapshot(this.#path,binding,actor.channelId,this.#bridge);signal?.throwIfAborted();
+  const {actor,record,binding}=await loadLifecycleAdmission(this.#path,input,'Stop',reference,key,signal);await validateLifecycleSettingsSnapshot(this.#path,binding,actor.channelId,this.#bridge,undefined,this.#nativeBridge);signal?.throwIfAborted();
   return withStopOrigin(stopOriginForIngress(record)??null,async()=>snapshotActionResult(await StopActionExecutor.prototype.stopBound.call(this.#stop,actor,binding,record,signal)));
  }
 }
