@@ -13,11 +13,13 @@ export interface AdmittedBusyPromptProcessor {processAdmittedPrompt(intake: Stor
 /** Atomic intake and confirmation receipt are committed by admitBusyQueue before
  * prompt preparation. Do not preclaim busy_choices or retry a returned receipt. */
 export class BusyQueueExecutor {
+  readonly #admit:typeof state.admitBusyQueue;
   readonly #database: string; readonly #receiver: AdmittedBusyPromptProcessor; readonly #process: Function; readonly #now: () => number;
-  constructor(database: string, processor: AdmittedBusyPromptProcessor, now: () => number = systemNow) {
+  constructor(database: string, processor: AdmittedBusyPromptProcessor, now: () => number = systemNow, admit:typeof state.admitBusyQueue=state.admitBusyQueue) {
     requireDiscordText(database); const process = gatewayOwnField(processor, 'processAdmittedPrompt');
     if (typeof process !== 'function' || types.isProxy(process) || types.isGeneratorFunction(process)) throw new TypeError('Expected admitted prompt processor');
     if (typeof now !== 'function' || types.isProxy(now) || types.isAsyncFunction(now) || types.isGeneratorFunction(now)) throw new TypeError('Expected synchronous busy queue clock');
+    if(typeof admit!=='function'||types.isProxy(admit)||types.isGeneratorFunction(admit))throw new TypeError('Expected owned busy admission function');this.#admit=admit;
     this.#database = database; this.#receiver = processor; this.#process = process; this.#now = now; Object.freeze(this);
   }
   async enqueueBusyChoice(input: BusyChoice): Promise<ActionResult> {
@@ -29,7 +31,7 @@ export class BusyQueueExecutor {
     if (choice.channelId < 0n || choice.ownerUserId < 0n) throw new ActionExecutionError('IntegerRange');
     let now: number; try {now = readCustodyTimestamp(this.#now);} catch (error) {throw new ActionExecutionError('SystemTime', error);}
     let admission: Awaited<ReturnType<typeof state.admitBusyQueue>>;
-    try {admission = await state.admitBusyQueue(this.#database, choice, target, mapped, busyReadyMarker(choice.choiceId, choice.ownerUserId, choice.channelId), now);}
+    try {const pending=Reflect.apply(this.#admit,undefined,[this.#database,choice,target,mapped,busyReadyMarker(choice.choiceId,choice.ownerUserId,choice.channelId),now]);if(!types.isPromise(pending))throw new TypeError('Expected native busy admission Promise');admission=await pending as typeof admission;}
     catch (error) {throw new ActionExecutionError('Store', error);}
     if (admission.intake === null) return snapshotActionResult({text: `This busy request was already accepted; no duplicate was queued.\njob_id: ${admission.jobId}`, waitsForFinal: false, ui: null});
     const pending = Reflect.apply(this.#process, this.#receiver, [admission.intake]);

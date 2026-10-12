@@ -152,6 +152,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.deliveredPublicationProposal, PublicationBinding.deliveredPublicationProposal);
     assert.strictEqual(FacadeExports.deliveredPublicationProposal, PublicationBinding.deliveredPublicationProposal);
     assert.strictEqual(StateAccessFacade.admitBusyQueue, BusyPromptIntake.admitBusyQueue);
+    assert.strictEqual(StateAccessFacade.admitBusyQueueExisting, BusyPromptIntake.admitBusyQueueExisting);
+    assert.strictEqual(FacadeExports.admitBusyQueueExisting, BusyPromptIntake.admitBusyQueueExisting);
     assert.strictEqual(FacadeExports.admitBusyQueue, BusyPromptIntake.admitBusyQueue);
     assert.strictEqual(StateAccessFacade.bindBusyControl, ControlBinding.bindBusyControl);
     assert.strictEqual(FacadeExports.bindBusyControl, ControlBinding.bindBusyControl);
@@ -189,6 +191,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.commitNewThreadSync, MirrorSync.commitNewThreadSync);
     assert.strictEqual(FacadeExports.commitNewThreadSync, MirrorSync.commitNewThreadSync);
     assert.strictEqual(StateAccessFacade.admitPromptIntakeWithIngress, NewPromptIntake.admitPromptIntakeWithIngress);
+    assert.strictEqual(StateAccessFacade.admitPromptIntakeWithIngressExisting, NewPromptIntake.admitPromptIntakeWithIngressExisting);
+    assert.strictEqual(FacadeExports.admitPromptIntakeWithIngressExisting, NewPromptIntake.admitPromptIntakeWithIngressExisting);
     assert.strictEqual(StateAccessFacade.checkpointNewReply, NewReplyCheckpoint.checkpointNewReply);
     assert.strictEqual(FacadeExports.checkpointNewReply, NewReplyCheckpoint.checkpointNewReply);
     assert.strictEqual(StateAccessFacade.getNewReplyBounded, NewReplyPending.getNewReplyBounded);
@@ -527,6 +531,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "bindPublicationDelivery",
       "deliveredPublicationProposal",
       "admitBusyQueue",
+      "admitBusyQueueExisting",
       "bindBusyControl",
       "resolveBusyControl",
       "recordUserOrigin",
@@ -546,6 +551,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "mirrorProjectForChannel",
       "commitNewThreadSync",
       "admitPromptIntakeWithIngress",
+      "admitPromptIntakeWithIngressExisting",
       "validateNewReplyCurrent",
       "getNewReplyByIngress",
       "remainingDiscordIds",
@@ -809,7 +815,7 @@ assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimExisting, PromptIntak
     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
 assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
 assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
-    assert.strictEqual(actual.length, 305);
+    assert.strictEqual(actual.length, 307);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

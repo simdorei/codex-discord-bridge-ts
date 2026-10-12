@@ -1,3 +1,6 @@
+import {captureBusyAdmission} from '../../store/prompt-intake-busy.ts';
+import {captureNewAdmission,type NewReplySeed} from '../../store/prompt-intake-new-thread.ts';
+import type {BusyChoice} from '../../store/busy-choice.ts';
 import {types} from 'node:util';
 import {snapshotNewPromptIntake,InvalidPromptIntakeIdentityError,type NewPromptIntake} from '../../store/prompt-intake-write.ts';
 import {trimUnicodeWhitespace} from '../../store/queue-preflight-failure.ts';
@@ -11,7 +14,7 @@ import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {intakeNumberWire,intakeFromWire} from './native-wire.ts';
 const LIMIT=16*1024*1024;
-type Operation='Get'|'List'|'DurableOwner'|'Claim'|'Renew'|'RecordFailure'|'RemoveQueued'|'Admit'|'Canonicalize'|'ReleaseAll';
+type Operation='Get'|'List'|'DurableOwner'|'Claim'|'Renew'|'RecordFailure'|'RemoveQueued'|'Admit'|'Canonicalize'|'ReleaseAll'|'AdmitBusy'|'AdmitWithIngress';
 export class NativePromptIntakeUnavailableError extends Error{
  readonly operation:Operation;
  constructor(operation:Operation,cause:unknown){super('Prompt intake result unavailable after actual native join; no partial result or automatic retry',{cause});this.name='NativePromptIntakeUnavailableError';this.operation=operation;}
@@ -20,7 +23,7 @@ function lease(now:number,expires:number):void{
  if(typeof now!=='number'||typeof expires!=='number')throw new TypeError('Expected lease timestamps');
  if(!Number.isFinite(now)||!Number.isFinite(expires)||expires<=now)throw new InvalidPromptIntakeLeaseError(now,expires);
 }
-/** Exactly ten intake operations; all other state functions retain their identities. Shared finite Control admission; no new pool, retry or detached I/O. */
+/** Exactly twelve intake operations; all other state functions retain their identities. Shared finite Control admission; no new pool, retry or detached I/O. */
 export function createNativePromptIntakeState(path:string,timeoutMs=5000):IStateAccessFacade{
  requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new TypeError('Invalid intake store path');
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid intake deadline');const fixed=pinNativeRuntimePath(path);
@@ -36,7 +39,7 @@ export function createNativePromptIntakeState(path:string,timeoutMs=5000):IState
   try{
    if(boundedSerdeByteCount(raw,LIMIT)===null||own(raw,'operation')!==operation)throw new TypeError('No complete bound intake acknowledgement');
    if(own(raw,'ok')===true)return decode(own(raw,'value'));
-   if((operation==='Admit'||operation==='Canonicalize')&&own(raw,'kind')==='DeadTargetHeld'){
+   if((operation==='Admit'||operation==='Canonicalize'||operation==='AdmitBusy'||operation==='AdmitWithIngress')&&own(raw,'kind')==='DeadTargetHeld'){
     if(own(raw,'id')!==own(fields,'id'))throw new TypeError('Held target refusal differs from captured intake');
     const target=own(raw,'target');requireDiscordText(target);refusal=new DeadGenerationTargetHeldError(target);
    }else throw new TypeError('No complete bound intake acknowledgement');
@@ -49,6 +52,21 @@ export function createNativePromptIntakeState(path:string,timeoutMs=5000):IState
   return {intake,claimToken:current};
  }
  return Object.freeze({...StateAccessFacade,
+  async admitBusyQueue(given:string,input:BusyChoice,target:string,requireCurrentMirror:boolean,confirmationKey:string,now:number){
+   requirePath(given);const {choice,jobId}=captureBusyAdmission(input,target,requireCurrentMirror,confirmationKey,now);identity(jobId);identity(target);identity(confirmationKey);
+   return run('AdmitBusy',{id:jobId,choice:{...choice,createdAt:intakeNumberWire(choice.createdAt),expiresAt:intakeNumberWire(choice.expiresAt)},target,requireCurrentMirror,confirmationKey,now},raw=>{
+    if(own(raw,'jobId')!==jobId)throw new TypeError('Busy admission reply differs from captured job');const value=own(raw,'intake');if(value===null)return {jobId,intake:null};const intake=intakeFromWire(value);
+    if(intake.jobId!==jobId||intake.targetThreadId!==target||intake.channelId!==choice.channelId||intake.ownerUserId!==choice.ownerUserId||intake.discordMessageId!==null||intake.rawPrompt!==choice.prompt||!intake.autoQueueWhenBusy||intake.requireCurrentMirror!==requireCurrentMirror)throw new TypeError('Busy intake differs from captured choice');return {jobId,intake};
+   });
+  },
+  async admitPromptIntakeWithIngress(given:string,input:NewPromptIntake,key:string,generation:bigint,reply:NewReplySeed|null=null){
+   requirePath(given);const {request,seed}=captureNewAdmission(input,key,generation,reply);identity(request.jobId);identity(key);
+   return run('AdmitWithIngress',{id:request.jobId,request:{...request,createdAt:intakeNumberWire(request.createdAt)},key,generation,seed},raw=>{
+    const created=own(raw,'created');if(typeof created!=='boolean')throw new TypeError('Expected new admission created boolean');const intake=intakeFromWire(own(raw,'intake'));
+    if(intake.discordMessageId!==request.discordMessageId||(request.discordMessageId===null&&intake.jobId!==request.jobId))throw new TypeError('New admission reply differs from captured message');
+    if(created&&(intake.jobId!==request.jobId||intake.channelId!==request.channelId||intake.ownerUserId!==request.ownerUserId||intake.rawPrompt!==request.rawPrompt||intake.autoQueueWhenBusy!==request.autoQueueWhenBusy||intake.requireCurrentMirror!==request.requireCurrentMirror))throw new TypeError('New admission differs from captured request');return {created,intake};
+   });
+  },
   // Caller must retain exclusive startup ownership; periodic recovery never calls this.
   async releaseAllPromptIntakeClaims(given:string){requirePath(given);return run('ReleaseAll',{},raw=>{if(typeof raw!=='bigint'||raw<0n)throw new TypeError('Expected nonnegative released-intake count');return raw;});},
   async admitPromptIntake(given:string,input:NewPromptIntake){

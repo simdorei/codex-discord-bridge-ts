@@ -1,6 +1,7 @@
+import type {DatabaseSync} from "node:sqlite";
 import {types} from "node:util";
 import {admitPromptIntakeIn,snapshotNewPromptIntake,type NewPromptIntake,type PromptIntakeAdmission} from "./prompt-intake-write.ts";
-import {withPromptIntakeWriter} from "./prompt-intake.ts";
+import {withPromptIntakeWriter,withPromptIntakeWriterExisting} from "./prompt-intake.ts";
 import {getIngressIn} from "./ingress-read.ts";
 import {newExecutionPrompt} from "./ingress-new-input.ts";
 import {linkPromptOwnerByKeyIn} from "./ingress-prompt-ownership.ts";
@@ -20,11 +21,12 @@ function snapshotSeed(value:NewReplySeed|null):NewReplySeed|null{
   // seed_in stores only the lossy string. Snapshot that value before opening storage.
   return {stateDb:{platform:"windows-utf16",units:Array.from({length:lossy.length},(_,i)=>lossy.charCodeAt(i))},acknowledgement:ack.value};
 }
-/** Save recorded creation, managed target, first-prompt ownership and optional reply seed atomically. */
-export async function admitPromptIntakeWithIngress(path:string,input:NewPromptIntake,key:string,generation:bigint,reply:NewReplySeed|null=null):Promise<PromptIntakeAdmission>{
+export function captureNewAdmission(input:NewPromptIntake,key:string,generation:bigint,reply:NewReplySeed|null=null){
   const request=snapshotNewPromptIntake(input),seed=snapshotSeed(reply);text(key);
   if(typeof generation!=="bigint"||generation<-(1n<<63n)||generation>=(1n<<63n))throw new TypeError("Expected i64 generation");
-  return withPromptIntakeWriter(path,db=>{
+  return {request,seed};
+}
+function admitNewIn(db:DatabaseSync,request:NewPromptIntake,key:string,generation:bigint,seed:NewReplySeed|null):{value:PromptIntakeAdmission;commit:boolean}{
     const ingress=getIngressIn(db,key);if(ingress===null)throw new StoreIntegrityError(`missing new ingress: ${key}`);
     if(newExecutionPrompt(ingress)!==request.rawPrompt||ingress.eventId!==request.discordMessageId||ingress.ownerUserId!==request.ownerUserId)
       throw new StoreIntegrityError(`new prompt identity changed: ${key}`);
@@ -36,5 +38,14 @@ export async function admitPromptIntakeWithIngress(path:string,input:NewPromptIn
     const admitted=admitPromptIntakeIn(db,request);linkPromptOwnerByKeyIn(db,key,admitted.intake);
     if(seed!==null)seedIn(db,key,admitted.intake.jobId,seed.stateDb,seed.acknowledgement);
     return {value:admitted,commit:true};
-  },false);
+}
+/** Save recorded creation, managed target, first-prompt ownership and optional reply seed atomically. */
+export async function admitPromptIntakeWithIngress(path:string,input:NewPromptIntake,key:string,generation:bigint,reply:NewReplySeed|null=null):Promise<PromptIntakeAdmission>{
+  const {request,seed}=captureNewAdmission(input,key,generation,reply);
+  return withPromptIntakeWriter(path,db=>admitNewIn(db,request,key,generation,seed),false);
+}
+/** Current existing bridge catalog required; managed target, intake and reply seed stay atomic. */
+export function admitPromptIntakeWithIngressExisting(path:string,input:NewPromptIntake,key:string,generation:bigint,reply:NewReplySeed|null=null):PromptIntakeAdmission{
+  const {request,seed}=captureNewAdmission(input,key,generation,reply);
+  return withPromptIntakeWriterExisting(path,db=>admitNewIn(db,request,key,generation,seed));
 }

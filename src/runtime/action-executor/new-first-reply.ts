@@ -13,15 +13,16 @@ import {InvalidActionRequestError} from './errors.ts';
 /** Durable first-prompt/first-reply composition. Transport delivery remains the
  * existing outbox/interaction worker; a stored turn is required before notifying. */
 export class NewFirstReply {
+ readonly #admit:typeof state.admitPromptIntakeWithIngress;
  readonly #database:string;readonly #statePath:string;readonly #journal:NewThreadJournal;readonly #mirrored:boolean;readonly #notify:()=>void;
- constructor(database:string,statePath:string,journal:NewThreadJournal,mirrored:boolean,notify:()=>void){requireDiscordText(database);requireDiscordText(statePath);NewThreadJournal.prototype.requireDatabase.call(journal,database);if(typeof mirrored!=='boolean')throw new TypeError('Expected mirror mode');if(typeof notify!=='function'||types.isProxy(notify)||types.isAsyncFunction(notify)||types.isGeneratorFunction(notify))throw new TypeError('Expected synchronous delivery notifier');this.#database=database;this.#statePath=statePath;this.#journal=journal;this.#mirrored=mirrored;this.#notify=notify;Object.freeze(this);}
+ constructor(database:string,statePath:string,journal:NewThreadJournal,mirrored:boolean,notify:()=>void,admit:typeof state.admitPromptIntakeWithIngress=state.admitPromptIntakeWithIngress){requireDiscordText(database);requireDiscordText(statePath);NewThreadJournal.prototype.requireDatabase.call(journal,database);if(typeof mirrored!=='boolean')throw new TypeError('Expected mirror mode');if(typeof notify!=='function'||types.isProxy(notify)||types.isAsyncFunction(notify)||types.isGeneratorFunction(notify))throw new TypeError('Expected synchronous delivery notifier');if(typeof admit!=='function'||types.isProxy(admit)||types.isGeneratorFunction(admit))throw new TypeError('Expected owned first admission function');this.#admit=admit;this.#database=database;this.#statePath=statePath;this.#journal=journal;this.#mirrored=mirrored;this.#notify=notify;Object.freeze(this);}
  admit(input:NewPromptIntake,ingress:StoredIngress,generation:bigint):Promise<PromptIntakeAdmission>{
   NewThreadJournal.prototype.requireOriginalRecord.call(this.#journal,ingress);const request=snapshotNewPromptIntake(input),prompt=newCommandPrompt(ingress);if(prompt===null)throw new StoreIntegrityError('new acknowledgement has no original prompt');
   const acknowledgement=`In progress\nmessage: ${requestEcho(prompt)}\n새 대화: <#${request.channelId}>`;
   // Existing storage adapter takes a native-path DTO. Valid scalar POSIX text
   // has the same persisted text through this UTF-16 representation.
   const seed=this.#mirrored?{stateDb:{platform:'windows-utf16' as const,units:Array.from({length:this.#statePath.length},(_,i)=>this.#statePath.charCodeAt(i))},acknowledgement}:null;
-  return state.admitPromptIntakeWithIngress(this.#database,request,ingress.ingressId,generation,seed);
+  const pending=Reflect.apply(this.#admit,undefined,[this.#database,request,ingress.ingressId,generation,seed]);if(!types.isPromise(pending))throw new TypeError('Expected native first admission Promise');return pending as Promise<PromptIntakeAdmission>;
  }
  async finish(ingress:StoredIngress,input:ActionResult):Promise<ActionResult>{
   NewThreadJournal.prototype.requireOriginalRecord.call(this.#journal,ingress);const result=snapshotActionResult(input);if(!this.#mirrored)return result;

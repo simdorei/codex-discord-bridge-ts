@@ -198,6 +198,7 @@ export const mirrorThreadChannels: typeof MirrorSync.mirrorThreadChannels = Mirr
 export const mirrorProjectForChannel: typeof MirrorSync.mirrorProjectForChannel = MirrorSync.mirrorProjectForChannel;
 export const commitNewThreadSync: typeof MirrorSync.commitNewThreadSync = MirrorSync.commitNewThreadSync;
 export const admitPromptIntakeWithIngress: typeof NewPromptIntake.admitPromptIntakeWithIngress = NewPromptIntake.admitPromptIntakeWithIngress;
+export const admitPromptIntakeWithIngressExisting: typeof NewPromptIntake.admitPromptIntakeWithIngressExisting = NewPromptIntake.admitPromptIntakeWithIngressExisting;
 export const checkpointNewReply: typeof NewReplyCheckpoint.checkpointNewReply = NewReplyCheckpoint.checkpointNewReply;
 export const getNewReplyBounded: typeof NewReplyPending.getNewReplyBounded = NewReplyPending.getNewReplyBounded;
 export const pendingNewReplies: typeof NewReplyPending.pendingNewReplies = NewReplyPending.pendingNewReplies;
@@ -354,6 +355,7 @@ export const proposePublication: typeof PublicationProposalStore.proposePublicat
 export const bindPublicationDelivery: typeof PublicationProposalStore.bindPublicationDelivery = PublicationProposalStore.bindPublicationDelivery;
 export const deliveredPublicationProposal: typeof PublicationBinding.deliveredPublicationProposal = PublicationBinding.deliveredPublicationProposal;
 export const admitBusyQueue: typeof BusyPromptIntake.admitBusyQueue = BusyPromptIntake.admitBusyQueue;
+export const admitBusyQueueExisting: typeof BusyPromptIntake.admitBusyQueueExisting = BusyPromptIntake.admitBusyQueueExisting;
 export const bindBusyControl: typeof ControlBinding.bindBusyControl = ControlBinding.bindBusyControl;
 export const resolveBusyControl: typeof ControlBinding.resolveBusyControl = ControlBinding.resolveBusyControl;
 export const recordUserOrigin: typeof MirrorOrigin.recordUserOrigin = MirrorOrigin.recordUserOrigin;
@@ -550,6 +552,7 @@ export interface IStateAccessFacade {
   readonly mirrorProjectForChannel: typeof MirrorSync.mirrorProjectForChannel;
   readonly commitNewThreadSync: typeof MirrorSync.commitNewThreadSync;
   readonly admitPromptIntakeWithIngress: typeof NewPromptIntake.admitPromptIntakeWithIngress;
+  readonly admitPromptIntakeWithIngressExisting: typeof NewPromptIntake.admitPromptIntakeWithIngressExisting;
   readonly checkpointNewReply: typeof NewReplyCheckpoint.checkpointNewReply;
   readonly getNewReplyBounded: typeof NewReplyPending.getNewReplyBounded;
   readonly pendingNewReplies: typeof NewReplyPending.pendingNewReplies;
@@ -745,6 +748,7 @@ export interface IStateAccessFacade {
   readonly bindPublicationDelivery: typeof PublicationProposalStore.bindPublicationDelivery;
   readonly deliveredPublicationProposal: typeof PublicationBinding.deliveredPublicationProposal;
   readonly admitBusyQueue: typeof BusyPromptIntake.admitBusyQueue;
+  readonly admitBusyQueueExisting: typeof BusyPromptIntake.admitBusyQueueExisting;
   readonly bindBusyControl: typeof ControlBinding.bindBusyControl;
   readonly resolveBusyControl: typeof ControlBinding.resolveBusyControl;
   readonly recordUserOrigin: typeof MirrorOrigin.recordUserOrigin;
@@ -903,6 +907,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   mirrorProjectForChannel,
   commitNewThreadSync,
   admitPromptIntakeWithIngress,
+  admitPromptIntakeWithIngressExisting,
   checkpointNewReply,
   pendingNewReplies,
   getNewReplyBounded,
@@ -1065,6 +1070,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   bindPublicationDelivery,
   deliveredPublicationProposal,
   admitBusyQueue,
+  admitBusyQueueExisting,
   bindBusyControl,
   resolveBusyControl,
   recordUserOrigin,

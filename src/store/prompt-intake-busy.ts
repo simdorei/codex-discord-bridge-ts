@@ -1,6 +1,6 @@
 import type {DatabaseSync} from "node:sqlite";
 import {snapshotBusyChoice,serializeBusyChoice,verifyBusyChoiceRouteIn,BusyChoiceUnavailableError,type BusyChoice} from "./busy-choice.ts";
-import {withPromptIntakeWriter,type StoredPromptIntake} from "./prompt-intake.ts";
+import {withPromptIntakeWriter,withPromptIntakeWriterExisting,type StoredPromptIntake} from "./prompt-intake.ts";
 import {admitPromptIntakeIn} from "./prompt-intake-write.ts";
 import {StoreIntegrityError} from "./schema-assembly.ts";
 import {decodeI64} from "./sqlite-values.ts";
@@ -12,14 +12,15 @@ function recordBusyOwnerIn(db:DatabaseSync,choice:BusyChoice,job:string,target:s
   db.prepare(`UPDATE discord_ingress_journal SET state='owned',phase='durable_prompt',owner_kind='prompt',owner_id=?,target_thread_id=?,updated_at=?
     WHERE canonical_owner=? AND channel_id=? AND owner_user_id=?`).run(job,target,now,canonical,choice.channelId,choice.ownerUserId);
 }
-/** Only an admission returning intake may start preparation; a receipt repeat must not replay work. */
-export async function admitBusyQueue(path:string,input:BusyChoice,target:string,requireCurrentMirror:boolean,confirmationKey:string,now:number):Promise<BusyQueueAdmission>{
+export function captureBusyAdmission(input:BusyChoice,target:string,requireCurrentMirror:boolean,confirmationKey:string,now:number) {
   const choice=snapshotBusyChoice(input);
   for(const text of [target,confirmationKey])if(typeof text!=="string"||/[\uD800-\uDFFF]/u.test(text))throw new TypeError("Expected well-formed text");
   if(typeof now!=="number"||typeof requireCurrentMirror!=="boolean")throw new TypeError("Expected route mode/timestamp");
   if(!Number.isFinite(now)||now<0||confirmationKey==="")throw new StoreIntegrityError("invalid busy queue admission");
   const jobId=`busy-choice:${choice.choiceId}`;
-  return withPromptIntakeWriter<BusyQueueAdmission>(path,db=>{
+  return {choice,jobId};
+}
+function admitBusyIn(db:DatabaseSync,choice:BusyChoice,target:string,requireCurrentMirror:boolean,confirmationKey:string,now:number,jobId:string):{value:BusyQueueAdmission;commit:boolean}{
     if(choice.targetThreadId!==target)throw new BusyChoiceUnavailableError(choice.choiceId);
     const receipt=db.prepare("SELECT EXISTS(SELECT 1 FROM persistent_component_claims WHERE claim_key=? AND expires_at>?) AS accepted");receipt.setReadBigInts(true);
     if(decodeI64(receipt.get(confirmationKey,now)?.accepted,"accepted")!==0n){recordBusyOwnerIn(db,choice,jobId,target,now);return {value:{jobId,intake:null},commit:true};}
@@ -38,5 +39,14 @@ export async function admitBusyQueue(path:string,input:BusyChoice,target:string,
     db.prepare(`INSERT INTO persistent_component_claims(claim_key,created_at,expires_at) VALUES (?,?,?) ON CONFLICT(claim_key)
       DO UPDATE SET created_at=excluded.created_at,expires_at=excluded.expires_at`).run(confirmationKey,now,Math.max(choice.expiresAt,now+1800));
     recordBusyOwnerIn(db,choice,jobId,target,now);return {value:{jobId,intake:admitted.intake},commit:true};
-  },false);
+}
+/** Only an admission returning intake may start preparation; a receipt repeat must not replay work. */
+export async function admitBusyQueue(path:string,input:BusyChoice,target:string,requireCurrentMirror:boolean,confirmationKey:string,now:number):Promise<BusyQueueAdmission>{
+  const {choice,jobId}=captureBusyAdmission(input,target,requireCurrentMirror,confirmationKey,now);
+  return withPromptIntakeWriter(path,db=>admitBusyIn(db,choice,target,requireCurrentMirror,confirmationKey,now,jobId),false);
+}
+/** Current existing bridge catalog required; complete original transaction is shared. */
+export function admitBusyQueueExisting(path:string,input:BusyChoice,target:string,requireCurrentMirror:boolean,confirmationKey:string,now:number):BusyQueueAdmission{
+  const {choice,jobId}=captureBusyAdmission(input,target,requireCurrentMirror,confirmationKey,now);
+  return withPromptIntakeWriterExisting(path,db=>admitBusyIn(db,choice,target,requireCurrentMirror,confirmationKey,now,jobId));
 }

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {test} from "node:test";
 import {storeFixture} from "../helpers/store-fixture.ts";
 import {openInitialized} from "../../src/store/owned-driver.ts";
-import {admitPromptIntakeWithIngress,type NewReplySeed} from "../../src/store/prompt-intake-new-thread.ts";
+import {admitPromptIntakeWithIngress as initializedAdmission,admitPromptIntakeWithIngressExisting,type NewReplySeed} from "../../src/store/prompt-intake-new-thread.ts";
 import type {NewPromptIntake} from "../../src/store/prompt-intake-write.ts";
 import {getPromptIntake} from "../../src/store/prompt-intake.ts";
 import {getIngress} from "../../src/store/ingress-read.ts";
@@ -14,6 +14,8 @@ async function seed(path:string,outcome:unknown={thread_start_generation:7,new_c
     VALUES ('i','action',3,1,2,'{"command":"new","prompt":"raw"}','executing','thread/created','target',?,0,0)`).run(JSON.stringify(outcome));
 }finally{db.close();}}
 async function managed(path:string):Promise<boolean>{const db=await openInitialized(path);try{return containsManagedTargetIn(db,"target");}finally{db.close();}}
+for(const existing of [false,true]){
+const admitPromptIntakeWithIngress:typeof initializedAdmission=async(...args)=>(existing?admitPromptIntakeWithIngressExisting:initializedAdmission)(...args);
 test("new creation atomically records managed generation, first prompt custody and immutable reply seed",async()=>{
   await storeFixture(async path=>{await seed(path);const result=await admitPromptIntakeWithIngress(path,input(),"i",7n,reply());
     assert.equal(result.created,true);assert.equal(await managed(path),true);const saved=await getIngress(path,"i");
@@ -48,3 +50,5 @@ test("a trigger-rejected ownership link causes reply seed failure and full rollb
     assert.equal(await managed(path),false);assert.equal(await getPromptIntake(path,"job"),null);
   });
 });
+
+}

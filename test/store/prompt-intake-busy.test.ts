@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {test} from "node:test";
 import {storeFixture} from "../helpers/store-fixture.ts";
 import {openInitialized} from "../../src/store/owned-driver.ts";
-import {admitBusyQueue} from "../../src/store/prompt-intake-busy.ts";
+import {admitBusyQueue as initializedAdmission,admitBusyQueueExisting} from "../../src/store/prompt-intake-busy.ts";
 import {serializeBusyChoice,BusyChoiceUnavailableError,mirroredThreadIdIn,type BusyChoice} from "../../src/store/busy-choice.ts";
 import {admitPromptIntake} from "../../src/store/prompt-intake-write.ts";
 import {getPromptIntake} from "../../src/store/prompt-intake.ts";
@@ -14,6 +14,8 @@ async function seed(path:string,mode="0"):Promise<void>{await sql(path,`INSERT I
   INSERT INTO discord_ingress_journal(ingress_id,kind,event_id,channel_id,owner_user_id,payload_json,state,phase,canonical_owner,created_at,updated_at)
   VALUES ('i','interaction',3,1,2,'{}','executing','processing','busy-choice:choice',0,0);`);}
 async function state(path:string){const db=await openInitialized(path);try{return {claimed:db.prepare("SELECT claimed_at FROM busy_choices WHERE choice_id='choice'").get()?.claimed_at,receipts:db.prepare("SELECT count(*) AS n FROM persistent_component_claims").get()?.n};}finally{db.close();}}
+for(const existing of [false,true]){
+const admitBusyQueue:typeof initializedAdmission=async(...args)=>(existing?admitBusyQueueExisting:initializedAdmission)(...args);
 test("busy admission preserves typed receipt field order and saves custody before returning preparation authority",async()=>{
   assert.equal(serializeBusyChoice(choice()),'{"choice_id":"choice","owner_user_id":2,"channel_id":1,"target_thread_id":"target","prompt":"raw","allow_steer":false,"created_at":1.0,"expires_at":100.0}');
   await storeFixture(async path=>{await seed(path);const result=await admitBusyQueue(path,choice(),"target",false,"confirmation",10);
@@ -63,3 +65,5 @@ test("invalid admission values reject before custody mutation",async()=>{
     await assert.rejects(()=>admitBusyQueue(path,choice(),"wrong",false,"confirmation",10),BusyChoiceUnavailableError);assert.deepEqual(await state(path),{claimed:null,receipts:0});
   });
 });
+
+}

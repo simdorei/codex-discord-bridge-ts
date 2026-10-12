@@ -25,10 +25,8 @@ export function windowsNativePathToStringLossy(input: unknown): string {
   const platformDesc = Object.getOwnPropertyDescriptor(input, "platform");
   if (
     platformDesc === undefined ||
-    platformDesc.get !== undefined ||
-    platformDesc.set !== undefined ||
     !platformDesc.enumerable ||
-    !("value" in platformDesc)
+    !Object.hasOwn(platformDesc, "value")
   ) {
     throw new TypeError('Expected "platform" to be an own enumerable data property');
   }
@@ -39,10 +37,8 @@ export function windowsNativePathToStringLossy(input: unknown): string {
   const unitsDesc = Object.getOwnPropertyDescriptor(input, "units");
   if (
     unitsDesc === undefined ||
-    unitsDesc.get !== undefined ||
-    unitsDesc.set !== undefined ||
     !unitsDesc.enumerable ||
-    !("value" in unitsDesc)
+    !Object.hasOwn(unitsDesc, "value")
   ) {
     throw new TypeError('Expected "units" to be an own enumerable data property');
   }
@@ -61,11 +57,9 @@ export function windowsNativePathToStringLossy(input: unknown): string {
   const lengthDesc = Object.getOwnPropertyDescriptor(rawUnits, "length");
   if (
     lengthDesc === undefined ||
-    lengthDesc.get !== undefined ||
-    lengthDesc.set !== undefined ||
     lengthDesc.enumerable ||
     lengthDesc.configurable ||
-    !("value" in lengthDesc)
+    !Object.hasOwn(lengthDesc, "value")
   ) {
     throw new TypeError('Expected native length descriptor on units array');
   }
@@ -85,10 +79,8 @@ export function windowsNativePathToStringLossy(input: unknown): string {
     const desc = Object.getOwnPropertyDescriptor(rawUnits, String(i));
     if (
       desc === undefined ||
-      desc.get !== undefined ||
-      desc.set !== undefined ||
       !desc.enumerable ||
-      !("value" in desc)
+      !Object.hasOwn(desc, "value")
     ) {
       throw new TypeError(`Expected own enumerable data property at index ${i}`);
     }
