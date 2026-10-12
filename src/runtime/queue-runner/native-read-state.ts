@@ -1,11 +1,11 @@
 import {types} from 'node:util';import {StateAccessFacade,type IStateAccessFacade} from '../../store/state-access-facade.ts';import {snapshotStoredQueueJob,type StoredQueueJob} from '../../store/queue-read.ts';import {OwnedWorkerSlot} from '../owned-worker-slot.ts';import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';import {requireDiscordText} from '../../discord/text.ts';import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
-type Operation='List'|'Eligible';const LIMIT=16*1024*1024;
+type Operation='List'|'Eligible'|'DeadTarget'|'AsyncDispatch';const LIMIT=16*1024*1024;
 export class NativeQueueReadUnavailableError extends Error{readonly operation:Operation;constructor(operation:Operation,cause:unknown){super('Queue read unavailable after actual native join; no partial state or fallback',{cause});this.name='NativeQueueReadUnavailableError';this.operation=operation;}}
 function jobs(input:unknown):StoredQueueJob[]{
  if(types.isProxy(input)||!Array.isArray(input)||boundedSerdeByteCount(input,LIMIT)===null)throw new TypeError('Expected bounded queue data array');const result:StoredQueueJob[]=[];
  for(let i=0;i<input.length;i++)result.push(snapshotStoredQueueJob(own(input,String(i)) as StoredQueueJob));return result;
 }
-/** Override only two serializable async reads. Other facade functions retain
+/** Override only four explicit serializable async reads. Other facade functions retain
  * their exact identities and original execution. Every invocation owns and joins
  * its own short native slot; no persistent worker or lifetime is detached. */
 export function createNativeQueueReadState(path:string,timeoutMs=5000):IStateAccessFacade{
@@ -15,7 +15,13 @@ export function createNativeQueueReadState(path:string,timeoutMs=5000):IStateAcc
   const data={path:fixed,operation,...fields};if(boundedSerdeByteCount(data,LIMIT)===null)throw new RangeError('Queue read input exceeds native wire boundary');const slot=new OwnedWorkerSlot('Control');let admitted=false;
   try{const pending=slot.run(new URL('./native-read-state-worker.ts',import.meta.url),data,timeoutMs);admitted=slot.busy;let raw:unknown;try{raw=await pending;}finally{await slot.join();}if(boundedSerdeByteCount(raw,LIMIT)===null||own(raw,'ok')!==true)throw new Error('No complete native queue read');return own(raw,'value');}catch(error){if(admitted)throw new NativeQueueReadUnavailableError(operation,error);throw error;}
  }
+ async function held(operation:'DeadTarget'|'AsyncDispatch',target:string):Promise<boolean>{
+  requireDiscordText(target);if(Buffer.byteLength(target)>65536)throw new RangeError('Queue target exceeds native boundary');
+  const result=await run(operation,{target});if(typeof result!=='boolean')throw new NativeQueueReadUnavailableError(operation,new TypeError('Expected exact admission boolean'));return result;
+ }
  return Object.freeze({...StateAccessFacade,
+  async deadTargetHeld(given:string,target:string):Promise<boolean>{requirePath(given);return held('DeadTarget',target);},
+  async asyncTargetDispatchHeld(given:string,target:string):Promise<boolean>{requirePath(given);return held('AsyncDispatch',target);},
   async listFiltered(given:string,target:string|null,generation:bigint|null):Promise<StoredQueueJob[]>{
    requirePath(given);if(target!==null){requireDiscordText(target);if(Buffer.byteLength(target)>65536)throw new RangeError('Queue target exceeds native boundary');}if(generation!==null&&(typeof generation!=='bigint'||generation<-(1n<<63n)||generation>=(1n<<63n)))throw new TypeError('Expected signed i64 generation or null');
    const raw=await run('List',{target,generation});try{return jobs(raw);}catch(error){throw new NativeQueueReadUnavailableError('List',error);}

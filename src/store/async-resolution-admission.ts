@@ -1,3 +1,4 @@
+import {usingExistingStore} from './owned-scope.ts';
 import {legacyStopSupersededIn} from './async-resolution-legacy-stop.ts';
 import type { DatabaseSync } from "node:sqlite";
 import { StoreIntegrityError } from "./schema-assembly.ts";
@@ -143,4 +144,12 @@ export async function asyncResolutionAdmissionHeld(path: string, thread: string)
 export async function asyncQuestionTargetDispatchHeld(path: string, thread: string): Promise<boolean> {
   if (await asyncResolutionAdmissionHeld(path, thread)) return true;
   return withInitialized(path, db => asyncQuestionDispatchHeldIn(db, thread));
+}
+
+/** Initialized-runtime counterpart. Preserve first connection close and only then
+ * open the separate start-dispatch connection when admission is false. */
+export function asyncQuestionTargetDispatchHeldExisting(path:string,thread:string):boolean {
+  requireThread(thread);
+  if(usingExistingStore(path,db=>asyncResolutionHeldIn(db,thread)))return true;
+  return usingExistingStore(path,db=>asyncQuestionDispatchHeldIn(db,thread));
 }

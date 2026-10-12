@@ -14,9 +14,9 @@ async function edit<T>(path:string,run:(db:DatabaseSync)=>T):Promise<T>{const db
 function insert(db:DatabaseSync,id:string,target:string,generation:bigint,created:number){
  db.prepare("INSERT INTO codex_turn_queue(job_id,target_thread_id,channel_id,app_server_generation,prompt,queued,ack_sent,state,attempt_count,baseline_turn_ids,last_error,created_at,updated_at) VALUES(?,?,9007199254740995,?,'prompt',1,0,'pending',0,'[]','',?,?)").run(id,target,generation,created,created);
 }
-test('native queue facade overrides exactly two functions and retains all other original identities',()=>{
+test('native queue facade overrides exactly four functions and retains all other original identities',()=>{
  const facade=createNativeQueueReadState('db');assert.equal(Object.isFrozen(facade),true);assert.deepEqual(Object.keys(facade),Object.keys(state));
- for(const key of Object.keys(state) as (keyof typeof state)[])if(key==='listFiltered'||key==='eligibleJobs')assert.notEqual(facade[key],state[key]);else assert.equal(facade[key],state[key]);
+ for(const key of Object.keys(state) as (keyof typeof state)[])if(key==='listFiltered'||key==='eligibleJobs'||key==='deadTargetHeld'||key==='asyncTargetDispatchHeld')assert.notEqual(facade[key],state[key]);else assert.equal(facade[key],state[key]);
 });
 test('native list preserves four filter modes, exact order, empty/astral target and lossless signed values',async()=>storeFixture(async path=>{
  await edit(path,db=>{insert(db,'b','😀',-2n,2);insert(db,'a','😀',-2n,2);insert(db,'c','',3n,1);insert(db,'d','😀',3n,3);});const native=createNativeQueueReadState(path);

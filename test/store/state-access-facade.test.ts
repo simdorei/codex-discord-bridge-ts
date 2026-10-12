@@ -109,6 +109,8 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.asyncTargetDispatchHeldExisting, AsyncAdmission.asyncQuestionTargetDispatchHeldExisting);
+    assert.strictEqual(FacadeExports.asyncTargetDispatchHeldExisting, AsyncAdmission.asyncQuestionTargetDispatchHeldExisting);
     assert.strictEqual(StateAccessFacade.eligibleJobsExisting, ExecutionHold.eligibleJobsExisting);
     assert.strictEqual(FacadeExports.eligibleJobsExisting, ExecutionHold.eligibleJobsExisting);
     assert.strictEqual(StateAccessFacade.recordGoalProgressErrorExisting, GoalProgress.recordGoalProgressErrorExisting);
@@ -563,7 +565,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "admitPromptIntake",
       "adoptTargetGeneration",
       "asyncAdmissionHeld",
-      "asyncTargetDispatchHeld",
+      "asyncTargetDispatchHeld", "asyncTargetDispatchHeldExisting",
       "attachGoalTurnObservedIfOwned",
       "beginAppServerForkHandoff",
       "revalidatePreparedMutation",
@@ -771,7 +773,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 283);
+    assert.strictEqual(actual.length, 284);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

@@ -366,6 +366,7 @@ export const eligibleJobsExisting: typeof ExecutionHold.eligibleJobsExisting = E
 
 export const asyncAdmissionHeld: typeof AsyncAdmission.asyncResolutionAdmissionHeld =
   AsyncAdmission.asyncResolutionAdmissionHeld;
+export const asyncTargetDispatchHeldExisting: typeof AsyncAdmission.asyncQuestionTargetDispatchHeldExisting = AsyncAdmission.asyncQuestionTargetDispatchHeldExisting;
 export const asyncTargetDispatchHeld: typeof AsyncAdmission.asyncQuestionTargetDispatchHeld =
   AsyncAdmission.asyncQuestionTargetDispatchHeld;
 
@@ -721,6 +722,7 @@ export interface IStateAccessFacade {
   readonly eligibleJobs: typeof ExecutionHold.eligibleJobs;
   readonly eligibleJobsExisting: typeof ExecutionHold.eligibleJobsExisting;
   readonly asyncAdmissionHeld: typeof AsyncAdmission.asyncResolutionAdmissionHeld;
+  readonly asyncTargetDispatchHeldExisting: typeof AsyncAdmission.asyncQuestionTargetDispatchHeldExisting;
   readonly asyncTargetDispatchHeld: typeof AsyncAdmission.asyncQuestionTargetDispatchHeld;
   readonly canonicalizePromptIntakeTarget: typeof PromptIntakeWrite.canonicalizePromptIntakeTarget;
   readonly promotePromptIntakeToQueue: typeof PromptIntakePromotion.promotePromptIntakeToQueue;
@@ -1019,6 +1021,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   eligibleJobs,
   eligibleJobsExisting,
   asyncAdmissionHeld,
+  asyncTargetDispatchHeldExisting,
   asyncTargetDispatchHeld,
   canonicalizePromptIntakeTarget,
   promotePromptIntakeToQueue,
