@@ -1,0 +1,9 @@
+# WIP782 Stop pending keyset native integration
+
+Six candidate files combine the new fixed-path pending reader/worker and four native tests with serial StopControlWorker/root wiring and three integration tests. Focused61PASS, strict TypeScript/build0. Full8266 expected across804 files is running; candidate is unapplied.
+
+The original facade SQL still uses accepted-only, sequence greater-than cursor, ordered LIMIT16, all SQL decoding before struct parsing, busy_timeout500 and existing read-write/no-create store. Opaque jobs remain strings and i64 values exact. Worker returns typed Stop records serialized by existing helper; parent binds UUID/path/operation/cursor and validates strictly increasing i64 sequences, max16 and whole4MiB response. Failure refuses; it never manufactures an empty page. Worker exit is joined before capacity release. Preabort/timeout/overlap and wrong bindings tested.
+
+Root constructs one fixed-path reader; constructor rejects a reader bound to another database. Runtime worker awaits the page and rechecks cancellation before cursor mutation. Foreign resident/generation filtering, target locks, claim, selected checks and interrupt ordering remain original. Existing synchronous adapter stays supported. Actual read/cancel/foreign-record/wrap tests preserve accepted records, zero claims and zero RPC for foreign rows. Full root command tests run, but dedicated root factory invocation instrumentation is not a separate new test.
+
+Initial standalone781 focused16 passed. Subsequent path-binding guard was added before final782 focused61. No RED or deadline relaxation in this slice. Response cap is a bounded adapter refusal, not full-size Rust parity or SQLite allocation cap. Stop writes remain synchronous and original cooperative2s deadline is not a hard real-time claim.
