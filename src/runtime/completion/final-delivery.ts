@@ -13,6 +13,8 @@ export interface CompletionFailureContext {readonly deliveryId:string;readonly s
 export interface CompletionFailureRenderer {render(error:unknown,context:CompletionFailureContext):string}
 export interface FinalDeliveryOptions {
   readonly transport:DiscordReceiptTransport;
+  /** Explicit native receipt profile only; preflight/outbox mutations remain separate. */
+  readonly nativeReceipts?:boolean;
   readonly failures:CompletionFailureRenderer;
   /** Unix seconds, sampled only for failures that are not Held. */
   readonly now:()=>number;
@@ -28,7 +30,7 @@ export class CompletionChunkFailure extends Error{
 /** Borrow no read snapshot across transport awaits. Await ownership through receipt commit.
  * No retry timers, background work, runtime scheduling or native transport are installed. */
 export async function deliverFinal(path:string,input:StoredDelivery,options:FinalDeliveryOptions):Promise<void>{
-  const pending=snapshotStoredDelivery(input),transport=options.transport,failures=options.failures,now=options.now;
+  const pending=snapshotStoredDelivery(input),transport=options.transport,failures=options.failures,now=options.now,native=options.nativeReceipts??false;if(typeof native!=="boolean")throw new TypeError("Expected native receipt profile flag");
   try{
     if(completeConfirmed(path,pending))return;
     const readiness=state.finalDeliveryPreflight(path,pending);
@@ -40,7 +42,7 @@ export async function deliverFinal(path:string,input:StoredDelivery,options:Fina
       case "Ready":break;
     }
     const guard=Object.freeze({jobId:pending.jobId,threadId:pending.targetThreadId,turnId:pending.turnId});
-    await sendCompletionText(path,transport,pending.channelId,outboxIdentity(pending.deliveryId),pending.content,guard);
+    await sendCompletionText(path,transport,pending.channelId,outboxIdentity(pending.deliveryId),pending.content,guard,native);
   }catch(error){
     if(isCompletionHeld(error))throw error;
     const timestamp=now();
@@ -60,10 +62,10 @@ export async function attemptAllFinals<T>(items:Iterable<T>,attempt:(item:T)=>Pr
 }
 
 /** Shared source send_idempotent_text boundary for final and progress delivery. */
-export async function sendCompletionText(path:string,transport:DiscordReceiptTransport,channel:bigint,identity:CompletionDeliveryIdentity,text:string,guard:DeliveryGuard):Promise<void>{
+export async function sendCompletionText(path:string,transport:DiscordReceiptTransport,channel:bigint,identity:CompletionDeliveryIdentity,text:string,guard:DeliveryGuard,native=false):Promise<void>{
   validateCompletionChannel(channel);
   const fixedGuard=Object.freeze({jobId:guard.jobId,threadId:guard.threadId,turnId:guard.turnId});
-  try{await deliverIdempotentChunks(text,{retryDelaysMs:[],chunkMarkers:true},identity,chunk=>sendReceiptChunk(path,transport,channel,chunk,[],fixedGuard));}
+  try{await deliverIdempotentChunks(text,{retryDelaysMs:[],chunkMarkers:true},identity,chunk=>sendReceiptChunk(path,transport,channel,chunk,[],fixedGuard,undefined,native));}
   catch(error){if(error instanceof DeliveryFailure){if(isCompletionHeld(error.source))throw error.source;throw new CompletionChunkFailure(error);}throw error;}
 }
 

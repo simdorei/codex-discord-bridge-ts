@@ -1,3 +1,4 @@
+import {NativeCompletionReceiptStore} from './native-receipt-store.ts';
 import type {ReceiptState} from '../../store/delivery-receipts.ts';
 import {types} from "node:util";
 import {StateAccessFacade as state} from "../../store/state-access-facade.ts";
@@ -35,7 +36,15 @@ export interface ReceiptPersistence{
  blockRejected(key:string,hash:string,reason:string):Promise<boolean>;
 }
 /** Caller owns this Promise until transport and receipt storage settle; it must not detach it or equate Promise.race with cancellation. */
-export async function sendReceiptChunk(path:string,transport:DiscordReceiptTransport,channel:bigint,input:IdempotentChunk,inputComponents:readonly DiscordComponent[]=[],guard:DeliveryGuard|null=null,signal?:AbortSignal):Promise<void>{
+export async function sendReceiptChunk(path:string,transport:DiscordReceiptTransport,channel:bigint,input:IdempotentChunk,inputComponents:readonly DiscordComponent[]=[],guard:DeliveryGuard|null=null,signal?:AbortSignal,native=false):Promise<void>{
+ if(typeof native!=="boolean")throw new TypeError("Expected native receipt profile flag");
+ if(native){
+  let owner:NativeCompletionReceiptStore|undefined;
+  const required=()=>{if(owner===undefined)throw new TypeError("Receipt begin has not captured original chunk");return owner;};
+  const persistence:ReceiptPersistence={begin:(key,hash,claim,abort)=>{if(owner!==undefined)throw new TypeError("Original chunk begin already owned");owner=new NativeCompletionReceiptStore(path,key,hash,claim);return owner.begin(key,hash,claim,abort);},confirm:(key,hash,message)=>required().confirm(key,hash,message),releaseRejected:(key,hash)=>required().releaseRejected(key,hash),blockRejected:(key,hash,reason)=>required().blockRejected(key,hash,reason)};
+  try{await sendReceiptChunkWithPersistence(persistence,transport,channel,input,inputComponents,guard,signal);}finally{await owner?.close();}
+  return;
+ }
  return sendReceiptChunkWithPersistence({
   begin:(key,hash,claim)=>state.beginDeliveryReceipt(path,key,hash,claim),
   confirm:(key,_hash,message)=>state.confirmDeliveryReceipt(path,key,message),

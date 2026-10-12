@@ -1,0 +1,105 @@
+{
+  "beforeHead": "87a97e10f457de0c79a8cdea3839132d999d0c01",
+  "stageFileCount": 1533,
+  "scope": [
+    {
+      "path": "src/runtime/completion/commentary-delivery.ts",
+      "beforeSha256": "ec31eaca82b76910af15dedeadad6209cebfe7ca4cc5ce20ebf02d881328b99d",
+      "sha256": "a24c152486bd95747148d9d4cc688f12ed05b73779a5d0eefe371af2ab9cc898"
+    },
+    {
+      "path": "src/runtime/completion/final-delivery.ts",
+      "beforeSha256": "40916507bfe82a5ffdc6a6ebe8f407ad835f5cfdcbfe5b6294275f824ba201d4",
+      "sha256": "a4f4979ab59aaa4a55369fb1d36a92e101f442e9a8b9e1cdc583bb5168c6a2bd"
+    },
+    {
+      "path": "src/runtime/completion/goal-delivery.ts",
+      "beforeSha256": "c10395db4299d5667e4ba2fa5bab2e07245282399fd3f808f6cc14747571cae4",
+      "sha256": "560abf38b9738771b09141d84b13ab501509811b0ab2b166f2c57affbb5a6fbf"
+    },
+    {
+      "path": "src/runtime/completion/native-receipt-store-worker.ts",
+      "beforeSha256": null,
+      "sha256": "7b76c85d9ddbced04156f1cd51ca04eac31d8103de42e5f36be8c80322d64f78"
+    },
+    {
+      "path": "src/runtime/completion/native-receipt-store.ts",
+      "beforeSha256": null,
+      "sha256": "ec7c629b4687e5b5cc6b25e59dced3b6a39b70ff13ca8cb2ce7c1af3e4d542ec"
+    },
+    {
+      "path": "src/runtime/completion/receipt-sender.ts",
+      "beforeSha256": "4c3cbadbda569f05ac8f2d8a93e6f50fc66fa480db126210f0fb3d2453c561ab",
+      "sha256": "67d1ac25dedcd01fec3bc8b45b70b7832e1661efd1f781571bc935ec08cef265"
+    },
+    {
+      "path": "src/runtime/completion/pending-delivery.ts",
+      "beforeSha256": "78d18c9072c895c8a79e1481b9b51d6a0c840610de91fa9d1ea0811f0b471d97",
+      "sha256": "ade817cee1432c6dafdfdc695a29ee8cf560e325134fe53b5776b9393a7b02ac"
+    },
+    {
+      "path": "src/runtime/completion/scheduler/http-work.ts",
+      "beforeSha256": "e8854d75a6398ede5883b992cdd8473a0f2f5c74fb83356fb10a1a7ed1671cba",
+      "sha256": "ede859d14f18dca0070e56a2339118d7eecdaea7d9d26a88aeb53e4438f4b80a"
+    },
+    {
+      "path": "test/runtime/native-completion-receipt-wiring.test.ts",
+      "beforeSha256": null,
+      "sha256": "769f229cd5f4ce687956e61f6f45241557dcc9e78e98f6e2186e20e269e205b3"
+    },
+    {
+      "path": "test/runtime/native-completion-receipt-store.test.ts",
+      "beforeSha256": null,
+      "sha256": "3e5e7ca5064c2f30a39d26b235a146db7f7cd88af525357a4c47f79dc3c43dc9"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 7731,
+    "pass": 7731,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 737,
+    "logSha256": "58a9eec8ceb71ee313cfa7cce57e73a3ab149b7108e59f3c6eb750aed36f17ea",
+    "tapSha256": "0adeded8f34db5f6ff845ebf5daa43fe89ba86b9fec1c426e8c7a065979ae99e"
+  },
+  "claim": "Qualified staged whole7731PASS plus actual115PASS/TS0/build0 and all1533source/test hashes identical. No separate actual full-run claim.",
+  "remoteWrite": "Authorized publication active;685 remotely verified11ba570d;688 not yet published",
+  "actualAll1533HashesMatchQualifiedStage": true,
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 115,
+      "pass": 115,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1533
+  },
+  "priorWholeFailure": {
+    "checkpoint": 688,
+    "tests": 7731,
+    "pass": 7729,
+    "fail": 2,
+    "disposition": "Preserved; one unchanged same-graph whole recheck after both baseline and candidate isolated mirror tests passed; root cause unconfirmed"
+  },
+  "evidence": {
+    ".runtime/completion-native-receipt-whole-recheck-691/full.log": "58a9eec8ceb71ee313cfa7cce57e73a3ab149b7108e59f3c6eb750aed36f17ea",
+    ".runtime/completion-native-receipt-whole-recheck-691/full.tap": "0adeded8f34db5f6ff845ebf5daa43fe89ba86b9fec1c426e8c7a065979ae99e",
+    ".runtime/completion-native-receipt-whole-recheck-691/full-exit.json": "a5614d9e25adb4d02ec256ef1f5d49672efd9b3b1e160dc6176e570f31ad53b5",
+    ".runtime/completion-native-receipt-whole-recheck-691/scope-proof.json": "6c801e276327b832caf957d38859e0b7529cb62a7c759b1cc7f128621e558c00",
+    ".runtime/completion-native-receipt-whole-recheck-691/stage-inputs.json": "b2fcc9eae96d27cd6a5c9348d9123ff3103a39aed860861cff07cbdbf93f2442",
+    ".runtime/completion-native-receipt-whole-recheck-691/unchanged-startup-proof.json": "66b3541eee7fae798867ac5d9bcf5fe3fb7a4a375a9610a3e71d941a28c8123d",
+    ".runtime/completion-native-receipt-whole-recheck-691/same-graph-recheck-proof.json": "afb27937c3dee851170756eae68b1d3ffb046f2a4e060eb6bc06c7635ad6ea84",
+    ".runtime/completion-native-receipt-wiring-688/full.log": "6f59d7171fe7e21f1b8b1c9553899e41a473244e97d9dfe178bdf3c96a35f132",
+    ".runtime/completion-native-receipt-wiring-688/full.tap": "ac09b7457d16101f7834a1c17d7f3da65819912929fb23719c72de4cc5312075",
+    ".runtime/completion-native-receipt-wiring-688/full-exit.json": "10396d71a3a52818d95b1a0b36b37c50553a3335440a3a5e69ddc8c83e2b728c",
+    ".runtime/completion-native-receipt-wiring-688/isolated-mirror-results.json": "c4c8ac7855a95ab6ca72ed60c39b3b8e36c66c044b53c178ca531e18cd666c93",
+    ".runtime/completion-native-receipt-wiring-688/baseline685-isolated-mirror.log": "8ff0462a189abbc0b2c75fc033d94af336055ba0fc717bb64ff181db3f8f3632",
+    ".runtime/completion-native-receipt-wiring-688/candidate688-isolated-mirror.log": "8aa9ea681b60f24cafd85ca58ccb6e9838476b7d1f3c37b16335d8ba5716273b",
+    ".runtime/completion-native-receipt-wiring-688/mirror-worker-static-closure-comparison.json": "baafaf6835c3c17597139229f9f4d901289edb12d4b011b85fb5d3bbfac86be2",
+    ".runtime/completion-native-receipt-whole-recheck-691/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/completion-native-receipt-whole-recheck-691/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/completion-native-receipt-whole-recheck-691/applied/focused.log": "2e07baf8887688922fa5019a14026c54d3187838566295929b3d1f6599876286"
+  }
+}

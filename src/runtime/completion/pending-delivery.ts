@@ -22,9 +22,9 @@ export async function deliverPendingOutputs(path:string,options:FinalDeliveryOpt
 }
 
 /** Capture an owned typed notice before any asynchronous receipt operation. */
-export async function deliverStartNotice(path:string,notice:StartNotice,transport:DiscordReceiptTransport):Promise<void>{
+export async function deliverStartNotice(path:string,notice:StartNotice,transport:DiscordReceiptTransport,native=false):Promise<void>{
   const channel=notice.channelId,job=notice.jobId,content=notice.content;
   validateCompletionChannel(channel);
-  await sendReceiptChunk(path,transport,channel,{domain:START_NOTICE_DOMAIN,logicalKey:job,chunkIndex:0,content});
+  await sendReceiptChunk(path,transport,channel,{domain:START_NOTICE_DOMAIN,logicalKey:job,chunkIndex:0,content},[],null,undefined,native);
   await state.completeStartNotice(path,job);
 }

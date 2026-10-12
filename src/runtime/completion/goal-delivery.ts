@@ -14,13 +14,13 @@ function snapshot(input:PendingGoalProgress):PendingGoalProgress{
   return {jobId:job===null?null:text(job),thread:text(field("thread")),turn:text(field("turn")),channel,content:text(field("content")),lastError:text(field("lastError"))};
 }
 /** Source records only send-stage failures, including a late Held. Preflight failures stay untouched. */
-export async function deliverGoalProgress(path:string,input:PendingGoalProgress,transport:DiscordReceiptTransport,failures:CompletionFailureRenderer):Promise<void>{
+export async function deliverGoalProgress(path:string,input:PendingGoalProgress,transport:DiscordReceiptTransport,failures:CompletionFailureRenderer,native=false):Promise<void>{
   const pending=snapshot(input);
   if(pending.jobId===null)throw new CompletionDeliveryError("legacy goal progress has no durable request identity; saved for review without sending");
   await ensureFirstReply(path,pending.jobId);
   const identity=goalProgressIdentity(pending.thread,pending.turn);
   validateCompletionChannel(pending.channel);
-  try{await sendCompletionText(path,transport,pending.channel,identity,pending.content,{jobId:pending.jobId,threadId:pending.thread,turnId:pending.turn});}
+  try{await sendCompletionText(path,transport,pending.channel,identity,pending.content,{jobId:pending.jobId,threadId:pending.thread,turnId:pending.turn},native);}
   catch(error){const display=failures.render(error,Object.freeze({deliveryId:identity.logicalKey,stage:"goal-send"}));requireDiscordText(display);await state.recordGoalProgressError(path,pending,display);throw error;}
   await state.completeGoalProgress(path,pending);
 }

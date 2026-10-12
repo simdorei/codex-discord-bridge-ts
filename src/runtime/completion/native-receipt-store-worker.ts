@@ -1,0 +1,6 @@
+import {parentPort,workerData as q} from 'node:worker_threads';import {usingExistingStore,withStoreTransaction,commitStore,rollbackStore} from '../../store/owned-scope.ts';import {beginDeliveryReceiptIn,confirmDeliveryReceiptIn,releaseRejectedDeliveryIn,blockRejectedDeliveryIn} from '../../store/delivery-receipts.ts';import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
+const port=parentPort;if(port===null)throw new Error('Completion receipt requires owned worker');
+try{const value=usingExistingStore(q.path,db=>{
+ if(q.operation==='Block')return blockRejectedDeliveryIn(db,q.key,q.reason); // Preserve original single-statement autocommit.
+ return withStoreTransaction<unknown>(db,'IMMEDIATE',()=>{switch(q.operation){case 'Begin':{const value=beginDeliveryReceiptIn(db,q.key,q.hash,q.guard);return value.kind==='Held'?rollbackStore(value):commitStore(value);}case 'Confirm':return commitStore(confirmDeliveryReceiptIn(db,q.key,q.message));case 'Release':return commitStore(releaseRejectedDeliveryIn(db,q.key));default:throw new TypeError('Invalid receipt operation');}});
+});const result={ok:true,value};if(boundedSerdeByteCount(result,16*1024*1024)===null)throw new Error('Receipt result exceeds wire budget');port.postMessage(result);}catch{port.postMessage({ok:false});}finally{port.close();}

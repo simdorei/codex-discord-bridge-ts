@@ -22,10 +22,10 @@ export async function ensureDeliveryOrder(path:string,job:string,before:bigint|n
   await ensureFirstReply(path,job);
   if(await state.hasPendingCommentary(path,job,before))throw new CompletionDeliveryError("output saved behind earlier undelivered progress; no output POST attempted");
 }
-export async function deliverCommentary(path:string,input:PendingCommentary,transport:DiscordReceiptTransport):Promise<void>{
+export async function deliverCommentary(path:string,input:PendingCommentary,transport:DiscordReceiptTransport,native=false):Promise<void>{
   const pending=snapshot(input);
   await ensureDeliveryOrder(path,pending.jobId,pending.sequence);
-  await sendCompletionText(path,transport,pending.channelId,commentaryIdentity(pending.threadId,pending.turnId,pending.text),commentaryMessage(pending.text),{jobId:pending.jobId,threadId:pending.threadId,turnId:pending.turnId});
+  await sendCompletionText(path,transport,pending.channelId,commentaryIdentity(pending.threadId,pending.turnId,pending.text),commentaryMessage(pending.text),{jobId:pending.jobId,threadId:pending.threadId,turnId:pending.turnId},native);
   await state.completeCommentary(path,pending.sequence);
 }
 /** Continue unrelated jobs after an error; later same-job entries remain behind the failed one. */
