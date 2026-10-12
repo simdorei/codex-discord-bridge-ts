@@ -1,0 +1,10 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "focusedTests": 16,
+  "focusedPass": 16,
+  "typecheck": 0,
+  "build": 0,
+  "full": "NOT_RUN for this exact independent candidate",
+  "notes": "Borrowed Stop-specific async execution settlement. Includes7 unchanged general historical regression tests and9 Stop tests. Caller owns IMMEDIATE transaction, original cancellation, native lifetime, reader validation and commit. No runtime installation.",
+  "actualBaseline": "783 R83"
+}

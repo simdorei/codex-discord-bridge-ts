@@ -1,0 +1,6 @@
+{
+  "rustCommit": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+  "authority": "async_resolution/history/settlement.rs",
+  "sha256": "56ea0e3b9cfb5af56060446cd315e10ebec1781334022ad49742a7ffe1370811",
+  "scope": "internal borrowed transaction leaf, caller authority required"
+}
