@@ -1,3 +1,4 @@
+import {isCompletionHeld} from '../../src/runtime/completion/receipt-sender.ts';
 import {NativeCompletionOwnerReader} from "../../src/runtime/completion/native-owner-read.ts";
 import {NativeObservedPayloadReader} from "../../src/runtime/completion/native-observed-payload.ts";
 import {openInitialized} from "../../src/store/owned-driver.ts";
@@ -93,3 +94,13 @@ test("native finalization exact-owner reread stages Interrupted without history 
 test("native finalization refuses owner drift against the same captured admission",async()=>storeFixture(async path=>{
  await seed(path);const reader=new NativeCompletionOwnerReader(path),f=setup(path,{nativeOwners:reader}),input=terminal('interrupted'),live=new CompletionEventBudget().chargeOwned(input)!,admitted=prepareCompletionState(path,f.queue.locks,{kind:'Live',live})!;try{await usingInitializedStore(path,db=>db.exec("UPDATE codex_turn_queue SET prompt='different original owner'"));await assert.rejects(f.handler.handleLive(input,admitted.permit),/admission owner changed/);assert.equal((await state.listPendingDeliveries(path)).length,0);assert.equal(f.requests.length,0);assert.equal(await state.hasObservedCompletion(path,'target','turn'),true);}finally{admitted.release();live.dispose();await reader.close();}
 }));
+
+test('already staged terminal replay is exact branded missing-owner Held with no second outbox or history',async()=>{
+ for(const native of [false,true])await storeFixture(async path=>{
+  await seed(path);const reader=native?new NativeCompletionOwnerReader(path):undefined,f=setup(path,reader===undefined?{}:{nativeOwners:reader});
+  try{await handle(path,f,terminal());const before=await state.listPendingDeliveries(path),requests=f.requests.length,notices=f.notices();assert.equal(before.length,1);assert.equal(before[0]!.content,'Final\nexact');assert.equal((await state.listFiltered(path,'target',null)).some(job=>job.state==='Running'),false);
+   await assert.rejects(handle(path,f,terminal()),error=>isCompletionHeld(error)&&error instanceof Error&&error.message==='output held without HTTP attempt: captured completion owner no longer exists');
+   assert.deepEqual(await state.listPendingDeliveries(path),before);assert.equal(f.requests.length,requests);assert.equal(f.notices(),notices);assert.equal(f.starts(),0);assert.equal(f.queue.locks.activeTargetCount,0);assert.equal(await state.unknownDeliveryReceiptCount(path),0n);assert.equal(await state.blockedDeliveryReceiptCount(path),0n);
+  }finally{await reader?.close();}
+ });
+});

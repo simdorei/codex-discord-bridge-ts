@@ -109,6 +109,8 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.eligibleJobsExisting, ExecutionHold.eligibleJobsExisting);
+    assert.strictEqual(FacadeExports.eligibleJobsExisting, ExecutionHold.eligibleJobsExisting);
     assert.strictEqual(StateAccessFacade.recordGoalProgressErrorExisting, GoalProgress.recordGoalProgressErrorExisting);
     assert.strictEqual(FacadeExports.recordGoalProgressErrorExisting, GoalProgress.recordGoalProgressErrorExisting);
     assert.strictEqual(StateAccessFacade.completeGoalProgressExisting, GoalProgress.completeGoalProgressExisting);
@@ -623,7 +625,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "verifyIdleIntentWithObservationsExisting",
       "settleExitedIdleOwnerExisting",
       "deadTargetHeld",
-      "eligibleJobs",
+      "eligibleJobs", "eligibleJobsExisting",
       "enqueue",
       "enqueueIfMirrorMatches",
       "enqueueInTransaction",
@@ -769,7 +771,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 282);
+    assert.strictEqual(actual.length, 283);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

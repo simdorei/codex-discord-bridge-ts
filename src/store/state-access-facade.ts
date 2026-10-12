@@ -362,6 +362,7 @@ export const isComponentClaimLive: typeof ComponentClaims.isComponentClaimLive =
 export const listQueueJobs: typeof QueueRead.list = QueueRead.list;
 export const listFiltered: typeof QueueRead.listFiltered = QueueRead.listFiltered;
 export const eligibleJobs: typeof ExecutionHold.eligibleJobs = ExecutionHold.eligibleJobs;
+export const eligibleJobsExisting: typeof ExecutionHold.eligibleJobsExisting = ExecutionHold.eligibleJobsExisting;
 
 export const asyncAdmissionHeld: typeof AsyncAdmission.asyncResolutionAdmissionHeld =
   AsyncAdmission.asyncResolutionAdmissionHeld;
@@ -718,6 +719,7 @@ export interface IStateAccessFacade {
   readonly listQueueJobs: typeof QueueRead.list;
   readonly listFiltered: typeof QueueRead.listFiltered;
   readonly eligibleJobs: typeof ExecutionHold.eligibleJobs;
+  readonly eligibleJobsExisting: typeof ExecutionHold.eligibleJobsExisting;
   readonly asyncAdmissionHeld: typeof AsyncAdmission.asyncResolutionAdmissionHeld;
   readonly asyncTargetDispatchHeld: typeof AsyncAdmission.asyncQuestionTargetDispatchHeld;
   readonly canonicalizePromptIntakeTarget: typeof PromptIntakeWrite.canonicalizePromptIntakeTarget;
@@ -1015,6 +1017,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   listQueueJobs,
   listFiltered,
   eligibleJobs,
+  eligibleJobsExisting,
   asyncAdmissionHeld,
   asyncTargetDispatchHeld,
   canonicalizePromptIntakeTarget,

@@ -1,3 +1,4 @@
+import {openExisting} from './existing-store.ts';
 import type { DatabaseSync } from "node:sqlite";
 import { StoreIntegrityError } from "./schema-assembly.ts";
 import { decodeTextField, textDecoderFor } from "./sqlite-values.ts";
@@ -96,4 +97,9 @@ export async function eligibleJobs(path: string, jobs: readonly StoredQueueJob[]
 
 export async function executionHoldReason(path:string,id:string):Promise<string|null>{
   const db=await openInitialized(path);try{return reasonIn(db,id);}finally{db.close();}
+}
+
+/** Existing-only counterpart; original Pending-only filter and hold decoder. */
+export function eligibleJobsExisting(path:string,jobs:readonly StoredQueueJob[]):StoredQueueJob[]{
+ const db=openExisting(path);try{return eligibleJobsIn(db,jobs);}finally{db.close();}
 }

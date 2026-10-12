@@ -1,0 +1,127 @@
+{
+  "beforeHead": "371088a57aaae7b2498f0af4c0fa00bc07ff80b4",
+  "stageFileCount": 1547,
+  "scope": [
+    {
+      "path": "src/runtime/discord-runtime/queue-bootstrap.ts",
+      "beforeSha256": "eb5ca7e1988d3ac89c6dce383eadaa7cabd7390c92b6d80db35ec570794f70f8",
+      "afterSha256": "5045108644010a29126e7ef82833514e824487f8ee60ed32000e0a58a72a6d53"
+    },
+    {
+      "path": "src/runtime/queue-runner/native-read-state-worker.ts",
+      "beforeSha256": null,
+      "afterSha256": "82f8cc801bd6409cc79d15baf7706b42594845fb8831863867cb63441797e39c"
+    },
+    {
+      "path": "src/runtime/queue-runner/native-read-state.ts",
+      "beforeSha256": null,
+      "afterSha256": "6a0f37602b441d1c25d787f80c491e6e8fab90259e88aad72b4462945b0e53a4"
+    },
+    {
+      "path": "src/store/execution-hold.ts",
+      "beforeSha256": "de1b0322641817ae7a87181955ff2d1489560909e4b9c6e2ad42811b44627b68",
+      "afterSha256": "cc54ef6e7f999f4f2aef8e10e8f2635f96cc08c7fe0df73c2a45f8af934441fd"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "94c7f86c78bcc74582631469b5668df61469ab245ad96a0bc4d36e12b1fe7f86",
+      "afterSha256": "92eb5b3712efd74aa916b92feb25a069d42631028f373eb33d1c129e0d5f376b"
+    },
+    {
+      "path": "test/runtime/completion/pipeline.test.ts",
+      "beforeSha256": "74ef0af60f2be9d179bde913a6fdf68a382b69f045180f34cd10e49da810a13f",
+      "afterSha256": "da1f0f0b60a995fd08517dfa28cb6fd09473e714ecf4a7fdebd6111dd487e8b1"
+    },
+    {
+      "path": "test/runtime/discord-runtime/native-queue-read-wiring.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "03387e18c6b95da64dbe46b62d693db2dfc865660e32cfc21fc328bf4353dbaa"
+    },
+    {
+      "path": "test/runtime/queue-runner/native-read-state.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "e53440bd073467e6b02c4c315cd4282e6ccfdff287d497e66493dc1f72c9117a"
+    },
+    {
+      "path": "test/runtime/staged-completion-handler.test.ts",
+      "beforeSha256": "3da3993c976eeea775fc0376337d7bb3f292ba392b3bdfd0c8997b4f2be7115e",
+      "afterSha256": "5ea19b013feda895a2be13f2e8de17952bf4d8625bb6f59f7a42dbf8ebf9439d"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "1f91c6bf079be8c9e823a5c1667b355ef0b9937f6338fa9ff9a982d5e8085791",
+      "afterSha256": "0c72e6904aea28365baa3583caf53ad4d5e739c5e95f9c755e963ffaa402f3e9"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 7777,
+    "pass": 7777,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 745,
+    "logSha256": "c373268b158dc6ef9641795ca9a208a8a07e5fc0856e5e0514f6c9906fe108b3",
+    "tapSha256": "becd9471e218a929a10ec563df95536fea50c6388ac4fb6bc3362bcbd65a18ba"
+  },
+  "claim": "Qualified staged whole7777PASS plus actual383PASS/TS0/build0 and all1547source/test hashes identical. No separate actual whole rerun/Windows/performance claim.",
+  "remoteWrite": "Authorized publication active; baseline695 verified03315730; candidate699 not published.",
+  "actualAll1547HashesMatchQualifiedStage": true,
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 383,
+      "pass": 383,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1547
+  },
+  "priorRed": {
+    "checkpoint": 697,
+    "tests": 7776,
+    "pass": 7775,
+    "fail": 1,
+    "reason": "Unchanged pipeline oracle omitted exact branded duplicate terminal missing-owner Held; original product deterministic replay proves safe refusal. Full RED retained."
+  },
+  "oracleCorrection": {
+    "initial697Focused": {
+      "tests": 354,
+      "pass": 352,
+      "fail": 2,
+      "reason": "Null-prototype passive snapshots vs plain expected test objects."
+    },
+    "baselineProductDeterministic": {
+      "tests": 17,
+      "pass": 17
+    },
+    "unchangedPipelineComparison": {
+      "baseline695": 11,
+      "candidate697": 11
+    },
+    "noProductionDeadlineOrGuardChangeForDiagnosticCorrection": true
+  },
+  "evidence": {
+    ".runtime/native-queue-read-state-697/full.log": "c731162dac65e52f67a164d3eef31b907a30619f3cdd5c3bbf2220ad574bd4e4",
+    ".runtime/native-queue-read-state-697/full.tap": "383059563505711163f8ec92a73c247d695ec4887d02c3acd0c690ca0a3ad01b",
+    ".runtime/native-queue-read-state-697/full-exit.json": "d339fcd653fdb31e4ebbfd64c76bbf8f76b62a2a073b8ed19854d6b6781871a9",
+    ".runtime/native-queue-read-state-697/oracle-correction.json": "783d657f60b51040f2187d3b51be61a2b4a73bda11237072b18f258a7a64dec9",
+    ".runtime/native-queue-read-state-697/initial-oracle-red/focused.log": "b192a68d0a29228ee2d9542096ba1843839d8370d90e3491e76c78601d545d32",
+    ".runtime/queue-native-read-oracle-699/full.log": "c373268b158dc6ef9641795ca9a208a8a07e5fc0856e5e0514f6c9906fe108b3",
+    ".runtime/queue-native-read-oracle-699/full.tap": "becd9471e218a929a10ec563df95536fea50c6388ac4fb6bc3362bcbd65a18ba",
+    ".runtime/queue-native-read-oracle-699/full-exit.json": "ca45a752798259a9607b1b31c6db91d3d51fce33ee1da75471f4641ae5d82af7",
+    ".runtime/queue-native-read-oracle-699/scope-proof.json": "78120a7dbe8122c65a1a518a4eebb787abdd336d051551eb19d6094674bf2f73",
+    ".runtime/queue-native-read-oracle-699/stage-inputs.json": "ac31d36c48d4c94e47a3b04b52e3efd7464f13bcc6e89c5a6277cb5a584683f1",
+    ".runtime/queue-native-read-oracle-699/baseline-proof-inputs.json": "e2f66b4faeac6524fda2aee013a76645af173708549516945e39443eeaaea7d0",
+    ".runtime/queue-native-read-oracle-699/baseline-deterministic-proof.log": "6762ff77a63a6b6d2177ddd75b6d3a6ef03e49d02f9054afa97e2125f22ac0e3",
+    ".runtime/queue-native-read-oracle-699/baseline-proof-typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/queue-native-read-oracle-699/unchanged-pipeline-results.json": "ac2996425d28b1e3094ab332a4ae7890acdca87f2bea6e8223df9cdd667b4b3d",
+    ".runtime/queue-native-read-oracle-699/baseline695-unchanged-pipeline.log": "139471634f49fb655603bbe54c6c20d3ddb88af11dfc38c628c15e5c2daed1b0",
+    ".runtime/queue-native-read-oracle-699/candidate697-unchanged-pipeline.log": "34bc67d9ff48b6646685df997f47d9926ba3555b0eb1b14dce34ff666a8d8b4d",
+    ".runtime/queue-native-read-oracle-699/oracle-change-proof.json": "bf4508f2809ffe4a298ca6045c37c94f93d869942afe4e46a9fe335e8e1da5f6",
+    ".runtime/queue-native-read-oracle-699/static-closure-comparison.json": "3178c944f21fed81109984034dc7aa3ef355423c09026920e5da7eae67502665",
+    ".runtime/queue-native-read-oracle-699/unchanged-original-hold-body.json": "de6291313ce8efec75ce4da4c84e45cc6ff26ea185a99ec7f4357c33cc90ed65",
+    ".runtime/queue-native-read-oracle-699/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/queue-native-read-oracle-699/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/queue-native-read-oracle-699/applied/focused.log": "2ee8ac167e8424fb0cb2547d173dc8009e5df6803dd95174a582aadfdeb51535"
+  }
+}
