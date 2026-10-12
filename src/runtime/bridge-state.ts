@@ -25,8 +25,8 @@ function objectEntry(record:Record<string,unknown>,key:string):Record<string,unk
 /** Single-execution-context state owner. Synchronous operations contain no await/interleaving.
  * Must live in the eventual owned filesystem worker, not a latency-sensitive event handler. */
 export class BridgeState {
-  readonly #path:string;
-  constructor(path:string){this.#path=text(path);}
+  readonly #path:string;readonly #maxBytes:number|undefined;
+  constructor(path:string,maxBytes?:number){if(maxBytes!==undefined&&(!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>1048576))throw new RangeError("Invalid bridge state budget");this.#path=text(path);this.#maxBytes=maxBytes;}
   path():string{return this.#path;}
   selectedThreadId():string|null{return clean(getOwn(this.#load(),"selected_thread_id"));}
   selectedThreadIdBounded(maxBytes:number):string|null{if(!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>1048576)throw new RangeError("Invalid bridge read budget");return clean(getOwn(this.#load(maxBytes),"selected_thread_id"));}
@@ -37,6 +37,11 @@ export class BridgeState {
   }
   setSelectedThreadId(id:string|null):void{
     if(id!==null)text(id);this.#update(state=>{const next=clean(id);if(next===null)delete state.selected_thread_id;else put(state,"selected_thread_id",next);});
+  }
+  /** Single owner operation: no await between scope check and selected clear. */
+  clearSelectedIfInScope(scope:readonly string[]):boolean{
+    for(const id of scope)text(id);const state=this.#load(),selected=clean(getOwn(state,"selected_thread_id"));
+    if(selected===null||!scope.includes(selected))return false;delete state.selected_thread_id;this.#save(state);return true;
   }
   threadSettings(id:string):SavedThreadSettings{
     text(id);const settings=getOwn(getOwn(this.#load(),"thread_settings"),id);
@@ -56,7 +61,7 @@ export class BridgeState {
     });
   }
   #update(mutate:(state:Record<string,unknown>)=>void):void{const state=this.#load();mutate(state);this.#save(state);}
-  #load(maxBytes?:number):Record<string,unknown>{
+  #load(maxBytes:number|undefined=this.#maxBytes):Record<string,unknown>{
     let bytes:Buffer;
     try{if(maxBytes===undefined)bytes=readFileSync(this.#path);else{const fd=openSync(this.#path,constants.O_RDONLY|constants.O_NONBLOCK);try{if(!fstatSync(fd).isFile())throw new TypeError('Expected regular bridge state file');const buffer=Buffer.alloc(maxBytes+1);let used=0;while(used<buffer.length){const n=readSync(fd,buffer,used,buffer.length-used,null);if(n===0)break;used+=n;}if(used>maxBytes)throw new RangeError('Bridge state exceeds byte budget');bytes=buffer.subarray(0,used);}finally{closeSync(fd);}}}catch(error){if((error as NodeJS.ErrnoException).code==="ENOENT")return Object.create(null);throw new BridgeStateError("Io",this.#path,error);}
     if(bytes.length>=3&&bytes[0]===0xef&&bytes[1]===0xbb&&bytes[2]===0xbf)bytes=bytes.subarray(3);
@@ -65,7 +70,7 @@ export class BridgeState {
   }
   #save(state:Record<string,unknown>):void{
     const parent=dirname(this.#path);try{mkdirSync(parent,{recursive:true});}catch(error){throw new BridgeStateError("Io",this.#path,error);}
-    let bytes:string;try{bytes=serializePrettySerdeValue(state)+'\n';}catch(error){throw new BridgeStateError("Json",this.#path,error);}
+    let bytes:string;try{bytes=serializePrettySerdeValue(state)+'\n';if(this.#maxBytes!==undefined&&Buffer.byteLength(bytes)>this.#maxBytes)throw new RangeError('Bridge state exceeds write budget');}catch(error){throw new BridgeStateError("Json",this.#path,error);}
     const temporary=joinRuntimePath(parent,`.cdr-state-${randomUUID()}.tmp`,process.platform==='win32'?'win32':'posix');let fd:number|undefined,identity:ReturnType<typeof fstatSync>|undefined,renamed=false;
     try{fd=openSync(temporary,"wx",0o600);identity=fstatSync(fd);writeFileSync(fd,bytes,"utf8");fsyncSync(fd);closeSync(fd);fd=undefined;renameSync(temporary,this.#path);renamed=true;}
     catch(error){throw new BridgeStateError("Io",this.#path,error);}

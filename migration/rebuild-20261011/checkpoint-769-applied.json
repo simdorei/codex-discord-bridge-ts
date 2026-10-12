@@ -1,0 +1,48 @@
+{
+  "status": "APPLIED_VERIFIED_STANDALONE_FOUNDATION",
+  "at": "2026-10-12T18:38:40.031218+00:00",
+  "baselineHead": "d28b845ef3cc6bc577c9216c9e3054b8e8098e8a",
+  "scope": [
+    {
+      "path": "src/runtime/bridge-state-native-worker.ts",
+      "beforeSha256": null,
+      "afterSha256": "8500b36d90b89379238d0cd43f368af62046e721b8ab3bdb12ce7f147c44149d"
+    },
+    {
+      "path": "src/runtime/bridge-state-native.ts",
+      "beforeSha256": null,
+      "afterSha256": "afcf9380bddfe1baa0e75749fcf9f6881e4f69ab455ec57673999a1840edeab5"
+    },
+    {
+      "path": "src/runtime/bridge-state.ts",
+      "beforeSha256": "600b7a48c11d7a8209f4bfa6e4010c1189b69ae28a90f2cdd38b7a24ddf11c21",
+      "afterSha256": "618b5ab007c92be673d3f337ece55923c337670c4955f5f9247f6cc205902144"
+    },
+    {
+      "path": "test/runtime/bridge-state-native.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "1d06a1808eaba4d454688d24f6a803362addcaf2f9a382ef1e8e4ccd49444a91"
+    }
+  ],
+  "wholeTests": 8235,
+  "wholeFiles": 797,
+  "fullLogSha256": "fc85e1a1114d49e9a5faac429baa9c69c6f7670dcc51eed45fe460d9326a14b2",
+  "stageInputsSha256": "8dfaf3b8cfe9b0fc224237e8525baba175eea2544b98cc71665c2b74bccfba1c",
+  "all1617InputsMatchStage": true,
+  "runtimeInstalled": false,
+  "actualFocused": 133,
+  "typecheck": 0,
+  "build": 0,
+  "verifiedAt": "2026-10-12T18:39:26.854719+00:00",
+  "wholeTestFiles": 797,
+  "testFileConcurrency": 1,
+  "missingProtectedFixture": "not executed or counted as skipped",
+  "runtimeWindowsLive24h": "UNVERIFIED",
+  "evidence": {
+    ".runtime/bridge-owner-foundation-769/full.log": "fc85e1a1114d49e9a5faac429baa9c69c6f7670dcc51eed45fe460d9326a14b2",
+    ".runtime/bridge-owner-foundation-769/applied/focused.log": "1772964b4290eaea175137832cc842cd84434479bcc7dde84b9f748fdb6b3496",
+    ".runtime/bridge-owner-foundation-769/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/bridge-owner-foundation-769/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/bridge-owner-foundation-769/stage-inputs.json": "8dfaf3b8cfe9b0fc224237e8525baba175eea2544b98cc71665c2b74bccfba1c"
+  }
+}
