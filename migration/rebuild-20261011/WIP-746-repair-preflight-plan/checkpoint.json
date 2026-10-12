@@ -1,0 +1,10 @@
+{
+  "status": "WIP_PLAN_ONLY",
+  "implementationStarted": false,
+  "runtimeVerified": false,
+  "baselineProduct": 744,
+  "baselineFullTests": 8095,
+  "additionalTestsOnly": 745,
+  "additionalTests": 2,
+  "limits": "No new implementation or runtime PASS. Existing tests-only evidence is composite, not a single 8097 test execution. Repair synchronous mutation guard remains outside this scope."
+}
