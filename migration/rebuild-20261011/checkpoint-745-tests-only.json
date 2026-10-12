@@ -1,0 +1,31 @@
+{
+  "path": "test/runtime/action-executor/new-project-race.test.ts",
+  "sha256": "7d8073151fdc979292446c52d5d52f55f2022f0969df27ad8d815896698e9e80",
+  "unchangedPriorFiles": 1596,
+  "productionSourceChanged": false,
+  "actualRecheck": "PENDING",
+  "status": "APPLIED_TESTS_ONLY_VERIFIED",
+  "at": "2026-10-12T12:55:11.009085+00:00",
+  "actualTests": {
+    "tests": 2,
+    "pass": 2,
+    "fail": 0,
+    "skip": 0
+  },
+  "typecheck": 0,
+  "build": 0,
+  "priorWhole": {
+    "checkpoint": 744,
+    "tests": 8095,
+    "pass": 8095,
+    "testFileConcurrency": 1
+  },
+  "claim": "Prior unchanged whole8095PASS plus two new tests PASS. Not a new single8097 whole run. Product source unchanged.",
+  "evidence": {
+    ".runtime/new-project-race-tests-745/applied/focused.log": "603286bdd24dbd6caef565633f50ccc449e54d7b1ccb5efde153df71a611fcdb",
+    ".runtime/new-project-race-tests-745/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/new-project-race-tests-745/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/new-project-race-tests-745/baseline.json": "3fd565797501910d62f810511fffe4f633e45885b51d8bf5707d1715875cd5d8"
+  },
+  "master": "MIGRATION_MASTER_HANDOFF_20261012_R70.md, unchanged full specification and operational limits"
+}
