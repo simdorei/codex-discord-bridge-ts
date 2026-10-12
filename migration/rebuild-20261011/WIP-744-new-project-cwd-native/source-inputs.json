@@ -1,0 +1,52 @@
+{
+  "frozen": "4e213aa69dc89bed1552d8b83e12471d7664b7ae",
+  "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+  "mainCheckedUTC": "2026-10-12T12:04:15Z",
+  "files": [
+    {
+      "path": "crates/cdr-runtime/src/action_executor/new_thread/project.rs",
+      "sha256": "2284b65628fb65d3e6a3e5760566227974a8ca5d01d571bddc3a0fc396cf5206",
+      "latestMainEqual": true
+    },
+    {
+      "path": "crates/cdr-codex-state/src/store.rs",
+      "sha256": "ab311172a96b1d6f6fd0917a2183e38807496f6e302e95971b5df2a096ae3395",
+      "latestMainEqual": true
+    },
+    {
+      "path": "crates/cdr-codex-state/src/thread.rs",
+      "sha256": "9ac2112f2660429ab6a7a673db3400c42374efc108f5130612ec457d06ab4810",
+      "latestMainEqual": true
+    },
+    {
+      "path": "crates/cdr-codex-state/src/thread_ref.rs",
+      "sha256": "bb4d9095462fd6e6a011bc675e817e90e8c83853aba3fb945f04da35005e8fed",
+      "latestMainEqual": true
+    },
+    {
+      "path": "crates/cdr-codex-state/src/error.rs",
+      "sha256": "b25ab1dcea02630c8c777ec27b32281fb81bd47d5a21248dbc23716bea80b300",
+      "latestMainEqual": true
+    },
+    {
+      "path": "src/runtime/action-executor/new-project.ts",
+      "sha256": "cc592ef32d8c73e04f8e1c55635557601a2c761792b55b33142b076c2a49bf7e"
+    },
+    {
+      "path": "src/codex-state/store.ts",
+      "sha256": "c0a344aa464a37de1cc6b9f43f627ca91b0b524f480e544c852cc27c944c4ad6"
+    },
+    {
+      "path": "src/runtime/runtime-paths/path-text.ts",
+      "sha256": "a96057633a6e608b0da1fb42e6409dc9b98381e55ebd05a39dcd90ed2b9b9ad0"
+    },
+    {
+      "path": "src/runtime/owned-worker-slot.ts",
+      "sha256": "8847bd560e98c757fe1f0048c19318795c86a9af881177a4131b06fba0c1ab0e"
+    },
+    {
+      "path": "test/runtime/action-executor/new-project.test.ts",
+      "sha256": "2cb45228706195473ed104cfedd7e0e12dc5b36a370f11d95adf75958a6484a0"
+    }
+  ]
+}

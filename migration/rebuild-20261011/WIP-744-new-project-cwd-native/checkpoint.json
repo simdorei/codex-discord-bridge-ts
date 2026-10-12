@@ -1,0 +1,59 @@
+{
+  "status": "UNAPPLIED_FOCUSED_PASS_FULL_RUNNING",
+  "files": [
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "117275e7d1d602335a8619c0b91bcfece285b4bafa8079df72356d5fbdec768f"
+    },
+    {
+      "path": "src/runtime/action-executor/new-executor.ts",
+      "sha256": "cc9750a9b53cdcf57f91966aae13d2eb730dfbba0465d027369d868042d90bd3"
+    },
+    {
+      "path": "src/runtime/action-executor/new-project-cwd.ts",
+      "sha256": "853de614d165875e3a9b45e9732ea51ee87322a740e4a3309a556157a2574f8a"
+    },
+    {
+      "path": "src/runtime/action-executor/new-project-native.ts",
+      "sha256": "9bfc08063932d04bed53a361b19f3ad1ac045057ba86ad4cdc9bd088e1538fe1"
+    },
+    {
+      "path": "src/runtime/action-executor/new-project-worker.ts",
+      "sha256": "70c94933c94387cdb8f1ed6a765c8eedda97e93c46286f04b9b3940ef15621fb"
+    },
+    {
+      "path": "src/runtime/action-executor/new-project.ts",
+      "sha256": "82141c4e39e17aeb269814e5be1073578b8ef77e3b7c69a9071bfd836443a6ff"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "sha256": "bf02b687ecf936bd378208684e779e6a3fa0389c488640558a66a86ec57836e1"
+    },
+    {
+      "path": "test/runtime/action-executor/new-project-native-paired.test.ts",
+      "sha256": "1209a38ba7f7da6d925a80d14d11417bf347981e47f15b714dcc5e38e3f074a9"
+    },
+    {
+      "path": "test/runtime/action-executor/new-project-native.test.ts",
+      "sha256": "6982aa152a733beb31a290e4133aa1499f15e780fec97fd413ed144e0383c2dd"
+    }
+  ],
+  "focused": {
+    "tests": 555,
+    "pass": 555,
+    "fail": 0,
+    "skip": 0,
+    "typecheck": 0,
+    "build": 0
+  },
+  "at": "2026-10-12T12:21:59.756609+00:00",
+  "full": "RUNNING_UNAPPLIED",
+  "firstFocused": {
+    "tests": 555,
+    "pass": 554,
+    "fail": 1,
+    "testCorrection": "Only original worker URL suffix .ts instead of .js at public slot call"
+  },
+  "actualProduct": "Qualified742 whole8080 at concurrency1, actual focused540,1591SHA; initial concurrent native timeout retained",
+  "excludes": "No secrets, real DBs, raw logs, protected redaction fixture"
+}
