@@ -1,3 +1,5 @@
+import {isMainThread} from "node:worker_threads";
+import {openExisting} from "./existing-store.ts";
 import {types} from "node:util";
 import type {DatabaseSync} from "node:sqlite";
 import {openInitialized} from "./owned-driver.ts";
@@ -78,4 +80,31 @@ export function currentCompletionEntryIn(db:DatabaseSync,input:CompletionEntry,r
   const final=entry.source==="Final";
   const row=receiptRow(db,`${completionMetadataQuery(entry.source,final)} SELECT ${entryColumns} FROM candidates WHERE id=?3 AND target=?4 AND turn=?5`,runtime,gen,entry.id,entry.target,entry.turn,...(final?[entry.channel]:[]));
   return row===undefined?null:readEntry(entry.source,row);
+}
+
+/** Existing-only native read profile; same five source heads and snapshot. */
+export function completionHeadsForTargetExisting(path:string,target:string,runtime:string,gen:bigint):CompletionEntry[]{
+  for(const value of [path,target,runtime])text(value);generation(gen);const db=openExisting(path);
+  try{db.exec("BEGIN DEFERRED");const result:CompletionEntry[]=[];
+    for(const source of COMPLETION_SOURCES){if(completionSourceIsState(source))continue;
+      const row=receiptRow(db,`${completionMetadataQuery(source)} SELECT ${entryColumns} FROM candidates WHERE target=?3 ORDER BY stamp,ordinal,sort_id LIMIT 1`,runtime,gen,target);
+      if(row!==undefined)result.push(readEntry(source,row));
+    }return result;
+  }finally{if(db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close abandons read */}}db.close();}
+}
+
+/** Native-only transport of private cursor state. Main runtime callers cannot
+ * mint SQL cursor state from public data or convert native handles into cursors. */
+export function nativeCompletionCursorWire(input:CompletionCursor):Readonly<CursorData>{
+  if(isMainThread)throw new TypeError("Cursor wire is worker-only");return Object.freeze(cursorData(input));
+}
+export function nativeCompletionCursorRestore(input:Readonly<CursorData>):CompletionCursor{
+  if(isMainThread)throw new TypeError("Cursor restore is worker-only");
+  const position=(p:CompletionPosition|null):CompletionPosition|null=>{
+    if(p===null)return null;text(p.id);generation(p.ordinal);
+    if(typeof p.stamp!=="number"||!Number.isFinite(p.stamp)||Buffer.byteLength(p.id)>MAX_COMPLETION_METADATA_BYTES)throw new TypeError("Invalid cursor position");
+    return Object.freeze({stamp:p.stamp,ordinal:p.ordinal,id:p.id});
+  };
+  if(typeof input.finished!=="boolean")throw new TypeError("Invalid cursor flag");
+  return cursor({after:position(input.after),upper:position(input.upper),finished:input.finished});
 }

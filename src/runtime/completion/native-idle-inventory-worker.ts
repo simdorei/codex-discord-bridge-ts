@@ -1,0 +1,3 @@
+import {parentPort,workerData as q} from 'node:worker_threads';import {StateAccessFacade as state} from '../../store/state-access-facade.ts';import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
+const port=parentPort;if(port===null)throw new Error('Idle inventory requires owned worker');
+try{let value;switch(q.operation){case 'Pending':value=state.pendingIdleIntentsExisting(q.path);break;case 'Get':value=state.getIdleIntentExisting(q.path,q.thread);break;default:throw new TypeError('Invalid idle inventory operation');}const result={ok:true,value};if(boundedSerdeByteCount(result,16*1024*1024)===null)throw new Error('Idle inventory exceeds native boundary');port.postMessage(result);}catch{port.postMessage({ok:false});}finally{port.close();}

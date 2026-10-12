@@ -1,3 +1,4 @@
+import {setImmediate as yieldIo} from 'node:timers/promises';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
@@ -34,8 +35,23 @@ test('remote interrupt rejection prevents resume and selection change',async()=>
 test('remote resume rejection has no fork fallback or selection success',async()=>fixture('reject',async f=>{
  await assert.rejects(f.action.open('target',false),/fixture rejected/);assert.deepEqual((await f.seen()).map(x=>x.method),['thread/resume']);assert.equal(f.bridge.selectedThreadId(),'old-selection');
 }));
-test('caller timeout reaches actual resident resume and timeout does not publish selected target',async()=>fixture('hang',async f=>{
- const started=performance.now();await assert.rejects(f.action.open('target',false),/timed out|timeout/i);assert.ok(performance.now()-started<1000);assert.equal(f.bridge.selectedThreadId(),'old-selection');assert.deepEqual((await f.seen()).map(x=>x.method),['thread/resume']);
+test('caller timeout reaches actual resident resume and timeout does not publish selected target',{timeout:30_000},async t=>fixture('hang',async f=>{
+ // Freeze only the parent test clock. The actual child must observe resume
+ // before advancing the original 47 ms deadline; fixture CPU time is not RPC time.
+ let now=0,settled=false;const clock=t.mock.method(performance,'now',()=>now);
+ t.mock.timers.enable({apis:['setTimeout']});const abort=new AbortController();
+ const pending=f.action.open('target',false,abort.signal);
+ void pending.then(()=>{settled=true;},()=>{settled=true;});
+ const rejected=assert.rejects(pending,/timed out|timeout/i);
+ try{
+  let dispatched=false;
+  for(let i=0;i<1000;i++){if((await f.seen()).some(x=>x.method==='thread/resume')){dispatched=true;break;}await yieldIo();}
+  assert.equal(dispatched,true,'actual child must receive the original resume');
+  assert.equal(settled,false);assert.equal(f.bridge.selectedThreadId(),'old-selection');
+  now=46;t.mock.timers.tick(46);await yieldIo();assert.equal(settled,false,'47 ms deadline must not fire at 46 ms');
+  now=47;t.mock.timers.tick(1);await rejected;
+  assert.equal(f.bridge.selectedThreadId(),'old-selection');assert.deepEqual((await f.seen()).map(x=>x.method),['thread/resume']);
+ }finally{abort.abort(new Error('test cleanup'));t.mock.timers.reset();clock.mock.restore();await pending.catch(()=>{});await rejected;}
 },47));
 test('pre-cancelled and invalid reference open perform no native mutation',async()=>fixture('idle',async f=>{
  const a=new AbortController(),reason=new Error('shutdown');a.abort(reason);await assert.rejects(f.action.open('target',true,a.signal),e=>e===reason);await assert.rejects(f.action.open('missing',false));assert.deepEqual(await f.seen(),[]);assert.equal(f.bridge.selectedThreadId(),'old-selection');

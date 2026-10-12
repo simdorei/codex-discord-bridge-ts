@@ -21,8 +21,8 @@ function sequence(v:unknown):bigint{if(typeof v!=="bigint"||v<0n||v>=(1n<<63n))t
  * Broadcast wakeups, history JSON and caller-provided NoRequiredStore are not proofs.
  * Required journals are written before verifying the matching source sequence. */
 export class CompletionSourceCertifier{
- readonly #path:string;readonly #server:Server;readonly #commentary:boolean;readonly #clock:()=>number;readonly #state:Pick<IStateAccessFacade,"certifyObservation"|"recordObservedCompletionForResident"|"recordObservedFinalAnswer">;
- constructor(path:string,server:Server,commentaryEnabled:boolean,clock:()=>number=()=>Date.now()/1000,certificationState:Pick<IStateAccessFacade,"certifyObservation"|"recordObservedCompletionForResident"|"recordObservedFinalAnswer">=state){if(typeof commentaryEnabled!=="boolean")throw new TypeError("Expected commentary flag");this.#path=path;this.#server=server;this.#commentary=commentaryEnabled;this.#clock=clock;this.#state=certificationState;}
+ readonly #observeQuestions:typeof observeAsyncQuestionNotification;readonly #path:string;readonly #server:Server;readonly #commentary:boolean;readonly #clock:()=>number;readonly #state:Pick<IStateAccessFacade,"certifyObservation"|"recordObservedCompletionForResident"|"recordObservedFinalAnswer">;
+ constructor(path:string,server:Server,commentaryEnabled:boolean,clock:()=>number=()=>Date.now()/1000,certificationState:Pick<IStateAccessFacade,"certifyObservation"|"recordObservedCompletionForResident"|"recordObservedFinalAnswer">=state,observeQuestions:typeof observeAsyncQuestionNotification=observeAsyncQuestionNotification){if(typeof commentaryEnabled!=="boolean")throw new TypeError("Expected commentary flag");this.#path=path;this.#server=server;this.#commentary=commentaryEnabled;this.#clock=clock;this.#state=certificationState;this.#observeQuestions=observeQuestions;}
  currentScope():ObservationScope{return copyScope({ownerId:this.#server.instanceId,generation:sequence(this.#server.generation())});}
  async certifyEvent(inputScope:ObservationScope,seq:bigint,input:AppNotification):Promise<void>{
   const scope=copyScope(inputScope),notification=cloneOwnedSerdeValue(input) as AppNotification;
@@ -41,7 +41,7 @@ export class CompletionSourceCertifier{
    case "turn/started":{const thread=extractThreadId(n.params),turn=extractTurnId(n.params);return thread!==null&&turn!==null?[{kind:"Started",thread,turn}]:[{kind:"Unconfirmed"}];}
    case "item/completed":{
     if(isAsyncAgentMessage(serdeField(n.params,"item"))){
-     await observeAsyncQuestionNotification(this.#path,scope.ownerId,scope.generation,n.params,this.#clock);
+     await this.#observeQuestions(this.#path,scope.ownerId,scope.generation,n.params,this.#clock);
      const parsed=parseAsyncQuestions(n.params);if(parsed===null)return [{kind:"Unconfirmed"}];
      const questions=parsed.questions.length===0?[{title:parsed.text,options:[]}]:parsed.questions,sourceText=parsed.questions.length===0?"":parsed.text;
      if(questions.length>OBSERVATION_PAGE_SIZE)return [{kind:"Unconfirmed"}];

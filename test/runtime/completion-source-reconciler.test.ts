@@ -57,3 +57,15 @@ test("run without installed observation tracking closes ticks and performs no st
  const r=new CompletionSourceReconciler('unused',f.server,false,()=>{calls++;},{activateObservation:unexpected,discoverObservation:unexpected,nextObservationGap:unexpected,finishObservationPage:unexpected,observationScopeVerified:unexpected});
  await r.run(new AbortController().signal,{wait:unexpected,close:()=>{closed++;}});assert.equal(calls,0);assert.equal(closed,1);
 });
+
+
+test("reconciler awaits native prefix verification rather than finishing with an ignored Promise",async()=>storeFixture(async path=>{
+ const f=fake(),entered=deferred(),release=deferred();let completed=false;
+ const server={...f.server,reconcileIdleObservationPrefixAsync:async(g:bigint,n:bigint)=>{entered.resolve();await release.promise;f.cleared.push({generation:g,through:n});return true;}};
+ const pending=new CompletionSourceReconciler(path,server,false,()=>{}).scanOnce().then(()=>{completed=true;});await entered.promise;
+ await delay(20);assert.equal(completed,false);assert.equal(f.cleared.length,0);release.resolve();await pending;assert.equal(completed,true);assert.deepEqual(f.cleared,[{generation:1n,through:0n}]);
+}));
+test("reconciler propagates asynchronous native proof failure without invoking sync fallback",async()=>storeFixture(async path=>{
+ const f=fake(),marker=new Error('native proof refused');const server={...f.server,reconcileIdleObservationPrefixAsync:async()=>{throw marker;}};
+ await assert.rejects(new CompletionSourceReconciler(path,server,false,()=>{}).scanOnce(),e=>e===marker);assert.equal(f.cleared.length,0);
+}));

@@ -12,8 +12,8 @@ export interface AdmittedWork<L,P>{readonly work:ReadyStateWork<L>;readonly perm
 const target=<L>(work:ReadyStateWork<L>)=>work.kind==="Live"?work.live.target:work.entry.target;
 /** In-memory hints only. No store mutation, RPC/HTTP, timers or retry maps. */
 export class CompletionReady<L>{
-  #draftDepth=0;
-  #mutable():void{if(this.#draftDepth!==0)throw new TypeError("Discovery draft permits append-only durable hints");}
+  #selecting=false;#draftDepth=0;
+  #mutable():void{if(this.#selecting)throw new TypeError('Completion selection owns the ready queue');if(this.#draftDepth!==0)throw new TypeError("Discovery draft permits append-only durable hints");}
   readonly #state:ReadyStateWork<L>[]=[];readonly #http:CompletionEntry[]=[];
   get length():number{return this.#state.length+this.#http.length;}
   get stateLength():number{return this.#state.length;}
@@ -31,6 +31,7 @@ export class CompletionReady<L>{
     this.#state.push(Object.freeze({kind:"Live",live:event}));return true;
   }
   durable(input:CompletionEntry,active:ReadonlySet<string>):void{
+    if(this.#selecting)throw new TypeError('Completion selection owns the ready queue');
     if(this.length>=COMPLETION_READY_CAP)return;const entry=snapshotCompletionEntry(input);
     if(completionSourceIsState(entry.source)){
       if(active.has(entry.target)||this.#state.some(w=>target(w)===entry.target))return;
@@ -61,16 +62,48 @@ export class CompletionReady<L>{
     for(let i=deferred.length-1;i>=0;i--)this.#state.splice(deferred[i]!,1);
     return chosen;
   }
+  async takeStateAdmittedAsync<P>(active:ReadonlySet<string>,native:number,admit:(work:ReadyStateWork<L>)=>Promise<ReadyAdmission<P>|null>):Promise<AdmittedWork<L,P>|null>{
+    this.#mutable();
+    if(!Number.isSafeInteger(native)||native<0)throw new TypeError("Expected native active count");
+    this.#selecting=true;try{
+    const heads=new Set<string>(),deferred:number[]=[];let chosen:AdmittedWork<L,P>|null=null;
+    for(let index=0;index<this.#state.length;index++){
+      const work=this.#state[index]!,key=target(work);if(heads.has(key))continue;heads.add(key);if(active.has(key))continue;
+      const admission=await admit(work);
+      if(admission===null){if(work.kind==="Durable")deferred.push(index);continue;}
+      if(admission.needsNative&&native>=COMPLETION_NATIVE_SLOTS){admission.release();continue;}
+      this.#state.splice(index,1);chosen={work,permit:admission.permit,needsNative:admission.needsNative};break;
+    }
+    for(let i=deferred.length-1;i>=0;i--)this.#state.splice(deferred[i]!,1);
+    return chosen;
+    }finally{this.#selecting=false;}
+  }
   takeHttp(active:ReadonlyMap<bigint,unknown>):CompletionEntry|null{
     this.#mutable();
     const index=this.#http.findIndex(e=>!active.has(e.channel));return index<0?null:this.#http.splice(index,1)[0]!;
   }
   /** Nested synchronous append-only drafts preserve all preexisting live ownership. */
   draft<T>(operation:()=>T):T{
+    if(this.#selecting)throw new TypeError('Completion selection owns the ready queue');
     if(typeof operation!=="function"||types.isProxy(operation)||types.isAsyncFunction(operation)||types.isGeneratorFunction(operation))throw new TypeError("Discovery draft must be synchronous");
     const stateLength=this.#state.length,httpLength=this.#http.length;let published=false;this.#draftDepth++;
     try{const result=operation();if(types.isPromise(result)){void Promise.prototype.then.call(result,undefined,()=>undefined);throw new TypeError("Discovery draft must not return a Promise");}published=true;return result;}
     finally{this.#draftDepth--;if(!published){this.#state.length=stateLength;this.#http.length=httpLength;}}
+  }
+  /** Async discovery owns the original queue while appending only to a private draft.
+   * No live envelope transfers to the draft; failure cannot dispose an existing owner.
+   * Caller must join this operation before dispatch, sidecar removal or shutdown. */
+  async draftAsync<T>(operation:(draft:CompletionReady<L>)=>Promise<T>):Promise<T>{
+    this.#mutable();
+    if(typeof operation!=="function"||types.isProxy(operation)||types.isGeneratorFunction(operation))throw new TypeError("Expected async discovery operation");
+    const draft=new CompletionReady<L>(),stateLength=this.#state.length,httpLength=this.#http.length;
+    draft.#state.push(...this.#state);draft.#http.push(...this.#http);draft.#draftDepth=1;this.#selecting=true;
+    try{
+      const result=await operation(draft);
+      // Defensive prefix check: only new immutable durable hints may be published.
+      if(draft.#state.length<stateLength||draft.#http.length<httpLength||draft.#state.slice(0,stateLength).some((w,i)=>w!==this.#state[i])||draft.#http.slice(0,httpLength).some((e,i)=>e!==this.#http[i])||draft.length>COMPLETION_READY_CAP||draft.#state.slice(stateLength).some(w=>w.kind!=="Durable"))throw new TypeError("Discovery draft changed existing ownership");
+      this.#state.push(...draft.#state.slice(stateLength));this.#http.push(...draft.#http.slice(httpLength));return result;
+    }finally{draft.#draftDepth=0;draft.#selecting=true;this.#selecting=false;}
   }
   /** Negative metadata may remove only the exact newly offered orphan hint, not live work. */
   discardOrphanHints(negatives:readonly {readonly index:number;readonly entry:CompletionEntry}[]):number{

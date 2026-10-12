@@ -1,3 +1,5 @@
+import type {DatabaseSync} from "node:sqlite";
+import {openExisting} from "./existing-store.ts";
 import {openInitialized} from "./owned-driver.ts";
 import {snapshotCompletionEntry,currentCompletionEntryIn,equalCompletionEntry,type CompletionEntry} from "./completion-metadata.ts";
 import {MAX_COMPLETION_PAYLOAD_BYTES} from "./completion-metadata-sql.ts";
@@ -19,6 +21,16 @@ export async function loadCompletionPayload(path:string,input:CompletionEntry,ru
   const entry=snapshotCompletionEntry(input);for(const value of [path,runtime])if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed payload scope");
   if(typeof generation!=="bigint"||generation<-(1n<<63n)||generation>=(1n<<63n))throw new TypeError("Expected i64 payload generation");
   const db=await openInitialized(path);
+  return loadOpenedPayload(db,entry,runtime,generation);
+}
+/** Existing-only native-worker leaf; never initializes or repairs a store. */
+export function loadCompletionPayloadExisting(path:string,input:CompletionEntry,runtime:string,generation:bigint):CompletionPayload|null{
+  const entry=snapshotCompletionEntry(input);for(const value of [path,runtime])if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed payload scope");
+  if(typeof generation!=="bigint"||generation<-(1n<<63n)||generation>=(1n<<63n))throw new TypeError("Expected i64 payload generation");
+  return loadOpenedPayload(openExisting(path),entry,runtime,generation);
+}
+/** Takes ownership of exactly one opened handle, including every error path. */
+function loadOpenedPayload(db:DatabaseSync,entry:CompletionEntry,runtime:string,generation:bigint):CompletionPayload|null{
   try{
     db.exec("BEGIN DEFERRED");const actual=currentCompletionEntryIn(db,entry,runtime,generation);
     if(actual===null||!equalCompletionEntry(actual,entry))return null;

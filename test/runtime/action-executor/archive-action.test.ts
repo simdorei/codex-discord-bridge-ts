@@ -1,3 +1,4 @@
+import {setImmediate as yieldIo} from 'node:timers/promises';
 import {ActionIntegerRangeError} from '../../../src/runtime/action-executor/errors.ts';
 import assert from 'node:assert/strict';import {it} from 'node:test';import {DatabaseSync} from 'node:sqlite';import {join,dirname} from 'node:path';
 import {PortableResidentLifecycle} from '../../../src/app-server/portable-resident-lifecycle.ts';import {AdmittedArchiveExecutor} from '../../../src/runtime/action-executor/archive-action.ts';
@@ -29,8 +30,23 @@ it('child queued work blocks archive and is preserved',async()=>fixture('ok',asy
 it('deadline waiting on shared root lock never releases the foreign owner or dispatches',async()=>fixture('ok',async f=>{
  const lease=await f.locks.acquire('root');try{await assert.rejects(f.action.execute(actor,null,'own'),/timed out; no archive was sent/);lease.requireTarget('root');assert.equal(f.locks.tryAcquire('root'),undefined);assert.deepEqual(await f.seen(),[]);}finally{lease.release();}assert.equal(f.locks.activeTargetCount,0);
 },150));
-it('timeout after attempted archive retains durable entire scope and does not clear selected target',async()=>fixture('no-ack',async f=>{
- await assert.rejects(f.action.execute(actor,null,'own'),/dispatch was attempted.*do not automatically retry/);assert.equal(f.locks.activeTargetCount,0);assert.equal(await state.archiveTargetFenced(f.path,'root'),true);assert.equal(await state.archiveTargetFenced(f.path,'child'),true);assert.equal(f.bridge.selectedThreadId(),'root');assert.equal((await f.seen()).filter(c=>c.method==='thread/archive').length,1);
+it('timeout after attempted archive retains durable entire scope and does not clear selected target',{timeout:30_000},async t=>fixture('no-ack',async f=>{
+ // Pause the parent deadline until the child confirms actual archive dispatch.
+ // Keep the original 700 ms budget and exercise both sides of its boundary.
+ let now=0,settled=false;const clock=t.mock.method(performance,'now',()=>now);
+ t.mock.timers.enable({apis:['setTimeout']});const abort=new AbortController();
+ const pending=f.action.execute(actor,null,'own',abort.signal);
+ void pending.then(()=>{settled=true;},()=>{settled=true;});
+ const rejected=assert.rejects(pending,/dispatch was attempted.*do not automatically retry/);
+ try{
+  let dispatched=false;
+  for(let i=0;i<1000;i++){if((await f.seen()).some(x=>x.method==='thread/archive')){dispatched=true;break;}await yieldIo();}
+  assert.equal(dispatched,true,'actual child must receive exactly the original archive');
+  assert.equal(settled,false);assert.equal(f.bridge.selectedThreadId(),'root');
+  now=699;t.mock.timers.tick(699);await yieldIo();assert.equal(settled,false,'700 ms deadline must not fire at 699 ms');
+  now=700;t.mock.timers.tick(1);await rejected;
+  assert.equal(f.locks.activeTargetCount,0);assert.equal(await state.archiveTargetFenced(f.path,'root'),true);assert.equal(await state.archiveTargetFenced(f.path,'child'),true);assert.equal(f.bridge.selectedThreadId(),'root');assert.equal((await f.seen()).filter(c=>c.method==='thread/archive').length,1);
+ }finally{abort.abort(new Error('test cleanup'));t.mock.timers.reset();clock.mock.restore();await pending.catch(()=>{});await rejected;}
 },700));
 it('exact known writer rejection releases attempted reservation but never forks',async()=>fixture('writer-reject',async f=>{
  await assert.rejects(f.action.execute(actor,null,'own'),/owns original thread.*no fork/);assert.equal(await state.archiveTargetFenced(f.path,'root'),false);assert.equal(await state.archiveTargetFenced(f.path,'child'),false);assert.equal(f.locks.activeTargetCount,0);assert.ok((await f.seen()).every(c=>c.method!=='thread/fork'));

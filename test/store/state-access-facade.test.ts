@@ -1,3 +1,4 @@
+import * as CompletionPayload from "../../src/store/completion-payload.ts";
 import * as PreparedMutationValidation from '../../src/store/prepared-mutation-validation.ts';
 import * as ResumeRestartRecovery from '../../src/store/resume-restart-recovery.ts';
 import * as NewReplyCheckpoint from '../../src/store/new-reply-checkpoint.ts';
@@ -179,17 +180,25 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.mirrorTargets, MirrorPolicyRead.mirrorTargets);
     assert.strictEqual(FacadeExports.mirrorTargets, MirrorPolicyRead.mirrorTargets);
     assert.strictEqual(StateAccessFacade.recordAsyncQuestionObservation, QuestionObservation.recordAsyncQuestionObservation);
+    assert.strictEqual(StateAccessFacade.recordAsyncQuestionObservationExisting, QuestionObservation.recordAsyncQuestionObservationExisting);
     assert.strictEqual(FacadeExports.recordAsyncQuestionObservation, QuestionObservation.recordAsyncQuestionObservation);
+    assert.strictEqual(FacadeExports.recordAsyncQuestionObservationExisting, QuestionObservation.recordAsyncQuestionObservationExisting);
     assert.strictEqual(StateAccessFacade.reconcileAsyncQuestionObservations, QuestionObservation.reconcileAsyncQuestionObservations);
+    assert.strictEqual(StateAccessFacade.reconcileAsyncQuestionObservationsExisting, QuestionObservation.reconcileAsyncQuestionObservationsExisting);
     assert.strictEqual(FacadeExports.reconcileAsyncQuestionObservations, QuestionObservation.reconcileAsyncQuestionObservations);
+    assert.strictEqual(FacadeExports.reconcileAsyncQuestionObservationsExisting, QuestionObservation.reconcileAsyncQuestionObservationsExisting);
     assert.strictEqual(StateAccessFacade.observeAsyncQuestion, QuestionObservation.observeAsyncQuestion);
     assert.strictEqual(FacadeExports.observeAsyncQuestion, QuestionObservation.observeAsyncQuestion);
     assert.strictEqual(StateAccessFacade.retireOldAsyncQuestionOwner, QuestionRetention.retireOldAsyncQuestionOwner);
+    assert.strictEqual(StateAccessFacade.retireOldAsyncQuestionOwnerExisting, QuestionRetention.retireOldAsyncQuestionOwnerExisting);
     assert.strictEqual(FacadeExports.retireOldAsyncQuestionOwner, QuestionRetention.retireOldAsyncQuestionOwner);
+    assert.strictEqual(FacadeExports.retireOldAsyncQuestionOwnerExisting, QuestionRetention.retireOldAsyncQuestionOwnerExisting);
     assert.strictEqual(StateAccessFacade.supersedeAsyncQuestions, QuestionRetention.supersedeAsyncQuestions);
     assert.strictEqual(FacadeExports.supersedeAsyncQuestions, QuestionRetention.supersedeAsyncQuestions);
     assert.strictEqual(StateAccessFacade.compactTerminalAsyncQuestions, QuestionRetention.compactTerminalAsyncQuestions);
+    assert.strictEqual(StateAccessFacade.compactTerminalAsyncQuestionsExisting, QuestionRetention.compactTerminalAsyncQuestionsExisting);
     assert.strictEqual(FacadeExports.compactTerminalAsyncQuestions, QuestionRetention.compactTerminalAsyncQuestions);
+    assert.strictEqual(FacadeExports.compactTerminalAsyncQuestionsExisting, QuestionRetention.compactTerminalAsyncQuestionsExisting);
     assert.strictEqual(StateAccessFacade.getAsyncQuestion,QuestionDelivery.getAsyncQuestion);
     assert.strictEqual(FacadeExports.getAsyncQuestion,QuestionDelivery.getAsyncQuestion);
     assert.strictEqual(StateAccessFacade.pendingAsyncQuestions,QuestionDelivery.pendingAsyncQuestions);
@@ -267,7 +276,10 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.getObservedFinalAnswer, ObservedFinalAnswer.getObservedFinalAnswer);
     assert.strictEqual(StateAccessFacade.hasObservedCompletionResidentEvidence, ObservedCompletion.hasObservedCompletionResidentEvidence);
     assert.strictEqual(FacadeExports.hasObservedCompletionResidentEvidence, ObservedCompletion.hasObservedCompletionResidentEvidence);
+    assert.strictEqual(StateAccessFacade.hasObservedCompletionResidentEvidenceExisting, ObservedCompletion.hasObservedCompletionResidentEvidenceExisting);
+    assert.strictEqual(FacadeExports.hasObservedCompletionResidentEvidenceExisting, ObservedCompletion.hasObservedCompletionResidentEvidenceExisting);
     assert.strictEqual(StateAccessFacade.pendingObservedCompletions, ObservedCompletion.pendingObservedCompletions);
+    assert.strictEqual(StateAccessFacade.pendingObservedCompletionsExisting, ObservedCompletion.pendingObservedCompletionsExisting);
     assert.strictEqual(StateAccessFacade.hasObservedCompletion, ObservedCompletion.hasObservedCompletion);
     assert.strictEqual(StateAccessFacade.recordObservedCompletionError, ObservedCompletion.recordObservedCompletionError);
     assert.strictEqual(StateAccessFacade.finishObservedCompletion, ObservedCompletion.finishObservedCompletion);
@@ -438,6 +450,12 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
   });
 
   it("exposes exact direct function references via named whole-function aliases", () => {
+    assert.strictEqual(StateAccessFacade.loadCompletionPayloadExisting, CompletionPayload.loadCompletionPayloadExisting);
+    assert.strictEqual(FacadeExports.loadCompletionPayloadExisting, CompletionPayload.loadCompletionPayloadExisting);
+    assert.strictEqual(StateAccessFacade.getObservedFinalAnswerExisting,ObservedFinalAnswer.getObservedFinalAnswerExisting);
+    assert.strictEqual(FacadeExports.getObservedFinalAnswerExisting,ObservedFinalAnswer.getObservedFinalAnswerExisting);
+    assert.strictEqual(StateAccessFacade.hasMirrorEventExisting,MirrorEventRead.hasMirrorEventExisting);
+    assert.strictEqual(FacadeExports.hasMirrorEventExisting,MirrorEventRead.hasMirrorEventExisting);
     assert.strictEqual(enqueue, QueueEnqueue.enqueue);
     assert.strictEqual(
       enqueueIfMirrorMatches,
@@ -515,8 +533,9 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "observationScopeVerified",
 
       "loadCompletionPayload",
+      "loadCompletionPayloadExisting",
       "readCompletionMetadataRound",
-      "completionPage", "completionHeadsForTarget",
+      "completionPage", "completionHeadsForTarget", "completionHeadsForTargetExisting",
       "pendingStartNotices", "completeStartNotice",
       "stageCommentary", "pendingCommentary", "hasPendingCommentary", "completeCommentary",
       "activate",
@@ -666,11 +685,15 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "openCheckedRead",
       "pendingGoalProgress",
       "recordAsyncQuestionObservation",
+      "recordAsyncQuestionObservationExisting",
       "reconcileAsyncQuestionObservations",
+      "reconcileAsyncQuestionObservationsExisting",
       "observeAsyncQuestion",
       "retireOldAsyncQuestionOwner",
+      "retireOldAsyncQuestionOwnerExisting",
       "supersedeAsyncQuestions",
       "compactTerminalAsyncQuestions",
+      "compactTerminalAsyncQuestionsExisting",
       "getAsyncQuestion",
       "pendingAsyncQuestions",
       "confirmAsyncQuestionOwner",
@@ -690,10 +713,14 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "getMirrorCursorTurn",
       "updateMirrorCursorWithTurn",
       "hasMirrorEvent",
+      "hasMirrorEventExisting",
       "recordObservedFinalAnswer",
       "getObservedFinalAnswer",
+      "getObservedFinalAnswerExisting",
       "hasObservedCompletionResidentEvidence",
+  "hasObservedCompletionResidentEvidenceExisting",
       "pendingObservedCompletions",
+      "pendingObservedCompletionsExisting",
       "promotePromptIntakeToQueue",
       "promptIntakeHasDurableOwner",
       "recordAndCancelDefiniteForkFailure",
@@ -721,7 +748,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 263);
+    assert.strictEqual(actual.length, 273);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
@@ -821,6 +848,9 @@ describe("StateAccessFacade type signature fidelity (compile-time)", () => {
 
   it("strictly conforms to IStateAccessFacade interface", () => {
     const facade: IStateAccessFacade = StateAccessFacade;
+    type ExactPayload<A,B> = (<T>()=>T extends A?1:2) extends (<T>()=>T extends B?1:2)?true:false;
+    const exactPayload: ExactPayload<typeof facade.loadCompletionPayloadExisting, typeof CompletionPayload.loadCompletionPayloadExisting> = true;
+    assert.strictEqual(exactPayload,true);
     assert.strictEqual(typeof facade.enqueue, "function");
     assert.strictEqual(typeof facade.enqueueIfMirrorMatches, "function");
     assert.strictEqual(typeof facade.enqueueInTransaction, "function");

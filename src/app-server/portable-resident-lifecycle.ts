@@ -84,7 +84,11 @@ function throwErrors(errors:unknown[],message:string):void{if(errors.length===1)
  * Persistence ports are mandatory, explicit and trusted; no no-op default exists.
  * Supervisor is explicit owner-started/joined; no 45s startup envelope or descendant-pipe cleanup. */
 export class PortableResidentLifecycle{
+  #acceptGapWrites=true;
+  #gapPending:{generation:bigint;upper:bigint|null;unknown:boolean;report:(error:unknown)=>void}|null=null;
+  #gapTask:Promise<void>|null=null;#gapReportFailure:{error:unknown}|null=null;
   readonly #targetGate=new IdleTargetGate();
+  readonly #managedObservation=new Set<Promise<boolean>>();
   readonly #maintenance:ResidentMaintenanceOptions|null;readonly #managedIdle=new Set<Promise<unknown>>();readonly #managedDispatch=new Set<Promise<unknown>>();readonly #managedPreparation=new Set<Promise<unknown>>();
   readonly instanceId=randomUUID();readonly #config:PortableSessionConfig;readonly #render:SessionDiagnosticRenderer;readonly #persistence:ResidentPersistence;
   readonly #lock=new TargetLocks();readonly #generation=new GenerationWatch(1n);
@@ -364,21 +368,61 @@ export class PortableResidentLifecycle{
   }
   /** Gap-report failures do not authorize release and are reported through the
    * caller's central handler; source treats these as nonfatal observation failures. */
+  #reportGap(report:(error:unknown)=>void,error:unknown):void{try{invokeSynchronousVoid(report,{},[error]);}catch(failure){this.#gapReportFailure??={error:failure};}}
+  #enqueueGap(generation:bigint,upper:bigint|null,unknown:boolean,report:(error:unknown)=>void):void{
+    if(!this.#acceptGapWrites||generation!==this.generation())throw new IdleObservationError("original gap scope is no longer accepting");
+    const pending=this.#gapPending;
+    if(pending!==null){if(pending.generation!==generation)throw new IdleObservationError("gap scope changed");if(upper!==null&&(pending.upper===null||upper>pending.upper))pending.upper=upper;pending.unknown||=unknown;}
+    else this.#gapPending={generation,upper,unknown,report};
+    if(this.#gapTask===null){const task=this.#drainGaps();this.#gapTask=task;void task.catch(error=>{this.#gapReportFailure??={error};});}
+  }
+  async #drainGaps():Promise<void>{
+    const native=this.#maintenance!.nativeObservation!;
+    try{while(this.#gapPending!==null){const work=this.#gapPending;this.#gapPending=null;let unknown=work.unknown;
+      if(work.upper!==null)try{await native.discoverGap!(this.instanceId,work.generation,work.upper);}catch(error){unknown=true;this.#targetGate.holdUnattributedGap();this.#reportGap(work.report,error);}
+      if(unknown)try{await native.recordGap!(this.instanceId,work.generation);}catch(error){this.#targetGate.holdUnattributedGap();this.#reportGap(work.report,error);}
+    }}finally{this.#gapTask=null;}
+  }
+  async #joinGaps():Promise<void>{if(this.#gapTask!==null)await this.#gapTask;if(this.#gapReportFailure!==null)throw this.#gapReportFailure.error;}
   markIdleObservationGap(report:(error:unknown)=>void):void{
     syncFunction(report);this.#targetGate.markGap();const journal=this.#targetGate.journal();
-    if(journal?.tracksObservations())this.#targetGate.holdUnattributedGap();
-    if(journal?.tracksObservations())try{journal.recordObservationGap(this.instanceId,this.generation());}catch(error){invokeSynchronousVoid(report,{},[error]);}
+    if(journal?.tracksObservations()){this.#targetGate.holdUnattributedGap();
+      if(this.#maintenance?.nativeObservation?.recordGap!==undefined){try{this.#enqueueGap(this.generation(),null,true,report);}catch(error){this.#reportGap(report,error);}return;}
+      try{journal.recordObservationGap(this.instanceId,this.generation());}catch(error){invokeSynchronousVoid(report,{},[error]);}
+    }
   }
   markSourceObservationGap(generation:bigint,report:(error:unknown)=>void):void{
-    syncFunction(report);this.#targetGate.markGap();try{
-      const journal=this.#targetGate.journal();if(journal===null)throw new IdleObservationError("observation journal absent");
-      const upper=this.observationWindow(generation,0n,0n).sourceUpper;journal.observeSourceUpper(this.instanceId,generation,upper);
-    }catch(error){this.markIdleObservationGap(report);invokeSynchronousVoid(report,{},[error]);}
+    syncFunction(report);this.#targetGate.markGap();const native=this.#maintenance?.nativeObservation;
+    if(native?.discoverGap!==undefined){
+      try{if(this.#targetGate.journal()===null)throw new IdleObservationError("observation journal absent");const upper=this.observationWindow(generation,0n,0n).sourceUpper;this.#enqueueGap(generation,upper,false,report);}
+      catch(error){this.#targetGate.holdUnattributedGap();this.#reportGap(report,error);try{this.#enqueueGap(generation,null,true,report);}catch(failure){this.#reportGap(report,failure);}}return;
+    }
+    try{const journal=this.#targetGate.journal();if(journal===null)throw new IdleObservationError("observation journal absent");const upper=this.observationWindow(generation,0n,0n).sourceUpper;journal.observeSourceUpper(this.instanceId,generation,upper);}
+    catch(error){this.markIdleObservationGap(report);invokeSynchronousVoid(report,{},[error]);}
   }
   reconcileIdleObservationPrefix(generation:bigint,through:bigint):boolean{
+    if(this.#gapTask!==null||this.#gapPending!==null)return false;
     const epoch=this.#targetGate.gapEpoch(),journal=this.#targetGate.journal();if(journal===null)return false;
     if(!journal.observationScopeVerified(this.instanceId,generation,through))return false;
     const admission=this.#state.admitResponse(generation);try{return admission.client.certifyObservationPrefix(through)&&this.#targetGate.clearGap(epoch);}finally{admission.release();}
+  }
+
+  /** Native read holds its original admission until joined; a later gap, close or
+   * replacement cannot be released by a previously captured database proof. */
+  reconcileIdleObservationPrefixAsync(generation:bigint,through:bigint):Promise<boolean>{
+    const native=this.#maintenance?.nativeObservation;
+    if(this.#gapTask!==null||this.#gapPending!==null)return Promise.resolve(false);
+    if(native===undefined)return Promise.resolve(this.reconcileIdleObservationPrefix(generation,through));
+    if(this.#targetGate.journal()===null)return Promise.resolve(false);
+    if(this.#managedObservation.size>=2)return Promise.reject(new IdleObservationError("native prefix verification capacity occupied"));
+    const epoch=this.#targetGate.gapEpoch(),admission=this.#state.admitResponse(generation);
+    const task=(async()=>{try{
+      if(!await native.verified(this.instanceId,generation,through))return false;
+      const current=this.#state.snapshot();
+      if(this.#gapTask!==null||this.#gapPending!==null||!current.accepting||current.generation!==generation||current.client?.identity!==admission.client.identity||this.#targetGate.gapEpoch()!==epoch)return false;
+      return admission.client.certifyObservationPrefix(through)&&this.#targetGate.clearGap(epoch);
+    }finally{admission.release();}})();
+    this.#managedObservation.add(task);const clear=()=>this.#managedObservation.delete(task);void task.then(clear,clear);return task;
   }
 
   lifecycleSnapshot(){const state=this.#state.snapshot(),child=state.client===null?null:this.#session(state.client).lifecycleSnapshot();return Object.freeze({generation:state.generation,healthy:state.accepting&&child?.healthy===true&&!state.quarantined,quarantined:state.quarantined,restartPending:state.restartPending,processId:child?.processId??null});}
@@ -405,7 +449,7 @@ export class PortableResidentLifecycle{
       if(!this.#state.fenceDeadGenerationBeforeRestart(work=>this.#persistence.persistDeadWork(this.instanceId,work)))return "Deferred";
       const candidate=this.#state.restartCandidate(expected);if(candidate.kind!=="Sealed")return candidate.kind==="NotPending"?"Settled":"Deferred";
       const next=this.#state.replacementGeneration(),oldPort=candidate.client,old=this.#session(oldPort),oldGeneration=this.generation();
-      await this.#stopForwarders();await old.dispose();this.#journalExit(old,oldGeneration);signal?.throwIfAborted();
+      this.#acceptGapWrites=false;await this.#stopForwarders();await old.dispose();await this.#joinGaps();this.#journalExit(old,oldGeneration);signal?.throwIfAborted();
       let recorded:ReplacementCleanup<PortableResidentClientPort>|undefined,staged:ResidentForwarders|undefined,replacement:PortableAppServerSession;
       try{
         const result=await PortableAppServerSession.startObserved(this.#config,session=>{
@@ -420,7 +464,7 @@ export class PortableResidentLifecycle{
         signal?.throwIfAborted();this.#state.installReplacementWith(replacement.residentClient(),next,()=>{
           if(this.#forwarders!==null)throw new ResidentStateError({kind:"ReplacementState",message:"resident forwarder slot was not empty before replacement"});
           this.#forwarders=staged!;this.#generation.replace(next);staged!.activate();
-        });this.#sessions.delete(oldPort);return "Restarted";
+        });this.#acceptGapWrites=true;this.#sessions.delete(oldPort);return "Restarted";
       }catch(primary){
         const errors=[primary];if(this.#forwarders===staged)this.#forwarders=null;this.#generation.replace(0n);if(staged)try{await staged.join();}catch(error){errors.push(error);}
         try{await this.#cleanupDebt(recorded!);}catch(error){errors.push(error);}throwErrors(errors,"Resident replacement installation cleanup failed");throw primary;
@@ -430,16 +474,19 @@ export class PortableResidentLifecycle{
   /** Terminal close serializes with replacement. Exact client remains retained until
    * both owned cleanup and its exit journal succeed, permitting an explicit retry. */
   close():Promise<void>{return this.#lock.run("restart",async()=>{
-    if(this.#disposed)return;const plan=this.#state.prepareClose(),errors:unknown[]=[];
+    if(this.#disposed)return;this.#acceptGapWrites=false;const plan=this.#state.prepareClose(),errors:unknown[]=[];
     try{await this.#stopForwarders();}catch(error){errors.push(error);}
     if(plan.replacement)try{await this.#cleanupDebt(plan.replacement);}catch(error){errors.push(error);}
     if(plan.current){const session=this.#session(plan.current),generation=this.generation();let cleaned=false,journaled=false;
       try{await session.dispose();cleaned=true;}catch(error){errors.push(error);}
+      await Promise.allSettled([...this.#managedObservation]);
       await Promise.allSettled([...this.#managedPreparation]);
       await Promise.allSettled([...this.#managedIdle]);
       await Promise.allSettled([...this.#managedDispatch]);
-      let nativeClosed=true;try{await this.#maintenance?.nativeDispatch?.close();}catch(error){nativeClosed=false;errors.push(error);}
+      let nativeClosed=true;try{await this.#joinGaps();}catch(error){nativeClosed=false;errors.push(error);}
+      try{await this.#maintenance?.nativeDispatch?.close();}catch(error){nativeClosed=false;errors.push(error);}
       try{await this.#maintenance?.nativeIdle?.close();}catch(error){nativeClosed=false;errors.push(error);}
+      try{await this.#maintenance?.nativeObservation?.close();}catch(error){nativeClosed=false;errors.push(error);}
       if(nativeClosed)try{this.#journalExit(session,generation);journaled=true;}catch(error){errors.push(error);}
       if(cleaned&&journaled)try{this.#state.finishCurrentClose(plan.current);this.#sessions.delete(plan.current);}catch(error){errors.push(error);}
     }

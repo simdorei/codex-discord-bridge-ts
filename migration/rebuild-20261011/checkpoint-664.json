@@ -1,0 +1,70 @@
+{
+  "checkpoint": 664,
+  "scope": "Native bounded existing-store completion head refresh; deterministic action deadline regression fixtures",
+  "qualifiedStage": {
+    "tests": 7599,
+    "pass": 7599,
+    "fail": 0,
+    "cancelled": 0,
+    "skip": 0,
+    "testFiles": 717,
+    "durationMs": 469578.043945
+  },
+  "actualApplied": {
+    "focused": 44,
+    "typecheck": 0,
+    "build": 0,
+    "sourceTestFiles": 1496,
+    "entireSourceTestEqualsQualifiedStage": true
+  },
+  "fullRerunOnActual": false,
+  "contracts": [
+    "Original SQL transaction and rank-before-target ordering",
+    "Existing-only; no create or migration",
+    "At most five non-state source heads and 64 KiB result",
+    "Single owned Background worker, actual native exit joined before release",
+    "Results remain hints, not delivery authority",
+    "Two tests synchronize real child receipt then advance exact unchanged 47/700 ms deadlines"
+  ],
+  "priorFailedRunsRetained": {
+    "663first": [
+      7596,
+      3
+    ],
+    "663unchangedRerun": [
+      7597,
+      2
+    ]
+  },
+  "missingHistoricalFile": "test/remote-agent/redaction.test.ts (10 unavailable tests; not skipped)",
+  "remoteWrites": "paused pending reply after cancellation",
+  "limitations": [
+    "Scheduler discovery/state admission and other DB calls remain synchronous",
+    "No Windows/24-hour/live deployment qualification",
+    "Original volume not recovered",
+    "Controlled deadline tests do not certify wall-clock performance"
+  ],
+  "files": {
+    "src/store/state-access-facade.ts": "5d8efa031311a725781c0ad653cb9955f76b140bbd90bba362d1f5ca9d7d6f36",
+    "src/store/completion-metadata.ts": "53e6ff8bc14f67fc0b532ae040f42edd7df857cc80138e9eaaa9c5d6c085ad46",
+    "src/runtime/completion/native-heads-worker.ts": "06bcde1bd74f971a82c81b111bb882e2116fababdf5757973140feefc53a2e46",
+    "src/runtime/completion/pipeline.ts": "06894e92a72c1d437b07ab394aee143daa19ba2e185a48831743660ede8cb953",
+    "src/runtime/completion/native-heads.ts": "518575533dba91710c384e0fc7fa00a830dafd0c3167e5a701a3186839e9c82c",
+    "test/runtime/native-completion-heads.test.ts": "1c20ff3c2196c9c27d97ec5b3c0758e8cb464fb4b43249467ea0892e1c857578",
+    "test/store/state-access-facade.test.ts": "9ffc00fe74c61991fd3624d641f75bc625e1cd93f287f161ae4900c183d29ad9",
+    "test/runtime/completion/pipeline.test.ts": "74ef0af60f2be9d179bde913a6fdf68a382b69f045180f34cd10e49da810a13f",
+    "test/runtime/action-executor/archive-action.test.ts": "7d3be3d733a5194554dd816134d4b1ce6dddf2751545c0d3775e57b8b30eadc1",
+    "test/runtime/action-executor/open-thread.test.ts": "8e75647411221e47f75b0c1e6b44f1d2b02720df70dfae1698610d0b2dc75171"
+  },
+  "evidence": {
+    ".runtime/completion-heads-664/full.log": "c659ad77a26405001531026386ad622b8c7cb30ebdb6e031ba1271c17179c451",
+    ".runtime/completion-heads-664/full-exit.json": "fd751d1e9af75b51861ccb76e758fd5ef82c2aaaceaec12d3e12999f282ee44f",
+    ".runtime/completion-heads-664/stage-inputs.json": "d5824e75d39977378db258c27d6c3e2e7c8691af6d9a8d5ecb53e92f3c5fee59",
+    ".runtime/completion-heads-664/REVIEW.md": "cff75a08137a4cd556e47ceb3563bbf92db182c5162d56201d6e56b1d91a2edf",
+    ".runtime/completion-heads-664/prior-full-results.json": "84921e835d4a159ebc57e44b33f5d43dc0b1e131a66da393cc9b7bf602e44b4e",
+    ".runtime/completion-heads-664/applied/applied-manifest.json": "a1ba7c26934032dad03b039b932b2ec9e48bc9501e202b2baade3dee6016dedd",
+    ".runtime/completion-heads-664/applied/source-test-identity.json": "05c4eb31cd301005d8c7ee314cfb2d6d36c18b66918a34d66ad9f57306dc390d",
+    ".runtime/completion-heads-664/applied/focused.log": "b842397420d66e4e5b564cfaa2a472e4e78606a9f7cea482e69334a5a93add31"
+  },
+  "at": "2026-10-11T22:19:47.506858+00:00"
+}

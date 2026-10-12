@@ -100,11 +100,15 @@ import * as DeadGeneration from "./dead-generation-admission.ts";
 import * as Preflight from "./queue-preflight-failure.ts";
 
 export const recordAsyncQuestionObservation: typeof QuestionObservation.recordAsyncQuestionObservation = QuestionObservation.recordAsyncQuestionObservation;
+export const recordAsyncQuestionObservationExisting: typeof QuestionObservation.recordAsyncQuestionObservationExisting = QuestionObservation.recordAsyncQuestionObservationExisting;
 export const reconcileAsyncQuestionObservations: typeof QuestionObservation.reconcileAsyncQuestionObservations = QuestionObservation.reconcileAsyncQuestionObservations;
+export const reconcileAsyncQuestionObservationsExisting: typeof QuestionObservation.reconcileAsyncQuestionObservationsExisting = QuestionObservation.reconcileAsyncQuestionObservationsExisting;
 export const observeAsyncQuestion: typeof QuestionObservation.observeAsyncQuestion = QuestionObservation.observeAsyncQuestion;
 export const retireOldAsyncQuestionOwner: typeof QuestionRetention.retireOldAsyncQuestionOwner = QuestionRetention.retireOldAsyncQuestionOwner;
+export const retireOldAsyncQuestionOwnerExisting: typeof QuestionRetention.retireOldAsyncQuestionOwnerExisting = QuestionRetention.retireOldAsyncQuestionOwnerExisting;
 export const supersedeAsyncQuestions: typeof QuestionRetention.supersedeAsyncQuestions = QuestionRetention.supersedeAsyncQuestions;
 export const compactTerminalAsyncQuestions: typeof QuestionRetention.compactTerminalAsyncQuestions = QuestionRetention.compactTerminalAsyncQuestions;
+export const compactTerminalAsyncQuestionsExisting: typeof QuestionRetention.compactTerminalAsyncQuestionsExisting = QuestionRetention.compactTerminalAsyncQuestionsExisting;
 export const getAsyncQuestion: typeof QuestionDelivery.getAsyncQuestion = QuestionDelivery.getAsyncQuestion;
 export const pendingAsyncQuestions: typeof QuestionDelivery.pendingAsyncQuestions = QuestionDelivery.pendingAsyncQuestions;
 export const confirmAsyncQuestionOwner: typeof QuestionDelivery.confirmAsyncQuestionOwner = QuestionDelivery.confirmAsyncQuestionOwner;
@@ -130,6 +134,7 @@ export const getMirrorOffset: typeof MirrorCursor.getMirrorOffset = MirrorCursor
 export const updateMirrorCursor: typeof MirrorCursor.updateMirrorCursor = MirrorCursor.updateMirrorCursor;
 export const getMirrorCursorTurn: typeof MirrorCursor.getMirrorCursorTurn = MirrorCursor.getMirrorCursorTurn;
 export const updateMirrorCursorWithTurn: typeof MirrorCursor.updateMirrorCursorWithTurn = MirrorCursor.updateMirrorCursorWithTurn;
+export const hasMirrorEventExisting: typeof MirrorEventRead.hasMirrorEventExisting = MirrorEventRead.hasMirrorEventExisting;
 export const hasMirrorEvent: typeof MirrorEventRead.hasMirrorEvent = MirrorEventRead.hasMirrorEvent;
 export const getIdleIntent: typeof IdleReleaseStore.getIdleIntent = IdleReleaseStore.getIdleIntent;
 export const pendingIdleIntents: typeof IdleReleaseStore.pendingIdleIntents = IdleReleaseStore.pendingIdleIntents;
@@ -210,7 +215,9 @@ export const pendingStartNotices: typeof StartNoticeOutbox.pendingStartNotices =
 export const completeStartNotice: typeof StartNoticeOutbox.completeStartNotice = StartNoticeOutbox.completeStartNotice;
 export const completionPage: typeof CompletionMetadata.completionPage = CompletionMetadata.completionPage;
 export const completionHeadsForTarget: typeof CompletionMetadata.completionHeadsForTarget = CompletionMetadata.completionHeadsForTarget;
+export const completionHeadsForTargetExisting: typeof CompletionMetadata.completionHeadsForTargetExisting = CompletionMetadata.completionHeadsForTargetExisting;
 export const readCompletionMetadataRound: typeof CompletionRound.readCompletionMetadataRound = CompletionRound.readCompletionMetadataRound;
+export const loadCompletionPayloadExisting: typeof CompletionPayload.loadCompletionPayloadExisting = CompletionPayload.loadCompletionPayloadExisting;
 export const loadCompletionPayload: typeof CompletionPayload.loadCompletionPayload = CompletionPayload.loadCompletionPayload;
 export const finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight = DeliveryPreflight.finalDeliveryPreflight;
 export const pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply = DeliveryPreflight.pendingFirstReply;
@@ -240,9 +247,12 @@ export const captureTerminalHistorySnapshot: typeof AsyncHistory.captureTerminal
 export const settleTerminalHistory: typeof AsyncHistory.settleTerminalHistory = AsyncHistory.settleTerminalHistory;
 
 export const recordObservedFinalAnswer: typeof ObservedFinalAnswer.recordObservedFinalAnswer = ObservedFinalAnswer.recordObservedFinalAnswer;
+export const getObservedFinalAnswerExisting: typeof ObservedFinalAnswer.getObservedFinalAnswerExisting = ObservedFinalAnswer.getObservedFinalAnswerExisting;
 export const getObservedFinalAnswer: typeof ObservedFinalAnswer.getObservedFinalAnswer = ObservedFinalAnswer.getObservedFinalAnswer;
 export const hasObservedCompletionResidentEvidence: typeof ObservedCompletion.hasObservedCompletionResidentEvidence = ObservedCompletion.hasObservedCompletionResidentEvidence;
+export const hasObservedCompletionResidentEvidenceExisting: typeof ObservedCompletion.hasObservedCompletionResidentEvidenceExisting = ObservedCompletion.hasObservedCompletionResidentEvidenceExisting;
 export const pendingObservedCompletions: typeof ObservedCompletion.pendingObservedCompletions = ObservedCompletion.pendingObservedCompletions;
+export const pendingObservedCompletionsExisting: typeof ObservedCompletion.pendingObservedCompletionsExisting = ObservedCompletion.pendingObservedCompletionsExisting;
 export const hasObservedCompletion: typeof ObservedCompletion.hasObservedCompletion = ObservedCompletion.hasObservedCompletion;
 export const recordObservedCompletionError: typeof ObservedCompletion.recordObservedCompletionError = ObservedCompletion.recordObservedCompletionError;
 export const finishObservedCompletion: typeof ObservedCompletion.finishObservedCompletion = ObservedCompletion.finishObservedCompletion;
@@ -431,6 +441,7 @@ export interface IStateAccessFacade {
   readonly updateMirrorCursor: typeof MirrorCursor.updateMirrorCursor;
   readonly getMirrorCursorTurn: typeof MirrorCursor.getMirrorCursorTurn;
   readonly updateMirrorCursorWithTurn: typeof MirrorCursor.updateMirrorCursorWithTurn;
+  readonly hasMirrorEventExisting: typeof MirrorEventRead.hasMirrorEventExisting;
   readonly hasMirrorEvent: typeof MirrorEventRead.hasMirrorEvent;
   readonly listFilteredExisting: typeof QueueRead.listFilteredExisting;
   readonly beginAsyncQuestionDispatch: typeof QuestionDispatch.beginAsyncQuestionDispatch;
@@ -446,11 +457,15 @@ export interface IStateAccessFacade {
   readonly bindAsyncQuestionReceipt: typeof QuestionDelivery.bindAsyncQuestionReceipt;
 
   readonly retireOldAsyncQuestionOwner: typeof QuestionRetention.retireOldAsyncQuestionOwner;
+  readonly retireOldAsyncQuestionOwnerExisting: typeof QuestionRetention.retireOldAsyncQuestionOwnerExisting;
   readonly supersedeAsyncQuestions: typeof QuestionRetention.supersedeAsyncQuestions;
   readonly compactTerminalAsyncQuestions: typeof QuestionRetention.compactTerminalAsyncQuestions;
+  readonly compactTerminalAsyncQuestionsExisting: typeof QuestionRetention.compactTerminalAsyncQuestionsExisting;
 
   readonly recordAsyncQuestionObservation: typeof QuestionObservation.recordAsyncQuestionObservation;
+  readonly recordAsyncQuestionObservationExisting: typeof QuestionObservation.recordAsyncQuestionObservationExisting;
   readonly reconcileAsyncQuestionObservations: typeof QuestionObservation.reconcileAsyncQuestionObservations;
+  readonly reconcileAsyncQuestionObservationsExisting: typeof QuestionObservation.reconcileAsyncQuestionObservationsExisting;
   readonly observeAsyncQuestion: typeof QuestionObservation.observeAsyncQuestion;
 
   readonly getIdleIntent: typeof IdleReleaseStore.getIdleIntent;
@@ -478,7 +493,9 @@ export interface IStateAccessFacade {
   readonly completeStartNotice: typeof StartNoticeOutbox.completeStartNotice;
   readonly completionPage: typeof CompletionMetadata.completionPage;
   readonly completionHeadsForTarget: typeof CompletionMetadata.completionHeadsForTarget;
+  readonly completionHeadsForTargetExisting: typeof CompletionMetadata.completionHeadsForTargetExisting;
   readonly readCompletionMetadataRound: typeof CompletionRound.readCompletionMetadataRound;
+  readonly loadCompletionPayloadExisting: typeof CompletionPayload.loadCompletionPayloadExisting;
   readonly loadCompletionPayload: typeof CompletionPayload.loadCompletionPayload;
   readonly finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight;
   readonly pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply;
@@ -590,9 +607,12 @@ export interface IStateAccessFacade {
   readonly captureTerminalHistorySnapshot: typeof AsyncHistory.captureTerminalHistorySnapshot;
   readonly settleTerminalHistory: typeof AsyncHistory.settleTerminalHistory;
   readonly recordObservedFinalAnswer: typeof ObservedFinalAnswer.recordObservedFinalAnswer;
+  readonly getObservedFinalAnswerExisting: typeof ObservedFinalAnswer.getObservedFinalAnswerExisting;
   readonly getObservedFinalAnswer: typeof ObservedFinalAnswer.getObservedFinalAnswer;
   readonly hasObservedCompletionResidentEvidence: typeof ObservedCompletion.hasObservedCompletionResidentEvidence;
+  readonly hasObservedCompletionResidentEvidenceExisting: typeof ObservedCompletion.hasObservedCompletionResidentEvidenceExisting;
   readonly pendingObservedCompletions: typeof ObservedCompletion.pendingObservedCompletions;
+  readonly pendingObservedCompletionsExisting: typeof ObservedCompletion.pendingObservedCompletionsExisting;
   readonly hasObservedCompletion: typeof ObservedCompletion.hasObservedCompletion;
   readonly recordObservedCompletionError: typeof ObservedCompletion.recordObservedCompletionError;
   readonly finishObservedCompletion: typeof ObservedCompletion.finishObservedCompletion;
@@ -714,6 +734,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   updateMirrorCursor,
   getMirrorCursorTurn,
   updateMirrorCursorWithTurn,
+  hasMirrorEventExisting,
   hasMirrorEvent,
   listFilteredExisting,
   beginAsyncQuestionDispatch,
@@ -729,11 +750,15 @@ export const StateAccessFacade: IStateAccessFacade = {
   bindAsyncQuestionReceipt,
 
   retireOldAsyncQuestionOwner,
+  retireOldAsyncQuestionOwnerExisting,
   supersedeAsyncQuestions,
   compactTerminalAsyncQuestions,
+  compactTerminalAsyncQuestionsExisting,
 
   recordAsyncQuestionObservation,
+  recordAsyncQuestionObservationExisting,
   reconcileAsyncQuestionObservations,
+  reconcileAsyncQuestionObservationsExisting,
   observeAsyncQuestion,
 
   getIdleIntent,
@@ -821,7 +846,9 @@ export const StateAccessFacade: IStateAccessFacade = {
   completeStartNotice,
   completionPage,
   completionHeadsForTarget,
+  completionHeadsForTargetExisting,
   readCompletionMetadataRound,
+  loadCompletionPayloadExisting,
   loadCompletionPayload,
   finalDeliveryPreflight,
   pendingFirstReply,
@@ -868,9 +895,12 @@ export const StateAccessFacade: IStateAccessFacade = {
   captureTerminalHistorySnapshot,
   settleTerminalHistory,
   recordObservedFinalAnswer,
+  getObservedFinalAnswerExisting,
   getObservedFinalAnswer,
   hasObservedCompletionResidentEvidence,
+  hasObservedCompletionResidentEvidenceExisting,
   pendingObservedCompletions,
+  pendingObservedCompletionsExisting,
   hasObservedCompletion,
   recordObservedCompletionError,
   finishObservedCompletion,

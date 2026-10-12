@@ -5,6 +5,8 @@ const port=parentPort;if(port===null)throw new Error('Observation ledger require
 try{
  let value:unknown=null;
  switch(q.operation){
+  case 'prepareQuestions':state.retireOldAsyncQuestionOwnerExisting(q.path,q.runtime,q.generation);state.reconcileAsyncQuestionObservationsExisting(q.path,q.runtime,q.generation);state.compactTerminalAsyncQuestionsExisting(q.path,Date.now()/1000);break;
+  case 'questions':for(const record of q.records)state.recordAsyncQuestionObservationExisting(q.path,record);state.reconcileAsyncQuestionObservationsExisting(q.path,q.runtime,q.generation);break;
   case 'terminal':value=state.recordObservedCompletionForResidentExisting(q.path,q.thread,q.turn,q.generation,q.payload,q.resident);break;
   case 'final':value=state.recordObservedFinalAnswerExisting(q.path,q.thread,q.turn,q.generation,q.content);break;
   case 'activate':state.activateObservationExisting(q.path,q.scope);break;

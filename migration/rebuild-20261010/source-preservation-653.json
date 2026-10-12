@@ -1,0 +1,27 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 653,
+  "localCommit": "b239849c46a15e6988432f9c037f719e1f56f29b",
+  "fullTests": 7561,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/app-server/maintenance-transport.ts": "339a7f9b9e27e6c49ce3052b59e87cf97d8a037c18a2bb9fcad49ba2d9cb916c",
+    "src/app-server/portable-resident-lifecycle.ts": "696c72bc107ecfacd2423cc5cddde8fb9fb84f6b26d22d521958e8cdc6a1130d",
+    "src/app-server/resident-native-observation.ts": "1acadfee546f105e0428a942beaeb5c67def1e480f2c20c35c9fb336ed9a208f",
+    "src/runtime/completion/source-reconciler.ts": "3077f79446f17c2246cd3112b36d5690eb82773aabf82614abd36f562619d95e",
+    "src/runtime/discord-runtime/resident-startup.ts": "9b67b28de3f3b55d5922ef0d2150d423aaf8cb25d04979fc9f0be58754fe4416",
+    "test/app-server/resident-native-observation.test.ts": "4e76289f99e7b1aad4f4306bd775e4449c6211992e1d735b49bd4d1cc787a607",
+    "test/runtime/completion-source-reconciler.test.ts": "36520b9551efab6d0f4adee5d20f42ba1ed4ee26cc34abd369869d9f0ca3d855",
+    "test/runtime/discord-runtime/startup-native-observation.test.ts": "8470c1bbc6b364ef5590d501da1ecab4049c096d12cee719a6e32043e09d9919"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

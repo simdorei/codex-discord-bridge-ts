@@ -1,3 +1,6 @@
+import {NativeCompletionOwnerReader} from "../../src/runtime/completion/native-owner-read.ts";
+import {NativeObservedPayloadReader} from "../../src/runtime/completion/native-observed-payload.ts";
+import {openInitialized} from "../../src/store/owned-driver.ts";
 import assert from "node:assert/strict";
 import {test} from "node:test";
 import {storeFixture} from "../helpers/store-fixture.ts";
@@ -20,11 +23,11 @@ const event=(method:string,params:unknown,generation=1n):ResidentNotificationEve
 const terminal=(status='completed')=>event('turn/completed',{threadId:'target',turn:{id:'turn',status,error:status==='failed'?{message:'failure detail'}:null}});
 const history=(text='exact')=>({thread:{id:'target',turns:[{id:'turn',status:'completed',items:[{type:'agentMessage',phase:'final_answer',text}]}]}});
 async function seed(path:string){await state.enqueue(path,queueJob({ownerUserId:2n}));const c=(await state.tryBeginAttempt(path,'saved',[],1n))!;return (await state.markRunningIfClaimed(path,c,'turn'))!;}
-function setup(path:string,options:{goal?:string|null;read?:()=>Promise<unknown>;gate?:AdmissionGate}={}){
+function setup(path:string,options:{nativeOwners?:NativeCompletionOwnerReader;nativeObserved?:NativeObservedPayloadReader;goal?:string|null;read?:()=>Promise<unknown>;gate?:AdmissionGate}={}){
  const requests:AppRequest[]=[];let notices=0,starts=0;let active:string|null=null;
  const server={instanceId:OWNER,generation:()=>1n,activeTurnId:()=>active,execute:async(request:AppRequest)=>{requests.push(request);if(request.method==='thread/goal/get')return {goal:options.goal==null?null:{threadId:'target',status:options.goal}};return options.read?options.read():history();}};
  const backend:QueueStartBackend={generation:()=>1n,residentInstanceId:()=>OWNER,activeTurnId:async()=>server.activeTurnId(),resumeThread:async()=>{},readTurns:async()=>[{turnId:'turn',status:'Completed'}],startClaimedTurn:async()=>{starts++;return 'unexpected-next';}};
- const queue=new QueueStartCoordinator(path,backend,{...(options.gate===undefined?{}:{admission:options.gate}),notifyDeliveryReady:()=>{notices++;}}),handler=new StagedCompletionHandler(server,queue,{commentaryEnabled:true,historyReadTimeoutMs:47123,render:()=> 'safe state failure',sleep:async()=>{}});
+ const queue=new QueueStartCoordinator(path,backend,{...(options.gate===undefined?{}:{admission:options.gate}),notifyDeliveryReady:()=>{notices++;}}),handler=new StagedCompletionHandler(server,queue,{commentaryEnabled:true,historyReadTimeoutMs:47123,render:()=> 'safe state failure',sleep:async()=>{},...(options.nativeOwners===undefined?{}:{nativeOwners:options.nativeOwners}),...(options.nativeObserved===undefined?{}:{nativeObserved:options.nativeObserved})});
  return {server,queue,handler,requests,notices:()=>notices,starts:()=>starts,setActive:(v:string|null)=>{active=v;}};
 }
 async function handle(path:string,f:ReturnType<typeof setup>,input:ResidentNotificationEvent){const budget=new CompletionEventBudget(),live=budget.chargeOwned(input)!;assert.ok(live);const admitted=prepareCompletionState(path,f.queue.locks,{kind:'Live',live})!;try{await f.handler.handleLive(input,admitted.permit);}finally{admitted.release();live.dispose();}}
@@ -70,4 +73,23 @@ test("actual VM helper source events reach staged Final storage under the same t
   const a=owner.admitRequest();try{await a.client.requestAdmitted(a.permit,'read',{},2000,undefined,t.signal);}finally{a.release();}await intake.scanOnce();for(;;){const live=intake.queue.take();if(!live)break;const admitted=prepareCompletionState(path,queue.locks,{kind:'Live',live})!;try{await handler.handleLive(live.payload,admitted.permit,t.signal);}finally{admitted.release();live.dispose();}}
   assert.equal((await state.listPendingDeliveries(path))[0]!.content,'Final\nnative final');assert.equal((await state.listFiltered(path,'target',null)).length,0);assert.equal(queue.locks.activeTargetCount,0);
  }finally{intake?.close();await owner.dispose();}
+}));
+
+test("native durable Observed replay retains final authorization and cannot mint resident terminal evidence",async()=>storeFixture(async path=>{
+ await seed(path);await usingInitializedStore(path,db=>{db.prepare("INSERT INTO codex_observed_completions(thread_id,turn_id,generation,payload) VALUES('target','turn',1,?)").run(JSON.stringify({threadId:'target',turn:{id:'turn',status:'completed'}}));});
+ const reader=new NativeObservedPayloadReader(path),f=setup(path,{nativeObserved:reader});try{await durable(path,f,'Observed');assert.equal((await state.listPendingDeliveries(path))[0]!.content,'Final\nexact');assert.equal(f.starts(),0);assert.equal(reader.active,0);await usingInitializedStore(path,db=>assert.equal(db.prepare('SELECT count(*) AS n FROM cdr_idle_release').get()!.n,0));}finally{await reader.close();}
+}));
+test("native durable malformed JSON retains the same diagnostic and saved original body",async()=>storeFixture(async path=>{
+ await seed(path);await usingInitializedStore(path,db=>db.exec("INSERT INTO codex_observed_completions(thread_id,turn_id,generation,payload) VALUES('target','turn',1,'bad json')"));const reader=new NativeObservedPayloadReader(path),f=setup(path,{nativeObserved:reader});try{await assert.rejects(durable(path,f,'Observed'),SyntaxError);await usingInitializedStore(path,db=>{const row=db.prepare('SELECT payload,last_error FROM codex_observed_completions').get()!;assert.equal(row.payload,'bad json');assert.equal(row.last_error,'safe state failure');});}finally{await reader.close();}
+}));
+test("native Observed cancellation holds the original target lease through actual read exit without diagnostic or delivery writes",async()=>storeFixture(async path=>{
+ await seed(path);await usingInitializedStore(path,db=>db.exec("INSERT INTO codex_observed_completions(thread_id,turn_id,generation,payload) VALUES('target','turn',1,'bad json')"));const reader=new NativeObservedPayloadReader(path),f=setup(path,{nativeObserved:reader}),item=await entry(path,'Observed'),admitted=prepareCompletionState(path,f.queue.locks,{kind:'Durable',entry:item})!,db=await openInitialized(path),c=new AbortController(),reason=new Error('cancel original durable read');let pending:Promise<void>|undefined;
+ try{db.exec('PRAGMA journal_mode=DELETE;BEGIN EXCLUSIVE');pending=f.handler.handleDurable(item,admitted.permit,c.signal);const rejected=assert.rejects(pending,e=>e===reason);await new Promise(r=>setTimeout(r,40));assert.equal(reader.active,1);c.abort(reason);let closed=false;const closing=reader.close().then(()=>{closed=true;});await new Promise(r=>setTimeout(r,40));assert.equal(closed,false);assert.equal(f.queue.locks.tryAcquire('target'),undefined);assert.equal(reader.active,1);db.exec('ROLLBACK');await rejected;await closing;assert.equal(f.requests.length,0);assert.equal(db.prepare('SELECT last_error FROM codex_observed_completions').get()!.last_error,'');assert.equal(db.prepare('SELECT count(*) n FROM codex_delivery_outbox').get()!.n,0);assert.equal(f.queue.locks.activeTargetCount,1);admitted.release();assert.equal(f.queue.locks.activeTargetCount,0);}finally{if(db.isTransaction)db.exec('ROLLBACK');if(pending)await Promise.allSettled([pending]);admitted.release();await reader.close();db.close();}
+}));
+
+test("native finalization exact-owner reread stages Interrupted without history or inline send",async()=>storeFixture(async path=>{
+ await seed(path);const reader=new NativeCompletionOwnerReader(path),f=setup(path,{nativeOwners:reader});try{await handle(path,f,terminal('interrupted'));assert.match((await state.listPendingDeliveries(path))[0]!.content,/^Interrupted\n/);assert.equal(f.requests.length,0);assert.equal(f.starts(),0);assert.equal(reader.active,0);assert.equal(f.queue.locks.activeTargetCount,0);}finally{await reader.close();}
+}));
+test("native finalization refuses owner drift against the same captured admission",async()=>storeFixture(async path=>{
+ await seed(path);const reader=new NativeCompletionOwnerReader(path),f=setup(path,{nativeOwners:reader}),input=terminal('interrupted'),live=new CompletionEventBudget().chargeOwned(input)!,admitted=prepareCompletionState(path,f.queue.locks,{kind:'Live',live})!;try{await usingInitializedStore(path,db=>db.exec("UPDATE codex_turn_queue SET prompt='different original owner'"));await assert.rejects(f.handler.handleLive(input,admitted.permit),/admission owner changed/);assert.equal((await state.listPendingDeliveries(path)).length,0);assert.equal(f.requests.length,0);assert.equal(await state.hasObservedCompletion(path,'target','turn'),true);}finally{admitted.release();live.dispose();await reader.close();}
 }));

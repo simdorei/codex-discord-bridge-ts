@@ -1,3 +1,4 @@
+import type {NativeHttpPayloadReader} from "../native-http-payload.ts";
 import {StateAccessFacade as state} from "../../../store/state-access-facade.ts";
 import type {CompletionEntry} from "../../../store/completion-metadata.ts";
 import type {StoredAsyncQuestion} from "../../../store/async-question-read.ts";
@@ -13,10 +14,10 @@ export interface CompletionResidentIdentity{instanceId():string;generation():big
 export interface CheckedQuestionDelivery{deliverChecked(path:string,currentGeneration:bigint,transport:DiscordReceiptTransport,question:StoredAsyncQuestion):Promise<void>}
 /** Called by a separately channel-serialized HTTP lane. Loading is revalidated metadata,
  * not send authority; each branch retains its own writer/preflight and receipt guards. */
-export async function deliverCompletionEntry(path:string,input:CompletionEntry,resident:CompletionResidentIdentity,options:FinalDeliveryOptions,questions:CheckedQuestionDelivery):Promise<void>{
+export async function deliverCompletionEntry(path:string,input:CompletionEntry,resident:CompletionResidentIdentity,options:FinalDeliveryOptions,questions:CheckedQuestionDelivery,native?:Pick<NativeHttpPayloadReader,'read'>,signal?:AbortSignal):Promise<void>{
   const fixed:FinalDeliveryOptions={transport:options.transport,failures:options.failures,now:options.now},checked=questions.deliverChecked.bind(questions);
   const runtime=resident.instanceId(),generation=resident.generation();if(typeof generation!=="bigint"||generation<0n||generation>=(1n<<63n))throw new QueueIntegerRangeError();
-  const payload=await state.loadCompletionPayload(path,input,runtime,generation);if(payload===null)return;
+  signal?.throwIfAborted();const payload=await (native===undefined?state.loadCompletionPayload(path,input,runtime,generation):native.read(input,runtime,generation,signal));signal?.throwIfAborted();if(payload===null)return;
   switch(payload.kind){
     case "Commentary":await deliverCommentary(path,payload.value,fixed.transport);return;
     case "Goal":await deliverGoalProgress(path,payload.value,fixed.transport,fixed.failures);return;

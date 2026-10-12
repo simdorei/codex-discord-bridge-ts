@@ -73,9 +73,7 @@ import { decodeI64, decodeTextField, textDecoderFor } from "./sqlite-values.ts";
 import { retainAsyncTerminalJournalIn } from "./async-resolution-terminal.ts";
 import { takeUnicodeScalarChars } from "./queue-preflight-failure.ts";
 export interface ObservedCompletion {threadId:string;turnId:string;generation:bigint;payload:string}
-export async function pendingObservedCompletions(path:string):Promise<ObservedCompletion[]> {
-  const db=await openInitialized(path);
-  try {
+function pendingObservedCompletionsIn(db:DatabaseSync):ObservedCompletion[]{
     const stmt=db.prepare(`SELECT thread_id,turn_id,generation,payload,CAST(thread_id AS BLOB) AS thread_raw,
       CAST(turn_id AS BLOB) AS turn_raw,CAST(payload AS BLOB) AS payload_raw,
       (SELECT encoding FROM pragma_encoding) AS encoding FROM codex_observed_completions ORDER BY rowid`);
@@ -87,7 +85,13 @@ export async function pendingObservedCompletions(path:string):Promise<ObservedCo
         generation:decodeI64(row.generation,"generation"),payload:decodeTextField(row.payload,row.payload_raw,"payload",false,decoder)!});
     }
     return result;
-  } finally {db.close();}
+}
+export async function pendingObservedCompletions(path:string):Promise<ObservedCompletion[]>{
+ const db=await openInitialized(path);try{return pendingObservedCompletionsIn(db);}finally{db.close();}
+}
+/** Existing-only profile; same full ordered decoder, no initialization or filtering. */
+export function pendingObservedCompletionsExisting(path:string):ObservedCompletion[]{
+ const db=openExisting(path);try{return pendingObservedCompletionsIn(db);}finally{db.close();}
 }
 export async function hasObservedCompletion(path:string,thread:string,turn:string):Promise<boolean> {
   const db=await openInitialized(path);
@@ -109,13 +113,19 @@ export async function finishObservedCompletion(path:string,thread:string,turn:st
   finally{write.close();}
 }
 
-import {usingInitializedStore} from "./owned-scope.ts";
+import {usingInitializedStore,usingExistingStore} from "./owned-scope.ts";
 import {I64_MIN,I64_MAX} from "../protocol/ids.ts";
 /** Equal numeric generations in different resident lifetimes do not grant release. */
-export function hasObservedCompletionResidentEvidence(path:string,thread:string,turn:string,generation:bigint,resident:string):Promise<boolean>{
+function residentEvidenceIdentity(thread:string,turn:string,generation:bigint,resident:string):void{
   for(const value of [thread,turn,resident])if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed resident evidence identity");
   if(typeof generation!=="bigint"||generation<I64_MIN||generation>I64_MAX)throw new RangeError("Expected i64 evidence generation");
-  return usingInitializedStore(path,db=>{const q=db.prepare("SELECT EXISTS(SELECT 1 FROM codex_observed_completions WHERE thread_id=?1 AND turn_id=?2 AND generation=?3 AND resident_owner=?4) AS present");q.setReadBigInts(true);return decodeI64(q.get(thread,turn,generation,resident)?.present,"present")!==0n;});
+}
+function residentEvidenceIn(db:DatabaseSync,thread:string,turn:string,generation:bigint,resident:string):boolean{const q=db.prepare("SELECT EXISTS(SELECT 1 FROM codex_observed_completions WHERE thread_id=?1 AND turn_id=?2 AND generation=?3 AND resident_owner=?4) AS present");q.setReadBigInts(true);return decodeI64(q.get(thread,turn,generation,resident)?.present,"present")!==0n;}
+export function hasObservedCompletionResidentEvidence(path:string,thread:string,turn:string,generation:bigint,resident:string):Promise<boolean>{
+ residentEvidenceIdentity(thread,turn,generation,resident);return usingInitializedStore(path,db=>residentEvidenceIn(db,thread,turn,generation,resident));
+}
+export function hasObservedCompletionResidentEvidenceExisting(path:string,thread:string,turn:string,generation:bigint,resident:string):boolean{
+ residentEvidenceIdentity(thread,turn,generation,resident);return usingExistingStore(path,db=>residentEvidenceIn(db,thread,turn,generation,resident));
 }
 
 /** Existing borrowed read only; source query and strict scalar decoder. */

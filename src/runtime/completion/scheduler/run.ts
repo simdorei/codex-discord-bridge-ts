@@ -27,7 +27,7 @@ export class CompletionScheduler<P>{
  readonly #path:string;readonly #ports:CompletionSchedulerPorts<P>;readonly #ready=new CompletionReady<CompletionNotification>();readonly #execution:CompletionExecution<P>;readonly #wake=new Wake();readonly #discovery:CompletionDiscovery;readonly #now:()=>number;readonly #input:ReadyLive<CompletionNotification>[]=[];
  #inputFinished=false;#closed=false;#used=false;
  constructor(path:string,ports:CompletionSchedulerPorts<P>,options:{discovery?:CompletionDiscovery;now?:()=>number}={}){
-  this.#path=path;this.#ports={prepare:ports.prepare.bind(ports),state:ports.state.bind(ports),http:ports.http.bind(ports),prepareFailed:ports.prepareFailed.bind(ports),instanceId:ports.instanceId.bind(ports),generation:ports.generation.bind(ports),freshHeads:ports.freshHeads.bind(ports),maintain:ports.maintain.bind(ports),report:ports.report.bind(ports),gap:ports.gap.bind(ports)};this.#now=options.now??(()=>performance.now());this.#discovery=options.discovery??new CompletionDiscovery(undefined,this.#now);this.#execution=new CompletionExecution(this.#ready,this.#ports,()=>this.#wake.notify());
+  this.#path=path;this.#ports={...(ports.prepareOwned===undefined?{}:{prepareOwned:ports.prepareOwned.bind(ports)}),prepare:ports.prepare.bind(ports),state:ports.state.bind(ports),http:ports.http.bind(ports),prepareFailed:ports.prepareFailed.bind(ports),instanceId:ports.instanceId.bind(ports),generation:ports.generation.bind(ports),freshHeads:ports.freshHeads.bind(ports),maintain:ports.maintain.bind(ports),report:ports.report.bind(ports),gap:ports.gap.bind(ports)};this.#now=options.now??(()=>performance.now());this.#discovery=options.discovery??new CompletionDiscovery(undefined,this.#now);this.#execution=new CompletionExecution(this.#ready,this.#ports,()=>this.#wake.notify());
  }
  #report(error:unknown):void{invokeSynchronousVoid(this.#ports.report,this.#ports,[error]);}
  #gap(error:unknown):void{invokeSynchronousVoid(this.#ports.gap,this.#ports,[error]);this.#report(error);}
@@ -48,6 +48,15 @@ export class CompletionScheduler<P>{
    for(const report of reports){if(!report.ok)this.#gap(report.error);else if(report.metadata!==null){if(report.metadata.oversizedIdentity)this.#gap(new Error(`completion metadata identity over budget: ${report.source}`));if(report.metadata.heldReceiptHeads>0n)this.#report(new Error(`completion receipt heads retained: ${report.source} count=${report.metadata.heldReceiptHeads}; no retry scheduled`));}}
   }catch(error){this.#gap(error);}
  }
+ async #discoverNative(signal:AbortSignal):Promise<void>{
+  try{
+   const generation=this.#ports.generation();if(typeof generation!=="bigint"||generation<0n||generation>=(1n<<63n))throw new RangeError("Completion generation outside i64");
+   const reports=await this.#discovery.readAsync(this.#ports.instanceId(),generation,this.#ready,this.#execution.activeTargets(),signal);
+   // No further await before exact newly appended orphan sidecars are removed.
+   const negatives=reports.flatMap(r=>r.ok&&r.metadata!==null?r.metadata.deferred:[]);this.#ready.discardOrphanHints(negatives);
+   for(const report of reports){if(!report.ok)this.#gap(report.error);else if(report.metadata!==null){if(report.metadata.oversizedIdentity)this.#gap(new Error(`completion metadata identity over budget: ${report.source}`));if(report.metadata.heldReceiptHeads>0n)this.#report(new Error(`completion receipt heads retained: ${report.source} count=${report.metadata.heldReceiptHeads}; no retry scheduled`));}}
+  }catch(error){if(!signal.aborted||error!==signal.reason)this.#gap(error);}
+ }
  async #harvest():Promise<void>{
   for(const result of this.#execution.takeSettled()){
    if(!result.outcome.ok){this.#report(result.outcome.error);continue;}
@@ -65,8 +74,9 @@ export class CompletionScheduler<P>{
     for(let i=0;i<128;i++){const event=this.#input.shift();if(event===undefined)break;if(!this.#ready.live(event))this.#gap(new Error("completion ready capacity gap; durable evidence retained"));}
     await this.#harvest();if(signal.aborted)break;
     if(maintenance!==null&&maintenance.result!==null){if(!maintenance.result.ok)this.#report(maintenance.result.error);maintenance=null;}
-    if(discover){this.#discover();discover=false;}
-    this.#execution.launch();
+    if(discover){if(this.#discovery.isNative)await this.#discoverNative(signal);else this.#discover();discover=false;}
+    if(signal.aborted)break;
+    if(this.#ports.prepareOwned===undefined)this.#execution.launch();else await this.#execution.launchOwned(signal);
     if(maintenance===null&&now>=maintenanceDue){const task:{promise:Promise<void>;result:{ok:true}|{ok:false;error:unknown}|null}={promise:Promise.resolve(),result:null};task.promise=Promise.resolve().then(async()=>{try{cancel.signal.throwIfAborted();await this.#ports.maintain(cancel.signal);task.result={ok:true};}catch(error){task.result={ok:false,error};}this.#wake.notify();});maintenance=task;maintenanceDue=now+30000;}
     if(this.#inputFinished&&this.#input.length===0&&this.#ready.length===0&&this.#execution.stateCount===0&&this.#execution.httpCount===0&&maintenance===null&&this.#discovery.drained)break;
     tick??=ticks.wait().then(()=>'tick' as const);wake??=this.#wake.wait().then(()=>'wake' as const);const selected=await Promise.race([tick,wake,stopped]);if(selected==='stop')break;if(selected==='tick'){tick=undefined;discover=true;}else wake=undefined;

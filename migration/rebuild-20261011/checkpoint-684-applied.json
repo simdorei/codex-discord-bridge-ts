@@ -1,0 +1,135 @@
+{
+  "beforeHead": "4af16c9a3d282230a0681b4c229aff5b883a7a6d",
+  "stageFileCount": 1527,
+  "scope": [
+    {
+      "path": "src/runtime/completion/idle-release.ts",
+      "sha256": "e7b8741bce8b6b3cdaea0e196de09a5d5fb87a69996a5cc37568afdc08aaa30c",
+      "beforeSha256": "0e1c8805567f642c53c82109be62a624148b4e73a433ef5717b8d5693214f770"
+    },
+    {
+      "path": "src/runtime/completion/native-idle-inventory-worker.ts",
+      "sha256": "23f71e33321be6ab80e8af57186c24b3f0e080c94507178ade7519855cb4206f",
+      "beforeSha256": null
+    },
+    {
+      "path": "src/runtime/completion/native-idle-inventory.ts",
+      "sha256": "1ff809dca9dce86cf54b149c04b60d67e2c26288863db7851ee71eec01b38d82",
+      "beforeSha256": null
+    },
+    {
+      "path": "src/runtime/completion/native-typing.ts",
+      "sha256": "ea71fa36ed98bb262b3f6aeac61f41d625e3c1d382eae8a09cf32c33b48951e3",
+      "beforeSha256": "0e32adba1fd629f36acb2e3318540a2d4d1f5f4389f3f1ff7b46aa1b33c31d86"
+    },
+    {
+      "path": "src/runtime/completion/pipeline.ts",
+      "sha256": "f3b9b4e2a65d3d302f29fddab284c56acee3b18abbc2f03214be7f89fe2317cf",
+      "beforeSha256": "8f18760fbf833de8127f426a2bd16466eb8e8830bad5f3f493cf0328ed08f6f5"
+    },
+    {
+      "path": "src/runtime/owned-worker-slot.ts",
+      "sha256": "8847bd560e98c757fe1f0048c19318795c86a9af881177a4131b06fba0c1ab0e",
+      "beforeSha256": "f43b92676f31916b28bde5d8e7f5725436a53225ffddc50189d63f8d1fd5cec6"
+    },
+    {
+      "path": "test/remote-agent/native-decode.test.ts",
+      "sha256": "b2f192b9740f7e1db8348299b5e8b4e12d685746858f45d58a91ff05a25942f5",
+      "beforeSha256": "1c3d5c5cafe4503d0277b72e99ce48f033558548483e96ffc170994ec2576655"
+    },
+    {
+      "path": "test/runtime/discovery-worker-lane.test.ts",
+      "sha256": "5a01c751a5335aa1a861482ea9cc1f33e739e3e124d9ef0f516a9f94fb94c0fc",
+      "beforeSha256": "3b7cfc3208658867d2596ef36afdbc3415e069d9a5eb6274bac56f4fc66e16b0"
+    },
+    {
+      "path": "test/runtime/maintenance-read-lane.test.ts",
+      "sha256": "833f8b9fc408a3c39097b01ed4a77ae667afabedfcabf0197d746f1105ef7ae3",
+      "beforeSha256": null
+    },
+    {
+      "path": "test/runtime/native-completion-history.test.ts",
+      "sha256": "be7a2cf5f2b1d12472d26ba62988161c3b0fbf35953c85c41f9ca0350b235649",
+      "beforeSha256": "c681c939dc5c1c1fe519cd29a7482974aa8b1822efa5dc79b0a373b5fe21ecb6"
+    },
+    {
+      "path": "test/runtime/native-completion-owner-read.test.ts",
+      "sha256": "09c735b4c602b4b9fbac59cd76e3cf8ebda0c811ca104ab6f0d08cff1bd5e080",
+      "beforeSha256": "7c5fdf108a301c0886df593efdcbe6de7e58d1643ea1178654fb0636a787650e"
+    },
+    {
+      "path": "test/runtime/native-http-payload.test.ts",
+      "sha256": "22b81033e76a4191064b462cb32c7574fcea2d234e264b5bd20faffaf1149062",
+      "beforeSha256": "b4b003b6a94b7d23807967e2772e6d811d7002ad02827fdad1efdec8f7544fce"
+    },
+    {
+      "path": "test/runtime/native-idle-inventory-boundary.test.ts",
+      "sha256": "0df01588aed406764d911037d9490ea022e59bd5a585ca6c56f09a226170611d",
+      "beforeSha256": null
+    },
+    {
+      "path": "test/runtime/native-idle-inventory.test.ts",
+      "sha256": "bfd1010bcd2aff3db1867e3822f1fb4280b13e131941f0ec95ca15ebb7689c04",
+      "beforeSha256": null
+    },
+    {
+      "path": "test/runtime/native-observed-payload.test.ts",
+      "sha256": "08c74ee3dc48d8400aecbb15e2d2c59a573cd519a76edae50330320b438d53b5",
+      "beforeSha256": "558fe9af37a5b67872543c3a765fcdb22f7ade003a7a2021133fb533b0eb5368"
+    },
+    {
+      "path": "test/runtime/native-typing-boundary.test.ts",
+      "sha256": "6227cc465132eb74a010f93e8a14fe8d68ef3625fc9c71787c4c4e28fcd72c4b",
+      "beforeSha256": "8479ef78e112a5ac6946e190762f398351505acc0172366321e6cfba0e5d8fc1"
+    },
+    {
+      "path": "test/runtime/new-reply/file-observation.test.ts",
+      "sha256": "31ed2af7e019cdb3d16ec9ffbe746dccc99a1ddee0460b43c95be517bf29db62",
+      "beforeSha256": "47891c0b93224f37604fce89a0bed9abd13b8410232b265fc45d1815168d645a"
+    },
+    {
+      "path": "test/runtime/new-reply/window.test.ts",
+      "sha256": "4021ccb6c849a15d85d583c1cf237880fae116edb34f37d5a9d75be424edb809",
+      "beforeSha256": "b465394578f09f5946f6794e6d64394a9eed286e2222a01af74347f1a71c136a"
+    },
+    {
+      "path": "test/runtime/owned-worker-budget.test.ts",
+      "sha256": "56fd4893b7a9129b5fdd50c374a23d88817d8954e18178a04014ca41e903e654",
+      "beforeSha256": "ae882ad7d135971c7f38771c1e90512fa8fadc1339afccbdd03dbaa5ad300cae"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 7711,
+    "pass": 7711,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 734,
+    "logSha256": "090201bbcf838c6c9db481f4a2abf7836ac6181387870a71c2bb9830a550a66a",
+    "tapSha256": "72af0019bf37d3a21699084b267b423cbd7da59ad51c3e46bc65115d2445b5b1"
+  },
+  "claim": "Qualified staged whole7711PASS plus actual68PASS/TS0/build0 and all1527source/test hashes identical. No separate actual full-run claim.",
+  "remoteWrite": "Resumed by user Slack1791767266.917679; qualified681 upload in progress;684 not yet published",
+  "actualAll1527HashesMatchQualifiedStage": true,
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 68,
+      "pass": 68,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1527
+  },
+  "evidence": {
+    ".runtime/completion-maintenance-read-lane-684/full.log": "090201bbcf838c6c9db481f4a2abf7836ac6181387870a71c2bb9830a550a66a",
+    ".runtime/completion-maintenance-read-lane-684/full.tap": "72af0019bf37d3a21699084b267b423cbd7da59ad51c3e46bc65115d2445b5b1",
+    ".runtime/completion-maintenance-read-lane-684/full-exit.json": "a0f33a2f96af420b9c24d6aa7730fa0738b6fb60c7acf097ba25fba61a4dd1a3",
+    ".runtime/completion-maintenance-read-lane-684/scope-proof.json": "4a395e710664a218c3d9115351266f8f0aa48f416f7f50bd7fc4a1de101e140e",
+    ".runtime/completion-maintenance-read-lane-684/stage-inputs.json": "1fa6914bd53853934550b4bea0fa5b22a7639cd1b4f79df0b2997c7c32e76f92",
+    ".runtime/completion-maintenance-read-lane-684/unchanged-startup-proof.json": "db42e60ce6e31963439cf0b9c78d859f5cb9fe9836926dc18d53268c7285eef9",
+    ".runtime/completion-maintenance-read-lane-684/applied/typecheck.log": "2fe43fdadeef60ddc24a0c6006626dfdd1c9f6339c778b657049648bc2d0414e",
+    ".runtime/completion-maintenance-read-lane-684/applied/build.log": "8fd4dfcce49f1e7eca06d775379c993f11caa85ac26d2af9ab759b7834fe36f6",
+    ".runtime/completion-maintenance-read-lane-684/applied/focused.log": "67e761b6b9f4a186a56db95ded0304c0ea1954cdd435a727f67beec9117192bc"
+  }
+}

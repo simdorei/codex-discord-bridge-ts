@@ -19,9 +19,13 @@ function recordFinalOn(db:DatabaseSync,thread:string,turn:string,generation:bigi
       AND COALESCE(turn_observation_generation,app_server_generation)=? AND state='running')`).run(thread,turn,generation,content,thread,turn,generation).changes)===1n;
 }
 export function getObservedFinalAnswer(path:string,thread:string,turn:string,generation:bigint):Promise<string|null>{
-  identity(thread,turn,generation);return usingInitializedStore(path,db=>{
+  identity(thread,turn,generation);return usingInitializedStore(path,db=>readFinalOn(db,thread,turn,generation));
+}
+export function getObservedFinalAnswerExisting(path:string,thread:string,turn:string,generation:bigint):string|null{
+  identity(thread,turn,generation);return usingExistingStore(path,db=>readFinalOn(db,thread,turn,generation));
+}
+function readFinalOn(db:DatabaseSync,thread:string,turn:string,generation:bigint):string|null{
     const row=db.prepare(`SELECT content,CAST(content AS BLOB) AS content_raw,(SELECT encoding FROM pragma_encoding) AS encoding
       FROM codex_observed_final_answers WHERE thread_id=? AND turn_id=? AND generation=?`).get(thread,turn,generation);
     return row===undefined?null:decodeTextField(row.content,row.content_raw,"content",false,textDecoderFor(row.encoding))!;
-  });
 }

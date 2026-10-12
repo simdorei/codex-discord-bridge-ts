@@ -1,3 +1,4 @@
+import type {NewAsyncQuestion} from "../store/async-question-observation.ts";
 import {parseAsyncQuestions,AsyncQuestionParseError} from "../app-server/async-questions.ts";
 import {StateAccessFacade,type IStateAccessFacade} from "../store/state-access-facade.ts";
 import {invokeSynchronousVoid} from "../core/synchronous-void.ts";
@@ -10,11 +11,17 @@ function now(clock:()=>number):number{
 /** Owning live notification path only. Readonly historical recovery must never use
  * this entry to mint current observations. Each question remains a distinct index. */
 export async function observeAsyncQuestionNotification(path:string,runtime:string,gen:bigint,params:unknown,clock:()=>number=()=>Date.now()/1000,state:Store=StateAccessFacade):Promise<void>{
- const parsed=parseAsyncQuestions(params);if(parsed===null)return;generation(gen);const timestamp=now(clock);
- const questions=parsed.questions.length===0?[{title:parsed.text,options:[]}]:parsed.questions,sourceText=parsed.questions.length===0?"":parsed.text;
- for(let index=0;index<questions.length;index++){const q=questions[index]!;await state.recordAsyncQuestionObservation(path,{runtime_id:runtime,generation:gen,thread_id:parsed.threadId,turn_id:parsed.turnId,item_id:parsed.itemId,body:{index:BigInt(index),source_text:sourceText,title:q.title,options:[...q.options]},now:timestamp});}
+ const records=captureAsyncQuestionNotification(runtime,gen,params,clock);if(records===null)return;
+ for(const record of records)await state.recordAsyncQuestionObservation(path,record);
  await state.reconcileAsyncQuestionObservations(path,runtime,gen);
 }
+/** Pure original snapshot. Per-record body validation remains inside each write. */
+export function captureAsyncQuestionNotification(runtime:string,gen:bigint,params:unknown,clock:()=>number=()=>Date.now()/1000):readonly NewAsyncQuestion[]|null{
+ const parsed=parseAsyncQuestions(params);if(parsed===null)return null;generation(gen);const timestamp=now(clock);
+ const questions=parsed.questions.length===0?[{title:parsed.text,options:[]}]:parsed.questions,sourceText=parsed.questions.length===0?"":parsed.text;
+ return questions.map((q,index)=>({runtime_id:runtime,generation:gen,thread_id:parsed.threadId,turn_id:parsed.turnId,item_id:parsed.itemId,body:{index:BigInt(index),source_text:sourceText,title:q.title,options:[...q.options]},now:timestamp}));
+}
+
 /** Preserve sequential partial-success behavior: retire, reconcile, then compact. */
 export async function preparePendingAsyncQuestions(path:string,runtime:string,gen:bigint,clock:()=>number=()=>Date.now()/1000,state:Store=StateAccessFacade):Promise<void>{
  generation(gen);await state.retireOldAsyncQuestionOwner(path,runtime,gen);await state.reconcileAsyncQuestionObservations(path,runtime,gen);await state.compactTerminalAsyncQuestions(path,now(clock));

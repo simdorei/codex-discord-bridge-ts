@@ -8,21 +8,22 @@ import {DelayedTicks,type TickSource} from "../delayed-ticks.ts";
 import {invokeSynchronousVoid} from "../../core/synchronous-void.ts";
 import {requireDiscordText} from "../../discord/text.ts";
 type Server=Pick<PortableResidentLifecycle,'instanceId'|'generation'|'releaseIdleSubscription'>;
+export interface IdleInventoryReader{pending(signal?:AbortSignal):Promise<readonly IdleIntent[]>;get(thread:string):Promise<IdleIntent|null>}
 export interface IdleReleaseFailure{readonly stage:'scan'|'release'|'deferral';readonly error:unknown;readonly thread:string|null}
 const equal=(a:IdleIntent,b:IdleIntent)=>a.intentId===b.intentId&&a.ownerId===b.ownerId&&a.generation===b.generation&&a.threadId===b.threadId&&a.turnId===b.turnId&&a.jobId===b.jobId&&a.revision===b.revision&&a.state===b.state&&a.detail===b.detail;
 /** Five-second delayed maintenance, borrowing the same queue target registry. Busy
  * targets are skipped rather than waited behind. Native release retains its own durable
  * effect custody; cancellation never abandons an already-started managed operation. */
 export class CompletionIdleRelease{
- readonly #server:Server;readonly #queue:QueueStartCoordinator;readonly #render:(error:unknown)=>string;readonly #report:(failure:IdleReleaseFailure)=>void;#busy=false;#running=false;#closed=false;
- constructor(server:Server,queue:QueueStartCoordinator,render:(error:unknown)=>string,report:(failure:IdleReleaseFailure)=>void){if(typeof render!=="function"||types.isProxy(render)||types.isAsyncFunction(render)||types.isGeneratorFunction(render))throw new TypeError("Expected public-safe synchronous idle diagnostic renderer");this.#server=server;this.#queue=queue;this.#render=render;this.#report=report;}
+ readonly #server:Server;readonly #queue:QueueStartCoordinator;readonly #render:(error:unknown)=>string;readonly #report:(failure:IdleReleaseFailure)=>void;readonly #native:IdleInventoryReader|undefined;#busy=false;#running=false;#closed=false;
+ constructor(server:Server,queue:QueueStartCoordinator,render:(error:unknown)=>string,report:(failure:IdleReleaseFailure)=>void,native?:IdleInventoryReader){this.#native=native;if(typeof render!=="function"||types.isProxy(render)||types.isAsyncFunction(render)||types.isGeneratorFunction(render))throw new TypeError("Expected public-safe synchronous idle diagnostic renderer");this.#server=server;this.#queue=queue;this.#render=render;this.#report=report;}
  #notify(stage:IdleReleaseFailure['stage'],error:unknown,thread:string|null=null):void{invokeSynchronousVoid(this.#report,{},[{stage,error,thread}]);}
  async #deferral(expected:IdleIntent,error:unknown):Promise<void>{
-  if(expected.state!=='Candidate')return;const current=await state.getIdleIntent(this.#queue.dbPath,expected.threadId);if(current===null||!equal(expected,current))return;
+  if(expected.state!=='Candidate')return;const current=await (this.#native===undefined?state.getIdleIntent(this.#queue.dbPath,expected.threadId):this.#native.get(expected.threadId));if(current===null||!equal(expected,current))return;
   const detail=this.#render(error);if(types.isPromise(detail))void Promise.prototype.then.call(detail,undefined,()=>undefined);requireDiscordText(detail);await state.transitionIdleIntent(this.#queue.dbPath,expected,'Candidate',detail);
  }
  async #pass(signal?:AbortSignal):Promise<void>{
-  signal?.throwIfAborted();const intents=await state.pendingIdleIntents(this.#queue.dbPath);
+  signal?.throwIfAborted();const intents=await (this.#native===undefined?state.pendingIdleIntents(this.#queue.dbPath):this.#native.pending(signal));
   for(const intent of intents){
    signal?.throwIfAborted();if(intent.ownerId!==this.#server.instanceId||intent.generation<0n||intent.generation!==this.#server.generation()||(intent.state!=='Candidate'&&intent.state!=='AwaitUnload'))continue;
    const lease=this.#queue.locks.tryAcquire(intent.threadId);if(lease===undefined)continue;

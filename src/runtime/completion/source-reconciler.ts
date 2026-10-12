@@ -1,3 +1,4 @@
+import {observeAsyncQuestionNotification} from "../async-question-observation.ts";
 import type {PortableResidentLifecycle} from "../../app-server/portable-resident-lifecycle.ts";
 import type {ObservationWindow} from "../../app-server/notification-state.ts";
 import {StateAccessFacade,type IStateAccessFacade} from "../../store/state-access-facade.ts";
@@ -7,7 +8,7 @@ import {CompletionHeldError} from "./receipt-sender.ts";
 import {QueueIntegerRangeError} from "../queue-runner/errors.ts";
 import {DelayedTicks,type TickSource} from "../delayed-ticks.ts";
 import {invokeSynchronousVoid} from "../../core/synchronous-void.ts";
-type Server=Pick<PortableResidentLifecycle,"instanceId"|"generation"|"observationWindow"|"reconcileIdleObservationPrefix"|"markIdleObservationGap"|"observationTrackingEnabled">;
+type Server=Pick<PortableResidentLifecycle,"instanceId"|"generation"|"observationWindow"|"reconcileIdleObservationPrefix"|"markIdleObservationGap"|"observationTrackingEnabled">&Partial<Pick<PortableResidentLifecycle,"reconcileIdleObservationPrefixAsync">>;
 type Store=Pick<IStateAccessFacade,"activateObservation"|"discoverObservation"|"nextObservationGap"|"finishObservationPage"|"observationScopeVerified">;
 export interface SourceReconcileFailure{readonly stage:"event"|"pass"|"gap";readonly error:unknown}
 function sequence(v:unknown):bigint{if(typeof v!=="bigint"||v<0n||v>=(1n<<63n))throw new QueueIntegerRangeError();return v;}
@@ -16,7 +17,7 @@ function sequence(v:unknown):bigint{if(typeof v!=="bigint"||v<0n||v>=(1n<<63n))t
 export class CompletionSourceReconciler{
  readonly #path:string;readonly #server:Server;readonly #certifier:CompletionSourceCertifier;readonly #state:Store;readonly #report:(failure:SourceReconcileFailure)=>void;
  #current:ObservationScope|null=null;#busy=false;#running=false;#closed=false;
- constructor(path:string,server:Server,commentaryEnabled:boolean,report:(failure:SourceReconcileFailure)=>void,state:Store=StateAccessFacade,certificationState:Pick<IStateAccessFacade,"certifyObservation"|"recordObservedCompletionForResident"|"recordObservedFinalAnswer">=StateAccessFacade){this.#path=path;this.#server=server;this.#certifier=new CompletionSourceCertifier(path,server,commentaryEnabled,undefined,certificationState);this.#report=report;this.#state=state;}
+ constructor(path:string,server:Server,commentaryEnabled:boolean,report:(failure:SourceReconcileFailure)=>void,state:Store=StateAccessFacade,certificationState:Pick<IStateAccessFacade,"certifyObservation"|"recordObservedCompletionForResident"|"recordObservedFinalAnswer">=StateAccessFacade,observeQuestions:typeof observeAsyncQuestionNotification=observeAsyncQuestionNotification){this.#path=path;this.#server=server;this.#certifier=new CompletionSourceCertifier(path,server,commentaryEnabled,undefined,certificationState,observeQuestions);this.#report=report;this.#state=state;}
  #notify(stage:SourceReconcileFailure['stage'],error:unknown):void{invokeSynchronousVoid(this.#report,{},[{stage,error}]);}
  #gapError=(error:unknown):void=>{this.#notify("gap",error);};
  async scanOnce(signal?:AbortSignal):Promise<void>{if(this.#closed||this.#running||this.#busy)throw new TypeError("Source reconciler already owned or closed");this.#busy=true;try{await this.#pass(signal);}finally{this.#busy=false;}}
@@ -39,7 +40,7 @@ export class CompletionSourceReconciler{
    signal?.throwIfAborted();if(this.#server.generation()===gen&&page.scannedThrough>gap.cursor)await this.#state.finishObservationPage(this.#path,gap,sequence(page.scannedThrough));
   }
   signal?.throwIfAborted();const latest=this.#server.observationWindow(gen,0n,0n);
-  if(await this.#state.observationScopeVerified(this.#path,scope,sequence(latest.sourceUpper))){signal?.throwIfAborted();if(this.#server.generation()!==gen)throw new CompletionHeldError("native generation changed during verification");this.#server.reconcileIdleObservationPrefix(gen,latest.sourceUpper);}
+  if(await this.#state.observationScopeVerified(this.#path,scope,sequence(latest.sourceUpper))){signal?.throwIfAborted();if(this.#server.generation()!==gen)throw new CompletionHeldError("native generation changed during verification");if(this.#server.reconcileIdleObservationPrefixAsync!==undefined)await this.#server.reconcileIdleObservationPrefixAsync(gen,latest.sourceUpper);else this.#server.reconcileIdleObservationPrefix(gen,latest.sourceUpper);}
  }
  /** One cooperative pass at a time. Shutdown checks precede page work and final
   * acknowledgement; a synchronous DB operation already running must finish. */

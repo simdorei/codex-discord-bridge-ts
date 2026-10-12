@@ -1,0 +1,16 @@
+import {StateAccessFacade as state} from '../../../src/store/state-access-facade.ts';
+import test from 'node:test';import assert from 'node:assert/strict';import {existsSync,readFileSync} from 'node:fs';
+import {storeFixture} from '../../helpers/store-fixture.ts';import {openInitialized} from '../../../src/store/owned-driver.ts';import {startRuntimeResident} from '../../../src/runtime/discord-runtime/resident-startup.ts';import {ownedWorkerUsage} from '../../../src/runtime/owned-worker-slot.ts';
+function config(log:string){const code=`import readline from 'node:readline';import {appendFileSync} from 'node:fs';readline.createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line);if(m.method==='initialized')return;if(m.method!=='initialize')appendFileSync(${JSON.stringify(log)},line+'\\n');process.stdout.write(JSON.stringify({id:m.id,result:{}})+'\\n');});`;return {process:{executable:process.execPath,arguments:['--input-type=module','-e',code],environment:{}},clientInfo:{name:'native-startup',title:'Fixture',version:'1'}};}
+async function until(check:()=>boolean){const deadline=Date.now()+4000;while(!check()){if(Date.now()>deadline)throw Error('fixture condition not observed');await new Promise(resolve=>setTimeout(resolve,5));}}
+
+test('actual native gap write waits SQLite lock without blocking timer and close joins before exit',async()=>storeFixture(async path=>{
+ const owner=await startRuntimeResident(config(path+'.wire'),path,'runtime',null,()=> 'safe'),db=await openInitialized(path),errors:unknown[]=[];let closing:Promise<void>|undefined;
+ try{db.exec('BEGIN IMMEDIATE');owner.markSourceObservationGap(1n,e=>{errors.push(e);});await until(()=>ownedWorkerUsage().Observation===1);await new Promise(r=>setTimeout(r,30));assert.equal(db.isTransaction,true);let closed=false;closing=owner.close().then(()=>{closed=true;});await new Promise(r=>setTimeout(r,40));assert.equal(closed,false);db.exec('ROLLBACK');await closing;assert.equal(ownedWorkerUsage().Observation,0);assert.deepEqual(errors,[]);}
+ finally{if(db.isTransaction)db.exec('ROLLBACK');if(closing)await Promise.allSettled([closing]);await owner.dispose();db.close();}
+}));
+test('failed native unknown persistence preserves unsealed old tail through actual resident replacement',async()=>storeFixture(async path=>{
+ const owner=await startRuntimeResident(config(path+'.wire'),path,'runtime',null,()=> 'safe'),db=await openInitialized(path),errors:unknown[]=[];
+ try{db.exec("CREATE TRIGGER deny_gap BEFORE INSERT ON cdr_observation_gaps BEGIN SELECT RAISE(ABORT,'gap denied'); END");owner.markIdleObservationGap(e=>{errors.push(e);});await until(()=>errors.length===1);assert.equal(await owner.reconcileIdleObservationPrefixAsync(1n,0n),false);db.exec('DROP TRIGGER deny_gap');assert.equal(await owner.forceRestartIfQuiescent(),true);assert.equal(owner.generation(),2n);await state.activateObservation(path,{ownerId:owner.instanceId,generation:2n});const row=db.prepare("SELECT state,detail FROM cdr_observation_gaps WHERE owner_id=? AND generation=1 AND first_seq=0 AND last_seq=0").get(owner.instanceId);assert.equal(row?.state,'Unresolved');assert.match(String(row?.detail),/unsealed/);assert.equal(await state.observationScopeVerified(path,{ownerId:owner.instanceId,generation:2n},0n),false);}
+ finally{await owner.dispose();db.close();}
+}));

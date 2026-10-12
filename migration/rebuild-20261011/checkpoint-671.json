@@ -1,0 +1,64 @@
+{
+  "checkpoint": 671,
+  "scope": "Existing-store native completion history owner/hold/marker/final reads with generation replacement guard",
+  "qualifiedStage": {
+    "tests": 7649,
+    "pass": 7649,
+    "fail": 0,
+    "cancelled": 0,
+    "skip": 0,
+    "testFiles": 722,
+    "durationMs": 450031.245306
+  },
+  "actualApplied": {
+    "focused": 73,
+    "typecheck": 0,
+    "build": 0,
+    "sourceTestFiles": 1507,
+    "entireSourceTestEqualsQualifiedStage": true
+  },
+  "fullRerunOnActual": false,
+  "contracts": [
+    "Whole queue decoded before unique Running owner selection; multiple never picks first",
+    "Separate original hold/marker/final queries preserve short-circuit order and exact i64 generation",
+    "Read failure never becomes absent/false, oversized historical data retained",
+    "Native generation reread after awaited hold prevents accepting replaced resident",
+    "Original three RPC reads and explicit Final precedence preserved",
+    "Actual exit join on deadline/cancel, Background3 global bound and existing target ownership",
+    "Facade explicit inventory271, named/object identity and signature assertions"
+  ],
+  "priorFailure": "Same unchanged native generation test RED: owner validation incorrectly passed across awaited hold. Native post-read generation equality added in both validation paths; same-test GREEN. Final marker boundary is separate test.",
+  "missingHistoricalFile": "test/remote-agent/redaction.test.ts (10 unavailable tests; not skipped)",
+  "remoteWrites": "paused after cancellation pending user reply",
+  "limitations": [
+    "General discovery and remaining live/HTTP DB work unfinished",
+    "No performance/Windows24-hour/production qualification",
+    "Original volume not recovered"
+  ],
+  "files": {
+    "src/store/state-access-facade.ts": "bce29c97ddf7f08c0025fbb8059f9519df89407c2f581f575c823a99d561966a",
+    "src/store/mirror-event-read.ts": "2dce9e5fe03c67b8b6a1f7fc5f206b5fe5419722912182c6f689f34076bd602c",
+    "src/store/observed-final-answer.ts": "b06bafbe577fe698110ef251867b2ec3ef16dd970ddd7d6e9e345d038ebd55c0",
+    "src/runtime/completion/native-owner-read-worker.ts": "62f0ab657c298406c0e8dd0aa1e099908b5bed7e6b30e87eb210769b266b8f6b",
+    "src/runtime/completion/history-context.ts": "c995b31ec9eea5a4c93bf68200963b772998010aa0085540492ba29e1190de61",
+    "src/runtime/completion/staged-handler.ts": "a3084bf736578465989ae9dd7875c96f8dce0cc6495f6ca004211f56b175726b",
+    "src/runtime/completion/pipeline.ts": "8871a7c974e9b8238b373324843ef1959ac11cdde5ebbdd8252c9d9f7bea7a49",
+    "src/runtime/completion/native-owner-read.ts": "45adf288e17e4595d71123faa9b8cd0f5ff972827e3fbda2d72184597ff445f1",
+    "src/runtime/completion/native-history-read-worker.ts": "0b476489cfd2cc82984dea41b99eb2c7d4394009eedc17e6a98ccdefc96496f7",
+    "src/runtime/completion/native-history-read.ts": "e8682bd9e173c8f02c8f88ac2821de8618f015d20198dc1d045d4b1085b94042",
+    "test/runtime/native-completion-history.test.ts": "91af663930883b26a71c61591587f8cc18212a91e137e9934e7b609442964ead",
+    "test/runtime/native-completion-history-boundary.test.ts": "75c9c9fef0c83f9634cbf03d0095ea9ebaa6ef007d02f60d6994475343e85aa9",
+    "test/store/state-access-facade.test.ts": "f1432a6a8f8469f5f6663499cd87cb1c9b7fadb40937da32994928401f6b36b7"
+  },
+  "evidence": {
+    ".runtime/completion-history-reads-671/full.log": "eb1914967dea1ecb59a75fe17e87c55bc31a52c822882fd6265bd23e77b93f30",
+    ".runtime/completion-history-reads-671/full-exit.json": "2c2ec25ac7c89dd0904ef386fe101deda37b40c9122d524d82bb2d03a6e13453",
+    ".runtime/completion-history-reads-671/REVIEW.md": "b33be2d1e4266294cf3113e03c9255cb66225c8ec2a140c772aeaf83bd94496b",
+    ".runtime/completion-history-reads-671/scope-proof.json": "b6387507b8e208396727724c0bc78fbf96381e3ba65dc7fa0921bf84d377cef3",
+    ".runtime/completion-history-reads-671/generation-window-red/same-test.json": "b9da39267a57198922a35c75506cbf68244a19d8243ad7a9a205313572678581",
+    ".runtime/completion-history-reads-671/applied/applied-manifest.json": "6ea7801751796f2f5c08469f8523f3287a05d35bec4ceac3da89cf8344ec15af",
+    ".runtime/completion-history-reads-671/applied/source-test-identity.json": "fa3a2209a6c9891e435e4a6493f6bcb2fbf9496f044cc583e2d387d5c34e69e7",
+    ".runtime/completion-history-reads-671/applied/focused.log": "a54ee45c8d92df9920b03ba243d40caef3fcaf9036f068ea1f8aae2e3f55155a",
+    ".runtime/completion-history-reads-671/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

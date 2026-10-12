@@ -1,5 +1,5 @@
 import {StateAccessFacade,type IStateAccessFacade} from "../../store/state-access-facade.ts";
-import {snapshotStoredQueueJob} from "../../store/queue-read.ts";
+import {snapshotStoredQueueJob,type StoredQueueJob} from "../../store/queue-read.ts";
 import {TerminalFence} from "./terminal-fence.ts";
 import {validateCompletionChannel} from "./final-delivery.ts";
 /** Trusted watch: hasChanged is nonthrowing (true when closed); changed must settle on abort. */
@@ -15,18 +15,21 @@ export interface TypingBackend{
 export interface TypingTransport{createTyping(channel:bigint,signal:AbortSignal):Promise<void>}
 export class TypingDeliveryError extends Error{readonly source:unknown;constructor(source:unknown){super("Discord typing request failed",{cause:source});this.name="TypingDeliveryError";this.source=source;}}
 type TypingStore=Pick<IStateAccessFacade,"listFiltered"|"pendingObservedCompletions">;
+export type TypingJob=Pick<StoredQueueJob,'targetThreadId'|'turnId'|'state'|'goalWaiting'|'channelId'>;
+export interface TypingInventory{readonly jobs:readonly TypingJob[];readonly terminals:readonly {readonly threadId:string;readonly turnId:string}[]}
+export interface TypingInventoryReader{read(signal?:AbortSignal):Promise<TypingInventory>}
 interface HttpResult{kind:"http";ok:boolean;error?:unknown}
 /** Source ordering with explicit JS cancellation/join. Real transport, off-thread DB
- * execution, hard cancellation and exact native error formatting remain unfinished. */
-export async function sendTyping(path:string,server:TypingBackend,fence:TerminalFence,transport:TypingTransport,store:TypingStore=StateAccessFacade,signal?:AbortSignal):Promise<void>{
+ * execution uses an optional owned reader; exact native error formatting remains unfinished. */
+export async function sendTyping(path:string,server:TypingBackend,fence:TerminalFence,transport:TypingTransport,store:TypingStore=StateAccessFacade,signal?:AbortSignal,native?:TypingInventoryReader):Promise<void>{
   signal?.throwIfAborted();const lifecycle=server.subscribeLifecycle();let failed=false,first:unknown;
   const remember=(error:unknown)=>{if(!failed){failed=true;first=error;}};
   try{
     const generation=server.generation(),snapshot=await server.lifecycleSnapshot();
     if(!snapshot.healthy||snapshot.quarantined||snapshot.restartPending)return;
     signal?.throwIfAborted();const version=fence.retentionVersion;
-    const jobs=(await store.listFiltered(path,null,null)).map(snapshotStoredQueueJob);
-    const terminals=await store.pendingObservedCompletions(path);
+    const {jobs,terminals}=native===undefined?{jobs:(await store.listFiltered(path,null,null)).map(snapshotStoredQueueJob),terminals:await store.pendingObservedCompletions(path)}:await native.read(signal);
+    if(native!==undefined)signal?.throwIfAborted();
     fence.retain(generation,jobs,version);const channels=new Set<bigint>();
     for(const job of jobs){
       signal?.throwIfAborted();const turn=job.turnId;if(turn===null||job.state!=="Running"||job.goalWaiting||channels.has(job.channelId)||terminals.some(t=>t.threadId===job.targetThreadId&&t.turnId===turn))continue;
