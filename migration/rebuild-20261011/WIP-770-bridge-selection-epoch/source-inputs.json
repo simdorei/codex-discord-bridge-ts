@@ -1,0 +1,5 @@
+{
+  "dependency": "769 candidate not applied; full regression pending",
+  "path": ".runtime/bridge-owner-foundation-769/candidate/src/runtime/bridge-state-native.ts",
+  "sha256": "afcf9380bddfe1baa0e75749fcf9f6881e4f69ab455ec57673999a1840edeab5"
+}
