@@ -1,0 +1,13 @@
+{
+  "initialFocused": {
+    "tests": 161,
+    "pass": 159,
+    "fail": 2
+  },
+  "changes": [
+    "Initialize mirror fixture for native existing-only contract; add explicit missing-store no-create rejection test",
+    "Inject selection change after actual openSelected snapshot instead of before worker capture"
+  ],
+  "productionChangedForTestFailures": false,
+  "limitation": "Runtime native mapping intentionally requires existing initialized store; standalone Rust-style helper initializes on lookup. No claim of parity for missing-store initialization."
+}
