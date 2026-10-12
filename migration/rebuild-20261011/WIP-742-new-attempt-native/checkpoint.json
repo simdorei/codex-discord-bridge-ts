@@ -1,22 +1,33 @@
 {
-  "status": "WIP_UNAPPLIED_FOCUSED_RED",
-  "at": "2026-10-12T11:08:23.257456+00:00",
+  "status": "WIP_UNAPPLIED_FULL_SERIAL_RUNNING",
+  "at": "2026-10-12T11:56:42.136505+00:00",
   "actualProduct": "Qualified739:8052 whole/512 actual focused",
   "typecheckExit": 0,
   "buildExit": 0,
   "candidateFocused": {
-    "status": "FAILED",
+    "status": "PASS",
     "tests": 540,
-    "pass": 538,
-    "fail": 2,
+    "pass": 540,
+    "fail": 0,
     "skip": 0,
-    "exit": 1,
-    "failures": [
-      "Gateway cancellation fixture did not observe thread/start within its bounded wait; cause still under investigation.",
-      "Disposal-report test callback returned Array.push number, violating synchronous void hook contract."
-    ]
+    "exit": 0,
+    "note": "Prior two test corrections, then unchanged repair timeout RED retained and unchanged focused retry PASS."
   },
-  "fullRegression": "NOT_RUN",
+  "fullRegression": {
+    "first": {
+      "tests": 8080,
+      "pass": 8079,
+      "fail": 1,
+      "testFileConcurrency": 2,
+      "failure": "Native queue Running worker exceeded unchanged 5000ms deadline"
+    },
+    "sameSourceIsolated": {
+      "tests": 11,
+      "pass": 11
+    },
+    "serialSameSource": "RUNNING, not PASS",
+    "productTimeoutOrBudgetChanges": false
+  },
   "files": [
     {
       "path": "src/runtime/action-executor/new-attempt.ts",
@@ -56,11 +67,11 @@
     },
     {
       "path": "test/runtime/action-executor/command-executor.test.ts",
-      "sha256": "8c23f144dc25e4da7565f389e6a5dfd9cdee0844ba6455a0e7df55bfbaacab87"
+      "sha256": "10c6412a6a42bca77b6b3dce9c4c033fff454e05355d82d1b292fb85acd2f69b"
     },
     {
       "path": "test/runtime/prompt-intake/native-attempt.test.ts",
-      "sha256": "36a7b57f9e93d345c1e3ca25e98aceb3b482107906f32ba9408a5d4c81944357"
+      "sha256": "64063808986069b8099be12845abb3edf6e5081f7331fdf6f938b084d874c824"
     },
     {
       "path": "test/runtime/prompt-intake/native-state.test.ts",
@@ -98,5 +109,21 @@
     "Original project CodexThreadStore/statSync remain synchronous",
     "Windows/live Discord/appserver/performance/24h unverified"
   ],
-  "excluded": "No secrets, actual databases, raw logs or protected redaction fixture"
+  "excluded": "No secrets, actual databases, raw logs or protected redaction fixture",
+  "priorFocused": {
+    "status": "FAILED",
+    "tests": 540,
+    "pass": 538,
+    "fail": 2,
+    "skip": 0,
+    "exit": 1,
+    "failures": [
+      "Gateway cancellation fixture did not observe thread/start within its bounded wait; cause still under investigation.",
+      "Disposal-report test callback returned Array.push number, violating synchronous void hook contract."
+    ]
+  },
+  "testCorrections": [
+    "Report callbacks return void.",
+    "Wait for actual creation request with bounded elapsed deadline; keep cancellation and no-recreation assertions."
+  ]
 }

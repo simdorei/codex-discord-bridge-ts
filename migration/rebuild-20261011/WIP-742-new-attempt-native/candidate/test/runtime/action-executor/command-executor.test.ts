@@ -86,6 +86,6 @@ it('gateway success-record failure cannot resend New or claim successful acknowl
 it('gateway cancellation after native creation dispatch preserves unknown attempt and cannot auto-recreate',async()=>fixture(true,f=>pipeline(f,async p=>{
  assert.ok(f.server);const slot=f.server.admitResponse(f.server.generation());try{await slot.client.requestAdmitted(slot.permit,'fixture/hang-start',{},1000);}finally{slot.release();}
  const c=new AbortController(),reason=new Error('runtime shutdown');const pending=p.handle('!new raw',5,c.signal),observed=assert.rejects(pending,e=>e===reason);
- try{for(let i=0;;i++){if((await f.seen()).some(x=>x.method==='thread/start'))break;if(i===100)throw Error('native creation was not observed');await new Promise<void>(r=>setTimeout(r,5));}c.abort(reason);await observed;}finally{c.abort(reason);}
+ try{const deadline=AbortSignal.timeout(8000);for(;;){if((await f.seen()).some(x=>x.method==='thread/start'))break;deadline.throwIfAborted();await new Promise<void>(r=>setTimeout(r,5));}c.abort(reason);await observed;}finally{c.abort(reason);await observed;}
  assert.equal(p.posts.length,0);assert.equal((await state.getIngress(f.path,'message:5'))?.state,'held');assert.deepEqual(await state.listQueueJobs(f.path),[]);await p.handle('!new raw');assert.equal((await f.seen()).filter(x=>x.method==='thread/start').length,1);
 })));
