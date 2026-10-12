@@ -1,0 +1,97 @@
+{
+  "status": "WIP_UNAPPLIED_FULL_RUNNING",
+  "utc": "2026-10-12T07:46:48.003586+00:00",
+  "baselineLocal": "12926e42ba8a9f1e1898deca1f397c45834321f9",
+  "baselineRemote": "39e33f3640e6e7e46706b5b0459c2a6cb4fed4da",
+  "actualQualifiedTests": 7943,
+  "candidateChecks": {
+    "typecheckExit": 0,
+    "buildExit": 0,
+    "focusedPass": 1527,
+    "focusedFail": 0,
+    "focusedSkip": 0,
+    "whole": "RUNNING; no whole PASS claimed"
+  },
+  "limitations": [
+    "Candidate not applied to src/test",
+    "Windows/performance/24h/production unverified",
+    "Startup release-all is native but still requires original singleton ownership",
+    "Worker clock observation is not parent-entry timestamp equivalence",
+    "Historical protected redaction fixture is absent; not recovered or counted"
+  ],
+  "files": [
+    {
+      "path": "migration/wip-20261012/prompt-intake-complete-native-725/candidate/src/runtime/prompt-intake/native-state-worker.ts",
+      "target": "src/runtime/prompt-intake/native-state-worker.ts",
+      "sha256": "5a5972a31d873c65428992ba6477e3646f2e8c953d78f2c00476ab6b8858a72c"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-complete-native-725/candidate/src/runtime/prompt-intake/native-state.ts",
+      "target": "src/runtime/prompt-intake/native-state.ts",
+      "sha256": "cff005065be4d786130878d7459b3cb80696b49da42a4b96c3377278f85dc5fb"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-complete-native-725/candidate/src/store/prompt-intake-write.ts",
+      "target": "src/store/prompt-intake-write.ts",
+      "sha256": "b8e0e46b719740d7531a12420712cdf2dead0117daf17d59f5b7026933201885"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-complete-native-725/candidate/src/store/state-access-facade.ts",
+      "target": "src/store/state-access-facade.ts",
+      "sha256": "1144f0b01cb54ed456305ec6b2b10a383effc9cea7a18e2e871ab9ed761bfa67"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-complete-native-725/candidate/test/runtime/discord-runtime/executor-bootstrap.test.ts",
+      "target": "test/runtime/discord-runtime/executor-bootstrap.test.ts",
+      "sha256": "ec2ecdaf847cb7c85a5d91d8ac4098b8a573ebed90225bbabe72dda72c8c5d54"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-complete-native-725/candidate/test/runtime/discord-runtime/startup-subscriptions.test.ts",
+      "target": "test/runtime/discord-runtime/startup-subscriptions.test.ts",
+      "sha256": "147eba932d20873bb55066bc6905a6b7d7f9894f053c083ed823f2e7cf26b850"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-complete-native-725/candidate/test/runtime/prompt-intake/native-admission.test.ts",
+      "target": "test/runtime/prompt-intake/native-admission.test.ts",
+      "sha256": "7c301c1436a8d07862a7a30874236980dd5c1ea06de6ba546614b0b9e682f44d"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-complete-native-725/candidate/test/runtime/prompt-intake/native-maintenance.test.ts",
+      "target": "test/runtime/prompt-intake/native-maintenance.test.ts",
+      "sha256": "1b12306ecdb0bae05d4f924af5dba020b418300f7fe6bbdd78f23c0527246d97"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-complete-native-725/candidate/test/runtime/prompt-intake/native-startup-release.test.ts",
+      "target": "test/runtime/prompt-intake/native-startup-release.test.ts",
+      "sha256": "dbc2ca9d28eb88f17d716b50d55e9634cfaf83747ec9be2db0d590154c955866"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-complete-native-725/candidate/test/runtime/prompt-intake/native-state.test.ts",
+      "target": "test/runtime/prompt-intake/native-state.test.ts",
+      "sha256": "7b65bc5f35f28bbccec16dc52b2d1c14193ecb6880c1a0765ed356e978cc4fab"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-complete-native-725/candidate/test/store/ingress-prompt.test.ts",
+      "target": "test/store/ingress-prompt.test.ts",
+      "sha256": "5077ce716f57527924709f9e9374497610cbddf627947e1ada8293415ad022b7"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-complete-native-725/candidate/test/store/prompt-intake-admission-existing.test.ts",
+      "target": "test/store/prompt-intake-admission-existing.test.ts",
+      "sha256": "0ceabd96ed3c35232885c4f723cccaa18af0137bc476267c839531d6f9f31b96"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-complete-native-725/candidate/test/store/state-access-facade.test.ts",
+      "target": "test/store/state-access-facade.test.ts",
+      "sha256": "1931562d118e8a7e325f92b342d6d2e921e98f8f63153edf71c734a8a37426d5"
+    }
+  ],
+  "evidenceHashes": {
+    "focused.log": "a19fd08391465ddf8c3772ebbb16cfd4f2ff485da2e4442f757e6ddeb15b43ec",
+    "typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stage-inputs.json": "f372a45cdd2b359619721f2b0188b671f66b29c36753d910a08d9055b1ce4b85",
+    "scope-proof.json": "3a486082cb672890aee7f496ad847a88ca4a6c0d9ebc8b9f764ccf192787ca45",
+    "source-inputs.json": "8443c090ef8819e5f973ec05089d7026aa5400599a80f7357fb9b80c1fa91d95"
+  }
+}
