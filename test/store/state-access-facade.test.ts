@@ -638,7 +638,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "settleExitedIdleOwnerExisting",
       "deadTargetHeld",
       "eligibleJobs", "eligibleJobsExisting",
-      "enqueue",
+      "enqueue", "enqueueExisting", "enqueueIfMirrorMatchesExisting",
       "enqueueIfMirrorMatches",
       "enqueueInTransaction",
       "executionHoldReason",
@@ -791,7 +791,11 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.stageOwnedQueueCompletionExisting, Delivery.stageOwnedQueueCompletionExisting);
     assert.strictEqual(StateAccessFacade.stageOwnedGoalProgressExisting, GoalProgress.stageOwnedGoalProgressExisting);
     assert.strictEqual(FacadeExports.stageOwnedGoalProgressExisting, GoalProgress.stageOwnedGoalProgressExisting);
-    assert.strictEqual(actual.length, 292);
+    assert.strictEqual(StateAccessFacade.enqueueExisting, QueueEnqueue.enqueueExisting);
+    assert.strictEqual(FacadeExports.enqueueExisting, QueueEnqueue.enqueueExisting);
+    assert.strictEqual(StateAccessFacade.enqueueIfMirrorMatchesExisting, QueueEnqueue.enqueueIfMirrorMatchesExisting);
+    assert.strictEqual(FacadeExports.enqueueIfMirrorMatchesExisting, QueueEnqueue.enqueueIfMirrorMatchesExisting);
+    assert.strictEqual(actual.length, 294);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

@@ -4,7 +4,7 @@ import type {TerminalReleaseOwner} from '../../store/async-resolution-terminal.t
 import {types} from 'node:util';
 import {type IStateAccessFacade} from '../../store/state-access-facade.ts';
 import {snapshotStoredQueueJob,type StoredQueueJob} from '../../store/queue-read.ts';
-import {createNativeQueueReadState} from './native-read-state.ts';
+import {createNativeQueueSubmissionState} from './native-submission-state.ts';
 import {OwnedWorkerSlot} from '../owned-worker-slot.ts';
 import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {requireDiscordText} from '../../discord/text.ts';
@@ -21,11 +21,11 @@ function baseline(input:readonly string[]):string[]{
  if(types.isProxy(input)||!Array.isArray(input)||boundedSerdeByteCount(input,LIMIT)===null)throw new TypeError('Expected bounded baseline data array');
  const result:string[]=[];for(let i=0;i<input.length;i++){const value=own(input,String(i));requireDiscordText(value);result.push(value);}return result;
 }
-/** Four reads and eight explicit serializable lifecycle writes only. Original store functions
+/** Four reads, two submissions and eight explicit serializable lifecycle writes. Original store functions
  * own the entire synchronous transaction. No backend awaits occur inside a TX.
  * An admitted operation is joined even after its result deadline. */
 export function createNativeQueueState(path:string,timeoutMs=5000):IStateAccessFacade{
- const reads=createNativeQueueReadState(path,timeoutMs),fixed=pinNativeRuntimePath(path);
+ const reads=createNativeQueueSubmissionState(path,timeoutMs),fixed=pinNativeRuntimePath(path);
  function requirePath(given:string):void{if(given!==path)throw new TypeError('Queue facade differs from original installation binding');}
  async function run(operation:Operation,fields:object):Promise<unknown>{
   const data={path:fixed,operation,...fields};if(boundedSerdeByteCount(data,LIMIT)===null)throw new RangeError('Queue attempt input exceeds native wire boundary');

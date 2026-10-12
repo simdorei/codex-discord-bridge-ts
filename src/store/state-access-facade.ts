@@ -398,6 +398,8 @@ export const canonicalizePromptIntakeTarget: typeof PromptIntakeWrite.canonicali
 export const promotePromptIntakeToQueue: typeof PromptIntakePromotion.promotePromptIntakeToQueue = PromptIntakePromotion.promotePromptIntakeToQueue;
 
 export const enqueue: typeof QueueEnqueue.enqueue = QueueEnqueue.enqueue;
+export const enqueueExisting: typeof QueueEnqueue.enqueueExisting = QueueEnqueue.enqueueExisting;
+export const enqueueIfMirrorMatchesExisting: typeof QueueEnqueue.enqueueIfMirrorMatchesExisting = QueueEnqueue.enqueueIfMirrorMatchesExisting;
 export const enqueueIfMirrorMatches: typeof QueueEnqueue.enqueueIfMirrorMatches =
   QueueEnqueue.enqueueIfMirrorMatches;
 export const enqueueInTransaction: typeof QueueEnqueue.enqueueInTransaction =
@@ -743,6 +745,8 @@ export interface IStateAccessFacade {
   readonly canonicalizePromptIntakeTarget: typeof PromptIntakeWrite.canonicalizePromptIntakeTarget;
   readonly promotePromptIntakeToQueue: typeof PromptIntakePromotion.promotePromptIntakeToQueue;
   readonly enqueue: typeof QueueEnqueue.enqueue;
+  readonly enqueueExisting: typeof QueueEnqueue.enqueueExisting;
+  readonly enqueueIfMirrorMatchesExisting: typeof QueueEnqueue.enqueueIfMirrorMatchesExisting;
   readonly enqueueIfMirrorMatches: typeof QueueEnqueue.enqueueIfMirrorMatches;
   readonly enqueueInTransaction: typeof QueueEnqueue.enqueueInTransaction;
   readonly markRunning: typeof QueueMarkRunning.markRunning;
@@ -1050,6 +1054,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   canonicalizePromptIntakeTarget,
   promotePromptIntakeToQueue,
   enqueue,
+  enqueueExisting,
+  enqueueIfMirrorMatchesExisting,
   enqueueIfMirrorMatches,
   enqueueInTransaction,
   markRunning,

@@ -1,8 +1,9 @@
+import {openExisting} from './existing-store.ts';
 import type { DatabaseSync } from "node:sqlite";
 import { types } from "node:util";
 import { I64_MIN, I64_MAX } from "../protocol/ids.ts";
 import { rustDebugString } from "../core/rust-debug.ts";
-import { openInitialized } from "./owned-driver.ts";
+import { openInitialized,verifyCurrentCatalogIn } from "./owned-driver.ts";
 import { StoreIntegrityError } from "./schema-assembly.ts";
 import { selectJob, QueueJobNotFoundError } from "./queue-read.ts";
 import type { StoredQueueJob } from "./queue-read.ts";
@@ -56,7 +57,7 @@ function fields(value: unknown, names: readonly string[]): Record<string, unknow
   const result: Record<string, unknown>={};
   for(const name of names) {
     const d=Object.getOwnPropertyDescriptor(value,name);
-    if(d===undefined||!("value" in d)||!d.enumerable) throw new TypeError("Expected own enumerable data fields");
+    if(d===undefined||!Object.hasOwn(d,"value")||!d.enumerable) throw new TypeError("Expected own enumerable data fields");
     result[name]=d.value;
   }
   return result;
@@ -126,11 +127,11 @@ function checkMirror(db: DatabaseSync, job: NewQueueJob, expected: ExpectedMirro
 export function ensureMirrorMatches(db: DatabaseSync, input: NewQueueJob, mapping: ExpectedMirrorMapping): void {
   checkMirror(db,snapshotJob(input),snapshotMapping(mapping));
 }
-async function ownedEnqueue(path: string, job: NewQueueJob, mapping: ExpectedMirrorMapping | null): Promise<QueueEnqueueResult> {
-  const db=await openInitialized(text(path));
+function finishEnqueue(db:DatabaseSync,job:NewQueueJob,mapping:ExpectedMirrorMapping|null,existing:boolean):QueueEnqueueResult{
   try {
     db.exec("BEGIN IMMEDIATE");
     try {
+      if(existing)verifyCurrentCatalogIn(db);
       if(mapping!==null) checkMirror(db,job,mapping);
       const result=enqueueOwnedValues(db,job);
       db.exec("COMMIT");
@@ -141,6 +142,9 @@ async function ownedEnqueue(path: string, job: NewQueueJob, mapping: ExpectedMir
     }
   } finally { try { db.close(); } catch {} }
 }
+async function ownedEnqueue(path:string,job:NewQueueJob,mapping:ExpectedMirrorMapping|null):Promise<QueueEnqueueResult>{
+  return finishEnqueue(await openInitialized(text(path)),job,mapping,false);
+}
 export async function enqueue(path: string, input: NewQueueJob): Promise<QueueEnqueueResult> {
   return ownedEnqueue(path,snapshotJob(input),null);
 }
@@ -148,4 +152,11 @@ export async function enqueueIfMirrorMatches(path: string, input: NewQueueJob, m
   return ownedEnqueue(path,snapshotJob(input),snapshotMapping(mapping));
 }
 
-export {snapshotJob as snapshotNewQueueJob};
+/** Existing initialized-profile mutations; no full initialization. Original in-transaction fork schema ensure is preserved. */
+export function enqueueExisting(path:string,input:NewQueueJob):QueueEnqueueResult{
+ const job=snapshotJob(input);return finishEnqueue(openExisting(text(path)),job,null,true);
+}
+export function enqueueIfMirrorMatchesExisting(path:string,input:NewQueueJob,mapping:ExpectedMirrorMapping):QueueEnqueueResult{
+ const job=snapshotJob(input),expected=snapshotMapping(mapping);return finishEnqueue(openExisting(text(path)),job,expected,true);
+}
+export {snapshotJob as snapshotNewQueueJob,snapshotMapping as snapshotExpectedMirrorMapping};
