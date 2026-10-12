@@ -270,6 +270,7 @@ export const hasObservedCompletionResidentEvidence: typeof ObservedCompletion.ha
 export const hasObservedCompletionResidentEvidenceExisting: typeof ObservedCompletion.hasObservedCompletionResidentEvidenceExisting = ObservedCompletion.hasObservedCompletionResidentEvidenceExisting;
 export const pendingObservedCompletions: typeof ObservedCompletion.pendingObservedCompletions = ObservedCompletion.pendingObservedCompletions;
 export const pendingObservedCompletionsExisting: typeof ObservedCompletion.pendingObservedCompletionsExisting = ObservedCompletion.pendingObservedCompletionsExisting;
+export const hasObservedCompletionExisting: typeof ObservedCompletion.hasObservedCompletionExisting = ObservedCompletion.hasObservedCompletionExisting;
 export const hasObservedCompletion: typeof ObservedCompletion.hasObservedCompletion = ObservedCompletion.hasObservedCompletion;
 export const recordObservedCompletionError: typeof ObservedCompletion.recordObservedCompletionError = ObservedCompletion.recordObservedCompletionError;
 export const finishObservedCompletion: typeof ObservedCompletion.finishObservedCompletion = ObservedCompletion.finishObservedCompletion;
@@ -690,6 +691,7 @@ export interface IStateAccessFacade {
   readonly hasObservedCompletionResidentEvidenceExisting: typeof ObservedCompletion.hasObservedCompletionResidentEvidenceExisting;
   readonly pendingObservedCompletions: typeof ObservedCompletion.pendingObservedCompletions;
   readonly pendingObservedCompletionsExisting: typeof ObservedCompletion.pendingObservedCompletionsExisting;
+  readonly hasObservedCompletionExisting: typeof ObservedCompletion.hasObservedCompletionExisting;
   readonly hasObservedCompletion: typeof ObservedCompletion.hasObservedCompletion;
   readonly recordObservedCompletionError: typeof ObservedCompletion.recordObservedCompletionError;
   readonly finishObservedCompletion: typeof ObservedCompletion.finishObservedCompletion;
@@ -1023,6 +1025,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   hasObservedCompletionResidentEvidenceExisting,
   pendingObservedCompletions,
   pendingObservedCompletionsExisting,
+  hasObservedCompletionExisting,
   hasObservedCompletion,
   recordObservedCompletionError,
   finishObservedCompletion,

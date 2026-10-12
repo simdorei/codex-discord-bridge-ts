@@ -93,6 +93,10 @@ export async function pendingObservedCompletions(path:string):Promise<ObservedCo
 export function pendingObservedCompletionsExisting(path:string):ObservedCompletion[]{
  const db=openExisting(path);try{return pendingObservedCompletionsIn(db);}finally{db.close();}
 }
+/** Existing-only native read profile; same two-key predicate, never creates or migrates. */
+export function hasObservedCompletionExisting(path:string,thread:string,turn:string):boolean {
+ return usingExistingStore(path,db=>hasObservedCompletionIn(db,thread,turn));
+}
 export async function hasObservedCompletion(path:string,thread:string,turn:string):Promise<boolean> {
   const db=await openInitialized(path);
   try {return hasObservedCompletionIn(db,thread,turn);} finally {db.close();}

@@ -159,3 +159,13 @@ it('installed active and archived lists read selection only through shared nativ
  t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){if(String(args[0]).endsWith('/bridge-state-native-worker.ts')&&(args[1] as {operation:{kind:string}}).operation.kind==='Selected')selectedReads++;return run.apply(this,args);});
  await fixture(false,async f=>{armed=true;try{const active=await f.executor.executeWithIngressContext({List:{limit:1n}},actor,'message:5');assert.match(active.text,/root/);const db=new DatabaseSync(join(dirname(f.path),'codex.sqlite'));try{db.exec("UPDATE threads SET archived=1,archived_at=1 WHERE id='root'");}finally{db.close();}const archived=await f.executor.executeWithIngressContext({ArchivedList:{limit:1n}},actor,'message:6');assert.match(archived.text,/root/);}finally{armed=false;}assert.equal(selectedReads,2);assert.deepEqual(f.starts,[]);});
 });
+
+it('installed control verifier uses exact native terminal evidence after real active cache observation',async t=>{
+ let reads=0;const run=OwnedWorkerSlot.prototype.run;t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){if(String(args[0]).endsWith('/control-evidence-native-worker.ts'))reads++;return run.apply(this,args);});
+ const script=()=>code.replace("if(m.method==='fixture/seen')", "if(m.method==='fixture/seed'){emit({method:'turn/started',params:{threadId:'root',turnId:'v'}});reply({});return;}if(m.method==='fixture/seen')");
+ await fixture(true,async f=>{const server=f.server!,verifier=f.executor.messageRuntimeBinding().controlVerifier;await assert.rejects(verifier.owned('root'),/no currently owned/);assert.equal(reads,0);const a=server.admitResponse(server.generation());try{await a.client.requestAdmitted(a.permit,'fixture/seed',{},1000);}finally{a.release();}
+ assert.deepEqual(await verifier.control(42n,'root','v'),['v',server.generation()]);assert.equal(reads,1);
+ const db=await openInitialized(f.path);try{db.exec("INSERT INTO codex_observed_completions(thread_id,turn_id,generation,payload,resident_owner) VALUES('root','v',-9,'{}','other')");}finally{db.close();}
+ await assert.rejects(verifier.owned('root','v'),/turn completed/);assert.equal(reads,2);assert.deepEqual(await f.seen(),[]);
+ },20000,script);
+});

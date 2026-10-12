@@ -29,11 +29,11 @@ const immediate=(text:string)=>snapshotActionResult({text,waitsForFinal:false,ui
  * This is not the full message business adapter or runnable bridge bootstrap. */
 export class BasicActionDispatcher{
  readonly #mirror:string;readonly #selection:ActionThreadSelection;readonly #list:ThreadListAction;readonly #status:ThreadStatusAction;readonly #context:ContextAction;readonly #usage:UsageAction;readonly #runners:RunnerInspection;readonly #options:SettingsOptionsAction;readonly #services:RuntimeServiceActions;
- constructor(input:DiagnosticPaths,bridge:BridgeState,server:PortableResidentLifecycle|null,locks:TargetLocks,render:(error:unknown)=>string,resumeTimeoutMs:number,mapped?:ActionMappingRead,reads?:ActionThreadReads,nativeBridge?:NativeBridgeStateOwner){
+ constructor(input:DiagnosticPaths,bridge:BridgeState,server:PortableResidentLifecycle|null,locks:TargetLocks,render:(error:unknown)=>string,resumeTimeoutMs:number,mapped?:ActionMappingRead,reads?:ActionThreadReads,nativeBridge?:NativeBridgeStateOwner,controlReads?:ConstructorParameters<typeof ControlTurnVerifier>[4]){
   const paths=cloneOwnedSerdeValue(input);for(const key of ['state','mirror','bridge'])requireDiscordText(serdeField(paths,key));
   const p=paths as DiagnosticPaths;this.#mirror=p.mirror;this.#selection=new ActionThreadSelection(p.state,p.mirror,bridge,mapped,reads,nativeBridge);
   this.#list=new ThreadListAction(p.state,bridge,server,render,nativeBridge);this.#status=new ThreadStatusAction(this.#selection,server,render);this.#context=new ContextAction(p.state,this.#selection,createNativeContextStoreReads(p.state));this.#usage=new UsageAction(server);
-  this.#runners=new RunnerInspection(p.mirror,this.#selection,new ControlTurnVerifier(p.mirror,server,bridge,locks,undefined,nativeBridge));this.#options=new SettingsOptionsAction(this.#selection,server,resumeTimeoutMs);this.#services=new RuntimeServiceActions(p,server);Object.freeze(this);
+  this.#runners=new RunnerInspection(p.mirror,this.#selection,new ControlTurnVerifier(p.mirror,server,bridge,locks,controlReads,nativeBridge));this.#options=new SettingsOptionsAction(this.#selection,server,resumeTimeoutMs);this.#services=new RuntimeServiceActions(p,server);Object.freeze(this);
  }
  async targetThreadId(channel:bigint,signal?:AbortSignal):Promise<string>{signal?.throwIfAborted();const target=await this.#selection.targetThreadId(channel);signal?.throwIfAborted();return target;}
  async execute(input:CommandAction,contextInput:NewActionContext,signal?:AbortSignal):Promise<ActionResult>{
