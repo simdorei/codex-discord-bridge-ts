@@ -1,3 +1,4 @@
+import {types} from 'node:util';
 import {resolveThreadReferenceOffThread} from '../../codex-state/reference-reader.ts';
 import {CodexThreadStore} from '../../codex-state/store.ts';
 import {resolveThreadRefPosix, ThreadResolveError} from '../../codex-state/thread-reference.ts';
@@ -7,17 +8,19 @@ import {requireDiscordText} from '../../discord/text.ts';
 import {StateAccessFacade} from '../../store/state-access-facade.ts';
 import {BridgeState} from '../bridge-state.ts';
 import {ActionIntegerRangeError, InvalidActionRequestError, NoActionTargetError} from './errors.ts';
-const mapped = StateAccessFacade.mirroredThreadId;
+export type ActionMappingRead = typeof StateAccessFacade.mirroredThreadId;
 /** Original-target selection only. Never canonicalizes forks or substitutes a
  * selected target for a stale room mapping. Synchronous Codex/bridge reads need
  * the production owned filesystem boundary; Windows reference parity pending. */
 export class ActionThreadSelection {
+  readonly #mapped: ActionMappingRead;
   readonly #statePath: string;
   readonly #bridgePath:string;
   readonly #mirrorPath: string;
   readonly #selected: () => string | null;
   readonly #select: (id: string | null) => void;
-  constructor(statePath: string, mirrorPath: string, bridge: BridgeState) {
+  constructor(statePath: string, mirrorPath: string, bridge: BridgeState, mapped: ActionMappingRead = StateAccessFacade.mirroredThreadId) {
+    if(typeof mapped!=='function'||types.isProxy(mapped)||types.isGeneratorFunction(mapped))throw new TypeError('Expected passive mapping read function');this.#mapped=mapped;
     requireDiscordText(statePath); requireDiscordText(mirrorPath);
     this.#statePath = statePath; this.#mirrorPath = mirrorPath;this.#bridgePath=BridgeState.prototype.path.call(bridge);
     this.#selected = BridgeState.prototype.selectedThreadId.bind(bridge);
@@ -27,7 +30,8 @@ export class ActionThreadSelection {
   async target(channel: bigint): Promise<readonly [string, 'mirror' | 'selected']> {
     if (typeof channel !== 'bigint' || channel < 0n || channel >= 1n << 64n) throw new TypeError('Expected u64 channel');
     if (channel >= 1n << 63n) throw new ActionIntegerRangeError();
-    const mirror = await mapped(this.#mirrorPath, channel);
+    const pending=this.#mapped(this.#mirrorPath,channel);if(!types.isPromise(pending))throw new TypeError('Expected native mapping read Promise');const mirror=await pending;
+    if(mirror!==null)requireDiscordText(mirror);
     if (mirror !== null) return Object.freeze([mirror, 'mirror'] as const);
     const selected = this.#selected();
     if (selected === null) throw new NoActionTargetError();
