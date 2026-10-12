@@ -1,0 +1,60 @@
+{
+  "rustMain": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+  "scope": "bounded six-file authority, not whole closure",
+  "files": [
+    {
+      "path": "crates/cdr-runtime/src/action_executor/repair_action.rs",
+      "sha256": "e06e138fcb8c72da372f4d41436d37c6970d7bfa618d7322910c8c706b7ece9d",
+      "currentMainEqual": true
+    },
+    {
+      "path": "crates/cdr-runtime/src/action_executor/recovery_custody.rs",
+      "sha256": "db36d28505b0a0e756a2c857820855e42e09b9a78d90b8caad4c7a9c25b50f94",
+      "currentMainEqual": true
+    },
+    {
+      "path": "crates/cdr-runtime/src/action_executor/repair_action_tests.rs",
+      "sha256": "5e129f713d7605bd887dbe268cd69daa7f075b4b3d64acf6bf278257a1c0258b",
+      "currentMainEqual": true
+    },
+    {
+      "path": "crates/cdr-runtime/src/action_executor/repair_custody_tests.rs",
+      "sha256": "639b706fee5214e89bcef67903484c1333bec9a8603c13f97caee5f0df133317",
+      "currentMainEqual": false
+    },
+    {
+      "path": "crates/cdr-store/src/queue/read.rs",
+      "sha256": "087d7e3852aaa2a283ecfd92b8d581ff7f1838821a3d1aa8523dcb572651d27b",
+      "currentMainEqual": true
+    },
+    {
+      "path": "crates/cdr-store/src/prompt_intake/read.rs",
+      "sha256": "900712b12da69c0cef3244752a04cc253d3886d2be4b4176b4883c4f68fdd4be",
+      "currentMainEqual": true
+    },
+    {
+      "path": "src/runtime/action-executor/repair-action.ts",
+      "sha256": "75f61ba7eb0d63cb7c34638bc6202443517c07d46738ba825737be36890be71f"
+    },
+    {
+      "path": "src/runtime/action-executor/recovery-custody.ts",
+      "sha256": "56c5a70ea6521551df8a08a20b8b5642ea6b51390c7788359e642f96129bd7a6"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "117275e7d1d602335a8619c0b91bcfece285b4bafa8079df72356d5fbdec768f"
+    },
+    {
+      "path": "src/runtime/queue-runner/native-read-state.ts",
+      "sha256": "9886e4dabbeb850a39a45260e2333ce7b68fbe6d166d2d726b83a1eb9531176a"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state.ts",
+      "sha256": "c6778987f38a561bdecf7a9cf7a33f6674babcd010917c3089939816a59200b8"
+    },
+    {
+      "path": "test/runtime/action-executor/repair-action.test.ts",
+      "sha256": "f7fd3a5641365a578dac7ce07e21fbd1c44d188ccb37dfe911ac9f9a848349b0"
+    }
+  ]
+}
