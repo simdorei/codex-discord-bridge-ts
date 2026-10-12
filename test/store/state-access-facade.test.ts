@@ -252,6 +252,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.listFilteredExisting, QueueRead.listFilteredExisting);
     assert.strictEqual(FacadeExports.listFilteredExisting, QueueRead.listFilteredExisting);
     assert.strictEqual(StateAccessFacade.unfinishedArchiveRequest, ArchiveFence.unfinishedArchiveRequest);
+    assert.strictEqual(StateAccessFacade.unfinishedArchiveRequestExisting, ArchiveFence.unfinishedArchiveRequestExisting);
+    assert.strictEqual(FacadeExports.unfinishedArchiveRequestExisting, ArchiveFence.unfinishedArchiveRequestExisting);
     assert.strictEqual(StateAccessFacade.reserveArchiveScope, ArchiveFence.reserveArchiveScope);
     assert.strictEqual(StateAccessFacade.archiveTargetFenced, ArchiveFence.archiveTargetFenced);
     assert.strictEqual(StateAccessFacade.markArchiveVerified, ArchiveFence.markArchiveVerified);
@@ -525,6 +527,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
   it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
       "unfinishedArchiveRequest",
+      "unfinishedArchiveRequestExisting",
       "reserveArchiveScope",
       "archiveTargetFenced",
       "markArchiveVerified",
@@ -836,7 +839,7 @@ assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimExisting, PromptIntak
     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
 assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
 assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
-    assert.strictEqual(actual.length, 317);
+    assert.strictEqual(actual.length, 318);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

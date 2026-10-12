@@ -1,6 +1,6 @@
 import type {DatabaseSync} from 'node:sqlite';
 import {randomUUID} from 'node:crypto';
-import {usingInitializedStore,withStoreTransaction,commitStore} from './owned-scope.ts';
+import {usingInitializedStore,usingExistingStore,withStoreTransaction,commitStore} from './owned-scope.ts';
 import {receiptRow,receiptText,receiptTextColumns,receiptExists} from './delivery-receipt-key.ts';
 import {StoreIntegrityError} from './schema-assembly.ts';
 import {cloneOwnedSerdeValue} from '../core/owned-serde-value.ts';
@@ -48,4 +48,9 @@ function unfinishedIn(db:DatabaseSync,target:string,own:string|null):string|null
 }
 export async function unfinishedArchiveRequest(path:string,target:string,own:string|null):Promise<string|null>{
  requireDiscordText(path);requireDiscordText(target);if(own!==null)requireDiscordText(own);return usingInitializedStore(path,db=>unfinishedIn(db,target,own));
+}
+
+/** Existing initialized runtime only; same exact unfinished SQL and text decoder. */
+export function unfinishedArchiveRequestExisting(path:string,target:string,own:string|null):string|null{
+ requireDiscordText(path);requireDiscordText(target);if(own!==null)requireDiscordText(own);return usingExistingStore(path,db=>unfinishedIn(db,target,own));
 }

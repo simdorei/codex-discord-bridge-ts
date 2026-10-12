@@ -1,0 +1,102 @@
+{
+  "scope": [
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "828a435bb4efce9fee50907bb8f4045247fb29110e772623daeb4df0d72f69b5",
+      "afterSha256": "6ef86f8a334a989103882a0fe8a2b6850880457a1f1486a801426ccde5fee791"
+    },
+    {
+      "path": "src/store/archive-fence.ts",
+      "beforeSha256": "96dcfef5d072bf876cd253be770a77ce752c89792eec8505fea7e1b58406696e",
+      "afterSha256": "aeddd4160ab7a5173e79f9ea58d37e09b36c195fe5cf17e788a143b403c4ac3c"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "beforeSha256": "9f1dbd6187f531b4671b484e976baa0d7e51c18327ad13e431e3cf0500697f26",
+      "afterSha256": "c69d4058d8675b2446cf8ddab84ad67993504a4065417152d6f42c397315960d"
+    },
+    {
+      "path": "src/runtime/action-executor/archive-preflight.ts",
+      "beforeSha256": "dbbca6913645cb424720bde04d3bbd74a2372c687002012e9123d5a1da82de70",
+      "afterSha256": "fab60f9b10dd217f18ab640093c75c64f86d3efab55db37c75eec349e680792b"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state.ts",
+      "beforeSha256": "c6778987f38a561bdecf7a9cf7a33f6674babcd010917c3089939816a59200b8",
+      "afterSha256": "4ccd76cfc73974aa8b7f8f759ae11088500b357f2f36ca92eeab4038eff315bd"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state-worker.ts",
+      "beforeSha256": "1b9b787923ada9f981c0f35f1d2a563f500cd360baf96071448d66da9a1e93e5",
+      "afterSha256": "f67a99f3759188884700538cba0aae18184a2205abc804bcf75a7b9a62f1eac9"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "24047f0a65f08f28996b0797bbd419927a39ca9f1e631b5e7851f6465338210a",
+      "afterSha256": "42df5b1d80bc3ae207d5aad34f89d3a92f07d55c9dbf5b401819dbde00dbc45f"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "beforeSha256": "b14e8be49ab665162c83e731c681e18d25dda30baf77dce84121ebd6409b3dd8",
+      "afterSha256": "70912ab2b6f2a44edb0a6c1cc83c330aee239ab8ac301aaaa0cecc4c0634b84d"
+    },
+    {
+      "path": "test/runtime/action-executor/archive-preflight-native-paired.test.ts",
+      "beforeSha256": "d7132f34bde17e15cb71960ce4ae4674731571178035d196572a186aa5fa2f47",
+      "afterSha256": "149e6719ca2dc8ae297ce9b7290b66e5da259970cd0e66c683cc01a257dfd419"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-archive-journal.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "1914cd87046c8258e4fab62333a651b77dc0f04a265cf21f731095fb41d1d3ac"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-state.test.ts",
+      "beforeSha256": "8d22a8a0a6bedb39ed12b694d87e9b6517ecdb8ba501b33f9abd683c7b13f0b7",
+      "afterSha256": "0f53196192c95e88234bf10917eeb1389730958e63d28ee825edf6a3acb02e0d"
+    }
+  ],
+  "stageFileCount": 1604,
+  "full": {
+    "tests": 8165,
+    "pass": 8165,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "fullLogSha256": "3f973b54f3fe54ee08f7a4304ff01e74fe9b0e60434c5af88d6e50d1b7613cf0",
+  "focused": 183,
+  "status": "APPLIED_VERIFIED_COMPOSITE",
+  "fullRunTestsMatchFinal": false,
+  "finalVerification": "Prior whole8165 plus corrected focused183, not one final full run",
+  "testCorrection": {
+    "file": "test/runtime/action-executor/command-executor.test.ts",
+    "beforeSha256": "32c4aa6ef0c8b8b734648cb341cd2b1be5d405833a9154462cb3e541eb4426b6",
+    "afterSha256": "70912ab2b6f2a44edb0a6c1cc83c330aee239ab8ac301aaaa0cecc4c0634b84d",
+    "scope": "test-only",
+    "fullResultReuse": "UNVERIFIED until corrected focused completion"
+  },
+  "firstActualFocused": {
+    "tests": 183,
+    "pass": 182,
+    "fail": 1
+  },
+  "actualFocused": 183,
+  "typecheck": 0,
+  "build": 0,
+  "verifiedAt": "2026-10-12T16:16:27.545690+00:00",
+  "wholeTestFiles": 788,
+  "testFileConcurrency": 1,
+  "missingProtectedFixture": "not executed or counted as skipped",
+  "runtimeWindowsLive24h": "UNVERIFIED",
+  "evidence": {
+    ".runtime/archive-journal-native-756/full.log": "3f973b54f3fe54ee08f7a4304ff01e74fe9b0e60434c5af88d6e50d1b7613cf0",
+    ".runtime/archive-journal-native-756/test-fixture-correction-758/focused.log": "296efab6c518a960a1ead3384cc7cd030d19f510df1cbc028b59c676a5b4df0f",
+    ".runtime/archive-journal-native-756/test-fixture-correction-758/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/archive-journal-native-756/test-fixture-correction-758/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/archive-journal-native-756/stage-inputs.json": "69096dbe6c3fb84d516b1042d16ac7542fb7935d6c2d62c7f676d771eca5de16",
+    ".runtime/archive-journal-native-756/applied/final-inputs.json": "f2c5d16435d492a30c096dc4a244b068886f67284be59bfebb0d1da103b220aa",
+    ".runtime/archive-journal-native-756/applied/focused.log": "476028c399a27c4c736964cf98afb1a9753ff9a8071c6bb959d6f7011fdf7991",
+    ".runtime/archive-journal-native-756/applied/archive-deadline-diagnostic.log": "f371c948c97e4b70e90a0e6b4c4ef301f14e4779f98a0c2a03024ac3004e263e"
+  }
+}

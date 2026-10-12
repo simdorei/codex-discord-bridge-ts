@@ -124,6 +124,7 @@ export const listFilteredExisting: typeof QueueRead.listFilteredExisting = Queue
 export const remainingDiscordIds: typeof MirrorPolicyRead.remainingDiscordIds = MirrorPolicyRead.remainingDiscordIds;
 export const mirrorTargets: typeof MirrorPolicyRead.mirrorTargets = MirrorPolicyRead.mirrorTargets;
 export const unfinishedArchiveRequest: typeof ArchiveFence.unfinishedArchiveRequest = ArchiveFence.unfinishedArchiveRequest;
+export const unfinishedArchiveRequestExisting: typeof ArchiveFence.unfinishedArchiveRequestExisting = ArchiveFence.unfinishedArchiveRequestExisting;
 export const reserveArchiveScope: typeof ArchiveFence.reserveArchiveScope = ArchiveFence.reserveArchiveScope;
 export const archiveTargetFenced: typeof ArchiveFence.archiveTargetFenced = ArchiveFence.archiveTargetFenced;
 export const markArchiveVerified: typeof ArchiveFence.markArchiveVerified = ArchiveFence.markArchiveVerified;
@@ -475,6 +476,7 @@ export interface IStateAccessFacade {
   readonly remainingDiscordIds: typeof MirrorPolicyRead.remainingDiscordIds;
   readonly mirrorTargets: typeof MirrorPolicyRead.mirrorTargets;
   readonly unfinishedArchiveRequest: typeof ArchiveFence.unfinishedArchiveRequest;
+  readonly unfinishedArchiveRequestExisting: typeof ArchiveFence.unfinishedArchiveRequestExisting;
   readonly reserveArchiveScope: typeof ArchiveFence.reserveArchiveScope;
   readonly archiveTargetFenced: typeof ArchiveFence.archiveTargetFenced;
   readonly markArchiveVerified: typeof ArchiveFence.markArchiveVerified;
@@ -812,6 +814,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   remainingDiscordIds,
   mirrorTargets,
   unfinishedArchiveRequest,
+  unfinishedArchiveRequestExisting,
   reserveArchiveScope,
   archiveTargetFenced,
   markArchiveVerified,

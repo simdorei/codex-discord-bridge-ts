@@ -21,7 +21,7 @@ async function serverFixture(pages:unknown[],run:(server:PortableResidentLifecyc
 function setup(path:string,server:PortableResidentLifecycle,override?:Partial<ArchivePreflightReads>){
  const codex=join(dirname(path),'codex.sqlite'),bridge=new BridgeState(join(dirname(path),'bridge.json'));bridge.setSelectedThreadId('target');
  const db=new DatabaseSync(codex);try{db.exec("CREATE TABLE threads(id TEXT PRIMARY KEY,title TEXT,cwd TEXT,updated_at INTEGER,rollout_path TEXT,model TEXT,reasoning_effort TEXT,tokens_used INTEGER,archived INTEGER,archived_at INTEGER);INSERT INTO threads(id,title,cwd,updated_at,archived,archived_at) VALUES ('target','Title','/tmp',1,0,0),('old','Old','/tmp',1,1,2)");}finally{db.close();}
- const reads={listFiltered:createNativeQueueReadState(path).listFiltered,listPromptIntakes:createNativePromptIntakeState(path).listPromptIntakes,exact:createNativeActionThreadReads(codex,bridge.path()).exact,...override};return {bridge,verifier:new ArchiveTargetVerifier(path,codex,new ActionThreadSelection(codex,path,bridge),server,1000,reads)};
+ const reads={unfinishedArchiveRequest:createNativePromptIntakeState(path).unfinishedArchiveRequest,listFiltered:createNativeQueueReadState(path).listFiltered,listPromptIntakes:createNativePromptIntakeState(path).listPromptIntakes,exact:createNativeActionThreadReads(codex,bridge.path()).exact,...override};return {bridge,verifier:new ArchiveTargetVerifier(path,codex,new ActionThreadSelection(codex,path,bridge),server,1000,reads)};
 }
 it('native preflight: preflight accepts active stored idle target without any archive dispatch',async()=>serverFixture([],async(s,seen,path)=>{
  const f=setup(path,s);await f.verifier.preflight(1n,null,'target',1n,null);assert.deepEqual(await seen(),[]);assert.equal(await state.archiveTargetFenced(path,'target'),false);
@@ -73,4 +73,12 @@ it('native preflight: cancellation waits for admitted read and prevents next sta
 it('native preflight: unrelated malformed queue row is not hidden by target filtering',async()=>serverFixture([],async(s,seen,path)=>{
  const f=setup(path,s);await state.enqueue(path,{jobId:'foreign',targetThreadId:'other',channelId:1n,ownerUserId:2n,discordMessageId:3n,appServerGeneration:1n,prompt:'hi',queued:true,ackSent:false,createdAt:1});const db=await openInitialized(path);try{db.exec("UPDATE codex_turn_queue SET baseline_turn_ids='{' WHERE job_id='foreign'");}finally{db.close();}
  await assert.rejects(f.verifier.preflight(0n,'target','target',1n,null),/Queue read unavailable/);assert.deepEqual(await seen(),[]);
+}));
+
+it('native unfinished request masks queue intake and exact checks while preserving original request',async()=>serverFixture([],async(s,seen,path)=>{
+ const fail=async():Promise<never>=>{throw new Error('later read must be masked');};const f=setup(path,s,{listFiltered:fail,listPromptIntakes:fail,exact:fail});await state.admitIngress(path,{ingressId:'held-original',kind:'message',eventId:9n,applicationId:null,channelId:1n,ownerUserId:2n,sourceMessageId:9n,payload:{version:1n},targetThreadId:null,canonicalOwner:null,now:9});
+ await assert.rejects(f.verifier.preflight(0n,'target','target',1n,null),/held-original.*unfinished ingress/);assert.equal((await state.getIngress(path,'held-original'))?.state,'staged');assert.deepEqual(await seen(),[]);
+}));
+it('native unfinished read failure never becomes empty permission',async()=>serverFixture([],async(s,seen,path)=>{
+ const reason=new Error('unfinished unavailable');let later=0;const f=setup(path,s,{unfinishedArchiveRequest:async()=>{throw reason;},listFiltered:async()=>{later++;return [];}});await assert.rejects(f.verifier.preflight(0n,'target','target',1n,null),e=>e===reason);assert.equal(later,0);assert.deepEqual(await seen(),[]);
 }));

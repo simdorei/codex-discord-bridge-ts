@@ -7,7 +7,8 @@ import {DeadGenerationTargetHeldError} from '../../store/fork-completed-target.t
 const port=parentPort;if(port===null)throw new Error('Intake state requires owned native worker');
 try{
  let value:unknown;
- if(q.operation==='IngressRead'){const record=state.getIngressExisting(q.path,q.id);value={id:q.id,record:record===null?null:storedIngressToWire(record)};}
+ if(q.operation==='ArchiveUnfinished')value={target:q.target,ownRequest:q.ownRequest,request:state.unfinishedArchiveRequestExisting(q.path,q.target,q.ownRequest)};
+ else if(q.operation==='IngressRead'){const record=state.getIngressExisting(q.path,q.id);value={id:q.id,record:record===null?null:storedIngressToWire(record)};}
  else if(q.operation==='IngressBegin')value={id:q.id,gen:q.gen,won:state.beginIngressThreadStartExisting(q.path,q.id,q.gen,intakeNumberFromWire(q.now))};
  else if(q.operation==='IngressCreation'){state.recordIngressNewCreationExisting(q.path,q.id,q.gen,q.cwd,q.channel,intakeNumberFromWire(q.now));value={id:q.id,gen:q.gen,cwd:q.cwd,channel:q.channel,recorded:true};}
  else if(q.operation==='IngressCreated'){state.recordIngressCreatedThreadExisting(q.path,q.id,q.gen,q.target,intakeNumberFromWire(q.now));value={id:q.id,gen:q.gen,target:q.target,recorded:true};}
