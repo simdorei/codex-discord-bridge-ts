@@ -1,5 +1,6 @@
 import type {DatabaseSync} from "node:sqlite";
-import {openInitialized} from "./owned-driver.ts";
+import {openInitialized,verifyCurrentCatalogIn} from "./owned-driver.ts";
+import {usingExistingStore,withStoreTransaction,commitStore} from "./owned-scope.ts";
 import {getIngressIn,unfinishedPriorIngressesIn} from "./ingress-read.ts";
 import {StoreIntegrityError} from "./schema-assembly.ts";
 import {decodeI64} from "./sqlite-values.ts";
@@ -53,4 +54,10 @@ export function recoverPriorRuntimeIngressIn(db:DatabaseSync,runtime:string,now:
   db.prepare("UPDATE codex_new_first_replies SET ack_recovery_allowed=1 WHERE confirmation_delivered=0 AND ingress_id IN (SELECT ingress_id FROM discord_ingress_journal WHERE runtime_id IS NOT ?)").run(runtime);
   for(const record of records)holdIngressIn(db,record.ingressId,"runtime ended before custody handoff or confirmation was recorded",record.state==="staged"||record.state==="acknowledged",now);
   return records.length;
+}
+
+/** Same hold/notice body in one existing-profile transaction; no repair or replay. */
+export function holdIngressExisting(path:string,key:string,reason:string,notExecuted:boolean,now:number):void{
+ for(const value of [path,key,reason])text(value);if(typeof notExecuted!=='boolean'||typeof now!=='number')throw new TypeError('Expected hold flag/timestamp');
+ usingExistingStore(path,db=>withStoreTransaction(db,'IMMEDIATE',()=>{verifyCurrentCatalogIn(db);holdIngressIn(db,key,reason,notExecuted,now);return commitStore(undefined);}));
 }

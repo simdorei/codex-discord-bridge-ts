@@ -340,8 +340,10 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.recordIngressNewCreation, IngressLifecycle.recordIngressNewCreation);
     assert.strictEqual(StateAccessFacade.admitBusyInteraction, BusyIngress.admitBusyInteraction);
     assert.strictEqual(StateAccessFacade.holdIngress, IngressRecovery.holdIngress);
+    assert.strictEqual(StateAccessFacade.holdIngressExisting, IngressRecovery.holdIngressExisting);
     assert.strictEqual(StateAccessFacade.recoverPriorRuntimeIngress, IngressRecovery.recoverPriorRuntimeIngress);
     assert.strictEqual(StateAccessFacade.ingressByOrigin, IngressRead.ingressByOrigin);
+    assert.strictEqual(StateAccessFacade.ingressByOriginExisting, IngressRead.ingressByOriginExisting);
     assert.strictEqual(StateAccessFacade.getIngress, IngressRead.getIngress);
     assert.strictEqual(StateAccessFacade.getIngressForOwnerReadonly, IngressRead.getIngressForOwnerReadonly);
     assert.strictEqual(StateAccessFacade.listIngressesForOwner, IngressRead.listIngressesForOwner);
@@ -365,6 +367,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.finalDeliveryPreflight, DeliveryPreflight.finalDeliveryPreflight);
     assert.strictEqual(StateAccessFacade.pendingFirstReply, DeliveryPreflight.pendingFirstReply);
     assert.strictEqual(StateAccessFacade.admitIngress, IngressAdmission.admitIngress);
+    assert.strictEqual(StateAccessFacade.admitIngressExisting, IngressAdmission.admitIngressExisting);
     assert.strictEqual(StateAccessFacade.installReviewedRecoveryPolicy, ReviewedPolicy.installReviewedRecoveryPolicy);
     assert.strictEqual(FacadeExports.installReviewedRecoveryPolicy, ReviewedPolicy.installReviewedRecoveryPolicy);
     assert.strictEqual(StateAccessFacade.restartReadinessSnapshot, RestartReadiness.restartReadinessSnapshot);
@@ -689,8 +692,10 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "recordIngressNewCreation",
       "admitBusyInteraction",
       "holdIngress",
+      "holdIngressExisting",
       "recoverPriorRuntimeIngress",
       "ingressByOrigin",
+      "ingressByOriginExisting",
       "getIngress",
       "getIngressForOwnerReadonly",
       "listIngressesForOwner",
@@ -718,6 +723,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "finalDeliveryPreflight",
       "pendingFirstReply", "pendingFirstReplyExisting",
       "admitIngress",
+      "admitIngressExisting",
       "installReviewedRecoveryPolicy",
       "restartReadinessSnapshot",
       "historyPollTargets",
@@ -822,7 +828,7 @@ assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimExisting, PromptIntak
     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
 assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
 assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
-    assert.strictEqual(actual.length, 310);
+    assert.strictEqual(actual.length, 313);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

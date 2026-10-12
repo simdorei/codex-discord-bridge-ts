@@ -1,3 +1,4 @@
+import {CheckedRead} from './owned-driver.ts';
 import {DatabaseSync,type SQLInputValue} from "node:sqlite";
 import {openInitialized} from "./owned-driver.ts";
 import {StoreIntegrityError,schemaVersion,LATEST_STORE_SCHEMA_VERSION} from "./schema-assembly.ts";
@@ -65,4 +66,11 @@ export function unfinishedPriorIngressesIn(db:DatabaseSync,runtime:string):Store
 }
 export async function listIngressesForOwner(path:string,channel:bigint,owner:bigint):Promise<StoredIngress[]>{
   ownerScope(path,channel,owner);const db=await openInitialized(path);try{return rows(db," WHERE channel_id=? AND owner_user_id=? AND (state='held' OR (state='completed' AND confirmation_delivered=0)) ORDER BY created_at DESC,ingress_id LIMIT 20",channel,owner);}finally{db.close();}
+}
+
+/** Exact original event lookup on an existing current read-only snapshot. */
+export function ingressByOriginExisting(path:string,eventId:bigint):StoredIngress|null{
+ if(typeof path!=='string'||/[\uD800-\uDFFF]/u.test(path))throw new TypeError('Expected well-formed path');
+ if(typeof eventId!=='bigint'||eventId<-(1n<<63n)||eventId>=(1n<<63n))throw new TypeError('Expected i64 origin');
+ const read=CheckedRead.open(path);try{const result=ingressByOriginIn(read.connection(),eventId);read.finish();return result;}finally{read.close();}
 }

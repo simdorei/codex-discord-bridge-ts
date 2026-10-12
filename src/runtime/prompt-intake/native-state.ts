@@ -1,3 +1,6 @@
+import {captureIngressAdmission} from '../../store/ingress-admission.ts';
+import type {NewIngress} from '../../store/ingress-types.ts';
+import {newIngressToWire,storedIngressFromWire} from './native-journal-wire.ts';
 import {captureBusyAdmission} from '../../store/prompt-intake-busy.ts';
 import {captureNewAdmission,type NewReplySeed} from '../../store/prompt-intake-new-thread.ts';
 import type {BusyChoice} from '../../store/busy-choice.ts';
@@ -14,7 +17,7 @@ import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {intakeNumberWire,intakeFromWire} from './native-wire.ts';
 const LIMIT=16*1024*1024;
-type Operation='Get'|'List'|'DurableOwner'|'Claim'|'Renew'|'RecordFailure'|'RemoveQueued'|'Admit'|'Canonicalize'|'ReleaseAll'|'AdmitBusy'|'AdmitWithIngress'|'MirrorTarget'|'FirstReplyFinish';
+type Operation='Get'|'List'|'DurableOwner'|'Claim'|'Renew'|'RecordFailure'|'RemoveQueued'|'Admit'|'Canonicalize'|'ReleaseAll'|'AdmitBusy'|'AdmitWithIngress'|'MirrorTarget'|'FirstReplyFinish'|'IngressOrigin'|'IngressAdmit'|'IngressHold';
 export class NativePromptIntakeUnavailableError extends Error{
  readonly operation:Operation;
  constructor(operation:Operation,cause:unknown){super('Prompt intake result unavailable after actual native join; no partial result or automatic retry',{cause});this.name='NativePromptIntakeUnavailableError';this.operation=operation;}
@@ -23,7 +26,7 @@ function lease(now:number,expires:number):void{
  if(typeof now!=='number'||typeof expires!=='number')throw new TypeError('Expected lease timestamps');
  if(!Number.isFinite(now)||!Number.isFinite(expires)||expires<=now)throw new InvalidPromptIntakeLeaseError(now,expires);
 }
-/** Exactly fourteen intake/mapping/first-reply operations; all other state functions retain their identities. Shared finite Control admission; no new pool, retry or detached I/O. */
+/** Exactly seventeen intake/mapping/first-reply/journal operations; all other state functions retain their identities. Shared finite Control admission; no new pool, retry or detached I/O. */
 export function createNativePromptIntakeState(path:string,timeoutMs=5000):IStateAccessFacade{
  requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new TypeError('Invalid intake store path');
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid intake deadline');const fixed=pinNativeRuntimePath(path);
@@ -52,6 +55,24 @@ export function createNativePromptIntakeState(path:string,timeoutMs=5000):IState
   return {intake,claimToken:current};
  }
  return Object.freeze({...StateAccessFacade,
+  async ingressByOrigin(given:string,event:bigint){
+   requirePath(given);if(typeof event!=='bigint'||event<-(1n<<63n)||event>=(1n<<63n))throw new TypeError('Expected i64 origin');
+   return run('IngressOrigin',{event},raw=>{if(own(raw,'event')!==event)throw new TypeError('Journal origin reply differs from request');const value=own(raw,'record');if(value===null)return null;const record=storedIngressFromWire(value);if(record.eventId!==event)throw new TypeError('Journal record differs from requested origin');return record;});
+  },
+  async admitIngress(given:string,input:NewIngress){
+   requirePath(given);const request=captureIngressAdmission(input);identity(request.ingressId);const envelope=newIngressToWire(request);
+   return run('IngressAdmit',{id:request.ingressId,envelope},raw=>{
+    if(own(raw,'id')!==request.ingressId)throw new TypeError('Journal admission reply differs from request');
+    const created=own(raw,'created');if(typeof created!=='boolean'||own(raw,'canonicalRepeatCreated')!==false||own(raw,'busyChoice')!==null)throw new TypeError('Invalid journal admission result');
+    const value=own(raw,'record');if(value===null){if(created||request.kind!=='message')throw new TypeError('Unexpected absent journal admission');return {created,canonicalRepeatCreated:false,record:null,busyChoice:null};}
+    const record=storedIngressFromWire(value);if(record.kind!==request.kind||record.eventId!==request.eventId||record.channelId!==request.channelId||record.ownerUserId!==request.ownerUserId||(created&&record.ingressId!==request.ingressId))throw new TypeError('Journal admission identity mismatch');
+    return {created,canonicalRepeatCreated:false,record,busyChoice:null};
+   });
+  },
+  async holdIngress(given:string,id:string,reason:string,notExecuted:boolean,now:number){
+   requirePath(given);identity(id);requireDiscordText(reason);if(typeof notExecuted!=='boolean'||typeof now!=='number')throw new TypeError('Expected hold fields');
+   return run('IngressHold',{id,reason,notExecuted,now:intakeNumberWire(now)},raw=>{if(own(raw,'id')!==id||own(raw,'held')!==true)throw new TypeError('Journal hold reply differs from request');});
+  },
   async getNewFirstReplyFinish(given:string,ingress:string){
    requirePath(given);identity(ingress);return run('FirstReplyFinish',{ingress},raw=>{
     if(own(raw,'ingress')!==ingress)throw new TypeError('First-reply projection differs from requested ingress');const record=own(raw,'record');if(record===null)return null;

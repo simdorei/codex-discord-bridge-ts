@@ -2,7 +2,8 @@ import type {BusyChoice} from "./busy-choice.ts";
 import {isMappedSlashPrompt} from "./ingress-new-input.ts";
 import {mirroredThreadIdIn} from "./busy-choice.ts";
 import type {DatabaseSync} from "node:sqlite";
-import {openInitialized} from "./owned-driver.ts";
+import {openInitialized,verifyCurrentCatalogIn} from "./owned-driver.ts";
+import {usingExistingStore,withStoreTransaction,commitStore} from "./owned-scope.ts";
 import {getIngressIn,ingressByOriginIn,type StoredIngress} from "./ingress-read.ts";
 import {snapshotNewIngress,type NewIngress} from "./ingress-types.ts";
 import {recordNewAdmissionIn,verifyRecordedAdmissionIn,type RecordedAdmission} from "./ingress-admission-order.ts";
@@ -19,6 +20,8 @@ function validate(r:NewIngress):void{
   if(trim(r.ingressId)===""||trim(r.ingressId)!==r.ingressId||r.channelId<=0n||r.ownerUserId<=0n||!Number.isFinite(r.now)||r.now<0||
     (r.eventId!==null&&r.eventId<=0n)||(r.kind!=="action"&&r.eventId===null)||!isJsonObject(r.payload))throw new StoreIntegrityError("invalid ingress custody identity");
 }
+/** Pure admission snapshot and original validation before native admission. */
+export function captureIngressAdmission(input:NewIngress):NewIngress {const request=snapshotNewIngress(input);validate(request);return request;}
 function captureOrigins(db:DatabaseSync,r:NewIngress):void{
   const p=r.payload as Record<string,unknown>;
   if(isJsonObject(getOwn(p,"settings_binding"))||isJsonObject(getOwn(p,"lifecycle_binding")))p.stop_origin=captureStopOriginIn(db,r.targetThreadId);
@@ -47,7 +50,7 @@ export function admitIngressRecordedIn(db:DatabaseSync,input:NewIngress):readonl
   verifyRecordedAdmissionIn(db,proof);return [{created:true,canonicalRepeatCreated:false,record:getIngressIn(db,request.ingressId),busyChoice:null},proof];
 }
 export async function admitIngress(path:string,input:NewIngress):Promise<IngressAdmission>{
-  const request=snapshotNewIngress(input);validate(request);const db=await openInitialized(path);
+  const request=captureIngressAdmission(input);const db=await openInitialized(path);
   try{db.exec("BEGIN IMMEDIATE");const [admitted]=admitIngressRecordedIn(db,request);db.exec("COMMIT");return admitted;}
   finally{if(db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
 }
@@ -60,4 +63,10 @@ export async function admitMappedSlashIngress(path:string,input:NewIngress):Prom
     db.exec("BEGIN IMMEDIATE");request.targetThreadId=mirroredThreadIdIn(db,request.channelId);
     const [admitted]=admitIngressRecordedIn(db,request);db.exec("COMMIT");return admitted;
   }finally{if(db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
+}
+
+/** Existing current profile; the complete original admission transaction is shared. */
+export function admitIngressExisting(path:string,input:NewIngress):IngressAdmission{
+ const request=captureIngressAdmission(input);
+ return usingExistingStore(path,db=>withStoreTransaction(db,'IMMEDIATE',()=>{verifyCurrentCatalogIn(db);const [admitted]=admitIngressRecordedIn(db,request);return commitStore(admitted);}));
 }

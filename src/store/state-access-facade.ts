@@ -167,8 +167,10 @@ export const recordIngressNewCreation: typeof IngressLifecycle.recordIngressNewC
 export const admitBusyInteraction: typeof BusyIngress.admitBusyInteraction = BusyIngress.admitBusyInteraction;
 
 export const holdIngress: typeof IngressRecovery.holdIngress = IngressRecovery.holdIngress;
+export const holdIngressExisting: typeof IngressRecovery.holdIngressExisting = IngressRecovery.holdIngressExisting;
 export const recoverPriorRuntimeIngress: typeof IngressRecovery.recoverPriorRuntimeIngress = IngressRecovery.recoverPriorRuntimeIngress;
 export const ingressByOrigin: typeof IngressRead.ingressByOrigin = IngressRead.ingressByOrigin;
+export const ingressByOriginExisting: typeof IngressRead.ingressByOriginExisting = IngressRead.ingressByOriginExisting;
 export const getIngress: typeof IngressRead.getIngress = IngressRead.getIngress;
 export const getIngressForOwnerReadonly: typeof IngressRead.getIngressForOwnerReadonly = IngressRead.getIngressForOwnerReadonly;
 export const completeConfirmedDelivery: typeof ConfirmedDelivery.completeConfirmedDelivery = ConfirmedDelivery.completeConfirmedDelivery;
@@ -240,6 +242,7 @@ export const claimProcessedMessage: typeof ProcessedMessages.claimProcessedMessa
 export const isProcessedMessage: typeof ProcessedMessages.isProcessedMessage = ProcessedMessages.isProcessedMessage;
 export const markProcessedMessage: typeof ProcessedMessages.markProcessedMessage = ProcessedMessages.markProcessedMessage;
 export const admitIngress: typeof IngressAdmission.admitIngress = IngressAdmission.admitIngress;
+export const admitIngressExisting: typeof IngressAdmission.admitIngressExisting = IngressAdmission.admitIngressExisting;
 export const pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt = NewPromptArm.pendingNewPrompt;
 
 export const newThreadOrigin: typeof NewOrigin.newThreadOrigin = NewOrigin.newThreadOrigin;
@@ -576,8 +579,10 @@ export interface IStateAccessFacade {
   readonly validateIngressRecovery: typeof RecoveryCustody.validateIngressRecovery;
 
   readonly holdIngress: typeof IngressRecovery.holdIngress;
+  readonly holdIngressExisting: typeof IngressRecovery.holdIngressExisting;
   readonly recoverPriorRuntimeIngress: typeof IngressRecovery.recoverPriorRuntimeIngress;
   readonly ingressByOrigin: typeof IngressRead.ingressByOrigin;
+  readonly ingressByOriginExisting: typeof IngressRead.ingressByOriginExisting;
   readonly getIngress: typeof IngressRead.getIngress;
   readonly getIngressForOwnerReadonly: typeof IngressRead.getIngressForOwnerReadonly;
   readonly completeConfirmedDelivery: typeof ConfirmedDelivery.completeConfirmedDelivery;
@@ -607,6 +612,7 @@ export interface IStateAccessFacade {
   readonly isProcessedMessage: typeof ProcessedMessages.isProcessedMessage;
   readonly markProcessedMessage: typeof ProcessedMessages.markProcessedMessage;
   readonly admitIngress: typeof IngressAdmission.admitIngress;
+  readonly admitIngressExisting: typeof IngressAdmission.admitIngressExisting;
   readonly pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt;
   readonly newThreadOrigin: typeof NewOrigin.newThreadOrigin;
   readonly pendingStopControlsAfter: typeof StopControlRead.pendingStopControlsAfter;
@@ -886,8 +892,10 @@ export const StateAccessFacade: IStateAccessFacade = {
   recordIngressNewCreation,
   admitBusyInteraction,
   holdIngress,
+  holdIngressExisting,
   recoverPriorRuntimeIngress,
   ingressByOrigin,
+  ingressByOriginExisting,
   getIngress,
   getIngressForOwnerReadonly,
   completeConfirmedDelivery,
@@ -953,6 +961,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   isProcessedMessage,
   markProcessedMessage,
   admitIngress,
+  admitIngressExisting,
   pendingNewPrompt,
   newThreadOrigin,
   pendingStopControlsAfter,

@@ -13,7 +13,7 @@ import {AppServerTurnBackend} from '../app-server-turn-backend.ts';
 import {QueueStartCoordinator} from '../queue-runner/start-coordinator.ts';
 import {PromptIntakeProcessor} from '../prompt-intake/processor.ts';
 import {BridgeState} from '../bridge-state.ts';
-import {NewThreadJournal,type NewActionContext} from './new-journal.ts';
+import {NewThreadJournal,type NewActionContext,type NewJournalState} from './new-journal.ts';
 import {NewThreadProject} from './new-project.ts';
 import {NewFirstReply} from './new-first-reply.ts';
 import {beginNewThreadAttempt,type NewAttemptReport} from './new-attempt.ts';
@@ -28,14 +28,14 @@ export interface NewMirrorLink {linkNewThread(channel:bigint,thread:string,promp
  * A concrete production mirror-link implementation is still required separately. */
 export class NewThreadExecutor {
  readonly #database:string;readonly #journal:NewThreadJournal;readonly #project:NewThreadProject;readonly #reply:NewFirstReply;readonly #queue:QueueStartCoordinator;readonly #intake:PromptIntakeProcessor;readonly #bridge:BridgeState;readonly #server:PortableResidentLifecycle|null;readonly #backend:AppServerTurnBackend|null;readonly #mirror:NewMirrorLink|null;readonly #link:NewMirrorLink['linkNewThread']|null;readonly #report:(value:NewAttemptReport)=>void;readonly #now:()=>number;
- constructor(database:string,statePath:string,queue:QueueStartCoordinator,intake:PromptIntakeProcessor,bridge:BridgeState,server:PortableResidentLifecycle|null,backend:AppServerTurnBackend|null,mirror:NewMirrorLink|null,report:(value:NewAttemptReport)=>void,now:()=>number=systemNow,admit:typeof state.admitPromptIntakeWithIngress=state.admitPromptIntakeWithIngress,finishRead:typeof state.getNewFirstReplyFinish=state.getNewFirstReplyFinish){
+ constructor(database:string,statePath:string,queue:QueueStartCoordinator,intake:PromptIntakeProcessor,bridge:BridgeState,server:PortableResidentLifecycle|null,backend:AppServerTurnBackend|null,mirror:NewMirrorLink|null,report:(value:NewAttemptReport)=>void,now:()=>number=systemNow,admit:typeof state.admitPromptIntakeWithIngress=state.admitPromptIntakeWithIngress,finishRead:typeof state.getNewFirstReplyFinish=state.getNewFirstReplyFinish,journalState:NewJournalState=state){
   requireDiscordText(database);requireDiscordText(statePath);if((server===null)!==(backend===null))throw new TypeError('Expected matching resident/backend availability');
   if(server!==null&&backend!==null&&backend.residentInstanceId()!==server.instanceId)throw new TypeError('New executor resident/backend mismatch');
   for(const fn of [report,now])if(typeof fn!=='function'||types.isProxy(fn)||types.isAsyncFunction(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected synchronous new executor callback');
   if(mirror!==null&&(typeof mirror!=='object'||types.isProxy(mirror)))throw new TypeError('Expected mirror-link object');
   const link=mirror===null?null:Object.getOwnPropertyDescriptor(mirror,'linkNewThread');if(mirror!==null&&(link===null||link===undefined||!Object.hasOwn(link,'value')||typeof link.value!=='function'||types.isProxy(link.value)))throw new TypeError('Expected owned mirror-link function');
   this.#database=database;this.#queue=queue;this.#intake=intake;this.#bridge=bridge;this.#server=server;this.#backend=backend;this.#mirror=mirror;this.#link=link?.value??null;this.#report=report;this.#now=now;
-  this.#journal=new NewThreadJournal(database,now);this.#project=new NewThreadProject(database,statePath,this.#journal,mirror!==null,now);this.#reply=new NewFirstReply(database,statePath,this.#journal,mirror!==null,()=>QueueStartCoordinator.prototype.notifyDeliveryReady.call(queue),admit,finishRead);Object.freeze(this);
+  this.#journal=new NewThreadJournal(database,now,journalState);this.#project=new NewThreadProject(database,statePath,this.#journal,mirror!==null,now);this.#reply=new NewFirstReply(database,statePath,this.#journal,mirror!==null,()=>QueueStartCoordinator.prototype.notifyDeliveryReady.call(queue),admit,finishRead);Object.freeze(this);
  }
  async #replay(ingress:StoredIngress,signal?:AbortSignal):Promise<ActionResult|null>{
   if(ingress.ownerId===null)return null;const intake=await state.getPromptIntake(this.#database,ingress.ownerId);signal?.throwIfAborted();if(intake!==null)return this.#intake.processAdmittedPrompt(intake,signal);
