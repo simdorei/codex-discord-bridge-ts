@@ -1,3 +1,4 @@
+import {openExisting} from './existing-store.ts';
 import {types} from "node:util";
 import { trimUnicodeWhitespace, takeUnicodeScalarChars } from "./queue-preflight-failure.ts";
 import type { DatabaseSync } from "node:sqlite";
@@ -106,7 +107,16 @@ export async function listPendingDeliveries(path: string): Promise<StoredDeliver
 export async function recordDeliveryFailure(path: string,id: string,error: string,now: number): Promise<StoredDelivery> {
   validText(path);validText(id);validText(error);if(typeof now!=="number") throw new TypeError("Expected timestamp number");
   const bounded=takeUnicodeScalarChars(trimUnicodeWhitespace(error),1000);
-  const db=await openInitialized(path);let committed=false;
+  return recordFailureOwned(await openInitialized(path),id,bounded,now);
+}
+/** Same original owned transaction, existing database only; never initializes. */
+export function recordDeliveryFailureExisting(path:string,id:string,error:string,now:number):StoredDelivery{
+  validText(path);validText(id);validText(error);if(typeof now!=="number")throw new TypeError("Expected timestamp number");
+  const bounded=takeUnicodeScalarChars(trimUnicodeWhitespace(error),1000);
+  return recordFailureOwned(openExisting(path),id,bounded,now);
+}
+function recordFailureOwned(db:DatabaseSync,id:string,bounded:string,now:number):StoredDelivery{
+  let committed=false;
   try {
     db.exec("BEGIN IMMEDIATE");
     const changed=db.prepare("UPDATE codex_delivery_outbox SET attempt_count=attempt_count+1,last_error=?,updated_at=? WHERE delivery_id=?").run(bounded,now,id).changes;
@@ -118,7 +128,13 @@ export async function recordDeliveryFailure(path: string,id: string,error: strin
   }
 }
 export async function completeDelivery(path: string,id: string): Promise<boolean> {
-  validText(path);validText(id);const db=await openInitialized(path);
+  validText(path);validText(id);return completeDeliveryOwned(await openInitialized(path),id);
+}
+/** Existing-only original single statement and close. */
+export function completeDeliveryExisting(path:string,id:string):boolean{
+  validText(path);validText(id);return completeDeliveryOwned(openExisting(path),id);
+}
+function completeDeliveryOwned(db:DatabaseSync,id:string):boolean{
   try {return BigInt(db.prepare("DELETE FROM codex_delivery_outbox WHERE delivery_id=?").run(id).changes)===1n;}
   finally {db.close();}
 }

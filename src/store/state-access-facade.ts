@@ -261,7 +261,9 @@ export const recordObservedCompletionForResident: typeof ObservedCompletion.reco
 
 export const listPendingDeliveries: typeof Delivery.listPendingDeliveries = Delivery.listPendingDeliveries;
 export const recordDeliveryFailure: typeof Delivery.recordDeliveryFailure = Delivery.recordDeliveryFailure;
+export const recordDeliveryFailureExisting: typeof Delivery.recordDeliveryFailureExisting = Delivery.recordDeliveryFailureExisting;
 export const completeDelivery: typeof Delivery.completeDelivery = Delivery.completeDelivery;
+export const completeDeliveryExisting: typeof Delivery.completeDeliveryExisting = Delivery.completeDeliveryExisting;
 
 export const stageOwnedQueueCompletion: typeof Delivery.stageOwnedQueueCompletion = Delivery.stageOwnedQueueCompletion;
 
@@ -619,7 +621,9 @@ export interface IStateAccessFacade {
   readonly holdStartingForAmbiguousCandidatesIfClaimed: typeof QueueClaims.holdStartingForAmbiguousCandidatesIfClaimed;
   readonly listPendingDeliveries: typeof Delivery.listPendingDeliveries;
   readonly recordDeliveryFailure: typeof Delivery.recordDeliveryFailure;
+  readonly recordDeliveryFailureExisting: typeof Delivery.recordDeliveryFailureExisting;
   readonly completeDelivery: typeof Delivery.completeDelivery;
+  readonly completeDeliveryExisting: typeof Delivery.completeDeliveryExisting;
   readonly recordObservedCompletionForResident: typeof ObservedCompletion.recordObservedCompletionForResident;
   readonly stageOwnedQueueCompletion: typeof Delivery.stageOwnedQueueCompletion;
   readonly activateDeadGenerationRuntime: typeof DeadCapture.activateDeadGenerationRuntime;
@@ -907,7 +911,9 @@ export const StateAccessFacade: IStateAccessFacade = {
   holdStartingForAmbiguousCandidatesIfClaimed,
   listPendingDeliveries,
   recordDeliveryFailure,
+  recordDeliveryFailureExisting,
   completeDelivery,
+  completeDeliveryExisting,
   recordObservedCompletionForResident,
   stageOwnedQueueCompletion,
   activateDeadGenerationRuntime,

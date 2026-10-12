@@ -286,7 +286,9 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.recordObservedCompletionForResident, ObservedCompletion.recordObservedCompletionForResident);
     assert.strictEqual(StateAccessFacade.listPendingDeliveries, Delivery.listPendingDeliveries);
     assert.strictEqual(StateAccessFacade.recordDeliveryFailure, Delivery.recordDeliveryFailure);
+    assert.strictEqual(StateAccessFacade.recordDeliveryFailureExisting, Delivery.recordDeliveryFailureExisting);
     assert.strictEqual(StateAccessFacade.completeDelivery, Delivery.completeDelivery);
+    assert.strictEqual(StateAccessFacade.completeDeliveryExisting, Delivery.completeDeliveryExisting);
     assert.strictEqual(StateAccessFacade.stageOwnedQueueCompletion, Delivery.stageOwnedQueueCompletion);
     assert.strictEqual(StateAccessFacade.beginAppServerForkHandoff, ForkBegin.beginAppServerForkHandoff);
     assert.strictEqual(StateAccessFacade.stageAppServerForkTarget, ForkTarget.stageAppServerForkTarget);
@@ -554,6 +556,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "captureAsyncHistorySnapshot",
       "captureTerminalHistorySnapshot",
       "completeDelivery",
+      "completeDeliveryExisting",
       "completeGoalProgress",
       "completedAppServerForkTargetForSource",
       "activateDeadGenerationRuntime",
@@ -727,6 +730,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "recordAppServerForkFailure",
       "recordAppServerForkFinalizeFailure",
       "recordDeliveryFailure",
+      "recordDeliveryFailureExisting",
       "recordGoalProgressError",
       "recordObservedCompletionError",
       "recordObservedCompletionForResident",
@@ -748,7 +752,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 273);
+    assert.strictEqual(actual.length, 275);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

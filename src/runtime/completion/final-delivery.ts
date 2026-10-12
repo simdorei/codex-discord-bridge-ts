@@ -1,3 +1,4 @@
+import {NativeFinalStateOwner} from './native-final-state.ts';
 import type {DeliveryGuard} from "../../store/delivery-receipt-key.ts";
 import {StateAccessFacade as state} from "../../store/state-access-facade.ts";
 import {snapshotStoredDelivery,type StoredDelivery} from "../../store/delivery.ts";
@@ -13,7 +14,7 @@ export interface CompletionFailureContext {readonly deliveryId:string;readonly s
 export interface CompletionFailureRenderer {render(error:unknown,context:CompletionFailureContext):string}
 export interface FinalDeliveryOptions {
   readonly transport:DiscordReceiptTransport;
-  /** Explicit native receipt profile only; preflight/outbox mutations remain separate. */
+  /** Explicit native completion profile: receipt and Final state owners are joined. */
   readonly nativeReceipts?:boolean;
   readonly failures:CompletionFailureRenderer;
   /** Unix seconds, sampled only for failures that are not Held. */
@@ -31,9 +32,13 @@ export class CompletionChunkFailure extends Error{
  * No retry timers, background work, runtime scheduling or native transport are installed. */
 export async function deliverFinal(path:string,input:StoredDelivery,options:FinalDeliveryOptions):Promise<void>{
   const pending=snapshotStoredDelivery(input),transport=options.transport,failures=options.failures,now=options.now,native=options.nativeReceipts??false;if(typeof native!=="boolean")throw new TypeError("Expected native receipt profile flag");
+  let owner:NativeFinalStateOwner|undefined;
   try{
-    if(completeConfirmed(path,pending))return;
-    const readiness=state.finalDeliveryPreflight(path,pending);
+   try{
+    if(native)owner=new NativeFinalStateOwner(path,pending);
+    const chunks=confirmedChunks(pending);
+    if(chunks!==null&&(owner?await owner.confirmed(chunks):state.completeConfirmedDelivery(path,pending,chunks)))return;
+    const readiness=owner?await owner.preflight():state.finalDeliveryPreflight(path,pending);
     switch(readiness.kind){
       case "Held":throw new CompletionHeldError(readiness.reason);
       case "FirstReply":throw new CompletionDeliveryError(`output saved; first reply is not confirmed for ${readiness.request}. No output POST attempted; inspect the saved request if its reply failed`);
@@ -48,11 +53,13 @@ export async function deliverFinal(path:string,input:StoredDelivery,options:Fina
     const timestamp=now();
     if(typeof timestamp!=="number"||!Number.isFinite(timestamp)||timestamp<0)throw new RangeError("Expected finite Unix failure timestamp");
     const display=failures.render(error,Object.freeze({deliveryId:pending.deliveryId,stage:"preflight-or-send"}));requireDiscordText(display);
-    await state.recordDeliveryFailure(path,pending.deliveryId,display,timestamp);
+    if(native){owner??=new NativeFinalStateOwner(path,pending);await owner.recordFailure(display,timestamp);}
+    else await state.recordDeliveryFailure(path,pending.deliveryId,display,timestamp);
     throw error;
   }
   // Source phase-1 ignores false; deletion failure is not recorded as a send failure.
-  await state.completeDelivery(path,pending.deliveryId);
+  if(owner)await owner.complete();else await state.completeDelivery(path,pending.deliveryId);
+  }finally{await owner?.close();}
 }
 /** Each final is awaited even after failure; undefined can itself be a thrown value. */
 export async function attemptAllFinals<T>(items:Iterable<T>,attempt:(item:T)=>Promise<void>):Promise<void>{
@@ -72,9 +79,9 @@ export async function sendCompletionText(path:string,transport:DiscordReceiptTra
 export function validateCompletionChannel(channel:bigint):void{if(typeof channel!=="bigint"||channel<=0n||channel>=(1n<<63n))throw new CompletionChannelIdError();}
 
 /** Current Rust main: only normally rendered/validated chunks reach the store fast path. */
-function completeConfirmed(path:string,pending:StoredDelivery):boolean{
-  if(pending.channelId<=0n||pending.channelId>=(1n<<63n))return false;
+function confirmedChunks(pending:StoredDelivery):string[]|null{
+  if(pending.channelId<=0n||pending.channelId>=(1n<<63n))return null;
   const identity=outboxIdentity(pending.deliveryId),chunks=splitDeliveryChunks(pending.content,true);
-  for(const[index,chunk]of chunks.entries()){try{idempotentMessageRequestWithComponents(pending.channelId,chunk,[],identity.domain,identity.logicalKey,index);}catch{return false;}}
-  return state.completeConfirmedDelivery(path,pending,chunks);
+  for(const[index,chunk]of chunks.entries()){try{idempotentMessageRequestWithComponents(pending.channelId,chunk,[],identity.domain,identity.logicalKey,index);}catch{return null;}}
+  return chunks;
 }
