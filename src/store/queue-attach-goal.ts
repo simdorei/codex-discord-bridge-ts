@@ -1,3 +1,4 @@
+import {openExisting} from './existing-store.ts';
 import type { DatabaseSync } from "node:sqlite";
 
 import { I64_MAX, I64_MIN } from "../protocol/ids.ts";
@@ -217,12 +218,15 @@ import {snapshotStoredQueueJob,storedQueueJobsEqual,selectJob,type StoredQueueJo
 import {handoffOwnedAsyncIn} from "./async-resolution-ownership.ts";
 import {trimUnicodeWhitespace} from "./queue-preflight-failure.ts";
 /** Exact observed successor; does not rewrite the original execution generation. */
-export async function attachGoalTurnObservedIfOwned(path:string,input:StoredQueueJob,turnId:string,observationGeneration:bigint):Promise<boolean>{
+function prepareGoalAttachment(path:string,input:StoredQueueJob,turnId:string,observationGeneration:bigint):StoredQueueJob|null{
   if(typeof turnId!=="string"||/[\uD800-\uDFFF]/u.test(turnId))throw new TypeError("Expected a well-formed turn");
   if(typeof observationGeneration!=="bigint"||observationGeneration<-(1n<<63n)||observationGeneration>=(1n<<63n))throw new TypeError("Expected i64 generation");
   const expected=snapshotStoredQueueJob(input);
-  if(observationGeneration<0n||expected.state!=="Running"||!expected.goalWaiting||expected.turnId===null||expected.turnId===turnId||trimUnicodeWhitespace(turnId)==="")return false;
-  const db=await openInitialized(path);let committed=false;
+  if(observationGeneration<0n||expected.state!=="Running"||!expected.goalWaiting||expected.turnId===null||expected.turnId===turnId||trimUnicodeWhitespace(turnId)==="")return null;
+  return expected;
+}
+
+function finishGoalAttachment(db:DatabaseSync,expected:StoredQueueJob,turnId:string,observationGeneration:bigint):boolean{let committed=false;
   try{
     db.exec("BEGIN IMMEDIATE");
     if(targetIsHeldIn(db,expected.targetThreadId))return false;
@@ -239,4 +243,14 @@ export async function attachGoalTurnObservedIfOwned(path:string,input:StoredQueu
     if(BigInt(changed)===1n)handoffOwnedAsyncIn(db,expected);
     db.exec("COMMIT");committed=true;return BigInt(changed)===1n;
   }finally{if(!committed&&db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
+}
+
+export async function attachGoalTurnObservedIfOwned(path:string,input:StoredQueueJob,turnId:string,observationGeneration:bigint):Promise<boolean>{
+  const expected=prepareGoalAttachment(path,input,turnId,observationGeneration);if(expected===null)return false;
+  return finishGoalAttachment(await openInitialized(path),expected,turnId,observationGeneration);
+}
+
+export function attachGoalTurnObservedIfOwnedExisting(path:string,input:StoredQueueJob,turnId:string,observationGeneration:bigint):boolean{
+  const expected=prepareGoalAttachment(path,input,turnId,observationGeneration);if(expected===null)return false;
+  return finishGoalAttachment(openExisting(path),expected,turnId,observationGeneration);
 }

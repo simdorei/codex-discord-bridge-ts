@@ -434,8 +434,10 @@ export const completeGoalProgressExisting: typeof GoalProgress.completeGoalProgr
 export const hasPendingGoalProgress: typeof GoalProgress.hasPendingGoalProgress = GoalProgress.hasPendingGoalProgress;
 
 export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObservedIfOwned = GoalAttach.attachGoalTurnObservedIfOwned;
+export const attachGoalTurnObservedIfOwnedExisting: typeof GoalAttach.attachGoalTurnObservedIfOwnedExisting = GoalAttach.attachGoalTurnObservedIfOwnedExisting;
 
 export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
+export const markGoalWaitingExisting: typeof GoalWaiting.markGoalWaitingExisting = GoalWaiting.markGoalWaitingExisting;
 
 export const requireFinalDeadGenerationUnheldIn: typeof PreparedMutationValidation.requireFinalDeadGenerationUnheldIn = PreparedMutationValidation.requireFinalDeadGenerationUnheldIn;
 export const revalidateStopWire: typeof StopDispatch.revalidateStopWire = StopDispatch.revalidateStopWire;
@@ -612,7 +614,9 @@ export interface IStateAccessFacade {
   readonly isAppServerManagedTarget: typeof ForkManaged.isAppServerManagedTarget;
 
   readonly markGoalWaiting: typeof GoalWaiting.markGoalWaiting;
+  readonly markGoalWaitingExisting: typeof GoalWaiting.markGoalWaitingExisting;
   readonly attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObservedIfOwned;
+  readonly attachGoalTurnObservedIfOwnedExisting: typeof GoalAttach.attachGoalTurnObservedIfOwnedExisting;
   readonly hasPendingGoalProgress: typeof GoalProgress.hasPendingGoalProgress;
   readonly completeGoalProgress: typeof GoalProgress.completeGoalProgress;
   readonly completeGoalProgressExisting: typeof GoalProgress.completeGoalProgressExisting;
@@ -915,7 +919,9 @@ export const StateAccessFacade: IStateAccessFacade = {
   isAppServerManagedTarget,
 
   markGoalWaiting,
+  markGoalWaitingExisting,
   attachGoalTurnObservedIfOwned,
+  attachGoalTurnObservedIfOwnedExisting,
   hasPendingGoalProgress,
   completeGoalProgress,
   completeGoalProgressExisting,

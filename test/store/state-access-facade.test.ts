@@ -1,3 +1,5 @@
+import * as GoalWaiting from '../../src/store/queue-goal-waiting.ts';
+import * as GoalAttach from '../../src/store/queue-attach-goal.ts';
 import * as StartNoticeOutbox from "../../src/store/start-notice-outbox.ts";
 import * as CommentaryOutbox from "../../src/store/commentary-outbox.ts";
 import * as GoalProgress from "../../src/store/goal-progress.ts";
@@ -574,7 +576,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "adoptTargetGeneration",
       "asyncAdmissionHeld",
       "asyncTargetDispatchHeld", "asyncTargetDispatchHeldExisting",
-      "attachGoalTurnObservedIfOwned",
+      "attachGoalTurnObservedIfOwned", "attachGoalTurnObservedIfOwnedExisting",
       "beginAppServerForkHandoff",
       "revalidatePreparedMutation",
       "requireFinalDeadGenerationUnheldIn",
@@ -652,7 +654,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "listPendingDeliveries",
       "releaseAllPromptIntakeClaims",
       "listPromptIntakes",
-      "markGoalWaiting",
+      "markGoalWaiting", "markGoalWaitingExisting",
       "markRunning",
       "markRunningIfClaimed",
       "markRunningWithResidentIfClaimed", "markRunningWithResidentIfClaimedExisting",
@@ -781,7 +783,11 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     ];
     const actual = Object.keys(StateAccessFacade).sort();
     assert.deepStrictEqual(actual, expected.sort());
-    assert.strictEqual(actual.length, 288);
+    assert.strictEqual(StateAccessFacade.markGoalWaitingExisting, GoalWaiting.markGoalWaitingExisting);
+    assert.strictEqual(FacadeExports.markGoalWaitingExisting, GoalWaiting.markGoalWaitingExisting);
+    assert.strictEqual(StateAccessFacade.attachGoalTurnObservedIfOwnedExisting, GoalAttach.attachGoalTurnObservedIfOwnedExisting);
+    assert.strictEqual(FacadeExports.attachGoalTurnObservedIfOwnedExisting, GoalAttach.attachGoalTurnObservedIfOwnedExisting);
+    assert.strictEqual(actual.length, 290);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

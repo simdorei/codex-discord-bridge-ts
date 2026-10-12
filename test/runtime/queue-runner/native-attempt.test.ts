@@ -10,8 +10,8 @@ import {OwnedWorkerSlot,OwnedWorkerBudgetError,ownedWorkerUsage} from '../../../
 import {openInitialized} from '../../../src/store/owned-driver.ts';
 async function seed(path:string){await state.enqueue(path,queueJob({ownerUserId:2n,channelId:9007199254740995n}));}
 async function edit(path:string,run:(db:DatabaseSync)=>void){const db=await openInitialized(path);try{run(db);}finally{db.close();}}
-test('native queue overrides exactly four reads and four attempt writes, preserving every other function reference',()=>{
- const native=createNativeQueueState('db'),changed=new Set(['listFiltered','eligibleJobs','deadTargetHeld','asyncTargetDispatchHeld','recordPreflightFailure','tryBeginAttempt','recordStartFailureIfClaimed','markRunningWithResidentIfClaimed']);assert.equal(Object.isFrozen(native),true);assert.deepEqual(Object.keys(native),Object.keys(state));
+test('native queue overrides exactly four reads and six explicit lifecycle writes, preserving every other function reference',()=>{
+ const native=createNativeQueueState('db'),changed=new Set(['listFiltered','eligibleJobs','deadTargetHeld','asyncTargetDispatchHeld','recordPreflightFailure','tryBeginAttempt','recordStartFailureIfClaimed','markRunningWithResidentIfClaimed','markGoalWaiting','attachGoalTurnObservedIfOwned']);assert.equal(Object.isFrozen(native),true);assert.deepEqual(Object.keys(native),Object.keys(state));
  for(const key of Object.keys(state) as (keyof typeof state)[])if(changed.has(key))assert.notEqual(native[key],state[key]);else assert.equal(native[key],state[key]);
 });
 test('native preflight/claim/Running preserve whole row, lossless ID and no-match null',async()=>storeFixture(async path=>{
