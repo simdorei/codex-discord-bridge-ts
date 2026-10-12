@@ -1,3 +1,4 @@
+import {newStateFunction,newStatePromise} from './new-state-call.ts';
 import {types} from 'node:util';
 import {statSync} from 'node:fs';
 import {CodexThreadStore} from '../../codex-state/store.ts';
@@ -24,8 +25,9 @@ function checkedCwd(input:string):string {
 /** POSIX original project resolution. The store transaction rechecks every
  * captured mapping before writing new_creation; no thread/start is sent here. */
 export class NewThreadProject {
+ readonly #record:typeof state.recordIngressNewCreation;
  readonly #database:string;readonly #statePath:string;readonly #journal:NewThreadJournal;readonly #mirrored:boolean;readonly #now:()=>number;
- constructor(database:string,statePath:string,journal:NewThreadJournal,mirrored:boolean,now:()=>number=systemNow){requireDiscordText(database);requireDiscordText(statePath);NewThreadJournal.prototype.requireDatabase.call(journal,database);if(typeof now!=='function'||types.isProxy(now)||types.isAsyncFunction(now)||types.isGeneratorFunction(now))throw new TypeError('Expected synchronous project clock');if(typeof mirrored!=='boolean')throw new TypeError('Expected mirror mode');this.#database=database;this.#statePath=statePath;this.#journal=journal;this.#mirrored=mirrored;this.#now=now;Object.freeze(this);}
+ constructor(database:string,statePath:string,journal:NewThreadJournal,mirrored:boolean,now:()=>number=systemNow,port:Pick<typeof state,'recordIngressNewCreation'>=state){requireDiscordText(database);requireDiscordText(statePath);NewThreadJournal.prototype.requireDatabase.call(journal,database);if(typeof now!=='function'||types.isProxy(now)||types.isAsyncFunction(now)||types.isGeneratorFunction(now))throw new TypeError('Expected synchronous project clock');if(typeof mirrored!=='boolean')throw new TypeError('Expected mirror mode');this.#record=newStateFunction(port,'recordIngressNewCreation');this.#database=database;this.#statePath=statePath;this.#journal=journal;this.#mirrored=mirrored;this.#now=now;Object.freeze(this);}
  #cwd(origin:NewThreadOrigin):string|null {
   if(origin.target!==null){const thread=CodexThreadStore.open(this.#statePath).loadThread(origin.target,false);if(thread===null)throw new InvalidActionRequestError(`cannot resolve project of mapped thread ${origin.target}`);return checkedCwd(thread.cwd);}
   if(origin.project!==null){if(origin.project==='codex:chats'||origin.project.startsWith('projectless:')){const thread=CodexThreadStore.open(this.#statePath).loadRecentThreads(0n).find(t=>origin.chat_targets.includes(t.id));if(thread===undefined)throw new InvalidActionRequestError('chat project has no known working directory');return checkedCwd(thread.cwd);}return checkedCwd(origin.project);}
@@ -38,7 +40,7 @@ export class NewThreadProject {
   let cwd:string|null;try{cwd=this.#cwd(origin);}catch(error){throw await this.#journal.hold(ingress,error,true);}
   if(cwd!==null)for(const key of [origin.mapped_project,origin.project,origin.parent_project])if(key!==null&&key!=='codex:chats'&&!key.startsWith('projectless:')&&normalizeWorkspacePathPosix(key)!==normalizeWorkspacePathPosix(cwd))throw await this.#journal.hold(ingress,new InvalidActionRequestError('Codex working directory differs from the frozen Discord project; no thread/start permitted'),true);
   if(this.#mirrored&&cwd===null)throw await this.#journal.hold(ingress,new InvalidActionRequestError('new request has no verified originating project'),true);
-  try{if(typeof channel!=='bigint'||channel<0n||channel>=(1n<<63n))throw new ActionIntegerRangeError();await state.recordIngressNewCreation(this.#database,ingress.ingressId,generation,cwd,channel,readCustodyTimestamp(this.#now));}catch(error){throw await this.#journal.hold(ingress,error,true);}
+  try{if(typeof channel!=='bigint'||channel<0n||channel>=(1n<<63n))throw new ActionIntegerRangeError();await newStatePromise(Reflect.apply(this.#record,undefined,[this.#database,ingress.ingressId,generation,cwd,channel,readCustodyTimestamp(this.#now)]));}catch(error){throw await this.#journal.hold(ingress,error,true);}
   return cwd;
  }
 }

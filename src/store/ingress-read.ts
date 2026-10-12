@@ -74,3 +74,9 @@ export function ingressByOriginExisting(path:string,eventId:bigint):StoredIngres
  if(typeof eventId!=='bigint'||eventId<-(1n<<63n)||eventId>=(1n<<63n))throw new TypeError('Expected i64 origin');
  const read=CheckedRead.open(path);try{const result=ingressByOriginIn(read.connection(),eventId);read.finish();return result;}finally{read.close();}
 }
+
+/** Full original record decoder on an existing read-only snapshot; no projection. */
+export function getIngressExisting(path:string,key:string):StoredIngress|null{
+ for(const value of [path,key])if(typeof value!=='string'||/[\uD800-\uDFFF]/u.test(value))throw new TypeError('Expected well-formed ingress read text');
+ const read=CheckedRead.open(path);try{const result=getIngressIn(read.connection(),key);read.finish();return result;}finally{read.close();}
+}

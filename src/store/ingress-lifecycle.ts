@@ -1,7 +1,8 @@
 import {newThreadOriginIn} from "./new-thread-origin.ts";
 import {serdeValueEqual} from "../core/serde-value-equal.ts";
 import type {DatabaseSync,SQLInputValue} from "node:sqlite";
-import {openInitialized} from "./owned-driver.ts";
+import {openInitialized,verifyCurrentCatalogIn} from "./owned-driver.ts";
+import {usingExistingStore,withStoreTransaction,commitStore} from "./owned-scope.ts";
 import {StoreIntegrityError} from "./schema-assembly.ts";
 import {InvalidAppServerManagedTargetError} from "./queue-managed-target.ts";
 import {getIngressIn} from "./ingress-read.ts";
@@ -38,17 +39,35 @@ export function beginIngressExecution(path:string,key:string,phase:string,target
     return changed(db,"UPDATE discord_ingress_journal SET state='executing',phase=?,target_thread_id=COALESCE(?,target_thread_id),updated_at=? WHERE ingress_id=? AND state IN ('staged','acknowledged')",phase,target,now,key);
   });
 }
-export function beginIngressThreadStart(path:string,key:string,gen:bigint,now:number):Promise<boolean>{
-  text(key);generation(gen);time(now);if(gen<=0n)throw new StoreIntegrityError("invalid thread/start generation");return connection(path,true,db=>{
+export function captureIngressThreadStart(key:string,gen:bigint,now:number){
+  text(key);generation(gen);time(now);if(gen<=0n)throw new StoreIntegrityError("invalid thread/start generation");return {key,gen,now};
+}
+function beginIngressThreadStartBody(db:DatabaseSync,key:string,gen:bigint,now:number):boolean{
     const record=getIngressIn(db,key);if(record!==null&&newExecutionPrompt(record)===null)throw new StoreIntegrityError("thread/start has no original New input");
     return changed(db,"UPDATE discord_ingress_journal SET state='executing',phase='thread/start',target_thread_id=NULL,outcome_json=json_set(COALESCE(outcome_json,'{}'),'$.thread_start_generation',?),updated_at=? WHERE ingress_id=? AND (state IN ('staged','acknowledged') OR (state='executing' AND phase='processing'))",gen,now,key);
-  });
+}
+export function beginIngressThreadStart(path:string,key:string,gen:bigint,now:number):Promise<boolean>{
+ const q=captureIngressThreadStart(key,gen,now);return connection(path,true,db=>beginIngressThreadStartBody(db,q.key,q.gen,q.now));
+}
+/** Existing current store only; original statement/transaction body is shared. */
+export function beginIngressThreadStartExisting(path:string,key:string,gen:bigint,now:number):boolean{
+ const q=captureIngressThreadStart(key,gen,now);return usingExistingStore(path,db=>withStoreTransaction(db,'IMMEDIATE',()=>{verifyCurrentCatalogIn(db);return commitStore(beginIngressThreadStartBody(db,q.key,q.gen,q.now));}));
+}
+
+export function captureIngressCreatedThread(key:string,gen:bigint,target:string,now:number){
+  text(key);generation(gen);text(target);time(now);if(trim(target)===""||trim(target)!==target)throw new InvalidAppServerManagedTargetError(target);return {key,gen,target,now};
+}
+function recordIngressCreatedThreadBody(db:DatabaseSync,key:string,gen:bigint,target:string,now:number):void{
+    if(!changed(db,"UPDATE discord_ingress_journal SET phase='thread/created',target_thread_id=?,updated_at=? WHERE ingress_id=? AND state='executing' AND phase='thread/start' AND json_extract(outcome_json,'$.thread_start_generation')=?",target,now,key,gen))throw new StoreIntegrityError("created thread has no matching generation-bound attempt");
 }
 export function recordIngressCreatedThread(path:string,key:string,gen:bigint,target:string,now:number):Promise<void>{
-  text(key);generation(gen);text(target);time(now);if(trim(target)===""||trim(target)!==target)throw new InvalidAppServerManagedTargetError(target);return connection(path,false,db=>{
-    if(!changed(db,"UPDATE discord_ingress_journal SET phase='thread/created',target_thread_id=?,updated_at=? WHERE ingress_id=? AND state='executing' AND phase='thread/start' AND json_extract(outcome_json,'$.thread_start_generation')=?",target,now,key,gen))throw new StoreIntegrityError("created thread has no matching generation-bound attempt");
-  });
+ const q=captureIngressCreatedThread(key,gen,target,now);return connection(path,false,db=>recordIngressCreatedThreadBody(db,q.key,q.gen,q.target,q.now));
 }
+/** Existing current store only; original statement/transaction body is shared. */
+export function recordIngressCreatedThreadExisting(path:string,key:string,gen:bigint,target:string,now:number):void{
+ const q=captureIngressCreatedThread(key,gen,target,now);return usingExistingStore(path,db=>{withStoreTransaction(db,'DEFERRED',()=>{verifyCurrentCatalogIn(db);return commitStore(undefined);});return recordIngressCreatedThreadBody(db,q.key,q.gen,q.target,q.now);});
+}
+
 export function recordIngressResult(path:string,key:string,input:unknown,now:number):Promise<void>{
   text(key);time(now);const outcome=parseSerdeValue(serializeSerdeValue(input));
   return connection(path,true,db=>{
@@ -83,13 +102,22 @@ export function recordIngressProcessingMode(path:string,key:string,mode:string):
 }
 
 /** Resolved context belongs only to the matching original thread/start attempt. */
-export function recordIngressNewCreation(path:string,key:string,gen:bigint,cwd:string|null,channel:bigint,now:number):Promise<void>{
+export function captureIngressNewCreation(key:string,gen:bigint,cwd:string|null,channel:bigint,now:number){
   text(key);generation(gen);generation(channel);if(cwd!==null)text(cwd);time(now);
   if((cwd!==null&&trim(cwd)==="")||channel<=0n)throw new StoreIntegrityError("invalid new creation context");
-  const context={version:1n,cwd,origin_channel_id:channel};return connection(path,true,db=>{
+  return {key,gen,cwd,channel,now};
+}
+function recordIngressNewCreationBody(db:DatabaseSync,key:string,gen:bigint,context:{version:bigint;cwd:string|null;origin_channel_id:bigint},channel:bigint,now:number):void{
     const record=getIngressIn(db,key);if(record===null)throw new StoreIntegrityError("new creation ingress is missing");
     const origin=newThreadOriginIn(db,channel);
     if(!serdeValueEqual(getOwn(record.payload,"new_origin"),origin))throw new StoreIntegrityError("new origin mapping changed after classification/admission; no thread/start permitted");
     if(!changed(db,"UPDATE discord_ingress_journal SET outcome_json=json_set(outcome_json,'$.new_creation',json(?)),updated_at=? WHERE ingress_id=? AND state='executing' AND phase='thread/start' AND json_extract(outcome_json,'$.thread_start_generation')=? AND json_type(outcome_json,'$.new_creation') IS NULL AND channel_id=?",serializeSerdeValue(context),now,key,gen,channel))throw new StoreIntegrityError("new creation context has no matching unwritten attempt");
-  });
 }
+export function recordIngressNewCreation(path:string,key:string,gen:bigint,cwd:string|null,channel:bigint,now:number):Promise<void>{
+ const q=captureIngressNewCreation(key,gen,cwd,channel,now);return connection(path,true,db=>recordIngressNewCreationBody(db,q.key,q.gen,{version:1n,cwd:q.cwd,origin_channel_id:q.channel},q.channel,q.now));
+}
+/** Existing current store only; original statement/transaction body is shared. */
+export function recordIngressNewCreationExisting(path:string,key:string,gen:bigint,cwd:string|null,channel:bigint,now:number):void{
+ const q=captureIngressNewCreation(key,gen,cwd,channel,now);return usingExistingStore(path,db=>withStoreTransaction(db,'IMMEDIATE',()=>{verifyCurrentCatalogIn(db);return commitStore(recordIngressNewCreationBody(db,q.key,q.gen,{version:1n,cwd:q.cwd,origin_channel_id:q.channel},q.channel,q.now));}));
+}
+

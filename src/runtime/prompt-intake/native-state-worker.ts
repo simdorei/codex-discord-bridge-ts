@@ -7,7 +7,11 @@ import {DeadGenerationTargetHeldError} from '../../store/fork-completed-target.t
 const port=parentPort;if(port===null)throw new Error('Intake state requires owned native worker');
 try{
  let value:unknown;
- if(q.operation==='IngressOrigin'){const record=state.ingressByOriginExisting(q.path,q.event);value={event:q.event,record:record===null?null:storedIngressToWire(record)};}
+ if(q.operation==='IngressRead'){const record=state.getIngressExisting(q.path,q.id);value={id:q.id,record:record===null?null:storedIngressToWire(record)};}
+ else if(q.operation==='IngressBegin')value={id:q.id,gen:q.gen,won:state.beginIngressThreadStartExisting(q.path,q.id,q.gen,intakeNumberFromWire(q.now))};
+ else if(q.operation==='IngressCreation'){state.recordIngressNewCreationExisting(q.path,q.id,q.gen,q.cwd,q.channel,intakeNumberFromWire(q.now));value={id:q.id,gen:q.gen,cwd:q.cwd,channel:q.channel,recorded:true};}
+ else if(q.operation==='IngressCreated'){state.recordIngressCreatedThreadExisting(q.path,q.id,q.gen,q.target,intakeNumberFromWire(q.now));value={id:q.id,gen:q.gen,target:q.target,recorded:true};}
+ else if(q.operation==='IngressOrigin'){const record=state.ingressByOriginExisting(q.path,q.event);value={event:q.event,record:record===null?null:storedIngressToWire(record)};}
  else if(q.operation==='IngressAdmit'){const admitted=state.admitIngressExisting(q.path,newIngressFromWire(q.envelope));value={id:q.id,created:admitted.created,canonicalRepeatCreated:admitted.canonicalRepeatCreated,busyChoice:admitted.busyChoice,record:admitted.record===null?null:storedIngressToWire(admitted.record)};}
  else if(q.operation==='IngressHold'){state.holdIngressExisting(q.path,q.id,q.reason,q.notExecuted,intakeNumberFromWire(q.now));value={id:q.id,held:true};}
  else if(q.operation==='FirstReplyFinish')value={ingress:q.ingress,record:state.getNewFirstReplyFinishExisting(q.path,q.ingress)};

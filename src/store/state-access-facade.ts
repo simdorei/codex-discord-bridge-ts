@@ -156,13 +156,16 @@ export const acknowledgeIngress: typeof IngressLifecycle.acknowledgeIngress = In
 export const beginIngressConfirmation: typeof IngressLifecycle.beginIngressConfirmation = IngressLifecycle.beginIngressConfirmation;
 export const beginIngressExecution: typeof IngressLifecycle.beginIngressExecution = IngressLifecycle.beginIngressExecution;
 export const beginIngressThreadStart: typeof IngressLifecycle.beginIngressThreadStart = IngressLifecycle.beginIngressThreadStart;
+export const beginIngressThreadStartExisting: typeof IngressLifecycle.beginIngressThreadStartExisting = IngressLifecycle.beginIngressThreadStartExisting;
 export const recordIngressCreatedThread: typeof IngressLifecycle.recordIngressCreatedThread = IngressLifecycle.recordIngressCreatedThread;
+export const recordIngressCreatedThreadExisting: typeof IngressLifecycle.recordIngressCreatedThreadExisting = IngressLifecycle.recordIngressCreatedThreadExisting;
 export const recordIngressResult: typeof IngressLifecycle.recordIngressResult = IngressLifecycle.recordIngressResult;
 export const confirmIngress: typeof IngressLifecycle.confirmIngress = IngressLifecycle.confirmIngress;
 export const recordIngressProcessingMode: typeof IngressLifecycle.recordIngressProcessingMode = IngressLifecycle.recordIngressProcessingMode;
 
 export const admitMappedSlashIngress: typeof IngressAdmission.admitMappedSlashIngress = IngressAdmission.admitMappedSlashIngress;
 export const recordIngressNewCreation: typeof IngressLifecycle.recordIngressNewCreation = IngressLifecycle.recordIngressNewCreation;
+export const recordIngressNewCreationExisting: typeof IngressLifecycle.recordIngressNewCreationExisting = IngressLifecycle.recordIngressNewCreationExisting;
 
 export const admitBusyInteraction: typeof BusyIngress.admitBusyInteraction = BusyIngress.admitBusyInteraction;
 
@@ -172,6 +175,7 @@ export const recoverPriorRuntimeIngress: typeof IngressRecovery.recoverPriorRunt
 export const ingressByOrigin: typeof IngressRead.ingressByOrigin = IngressRead.ingressByOrigin;
 export const ingressByOriginExisting: typeof IngressRead.ingressByOriginExisting = IngressRead.ingressByOriginExisting;
 export const getIngress: typeof IngressRead.getIngress = IngressRead.getIngress;
+export const getIngressExisting: typeof IngressRead.getIngressExisting = IngressRead.getIngressExisting;
 export const getIngressForOwnerReadonly: typeof IngressRead.getIngressForOwnerReadonly = IngressRead.getIngressForOwnerReadonly;
 export const completeConfirmedDelivery: typeof ConfirmedDelivery.completeConfirmedDelivery = ConfirmedDelivery.completeConfirmedDelivery;
 export const diagnosticDatabaseCounts: typeof DiagnosticRead.diagnosticDatabaseCounts = DiagnosticRead.diagnosticDatabaseCounts;
@@ -584,6 +588,7 @@ export interface IStateAccessFacade {
   readonly ingressByOrigin: typeof IngressRead.ingressByOrigin;
   readonly ingressByOriginExisting: typeof IngressRead.ingressByOriginExisting;
   readonly getIngress: typeof IngressRead.getIngress;
+  readonly getIngressExisting: typeof IngressRead.getIngressExisting;
   readonly getIngressForOwnerReadonly: typeof IngressRead.getIngressForOwnerReadonly;
   readonly completeConfirmedDelivery: typeof ConfirmedDelivery.completeConfirmedDelivery;
   readonly diagnosticDatabaseCounts: typeof DiagnosticRead.diagnosticDatabaseCounts;
@@ -594,12 +599,15 @@ export interface IStateAccessFacade {
   readonly admitBusyInteraction: typeof BusyIngress.admitBusyInteraction;
   readonly admitMappedSlashIngress: typeof IngressAdmission.admitMappedSlashIngress;
   readonly recordIngressNewCreation: typeof IngressLifecycle.recordIngressNewCreation;
+  readonly recordIngressNewCreationExisting: typeof IngressLifecycle.recordIngressNewCreationExisting;
 
   readonly acknowledgeIngress: typeof IngressLifecycle.acknowledgeIngress;
   readonly beginIngressConfirmation: typeof IngressLifecycle.beginIngressConfirmation;
   readonly beginIngressExecution: typeof IngressLifecycle.beginIngressExecution;
   readonly beginIngressThreadStart: typeof IngressLifecycle.beginIngressThreadStart;
+  readonly beginIngressThreadStartExisting: typeof IngressLifecycle.beginIngressThreadStartExisting;
   readonly recordIngressCreatedThread: typeof IngressLifecycle.recordIngressCreatedThread;
+  readonly recordIngressCreatedThreadExisting: typeof IngressLifecycle.recordIngressCreatedThreadExisting;
   readonly recordIngressResult: typeof IngressLifecycle.recordIngressResult;
   readonly confirmIngress: typeof IngressLifecycle.confirmIngress;
   readonly recordIngressProcessingMode: typeof IngressLifecycle.recordIngressProcessingMode;
@@ -884,12 +892,15 @@ export const StateAccessFacade: IStateAccessFacade = {
   beginIngressConfirmation,
   beginIngressExecution,
   beginIngressThreadStart,
+  beginIngressThreadStartExisting,
   recordIngressCreatedThread,
+  recordIngressCreatedThreadExisting,
   recordIngressResult,
   confirmIngress,
   recordIngressProcessingMode,
   admitMappedSlashIngress,
   recordIngressNewCreation,
+  recordIngressNewCreationExisting,
   admitBusyInteraction,
   holdIngress,
   holdIngressExisting,
@@ -897,6 +908,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   ingressByOrigin,
   ingressByOriginExisting,
   getIngress,
+  getIngressExisting,
   getIngressForOwnerReadonly,
   completeConfirmedDelivery,
   diagnosticDatabaseCounts,
