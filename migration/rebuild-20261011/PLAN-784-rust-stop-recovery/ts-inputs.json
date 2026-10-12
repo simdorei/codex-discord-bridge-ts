@@ -1,0 +1,39 @@
+{
+  "files": [
+    {
+      "path": "src/store/async-history.ts",
+      "exists": true,
+      "sha256": "311124a535d88a8a435e4893b7bf3c370fe341e4deadb2b4f8520c34ee8f00d0"
+    },
+    {
+      "path": "src/store/stop-control-read.ts",
+      "exists": true,
+      "sha256": "6199b229411b65572af60e63bb1835199726453701e1220d6c01377f3a061557"
+    },
+    {
+      "path": "src/store/stop-control-dispatch.ts",
+      "exists": true,
+      "sha256": "9368aced4df9ba3625aa2754f02d37381aa098954b8f252447c9886a0dd47313"
+    },
+    {
+      "path": "src/store/queue-cancel-recovery.ts",
+      "exists": true,
+      "sha256": "3e31287e7fb89c6aa7a7c0b1205c73597fb098aa844db4e284407c0b4ee6f4ae"
+    },
+    {
+      "path": "src/app-server/recovery-collector.ts",
+      "exists": true,
+      "sha256": "7bb82eaea8ea10dda1bc1ac18e4a3394c78b6e17c5feda78eabad068ef32709a"
+    },
+    {
+      "path": "src/app-server/portable-resident-lifecycle.ts",
+      "exists": true,
+      "sha256": "721947c22146310b487d35f50c25610d0f17f8e3429d4d577dbb224b0821ac71"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-worker.ts",
+      "exists": true,
+      "sha256": "ea29c0996dabb0ff17a05215888182bcd6adc07cec332de7f553093760cce8c4"
+    }
+  ]
+}
