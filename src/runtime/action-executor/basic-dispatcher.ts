@@ -10,7 +10,7 @@ import {snapshotActionResult,type ActionResult} from '../action-result.ts';
 import {snapshotActionContext,snapshotRuntimeCommand} from './command-snapshot.ts';
 import type {NewActionContext} from './new-journal.ts';
 import {ActionExecutionError} from './action-error.ts';
-import {ActionThreadSelection,type ActionMappingRead} from './thread-selection.ts';
+import {ActionThreadSelection,type ActionMappingRead,type ActionThreadReads} from './thread-selection.ts';
 import {ThreadListAction} from './thread-list.ts';
 import {ThreadStatusAction} from './thread-status.ts';
 import {ContextAction} from './context-action.ts';
@@ -27,9 +27,9 @@ const immediate=(text:string)=>snapshotActionResult({text,waitsForFinal:false,ui
  * This is not the full message business adapter or runnable bridge bootstrap. */
 export class BasicActionDispatcher{
  readonly #mirror:string;readonly #selection:ActionThreadSelection;readonly #list:ThreadListAction;readonly #status:ThreadStatusAction;readonly #context:ContextAction;readonly #usage:UsageAction;readonly #runners:RunnerInspection;readonly #options:SettingsOptionsAction;readonly #services:RuntimeServiceActions;
- constructor(input:DiagnosticPaths,bridge:BridgeState,server:PortableResidentLifecycle|null,locks:TargetLocks,render:(error:unknown)=>string,resumeTimeoutMs:number,mapped?:ActionMappingRead){
+ constructor(input:DiagnosticPaths,bridge:BridgeState,server:PortableResidentLifecycle|null,locks:TargetLocks,render:(error:unknown)=>string,resumeTimeoutMs:number,mapped?:ActionMappingRead,reads?:ActionThreadReads){
   const paths=cloneOwnedSerdeValue(input);for(const key of ['state','mirror','bridge'])requireDiscordText(serdeField(paths,key));
-  const p=paths as DiagnosticPaths;this.#mirror=p.mirror;this.#selection=new ActionThreadSelection(p.state,p.mirror,bridge,mapped);
+  const p=paths as DiagnosticPaths;this.#mirror=p.mirror;this.#selection=new ActionThreadSelection(p.state,p.mirror,bridge,mapped,reads);
   this.#list=new ThreadListAction(p.state,bridge,server,render);this.#status=new ThreadStatusAction(this.#selection,server,render);this.#context=new ContextAction(p.state,this.#selection);this.#usage=new UsageAction(server);
   this.#runners=new RunnerInspection(p.mirror,this.#selection,new ControlTurnVerifier(p.mirror,server,bridge,locks));this.#options=new SettingsOptionsAction(this.#selection,server,resumeTimeoutMs);this.#services=new RuntimeServiceActions(p,server);Object.freeze(this);
  }
@@ -49,7 +49,7 @@ export class BasicActionDispatcher{
     case 'RestartCodex':result=await this.#services.restartCodex(signal);break;
     default:throw new ActionExecutionError('Unsupported',action);
    }
-  }else if('Use'in action)result=immediate(this.#selection.select(action.Use.reference));
+  }else if('Use'in action)result=immediate(await this.#selection.selectAsync(action.Use.reference,signal));
   else if('List'in action)result=await this.#list.list(action.List.limit,false,signal);
   else if('DeleteArchivePreview'in action)result=immediate(await this.#selection.archiveDeletePreview(action.DeleteArchivePreview.reference,signal));
   else if('ArchivedList'in action)result=await this.#list.list(action.ArchivedList.limit,true,signal);

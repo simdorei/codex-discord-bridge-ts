@@ -1,0 +1,95 @@
+{
+  "scope": [
+    {
+      "path": "src/codex-state/reference-reader.ts",
+      "beforeSha256": "b0b07d32d6bdc23456f3d599e2060be13d635658656c8b92ad4446df31734e07",
+      "afterSha256": "13b4d874fe64bd0736eabd6ed975df739904fb85e8d40e3ffa5eca63b5459803"
+    },
+    {
+      "path": "src/codex-state/reference-worker.ts",
+      "beforeSha256": "13b732f30d123a56b2d75fe18725cbb4f8acd10f812702ff26a333394ac065c4",
+      "afterSha256": "a8961621812bd07d635b597cb330b5aa551e5fe38f7f20eb92081eec8e5795a0"
+    },
+    {
+      "path": "src/runtime/action-executor/basic-dispatcher.ts",
+      "beforeSha256": "119874742eddec08c3fa433705f732c2822d53121857dea64725cc4bac85a99b",
+      "afterSha256": "8bcfb17402c89a1b637688b80e5ca4bcea4ad795536df1d88f56cae93d862753"
+    },
+    {
+      "path": "src/runtime/action-executor/retract-action.ts",
+      "beforeSha256": "cdecb2a043b3b9a8a441c545307e21ea234b6c7bc967681473695f0afab46e95",
+      "afterSha256": "a6e078351a6d95b3ee763ff124bbe827ea1a5923e3bd7d30ad6952081da56e1f"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "beforeSha256": "bf3c9e8c392f32d12e6427f93c7e8ab8aaa2489cdd918918dffd87a236ecd2d6",
+      "afterSha256": "4d7db7b4e249157c281a28b73bd17a0e907d6e84492f29f998b55e175ec5ca88"
+    },
+    {
+      "path": "src/runtime/action-executor/thread-selection.ts",
+      "beforeSha256": "2056149c965cc8c31d567350c4db95cd3352b2a7d09a8bf25210687ed82705ea",
+      "afterSha256": "5eba7487a20c160ba984be8465dd9eae74c1bc5ae8b4f790c66dcc20c084ed90"
+    },
+    {
+      "path": "src/runtime/action-executor/resume-action.ts",
+      "beforeSha256": "e87fd040b2a79bb0daea4f77bab10e5e2792a5dbc1b03ff440084499629396bd",
+      "afterSha256": "b2c3e95b49f5c3db0d7d00610cb64894b4c4d8956c960d0231707abc9ccd3aee"
+    },
+    {
+      "path": "src/runtime/action-executor/settings-action.ts",
+      "beforeSha256": "a1f35322279a13c73bad6b73c880bbe546e0e70cdfc2ba7bdf4413a7050b8980",
+      "afterSha256": "60f856e599c3fe511e32e5f88d60ea5f3904556bc662599c56be8e2f82d77b8d"
+    },
+    {
+      "path": "src/runtime/action-executor/archive-action.ts",
+      "beforeSha256": "f548e4913fe86928586089055144def3259ec227e8d3d9fa2524852746d370a9",
+      "afterSha256": "cf7f56be2bb9688756534cc0ce0914bfbdc65d84e4e9e4a13bc00ad819ec9c1e"
+    },
+    {
+      "path": "src/runtime/action-executor/thread-selection-native.ts",
+      "beforeSha256": null,
+      "afterSha256": "e91f9ed5eabd4cc789dabdf35b92ad6229cc818a4a0032657f88e9d06fe76ada"
+    },
+    {
+      "path": "test/codex-state/exact-thread-reader.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "7418868a313a572805a34b6a88c183bd5ea52b7e74954666ecc25a8eb70895b6"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "beforeSha256": "aa6b60e00ba21cd63e78eccddcd146f1f6b5a0f0df430c64567edef91d524ae2",
+      "afterSha256": "f18b2abf6d0d6f3dc24ee4a660136d0f4e985f73e1332c3538b2e9b401374ddf"
+    },
+    {
+      "path": "test/runtime/action-executor/thread-reference-native-paired.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "a3611df5beac27534dfea4b88db6bd057cce412eaeba0ad36ce35f16c2388069"
+    }
+  ],
+  "stageFileCount": 1602,
+  "full": {
+    "tests": 8143,
+    "pass": 8143,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "fullLogSha256": "d78df2932f5f12f57d10410f159991b262e748e133dfe191c76247f3e6cd8fe0",
+  "focused": 474,
+  "status": "APPLIED_VERIFIED",
+  "actualFocused": 474,
+  "typecheck": 0,
+  "build": 0,
+  "verifiedAt": "2026-10-12T14:53:47.974643+00:00",
+  "wholeTestFiles": 786,
+  "testFileConcurrency": 1,
+  "missingProtectedFixture": "not executed or counted as skipped",
+  "runtimeWindowsLive24h": "UNVERIFIED",
+  "evidence": {
+    ".runtime/action-reference-native-752/full.log": "d78df2932f5f12f57d10410f159991b262e748e133dfe191c76247f3e6cd8fe0",
+    ".runtime/action-reference-native-752/applied/focused.log": "1e0970961d8fdf39c978012b9397663f5f9c26d3f183b7bda861af0050d7416c",
+    ".runtime/action-reference-native-752/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/action-reference-native-752/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/action-reference-native-752/stage-inputs.json": "b4e6ae26b17e1fe8bc021fb1ebc252b9889a869453fcc2fb8d11ac099661695c"
+  }
+}

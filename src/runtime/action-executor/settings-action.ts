@@ -33,7 +33,7 @@ export class SettingsAction {
  async settings(channel:bigint,input:SettingsChange,bindingInput:FrozenSettingsBinding|null=null,signal?:AbortSignal):Promise<ActionResult>{
   if(typeof channel!=='bigint'||channel<0n||channel>=1n<<64n)throw new TypeError('Expected u64 channel');const change=capture(input),binding=bindingInput===null?null:snapshotSettingsBinding(bindingInput);signal?.throwIfAborted();
   if(binding!==null)await this.#resolver.validate(binding,channel);signal?.throwIfAborted();
-  const thread=binding!==null?this.#selection.resolveReference(binding.target,false):await this.#selection.resolveThread(channel,change.reference);signal?.throwIfAborted();const server=this.#server;if(server===null)throw new MissingActionAppServerError();
+  const thread=binding!==null?await this.#selection.resolveReferenceAsync(binding.target,false,signal):await this.#selection.resolveThread(channel,change.reference,signal);signal?.throwIfAborted();const server=this.#server;if(server===null)throw new MissingActionAppServerError();
   if(change.model===null&&change.effort===null&&change.speed===null){
    const generation=server.generation();settingsReady(server,generation);const observed=server.observedThreadSettings(thread.id,generation);
    const text=observed===null?`대화 설정 · 현재 실행값 미확인\nthread: ${thread.id}\n마지막 저장 모델: ${thread.model}\n마지막 저장 추론: ${thread.reasoningEffort}\n속도: 확인된 기록 없음`:ObservedSettings.parse(observed[1]).display(thread.id,'마지막 서버 확인값');

@@ -9,7 +9,7 @@ import {serdeValueEqual} from '../../core/serde-value-equal.ts';
 import {TargetLocks,type TargetLease} from '../../core/keyed-locks.ts';
 import {BridgeState} from '../bridge-state.ts';
 import {requireDiscordText} from '../../discord/text.ts';
-import {ActionThreadSelection} from './thread-selection.ts';
+import {ActionThreadSelection,type ActionMappingRead,type ActionThreadReads} from './thread-selection.ts';
 import {ArchiveTargetVerifier} from './archive-preflight.ts';
 import {archiveOwnRequest,archiveDescendants,type ArchiveActor} from './archive-observation.ts';
 import {archiveDispatchFailure} from './archive-failure.ts';
@@ -22,8 +22,8 @@ import {snapshotActionResult,type ActionResult} from '../action-result.ts';
  * it never releases local leases by racing a still-running promise. */
 export class AdmittedArchiveExecutor {
  readonly #path:string;readonly #codex:string;readonly #bridge:BridgeState;readonly #server:PortableResidentLifecycle;readonly #locks:TargetLocks;readonly #selection:ActionThreadSelection;readonly #verify:ArchiveTargetVerifier;readonly #timeout:number;
- constructor(path:string,codex:string,bridge:BridgeState,server:PortableResidentLifecycle,locks:TargetLocks,timeoutMs:number){
-  requireDiscordText(path);requireDiscordText(codex);resumeThreadWithTimeout('',timeoutMs);this.#path=path;this.#codex=codex;this.#bridge=bridge;this.#server=server;this.#locks=locks;this.#timeout=timeoutMs;this.#selection=new ActionThreadSelection(codex,path,bridge);this.#verify=new ArchiveTargetVerifier(path,codex,this.#selection,server,timeoutMs);Object.freeze(this);
+ constructor(path:string,codex:string,bridge:BridgeState,server:PortableResidentLifecycle,locks:TargetLocks,timeoutMs:number,mapped?:ActionMappingRead,reads?:ActionThreadReads){
+  requireDiscordText(path);requireDiscordText(codex);resumeThreadWithTimeout('',timeoutMs);this.#path=path;this.#codex=codex;this.#bridge=bridge;this.#server=server;this.#locks=locks;this.#timeout=timeoutMs;this.#selection=new ActionThreadSelection(codex,path,bridge,mapped,reads);this.#verify=new ArchiveTargetVerifier(path,codex,this.#selection,server,timeoutMs);Object.freeze(this);
  }
  async execute(input:ArchiveActor,reference:string|null,key:string,signal?:AbortSignal):Promise<ActionResult>{
   const actor=cloneOwnedSerdeValue(input) as ArchiveActor;requireDiscordText(key);if(reference!==null)requireDiscordText(reference);for(const id of [actor.channelId,actor.userId,actor.discordMessageId]){if(typeof id!=='bigint'||id<0n||id>=1n<<64n)throw new TypeError('Expected admitted u64 archive actor');if(id>=1n<<63n)throw new ActionIntegerRangeError();}signal?.throwIfAborted();
@@ -35,7 +35,7 @@ export class AdmittedArchiveExecutor {
    if(await archiveOwnRequest(this.#path,actor,reference,cancel.signal)!==key)throw new InvalidActionRequestError('archive original admission identity differs');
    return await withStopOrigin(stopOriginForIngress(record)??null,async()=>{
     await this.#binding(binding,actor.channelId,cancel.signal);
-    const thread=await this.#selection.resolveThread(actor.channelId,binding.target);cancel.signal.throwIfAborted();if(thread.id!==binding.target)throw new InvalidActionRequestError('archive admitted original target no longer resolves exactly; no replacement target will be used');const root=await this.#locks.acquire(thread.id,cancel.signal);
+    const thread=await this.#selection.resolveThread(actor.channelId,binding.target,cancel.signal);cancel.signal.throwIfAborted();if(thread.id!==binding.target)throw new InvalidActionRequestError('archive admitted original target no longer resolves exactly; no replacement target will be used');const root=await this.#locks.acquire(thread.id,cancel.signal);
     try{
      const generation=this.#server.generation();await this.#binding(binding,actor.channelId,cancel.signal);await this.#verify.preflight(actor.channelId,reference,thread.id,generation,key,cancel.signal);await this.#verify.loadIdle(thread.id,generation,cancel.signal);
      const children=await archiveDescendants(this.#server,thread.id,generation,cancel.signal);

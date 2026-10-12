@@ -48,3 +48,23 @@ export async function readThreadInventoryOffThread(path:string,archived:boolean,
  }
  return value as readonly ThreadInfo[];
 }
+
+/** Exact identity only: no trim, alias, inventory scan or selected-state access.
+ * Shares the existing reader slot. This helper alone installs no runtime caller. */
+export async function readThreadExactOffThread(path:string,id:string,archived:boolean,signal?:AbortSignal,timeoutMs=6000):Promise<ThreadInfo|null>{
+ signal?.throwIfAborted();if(process.platform==='win32')throw new Error('Windows action reference resolution is not yet qualified');
+ text(path,32768);if(path.includes('\0'))throw new TypeError('Invalid state path');text(id,16384);if(typeof archived!=='boolean')throw new TypeError('Expected archived flag');
+ if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid native reference timeout');
+ const full=pinNativeRuntimePath(path);text(full,32768);if(slot.busy)throw new OwnedWorkerBusyError();
+ const binding=Object.freeze({mode:'Exact',path:full,id,archived});const pending=slot.run(new URL('./reference-worker.ts',import.meta.url),{path:full,id,archived,exact:true},timeoutMs,signal),joined=slot.join();let raw:unknown;
+ try{raw=await pending;}finally{await joined;}signal?.throwIfAborted();
+ if(boundedSerdeByteCount(raw,1048576)===null)throw new RangeError('Native exact thread response exceeds budget');const response=cloneOwnedSerdeValue(raw),returned=own(response,'binding');
+ for(const key of ['mode','path','id','archived'] as const)if(own(returned,key)!==binding[key])throw new TypeError('Exact thread response differs from original request');
+ if(own(response,'ok')!==true){const detail=own(response,'detail');throw new Error(typeof detail==='string'?detail:'Native exact thread lookup failed');}
+ const value=own(response,'value');if(value===null)return null;
+ for(const key of ['id','title','cwd','rolloutPath','model','reasoningEffort'])requireDiscordText(own(value,key));
+ if(own(value,'id')!==id)throw new TypeError('Exact thread row differs from requested identity');
+ for(const key of ['updatedAt','archivedAt']){const n=own(value,key);if(typeof n!=='bigint'||n<-(1n<<63n)||n>=(1n<<63n))throw new TypeError('Invalid native exact thread integer');}
+ const tokens=own(value,'tokensUsed');if(tokens!==null&&(typeof tokens!=='bigint'||tokens<-(1n<<63n)||tokens>=(1n<<63n)))throw new TypeError('Invalid native exact token count');
+ if(!archived&&own(value,'archivedAt')!==0n)throw new TypeError('Active exact thread has unexpected archive time');return value as ThreadInfo;
+}

@@ -1,4 +1,5 @@
 import {types} from 'node:util';
+import {gatewayOwnField} from '../../discord/gateway/values.ts';
 import {resolveThreadReferenceOffThread} from '../../codex-state/reference-reader.ts';
 import {CodexThreadStore} from '../../codex-state/store.ts';
 import {resolveThreadRefPosix, ThreadResolveError} from '../../codex-state/thread-reference.ts';
@@ -9,17 +10,22 @@ import {StateAccessFacade} from '../../store/state-access-facade.ts';
 import {BridgeState} from '../bridge-state.ts';
 import {ActionIntegerRangeError, InvalidActionRequestError, NoActionTargetError} from './errors.ts';
 export type ActionMappingRead = typeof StateAccessFacade.mirroredThreadId;
+export interface ActionThreadReads {readonly resolve:(reference:string,archived:boolean,signal?:AbortSignal)=>Promise<ThreadInfo>;readonly exact:(id:string,archived:boolean,signal?:AbortSignal)=>Promise<ThreadInfo|null>}
+function captureReads(input:ActionThreadReads|undefined):ActionThreadReads|undefined{if(input===undefined)return undefined;const capture=<K extends keyof ActionThreadReads>(key:K):ActionThreadReads[K]=>{const f=gatewayOwnField(input,key);if(typeof f!=='function'||types.isProxy(f)||types.isGeneratorFunction(f))throw new TypeError('Expected passive thread read function');return f as ActionThreadReads[K];};return Object.freeze({resolve:capture('resolve'),exact:capture('exact')});}
+function nativePromise<T>(p:Promise<T>):Promise<T>{if(!types.isPromise(p))throw new TypeError('Expected native thread read Promise');return p;}
 /** Original-target selection only. Never canonicalizes forks or substitutes a
  * selected target for a stale room mapping. Synchronous Codex/bridge reads need
  * the production owned filesystem boundary; Windows reference parity pending. */
 export class ActionThreadSelection {
+  readonly #reads:ActionThreadReads|undefined;
   readonly #mapped: ActionMappingRead;
   readonly #statePath: string;
   readonly #bridgePath:string;
   readonly #mirrorPath: string;
   readonly #selected: () => string | null;
   readonly #select: (id: string | null) => void;
-  constructor(statePath: string, mirrorPath: string, bridge: BridgeState, mapped: ActionMappingRead = StateAccessFacade.mirroredThreadId) {
+  constructor(statePath: string, mirrorPath: string, bridge: BridgeState, mapped: ActionMappingRead = StateAccessFacade.mirroredThreadId, reads?:ActionThreadReads) {
+    this.#reads=captureReads(reads);
     if(typeof mapped!=='function'||types.isProxy(mapped)||types.isGeneratorFunction(mapped))throw new TypeError('Expected passive mapping read function');this.#mapped=mapped;
     requireDiscordText(statePath); requireDiscordText(mirrorPath);
     this.#statePath = statePath; this.#mirrorPath = mirrorPath;this.#bridgePath=BridgeState.prototype.path.call(bridge);
@@ -52,12 +58,20 @@ export class ActionThreadSelection {
     signal?.throwIfAborted();const thread=await resolveThreadReferenceOffThread(this.#statePath,reference,null,true,signal,6000,this.#bridgePath);
     return `Archived thread deletion preview\nthread_id: ${thread.id}\ntitle: ${thread.title}\ncwd: ${thread.cwd}\nrollout_path: ${thread.rolloutPath}\nTo delete, run !confirm_delete_archive ${thread.id}`;
   }
-  async resolveThread(channel: bigint, reference: string | null): Promise<ThreadInfo> {
-    if (reference !== null) return this.resolveReference(reference, false);
+  async resolveReferenceAsync(input:string,archived=false,signal?:AbortSignal):Promise<ThreadInfo>{
+    signal?.throwIfAborted();requireDiscordText(input);if(typeof archived!=='boolean')throw new TypeError('Expected archived flag');
+    const result=this.#reads===undefined?this.resolveReference(input,archived):await nativePromise(this.#reads.resolve(input,archived,signal));signal?.throwIfAborted();return result;
+  }
+  async resolveThread(channel: bigint, reference: string | null,signal?:AbortSignal): Promise<ThreadInfo> {
+    signal?.throwIfAborted();if (reference !== null) return this.resolveReferenceAsync(reference, false,signal);
     const target = await this.targetThreadId(channel);
-    const thread = CodexThreadStore.open(this.#statePath).loadThread(target, false);
+    signal?.throwIfAborted();const thread = this.#reads===undefined?CodexThreadStore.open(this.#statePath).loadThread(target,false):await nativePromise(this.#reads.exact(target,false,signal));signal?.throwIfAborted();
     if (thread === null) throw new ThreadResolveError('NotFound', target);
     return thread;
+  }
+  async selectAsync(reference:string,signal?:AbortSignal):Promise<string>{
+    const thread=await this.resolveReferenceAsync(reference,false,signal);signal?.throwIfAborted();this.#select(thread.id);
+    const workspace=thread.cwd.split(/[\\/]/u).filter(part=>part!=='').at(-1)??'-';return `Selected Codex thread\nthread_id: ${thread.id}\nworkspace: ${workspace}\ntitle: ${thread.title}`;
   }
   select(reference: string): string {
     const thread = this.resolveReference(reference, false);

@@ -6,7 +6,7 @@ import {TargetLocks} from '../../core/keyed-locks.ts';
 import {passiveErrorText} from '../../core/passive-error-text.ts';
 import {BridgeState} from '../bridge-state.ts';
 import {requireDiscordText} from '../../discord/text.ts';
-import {ActionThreadSelection} from './thread-selection.ts';
+import {ActionThreadSelection,type ActionMappingRead,type ActionThreadReads} from './thread-selection.ts';
 import {verifyResumedThread} from './resume-verifier.ts';
 import {loadLifecycleAdmission,type LifecycleActor} from './lifecycle-admission.ts';
 import {validateLifecycleSettingsSnapshot} from './settings-snapshot.ts';
@@ -16,11 +16,11 @@ import {snapshotActionResult,type ActionResult} from '../action-result.ts';
  * origin. It never resends a prompt, forks or treats an ACK as loaded evidence. */
 export class AdmittedResumeExecutor {
  readonly #path:string;readonly #bridge:BridgeState;readonly #server:PortableResidentLifecycle;readonly #locks:TargetLocks;readonly #selection:ActionThreadSelection;readonly #timeout:number;
- constructor(path:string,codex:string,bridge:BridgeState,server:PortableResidentLifecycle,locks:TargetLocks,timeoutMs:number){requireDiscordText(path);requireDiscordText(codex);resumeThreadWithTimeout('',timeoutMs);this.#path=path;this.#bridge=bridge;this.#server=server;this.#locks=locks;this.#timeout=timeoutMs;this.#selection=new ActionThreadSelection(codex,path,bridge);Object.freeze(this);}
+ constructor(path:string,codex:string,bridge:BridgeState,server:PortableResidentLifecycle,locks:TargetLocks,timeoutMs:number,mapped?:ActionMappingRead,reads?:ActionThreadReads){requireDiscordText(path);requireDiscordText(codex);resumeThreadWithTimeout('',timeoutMs);this.#path=path;this.#bridge=bridge;this.#server=server;this.#locks=locks;this.#timeout=timeoutMs;this.#selection=new ActionThreadSelection(codex,path,bridge,mapped,reads);Object.freeze(this);}
  async execute(input:LifecycleActor,reference:string|null,key:string,signal?:AbortSignal):Promise<ActionResult>{
   const {actor,record,binding}=await loadLifecycleAdmission(this.#path,input,'Resume',reference,key,signal);await validateLifecycleSettingsSnapshot(this.#path,binding,actor.channelId,this.#bridge);signal?.throwIfAborted();
   return withStopOrigin(stopOriginForIngress(record)??null,async()=>{
-   const thread=await this.#selection.resolveThread(actor.channelId,binding.target);signal?.throwIfAborted();if(thread.id!==binding.target)throw new InvalidActionRequestError('resume admitted original target no longer resolves exactly; no replacement target will be used');
+   const thread=await this.#selection.resolveThread(actor.channelId,binding.target,signal);signal?.throwIfAborted();if(thread.id!==binding.target)throw new InvalidActionRequestError('resume admitted original target no longer resolves exactly; no replacement target will be used');
    const deadline=performance.now()+this.#timeout,cancel=new AbortController(),timeoutReason=new Error('resume deadline'),abort=()=>cancel.abort(signal?.reason);signal?.addEventListener('abort',abort,{once:true});const timer=setTimeout(()=>cancel.abort(timeoutReason),this.#timeout);
    try{
     let lease;try{lease=await this.#locks.acquire(thread.id,cancel.signal);}catch(error){if(cancel.signal.reason===timeoutReason)throw new InvalidActionRequestError('resume control wait timed out; no prompt was resent');throw error;}

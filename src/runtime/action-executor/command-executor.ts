@@ -1,3 +1,4 @@
+import {createNativeActionThreadReads} from './thread-selection-native.ts';
 import {createNativeQueueReadState} from '../queue-runner/native-read-state.ts';
 import {createNativeNewProjectLookup} from './new-project-native.ts';
 import {StopControlWorker,type StopWorkerFailure} from './stop-worker.ts';
@@ -68,20 +69,20 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   if(queue.dbPath!==paths.mirror)throw new InvalidActionRequestError('queue and action database differ');
   if(typeof prepare!=='function'||types.isProxy(prepare)||types.isGeneratorFunction(prepare))throw new TypeError('Expected prompt preparation function');
   this.#codex=paths.state;this.#database=paths.mirror;
-  const intakeState=createNativePromptIntakeState(paths.mirror);
-  const locks=queue.locks,selection=new ActionThreadSelection(paths.state,paths.mirror,bridge,intakeState.mirroredThreadId),control=new ControlTurnVerifier(paths.mirror,server,bridge,locks),busy=new BusyResultProducer(paths.mirror,control,queue.reads);
+  const intakeState=createNativePromptIntakeState(paths.mirror),threadReads=createNativeActionThreadReads(paths.state,BridgeState.prototype.path.call(bridge));
+  const locks=queue.locks,selection=new ActionThreadSelection(paths.state,paths.mirror,bridge,intakeState.mirroredThreadId,threadReads),control=new ControlTurnVerifier(paths.mirror,server,bridge,locks),busy=new BusyResultProducer(paths.mirror,control,queue.reads);
   const targets=new ActionTargetServices(paths.mirror,bridge,queue,{preparePrompt:prepare,busyResult:BusyResultProducer.prototype.busyResult.bind(busy)}),intake=new PromptIntakeProcessor(paths.mirror,queue,targets,{state:intakeState});
   this.#stopWorkerFactory=report=>new StopControlWorker(paths.mirror,server,bridge,locks,render,report);
   this.#intake=intake;  this.#server=server;this.#control=control;this.#componentQueue=new BusyQueueExecutor(paths.mirror,Object.freeze({processAdmittedPrompt:PromptIntakeProcessor.prototype.processAdmittedPrompt.bind(intake)}),undefined,intakeState.admitBusyQueue,intakeState.mirroredThreadId);
-  this.#queue=queue;this.#basic=new BasicActionDispatcher(paths,bridge,server,locks,render,timeout,intakeState.mirroredThreadId);
+  this.#queue=queue;this.#basic=new BasicActionDispatcher(paths,bridge,server,locks,render,timeout,intakeState.mirroredThreadId,threadReads);
   this.#new=new NewThreadExecutor(paths.mirror,paths.state,queue,intake,bridge,server,backend,get('mirror'),get('reportNewAttempt'),undefined,intakeState.admitPromptIntakeWithIngress,intakeState.getNewFirstReplyFinish,intakeState,createNativeNewProjectLookup(paths.state));
   this.#prompts=new QueuePromptExecutor(paths.mirror,selection,targets,queue,intake,busy);this.#retract=new RetractAction(paths.mirror,selection);
   this.#controls=new PromptControlActions(paths.mirror,selection,targets,control,server);this.#open=new OpenThreadAction(selection,targets,bridge,server,timeout);
   this.#settingsResolver=new SettingsTargetResolver(paths.state,paths.mirror,bridge);
   this.#settings=new AdmittedSettingsExecutor(paths.mirror,new SettingsAction(selection,this.#settingsResolver,bridge,server,control,timeout));
   this.#stop=new AdmittedStopExecutor(paths.mirror,bridge,new StopActionExecutor(paths.mirror,server,bridge,locks,render));
-  this.#archive=server===null?null:new AdmittedArchiveExecutor(paths.mirror,paths.state,bridge,server,locks,timeout);
-  this.#resume=server===null?null:new AdmittedResumeExecutor(paths.mirror,paths.state,bridge,server,locks,timeout);
+  this.#archive=server===null?null:new AdmittedArchiveExecutor(paths.mirror,paths.state,bridge,server,locks,timeout,intakeState.mirroredThreadId,threadReads);
+  this.#resume=server===null?null:new AdmittedResumeExecutor(paths.mirror,paths.state,bridge,server,locks,timeout,intakeState.mirroredThreadId,threadReads);
   this.#repair=server===null?null:new AdmittedRepairExecutor(paths.mirror,bridge,server,locks,render,undefined,{listFiltered:createNativeQueueReadState(paths.mirror).listFiltered,listPromptIntakes:intakeState.listPromptIntakes});Object.freeze(this);
  }
  /** Startup-only lease release/recovery; caller owns singleton and has not
