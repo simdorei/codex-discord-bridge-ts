@@ -1,0 +1,32 @@
+{
+  "scope": "standalone native Bridge owner foundation, not runtime installation",
+  "files": [
+    {
+      "path": ".runtime/rust-authority/crates/cdr-runtime/src/bridge_state.rs",
+      "sha256": "f5e84f12f63eb0f23f423ad7d638aebe0b8d8ac3e54f79ddbe51396fecafdae1"
+    },
+    {
+      "path": "src/runtime/bridge-state.ts",
+      "sha256": "600b7a48c11d7a8209f4bfa6e4010c1189b69ae28a90f2cdd38b7a24ddf11c21"
+    },
+    {
+      "path": "src/runtime/owned-worker-slot.ts",
+      "sha256": "8847bd560e98c757fe1f0048c19318795c86a9af881177a4131b06fba0c1ab0e"
+    },
+    {
+      "path": "src/runtime/discord-runtime/executor-bootstrap.ts",
+      "sha256": "18eedc8ef40145c2d54a449e88351e8081c0df9546c62e3fe4e36497739c9980"
+    },
+    {
+      "path": "src/runtime/runtime-paths/path-text.ts",
+      "sha256": "a96057633a6e608b0da1fb42e6409dc9b98381e55ebd05a39dcd90ed2b9b9ad0"
+    },
+    {
+      "path": "test/runtime/bridge-state.test.ts",
+      "sha256": "3862f4a1e5889cd2953380b9560abcc9e1300c0e24a3a003d82bf8d586510a14"
+    }
+  ],
+  "frozenRust": "4e213aa69dc89bed1552d8b83e12471d7664b7ae",
+  "latestRustRef": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+  "latestRefCheckedAt": "2026-10-12T18:09:04Z"
+}
