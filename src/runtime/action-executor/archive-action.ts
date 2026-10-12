@@ -10,7 +10,7 @@ import {TargetLocks,type TargetLease} from '../../core/keyed-locks.ts';
 import {BridgeState} from '../bridge-state.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {ActionThreadSelection,type ActionMappingRead,type ActionThreadReads} from './thread-selection.ts';
-import {ArchiveTargetVerifier} from './archive-preflight.ts';
+import {ArchiveTargetVerifier,type ArchivePreflightReads} from './archive-preflight.ts';
 import {archiveOwnRequest,archiveDescendants,type ArchiveActor} from './archive-observation.ts';
 import {archiveDispatchFailure} from './archive-failure.ts';
 import {verifyArchivedScope} from './archive-persistence.ts';
@@ -22,8 +22,8 @@ import {snapshotActionResult,type ActionResult} from '../action-result.ts';
  * it never releases local leases by racing a still-running promise. */
 export class AdmittedArchiveExecutor {
  readonly #path:string;readonly #codex:string;readonly #bridge:BridgeState;readonly #server:PortableResidentLifecycle;readonly #locks:TargetLocks;readonly #selection:ActionThreadSelection;readonly #verify:ArchiveTargetVerifier;readonly #timeout:number;
- constructor(path:string,codex:string,bridge:BridgeState,server:PortableResidentLifecycle,locks:TargetLocks,timeoutMs:number,mapped?:ActionMappingRead,reads?:ActionThreadReads){
-  requireDiscordText(path);requireDiscordText(codex);resumeThreadWithTimeout('',timeoutMs);this.#path=path;this.#codex=codex;this.#bridge=bridge;this.#server=server;this.#locks=locks;this.#timeout=timeoutMs;this.#selection=new ActionThreadSelection(codex,path,bridge,mapped,reads);this.#verify=new ArchiveTargetVerifier(path,codex,this.#selection,server,timeoutMs);Object.freeze(this);
+ constructor(path:string,codex:string,bridge:BridgeState,server:PortableResidentLifecycle,locks:TargetLocks,timeoutMs:number,mapped?:ActionMappingRead,reads?:ActionThreadReads,preflightReads?:ArchivePreflightReads){
+  requireDiscordText(path);requireDiscordText(codex);resumeThreadWithTimeout('',timeoutMs);this.#path=path;this.#codex=codex;this.#bridge=bridge;this.#server=server;this.#locks=locks;this.#timeout=timeoutMs;this.#selection=new ActionThreadSelection(codex,path,bridge,mapped,reads);this.#verify=new ArchiveTargetVerifier(path,codex,this.#selection,server,timeoutMs,preflightReads);Object.freeze(this);
  }
  async execute(input:ArchiveActor,reference:string|null,key:string,signal?:AbortSignal):Promise<ActionResult>{
   const actor=cloneOwnedSerdeValue(input) as ArchiveActor;requireDiscordText(key);if(reference!==null)requireDiscordText(reference);for(const id of [actor.channelId,actor.userId,actor.discordMessageId]){if(typeof id!=='bigint'||id<0n||id>=1n<<64n)throw new TypeError('Expected admitted u64 archive actor');if(id>=1n<<63n)throw new ActionIntegerRangeError();}signal?.throwIfAborted();

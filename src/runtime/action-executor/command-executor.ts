@@ -81,7 +81,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   this.#settingsResolver=new SettingsTargetResolver(paths.state,paths.mirror,bridge);
   this.#settings=new AdmittedSettingsExecutor(paths.mirror,new SettingsAction(selection,this.#settingsResolver,bridge,server,control,timeout));
   this.#stop=new AdmittedStopExecutor(paths.mirror,bridge,new StopActionExecutor(paths.mirror,server,bridge,locks,render));
-  this.#archive=server===null?null:new AdmittedArchiveExecutor(paths.mirror,paths.state,bridge,server,locks,timeout,intakeState.mirroredThreadId,threadReads);
+  this.#archive=server===null?null:new AdmittedArchiveExecutor(paths.mirror,paths.state,bridge,server,locks,timeout,intakeState.mirroredThreadId,threadReads,{listFiltered:createNativeQueueReadState(paths.mirror).listFiltered,listPromptIntakes:intakeState.listPromptIntakes,exact:threadReads.exact});
   this.#resume=server===null?null:new AdmittedResumeExecutor(paths.mirror,paths.state,bridge,server,locks,timeout,intakeState.mirroredThreadId,threadReads);
   this.#repair=server===null?null:new AdmittedRepairExecutor(paths.mirror,bridge,server,locks,render,undefined,{listFiltered:createNativeQueueReadState(paths.mirror).listFiltered,listPromptIntakes:intakeState.listPromptIntakes});Object.freeze(this);
  }
