@@ -1,0 +1,46 @@
+[
+  {
+    "path": "src/store/async-history.ts",
+    "sha256": "88d6e4cb3a0cce8b57dd58f427be47baaae296b6232fa83112f60ff9e0ce3d66"
+  },
+  {
+    "path": "test/store/stop-execution-settlement.test.ts",
+    "sha256": "216952b8e9d69aa23a4bfa9b452109aa146663fbb93e1a22977e5844a224a149"
+  },
+  {
+    "path": "src/store/queue-cancel-recovery.ts",
+    "sha256": "ad3534497e366dad7bbadced4a7390396d17e2ed11b0e642d03a263652fb3cc6"
+  },
+  {
+    "path": "src/store/stop-terminal-recovery.ts",
+    "sha256": "5f2f28467a9f5338bded4dfd593a600438a8236443ad9e4fed07eef11c2722c4"
+  },
+  {
+    "path": "test/store/stop-terminal-recovery.test.ts",
+    "sha256": "eb4976a47c12999180d12927fc65832589fd17fd2d0272c3fede0f16f6a65b50"
+  },
+  {
+    "path": "src/app-server/recovery-collector.ts",
+    "sha256": "7ae168f37b16d2bfdb292143144a4b7bb454b1127ed73c2e3cc4283e30d58796"
+  },
+  {
+    "path": "src/app-server/portable-resident-lifecycle.ts",
+    "sha256": "327251c76e40ce3737e8ac024e755efa657cb9ecab00cf094b5fbcab6a12532f"
+  },
+  {
+    "path": "test/app-server/stopped-recovery-collector.test.ts",
+    "sha256": "7eece0ed30ca3e935893994c7d4e09158089d7f5073dbfcf0fcd55edfd10eddc"
+  },
+  {
+    "path": "test/app-server/native-stopped-observation.test.ts",
+    "sha256": "2e9fbd5b0c5d999af23f79a3b53796e3b3715096c7efbeb2cf45059b3a73d902"
+  },
+  {
+    "path": "src/admission/drain-gate.ts",
+    "sha256": "f812e401d6d3e4bf04a670230bf76d25c4ac7cd064568664b357dbd58a1e4706"
+  },
+  {
+    "path": "test/admission/unsealed-commit.test.ts",
+    "sha256": "4b0a878c687f8b05512fb85fa34b879765a6398c86646479b03fd2a9f9c8db49"
+  }
+]

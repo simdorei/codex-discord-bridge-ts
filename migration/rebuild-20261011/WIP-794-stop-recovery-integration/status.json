@@ -1,0 +1,8 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "actualBaseline": "788 R84 whole8304",
+  "791Full": "RUNNING, not a PASS claim",
+  "792and793Full": "NOT_RUN",
+  "combinedFull": "NOT_RUN",
+  "runtimeLoop": "NOT_CONNECTED"
+}
