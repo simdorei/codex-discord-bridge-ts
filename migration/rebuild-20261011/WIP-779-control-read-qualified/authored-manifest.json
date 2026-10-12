@@ -1,0 +1,46 @@
+[
+  {
+    "path": "src/runtime/action-executor/basic-dispatcher.ts",
+    "sha256": "831121203772c6ca958b71debc81b4ba0cca953ef0670c03b950483137cb2d6b"
+  },
+  {
+    "path": "src/runtime/action-executor/command-executor.ts",
+    "sha256": "e2ec241d25f98cbb02d362681e5aa930a9e9ddbe6f8d115435a6bb3c66b640fa"
+  },
+  {
+    "path": "src/runtime/action-executor/control-evidence-native-worker.ts",
+    "sha256": "0040b903d1eafaf8c04e5101f9dba13822887f881627923074243ef5e646b38a"
+  },
+  {
+    "path": "src/runtime/action-executor/control-evidence-native.ts",
+    "sha256": "82c3144764b55f65c2def57f14b7386d76feb3d1419c20aebb02a752d4ca5874"
+  },
+  {
+    "path": "src/runtime/action-executor/control-evidence-state.ts",
+    "sha256": "6ddf39af9f57cc6436940d874aad3183ea8e0e67a03eeffe13d502ace4dc3d47"
+  },
+  {
+    "path": "src/store/observed-completion.ts",
+    "sha256": "a6279c345eabf8bdbd7c0f0eaff735a0638609413ecb50c5ca0ae586daaff257"
+  },
+  {
+    "path": "src/store/state-access-facade.ts",
+    "sha256": "935a8c8945461bb8786f1903ec552dd5e56afd9e9578a9e3f85c8d69347b932c"
+  },
+  {
+    "path": "test/runtime/action-executor/command-executor.test.ts",
+    "sha256": "7e09f8f0e4fdf8892bf0d9b29fc52404662222e258d61ef784c63ebbdccd7a47"
+  },
+  {
+    "path": "test/runtime/action-executor/control-evidence-native.test.ts",
+    "sha256": "e072c6a2683422f9346e01cc97208c14c1d9c37462e2f016ff9573f813ad6862"
+  },
+  {
+    "path": "test/runtime/action-executor/control-evidence-state.test.ts",
+    "sha256": "a43b82ab43f46e157043a7c689e511478a753c68eab3f853bcf5fea447e06444"
+  },
+  {
+    "path": "test/store/state-access-facade.test.ts",
+    "sha256": "d1d18d2a5bc1abfe351c6ead8b7d748df445ec64db40de81494c2e6437c7198b"
+  }
+]
