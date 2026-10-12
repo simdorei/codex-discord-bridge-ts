@@ -13,7 +13,7 @@ import {ActionThreadSelection,type ActionMappingRead,type ActionThreadReads} fro
 import {ArchiveTargetVerifier,type ArchivePreflightReads} from './archive-preflight.ts';
 import {archiveOwnRequest,archiveDescendants,type ArchiveActor} from './archive-observation.ts';
 import {archiveDispatchFailure} from './archive-failure.ts';
-import {verifyArchivedScope} from './archive-persistence.ts';
+import {verifyArchivedScope,captureArchiveScopeRead,type ArchiveScopeRead} from './archive-persistence.ts';
 import {snapshotSettingsBinding,validateLifecycleSettingsSnapshot,type FrozenSettingsBinding} from './settings-snapshot.ts';
 import {InvalidActionRequestError,ActionIntegerRangeError} from './errors.ts';
 import {snapshotActionResult,type ActionResult} from '../action-result.ts';
@@ -21,9 +21,9 @@ import {snapshotActionResult,type ActionResult} from '../action-result.ts';
  * registry used by queue/other controls. Timeout cancels and joins this operation;
  * it never releases local leases by racing a still-running promise. */
 export class AdmittedArchiveExecutor {
- readonly #path:string;readonly #codex:string;readonly #bridge:BridgeState;readonly #server:PortableResidentLifecycle;readonly #locks:TargetLocks;readonly #selection:ActionThreadSelection;readonly #verify:ArchiveTargetVerifier;readonly #timeout:number;
- constructor(path:string,codex:string,bridge:BridgeState,server:PortableResidentLifecycle,locks:TargetLocks,timeoutMs:number,mapped?:ActionMappingRead,reads?:ActionThreadReads,preflightReads?:ArchivePreflightReads){
-  requireDiscordText(path);requireDiscordText(codex);resumeThreadWithTimeout('',timeoutMs);this.#path=path;this.#codex=codex;this.#bridge=bridge;this.#server=server;this.#locks=locks;this.#timeout=timeoutMs;this.#selection=new ActionThreadSelection(codex,path,bridge,mapped,reads);this.#verify=new ArchiveTargetVerifier(path,codex,this.#selection,server,timeoutMs,preflightReads);Object.freeze(this);
+ readonly #persistence:ArchiveScopeRead|undefined;readonly #path:string;readonly #codex:string;readonly #bridge:BridgeState;readonly #server:PortableResidentLifecycle;readonly #locks:TargetLocks;readonly #selection:ActionThreadSelection;readonly #verify:ArchiveTargetVerifier;readonly #timeout:number;
+ constructor(path:string,codex:string,bridge:BridgeState,server:PortableResidentLifecycle,locks:TargetLocks,timeoutMs:number,mapped?:ActionMappingRead,reads?:ActionThreadReads,preflightReads?:ArchivePreflightReads,persistence?:ArchiveScopeRead){
+  this.#persistence=captureArchiveScopeRead(persistence);requireDiscordText(path);requireDiscordText(codex);resumeThreadWithTimeout('',timeoutMs);this.#path=path;this.#codex=codex;this.#bridge=bridge;this.#server=server;this.#locks=locks;this.#timeout=timeoutMs;this.#selection=new ActionThreadSelection(codex,path,bridge,mapped,reads);this.#verify=new ArchiveTargetVerifier(path,codex,this.#selection,server,timeoutMs,preflightReads);Object.freeze(this);
  }
  async execute(input:ArchiveActor,reference:string|null,key:string,signal?:AbortSignal):Promise<ActionResult>{
   const actor=cloneOwnedSerdeValue(input) as ArchiveActor;requireDiscordText(key);if(reference!==null)requireDiscordText(reference);for(const id of [actor.channelId,actor.userId,actor.discordMessageId]){if(typeof id!=='bigint'||id<0n||id>=1n<<64n)throw new TypeError('Expected admitted u64 archive actor');if(id>=1n<<63n)throw new ActionIntegerRangeError();}signal?.throwIfAborted();
@@ -47,7 +47,7 @@ export class AdmittedArchiveExecutor {
        if(await archiveOwnRequest(this.#path,actor,reference,cancel.signal)!==key)throw new InvalidActionRequestError('archive original admission changed');
        const scope=[...children,thread.id],reservation=await state.reserveArchiveScope(this.#path,scope,key);cancel.signal.throwIfAborted();attempted=true;
        try{await this.#server.execute(archiveThread(thread.id),generation,cancel.signal);}catch(error){throw await archiveDispatchFailure(this.#path,reservation,thread.id,error);}
-       await verifyArchivedScope(this.#codex,scope,cancel.signal);cancel.signal.throwIfAborted();await state.markArchiveVerified(this.#path,reservation);
+       await verifyArchivedScope(this.#codex,scope,cancel.signal,this.#persistence);cancel.signal.throwIfAborted();await state.markArchiveVerified(this.#path,reservation);
        const selected=BridgeState.prototype.selectedThreadId.call(this.#bridge);if(selected!==null&&scope.includes(selected))BridgeState.prototype.setSelectedThreadId.call(this.#bridge,null);
        return snapshotActionResult({text:`Archived Codex thread ${thread.id} (${scope.length} conversations, persisted state verified).`,waitsForFinal:false,ui:null});
       }finally{for(let i=leases.length-1;i>=0;i--)leases[i]!.release();}

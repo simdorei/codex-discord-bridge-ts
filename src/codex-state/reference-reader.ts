@@ -68,3 +68,25 @@ export async function readThreadExactOffThread(path:string,id:string,archived:bo
  const tokens=own(value,'tokensUsed');if(tokens!==null&&(typeof tokens!=='bigint'||tokens<-(1n<<63n)||tokens>=(1n<<63n)))throw new TypeError('Invalid native exact token count');
  if(!archived&&own(value,'archivedAt')!==0n)throw new TypeError('Active exact thread has unexpected archive time');return value as ThreadInfo;
 }
+
+/** One read-only batch, not one transactional snapshot. Every original member is
+ * decoded using the existing bounded exact archived-row decoder. Missing IDs are
+ * the ordered subset, never partial success. Shares the existing native slot. */
+export async function readArchivedScopeOffThread(path:string,input:readonly string[],signal?:AbortSignal,timeoutMs=3000):Promise<readonly string[]>{
+ signal?.throwIfAborted();if(process.platform==='win32')throw new Error('Windows archive scope resolution is not yet qualified');
+ text(path,32768);if(path.includes('\0'))throw new TypeError('Invalid state path');
+ if(boundedSerdeByteCount(input,4194304)===null)throw new TypeError('Expected bounded archive scope');
+ const scope=cloneOwnedSerdeValue(input);if(!Array.isArray(scope)||scope.length===0||scope.length>101)throw new TypeError('Expected bounded archive scope');
+ for(const id of scope){text(id,16384);if(id==='')throw new TypeError('Expected nonempty archive identity');}if(new Set(scope).size!==scope.length)throw new TypeError('Expected unique archive scope');
+ if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>3000)throw new RangeError('Invalid archive scope timeout');
+ const full=pinNativeRuntimePath(path);text(full,32768);if(slot.busy)throw new OwnedWorkerBusyError();
+ const pending=slot.run(new URL('./reference-worker.ts',import.meta.url),{path:full,archiveScope:scope},timeoutMs,signal),joined=slot.join();let raw:unknown;
+ try{raw=await pending;}finally{await joined;}signal?.throwIfAborted();
+ if(boundedSerdeByteCount(raw,4194304)===null)throw new RangeError('Native archive scope response exceeds budget');
+ const response=cloneOwnedSerdeValue(raw),binding=own(response,'binding'),returned=own(binding,'scope');
+ if(own(binding,'mode')!=='ArchiveScope'||own(binding,'path')!==full||!Array.isArray(returned)||returned.length!==scope.length||returned.some((id,i)=>id!==scope[i]))throw new TypeError('Archive scope response differs from original request');
+ if(own(response,'ok')!==true){const detail=own(response,'detail');throw new Error(typeof detail==='string'?detail:'Native archive scope lookup failed');}
+ const missing=own(response,'value');if(!Array.isArray(missing)||missing.length>scope.length)throw new TypeError('Invalid missing archive scope');
+ let previous=-1;for(const id of missing){requireDiscordText(id);const at=scope.indexOf(id);if(at<=previous)throw new TypeError('Missing archive scope must be an ordered original subset');previous=at;}
+ return missing as readonly string[];
+}
