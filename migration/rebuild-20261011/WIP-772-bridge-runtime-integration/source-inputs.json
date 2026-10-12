@@ -1,0 +1,77 @@
+{
+  "scope": "root/caller inventory; transitive closure review incomplete",
+  "files": [
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "99a4d5a0aa85964a7da4b28ad1502e4092b50d493396d8064b188dc50a47ce3e"
+    },
+    {
+      "path": "src/runtime/action-executor/basic-dispatcher.ts",
+      "sha256": "10355b3f6d31498b7ac5799737cc5fac57dbef0e0d1874f1d700dd6a5f1c932b"
+    },
+    {
+      "path": "src/runtime/action-executor/thread-selection.ts",
+      "sha256": "5eba7487a20c160ba984be8465dd9eae74c1bc5ae8b4f790c66dcc20c084ed90"
+    },
+    {
+      "path": "src/runtime/action-executor/action-target.ts",
+      "sha256": "3c3be175cca7adb133ae44013c8dffc5b222136b5f788b77d7b70ef7252e9a80"
+    },
+    {
+      "path": "src/runtime/action-executor/new-executor.ts",
+      "sha256": "cc9750a9b53cdcf57f91966aae13d2eb730dfbba0465d027369d868042d90bd3"
+    },
+    {
+      "path": "src/runtime/action-executor/open-thread.ts",
+      "sha256": "df800b721c3e4c48d1940b0e50bce28f1990a6392e36d77e640b5767e817818e"
+    },
+    {
+      "path": "src/runtime/action-executor/settings-action.ts",
+      "sha256": "60f856e599c3fe511e32e5f88d60ea5f3904556bc662599c56be8e2f82d77b8d"
+    },
+    {
+      "path": "src/runtime/action-executor/resume-action.ts",
+      "sha256": "b2c3e95b49f5c3db0d7d00610cb64894b4c4d8956c960d0231707abc9ccd3aee"
+    },
+    {
+      "path": "src/runtime/action-executor/archive-action.ts",
+      "sha256": "b70796eb7bddc4b07988232055b9c46ac52ac2917a13c52f763523278812bda3"
+    },
+    {
+      "path": "src/runtime/settings-binding.ts",
+      "sha256": "9d25434d6998554d8a2dc43f121e67b4dc71b79f03507b96eab8c3ef326ffea5"
+    },
+    {
+      "path": "src/runtime/action-executor/control-turn.ts",
+      "sha256": "d7a25e660b39c0a6adcf5c8003183d3ab75d377ade834ff8c02440a0130c0c5f"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-action.ts",
+      "sha256": "73b7faae4392ec9eed4144bf9f7bd2613a27bab74ca3e5bb2c85ed08706694f2"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-worker.ts",
+      "sha256": "b39ad50f2952848348a7d7719837cf6a52004bcb5dbbcc4daa5200b8bab25024"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-custody.ts",
+      "sha256": "2722a291129d85bc2940f3f1b1060cf290e424e0f12b7e66afb77bc87df5b36f"
+    },
+    {
+      "path": "src/runtime/action-executor/recovery-custody.ts",
+      "sha256": "56c5a70ea6521551df8a08a20b8b5642ea6b51390c7788359e642f96129bd7a6"
+    },
+    {
+      "path": "src/runtime/action-executor/settings-snapshot.ts",
+      "sha256": "694efe4e59b8cf96f6c7a2c7f4650a33390a6be9a62c78afc1a068918fa36c32"
+    },
+    {
+      "path": "src/runtime/action-executor/errors.ts",
+      "sha256": "0a47e49d6e9246da7d1667b77f38a1e337a9abbdbcd8f04071fb5b788ae9cfa4"
+    },
+    {
+      "path": "src/runtime/discord-runtime/executor-bootstrap.ts",
+      "sha256": "18eedc8ef40145c2d54a449e88351e8081c0df9546c62e3fe4e36497739c9980"
+    }
+  ]
+}
