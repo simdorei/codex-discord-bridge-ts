@@ -1,0 +1,107 @@
+{
+  "checkpoint": 808,
+  "status": "APPLIED_BOUNDED_MIRROR_STORE_AND_NATIVE_ADAPTER",
+  "appliedAt": "2026-10-13T08:51:30.480319+00:00",
+  "files": [
+    {
+      "path": "src/runtime/mirror-sync/store-native-protocol.ts",
+      "sha256": "d45f60bf8c90a5265a927c72401dc6a53c6c1bd09af73f9117d512975d053947"
+    },
+    {
+      "path": "src/runtime/mirror-sync/store-native-worker.ts",
+      "sha256": "5b49a131c0febf1b0aaad0b425836b903bb4bfd7904e03181f6c175b46e0e6a1"
+    },
+    {
+      "path": "src/runtime/mirror-sync/store-native.ts",
+      "sha256": "22b177dbf43fcc576d5b7c7b765c11cae186afa88ff7876100418277c6129362"
+    },
+    {
+      "path": "src/store/mirror-mapping.ts",
+      "sha256": "01ccc5602876770f152d24232fa91d861f1ab270c8c283b4b5e693228b0d374b"
+    },
+    {
+      "path": "src/store/mirror-stale.ts",
+      "sha256": "35c8d786de8a3a7e34038944525b49b3abb4dec3976232b919877e2949643a34"
+    },
+    {
+      "path": "src/store/room-cleanup-pending.ts",
+      "sha256": "cd3eec95ab5d09ea11cebc7a37e4854d597c34e0a7edbe8803680beb4f9a95bd"
+    },
+    {
+      "path": "src/store/room-cleanup.ts",
+      "sha256": "ebbc9b345c1e13870ce1122c14a9143508d5aa48273bb7f2f87a33d1933e7e4e"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "sha256": "0178a81104609cbb3a18161b7c7dbd6601b6bed9c553a021ff4e6f92f1cccdbf"
+    },
+    {
+      "path": "test/runtime/mirror-sync/store-native-retirement.test.ts",
+      "sha256": "6bba94fce3b021df77f0cb928a649948dc2a7b2d199a372d3fc8436d8682b901"
+    },
+    {
+      "path": "test/runtime/mirror-sync/store-native.test.ts",
+      "sha256": "2097fefb763106a6e1c811728a060faea7baf0120347bcd18b5945e562e8bcb4"
+    },
+    {
+      "path": "test/store/mirror-sync-mapping.test.ts",
+      "sha256": "e5e157ed6a444c73329832bd19b2e1ade38f15c59e0e44ce39bee6b09f95c9ab"
+    },
+    {
+      "path": "test/store/room-cleanup-pending.test.ts",
+      "sha256": "570279de6c4e0e0ec2f87ac296376c590c3d11cf5ff4c211d4f776d61f34155f"
+    },
+    {
+      "path": "test/store/room-cleanup.test.ts",
+      "sha256": "483c0253a3b10b6ca571e155ef10193229efac58bd3b6409884ec2605d87d11c"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "sha256": "97a9ccde386191e137b957f30fd3c3b901134f6f2103e9448ef42d5ff0a70a87"
+    }
+  ],
+  "wholeStage": {
+    "passed": 8451,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "files": 825,
+    "suites": 299,
+    "exit": 0,
+    "started": "2026-10-13T08:21:27.337Z",
+    "ended": "2026-10-13T08:46:42.404Z"
+  },
+  "actualReplay": {
+    "passed": 56,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "strictTypecheckExit": 0,
+    "compiledBuildExit": 0
+  },
+  "identity": {
+    "allSourceTestToolsEqualWholeStage": true
+  },
+  "priorFailures": {
+    "whole805": {
+      "pass": 8426,
+      "fail": 2,
+      "cancelled": 1
+    },
+    "serial805": {
+      "pass": 42,
+      "fail": 1,
+      "cancelled": 1
+    },
+    "allObservedFailingCasesPassInWhole808": true,
+    "deadlinesOrAssertionsWeakened": false,
+    "rootCauseResolved": false
+  },
+  "limitations": [
+    "Full BridgeSync composition and HTTP inventory/delete transport not implemented.",
+    "Normal cleanup only; archived-rejected-Steer exception not included.",
+    "Native adapter POSIX only and uses initialized-store APIs; fixed Control slot, no additional pool.",
+    "Protected redaction fixture absent, not counted PASS or skipped.",
+    "Windows, live Discord, packaging and G1-G7 operational acceptance unverified."
+  ]
+}

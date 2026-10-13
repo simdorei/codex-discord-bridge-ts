@@ -1,3 +1,6 @@
+import * as MirrorStale from '../../src/store/mirror-stale.ts';
+import * as RoomCleanupPending from '../../src/store/room-cleanup-pending.ts';
+import * as RoomCleanup from '../../src/store/room-cleanup.ts';
 import * as MirrorProjectCreation from '../../src/store/mirror-project-creation.ts';
 import * as MirrorContainer from '../../src/store/mirror-container-creation.ts';
 import * as StopRecovery from '../../src/store/stop-terminal-recovery.ts';
@@ -201,6 +204,32 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.ensureMirrorProjectAdoptable, MirrorProjectCreation.ensureMirrorProjectAdoptable);
     assert.strictEqual(StateAccessFacade.upsertMirrorProject, MirrorProjectCreation.upsertMirrorProject);
     assert.strictEqual(FacadeExports.upsertMirrorProject, MirrorProjectCreation.upsertMirrorProject);
+    assert.strictEqual(StateAccessFacade.beginRoomCleanup, RoomCleanup.beginRoomCleanup);
+    assert.strictEqual(FacadeExports.beginRoomCleanup, RoomCleanup.beginRoomCleanup);
+    assert.strictEqual(StateAccessFacade.completeRoomCleanup, RoomCleanup.completeRoomCleanup);
+    assert.strictEqual(FacadeExports.completeRoomCleanup, RoomCleanup.completeRoomCleanup);
+    assert.strictEqual(StateAccessFacade.releaseRejectedRoomCleanup, RoomCleanup.releaseRejectedRoomCleanup);
+    assert.strictEqual(FacadeExports.releaseRejectedRoomCleanup, RoomCleanup.releaseRejectedRoomCleanup);
+    assert.strictEqual(StateAccessFacade.roomCleanupPhase, RoomCleanup.roomCleanupPhase);
+    assert.strictEqual(FacadeExports.roomCleanupPhase, RoomCleanup.roomCleanupPhase);
+    assert.strictEqual(StateAccessFacade.roomCleanupConfirmedTarget, RoomCleanup.roomCleanupConfirmedTarget);
+    assert.strictEqual(FacadeExports.roomCleanupConfirmedTarget, RoomCleanup.roomCleanupConfirmedTarget);
+    assert.strictEqual(StateAccessFacade.unconfirmedRoomCleanupChannels, RoomCleanup.unconfirmedRoomCleanupChannels);
+    assert.strictEqual(FacadeExports.unconfirmedRoomCleanupChannels, RoomCleanup.unconfirmedRoomCleanupChannels);
+    assert.strictEqual(StateAccessFacade.roomCleanupPendingReasonIn, RoomCleanupPending.roomCleanupPendingReasonIn);
+    assert.strictEqual(FacadeExports.roomCleanupPendingReasonIn, RoomCleanupPending.roomCleanupPendingReasonIn);
+    assert.strictEqual(StateAccessFacade.roomCleanupPendingReasonReadonly, RoomCleanupPending.roomCleanupPendingReasonReadonly);
+    assert.strictEqual(FacadeExports.roomCleanupPendingReasonReadonly, RoomCleanupPending.roomCleanupPendingReasonReadonly);
+    assert.strictEqual(StateAccessFacade.commitThreadSync, MirrorSync.commitThreadSync);
+    assert.strictEqual(FacadeExports.commitThreadSync, MirrorSync.commitThreadSync);
+    assert.strictEqual(StateAccessFacade.retireMirrorThreadSync, MirrorSync.retireMirrorThreadSync);
+    assert.strictEqual(FacadeExports.retireMirrorThreadSync, MirrorSync.retireMirrorThreadSync);
+    assert.strictEqual(StateAccessFacade.retireMirrorProjectSync, MirrorSync.retireMirrorProjectSync);
+    assert.strictEqual(FacadeExports.retireMirrorProjectSync, MirrorSync.retireMirrorProjectSync);
+    assert.strictEqual(StateAccessFacade.staleMirrorThreads, MirrorStale.staleMirrorThreads);
+    assert.strictEqual(FacadeExports.staleMirrorThreads, MirrorStale.staleMirrorThreads);
+    assert.strictEqual(StateAccessFacade.staleMirrorProjects, MirrorStale.staleMirrorProjects);
+    assert.strictEqual(FacadeExports.staleMirrorProjects, MirrorStale.staleMirrorProjects);
     assert.strictEqual(StateAccessFacade.beginMirrorCreation, MirrorCreation.beginMirrorCreation);
     assert.strictEqual(FacadeExports.beginMirrorCreation, MirrorCreation.beginMirrorCreation);
     assert.strictEqual(StateAccessFacade.confirmMirrorCreation, MirrorCreation.confirmMirrorCreation);
@@ -601,6 +630,19 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "beginMirrorProject",
       "ensureMirrorProjectAdoptable",
       "upsertMirrorProject",
+      "beginRoomCleanup",
+      "completeRoomCleanup",
+      "releaseRejectedRoomCleanup",
+      "roomCleanupPhase",
+      "roomCleanupConfirmedTarget",
+      "unconfirmedRoomCleanupChannels",
+      "roomCleanupPendingReasonIn",
+      "roomCleanupPendingReasonReadonly",
+      "commitThreadSync",
+      "retireMirrorThreadSync",
+      "retireMirrorProjectSync",
+      "staleMirrorThreads",
+      "staleMirrorProjects",
       "beginMirrorCreation",
       "confirmMirrorCreation",
       "mirrorInspectionSnapshotReadonly",
@@ -885,7 +927,7 @@ assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimExisting, PromptIntak
     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
 assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
 assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
-    assert.strictEqual(actual.length, 333);
+    assert.strictEqual(actual.length, 346);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

@@ -1,3 +1,6 @@
+import * as MirrorStale from './mirror-stale.ts';
+import * as RoomCleanupPending from './room-cleanup-pending.ts';
+import * as RoomCleanup from './room-cleanup.ts';
 import * as MirrorProjectCreation from './mirror-project-creation.ts';
 import * as MirrorContainer from './mirror-container-creation.ts';
 import * as StopRecovery from './stop-terminal-recovery.ts';
@@ -215,6 +218,19 @@ export const mirrorProjectCreationReceipt: typeof MirrorProjectCreation.mirrorPr
 export const beginMirrorProject: typeof MirrorProjectCreation.beginMirrorProject = MirrorProjectCreation.beginMirrorProject;
 export const ensureMirrorProjectAdoptable: typeof MirrorProjectCreation.ensureMirrorProjectAdoptable = MirrorProjectCreation.ensureMirrorProjectAdoptable;
 export const upsertMirrorProject: typeof MirrorProjectCreation.upsertMirrorProject = MirrorProjectCreation.upsertMirrorProject;
+export const beginRoomCleanup: typeof RoomCleanup.beginRoomCleanup = RoomCleanup.beginRoomCleanup;
+export const completeRoomCleanup: typeof RoomCleanup.completeRoomCleanup = RoomCleanup.completeRoomCleanup;
+export const releaseRejectedRoomCleanup: typeof RoomCleanup.releaseRejectedRoomCleanup = RoomCleanup.releaseRejectedRoomCleanup;
+export const roomCleanupPhase: typeof RoomCleanup.roomCleanupPhase = RoomCleanup.roomCleanupPhase;
+export const roomCleanupConfirmedTarget: typeof RoomCleanup.roomCleanupConfirmedTarget = RoomCleanup.roomCleanupConfirmedTarget;
+export const unconfirmedRoomCleanupChannels: typeof RoomCleanup.unconfirmedRoomCleanupChannels = RoomCleanup.unconfirmedRoomCleanupChannels;
+export const roomCleanupPendingReasonIn: typeof RoomCleanupPending.roomCleanupPendingReasonIn = RoomCleanupPending.roomCleanupPendingReasonIn;
+export const roomCleanupPendingReasonReadonly: typeof RoomCleanupPending.roomCleanupPendingReasonReadonly = RoomCleanupPending.roomCleanupPendingReasonReadonly;
+export const commitThreadSync: typeof MirrorSync.commitThreadSync = MirrorSync.commitThreadSync;
+export const retireMirrorThreadSync: typeof MirrorSync.retireMirrorThreadSync = MirrorSync.retireMirrorThreadSync;
+export const retireMirrorProjectSync: typeof MirrorSync.retireMirrorProjectSync = MirrorSync.retireMirrorProjectSync;
+export const staleMirrorThreads: typeof MirrorStale.staleMirrorThreads = MirrorStale.staleMirrorThreads;
+export const staleMirrorProjects: typeof MirrorStale.staleMirrorProjects = MirrorStale.staleMirrorProjects;
 export const beginMirrorCreation: typeof MirrorCreation.beginMirrorCreation = MirrorCreation.beginMirrorCreation;
 export const confirmMirrorCreation: typeof MirrorCreation.confirmMirrorCreation = MirrorCreation.confirmMirrorCreation;
 export const mirrorInspectionSnapshotReadonly: typeof MirrorInspection.mirrorInspectionSnapshotReadonly = MirrorInspection.mirrorInspectionSnapshotReadonly;
@@ -589,6 +605,19 @@ export interface IStateAccessFacade {
   readonly beginMirrorProject: typeof MirrorProjectCreation.beginMirrorProject;
   readonly ensureMirrorProjectAdoptable: typeof MirrorProjectCreation.ensureMirrorProjectAdoptable;
   readonly upsertMirrorProject: typeof MirrorProjectCreation.upsertMirrorProject;
+  readonly beginRoomCleanup: typeof RoomCleanup.beginRoomCleanup;
+  readonly completeRoomCleanup: typeof RoomCleanup.completeRoomCleanup;
+  readonly releaseRejectedRoomCleanup: typeof RoomCleanup.releaseRejectedRoomCleanup;
+  readonly roomCleanupPhase: typeof RoomCleanup.roomCleanupPhase;
+  readonly roomCleanupConfirmedTarget: typeof RoomCleanup.roomCleanupConfirmedTarget;
+  readonly unconfirmedRoomCleanupChannels: typeof RoomCleanup.unconfirmedRoomCleanupChannels;
+  readonly roomCleanupPendingReasonIn: typeof RoomCleanupPending.roomCleanupPendingReasonIn;
+  readonly roomCleanupPendingReasonReadonly: typeof RoomCleanupPending.roomCleanupPendingReasonReadonly;
+  readonly commitThreadSync: typeof MirrorSync.commitThreadSync;
+  readonly retireMirrorThreadSync: typeof MirrorSync.retireMirrorThreadSync;
+  readonly retireMirrorProjectSync: typeof MirrorSync.retireMirrorProjectSync;
+  readonly staleMirrorThreads: typeof MirrorStale.staleMirrorThreads;
+  readonly staleMirrorProjects: typeof MirrorStale.staleMirrorProjects;
   readonly beginMirrorCreation: typeof MirrorCreation.beginMirrorCreation;
   readonly confirmMirrorCreation: typeof MirrorCreation.confirmMirrorCreation;
   readonly mirrorInspectionSnapshotReadonly: typeof MirrorInspection.mirrorInspectionSnapshotReadonly;
@@ -976,6 +1005,19 @@ export const StateAccessFacade: IStateAccessFacade = {
   beginMirrorProject,
   ensureMirrorProjectAdoptable,
   upsertMirrorProject,
+  beginRoomCleanup,
+  completeRoomCleanup,
+  releaseRejectedRoomCleanup,
+  roomCleanupPhase,
+  roomCleanupConfirmedTarget,
+  unconfirmedRoomCleanupChannels,
+  roomCleanupPendingReasonIn,
+  roomCleanupPendingReasonReadonly,
+  commitThreadSync,
+  retireMirrorThreadSync,
+  retireMirrorProjectSync,
+  staleMirrorThreads,
+  staleMirrorProjects,
   beginMirrorCreation,
   confirmMirrorCreation,
   mirrorInspectionSnapshotReadonly,

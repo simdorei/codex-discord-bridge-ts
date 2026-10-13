@@ -18,14 +18,25 @@ export async function mirrorProjectForChannel(path:string,channel:bigint|null):P
 function projectKeys(db:DatabaseSync,parent:bigint):string[] {const q=db.prepare(`SELECT project_key,${receiptTextColumns('project_key')} FROM mirror_projects WHERE discord_channel_id=?`);q.setReadBigInts(true);return [...q.iterate(parent)].map(row=>receiptText(row,'project_key')!);}
 /** Exact new-room mapping CAS and creation-custody consumption share one IMMEDIATE
  * transaction. It never repeats or rolls back a remote Discord create. */
-export async function commitNewThreadSync(path:string,input:MirrorThreadUpdate,expectedInput:readonly [bigint,bigint]|null,projectKey:string|null):Promise<void> {
+async function commitChecked(path:string,input:MirrorThreadUpdate,expectedInput:readonly [bigint,bigint]|null,projectKey:string|null,checkProject:boolean):Promise<void> {
  requireDiscordText(path);const u=cloneOwnedSerdeValue(input) as MirrorThreadUpdate;for(const text of [u.threadId,u.projectKey,u.title])requireDiscordText(text);integer(u.parentId);integer(u.channelId);if(typeof u.now!=='number')throw new TypeError('Expected f64 mapping timestamp');const expected=pair(expectedInput);if(projectKey!==null)requireDiscordText(projectKey);
  return usingInitializedStore(path,db=>withStoreTransaction(db,'IMMEDIATE',()=>{
-  const keys=projectKeys(db,u.parentId);if(projectKey===null?keys.length!==0:keys.length!==1||keys[0]!==projectKey)throw new StoreIntegrityError(`new-thread project mapping changed for channel ${u.parentId}; created room ${u.channelId} retained without attaching or retrying`);
+  if(checkProject){const keys=projectKeys(db,u.parentId);if(projectKey===null?keys.length!==0:keys.length!==1||keys[0]!==projectKey)throw new StoreIntegrityError(`new-thread project mapping changed for channel ${u.parentId}; created room ${u.channelId} retained without attaching or retrying`);}
   if(receiptExists(db,'SELECT EXISTS(SELECT 1 FROM mirror_threads WHERE discord_thread_id=? AND codex_thread_id<>?) AS held',u.channelId,u.threadId))throw new StoreIntegrityError(`Discord room ${u.channelId} already belongs to another Codex thread; mapping unchanged`);
   const actual=mirrorThreadChannelsIn(db,u.threadId);if(actual===null?expected!==null:expected===null||actual[0]!==expected[0]||actual[1]!==expected[1])throw new MirrorMappingChangedError(u.channelId,u.threadId,null);
   const creation=readMirrorCreationIn(db,u.threadId);
   db.prepare(`INSERT INTO mirror_threads(codex_thread_id,project_key,thread_title,discord_channel_id,discord_thread_id,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(codex_thread_id) DO UPDATE SET project_key=excluded.project_key,thread_title=excluded.thread_title,discord_channel_id=excluded.discord_channel_id,discord_thread_id=excluded.discord_thread_id,updated_at=excluded.updated_at`).run(u.threadId,u.projectKey,u.title,u.parentId,u.channelId,u.now);
   finishMirrorCreationIn(db,u.threadId,u.parentId,u.channelId,expected,creation);return commitStore(undefined);
  }));
+}
+
+export function commitNewThreadSync(path:string,input:MirrorThreadUpdate,expected:readonly [bigint,bigint]|null,projectKey:string|null):Promise<void> {return commitChecked(path,input,expected,projectKey,true);}
+/** Normal sync has already resolved its project; preserve the source distinction
+ * from new-thread's additional project identity check. Mapping CAS is shared. */
+export function commitThreadSync(path:string,input:MirrorThreadUpdate,expected:readonly [bigint,bigint]|null):Promise<void> {return commitChecked(path,input,expected,null,false);}
+export async function retireMirrorThreadSync(path:string,thread:string,channel:bigint,updatedBefore:number):Promise<boolean> {
+ requireDiscordText(path);requireDiscordText(thread);integer(channel);if(typeof updatedBefore!=='number')throw new TypeError('Expected f64 cutoff');return usingInitializedStore(path,db=>BigInt(db.prepare('DELETE FROM mirror_threads WHERE codex_thread_id=? AND discord_thread_id=? AND updated_at<?').run(thread,channel,updatedBefore).changes)===1n);
+}
+export async function retireMirrorProjectSync(path:string,key:string,channel:bigint,started:number):Promise<boolean> {
+ requireDiscordText(path);requireDiscordText(key);integer(channel);if(typeof started!=='number')throw new TypeError('Expected f64 cutoff');return usingInitializedStore(path,db=>BigInt(db.prepare('DELETE FROM mirror_projects WHERE project_key=? AND discord_channel_id=? AND updated_at<? AND NOT EXISTS(SELECT 1 FROM mirror_threads WHERE discord_channel_id=?)').run(key,channel,started,channel).changes)===1n);
 }
