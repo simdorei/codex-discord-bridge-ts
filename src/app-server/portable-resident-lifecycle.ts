@@ -215,7 +215,11 @@ export class PortableResidentLifecycle{
   }
   /** Read-only 10-second native lifetime. Owners are original execution IDs, not
    * target inventory discovery. Separate authenticated release consent is required. */
-  async observeRecoveryPrerequisites(thread:string,inputOwners:readonly string[],requestLimitMs:number,signal?:AbortSignal):Promise<NativeRecoveryObservation>{
+  async observeRecoveryPrerequisites(thread:string,inputOwners:readonly string[],requestLimitMs:number,signal?:AbortSignal):Promise<NativeRecoveryObservation>{return this.#observePrerequisites(thread,inputOwners,requestLimitMs,false,signal);}
+  /** Original Stop cancellation consent is separate. This only observes exact
+   * ended execution using compact history, without resume, interrupt or replay. */
+  async observeStoppedExecution(thread:string,turn:string,requestLimitMs:number,signal?:AbortSignal):Promise<NativeRecoveryObservation>{return this.#observePrerequisites(thread,[turn],requestLimitMs,true,signal);}
+  async #observePrerequisites(thread:string,inputOwners:readonly string[],requestLimitMs:number,stopped:boolean,signal?:AbortSignal):Promise<NativeRecoveryObservation>{
     signal?.throwIfAborted();const owners=cloneOwnedSerdeValue(inputOwners);
     if(typeof thread!=="string"||/[\uD800-\uDFFF]/u.test(thread)||rustTrim(thread)===""||Buffer.byteLength(thread)>512||!Array.isArray(owners)||owners.length===0||owners.length>128||owners.some(id=>typeof id!=="string"||rustTrim(id)===""||Buffer.byteLength(id)>512)||new Set(owners).size!==owners.length||!Number.isSafeInteger(requestLimitMs)||requestLimitMs<=0)throw new AppServerInvalidReplyError("bounded exact target and original owners are required");
     const admission=this.#state.admitRequest(),deadline=recoveryNow()+RECOVERY_BUDGET,limit=Math.min(requestLimitMs,2000),wanted=new Set(owners as string[]),controller=new AbortController();
@@ -231,7 +235,7 @@ export class PortableResidentLifecycle{
       const observation=await collectRecoveryObservation(thread,wanted,async(method,params)=>{
         lifetime.current(()=>{});controller.signal.throwIfAborted();const remaining=Math.min(limit,Math.ceil(deadline-recoveryNow()));if(remaining<=0)throw recoveryExpired();
         const value=await this.requestForRecoveryObservation(admission,{method,params,timeoutMs:remaining},controller.signal);lifetime.current(()=>{});return value;
-      });
+      },stopped);
       controller.signal.throwIfAborted();lifetime.current(()=>{});const proof=new NativeRecoveryObservation(nativeRecoveryKey,lifetime,observation);transferred=true;return proof;
     }finally{clearTimeout(timer);signal?.removeEventListener("abort",abort);if(!transferred)admission.release();}
   }

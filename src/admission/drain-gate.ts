@@ -1,3 +1,4 @@
+import {invokeSynchronousVoid} from "../core/synchronous-void.ts";
 import {
   DrainFenceKey,
   DrainGateError,
@@ -16,6 +17,7 @@ interface GateInternalState {
   sealedRecord: DrainFenceKeyRecord | null;
   controlsOpen: boolean;
   poisoned: boolean;
+  finalizing: boolean;
   notifications: bigint;
   readonly waiters: Set<() => void>;
 }
@@ -33,6 +35,17 @@ export class AdmissionPermit {
       throw new DrainGateError("InvalidKey");
     }
     this.#gate = gate;
+  }
+
+  /** Bounded synchronous final commit only. A control lease acquired during a
+   * drain cannot publish recovery. Reentrant use of this gate is refused. */
+  withUnsealed(action:()=>void):void {
+    if(this.#disposed)throw new DrainGateError("DisposedHandle");
+    const state=getGateState(this.#gate);
+    if(state.poisoned)throw new DrainGateError("LockPoisoned");
+    if(state.sealedRecord!==null)throw new DrainGateError("Sealed");
+    state.finalizing=true;
+    try{invokeSynchronousVoid(action,{},[]);}finally{state.finalizing=false;}
   }
 
   clone(): AdmissionPermit {
@@ -53,9 +66,8 @@ export class AdmissionPermit {
     if (this.#disposed) {
       return;
     }
-    this.#disposed = true;
-
     const state = getGateState(this.#gate);
+    this.#disposed = true;
     if (state.poisoned) {
       return;
     }
@@ -78,6 +90,7 @@ export class AdmissionGate {
       sealedRecord: null,
       controlsOpen: false,
       poisoned: false,
+      finalizing: false,
       notifications: 0n,
       waiters: new Set(),
     });
@@ -259,7 +272,7 @@ export class AdmissionGate {
 
 function getGateState(gate: AdmissionGate): GateInternalState {
   const state = GATE_STATES.get(gate);
-  if (!state) {
+  if (!state || state.finalizing) {
     throw new DrainGateError("LockPoisoned");
   }
   return state;

@@ -1,3 +1,5 @@
+import * as StopRecovery from '../../src/store/stop-terminal-recovery.ts';
+import * as StopRecoveryRead from '../../src/store/stop-control-recovery-read.ts';
 import * as NewReplyFinish from '../../src/store/new-reply-finish.ts';
 import * as GoalWaiting from '../../src/store/queue-goal-waiting.ts';
 import * as GoalAttach from '../../src/store/queue-attach-goal.ts';
@@ -391,6 +393,10 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
     assert.strictEqual(StateAccessFacade.pendingNewPrompt, NewPromptArm.pendingNewPrompt);
     assert.strictEqual(StateAccessFacade.newThreadOrigin, NewOrigin.newThreadOrigin);
+    assert.strictEqual(StateAccessFacade.recoverStoppedTerminalIn, StopRecovery.recoverStoppedTerminalIn);
+    assert.strictEqual(FacadeExports.recoverStoppedTerminalIn, StopRecovery.recoverStoppedTerminalIn);
+    assert.strictEqual(StateAccessFacade.recoveryStopControlsAfter, StopRecoveryRead.recoveryStopControlsAfter);
+    assert.strictEqual(FacadeExports.recoveryStopControlsAfter, StopRecoveryRead.recoveryStopControlsAfter);
     assert.strictEqual(StateAccessFacade.pendingStopControlsAfter, StopControlRead.pendingStopControlsAfter);
     assert.strictEqual(FacadeExports.pendingStopControlsAfter, StopControlRead.pendingStopControlsAfter);
     assert.strictEqual(StateAccessFacade.stopControlPhase, StopControlRead.stopControlPhase);
@@ -747,6 +753,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "markProcessedMessage",
       "recordNewInput",
       "pendingNewPrompt",
+      "recoverStoppedTerminalIn",
+      "recoveryStopControlsAfter",
       "pendingStopControlsAfter",
       "stopControlPhase",
       "acceptRunningStop",
@@ -842,7 +850,7 @@ assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimExisting, PromptIntak
     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
 assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
 assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
-    assert.strictEqual(actual.length, 319);
+    assert.strictEqual(actual.length, 321);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

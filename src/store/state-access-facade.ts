@@ -1,3 +1,5 @@
+import * as StopRecovery from './stop-terminal-recovery.ts';
+import * as StopRecoveryRead from './stop-control-recovery-read.ts';
 import * as NewReplyFinish from './new-reply-finish.ts';
 import * as PreparedMutationValidation from './prepared-mutation-validation.ts';
 import * as ResumeRestartRecovery from './resume-restart-recovery.ts';
@@ -251,6 +253,8 @@ export const admitIngressExisting: typeof IngressAdmission.admitIngressExisting 
 export const pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt = NewPromptArm.pendingNewPrompt;
 
 export const newThreadOrigin: typeof NewOrigin.newThreadOrigin = NewOrigin.newThreadOrigin;
+export const recoverStoppedTerminalIn: typeof StopRecovery.recoverStoppedTerminalIn = StopRecovery.recoverStoppedTerminalIn;
+export const recoveryStopControlsAfter: typeof StopRecoveryRead.recoveryStopControlsAfter = StopRecoveryRead.recoveryStopControlsAfter;
 export const pendingStopControlsAfter: typeof StopControlRead.pendingStopControlsAfter = StopControlRead.pendingStopControlsAfter;
 export const stopControlPhase: typeof StopControlRead.stopControlPhase = StopControlRead.stopControlPhase;
 export const acceptRunningStop: typeof StopControlAdmission.acceptRunningStop = StopControlAdmission.acceptRunningStop;
@@ -626,6 +630,8 @@ export interface IStateAccessFacade {
   readonly admitIngressExisting: typeof IngressAdmission.admitIngressExisting;
   readonly pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt;
   readonly newThreadOrigin: typeof NewOrigin.newThreadOrigin;
+  readonly recoverStoppedTerminalIn: typeof StopRecovery.recoverStoppedTerminalIn;
+  readonly recoveryStopControlsAfter: typeof StopRecoveryRead.recoveryStopControlsAfter;
   readonly pendingStopControlsAfter: typeof StopControlRead.pendingStopControlsAfter;
   readonly stopControlPhase: typeof StopControlRead.stopControlPhase;
   readonly acceptRunningStop: typeof StopControlAdmission.acceptRunningStop;
@@ -981,6 +987,8 @@ export const StateAccessFacade: IStateAccessFacade = {
   admitIngressExisting,
   pendingNewPrompt,
   newThreadOrigin,
+  recoverStoppedTerminalIn,
+  recoveryStopControlsAfter,
   pendingStopControlsAfter,
   stopControlPhase,
   acceptRunningStop,

@@ -14,6 +14,7 @@ await visit(join(root,'test'));
 // These source files are immutable READ fixtures for the instrumentation test;
 // NODE_OPTIONS=--no-strip-types still prevents executing them as TypeScript.
 for(const name of ['drain-gate.ts','owned-key.ts'])await copy(join(root,'src/admission',name));
+await copy(join(root,'src/core/synchronous-void.ts'));
 await copy(join(root,'migration/oracles/sqlite-utf16-0.40.2/decoded-results.json'));
 await writeFile(join(output,'fixture-manifest.json'),JSON.stringify({copied},null,2)+'\n');
 
