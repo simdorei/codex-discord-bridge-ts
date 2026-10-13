@@ -207,12 +207,12 @@ function terminalFingerprint(data:TerminalSnapshotData):string{
     ',"prior_proof":'+serializeSerdeValue(e.priorProof)+',"source_state":'+serializeSerdeValue(e.sourceState)+',"source_error":'+serializeSerdeValue(e.sourceError)+'}');
   return '['+serializeSerdeValue(fingerprint(data.history))+',['+entries.join(',')+']]';
 }
-function terminalObservations(data:TerminalSnapshotData,observed:unknown):unknown[]{
+function terminalObservations(data:TerminalSnapshotData,observed:unknown,stopped=false):unknown[]{
   const thread=data.history.thread,invalid=():never=>fail(thread,"historical execution needs exact idle thread and explicit ended Goal");
   const metadata=getOwn(observed,"thread_observation"),goal=getOwn(getOwn(observed,"goal_observation"),"goal");
   if(goal===undefined)invalid();
   if(Buffer.byteLength(serializeSerdeValue(observed))>1048576||getOwn(observed,"threadId")!==thread||getOwn(observed,"truncated")===true||
-    getOwn(getOwn(metadata,"thread"),"id")!==thread||getOwn(getOwn(getOwn(metadata,"thread"),"status"),"type")!=="idle"||
+    getOwn(getOwn(metadata,"thread"),"id")!==thread||!(getOwn(getOwn(getOwn(metadata,"thread"),"status"),"type")==="idle"||(stopped&&getOwn(getOwn(getOwn(metadata,"thread"),"status"),"type")==="notLoaded"))||
     !(goal===null||(getOwn(goal,"threadId")===thread&&getOwn(goal,"status")==="complete")))invalid();
   const turns=getOwn(observed,"turns");if(!Array.isArray(turns)||turns.length>128)return invalid();
   const ids=new Set<string>();for(const turn of turns){const id=getOwn(turn,"id");if(typeof id!=="string"||id===""||Buffer.byteLength(id)>512)return invalid();if(ids.has(id))invalid();ids.add(id);}
@@ -266,4 +266,18 @@ export async function settleTerminalHistory(path:string,expected:TerminalHistory
     }
     db.exec("COMMIT");committed=true;return data.entries.length;
   }finally{if(!committed&&db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
+}
+
+/** PR5 internal borrowed transaction leaf. Caller must validate Stop custody,
+ * reader/generation and native lifetime, cancel only original jobs, and own
+ * IMMEDIATE transaction + commit. This does not open, commit or close. */
+export function settleStoppedExecutionIn(db:DatabaseSync,thread:string,turn:string,observed:unknown,reader:string,generation:bigint):number{
+ const snapshot=terminalSnapshotIn(db,thread);if(snapshot===null)return 0;
+ const data:TerminalSnapshotData={history:snapshot.history,entries:snapshot.entries.filter(entry=>entry.owner.turn_id===turn)};
+ serializeSerdeValue(observed);const owned:unknown=structuredClone(observed),turns=terminalObservations(data,owned,true);
+ for(const entry of data.entries)settleHistoricalOneIn(db,data,entry,historicalProofIn(db,data,entry,owned,turns,reader,generation));
+ for(const entry of data.entries){const row=data.history.rows[entry.index]!,state=entry.sourceState==='dispatching'?'closed_unknown':'submitted';
+  if(!exists(db,`SELECT EXISTS(SELECT 1 FROM cdr_async_questions q WHERE q.id=? AND q.state=? AND ${ASYNC_QUESTION_CLAIM_SQL}=? AND q.preparation_json IS ? AND q.error IS ?) AS present`,row.question_id,state,row.claim,row.original_seal,entry.sourceError))fail(row.thread_id,'historical settlement changed its original question');
+ }
+ return data.entries.length;
 }

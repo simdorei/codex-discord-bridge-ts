@@ -1,0 +1,50 @@
+{
+  "status": "APPLIED_VALIDATED_BOUNDED",
+  "at": "2026-10-13T05:32:58.130964+00:00",
+  "baselineHead": "53ef7429b59bb8fe108d0efe72bc0aefe5c75927",
+  "scope": [
+    {
+      "path": "src/store/async-history.ts",
+      "beforeSha256": "311124a535d88a8a435e4893b7bf3c370fe341e4deadb2b4f8520c34ee8f00d0",
+      "afterSha256": "88d6e4cb3a0cce8b57dd58f427be47baaae296b6232fa83112f60ff9e0ce3d66"
+    },
+    {
+      "path": "test/store/stop-execution-settlement.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "216952b8e9d69aa23a4bfa9b452109aa146663fbb93e1a22977e5844a224a149"
+    },
+    {
+      "path": "src/store/queue-cancel-recovery.ts",
+      "beforeSha256": "3e31287e7fb89c6aa7a7c0b1205c73597fb098aa844db4e284407c0b4ee6f4ae",
+      "afterSha256": "ad3534497e366dad7bbadced4a7390396d17e2ed11b0e642d03a263652fb3cc6"
+    },
+    {
+      "path": "src/store/stop-terminal-recovery.ts",
+      "beforeSha256": null,
+      "afterSha256": "5f2f28467a9f5338bded4dfd593a600438a8236443ad9e4fed07eef11c2722c4"
+    },
+    {
+      "path": "test/store/stop-terminal-recovery.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "eb4976a47c12999180d12927fc65832589fd17fd2d0272c3fede0f16f6a65b50"
+    }
+  ],
+  "wholeTests": 8327,
+  "wholeFiles": 810,
+  "fullLogSha256": "007ddf5154a53b1e5c3695cdef9885acb9c02e9ba6e6e4c63aa558d9778d2125",
+  "stageInputsSha256": "f3709405ba143ddaab5b914e64c1752830141060907fcb7ca05edc8dac581c95",
+  "priorRedRetained": true,
+  "liveDeploymentQualified": false,
+  "all1639InputsMatchStage": true,
+  "actualTypecheckExit": 0,
+  "actualBuildExit": 0,
+  "actualFocusedTests": 30,
+  "actualFocusedPass": 30,
+  "actualFocusedFail": 0,
+  "actualFocusedLogSha256": "ee451b5b89b57a8814b07fd7c237d83be82de0ce1317babdfd2935f5d510a360",
+  "fullStageTests": 8327,
+  "fullStagePass": 8327,
+  "fullStageFail": 0,
+  "fullStageMissingProtectedTest": "test/remote-agent/redaction.test.ts",
+  "runtimeIntegrationComplete": false
+}

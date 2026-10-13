@@ -64,3 +64,6 @@ export async function cancelForRecovery(path:string,target:string,channel:bigint
     checked(db);recordRecoveryCancellationRevisionIn(db,target,channel,owner,result.jobs,now);db.exec("COMMIT");return result;
   }finally{if(db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
 }
+
+/** Internal borrowed transaction cancellation leaf; caller must prove exact custody. */
+export {cancelRequest as cancelRecoveryRequestIn};
