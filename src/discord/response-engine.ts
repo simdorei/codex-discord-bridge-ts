@@ -1,3 +1,4 @@
+import {decodeMirrorBotId,decodeMirrorGuildChannels,decodeMirrorThreadsPage,mirrorArchivedThreadsPath,type MirrorInventoryChannel,type MirrorThreadsPage} from './mirror-inventory-request.ts';
 import {historyMessagePath} from './history-request.ts';
 import {decodeDiscordHistoryMessages,type DecodedGatewayMessage} from './gateway/decoded-message.ts';
 import {mirrorChannelId,mirrorCreateThreadRequest,mirrorUpdateThreadRequest,decodeMirrorChannelBytes} from './mirror-channel-request.ts';
@@ -54,6 +55,11 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
   if(typeof options.decoder.decode!=="function"||types.isProxy(options.decoder.decode)||types.isAsyncFunction(options.decoder.decode)||types.isGeneratorFunction(options.decoder.decode))throw new DiscordTransportFault("BuildingRequest","a synchronous complete receipt decoder is required");
   this.#authorization=authorization;this.#wire={request:options.wire.request.bind(options.wire)};this.#rate={acquire:options.rateLimiter.acquire.bind(options.rateLimiter)};this.#decoder={decode:options.decoder.decode.bind(options.decoder)};this.#timeout=options.headerTimeoutMs??10000;if(!Number.isSafeInteger(this.#timeout)||this.#timeout<0||this.#timeout>2147483647)throw new DiscordTransportFault('BuildingRequest','invalid timeout profile');
  }
+
+ getMirrorBotId(signal?:AbortSignal):Promise<bigint>{return this.#run(owned=>this.#request('GET','users/@me',null,decodeMirrorBotId,()=>new DiscordTransportFault('Json','bot response model could not be decoded'),owned,true,true),signal) as Promise<bigint>;}
+ getMirrorGuildChannels(guild:bigint,signal?:AbortSignal):Promise<readonly MirrorInventoryChannel[]>{const path='guilds/'+mirrorChannelId(guild)+'/channels';return this.#run(owned=>this.#request('GET',path,null,decodeMirrorGuildChannels,()=>new DiscordTransportFault('Json','guild channels model could not be decoded'),owned,true,true),signal) as Promise<readonly MirrorInventoryChannel[]>;}
+ getMirrorActiveThreads(guild:bigint,signal?:AbortSignal):Promise<MirrorThreadsPage>{const path='guilds/'+mirrorChannelId(guild)+'/threads/active';return this.#run(owned=>this.#request('GET',path,null,decodeMirrorThreadsPage,()=>new DiscordTransportFault('Json','active threads model could not be decoded'),owned,true,true),signal) as Promise<MirrorThreadsPage>;}
+ getMirrorArchivedThreads(parent:bigint,before:string|null,signal?:AbortSignal):Promise<MirrorThreadsPage>{const path=mirrorArchivedThreadsPath(parent,before);return this.#run(owned=>this.#request('GET',path,null,decodeMirrorThreadsPage,()=>new DiscordTransportFault('Json','archived threads model could not be decoded'),owned,true,true),signal) as Promise<MirrorThreadsPage>;}
  async deleteMirrorChannel(id:bigint,signal?:AbortSignal):Promise<void>{
   const path=`channels/${mirrorChannelId(id)}`;
   try{await this.#run(async owned=>{await this.#request('DELETE',path,null,null,()=>new Error('unused channel delete decoder'),owned,true,true);},signal);}

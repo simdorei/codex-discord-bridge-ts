@@ -1,3 +1,4 @@
+import {mirrorInventoryResource} from './mirror-inventory-request.ts';
 import {historyChannelResource,HISTORY_HTTP_MAX_BYTES} from './history-request.ts';
 import {isMirrorChannelMethod} from './mirror-channel-request.ts';
 import {messageComponentClearResource} from './message-component-clear-request.ts';
@@ -38,7 +39,8 @@ export class NodeDiscordHttpWire implements DiscordHttpWire{
   const update=method==='PATCH'&&isOriginalInteractionResponsePath(path)&&typeof body==='string'&&!/[\uD800-\uDFFF]/u.test(body)&&authorization===null;
   const clear=method==='PATCH'&&messageComponentClearResource(path)!==null&&body==='{"components":[]}';
   const mirror=isMirrorChannelMethod(method,path)&&((method==='GET'||method==='DELETE')?body===null:typeof body==='string'&&!/[\uD800-\uDFFF]/u.test(body));
-  if(!history&&!gateway&&!channel&&!commands&&!callback&&!update&&!clear&&!mirror)throw new WireError('Invalid HTTP request profile');
+  const inventory=method==='GET'&&body===null&&mirrorInventoryResource(path)!==null;
+  if(!inventory&&!history&&!gateway&&!channel&&!commands&&!callback&&!update&&!clear&&!mirror)throw new WireError('Invalid HTTP request profile');
   if(authorization!==null&&(typeof authorization!=='string'||/[^\x20-\x7e]/u.test(authorization)))throw new WireError('Invalid HTTP authorization');
   if(this.#loopback&&authorization!==null)throw new WireError('Credentials are forbidden for loopback tests');
   if(!Number.isSafeInteger(timeout)||timeout<0||timeout>2147483647)throw new WireError('Invalid header deadline');
