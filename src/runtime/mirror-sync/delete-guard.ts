@@ -1,3 +1,4 @@
+import {consumeArchivedCleanupPermit,type ArchivedCleanupPermit} from './archived-native.ts';
 import {types} from 'node:util';
 import {NativeMirrorStore} from './store-native.ts';
 import {mirrorDeleteRejectedStatus,type DiscordMirrorDeletionTransport} from './delete-http.ts';
@@ -27,6 +28,17 @@ export class MirrorDeletionGuard{
  }
  async deleteGuarded(channel:bigint,target:string|null,signal:AbortSignal):Promise<void>{
   const id=dbId(channel);targetId(target);signal.throwIfAborted();const token=await this.#begin(id,target,signal);
+  await this.#dispatch(channel,token,signal);
+ }
+ /** Dispatch only an existing exact unfinished token, including one committed
+  * with the archived audit transaction. Never manufacture a second fence. */
+ async dispatchPreparedDelete(channel:bigint,permit:ArchivedCleanupPermit,signal:AbortSignal):Promise<void>{
+  const id=dbId(channel);signal.throwIfAborted();const token=consumeArchivedCleanupPermit(permit,this.#store,id);
+  if(await NativeMirrorStore.prototype.execute.call(this.#store,{kind:'CleanupOwnsToken',args:[id,token]},signal)!==true)throw new Error('Prepared cleanup ownership changed; no DELETE dispatched');
+  await this.#dispatch(channel,token,signal);
+ }
+ async #dispatch(channel:bigint,token:string,signal:AbortSignal):Promise<void>{
+  const id=dbId(channel);
   try{const result=this.#delete(channel,signal);if(!types.isPromise(result))throw new TypeError('Deletion transport must return a native Promise');await result;}
   catch(error){
    if(mirrorDeleteRejectedStatus(error)!==undefined){await NativeMirrorStore.prototype.execute.call(this.#store,{kind:'ReleaseCleanup',args:[id,token]},signal);throw error;}

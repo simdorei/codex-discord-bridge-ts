@@ -1,3 +1,4 @@
+import * as ArchivedCleanup from './archived-cleanup.ts';
 import * as MirrorStale from './mirror-stale.ts';
 import * as RoomCleanupPending from './room-cleanup-pending.ts';
 import * as RoomCleanup from './room-cleanup.ts';
@@ -220,6 +221,9 @@ export const mirrorProjectCreationReceipt: typeof MirrorProjectCreation.mirrorPr
 export const beginMirrorProject: typeof MirrorProjectCreation.beginMirrorProject = MirrorProjectCreation.beginMirrorProject;
 export const ensureMirrorProjectAdoptable: typeof MirrorProjectCreation.ensureMirrorProjectAdoptable = MirrorProjectCreation.ensureMirrorProjectAdoptable;
 export const upsertMirrorProject: typeof MirrorProjectCreation.upsertMirrorProject = MirrorProjectCreation.upsertMirrorProject;
+export const archivedCleanupPendingReason: typeof ArchivedCleanup.archivedCleanupPendingReason = ArchivedCleanup.archivedCleanupPendingReason;
+export const beginArchivedCleanup: typeof ArchivedCleanup.beginArchivedCleanup = ArchivedCleanup.beginArchivedCleanup;
+export const roomCleanupOwnsToken: typeof RoomCleanup.roomCleanupOwnsToken = RoomCleanup.roomCleanupOwnsToken;
 export const beginRoomCleanup: typeof RoomCleanup.beginRoomCleanup = RoomCleanup.beginRoomCleanup;
 export const completeRoomCleanup: typeof RoomCleanup.completeRoomCleanup = RoomCleanup.completeRoomCleanup;
 export const releaseRejectedRoomCleanup: typeof RoomCleanup.releaseRejectedRoomCleanup = RoomCleanup.releaseRejectedRoomCleanup;
@@ -609,6 +613,9 @@ export interface IStateAccessFacade {
   readonly beginMirrorProject: typeof MirrorProjectCreation.beginMirrorProject;
   readonly ensureMirrorProjectAdoptable: typeof MirrorProjectCreation.ensureMirrorProjectAdoptable;
   readonly upsertMirrorProject: typeof MirrorProjectCreation.upsertMirrorProject;
+  readonly archivedCleanupPendingReason: typeof ArchivedCleanup.archivedCleanupPendingReason;
+  readonly beginArchivedCleanup: typeof ArchivedCleanup.beginArchivedCleanup;
+  readonly roomCleanupOwnsToken: typeof RoomCleanup.roomCleanupOwnsToken;
   readonly beginRoomCleanup: typeof RoomCleanup.beginRoomCleanup;
   readonly completeRoomCleanup: typeof RoomCleanup.completeRoomCleanup;
   readonly releaseRejectedRoomCleanup: typeof RoomCleanup.releaseRejectedRoomCleanup;
@@ -1011,6 +1018,9 @@ export const StateAccessFacade: IStateAccessFacade = {
   beginMirrorProject,
   ensureMirrorProjectAdoptable,
   upsertMirrorProject,
+  archivedCleanupPendingReason,
+  beginArchivedCleanup,
+  roomCleanupOwnsToken,
   beginRoomCleanup,
   completeRoomCleanup,
   releaseRejectedRoomCleanup,

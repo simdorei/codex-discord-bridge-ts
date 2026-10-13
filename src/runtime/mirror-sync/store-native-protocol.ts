@@ -27,6 +27,7 @@ export type MirrorStoreRequest=
  |{kind:'ProjectReceipt'|'BeginProject';args:readonly [string,bigint,bigint,MirrorProjectSnapshot]}
  |{kind:'ProjectAdoptable';args:readonly [bigint,bigint]}
  |{kind:'UpsertProject';args:readonly [string,string,bigint,number]}
+ |{kind:'CleanupOwnsToken';args:readonly [bigint,string]}
  |{kind:'BeginCleanup';args:readonly [bigint,string|null,number]}
  |{kind:'CompleteCleanup'|'ReleaseCleanup';args:readonly [bigint,string]}
  |{kind:'CleanupPhase';args:readonly [bigint]}
@@ -66,6 +67,7 @@ export function captureMirrorStoreRequest(input:MirrorStoreRequest):MirrorStoreR
   case 'ProjectReceipt':case 'BeginProject':arity(4);text(args[0]);int(args[1]);int(args[2]);snapshot(args[3]);break;
   case 'ProjectAdoptable':arity(2);int(args[0]);int(args[1]);break;
   case 'UpsertProject':arity(4);text(args[0]);text(args[1]);int(args[2]);number(args[3]);break;
+  case 'CleanupOwnsToken':arity(2);int(args[0]);text(args[1]);break;
   case 'BeginCleanup':arity(3);int(args[0]);optionalText(args[1]);number(args[2]);break;
   case 'CompleteCleanup':case 'ReleaseCleanup':case 'CleanupConfirmed':arity(2);int(args[0]);text(args[1]);break;
   case 'UnconfirmedCleanup':arity(0);break;
@@ -97,7 +99,7 @@ export function captureMirrorStoreResult(kind:MirrorStoreRequest['kind'],input:u
    for(const row of v){if(row===null||typeof row!=='object'||Array.isArray(row)||Object.keys(row).length!==3||keys.some(k=>!Object.hasOwn(row,k)))throw new TypeError('Expected exact stale mapping record');text(own(row,keys[0]!));int(own(row,keys[1]!));text(own(row,keys[2]!));}
    return v as readonly StaleMirrorThread[]|readonly StaleMirrorProject[];
   }
-  case 'RetireThread':case 'RetireProject':case 'CleanupConfirmed':if(typeof v!=='boolean')throw new TypeError('Expected cleanup verification');return v;
+  case 'CleanupOwnsToken':case 'RetireThread':case 'RetireProject':case 'CleanupConfirmed':if(typeof v!=='boolean')throw new TypeError('Expected cleanup verification');return v;
   case 'BeginCleanup':text(v);if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u.test(v))throw new TypeError('Invalid cleanup token');return v;
   case 'CleanupPhase':case 'CleanupPending':if(v!==null)text(v);return v as string|null;
   default:if(v!==null)throw new TypeError('Expected empty write acknowledgement');return null;

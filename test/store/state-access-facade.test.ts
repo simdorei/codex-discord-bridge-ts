@@ -1,3 +1,4 @@
+import * as ArchivedCleanup from '../../src/store/archived-cleanup.ts';
 import * as MirrorStale from '../../src/store/mirror-stale.ts';
 import * as RoomCleanupPending from '../../src/store/room-cleanup-pending.ts';
 import * as RoomCleanup from '../../src/store/room-cleanup.ts';
@@ -206,6 +207,12 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.ensureMirrorProjectAdoptable, MirrorProjectCreation.ensureMirrorProjectAdoptable);
     assert.strictEqual(StateAccessFacade.upsertMirrorProject, MirrorProjectCreation.upsertMirrorProject);
     assert.strictEqual(FacadeExports.upsertMirrorProject, MirrorProjectCreation.upsertMirrorProject);
+    assert.strictEqual(StateAccessFacade.archivedCleanupPendingReason, ArchivedCleanup.archivedCleanupPendingReason);
+    assert.strictEqual(FacadeExports.archivedCleanupPendingReason, ArchivedCleanup.archivedCleanupPendingReason);
+    assert.strictEqual(StateAccessFacade.beginArchivedCleanup, ArchivedCleanup.beginArchivedCleanup);
+    assert.strictEqual(FacadeExports.beginArchivedCleanup, ArchivedCleanup.beginArchivedCleanup);
+    assert.strictEqual(StateAccessFacade.roomCleanupOwnsToken, RoomCleanup.roomCleanupOwnsToken);
+    assert.strictEqual(FacadeExports.roomCleanupOwnsToken, RoomCleanup.roomCleanupOwnsToken);
     assert.strictEqual(StateAccessFacade.beginRoomCleanup, RoomCleanup.beginRoomCleanup);
     assert.strictEqual(FacadeExports.beginRoomCleanup, RoomCleanup.beginRoomCleanup);
     assert.strictEqual(StateAccessFacade.completeRoomCleanup, RoomCleanup.completeRoomCleanup);
@@ -635,6 +642,9 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "beginMirrorProject",
       "ensureMirrorProjectAdoptable",
       "upsertMirrorProject",
+      "archivedCleanupPendingReason",
+      "beginArchivedCleanup",
+      "roomCleanupOwnsToken",
       "beginRoomCleanup",
       "completeRoomCleanup",
       "releaseRejectedRoomCleanup",
@@ -933,7 +943,7 @@ assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimExisting, PromptIntak
     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
 assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
 assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
-    assert.strictEqual(actual.length, 348);
+    assert.strictEqual(actual.length, 351);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

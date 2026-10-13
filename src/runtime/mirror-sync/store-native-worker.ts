@@ -33,6 +33,7 @@ try{
   case 'BeginProject':value=await state.beginMirrorProject(data.path,...q.args,matches);break;
   case 'ProjectAdoptable':await state.ensureMirrorProjectAdoptable(data.path,...q.args);break;
   case 'UpsertProject':value=await state.upsertMirrorProject(data.path,...q.args,matches);break;
+  case 'CleanupOwnsToken':value=await state.roomCleanupOwnsToken(data.path,...q.args);break;
   case 'BeginCleanup':value=await state.beginRoomCleanup(data.path,...q.args);break;
   case 'CompleteCleanup':await state.completeRoomCleanup(data.path,...q.args);break;
   case 'ReleaseCleanup':await state.releaseRejectedRoomCleanup(data.path,...q.args);break;
