@@ -1,0 +1,108 @@
+{
+  "status": "APPLIED_SCOPED_VERIFIED",
+  "at": "2026-10-13T06:57:41.734539+00:00",
+  "scope": [
+    {
+      "path": "src/runtime/action-executor/archive-action.ts",
+      "beforeSha256": "4e7e0e9032a1e87299941f11e055c8cca97086fdafa822abcc1e3553228245d7",
+      "sha256": "1debd664908fa1e99d2a7407dc3dca8df123446f579d17049e32a5e55953e3a6"
+    },
+    {
+      "path": "src/runtime/action-executor/archive-failure.ts",
+      "beforeSha256": "f1f44873c12ff62cce44b4154b8b2b57d1ce7b7291e6e12d3ae6944946ea9a5c",
+      "sha256": "7523a418f99f08839f8ee70b0d2cd7485d48f473e3db6944816e351e6c592e17"
+    },
+    {
+      "path": "src/runtime/action-executor/archive-write-native-worker.ts",
+      "beforeSha256": null,
+      "sha256": "cab12207e37e5a1fef51b81f10d26be7e2c9c4a83cc51ef928ac6fe06ba2fea9"
+    },
+    {
+      "path": "src/runtime/action-executor/archive-write-native.ts",
+      "beforeSha256": null,
+      "sha256": "463cbc1f91d3d2db40ae07068355aeecd3526af2bf7fed835e4d9a22645e70bb"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "beforeSha256": "998938ba7d52d499b536d54a98bb0349a0a7101d86222c756c7a88f6ddadc206",
+      "sha256": "fe9c84cd53885154acc1b8735b7965405901ea727d8ea2028ead34e0bc2b9f0e"
+    },
+    {
+      "path": "src/store/archive-fence.ts",
+      "beforeSha256": "aeddd4160ab7a5173e79f9ea58d37e09b36c195fe5cf17e788a143b403c4ac3c",
+      "sha256": "61ec4bb155d49c9cf29270dc8b7fada61b9cac495c7c72afc83adbba68280dd3"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "ddd2a75129fc1a4734782ea03b6f2995958f3178e94bfc4e4b1d2db8535c9387",
+      "sha256": "010aa71e32bc6392cf4c8d23e745b6df43b804287da09ec542f5d67816c8101a"
+    },
+    {
+      "path": "test/runtime/action-executor/archive-action.test.ts",
+      "beforeSha256": "7c64df936e26e04de16ee5a5e5fe3500e97ed396b413ea62607b5695d17e3576",
+      "sha256": "c6220a6fca0ffb244cae654bae6296c15b93333d3d777b808d3d7094aad62af2"
+    },
+    {
+      "path": "test/runtime/action-executor/archive-write-native.test.ts",
+      "beforeSha256": null,
+      "sha256": "92e62cb6be4b67ad894205db0bf5273a855b8dae2cdd07452c1f0aef0db209fe"
+    },
+    {
+      "path": "test/runtime/action-executor/archive-write-own-fields.test.ts",
+      "beforeSha256": null,
+      "sha256": "c0d2183a2eb363ab7dae093b0986295cd12620485fb804ecbbe34dac5ee60fa1"
+    },
+    {
+      "path": "test/store/archive-fence-existing.test.ts",
+      "beforeSha256": null,
+      "sha256": "d2d26121d672a7f2b173c377a524fbfd18735feb0afcbacd92e906dede6b958e"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "675b13e839c3f2ac19b6110c61e5e8dea20370bec8d9fa3688cb6470c7da7efd",
+      "sha256": "6a5c8693d29d50c5c4d2ab174198eddc5afe1dca1adf83df69a7b4e90e602042"
+    }
+  ],
+  "referenceWholeCandidate801": {
+    "tests": 8377,
+    "pass": 8377,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "fileCount": 817,
+    "durationMs": 1359016.372421,
+    "logSha256": "f4dfde4f4c537d7336951b9834126ec3612f300a0e21087b20abe3e507ae7fa6"
+  },
+  "final803DependentReplay": {
+    "tests": 149,
+    "pass": 149,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "fileCount": 15,
+    "logSha256": "88d35ef25cdd224cb93740d564e6be7e17cb4d0de190bac4b147a5840e825afb"
+  },
+  "inputCorrection": {
+    "sameTestSha256": "edabc48d0d4e8a05b7e0d12f8cef04db0f9c4ce55f8f91c2c76a80c4337dde24",
+    "oldFail": 2,
+    "newPass": 2
+  },
+  "finalWholeSuiteClaim": false,
+  "limitation": "Only input capture source changed after whole801. All15 literal local dependent test files replayed; computed import closure not proven. No single final whole-suite PASS claim.",
+  "missingProtectedTest": "test/remote-agent/redaction.test.ts",
+  "migrationComplete": false,
+  "windowsLiveDeploymentQualified": false,
+  "actual": {
+    "tests": 52,
+    "pass": 52,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "typecheckExit": 0,
+    "buildExit": 0,
+    "fileCount": 6,
+    "sourceTestToolIdentities": 1652,
+    "allMatchStage": true,
+    "logSha256": "a572d44401644fa5db567e370b0ad47b91f1fc09918b2081c58334f94749cc8d"
+  }
+}

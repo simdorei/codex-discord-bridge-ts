@@ -1,3 +1,4 @@
+import {NativeArchiveWriter} from './archive-write-native.ts';
 import {types} from 'node:util';
 import {ownedResidentFailure} from '../../app-server/resident-state.ts';
 import {ownedRequestFailure} from '../../app-server/request-client.ts';
@@ -12,10 +13,10 @@ export function originalOwnerActionError(operation:string,thread:string,error:un
 }
 /** Central archive failure disposition. Only exact owned pre-effect failure
  * variants release an attempted reservation; ambiguous outcomes remain fenced. */
-export async function archiveDispatchFailure(path:string,reservation:string,thread:string,error:unknown):Promise<ActionExecutionError>{
+export async function archiveDispatchFailure(path:string,reservation:string,thread:string,error:unknown,writer?:NativeArchiveWriter,signal?:AbortSignal):Promise<ActionExecutionError>{
  requireDiscordText(path);requireDiscordText(reservation);requireDiscordText(thread);const kind=field(ownedResidentFailure(error),'kind');
  if(kind==='GenerationMismatch'||kind==='GenerationQuarantined'||kind==='DeadGenerationFence'||activeWriter(error)){
-  try{await state.releaseRejectedArchive(path,reservation);}
+  try{if(writer===undefined)await state.releaseRejectedArchive(path,reservation);else{NativeArchiveWriter.prototype.assertPath.call(writer,path);await NativeArchiveWriter.prototype.execute.call(writer,{kind:'ReleaseRejected',operation:reservation},signal);}}
   catch(release){return new ActionExecutionError('Invalid',`archive was rejected before effect, but its reservation could not be released and remains protected: ${passiveErrorText(release,'reservation release failed')}. Original error: ${passiveErrorText(error,'app-server failed')}`);}
   return originalOwnerActionError('archive',thread,error);
  }

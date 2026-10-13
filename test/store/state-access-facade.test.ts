@@ -257,9 +257,12 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.unfinishedArchiveRequestExisting, ArchiveFence.unfinishedArchiveRequestExisting);
     assert.strictEqual(FacadeExports.unfinishedArchiveRequestExisting, ArchiveFence.unfinishedArchiveRequestExisting);
     assert.strictEqual(StateAccessFacade.reserveArchiveScope, ArchiveFence.reserveArchiveScope);
+    assert.strictEqual(StateAccessFacade.reserveArchiveScopeExisting, ArchiveFence.reserveArchiveScopeExisting);
     assert.strictEqual(StateAccessFacade.archiveTargetFenced, ArchiveFence.archiveTargetFenced);
     assert.strictEqual(StateAccessFacade.markArchiveVerified, ArchiveFence.markArchiveVerified);
+    assert.strictEqual(StateAccessFacade.markArchiveVerifiedExisting, ArchiveFence.markArchiveVerifiedExisting);
     assert.strictEqual(StateAccessFacade.releaseRejectedArchive, ArchiveFence.releaseRejectedArchive);
+    assert.strictEqual(StateAccessFacade.releaseRejectedArchiveExisting, ArchiveFence.releaseRejectedArchiveExisting);
     assert.strictEqual(StateAccessFacade.claimMirrorEvent, MirrorCursor.claimMirrorEvent);
     assert.strictEqual(StateAccessFacade.cleanupMirrorEvents, MirrorCursor.cleanupMirrorEvents);
     assert.strictEqual(StateAccessFacade.getOrInitMirrorCursor, MirrorCursor.getOrInitMirrorCursor);
@@ -537,9 +540,12 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "unfinishedArchiveRequest",
       "unfinishedArchiveRequestExisting",
       "reserveArchiveScope",
+      "reserveArchiveScopeExisting",
       "archiveTargetFenced",
       "markArchiveVerified",
+      "markArchiveVerifiedExisting",
       "releaseRejectedArchive",
+      "releaseRejectedArchiveExisting",
 
       "proposeAbandonment",
       "bindAbandonmentDelivery",
@@ -850,7 +856,7 @@ assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimExisting, PromptIntak
     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
 assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
 assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
-    assert.strictEqual(actual.length, 321);
+    assert.strictEqual(actual.length, 324);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

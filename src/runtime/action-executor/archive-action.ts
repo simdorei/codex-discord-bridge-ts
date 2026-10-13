@@ -1,3 +1,4 @@
+import {NativeArchiveWriter} from './archive-write-native.ts';
 import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
 import {PortableResidentLifecycle} from '../../app-server/portable-resident-lifecycle.ts';
 import {archiveThread,resumeThreadWithTimeout} from '../../app-server/requests.ts';
@@ -22,9 +23,10 @@ import {snapshotActionResult,type ActionResult} from '../action-result.ts';
  * registry used by queue/other controls. Timeout cancels and joins this operation;
  * it never releases local leases by racing a still-running promise. */
 export class AdmittedArchiveExecutor {
+ readonly #writer:NativeArchiveWriter|undefined;
  readonly #nativeBridge:NativeBridgeStateOwner|undefined;
  readonly #persistence:ArchiveScopeRead|undefined;readonly #path:string;readonly #codex:string;readonly #bridge:BridgeState;readonly #server:PortableResidentLifecycle;readonly #locks:TargetLocks;readonly #selection:ActionThreadSelection;readonly #verify:ArchiveTargetVerifier;readonly #timeout:number;
- constructor(path:string,codex:string,bridge:BridgeState,server:PortableResidentLifecycle,locks:TargetLocks,timeoutMs:number,mapped?:ActionMappingRead,reads?:ActionThreadReads,preflightReads?:ArchivePreflightReads,persistence?:ArchiveScopeRead,nativeBridge?:NativeBridgeStateOwner){this.#nativeBridge=nativeBridge;
+ constructor(path:string,codex:string,bridge:BridgeState,server:PortableResidentLifecycle,locks:TargetLocks,timeoutMs:number,mapped?:ActionMappingRead,reads?:ActionThreadReads,preflightReads?:ArchivePreflightReads,persistence?:ArchiveScopeRead,nativeBridge?:NativeBridgeStateOwner,writer?:NativeArchiveWriter){this.#nativeBridge=nativeBridge;this.#writer=writer;if(writer!==undefined)NativeArchiveWriter.prototype.assertPath.call(writer,path);
   this.#persistence=captureArchiveScopeRead(persistence);requireDiscordText(path);requireDiscordText(codex);resumeThreadWithTimeout('',timeoutMs);this.#path=path;this.#codex=codex;this.#bridge=bridge;this.#server=server;this.#locks=locks;this.#timeout=timeoutMs;this.#selection=new ActionThreadSelection(codex,path,bridge,mapped,reads,nativeBridge);this.#verify=new ArchiveTargetVerifier(path,codex,this.#selection,server,timeoutMs,preflightReads);Object.freeze(this);
  }
  async execute(input:ArchiveActor,reference:string|null,key:string,signal?:AbortSignal):Promise<ActionResult>{
@@ -47,16 +49,16 @@ export class AdmittedArchiveExecutor {
        const observed=await archiveDescendants(this.#server,thread.id,generation,cancel.signal);if(!serdeValueEqual(children,observed))throw new InvalidActionRequestError('archive descendant scope changed; no archive was sent');
        for(const child of children)await this.#verify.preflight(0n,child,child,generation,key,cancel.signal);await this.#verify.preflight(actor.channelId,reference,thread.id,generation,key,cancel.signal);await this.#binding(binding,actor.channelId,cancel.signal);
        if(await archiveOwnRequest(this.#path,actor,reference,cancel.signal)!==key)throw new InvalidActionRequestError('archive original admission changed');
-       const scope=[...children,thread.id],reservation=await state.reserveArchiveScope(this.#path,scope,key);cancel.signal.throwIfAborted();attempted=true;
-       try{await this.#server.execute(archiveThread(thread.id),generation,cancel.signal);}catch(error){throw await archiveDispatchFailure(this.#path,reservation,thread.id,error);}
-       await verifyArchivedScope(this.#codex,scope,cancel.signal,this.#persistence);cancel.signal.throwIfAborted();await state.markArchiveVerified(this.#path,reservation);
+       const scope=[...children,thread.id],reservation=this.#writer===undefined?await state.reserveArchiveScope(this.#path,scope,key):await NativeArchiveWriter.prototype.execute.call(this.#writer,{kind:'Reserve',scope,own:key},cancel.signal);if(reservation===null)throw new InvalidActionRequestError('archive reservation acknowledgement is missing');cancel.signal.throwIfAborted();attempted=true;
+       try{await this.#server.execute(archiveThread(thread.id),generation,cancel.signal);}catch(error){throw await archiveDispatchFailure(this.#path,reservation,thread.id,error,this.#writer,cancel.signal);}
+       await verifyArchivedScope(this.#codex,scope,cancel.signal,this.#persistence);cancel.signal.throwIfAborted();if(this.#writer===undefined)await state.markArchiveVerified(this.#path,reservation);else await NativeArchiveWriter.prototype.execute.call(this.#writer,{kind:'Verified',operation:reservation},cancel.signal);
        if(this.#nativeBridge===undefined){const selected=BridgeState.prototype.selectedThreadId.call(this.#bridge);if(selected!==null&&scope.includes(selected))BridgeState.prototype.setSelectedThreadId.call(this.#bridge,null);}else await this.#nativeBridge.execute({kind:'ClearScope',scope},cancel.signal);
        return snapshotActionResult({text:`Archived Codex thread ${thread.id} (${scope.length} conversations, persisted state verified).`,waitsForFinal:false,ui:null});
       }finally{for(let i=leases.length-1;i>=0;i--)leases[i]!.release();}
      });
     }finally{root.release();}
    });
-  }catch(error){if(cancel.signal.reason===timeoutReason)throw new InvalidActionRequestError(`archive operation timed out; ${attempted?'archive dispatch was attempted; delivery and outcome is unverified and some conversations may already be archived; do not automatically retry':'no archive was sent'}`);throw error;}
+  }catch(error){if(cancel.signal.reason===timeoutReason)throw new InvalidActionRequestError(`archive operation timed out; ${attempted?'archive dispatch was attempted; delivery and outcome is unverified and some conversations may already be archived; do not automatically retry':'no archive was sent; any existing reservation remains protected; do not automatically retry'}`);throw error;}
   finally{clearTimeout(timer);signal?.removeEventListener('abort',onAbort);}
  }
  async #binding(binding:FrozenSettingsBinding,channel:bigint,signal:AbortSignal):Promise<void>{signal.throwIfAborted();await validateLifecycleSettingsSnapshot(this.#path,binding,channel,this.#bridge,undefined,this.#nativeBridge);signal.throwIfAborted();}

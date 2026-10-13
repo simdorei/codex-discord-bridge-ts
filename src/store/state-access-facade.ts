@@ -128,9 +128,12 @@ export const mirrorTargets: typeof MirrorPolicyRead.mirrorTargets = MirrorPolicy
 export const unfinishedArchiveRequest: typeof ArchiveFence.unfinishedArchiveRequest = ArchiveFence.unfinishedArchiveRequest;
 export const unfinishedArchiveRequestExisting: typeof ArchiveFence.unfinishedArchiveRequestExisting = ArchiveFence.unfinishedArchiveRequestExisting;
 export const reserveArchiveScope: typeof ArchiveFence.reserveArchiveScope = ArchiveFence.reserveArchiveScope;
+export const reserveArchiveScopeExisting: typeof ArchiveFence.reserveArchiveScopeExisting = ArchiveFence.reserveArchiveScopeExisting;
 export const archiveTargetFenced: typeof ArchiveFence.archiveTargetFenced = ArchiveFence.archiveTargetFenced;
 export const markArchiveVerified: typeof ArchiveFence.markArchiveVerified = ArchiveFence.markArchiveVerified;
+export const markArchiveVerifiedExisting: typeof ArchiveFence.markArchiveVerifiedExisting = ArchiveFence.markArchiveVerifiedExisting;
 export const releaseRejectedArchive: typeof ArchiveFence.releaseRejectedArchive = ArchiveFence.releaseRejectedArchive;
+export const releaseRejectedArchiveExisting: typeof ArchiveFence.releaseRejectedArchiveExisting = ArchiveFence.releaseRejectedArchiveExisting;
 export const claimMirrorEvent: typeof MirrorCursor.claimMirrorEvent = MirrorCursor.claimMirrorEvent;
 export const cleanupMirrorEvents: typeof MirrorCursor.cleanupMirrorEvents = MirrorCursor.cleanupMirrorEvents;
 export const getOrInitMirrorCursor: typeof MirrorCursor.getOrInitMirrorCursor = MirrorCursor.getOrInitMirrorCursor;
@@ -483,9 +486,12 @@ export interface IStateAccessFacade {
   readonly unfinishedArchiveRequest: typeof ArchiveFence.unfinishedArchiveRequest;
   readonly unfinishedArchiveRequestExisting: typeof ArchiveFence.unfinishedArchiveRequestExisting;
   readonly reserveArchiveScope: typeof ArchiveFence.reserveArchiveScope;
+  readonly reserveArchiveScopeExisting: typeof ArchiveFence.reserveArchiveScopeExisting;
   readonly archiveTargetFenced: typeof ArchiveFence.archiveTargetFenced;
   readonly markArchiveVerified: typeof ArchiveFence.markArchiveVerified;
+  readonly markArchiveVerifiedExisting: typeof ArchiveFence.markArchiveVerifiedExisting;
   readonly releaseRejectedArchive: typeof ArchiveFence.releaseRejectedArchive;
+  readonly releaseRejectedArchiveExisting: typeof ArchiveFence.releaseRejectedArchiveExisting;
   readonly claimMirrorEvent: typeof MirrorCursor.claimMirrorEvent;
   readonly cleanupMirrorEvents: typeof MirrorCursor.cleanupMirrorEvents;
   readonly getOrInitMirrorCursor: typeof MirrorCursor.getOrInitMirrorCursor;
@@ -824,9 +830,12 @@ export const StateAccessFacade: IStateAccessFacade = {
   unfinishedArchiveRequest,
   unfinishedArchiveRequestExisting,
   reserveArchiveScope,
+  reserveArchiveScopeExisting,
   archiveTargetFenced,
   markArchiveVerified,
+  markArchiveVerifiedExisting,
   releaseRejectedArchive,
+  releaseRejectedArchiveExisting,
   claimMirrorEvent,
   cleanupMirrorEvents,
   getOrInitMirrorCursor,
