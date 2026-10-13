@@ -1,0 +1,55 @@
+{
+  "status": "WIP_UNAPPLIED_CLOCK_CORRECTED",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/project-channel.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-825-clock-guard/files/src/runtime/mirror-sync/project-channel.ts",
+      "sha256": "7bc715b6818cf9aeb68f7e547eb5f9149b5841a76ab74390c590f9f077e3309e"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/thread-channel.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-825-clock-guard/files/src/runtime/mirror-sync/thread-channel.ts",
+      "sha256": "8755c58ea07de50f8e0f41d2b861ad0dc43908f57f1f74df2418f52dce8b237e"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/project-channel.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-825-clock-guard/files/test/runtime/mirror-sync/project-channel.test.ts",
+      "sha256": "d7f129735e9e586732bf204f3d3a2ede0ce138dd144ec1063077ce8d358d8087"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/thread-channel.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-825-clock-guard/files/test/runtime/mirror-sync/thread-channel.test.ts",
+      "sha256": "f4799c33836166208296097574db6cbf8b080386c9fc5b97a651d1a1418c1c11"
+    }
+  ],
+  "scope": "Reuse common SystemTime guard at project/thread mapping commit",
+  "evidence": {
+    "sameTestHashes": [
+      {
+        "path": "test/runtime/mirror-sync/project-channel.test.ts",
+        "oldTestSha256": "d7f129735e9e586732bf204f3d3a2ede0ce138dd144ec1063077ce8d358d8087",
+        "fixedTestSha256": "d7f129735e9e586732bf204f3d3a2ede0ce138dd144ec1063077ce8d358d8087"
+      },
+      {
+        "path": "test/runtime/mirror-sync/thread-channel.test.ts",
+        "oldTestSha256": "f4799c33836166208296097574db6cbf8b080386c9fc5b97a651d1a1418c1c11",
+        "fixedTestSha256": "f4799c33836166208296097574db6cbf8b080386c9fc5b97a651d1a1418c1c11"
+      }
+    ],
+    "oldTwoFiles": {
+      "tests": 18,
+      "passed": 16,
+      "failed": 2
+    },
+    "fixedFocused": {
+      "tests": 32,
+      "passed": 32,
+      "failed": 0
+    }
+  },
+  "limitations": [
+    "Whole suite pending",
+    "Existing822 whole run predates clock correction; do not apply822 alone",
+    "Full synchronization caller and Windows/deployment unverified"
+  ]
+}
