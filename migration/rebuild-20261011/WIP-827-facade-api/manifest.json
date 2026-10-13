@@ -1,0 +1,28 @@
+{
+  "status": "WIP_UNAPPLIED_WHOLE_RUNNING",
+  "files": [
+    {
+      "candidatePath": "test/store/state-access-facade.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-827-facade-api/files/test/store/state-access-facade.test.ts",
+      "sha256": "82b362ecf6324ecded30c80a4d29ce44eec64edc213b356434c6bbb3fed81cda"
+    }
+  ],
+  "scope": "Register findMirrorProject in exact API list/count and assert facade/export function identity",
+  "evidence": {
+    "prior822": {
+      "tests": 8543,
+      "passed": 8542,
+      "failed": 1
+    },
+    "focusedFacade": {
+      "tests": 8,
+      "passed": 8,
+      "failed": 0
+    }
+  },
+  "limitations": [
+    "Whole run includes820-825 stages plus this API contract update",
+    "Old clock candidate remains unapproved",
+    "Full synchronization and Windows/deployment unverified"
+  ]
+}
