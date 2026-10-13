@@ -194,6 +194,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.beginMirrorCategory, MirrorContainer.beginMirrorCategory);
     assert.strictEqual(StateAccessFacade.bindMirrorCategory, MirrorContainer.bindMirrorCategory);
     assert.strictEqual(FacadeExports.bindMirrorCategory, MirrorContainer.bindMirrorCategory);
+    assert.strictEqual(StateAccessFacade.findMirrorProject, MirrorProjectCreation.findMirrorProject);
+    assert.strictEqual(FacadeExports.findMirrorProject, MirrorProjectCreation.findMirrorProject);
     assert.strictEqual(StateAccessFacade.mirrorProjectSnapshot, MirrorProjectCreation.mirrorProjectSnapshot);
     assert.strictEqual(FacadeExports.mirrorProjectSnapshot, MirrorProjectCreation.mirrorProjectSnapshot);
     assert.strictEqual(StateAccessFacade.mirrorProjectCreationReceipt, MirrorProjectCreation.mirrorProjectCreationReceipt);
@@ -256,6 +258,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.getNewFirstReplyFinish, NewReplyFinish.getNewFirstReplyFinish);
     assert.strictEqual(StateAccessFacade.getNewFirstReplyFinishExisting, NewReplyFinish.getNewFirstReplyFinishExisting);
     assert.strictEqual(FacadeExports.getNewReplyByIngress, NewReplyRead.getNewReplyByIngress);
+    assert.strictEqual(StateAccessFacade.isMirrorChannelMapped, MirrorPolicyRead.isMirrorChannelMapped);
+    assert.strictEqual(FacadeExports.isMirrorChannelMapped, MirrorPolicyRead.isMirrorChannelMapped);
     assert.strictEqual(StateAccessFacade.remainingDiscordIds, MirrorPolicyRead.remainingDiscordIds);
     assert.strictEqual(FacadeExports.remainingDiscordIds, MirrorPolicyRead.remainingDiscordIds);
     assert.strictEqual(StateAccessFacade.mirrorTargets, MirrorPolicyRead.mirrorTargets);
@@ -625,6 +629,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "mirrorCategoryReceipt",
       "beginMirrorCategory",
       "bindMirrorCategory",
+      "findMirrorProject",
       "mirrorProjectSnapshot",
       "mirrorProjectCreationReceipt",
       "beginMirrorProject",
@@ -655,6 +660,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "getNewReplyByIngress",
       "getNewFirstReplyFinish",
       "getNewFirstReplyFinishExisting",
+      "isMirrorChannelMapped",
       "remainingDiscordIds",
       "mirrorTargets",
       "getIdleIntent",
@@ -927,7 +933,7 @@ assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimExisting, PromptIntak
     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
 assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
 assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
-    assert.strictEqual(actual.length, 346);
+    assert.strictEqual(actual.length, 348);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

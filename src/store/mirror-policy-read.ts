@@ -13,6 +13,17 @@ export interface MirrorTarget {
   readonly discordChannelId: bigint;
   readonly discordThreadId: bigint;
 }
+/** Source mapping membership across thread IDs, thread parents and project
+ * parents. Null is the only pre-open false path; zero is queried as supplied. */
+export async function isMirrorChannelMapped(path: string, channel: bigint | null): Promise<boolean> {
+  requireDiscordText(path); if (channel === null) return false;
+  if (typeof channel !== 'bigint' || channel < -(1n << 63n) || channel >= 1n << 63n) throw new TypeError('Expected optional i64 room');
+  return usingInitializedStore(path, db => {
+    const query = db.prepare('SELECT 1 AS found FROM mirror_threads WHERE discord_thread_id=? OR discord_channel_id=? UNION ALL SELECT 1 AS found FROM mirror_projects WHERE discord_channel_id=? LIMIT 1');
+    query.setReadBigInts(true); const row = query.get(channel, channel, channel);
+    if (row === undefined) return false; decodeI64(row.found, 'mapped room predicate'); return true;
+  });
+}
 function collect(db: DatabaseSync, sql: string): bigint[] {
   const query = db.prepare(sql); query.setReadBigInts(true);
   const result: bigint[] = [];

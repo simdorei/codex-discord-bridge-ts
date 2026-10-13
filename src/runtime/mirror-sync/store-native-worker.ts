@@ -10,6 +10,14 @@ try{
  if(process.platform==='win32')throw new Error('Windows mirror store profile is unqualified');
  const q=captureMirrorStoreRequest(data.operation);let value:unknown=null;
  switch(q.kind){
+  case 'MirrorTargets':value=await state.mirrorTargets(data.path,(1n<<63n)-1n);break;
+  case 'RemainingIds':value=await state.remainingDiscordIds(data.path);break;
+  case 'IsMapped':value=await state.isMirrorChannelMapped(data.path,...q.args);break;
+  case 'ThreadChannels':value=await state.mirrorThreadChannels(data.path,...q.args);break;
+  case 'ConfirmedThreadCreation':value=await state.confirmedMirrorCreation(data.path,...q.args);break;
+  case 'BeginThreadCreation':value=await state.beginMirrorCreation(data.path,...q.args);break;
+  case 'ConfirmThreadCreation':await state.confirmMirrorCreation(data.path,...q.args);break;
+  case 'CommitThread':await state.commitThreadSync(data.path,...q.args);break;
   case 'StaleThreads':value=await state.staleMirrorThreads(data.path,...q.args);break;
   case 'StaleProjects':value=await state.staleMirrorProjects(data.path,...q.args);break;
   case 'RetireThread':value=await state.retireMirrorThreadSync(data.path,...q.args);break;
@@ -18,6 +26,8 @@ try{
   case 'BeginCategory':value=await state.beginMirrorCategory(data.path,...q.args);break;
   case 'ConfirmContainer':value=await state.confirmMirrorContainer(data.path,...q.args);break;
   case 'BindCategory':await state.bindMirrorCategory(data.path,...q.args);break;
+  case 'FindProject':value=await state.findMirrorProject(data.path,...q.args,matches);break;
+  case 'ProjectForChannel':value=await state.mirrorProjectForChannel(data.path,...q.args);break;
   case 'ProjectSnapshot':value=await state.mirrorProjectSnapshot(data.path,...q.args,matches);break;
   case 'ProjectReceipt':value=await state.mirrorProjectCreationReceipt(data.path,...q.args,matches);break;
   case 'BeginProject':value=await state.beginMirrorProject(data.path,...q.args,matches);break;

@@ -2,7 +2,7 @@ import {randomUUID} from 'node:crypto';
 import {types} from 'node:util';
 import type {DatabaseSync} from 'node:sqlite';
 import {usingInitializedStore,withStoreTransaction,commitStore,rollbackStore} from './owned-scope.ts';
-import {receiptText,receiptTextColumns} from './delivery-receipt-key.ts';
+import {receiptRow,receiptText,receiptTextColumns} from './delivery-receipt-key.ts';
 import {decodeI64} from './sqlite-values.ts';
 import {cloneOwnedSerdeValue} from '../core/owned-serde-value.ts';
 import {serializeSerdeValue} from '../core/serde-json.ts';
@@ -11,6 +11,7 @@ import {rustTrim} from '../app-server/value.ts';
 import {requireContainer as require,containerI64,containerRecordsIn,expectedContainerMapping,containerReceiptEqual,confirmedContainerChannel,checkContainerCleanupIn,attemptContainerIn,type MirrorContainerReceipt} from './mirror-container-creation.ts';
 export type MirrorProjectSnapshot=readonly (readonly [string,bigint])[];
 export type MirrorProjectKeyMatch=(stored:string,key:string)=>boolean;
+export interface MirrorProjectMatch {readonly channelId:bigint;readonly storedKey:string}
 function comparator(fn:MirrorProjectKeyMatch):MirrorProjectKeyMatch {
  if(typeof fn!=='function'||types.isProxy(fn)||types.isAsyncFunction(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected synchronous project key matcher');
  return (a,b)=>{const result=fn(a,b);if(typeof result!=='boolean'){if(types.isPromise(result))void Promise.prototype.then.call(result,undefined,()=>undefined);throw new TypeError('Project key matcher must return boolean');}return result;};
@@ -26,6 +27,18 @@ function snapshotIn(db:DatabaseSync,key:string,matches:MirrorProjectKeyMatch):Mi
 }
 function findIn(db:DatabaseSync,key:string,matches:MirrorProjectKeyMatch):MirrorContainerReceipt|null {
  let found:MirrorContainerReceipt|null=null;for(const r of containerRecordsIn(db))if(r.kind==='project'&&matches(r.key,key)){require(found===null,'multiple project creation claims; reconciliation required');found=r;}return found;
+}
+/** Exact match precedes full alias decoding. Alias fallback decodes every row
+ * before choosing the first comparator match in updated_at descending order. */
+export async function findMirrorProject(path:string,key:string|null,fn:MirrorProjectKeyMatch):Promise<MirrorProjectMatch|null> {
+ requireDiscordText(path);if(key!==null)requireDiscordText(key);const canonical=rustTrim(key??'');if(canonical==='')return null;const matches=comparator(fn);
+ return usingInitializedStore(path,db=>{
+  const columns=`discord_channel_id,project_key,${receiptTextColumns('project_key')}`;
+  const decode=(row:Record<string,unknown>):MirrorProjectMatch=>Object.freeze({channelId:decodeI64(row.discord_channel_id,'discord_channel_id'),storedKey:receiptText(row,'project_key')!});
+  const exact=receiptRow(db,`SELECT ${columns} FROM mirror_projects WHERE project_key=?`,canonical);if(exact!==undefined)return decode(exact);
+  const query=db.prepare(`SELECT ${columns} FROM mirror_projects ORDER BY updated_at DESC`);query.setReadBigInts(true);
+  const rows=query.all().map(decode);return rows.find(row=>matches(row.storedKey,canonical))??null;
+ });
 }
 export async function mirrorProjectSnapshot(path:string,key:string,fn:MirrorProjectKeyMatch):Promise<MirrorProjectSnapshot> {
  requireDiscordText(path);requireDiscordText(key);const matches=comparator(fn);return usingInitializedStore(path,db=>{const result=snapshotIn(db,key,matches);require(result.every(([,id])=>id>0n&&id===result[0]?.[1]),'project aliases have conflicting channel identities');return result;});

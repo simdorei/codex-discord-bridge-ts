@@ -129,6 +129,7 @@ export const rejectDefiniteAsyncQuestion: typeof QuestionDispatch.rejectDefinite
 export const rejectUsageLimitAsyncQuestion: typeof QuestionDispatch.rejectUsageLimitAsyncQuestion = QuestionDispatch.rejectUsageLimitAsyncQuestion;
 export const listFilteredExisting: typeof QueueRead.listFilteredExisting = QueueRead.listFilteredExisting;
 export const remainingDiscordIds: typeof MirrorPolicyRead.remainingDiscordIds = MirrorPolicyRead.remainingDiscordIds;
+export const isMirrorChannelMapped: typeof MirrorPolicyRead.isMirrorChannelMapped = MirrorPolicyRead.isMirrorChannelMapped;
 export const mirrorTargets: typeof MirrorPolicyRead.mirrorTargets = MirrorPolicyRead.mirrorTargets;
 export const unfinishedArchiveRequest: typeof ArchiveFence.unfinishedArchiveRequest = ArchiveFence.unfinishedArchiveRequest;
 export const unfinishedArchiveRequestExisting: typeof ArchiveFence.unfinishedArchiveRequestExisting = ArchiveFence.unfinishedArchiveRequestExisting;
@@ -214,6 +215,7 @@ export const mirrorCategoryReceipt: typeof MirrorContainer.mirrorCategoryReceipt
 export const beginMirrorCategory: typeof MirrorContainer.beginMirrorCategory = MirrorContainer.beginMirrorCategory;
 export const bindMirrorCategory: typeof MirrorContainer.bindMirrorCategory = MirrorContainer.bindMirrorCategory;
 export const mirrorProjectSnapshot: typeof MirrorProjectCreation.mirrorProjectSnapshot = MirrorProjectCreation.mirrorProjectSnapshot;
+export const findMirrorProject: typeof MirrorProjectCreation.findMirrorProject = MirrorProjectCreation.findMirrorProject;
 export const mirrorProjectCreationReceipt: typeof MirrorProjectCreation.mirrorProjectCreationReceipt = MirrorProjectCreation.mirrorProjectCreationReceipt;
 export const beginMirrorProject: typeof MirrorProjectCreation.beginMirrorProject = MirrorProjectCreation.beginMirrorProject;
 export const ensureMirrorProjectAdoptable: typeof MirrorProjectCreation.ensureMirrorProjectAdoptable = MirrorProjectCreation.ensureMirrorProjectAdoptable;
@@ -509,6 +511,7 @@ export interface IStateAccessFacade {
   readonly revalidateStopWire: typeof StopDispatch.revalidateStopWire;
   readonly requireFinalDeadGenerationUnheldIn: typeof PreparedMutationValidation.requireFinalDeadGenerationUnheldIn;
   readonly remainingDiscordIds: typeof MirrorPolicyRead.remainingDiscordIds;
+  readonly isMirrorChannelMapped: typeof MirrorPolicyRead.isMirrorChannelMapped;
   readonly mirrorTargets: typeof MirrorPolicyRead.mirrorTargets;
   readonly unfinishedArchiveRequest: typeof ArchiveFence.unfinishedArchiveRequest;
   readonly unfinishedArchiveRequestExisting: typeof ArchiveFence.unfinishedArchiveRequestExisting;
@@ -601,6 +604,7 @@ export interface IStateAccessFacade {
   readonly beginMirrorCategory: typeof MirrorContainer.beginMirrorCategory;
   readonly bindMirrorCategory: typeof MirrorContainer.bindMirrorCategory;
   readonly mirrorProjectSnapshot: typeof MirrorProjectCreation.mirrorProjectSnapshot;
+  readonly findMirrorProject: typeof MirrorProjectCreation.findMirrorProject;
   readonly mirrorProjectCreationReceipt: typeof MirrorProjectCreation.mirrorProjectCreationReceipt;
   readonly beginMirrorProject: typeof MirrorProjectCreation.beginMirrorProject;
   readonly ensureMirrorProjectAdoptable: typeof MirrorProjectCreation.ensureMirrorProjectAdoptable;
@@ -875,6 +879,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   revalidateStopWire,
   requireFinalDeadGenerationUnheldIn,
   remainingDiscordIds,
+  isMirrorChannelMapped,
   mirrorTargets,
   unfinishedArchiveRequest,
   unfinishedArchiveRequestExisting,
@@ -1001,6 +1006,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   beginMirrorCategory,
   bindMirrorCategory,
   mirrorProjectSnapshot,
+  findMirrorProject,
   mirrorProjectCreationReceipt,
   beginMirrorProject,
   ensureMirrorProjectAdoptable,
