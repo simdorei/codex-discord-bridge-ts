@@ -1,0 +1,50 @@
+{
+  "status": "WIP_UNAPPLIED_FOCUSED55_PASS_WHOLE_RUNNING",
+  "files": [
+    {
+      "candidatePath": "src/runtime/discord-runtime/prepared-workers.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-840-mirror-startup/files/src/runtime/discord-runtime/prepared-workers.ts",
+      "sha256": "c68d5aedff54e71e933f693640207b025dc2f9932c236b204097cf90d72069f6"
+    },
+    {
+      "candidatePath": "src/runtime/discord-runtime/prepared-typed-ingress.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-840-mirror-startup/files/src/runtime/discord-runtime/prepared-typed-ingress.ts",
+      "sha256": "704831e7dee3043d572f3c34d03ff3c181e62ccb8b1b50777cc4764f9eff9e7c"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-metadata.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-840-mirror-startup/files/src/runtime/mirror-sync/source-metadata.ts",
+      "sha256": "769c2f9aca8551b7ee424fc6384aef775eac83175272d4e7a1138789f08666b1"
+    },
+    {
+      "candidatePath": "test/runtime/discord-runtime/startup-context.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-840-mirror-startup/files/test/runtime/discord-runtime/startup-context.test.ts",
+      "sha256": "faf73be4188610f9195bb05d227287c1b5b3322d09001d788619cdba102dd28b"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/source-metadata.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-840-mirror-startup/files/test/runtime/mirror-sync/source-metadata.test.ts",
+      "sha256": "65e6b35938ff38b9ec70f0e5a17b47c2f0634f6ab4a0330b0ee861d62492c1ed"
+    }
+  ],
+  "verification": {
+    "strictBuildExit": 0,
+    "focusedPass": 55,
+    "focusedFail": 0,
+    "metadataLaneRegression": {
+      "oldFailed": 2,
+      "sameTestFileSha256": "65e6b35938ff38b9ec70f0e5a17b47c2f0634f6ab4a0330b0ee861d62492c1ed",
+      "newPassed": 2
+    }
+  },
+  "scope": "Configure mirror command owner before typed intake; capture startup options before await; keep shared HTTP/locks; essential metadata reads use existing Control budget.",
+  "limits": "Global native worker limits remain Background3 Control1 Observation2 Discovery1 Maintenance1. Command metadata reads retain zero-queue saturation and joined cancellation.",
+  "authority": {
+    "commit": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+    "discordRuntimeBlob": "43c4e0376df47ae4571c19b66b6678c49928cec1"
+  },
+  "limitations": [
+    "Whole regression and actual application pending.",
+    "No live Discord, Windows, deployment or protected redaction fixture validation."
+  ]
+}
