@@ -1,0 +1,7 @@
+# Stop recovery runtime WIP
+
+Native read-only Stop evidence and original-only cancellation are now connected in a staged runner. The runner pins the shared queue target lease, preserves selected target checks, and commits under the current native resident proof plus an unsealed queue admission permit. Errors roll back and close the owned transaction. No interrupt, resume, or start replay is introduced.
+
+The existing serial Stop worker now has separate dispatch/recovery cursors and 250ms/2s skipped timers. Losing timer waits are retained, shutdown does not rearm a timer, and the shutdown wait is renewed per cycle to avoid retaining an unbounded promise listener chain. Runtime construction verifies the shared queue path/locks/server. Candidate recovery pages use the existing Maintenance lane and bounded native response, without adding a worker lane or pool.
+
+Focused execution found and fixed an extra timer wait after shutdown. Full candidate795 exposed a stale instrumentation source hash. Candidate796 updates exact source/dependency pins and copies the synchronous-void source as a read-only compiled-profile fixture. Original failure logs remain local and are not uploaded. Assertions and runtime safety gates were not removed. Candidate796 focused38 and strict compilation pass; full regression is still running. No production application or full PASS is claimed for these candidates.

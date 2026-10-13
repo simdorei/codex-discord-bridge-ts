@@ -1,0 +1,41 @@
+import {StopControlWorker} from '../../../src/runtime/action-executor/stop-worker.ts';
+import {NativeStopPendingReader} from '../../../src/runtime/action-executor/stop-pending-native.ts';
+import {setTimeout as delay} from 'node:timers/promises';
+import assert from 'node:assert/strict';
+import {test,type TestContext} from 'node:test';
+import type {DatabaseSync} from 'node:sqlite';
+import {PortableResidentLifecycle} from '../../../src/app-server/portable-resident-lifecycle.ts';
+import {AppServerTurnBackend} from '../../../src/runtime/app-server-turn-backend.ts';
+import {QueueStartCoordinator} from '../../../src/runtime/queue-runner/start-coordinator.ts';
+import {AdmissionGate,DrainFenceKey} from '../../../src/admission/drain-gate.ts';
+import {TargetLocks} from '../../../src/core/keyed-locks.ts';
+import {recoverStoppedExecution} from '../../../src/runtime/action-executor/stop-recovery.ts';
+import {storeFixture} from '../../helpers/store-fixture.ts';
+import {openInitialized} from '../../../src/store/owned-driver.ts';
+import {StateAccessFacade as state} from '../../../src/store/state-access-facade.ts';
+import {serializeSerdeValue} from '../../../src/core/serde-json.ts';
+import {getIngressIn} from '../../../src/store/ingress-read.ts';
+async function owner(t:TestContext,mode="normal"){
+  const script=`import readline from 'node:readline';const mode=${JSON.stringify(mode)};const emit=x=>process.stdout.write(JSON.stringify(x)+'\\n');readline.createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line),reply=x=>emit({id:m.id,result:x});if(m.method==='initialize')reply({});else if(m.method==='thread/read'){if(mode==='hang'){emit({method:'fixture/read-seen'});return;}reply({thread:{id:m.params.threadId,status:{type:mode==='unloaded'?'notLoaded':'idle'}}});}else if(m.method==='thread/turns/list'){if(mode==='unloaded'&&m.params.itemsView!=='notLoaded'){emit({id:m.id,error:{code:-1,message:'compact required'}});return;}reply({data:mode==='missing'?[]:[{id:'V',status:'completed'}],nextCursor:null});}else if(m.method==='thread/goal/get')reply({goal:null});});`;
+  const o=await PortableResidentLifecycle.start({process:{executable:process.execPath,arguments:["--input-type=module","-e",script],environment:{}},clientInfo:{name:"fixture",title:"Fixture",version:"1"}},()=>"diagnostic",{persistDeadWork(){},oldChildExited(){}},t.signal,{renderError:e=>e instanceof Error?e.message:"unknown",fence:{requestOrigin:()=>null,checkRequest(){},beginMutationWithOrigin(){throw new Error("Read cannot create mutation claim");},finishMutation(){throw new Error("Read cannot finish mutation claim");}}});t.after(()=>o.dispose());return o;
+}
+
+const scope={target:"T",channel:42n,owner:3n},binding={target:"T",route:"Explicit",command:{Stop:{reference:"T"}}};
+async function fixture(run:(path:string,db:DatabaseSync)=>void|Promise<void>){await storeFixture(async path=>{const db=await openInitialized(path);try{await run(path,db);}finally{db.close();}});}
+function job(db:DatabaseSync,id="job",status="running",turn:string|null="V"){db.prepare("INSERT INTO codex_turn_queue(job_id,target_thread_id,channel_id,owner_user_id,app_server_generation,execution_generation,prompt,queued,ack_sent,state,attempt_count,turn_id,baseline_turn_ids,created_at,updated_at) VALUES(?,'T',42,3,7,?, 'original',0,1,?,?,?,'[]',1.25,1.5)").run(id,status==="pending"?null:7,status,status==="pending"?0:1,turn);}
+function controlIngress(db:DatabaseSync){db.prepare("INSERT INTO discord_ingress_journal(ingress_id,kind,event_id,channel_id,owner_user_id,source_message_id,payload_json,state,phase,target_thread_id,created_at,updated_at) VALUES('message:100','message',100,42,3,100,?,'executing','processing','T',10,11)").run(serializeSerdeValue({version:1n,lifecycle_binding:binding,plan:{Execute:binding.command}}));return getIngressIn(db,"message:100")!;}
+function accept(path:string,expected:ReturnType<typeof controlIngress>|null=null,g=7n,check=()=>{}){return state.acceptRunningStop(path,scope,binding,expected,"resident",g,check,()=>50);}
+
+
+function worker(path:string,server:PortableResidentLifecycle,queue:QueueStartCoordinator,failures:unknown[]){return new StopControlWorker(path,server,{selectedThreadId:()=> 'T'},queue.locks,()=> 'diagnostic',e=>{failures.push(e);},state,undefined,new NativeStopPendingReader(path),{queue,server});}
+test('native Recovery page is bound separately from Pending and returns original resident generation',{timeout:15000},async t=>{await fixture(async(path,db)=>{job(db);const c=accept(path)!,reader=new NativeStopPendingReader(path);const rows=await reader.recovery(0n,t.signal);assert.equal(rows.length,1);assert.equal(rows[0]![1].operation_id,c.operation_id);assert.equal(rows[0]![1].generation,7n);assert.equal((await reader.recovery(rows[0]![0],t.signal)).length,0);});});
+test('worker recovery crosses old resident generation without replay and uses separate cursor',{timeout:15000},async t=>{const server=await owner(t,'unloaded');await fixture(async(path,db)=>{job(db);accept(path);const queue=new QueueStartCoordinator(path,new AppServerTurnBackend(server,()=> 'diagnostic'),{admission:new AdmissionGate()}),failures:unknown[]=[],w=worker(path,server,queue,failures);assert.equal(await w.processRecoveries(t.signal),1);assert.ok(w.recoveryCursor>0n);assert.equal(w.cursor,0n);assert.equal(db.prepare('SELECT phase FROM cdr_stop_controls').get()!.phase,'settled');assert.equal(await w.processRecoveries(t.signal),0);assert.equal(w.recoveryCursor,0n);assert.deepEqual(failures,[]);assert.equal(queue.locks.activeTargetCount,0);});});
+test('busy original advances recovery cursor without holding another target or cancelling',{timeout:15000},async t=>{const server=await owner(t,'unloaded');await fixture(async(path,db)=>{job(db);accept(path);const queue=new QueueStartCoordinator(path,new AppServerTurnBackend(server,()=> 'diagnostic'),{admission:new AdmissionGate()}),failures:unknown[]=[],w=worker(path,server,queue,failures),lease=queue.locks.tryAcquire('T')!;try{assert.equal(await w.processRecoveries(t.signal),0);assert.ok(w.recoveryCursor>0n);assert.equal(db.prepare('SELECT phase FROM cdr_stop_controls').get()!.phase,'accepted');}finally{lease.release();}assert.equal(await w.processRecoveries(t.signal),0);assert.equal(await w.processRecoveries(t.signal),1);assert.deepEqual(failures,[]);});});
+class Tick{
+ pending:(()=>void)|undefined;closed=false;waits=0;
+ wait():Promise<void>{assert.equal(this.pending,undefined,'one waiter per timer');this.waits++;return new Promise(resolve=>{this.pending=resolve;});}
+ fire(){const p=this.pending;assert.ok(p);this.pending=undefined;p();}
+ close(){this.closed=true;const p=this.pending;this.pending=undefined;p?.();}
+}
+test('one serial worker preserves losing timer waiter and joins both timers on shutdown',{timeout:15000},async t=>{const server=await owner(t,'unloaded');await fixture(async(path,db)=>{job(db);accept(path);const queue=new QueueStartCoordinator(path,new AppServerTurnBackend(server,()=> 'diagnostic'),{admission:new AdmissionGate()}),failures:unknown[]=[],w=worker(path,server,queue,failures),dispatch=new Tick(),recovery=new Tick(),stop=new AbortController();const running=w.run(stop.signal,()=>dispatch,()=>recovery);try{assert.equal(dispatch.waits,1);assert.equal(recovery.waits,1);dispatch.fire();while(dispatch.waits<2)await delay(5,undefined,{signal:t.signal});assert.equal(recovery.waits,1);recovery.fire();while(recovery.waits<2)await delay(5,undefined,{signal:t.signal});assert.equal(dispatch.waits,2);assert.equal(db.prepare('SELECT phase FROM cdr_stop_controls').get()!.phase,'settled');}finally{stop.abort();await running;}assert.equal(dispatch.closed,true);assert.equal(recovery.closed,true);assert.deepEqual(failures,[]);});});
+test('worker refuses a recovery coordinator from another target registry',{timeout:15000},async t=>{const server=await owner(t,'unloaded');await fixture(async(path)=>{const q=new QueueStartCoordinator(path,new AppServerTurnBackend(server,()=> 'diagnostic'));assert.throws(()=>new StopControlWorker(path,server,{selectedThreadId:()=> 'T'},new TargetLocks(),()=> 'diagnostic',()=>{},state,undefined,undefined,{queue:q,server}),/ownership differs/);});});

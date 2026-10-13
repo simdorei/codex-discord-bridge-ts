@@ -1,0 +1,105 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "files": [
+    {
+      "path": "src/admission/drain-gate.ts",
+      "sha256": "f812e401d6d3e4bf04a670230bf76d25c4ac7cd064568664b357dbd58a1e4706"
+    },
+    {
+      "path": "src/app-server/portable-resident-lifecycle.ts",
+      "sha256": "327251c76e40ce3737e8ac024e755efa657cb9ecab00cf094b5fbcab6a12532f"
+    },
+    {
+      "path": "src/app-server/recovery-collector.ts",
+      "sha256": "7ae168f37b16d2bfdb292143144a4b7bb454b1127ed73c2e3cc4283e30d58796"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "998938ba7d52d499b536d54a98bb0349a0a7101d86222c756c7a88f6ddadc206"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-pending-native-worker.ts",
+      "sha256": "7ad6eb24d487b9bb0a760ccd69bd19694c01d0d8c4fa205aef1952814cc2698a"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-pending-native.ts",
+      "sha256": "f2a8520d81fb306dbd75d159827d073263575639fc8aa3ded829532792665bed"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-recovery.ts",
+      "sha256": "776737d159b291bfa8862f98979b6636bbe204db5973708a6f72ff99b062ff84"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-worker.ts",
+      "sha256": "129faa156d5fad650a0edee803440728366bd31d9946e90ceda51570321dcb6a"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "sha256": "ddd2a75129fc1a4734782ea03b6f2995958f3178e94bfc4e4b1d2db8535c9387"
+    },
+    {
+      "path": "test/admission/drain-gate-instrumentation.test.ts",
+      "sha256": "dad76d384ec1b3d51f0c5297dddafecf13d9c3763781c07464c52f6093ee266d"
+    },
+    {
+      "path": "test/admission/unsealed-commit.test.ts",
+      "sha256": "4b0a878c687f8b05512fb85fa34b879765a6398c86646479b03fd2a9f9c8db49"
+    },
+    {
+      "path": "test/app-server/native-stopped-observation.test.ts",
+      "sha256": "2e9fbd5b0c5d999af23f79a3b53796e3b3715096c7efbeb2cf45059b3a73d902"
+    },
+    {
+      "path": "test/app-server/stopped-recovery-collector.test.ts",
+      "sha256": "7eece0ed30ca3e935893994c7d4e09158089d7f5073dbfcf0fcd55edfd10eddc"
+    },
+    {
+      "path": "test/runtime/action-executor/stop-recovery-worker.test.ts",
+      "sha256": "1d0bae94141759823901cc88ef7f4b8ec1be946ebb64c1bf0cd83aff21ace5fa"
+    },
+    {
+      "path": "test/runtime/action-executor/stop-recovery.test.ts",
+      "sha256": "a16c23f781fc3a096fdbb47eedcb3f9095367d849798bb6d38d6dc313212bd95"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "sha256": "675b13e839c3f2ac19b6110c61e5e8dea20370bec8d9fa3688cb6470c7da7efd"
+    },
+    {
+      "path": "tools/build-test-profile.mjs",
+      "sha256": "c001baf550d16dda0c28d8c78b3aea535d9c16d310467cb6fb56d52b4881fc77"
+    }
+  ],
+  "actualBaseline": "791/R85; staged8327/actual30; protected redaction unavailable",
+  "candidate795": "focused28 PASS; whole run has instrumentation pin failure, ongoing; not PASS",
+  "candidate796": "strict TS/build0, focused38 PASS, whole815 files RUNNING; not PASS",
+  "limits": [
+    "No live deployment",
+    "Windows unqualified",
+    "Synchronous SQLite transaction not preemptible",
+    "Missing protected redaction test is not passed or skipped",
+    "Full runtime migration still incomplete"
+  ],
+  "sourceInputs": {
+    "stop-recovery-runner-795": {
+      "rustCommit": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+      "source": "action_executor/stop_recovery.rs",
+      "sha256": "fef8040fe909716566dad2de5ee61c3d3839ca782b8d3c6b4f7d0e928dabdd29",
+      "scope": "single original native proof and transaction lifecycle; timer/cursor/root worker integration pending"
+    },
+    "stop-recovery-worker-796": {
+      "rustCommit": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+      "sources": [
+        {
+          "path": "crates/cdr-runtime/src/action_executor/stop_worker.rs",
+          "sha256": "a21bc181833aa2636fdbda12bf4371da0d5a3734f40be6648cc19f19c57faca8"
+        },
+        {
+          "path": "crates/cdr-runtime/src/action_executor/stop_recovery.rs",
+          "sha256": "fef8040fe909716566dad2de5ee61c3d3839ca782b8d3c6b4f7d0e928dabdd29"
+        }
+      ],
+      "dependencies": "frozen candidate795; timer/cursor/native inventory/root wiring; pending tests, unqualified"
+    }
+  }
+}
