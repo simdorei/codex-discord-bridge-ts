@@ -4,7 +4,7 @@ import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {cloneOwnedSerdeValue} from '../../core/owned-serde-value.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
-import {requireDiscordText} from '../../discord/text.ts';
+import {validateMirrorThreadInfo} from './source-record.ts';
 import type {ThreadInfo} from '../../codex-state/thread.ts';
 function integer(value: unknown): void {
   if (typeof value !== 'bigint' || value < -(1n << 63n) || value >= 1n << 63n) throw new TypeError('Expected i64 source field');
@@ -31,12 +31,7 @@ export class NativeMirrorSourceScope {
     if (own(result, 'id') !== id || own(result, 'codex') !== this.#codex || own(result, 'mirror') !== this.#mirror || own(result, 'limit') !== limit || own(result, 'ok') !== true) throw new Error('Unconfirmed mirror source scope; no partial inventory accepted');
     const value = own(result, 'value');
     if (!Array.isArray(value)) throw new TypeError('Expected source thread array');
-    const keys = ['id', 'title', 'cwd', 'rolloutPath', 'model', 'reasoningEffort', 'updatedAt', 'tokensUsed', 'archivedAt'];
-    for (const row of value) {
-      if (row === null || typeof row !== 'object' || Array.isArray(row) || Object.keys(row).length !== keys.length || keys.some(key => !Object.hasOwn(row, key))) throw new TypeError('Expected exact source thread');
-      for (const key of keys.slice(0, 6)) requireDiscordText(own(row, key));
-      integer(own(row, 'updatedAt')); integer(own(row, 'archivedAt')); if (own(row, 'tokensUsed') !== null) integer(own(row, 'tokensUsed'));
-    }
+    for (const row of value) validateMirrorThreadInfo(row);
     return value as readonly ThreadInfo[];
   }
 }
