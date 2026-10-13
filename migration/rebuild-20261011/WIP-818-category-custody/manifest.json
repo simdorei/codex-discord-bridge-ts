@@ -1,0 +1,24 @@
+{
+  "status": "WIP_UNTESTED_UNAPPLIED",
+  "dependsOn": "WIP817 containerHTTP stage; applied815 deletion guard/native store",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/category-custody.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-818-category-custody/files/src/runtime/mirror-sync/category-custody.ts",
+      "sha256": "71a92dcdc179629e8fc199412603352ee7ca2edea5a8e18178abdb66a352c303"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/category-custody.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-818-category-custody/files/test/runtime/mirror-sync/category-custody.test.ts",
+      "sha256": "f303993d4e3cb2d4c1d42ee7adcc5764d0a328821fdd2e46609decfe0ed422a5"
+    }
+  ],
+  "authority": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca mirror_sync/container_creation.rs category_channel full read",
+  "scope": "Category receipt lookup, exact channel readback, one matching category adoption, durable begin/confirm/bind, replacement only bound exact fresh404",
+  "limitations": [
+    "Uncompiled/untested",
+    "Full sync caller/global operation lock not wired",
+    "Project channel creation and archived cleanup exception remain",
+    "No Windows/deployment qualification"
+  ]
+}
