@@ -1,0 +1,7 @@
+# WIP801 — Archive native durable writes
+
+Unapplied candidate. Existing reservation/verification/rejection SQL is shared between legacy initialized entry points and existing-only worker entry points. Concrete RuntimeCommandExecutor injects a fixed-path NativeArchiveWriter; all three archive writes use that owner. Existing global Control1 budget, zero queue, bounded passive input capture, immutable path/request/kind acknowledgement, and native exit joining are retained. No new pool, retry, worker termination, or automatic fence release. Unknown acknowledgement after admitted write is conservatively held. Source-compatible operation UUID is generated inside the transaction after prechecks; lost reply does not authorize inventing it or resubmission.
+
+Focused96 pass; strict TypeScript and compiled build succeed. Full817-file regression is running and has no PASS claim. The new tests include actual native writes, lock contention/event-loop progress, immutable scope, private path binding, pre-admission abort, admitted cancellation joined to exit, corrupted acknowledgement and simulated reply loss after an actual database commit. Fault injection is not a real OS crash/kill qualification. Two archive integration modes exercise actual native reservation/verification and proven pre-effect rejection release.
+
+Windows is explicitly unqualified. Other synchronous runtime paths remain. Missing redaction fixture is not reconstructed. No live DB, raw log, secret or deployment artifact is included.
