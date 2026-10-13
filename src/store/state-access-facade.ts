@@ -1,3 +1,5 @@
+import * as MirrorProjectCreation from './mirror-project-creation.ts';
+import * as MirrorContainer from './mirror-container-creation.ts';
 import * as StopRecovery from './stop-terminal-recovery.ts';
 import * as StopRecoveryRead from './stop-control-recovery-read.ts';
 import * as NewReplyFinish from './new-reply-finish.ts';
@@ -204,6 +206,15 @@ export const blockRejectedDelivery: typeof DeliveryReceipts.blockRejectedDeliver
 export const unknownDeliveryReceiptCount: typeof DeliveryReceipts.unknownDeliveryReceiptCount = DeliveryReceipts.unknownDeliveryReceiptCount;
 export const blockedDeliveryReceiptCount: typeof DeliveryReceipts.blockedDeliveryReceiptCount = DeliveryReceipts.blockedDeliveryReceiptCount;
 export const confirmedMirrorCreation: typeof MirrorCreation.confirmedMirrorCreation = MirrorCreation.confirmedMirrorCreation;
+export const confirmMirrorContainer: typeof MirrorContainer.confirmMirrorContainer = MirrorContainer.confirmMirrorContainer;
+export const mirrorCategoryReceipt: typeof MirrorContainer.mirrorCategoryReceipt = MirrorContainer.mirrorCategoryReceipt;
+export const beginMirrorCategory: typeof MirrorContainer.beginMirrorCategory = MirrorContainer.beginMirrorCategory;
+export const bindMirrorCategory: typeof MirrorContainer.bindMirrorCategory = MirrorContainer.bindMirrorCategory;
+export const mirrorProjectSnapshot: typeof MirrorProjectCreation.mirrorProjectSnapshot = MirrorProjectCreation.mirrorProjectSnapshot;
+export const mirrorProjectCreationReceipt: typeof MirrorProjectCreation.mirrorProjectCreationReceipt = MirrorProjectCreation.mirrorProjectCreationReceipt;
+export const beginMirrorProject: typeof MirrorProjectCreation.beginMirrorProject = MirrorProjectCreation.beginMirrorProject;
+export const ensureMirrorProjectAdoptable: typeof MirrorProjectCreation.ensureMirrorProjectAdoptable = MirrorProjectCreation.ensureMirrorProjectAdoptable;
+export const upsertMirrorProject: typeof MirrorProjectCreation.upsertMirrorProject = MirrorProjectCreation.upsertMirrorProject;
 export const beginMirrorCreation: typeof MirrorCreation.beginMirrorCreation = MirrorCreation.beginMirrorCreation;
 export const confirmMirrorCreation: typeof MirrorCreation.confirmMirrorCreation = MirrorCreation.confirmMirrorCreation;
 export const mirrorInspectionSnapshotReadonly: typeof MirrorInspection.mirrorInspectionSnapshotReadonly = MirrorInspection.mirrorInspectionSnapshotReadonly;
@@ -569,6 +580,15 @@ export interface IStateAccessFacade {
   readonly unknownDeliveryReceiptCount: typeof DeliveryReceipts.unknownDeliveryReceiptCount;
   readonly blockedDeliveryReceiptCount: typeof DeliveryReceipts.blockedDeliveryReceiptCount;
   readonly confirmedMirrorCreation: typeof MirrorCreation.confirmedMirrorCreation;
+  readonly confirmMirrorContainer: typeof MirrorContainer.confirmMirrorContainer;
+  readonly mirrorCategoryReceipt: typeof MirrorContainer.mirrorCategoryReceipt;
+  readonly beginMirrorCategory: typeof MirrorContainer.beginMirrorCategory;
+  readonly bindMirrorCategory: typeof MirrorContainer.bindMirrorCategory;
+  readonly mirrorProjectSnapshot: typeof MirrorProjectCreation.mirrorProjectSnapshot;
+  readonly mirrorProjectCreationReceipt: typeof MirrorProjectCreation.mirrorProjectCreationReceipt;
+  readonly beginMirrorProject: typeof MirrorProjectCreation.beginMirrorProject;
+  readonly ensureMirrorProjectAdoptable: typeof MirrorProjectCreation.ensureMirrorProjectAdoptable;
+  readonly upsertMirrorProject: typeof MirrorProjectCreation.upsertMirrorProject;
   readonly beginMirrorCreation: typeof MirrorCreation.beginMirrorCreation;
   readonly confirmMirrorCreation: typeof MirrorCreation.confirmMirrorCreation;
   readonly mirrorInspectionSnapshotReadonly: typeof MirrorInspection.mirrorInspectionSnapshotReadonly;
@@ -947,6 +967,15 @@ export const StateAccessFacade: IStateAccessFacade = {
   unknownDeliveryReceiptCount,
   blockedDeliveryReceiptCount,
   confirmedMirrorCreation,
+  confirmMirrorContainer,
+  mirrorCategoryReceipt,
+  beginMirrorCategory,
+  bindMirrorCategory,
+  mirrorProjectSnapshot,
+  mirrorProjectCreationReceipt,
+  beginMirrorProject,
+  ensureMirrorProjectAdoptable,
+  upsertMirrorProject,
   beginMirrorCreation,
   confirmMirrorCreation,
   mirrorInspectionSnapshotReadonly,

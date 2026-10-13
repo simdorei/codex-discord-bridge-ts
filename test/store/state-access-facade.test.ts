@@ -1,3 +1,5 @@
+import * as MirrorProjectCreation from '../../src/store/mirror-project-creation.ts';
+import * as MirrorContainer from '../../src/store/mirror-container-creation.ts';
 import * as StopRecovery from '../../src/store/stop-terminal-recovery.ts';
 import * as StopRecoveryRead from '../../src/store/stop-control-recovery-read.ts';
 import * as NewReplyFinish from '../../src/store/new-reply-finish.ts';
@@ -181,6 +183,24 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.listQueueJobs, QueueRead.list);
     assert.strictEqual(StateAccessFacade.confirmedMirrorCreation, MirrorCreation.confirmedMirrorCreation);
     assert.strictEqual(FacadeExports.confirmedMirrorCreation, MirrorCreation.confirmedMirrorCreation);
+    assert.strictEqual(StateAccessFacade.confirmMirrorContainer, MirrorContainer.confirmMirrorContainer);
+    assert.strictEqual(FacadeExports.confirmMirrorContainer, MirrorContainer.confirmMirrorContainer);
+    assert.strictEqual(StateAccessFacade.mirrorCategoryReceipt, MirrorContainer.mirrorCategoryReceipt);
+    assert.strictEqual(FacadeExports.mirrorCategoryReceipt, MirrorContainer.mirrorCategoryReceipt);
+    assert.strictEqual(StateAccessFacade.beginMirrorCategory, MirrorContainer.beginMirrorCategory);
+    assert.strictEqual(FacadeExports.beginMirrorCategory, MirrorContainer.beginMirrorCategory);
+    assert.strictEqual(StateAccessFacade.bindMirrorCategory, MirrorContainer.bindMirrorCategory);
+    assert.strictEqual(FacadeExports.bindMirrorCategory, MirrorContainer.bindMirrorCategory);
+    assert.strictEqual(StateAccessFacade.mirrorProjectSnapshot, MirrorProjectCreation.mirrorProjectSnapshot);
+    assert.strictEqual(FacadeExports.mirrorProjectSnapshot, MirrorProjectCreation.mirrorProjectSnapshot);
+    assert.strictEqual(StateAccessFacade.mirrorProjectCreationReceipt, MirrorProjectCreation.mirrorProjectCreationReceipt);
+    assert.strictEqual(FacadeExports.mirrorProjectCreationReceipt, MirrorProjectCreation.mirrorProjectCreationReceipt);
+    assert.strictEqual(StateAccessFacade.beginMirrorProject, MirrorProjectCreation.beginMirrorProject);
+    assert.strictEqual(FacadeExports.beginMirrorProject, MirrorProjectCreation.beginMirrorProject);
+    assert.strictEqual(StateAccessFacade.ensureMirrorProjectAdoptable, MirrorProjectCreation.ensureMirrorProjectAdoptable);
+    assert.strictEqual(FacadeExports.ensureMirrorProjectAdoptable, MirrorProjectCreation.ensureMirrorProjectAdoptable);
+    assert.strictEqual(StateAccessFacade.upsertMirrorProject, MirrorProjectCreation.upsertMirrorProject);
+    assert.strictEqual(FacadeExports.upsertMirrorProject, MirrorProjectCreation.upsertMirrorProject);
     assert.strictEqual(StateAccessFacade.beginMirrorCreation, MirrorCreation.beginMirrorCreation);
     assert.strictEqual(FacadeExports.beginMirrorCreation, MirrorCreation.beginMirrorCreation);
     assert.strictEqual(StateAccessFacade.confirmMirrorCreation, MirrorCreation.confirmMirrorCreation);
@@ -572,6 +592,15 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "isComponentClaimLive",
       "listQueueJobs",
       "confirmedMirrorCreation",
+      "confirmMirrorContainer",
+      "mirrorCategoryReceipt",
+      "beginMirrorCategory",
+      "bindMirrorCategory",
+      "mirrorProjectSnapshot",
+      "mirrorProjectCreationReceipt",
+      "beginMirrorProject",
+      "ensureMirrorProjectAdoptable",
+      "upsertMirrorProject",
       "beginMirrorCreation",
       "confirmMirrorCreation",
       "mirrorInspectionSnapshotReadonly",
@@ -856,7 +885,7 @@ assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimExisting, PromptIntak
     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
 assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
 assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
-    assert.strictEqual(actual.length, 324);
+    assert.strictEqual(actual.length, 333);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
