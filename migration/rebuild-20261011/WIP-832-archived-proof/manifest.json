@@ -1,0 +1,31 @@
+{
+  "status": "WIP_UNAPPLIED_FOCUSED14_PASS_WHOLE_PENDING",
+  "files": [
+    {
+      "candidatePath": "src/store/archived-cleanup-proof.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-832-archived-proof/files/src/store/archived-cleanup-proof.ts",
+      "sha256": "819b11e9131aa795cbf6e9a96de11a7480e46eb2a5422b7739b28caf7507e875"
+    },
+    {
+      "candidatePath": "test/store/archived-cleanup-proof.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-832-archived-proof/files/test/store/archived-cleanup-proof.test.ts",
+      "sha256": "e4cea80ba798883b00f9ab28a41c6500231f8e8d4520be2463f80dc1eeeecee0"
+    }
+  ],
+  "authority": {
+    "commit": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+    "archivedRejectionsBlob": "be7d642720e23b632711327015f442eafbba9df8",
+    "evidenceBlob": "d26038b93aa5e2bdb737a2883fa5f35af80f50d8"
+  },
+  "verification": {
+    "strictBuildExit": 0,
+    "focusedPass": 14,
+    "focusedFail": 0
+  },
+  "scope": "Borrowed eligibility query and exact expired-Steer non-dispatch proof only",
+  "limitations": [
+    "No fence, exception-based deletion or audit write implemented by this unit",
+    "Notification delivery is not inferred",
+    "Whole/native integration/Windows/deployment unverified"
+  ]
+}
