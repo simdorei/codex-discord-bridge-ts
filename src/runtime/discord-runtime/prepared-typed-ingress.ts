@@ -26,13 +26,18 @@ export interface PreparedTypedIngressOptions extends RuntimeHistoryStartupOption
  * gateway. Uses one prepared executor, HTTP owner, gate and settings resolver.
  * This borrows the interaction work queue; its business worker is separately
  * owned and must start/join under the common runtime lifecycle. */
-export function startPreparedTypedIngress(input:RuntimeMessageStartup,gateway:GatewayRuntime<DecodedGatewayInteraction>,gate:AdmissionGate,http:DiscordChannelClient,work:InteractionWorkQueue,catalog:AutocompleteCatalog,shutdown:AbortSignal,notifier:RuntimeWorkerExitChannel,options:PreparedTypedIngressOptions){
- shutdown.throwIfAborted();const captured=capturePreparedMessageOptions(input,gate,http,options),qa=own(options,'qaCommands') as boolean,startupNotify=own(options,'startupNotify') as boolean;
+export function capturePreparedTypedIngressOptions(input:RuntimeMessageStartup,gate:AdmissionGate,http:DiscordChannelClient,work:InteractionWorkQueue,catalog:AutocompleteCatalog,options:PreparedTypedIngressOptions):TypedIngressStartOptions{
+ const captured=capturePreparedMessageOptions(input,gate,http,options),qa=own(options,'qaCommands') as boolean,startupNotify=own(options,'startupNotify') as boolean;
  if(typeof qa!=='boolean'||typeof startupNotify!=='boolean')throw new TypeError('Expected startup flags');
  const optionalId=(key:string)=>{const value=own(options,key);return value===null?null:gatewayId(value);},guildId=optionalId('guildId'),startupChannelId=optionalId('startupChannelId');
  const callback=<T>(key:string)=>{const fn=own(options,key);if(typeof fn!=='function'||types.isProxy(fn)||types.isAsyncFunction(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected synchronous startup reporter');return fn as T;};
  const reportReady=callback<ReadySetupOptions['report']>('reportReady'),reportDispatch=callback<PreparedTypedIngressOptions['reportDispatch']>('reportDispatch'),reportInteraction=callback<TypedIngressStartOptions['reportInteraction']>('reportInteraction'),reportReceiveError=callback<TypedIngressStartOptions['reportReceiveError']>('reportReceiveError');
  const raw=own(options,'allowedChannelIds');if(raw===null||typeof raw!=='object'||types.isProxy(raw))throw new TypeError('Expected native allowed channel set');const allowedChannelIds=new Set<bigint>();Set.prototype.forEach.call(raw,(id:unknown)=>allowedChannelIds.add(gatewayId(id)));
  const message=createGatewayMessageHandler(captured),interaction=createPreparedInteractionIngress(input,gate,work,http,catalog,qa,reportDispatch),historyOptions=Object.freeze({...captured,allowedChannelIds,startupChannelId,nativeTargetLimits:captureNativeHistoryTargetLimits(own(options,'historyTargetLimits') as NativeHistoryTargetLimits)});
- return startTypedIngressWorkers(gateway,shutdown,notifier,{ready:Object.freeze({port:readyHttpPort(http),guildId,qaCommands:qa,startupNotify,startupChannelId,report:reportReady}),message,history:gaps=>createDiscordHistoryOperations(gaps,historyOptions),historyPeriodMs:own(options,'historyPeriodMs') as number|null,interaction,reportInteraction,reportReceiveError});
+ return Object.freeze<TypedIngressStartOptions>({ready:Object.freeze({port:readyHttpPort(http),guildId,qaCommands:qa,startupNotify,startupChannelId,report:reportReady}),message,history:gaps=>createDiscordHistoryOperations(gaps,historyOptions),historyPeriodMs:own(options,'historyPeriodMs') as number|null,interaction,reportInteraction,reportReceiveError});
+}
+
+export function startPreparedTypedIngress(input:RuntimeMessageStartup,gateway:GatewayRuntime<DecodedGatewayInteraction>,gate:AdmissionGate,http:DiscordChannelClient,work:InteractionWorkQueue,catalog:AutocompleteCatalog,shutdown:AbortSignal,notifier:RuntimeWorkerExitChannel,options:PreparedTypedIngressOptions){
+ shutdown.throwIfAborted();
+ return startTypedIngressWorkers(gateway,shutdown,notifier,capturePreparedTypedIngressOptions(input,gate,http,work,catalog,options));
 }

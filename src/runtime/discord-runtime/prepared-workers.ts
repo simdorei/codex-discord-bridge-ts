@@ -1,3 +1,5 @@
+import {RuntimeCommandExecutor} from '../action-executor/command-executor.ts';
+import {startTypedIngressWorkers} from './typed-ingress-start.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {GatewayRuntime} from '../../discord/gateway/runtime.ts';
@@ -7,7 +9,7 @@ import type {AdmissionGate} from '../../admission/drain-gate.ts';
 import type {AutocompleteCatalog} from '../discord-dispatch/autocomplete.ts';
 import {createInteractionWorkQueue} from '../discord-dispatch/interaction-work.ts';
 import {RuntimeMonitoredWorker,RuntimeWorkerExitChannel,type RuntimeWorkerJoin} from './monitored-worker.ts';
-import {startPreparedTypedIngress,type PreparedTypedIngressOptions} from './prepared-typed-ingress.ts';
+import {capturePreparedTypedIngressOptions,type PreparedTypedIngressOptions} from './prepared-typed-ingress.ts';
 import {startPreparedInteractionWorker} from './interaction-bootstrap.ts';
 import {capturePreparedMessageOptions,type RuntimeMessageStartup} from './message-bootstrap.ts';
 import {RuntimeDeliveryWake} from './delivery-wake.ts';
@@ -59,7 +61,9 @@ export async function startPreparedRuntimeWorkers(input:RuntimeCoreStartup&Runti
  let typed:RuntimeMonitoredWorker[]=[],business:Awaited<ReturnType<typeof startPreparedInteractionWorker>>|undefined,core:Awaited<ReturnType<typeof startRuntimeCoreWorkers>>|undefined;
  const requestStop=()=>{GatewayRuntime.prototype.beginStopping.call(gateway);stop.abort();core?.requestStop();work.sender.dispose();};
  try{
-  typed=await startPreparedTypedIngress(context,gateway,gate,http,work,catalog,signal,notifier,ingress);signal.throwIfAborted();
+  const typedOptions=capturePreparedTypedIngressOptions(context,gate,http,work,catalog,ingress);
+  await RuntimeCommandExecutor.prototype.configureMirrorSync.call(context.executor,http,typedOptions.ready.guildId,signal);signal.throwIfAborted();
+  typed=await startTypedIngressWorkers(gateway,signal,notifier,typedOptions);signal.throwIfAborted();
   business=await startPreparedInteractionWorker(context,work,http,notifier,report);signal.throwIfAborted();
   core=await startRuntimeCoreWorkers(context,http,gate,signal,notifier,completion,interleaving);signal.throwIfAborted();
   const heartbeatOwner=core.heartbeat!;const workers=Object.freeze([...typed,business.worker,...core.workers]),startupOrder=Object.freeze([...typed,business.worker,...core.startupOrder]);notifier.close();let closing:Promise<readonly RuntimeWorkerJoin[]>|undefined;

@@ -15,6 +15,9 @@ import {createOrdinaryComponentHandler} from '../component-worker/ordinary-handl
 import {BusyQueueExecutor} from './busy-queue.ts';
 import {ActionExecutionError} from './action-error.ts';
 import {MirrorInspector} from '../mirror-sync/inspection.ts';
+import {MirrorSynchronizer} from '../mirror-sync/sync.ts';
+import {DiscordNewMirrorTransport} from '../mirror-sync/new-mirror-http.ts';
+import {formatMirrorSyncResult} from '../mirror-sync/result.ts';
 import {types} from 'node:util';
 import {PortableResidentLifecycle} from '../../app-server/portable-resident-lifecycle.ts';
 import {gatewayOwnField} from '../../discord/gateway/values.ts';
@@ -59,7 +62,7 @@ export interface RuntimeExecutorDependencies{
 }
 /** Concrete message business composition. All controls share queue.locks, and
  * lifecycle/settings mutations only enter their original-admission wrappers.
- * Missing Windows recovery/mirror synchronization/archive deletion remain explicit
+ * Missing Windows recovery/archive deletion remain explicit
  * Unsupported results in the basic dispatcher, never a successful no-op.
  * A native server, queue backend and live gateway still require bootstrap and
  * ownership qualification; this constructor does not start any of them. */
@@ -67,7 +70,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
  readonly #stopWorkerFactory:(report:(event:StopWorkerFailure)=>void)=>StopControlWorker;
  readonly #intake:PromptIntakeProcessor;readonly #settingsResolver:SettingsTargetResolver;
  readonly #server:PortableResidentLifecycle|null;readonly #componentQueue:BusyQueueExecutor;readonly #control:ControlTurnVerifier;
- readonly #codex:string;readonly #database:string;#inspection:MirrorInspector|null=null;
+ readonly #codex:string;readonly #database:string;#inspection:MirrorInspector|null=null;#mirrorSync:MirrorSynchronizer|null=null;#mirrorConfiguring=false;
  readonly #basic:BasicActionDispatcher;readonly #queue:QueueStartCoordinator;readonly #new:NewThreadExecutor;readonly #prompts:QueuePromptExecutor;readonly #retract:RetractAction;readonly #controls:PromptControlActions;readonly #open:OpenThreadAction;readonly #settings:AdmittedSettingsExecutor;readonly #archive:AdmittedArchiveExecutor|null;readonly #resume:AdmittedResumeExecutor|null;readonly #stop:AdmittedStopExecutor;readonly #repair:AdmittedRepairExecutor|null;
  constructor(input:RuntimeExecutorDependencies){
   const get=<K extends keyof RuntimeExecutorDependencies>(key:K)=>gatewayOwnField(input,key) as RuntimeExecutorDependencies[K];
@@ -103,7 +106,25 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
  promptIntakeRecoveryServices(){const intake=this.#intake;return Object.freeze({recoverPromptIntakes:()=>PromptIntakeProcessor.prototype.recoverPromptIntakes.call(intake)});}
  /** Shares the action executor's original resident, binding and queue locks. */
  createStopControlWorker(report:(event:StopWorkerFailure)=>void):StopControlWorker{return this.#stopWorkerFactory(report);}
- configureMirrorInspection(inspector:MirrorInspector):void{if(this.#inspection!==null)throw new InvalidActionRequestError('mirror inspection is already configured');MirrorInspector.prototype.requireScope.call(inspector,this.#codex,this.#database);this.#inspection=inspector;}
+ configureMirrorInspection(inspector:MirrorInspector):void{if(this.#inspection!==null||this.#mirrorConfiguring)throw new InvalidActionRequestError('mirror inspection is already configured');MirrorInspector.prototype.requireScope.call(inspector,this.#codex,this.#database);this.#inspection=inspector;}
+ /** One startup configuration owns both inspection and mutation transports.
+  * Reserve configuration before awaiting preparation, so concurrent callers
+  * cannot replace a prepared owner or install a second operation lock. */
+ async configureMirrorSync(http:DiscordChannelClient,guild:bigint|null,signal:AbortSignal):Promise<void>{
+  if(this.#mirrorConfiguring||this.#mirrorSync!==null||this.#inspection!==null)throw new InvalidActionRequestError('mirror sync is already configured');
+  this.#mirrorConfiguring=true;
+  try{
+   const sync=await MirrorSynchronizer.create(this.#codex,this.#database,http,this.#queue.locks,guild,signal);
+   signal.throwIfAborted();
+   const inspector=new MirrorInspector(this.#codex,this.#database,new DiscordNewMirrorTransport(http),this.#queue.locks,guild);
+   this.#mirrorSync=sync;this.#inspection=inspector;
+  }finally{this.#mirrorConfiguring=false;}
+ }
+ async #syncMirror(channel:bigint,limit:bigint|null,signal?:AbortSignal):Promise<ActionResult>{
+  if(this.#mirrorSync===null)throw new ActionExecutionError('Unsupported','mirror sync transport is not configured');
+  try{return snapshotActionResult({text:formatMirrorSyncResult(await this.#mirrorSync.sync(channel,limit,signal)),waitsForFinal:false,ui:null});}
+  catch(error){signal?.throwIfAborted();throw new ActionExecutionError('MirrorSync',error);}
+ }
  async #inspect(channel:bigint,limit:bigint|null,list:boolean,signal?:AbortSignal):Promise<ActionResult>{if(this.#inspection===null)throw new ActionExecutionError('Unsupported','mirror inspection transport is not configured; remote state was not checked');return snapshotActionResult({text:await MirrorInspector.prototype.inspect.call(this.#inspection,channel,limit,list,signal),waitsForFinal:false,ui:null});}
  targetThreadId(channel:bigint,signal?:AbortSignal):Promise<string>{return this.#basic.targetThreadId(channel,signal);}
  requireRuntimeQueue(queue:QueueStartCoordinator):void{if(this.#queue!==queue)throw new TypeError('Action executor queue differs from runtime binding');}
@@ -122,7 +143,8 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
  async executeWithIngressContext(input:CommandAction,inputActor:MessageActionContext,key:string,signal?:AbortSignal):Promise<ActionResult>{
   signal?.throwIfAborted();const action=snapshotRuntimeCommand(input),actor=snapshotActionContext(inputActor);requireDiscordText(key);if(actor.discordMessageId===null)throw new InvalidActionRequestError('admitted message/interaction event identity is required');let result:ActionResult;
   if(typeof action==='object'){
-   if('MirrorInspect'in action)result=await this.#inspect(actor.channelId,action.MirrorInspect.limit,action.MirrorInspect.list,signal);
+   if('BridgeSync'in action)result=await this.#syncMirror(actor.channelId,action.BridgeSync.limit,signal);
+   else if('MirrorInspect'in action)result=await this.#inspect(actor.channelId,action.MirrorInspect.limit,action.MirrorInspect.list,signal);
    else if('New'in action)result=await this.#new.execute(actor,action.New.prompt,signal);
    else if('Ask'in action)result=await this.#prompts.queuePrompt(actor.channelId,actor.userId,actor.discordMessageId,actor.autoQueueWhenBusy,action.Ask.prompt,signal);
    else if('Interview'in action)result=await this.#prompts.interview(actor.channelId,actor.userId,actor.discordMessageId,actor.autoQueueWhenBusy,action.Interview.prompt,signal);

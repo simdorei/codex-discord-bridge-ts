@@ -285,3 +285,26 @@ test('unjoined losing control IO reaches fail-stop without fabricating resident 
  const run=runPreparedRuntimeLifetime(f.owner,f.controller,f.stop.signal,{...f.options,stopRequested:async()=>{entered();await blocked;accepted=true;return false;},shutdown:{report:()=>{},clock:{now:()=>1000,sleepUntil:async()=>{}},fatal:()=>{throw fatal;}}});const checked=assert.rejects(run,e=>e===fatal);
  try{await started;f.owner.heartbeat.requestStop();await f.owner.heartbeat.worker.join();await checked;assert.equal(accepted,false);assert.equal(f.gateway.resourcesClosed,false);assert.equal(f.context.owner.lifecycleSnapshot().healthy,true);release();await new Promise<void>(r=>setImmediate(r));assert.equal(accepted,true);}finally{release();await checked;}
 }));
+
+test('prepared worker startup configures BridgeSync with the same HTTP owner before intake starts',{timeout:15000},async()=>storeFixture(async path=>{
+ const {createServer}=await import('node:http'),{DiscordChannelClient}=await import('../../../src/discord/channel-client.ts'),{loadRuntimeAutocomplete}=await import('../../../src/runtime/discord-runtime/autocomplete-bootstrap.ts');
+ const o=await input(path),db=new DatabaseSync(o.paths.stateDb);try{db.exec('CREATE TABLE threads(id TEXT,title TEXT,cwd TEXT,updated_at INTEGER,rollout_path TEXT,model TEXT,reasoning_effort TEXT,tokens_used INTEGER,archived INTEGER,archived_at INTEGER,source TEXT,thread_source TEXT)');}finally{db.close();}
+ const context=await prepareRuntimeContext(o),port=new PreparedPort(),gateway=GatewayRuntime.fromOwnedPorts([port],{reportReceiveErrorDrop:()=>{},reportTriggerFailure:()=>{}}),stop=new AbortController(),seen:string[]=[];
+ const server=createServer((req,res)=>{req.resume();req.on('end',()=>{seen.push(`${req.method} ${req.url}`);if(req.method==='GET'&&req.url==='/api/v10/guilds/1/channels')res.end(JSON.stringify([{id:'10',type:4,guild_id:'1',name:'Codex'}]));else{res.statusCode=500;res.end('{"code":0,"message":"unexpected"}');}});});await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const http=await DiscordChannelClient.create({token:null,report:()=>{},testOrigin:`http://127.0.0.1:${(server.address() as {port:number}).port}/api/v10/`});let owner:PreparedRuntimeWorkerOwner|undefined;
+ try{
+  const base=localWorkerOptions(o.paths.root,[]),options={...base,ingress:{...base.ingress,guildId:1n}};
+  const pending=startPreparedRuntimeWorkers(context,gateway,o.admission,http,await loadRuntimeAutocomplete(context.owner),stop.signal,options);options.ingress.guildId=2n;owner=await pending;
+  const result=await context.executor.executeWithIngressContext({BridgeSync:{limit:1n}},{channelId:1n,userId:2n,discordMessageId:901n,autoQueueWhenBusy:false},'message:901');
+  assert.match(result.text,/Mirror sync complete/);assert.match(result.text,/cleanup: limited sync; existing mappings retained$/);assert.deepEqual(seen,['GET /api/v10/guilds/1/channels']);assert.equal(result.waitsForFinal,false);
+ }finally{stop.abort();owner?.requestStop();await gateway.shutdown(performance.now()+3000);await owner?.close();owner?.heartbeat.requestStop();await owner?.heartbeat.worker.join();owner?.disposeMonitor();await context.disposeBeforeWorkers();await http.close();server.closeAllConnections();await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}gone(o.paths.root);
+}));
+
+test('mirror configuration failure closes paused gateway before any typed worker is accepted',{timeout:15000},async()=>storeFixture(async path=>{
+ const {PreparedRuntimeWorkerStartError}=await import('../../../src/runtime/discord-runtime/prepared-workers.ts'),{loadRuntimeAutocomplete}=await import('../../../src/runtime/discord-runtime/autocomplete-bootstrap.ts'),{httpFixture}=await import('../../helpers/interaction-worker-fixture.ts');
+ const o=await input(path),context=await prepareRuntimeContext(o),port=new PreparedPort(),gateway=GatewayRuntime.fromOwnedPorts([port],{reportReceiveErrorDrop:()=>{},reportTriggerFailure:()=>{}}),stop=new AbortController();
+ try{await httpFixture(async(http,seen)=>{
+  await context.executor.configureMirrorSync(http,null,stop.signal);
+  await assert.rejects(startPreparedRuntimeWorkers(context,gateway,o.admission,http,await loadRuntimeAutocomplete(context.owner),stop.signal,localWorkerOptions(o.paths.root,[])),error=>{assert.ok(error instanceof PreparedRuntimeWorkerStartError);assert.deepEqual(error.joined,[]);assert.match(String(error.errors[0]),/already configured/);return true;});
+  assert.equal(port.polls,0);assert.equal(port.disposed,1);assert.equal(gateway.resourcesClosed,true);assert.equal(context.owner.lifecycleSnapshot().healthy,true);assert.deepEqual(seen,[]);
+ });}finally{stop.abort();await gateway.shutdown(performance.now()+3000);await context.disposeBeforeWorkers();}gone(o.paths.root);
+}));

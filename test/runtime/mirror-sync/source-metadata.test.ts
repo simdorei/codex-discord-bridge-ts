@@ -41,3 +41,16 @@ test('pre-aborted metadata read propagates exact reason without file access', as
   const abort = new AbortController(), reason = new Error('cancel'); abort.abort(reason);
   await assert.rejects(new NativeMirrorMetadata().titles('/not-present', abort.signal), error => error === reason);
 });
+
+import {OwnedWorkerSlot,OwnedWorkerBudgetError,ownedWorkerUsage} from '../../../src/runtime/owned-worker-slot.ts';
+const blockedMetadataWorker=new URL('data:text/javascript,'+encodeURIComponent("import{parentPort,workerData}from'node:worker_threads';const a=new Int32Array(workerData);while(Atomics.load(a,0)===0)Atomics.wait(a,0,0);parentPort.postMessage('done');parentPort.close();"));
+test('mirror command metadata remains available when both continuous observation slots are occupied',async()=>storeFixture(async path=>{
+ writeFileSync(path,'{}');const shared=new SharedArrayBuffer(4),a=new Int32Array(shared),slots=[new OwnedWorkerSlot('Observation'),new OwnedWorkerSlot('Observation')],tasks=slots.map(s=>s.run(blockedMetadataWorker,shared,10000));
+ try{assert.equal(ownedWorkerUsage().Observation,2);assert.equal(await new NativeMirrorMetadata().rollout(path,fresh()),true);assert.equal(ownedWorkerUsage().Observation,2);assert.equal(ownedWorkerUsage().Control,0);}
+ finally{Atomics.store(a,0,1);Atomics.notify(a,0,2);await Promise.allSettled(tasks);await Promise.all(slots.map(s=>s.join()));}
+}));
+test('mirror metadata preserves zero-queue control saturation rather than adding native capacity',async()=>storeFixture(async path=>{
+ writeFileSync(path,'{}');const shared=new SharedArrayBuffer(4),a=new Int32Array(shared),slot=new OwnedWorkerSlot('Control'),task=slot.run(blockedMetadataWorker,shared,10000);
+ try{await assert.rejects(new NativeMirrorMetadata().rollout(path,fresh()),OwnedWorkerBudgetError);assert.equal(ownedWorkerUsage().Control,1);}
+ finally{Atomics.store(a,0,1);Atomics.notify(a,0);await task;await slot.join();}
+}));

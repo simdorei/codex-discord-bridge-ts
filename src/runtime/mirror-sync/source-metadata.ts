@@ -6,7 +6,10 @@ import {cloneOwnedSerdeValue} from '../../core/owned-serde-value.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 export class NativeMirrorMetadata {
-  readonly #slot = new OwnedWorkerSlot('Observation');
+  // Essential command reads share the reserved Control budget with scope/store
+  // work. Continuous observations cannot consume this capacity; saturation still
+  // rejects with zero queue and never expands the global native worker limit.
+  readonly #slot = new OwnedWorkerSlot('Control');
   async #read(kind: 'titles' | 'rollout', input: string, signal: AbortSignal): Promise<unknown> {
     signal.throwIfAborted(); requireDiscordText(input);
     if (process.platform === 'win32') throw new Error('Windows mirror metadata unqualified');
