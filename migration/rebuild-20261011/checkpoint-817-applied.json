@@ -1,0 +1,63 @@
+{
+  "status": "APPLIED_CONTAINER_HTTP_817",
+  "files": [
+    {
+      "candidatePath": "src/discord/mirror-container-request.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-816-mirror-container-http/files/src/discord/mirror-container-request.ts",
+      "sha256": "c91269b9ce6d8813956650f1b79522f4dbf9247bafd42163f63e5cbc2cbfb0b7"
+    },
+    {
+      "candidatePath": "src/discord/mirror-inventory-request.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-816-mirror-container-http/files/src/discord/mirror-inventory-request.ts",
+      "sha256": "abc7c9568cb08cf9e55faf91de08c67ca830b876be27bddd48809c6c96010015"
+    },
+    {
+      "candidatePath": "src/discord/node-http-wire.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-816-mirror-container-http/files/src/discord/node-http-wire.ts",
+      "sha256": "aae57a7831925f954f33b745215b622a29dcd3ebfea6fa8565c2022e2dc1a102"
+    },
+    {
+      "candidatePath": "src/discord/rate-header-adapter.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-816-mirror-container-http/files/src/discord/rate-header-adapter.ts",
+      "sha256": "438a9ca07465e98e169bfff05ae7de30973199facc0b913314b3d877fb09deae"
+    },
+    {
+      "candidatePath": "src/discord/response-engine.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-816-mirror-container-http/files/src/discord/response-engine.ts",
+      "sha256": "d5653622ac2aea941bb7d87053379472a8213c4da0688cba9f2f9f523306ec32"
+    },
+    {
+      "candidatePath": "src/discord/channel-client.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-816-mirror-container-http/files/src/discord/channel-client.ts",
+      "sha256": "c30cdc148425f7a3c137d0cc527acee10daec09ae809bb06ae9a32efb9b4ba9f"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/container-http.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-816-mirror-container-http/files/src/runtime/mirror-sync/container-http.ts",
+      "sha256": "f7de31e160fee841830245bcce0b41394c289fa80016e4e40f7f025c8efca772"
+    },
+    {
+      "candidatePath": "test/discord/mirror-container-http.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-817-container-http-hardened/files/test/discord/mirror-container-http.test.ts",
+      "sha256": "f676c8151db2ae9226ba2664ca75aa58bcaecfe5edfad9d7f62de64aac2e1d74"
+    }
+  ],
+  "full": {
+    "tests": 8507,
+    "pass": 8507,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "started": "2026-10-13T12:24:35.967Z",
+    "ended": "2026-10-13T12:41:49.521Z",
+    "exit": 0,
+    "signal": null,
+    "testFiles": 831
+  },
+  "otherSourceTestToolBytesMatchWholeStage": true,
+  "limitations": [
+    "Category/project creation custody integration still pending",
+    "No fullBridgeSync or native Windows/deployment qualification",
+    "Protected redaction fixture remains absent and unverified"
+  ]
+}

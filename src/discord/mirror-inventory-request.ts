@@ -38,3 +38,5 @@ const listing=modelStruct(modelShape([['has_more',modelOption('bool')],['members
 export function decodeMirrorGuildChannels(bytes:Uint8Array):readonly MirrorInventoryChannel[]{return Object.freeze((parseSerdeField(text(bytes),modelVector(discordChannelField)) as unknown[]).map(project));}
 export function decodeMirrorThreadsPage(bytes:Uint8Array):MirrorThreadsPage{const v=parseSerdeField(text(bytes),listing) as Record<string,unknown>;return Object.freeze({hasMore:v.has_more as boolean|null,threads:Object.freeze((v.threads as unknown[]).map(project))});}
 export function decodeMirrorBotId(bytes:Uint8Array):bigint{return decodeDiscordUser(text(bytes)).id as bigint;}
+
+export function decodeMirrorInventoryChannel(bytes:Uint8Array):MirrorInventoryChannel{return project(parseSerdeField(text(bytes),discordChannelField));}
