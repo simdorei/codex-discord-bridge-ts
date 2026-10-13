@@ -4,6 +4,7 @@ import {clonePendingServerRequest,type PendingServerRequest} from '../app-server
 import {gatewayOwnField as own} from '../discord/gateway/values.ts';
 import {requireDiscordText,splitDeliveryChunks} from '../discord/text.ts';
 import {verifyPromptAuthority,PromptAuthorityError} from './server-prompt-authority.ts';
+import {localToolFormResponse} from './server-request-local-tools.ts';
 import {buildServerPrompt} from './server-prompt.ts';
 import {sendReceiptChunk,type DiscordReceiptTransport} from './completion/receipt-sender.ts';
 import {serverPromptIdentity,SentServerPromptCache,SERVER_REQUEST_PROMPT_DOMAIN,requirePromptGeneration} from './server-prompt-identity.ts';
@@ -11,7 +12,8 @@ export class ServerRequestGenerationMismatch extends Error{readonly expected:big
 export class ServerRequestSnapshotUnstable extends Error{readonly attempts=3;constructor(){super('app-server generation changed during 3 pending-request snapshots');this.name='ServerRequestSnapshotUnstable';}}
 /** Serial original-request delivery core. Caller supplies the exact native owner
  * and a validated HTTP transport. No default channel, fabricated occurrence or
- * approval response exists here. Signal cancellation joins actual HTTP/receipt
+ * fabricated approval response exists here. Local-tool form responses require
+ * original authority and the resident occurrence-bound response path. Signal cancellation joins actual HTTP/receipt
  * work; a late known acceptance is still committed by the receipt state machine.
  * Scheduler retries and runtime startup binding are separate. */
 export class ServerRequestDelivery{
@@ -23,6 +25,8 @@ export class ServerRequestDelivery{
  #generation(expected:bigint){requirePromptGeneration(expected);const actual=PortableResidentLifecycle.prototype.generation.call(this.#server);if(actual!==expected)throw new ServerRequestGenerationMismatch(expected,actual);}
  async #process(generation:bigint,input:PendingServerRequest,signal?:AbortSignal):Promise<void>{
   signal?.throwIfAborted();this.#generation(generation);const request=clonePendingServerRequest(input),authority=await verifyPromptAuthority(this.#database,this.#server,request,generation);signal?.throwIfAborted();
+  const local=localToolFormResponse(request);
+  if(local!==null){this.#generation(generation);await PortableResidentLifecycle.prototype.respond.call(this.#server,request.id,request.occurrence,local.response,generation,signal);return;}
   const prompt=buildServerPrompt(request,generation),key=serverPromptIdentity(generation,request,prompt);if(this.#sent.contains(generation,key))return;
   const chunks=splitDeliveryChunks(prompt.text,true);
   for(let index=0;index<chunks.length;index++){

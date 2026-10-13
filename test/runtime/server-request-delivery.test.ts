@@ -55,3 +55,27 @@ test('one delivery owner rejects concurrent cycles and retains the in-flight sen
  const worker=new ServerRequestDelivery(path,server,{sendValidated:async()=>{sends++;enter();await wait;return 97n;}}),running=worker.process(1n,request);
  try{await Promise.race([started,running]);await assert.rejects(worker.recover(),/already owned/);await assert.rejects(worker.process(1n,request),/already owned/);assert.equal(sends,1);}finally{release();await running;}await worker.recover();assert.equal(sends,1);
 }));
+
+for(const allowed of [true,false])test('local form responds through actual occurrence-bound resident; accepted='+allowed,async()=>promptFixture(async(path,server,request)=>{
+ let sends=0;const worker=new ServerRequestDelivery(path,server,{sendValidated:async()=>{sends++;return 98n;}});
+ await worker.process(1n,request);assert.equal(sends,0);assert.equal(server.pendingServerRequests().length,0);
+ const answers=await callPromptFixture(server,'answers') as Array<{result:unknown}>;
+ assert.equal(answers.length,1);assert.deepEqual(answers[0]!.result,{action:allowed?'accept':'cancel',content:allowed?{}:null,_meta:null});
+ await assert.rejects(worker.process(1n,request));assert.equal((await callPromptFixture(server,'answers') as unknown[]).length,1);
+},{enableResponses:true,method:'mcpServer/elicitation/request',params:{threadId:'t',turnId:'v',mode:'openai/form',serverName:'node_repl',_meta:{codex_approval_kind:'mcp_tool_call',connector_id:'browser',riskLevel:allowed?'low':'high'},requestedSchema:{type:'object',properties:{}}}}));
+
+test('local form never responds after original turn completion or generation mismatch',async()=>promptFixture(async(path,server,request)=>{
+ const worker=new ServerRequestDelivery(path,server,{sendValidated:async()=>{throw new Error('must not send');}});
+ await assert.rejects(worker.process(2n,request),ServerRequestGenerationMismatch);
+ await callPromptFixture(server,'finish');await assert.rejects(worker.process(1n,request),/no longer active/);
+ assert.deepEqual(await callPromptFixture(server,'answers'),[]);
+},{enableResponses:true,method:'mcpServer/elicitation/request',params:{threadId:'t',turnId:'v',mode:'form',serverName:'node_repl',_meta:{codex_approval_kind:'mcp_tool_call',connector_id:'computer-use',riskLevel:'low'},requestedSchema:{type:'object',properties:{}}}}));
+
+for(const bad of ['unowned','wrong-queue-generation','remapped','expired-occurrence'] as const)test('local form original authority rejects '+bad,async()=>promptFixture(async(path,server,request)=>{
+ if(bad==='unowned')await editPromptFixture(path,'UPDATE codex_turn_queue SET owner_user_id=NULL');
+ if(bad==='wrong-queue-generation')await editPromptFixture(path,'UPDATE codex_turn_queue SET app_server_generation=999');
+ if(bad==='remapped')await editPromptFixture(path,"UPDATE mirror_threads SET codex_thread_id='other'");
+ const supplied=bad==='expired-occurrence'?{...request,occurrence:ServerRequestOccurrence.fromBytes(new Uint8Array(16).fill(99))}:request;
+ await assert.rejects(new ServerRequestDelivery(path,server,{sendValidated:async()=>{throw new Error('must not send');}}).process(1n,supplied));
+ assert.deepEqual(await callPromptFixture(server,'answers'),[]);assert.equal(server.pendingServerRequests().length,1);
+},{enableResponses:true,method:'mcpServer/elicitation/request',params:{threadId:'t',turnId:'v',mode:'form',serverName:'node_repl',_meta:{codex_approval_kind:'mcp_tool_call',connector_id:'computer-use',riskLevel:'low',persist:['session','always']},requestedSchema:{type:'object',properties:{}}}}));

@@ -1,3 +1,4 @@
+import {defaultAppServerArguments} from '../../app-server/independent-tools-config.ts';
 import type {PortableSessionConfig} from '../../app-server/portable-session.ts';
 import type {RuntimePaths} from '../runtime-paths/resolve.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
@@ -9,5 +10,5 @@ export function runtimeResidentConfig(paths:Pick<RuntimePaths,'codexExe'|'codexH
  const executable=own(paths,'codexExe'),home=own(paths,'codexHome');
  for(const value of [executable,home,version]){requireDiscordText(value as string);if((value as string).includes('\0'))throw new TypeError('NUL in native runtime configuration');}
  const environment:Record<string,string>=Object.create(null);Object.defineProperty(environment,'CODEX_HOME',{value:home,enumerable:true});
- return Object.freeze({process:Object.freeze({executable:executable as string,arguments:Object.freeze(['app-server','--stdio']),environment:Object.freeze(environment)}),clientInfo:Object.freeze({name:'codex-discord-remote',title:'Codex Discord Remote',version})});
+ return Object.freeze({process:Object.freeze({executable:executable as string,arguments:defaultAppServerArguments(process.platform),environment:Object.freeze(environment)}),clientInfo:Object.freeze({name:'codex-discord-remote',title:'Codex Discord Remote',version})});
 }

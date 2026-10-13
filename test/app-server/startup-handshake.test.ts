@@ -7,7 +7,7 @@ const info={name:"codex-discord-remote",title:"Codex Discord Remote",version:"te
 function base(){const gate=new ClientLifecycle(),state=new ClientRuntimeState(123),events:string[]=[];return {gate,state,events};}
 test("observer precedes initialize/initialized and only then generation one commits",async()=>{
   const f=base(),token={},observer={value:token,dispose(){f.events.push("dispose");}};
-  const session:SpawnedHandshakeSession={...f,client:{async request(method,params,timeout){f.events.push(method);assert.equal(f.state.snapshot().initialized,false);assert.equal(timeout,30000);assert.deepEqual(params,{clientInfo:info,capabilities:{experimentalApi:true}});return {};},async notify(method,params){f.events.push(method);assert.deepEqual(params,{});assert.equal(f.state.snapshot().initialized,false);}},async cleanupOwned(){f.events.push("cleanup");}};
+  const session:SpawnedHandshakeSession={...f,client:{async request(method,params,timeout){f.events.push(method);assert.equal(f.state.snapshot().initialized,false);assert.equal(timeout,30000);assert.deepEqual(params,{clientInfo:info,capabilities:{experimentalApi:true,mcpServerOpenaiFormElicitation:true}});return {};},async notify(method,params){f.events.push(method);assert.deepEqual(params,{});assert.equal(f.state.snapshot().initialized,false);}},async cleanupOwned(){f.events.push("cleanup");}};
   const result=await initializeObserved(session,info,()=>{f.events.push("observe");return observer;});assert.equal(result,observer);assert.equal(result.value,token);assert.deepEqual(f.events,["observe","initialize","initialized"]);assert.equal(f.state.snapshot().generation,1n);assert.equal(f.state.snapshot().healthy,true);assert.equal(APP_SERVER_INITIALIZE_TIMEOUT_MS,30000);assert.equal(APP_SERVER_STARTUP_TIMEOUT_MS,45000);
 });
 test("observer installation failure cleans owned session before reporting same primary",async()=>{
@@ -33,7 +33,7 @@ test("already aborted startup still cleans its already-spawned owned session",as
 test("initialize metadata is captured before observer callback can mutate caller input",async()=>{
   const f=base(),mutable={...info};let received:unknown;
   await initializeObserved({...f,client:{async request(_m,params){received=params;return {};},async notify(){}},async cleanupOwned(){}},mutable,()=>{mutable.name="changed";return {value:null,dispose(){}};});
-  assert.deepEqual(received,{clientInfo:info,capabilities:{experimentalApi:true}});
+  assert.deepEqual(received,{clientInfo:info,capabilities:{experimentalApi:true,mcpServerOpenaiFormElicitation:true}});
 });
 test("invalid observer fails before initialize and still cleans already-spawned session",async()=>{
   const f=base();let requests=0;

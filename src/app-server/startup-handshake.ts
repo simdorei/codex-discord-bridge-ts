@@ -34,7 +34,7 @@ export async function initializeObserved<T>(session:SpawnedHandshakeSession,info
     const value=Object.getOwnPropertyDescriptor(installed,"value"),dispose=Object.getOwnPropertyDescriptor(installed,"dispose");
     if(!value||!Object.hasOwn(value,"value")||!dispose||!Object.hasOwn(dispose,"value")||typeof dispose.value!=="function"||types.isProxy(dispose.value)||types.isAsyncFunction(dispose.value)||types.isGeneratorFunction(dispose.value))throw new TypeError("Expected own observer value and synchronous disposer");
     observer=installed;const disposer=dispose.value;disposeObserver=()=>invokeSynchronousVoid(disposer,installed);
-    await session.client.request("initialize",{clientInfo,capabilities:{experimentalApi:true}},APP_SERVER_INITIALIZE_TIMEOUT_MS,undefined,signal);
+    await session.client.request("initialize",{clientInfo,capabilities:{experimentalApi:true,mcpServerOpenaiFormElicitation:true}},APP_SERVER_INITIALIZE_TIMEOUT_MS,undefined,signal);
     await session.client.notify("initialized",{},signal);
     signal?.throwIfAborted();session.gate.withOpen(()=>session.state.commitInitialized());
     return observer;

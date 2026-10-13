@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {runtimeResidentConfig} from '../../../src/runtime/discord-runtime/resident-config.ts';
 test('resolved paths become literal executable and CODEX_HOME with exact stdio arguments',()=>{
  const c=runtimeResidentConfig({codexExe:'/path with spaces/codex',codexHome:'/home/한😀'},'0.0.0');
- assert.equal(c.process.executable,'/path with spaces/codex');assert.deepEqual(c.process.arguments,['app-server','--stdio']);assert.equal(c.process.environment.CODEX_HOME,'/home/한😀');
+ assert.equal(c.process.executable,'/path with spaces/codex');assert.deepEqual(c.process.arguments,process.platform==='win32'?['app-server','--stdio','-c','mcp_servers.node_repl.env.SKY_CUA_NATIVE_PIPE=\"0\"']:['app-server','--stdio']);assert.equal(c.process.environment.CODEX_HOME,'/home/한😀');
  assert.deepEqual(c.clientInfo,{name:'codex-discord-remote',title:'Codex Discord Remote',version:'0.0.0'});assert.deepEqual(Object.keys(c.process.environment),['CODEX_HOME']);
 });
 test('configuration is deeply frozen and detached from caller path mutation',()=>{
