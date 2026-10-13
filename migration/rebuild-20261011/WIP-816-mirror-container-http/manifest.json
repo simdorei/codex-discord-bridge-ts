@@ -1,0 +1,56 @@
+{
+  "status": "WIP_UNTESTED_UNAPPLIED",
+  "baseRemote": "786f4ef85fba35e4af729be6ac89f5e55636bd03",
+  "stageIncludes": "Pending814/815 deletion guard; independent container HTTP delta only in this manifest",
+  "files": [
+    {
+      "candidatePath": "src/discord/mirror-container-request.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-816-mirror-container-http/files/src/discord/mirror-container-request.ts",
+      "sha256": "c91269b9ce6d8813956650f1b79522f4dbf9247bafd42163f63e5cbc2cbfb0b7"
+    },
+    {
+      "candidatePath": "src/discord/mirror-inventory-request.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-816-mirror-container-http/files/src/discord/mirror-inventory-request.ts",
+      "sha256": "abc7c9568cb08cf9e55faf91de08c67ca830b876be27bddd48809c6c96010015"
+    },
+    {
+      "candidatePath": "src/discord/node-http-wire.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-816-mirror-container-http/files/src/discord/node-http-wire.ts",
+      "sha256": "aae57a7831925f954f33b745215b622a29dcd3ebfea6fa8565c2022e2dc1a102"
+    },
+    {
+      "candidatePath": "src/discord/rate-header-adapter.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-816-mirror-container-http/files/src/discord/rate-header-adapter.ts",
+      "sha256": "438a9ca07465e98e169bfff05ae7de30973199facc0b913314b3d877fb09deae"
+    },
+    {
+      "candidatePath": "src/discord/response-engine.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-816-mirror-container-http/files/src/discord/response-engine.ts",
+      "sha256": "d5653622ac2aea941bb7d87053379472a8213c4da0688cba9f2f9f523306ec32"
+    },
+    {
+      "candidatePath": "src/discord/channel-client.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-816-mirror-container-http/files/src/discord/channel-client.ts",
+      "sha256": "c30cdc148425f7a3c137d0cc527acee10daec09ae809bb06ae9a32efb9b4ba9f"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/container-http.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-816-mirror-container-http/files/src/runtime/mirror-sync/container-http.ts",
+      "sha256": "f7de31e160fee841830245bcce0b41394c289fa80016e4e40f7f025c8efca772"
+    },
+    {
+      "candidatePath": "test/discord/mirror-container-http.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-816-mirror-container-http/files/test/discord/mirror-container-http.test.ts",
+      "sha256": "c9eed565b6707d102a5add738905a8a160af196689beec256c8bea401202b92b"
+    }
+  ],
+  "authority": {
+    "rust": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca mirror_sync/http.rs",
+    "twilight": "twilight-0.17.1 create_guild_channel.rs d2ff455c9213d7495078cb4d41f789ea62f0e489; update_channel.rs1aab599506e9014ce86379317a31c4e91e22d9e6; channel validation8de2bd5f473d46d8b5278648f707063ee966f63b"
+  },
+  "limitations": [
+    "Not compiled or tested yet",
+    "Only reachable category/text creation; existing public thread API separate",
+    "Creation custody coordinator, full BridgeSync and native Windows not qualified"
+  ]
+}
