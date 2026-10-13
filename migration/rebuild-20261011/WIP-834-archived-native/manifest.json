@@ -1,0 +1,33 @@
+{
+  "status": "WIP_UNAPPLIED_FOCUSED19_PASS_WHOLE_PENDING",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/archived-native.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-834-archived-native/files/src/runtime/mirror-sync/archived-native.ts",
+      "sha256": "1e359699d081d0d78ef248a5859239f6759ee2fd5a6178ff4a036aa74ca1f6e7"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/archived-native-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-834-archived-native/files/src/runtime/mirror-sync/archived-native-worker.ts",
+      "sha256": "e0168c2bd6a2f1d0a08a4f03784ada8994e8c3a11bd5527cac49a63345f2f2f3"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/archived-native.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-834-archived-native/files/test/runtime/mirror-sync/archived-native.test.ts",
+      "sha256": "11d223eacfcbbfab582a1cb1d8e11666a61a33b34054fce65fa636e37385c878"
+    }
+  ],
+  "dependsOn": "WIP832-833 and831",
+  "verification": {
+    "strictBuildExit": 0,
+    "focusedPass": 19,
+    "focusedFail": 0
+  },
+  "scope": "Native archive verification inside atomic fence/audit transaction; source restoration/time/path/file checks and database alias protection",
+  "correction": "Generic error reply may omit protected; own-property guard preserves intended no-deletion outcome error. Original RED retained locally; tests unchanged.",
+  "limitations": [
+    "Does not dispatch Discord DELETE",
+    "Full regression pending; Windows/live runtime/deployment unverified",
+    "Path replacement races not certified"
+  ]
+}
