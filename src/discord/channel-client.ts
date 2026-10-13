@@ -48,6 +48,7 @@ export class DiscordChannelClient implements DiscordReceiptTransport,TypingTrans
  clearMessageComponents(channelId:bigint,messageId:bigint,signal?:AbortSignal):Promise<void>{return this.#engine.clearMessageComponents(channelId,messageId,signal);}
  fetchLatestChannelMessages(id:bigint,signal?:AbortSignal){return this.#engine.fetchLatestChannelMessages(id,signal);}
  getGatewayBot(signal?:AbortSignal){return this.#engine.getGatewayBot(signal);}
+ deleteMirrorChannel(id:bigint,signal?:AbortSignal){return this.#engine.deleteMirrorChannel(id,signal);}
  getMirrorChannel(id:bigint,signal?:AbortSignal){return this.#engine.getMirrorChannel(id,signal);}
  createMirrorThread(parent:bigint,title:string,signal?:AbortSignal){return this.#engine.createMirrorThread(parent,title,signal);}
  updateMirrorThread(channel:bigint,title:string,signal?:AbortSignal){return this.#engine.updateMirrorThread(channel,title,signal);}

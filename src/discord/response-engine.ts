@@ -18,7 +18,7 @@ import type {IdempotentMessageRequest} from './idempotent-message.ts';
 import {DiscordTransportFault} from './transport-fault.ts';
 import type {DiscordReceiptTransport} from '../runtime/completion/receipt-sender.ts';
 import type {TypingTransport} from '../runtime/completion/typing.ts';
-export type DiscordHttpMethod='POST'|'GET'|'PUT'|'PATCH';
+export type DiscordHttpMethod='POST'|'GET'|'PUT'|'PATCH'|'DELETE';
 export interface DiscordWireRequest{readonly method:DiscordHttpMethod;readonly path:string;readonly body:string|null;readonly authorization:string|null}
 /** Response/body/decompression/socket custody belongs to this trusted adapter. release
  * must cancel/drain and settle owned IO, even when the caller did not read the body. */
@@ -53,6 +53,11 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
   if(authorization!==null&&/[^\x20-\x7e]/.test(authorization))throw new DiscordTransportFault('CreatingHeader','invalid authorization header');
   if(typeof options.decoder.decode!=="function"||types.isProxy(options.decoder.decode)||types.isAsyncFunction(options.decoder.decode)||types.isGeneratorFunction(options.decoder.decode))throw new DiscordTransportFault("BuildingRequest","a synchronous complete receipt decoder is required");
   this.#authorization=authorization;this.#wire={request:options.wire.request.bind(options.wire)};this.#rate={acquire:options.rateLimiter.acquire.bind(options.rateLimiter)};this.#decoder={decode:options.decoder.decode.bind(options.decoder)};this.#timeout=options.headerTimeoutMs??10000;if(!Number.isSafeInteger(this.#timeout)||this.#timeout<0||this.#timeout>2147483647)throw new DiscordTransportFault('BuildingRequest','invalid timeout profile');
+ }
+ async deleteMirrorChannel(id:bigint,signal?:AbortSignal):Promise<void>{
+  const path=`channels/${mirrorChannelId(id)}`;
+  try{await this.#run(async owned=>{await this.#request('DELETE',path,null,null,()=>new Error('unused channel delete decoder'),owned,true,true);},signal);}
+  catch(error){const fault=ownedDiscordTransportFault(error);if(fault?.kind==='Response'&&fault.status===404)return;throw error;}
  }
  async getMirrorChannel(id:bigint,signal?:AbortSignal):Promise<MirrorChannel|null>{
   const path=`channels/${mirrorChannelId(id)}`;try{return await this.#run(owned=>this.#request('GET',path,null,decodeMirrorChannelBytes,()=>new DiscordTransportFault('Json','channel response model could not be decoded'),owned,true,true),signal) as MirrorChannel;}catch(error){const fault=ownedDiscordTransportFault(error);if(fault?.kind==='Response'&&fault.status===404)return null;throw error;}
@@ -91,7 +96,7 @@ export class DiscordResponseEngine implements DiscordReceiptTransport,TypingTran
      try{return await decode(await response.bytes());}catch(error){if(preserveCancellation&&signal.aborted&&error===signal.reason)throw error;throw decodeFailure();}
     }
     if(status!==429){
-     try{const bytes=await response.bytes(),text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);parseDiscordApiError(text);}catch{throw transport();}
+     try{const bytes=await response.bytes(),text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);parseDiscordApiError(text);}catch(error){if(preserveCancellation&&signal.aborted&&error===signal.reason)throw error;throw transport();}
      throw new DiscordTransportFault('Response',`provider returned HTTP ${status}`,status);
     }
    }finally{
