@@ -31,3 +31,16 @@ for(const count of [128,129])test(`bounded inventory ${count} proves completenes
  if(count===128)assert.equal(state.cancelForRecoveryExisting(path,'target',1n,2n,10,checked).jobs.length,128);else assert.throws(()=>state.cancelForRecoveryExisting(path,'target',1n,2n,10,checked),/too many/);
  const read=await openInitialized(path);try{assert.equal(read.prepare('SELECT COUNT(*) AS n FROM codex_prompt_intakes').get()?.n,count===128?0:129);assert.equal(read.prepare('SELECT COUNT(*) AS n FROM codex_request_cancellations').get()?.n,count===128?128:0);}finally{read.close();}
 }));
+
+test('existing cancellation preserves absent lazy handoff schema without creating it',()=>seeded(async path=>{
+ const db=await openInitialized(path);try{db.exec('DROP TABLE codex_thread_fork_handoffs');assert.deepEqual(state.cancelForRecoveryExisting(path,'target',1n,2n,10,checked).jobs,['job']);assert.equal(db.prepare("SELECT count(*) AS n FROM sqlite_schema WHERE name='codex_thread_fork_handoffs'").get()?.n,0);}finally{db.close();}
+}));
+test('existing cancellation rejects a partial handoff table without schema repair',()=>seeded(async path=>{
+ const db=await openInitialized(path);try{db.exec('DROP TABLE codex_thread_fork_handoffs; CREATE TABLE codex_thread_fork_handoffs(source_thread_id TEXT)');assert.throws(()=>state.cancelForRecoveryExisting(path,'target',1n,2n,10,checked),/no such column/);assert.equal(db.prepare("SELECT count(*) AS n FROM pragma_table_info('codex_thread_fork_handoffs')").get()?.n,1);assert.equal(db.prepare('SELECT count(*) AS n FROM codex_turn_queue').get()?.n,1);}finally{db.close();}
+}));
+test('existing cancellation does not drop a handoff index or change schema version',()=>seeded(async path=>{
+ const db=await openInitialized(path);try{db.exec('CREATE INDEX codex_thread_fork_handoffs_observed_target ON codex_thread_fork_handoffs(observed_target_thread_id)');const before=db.prepare('PRAGMA schema_version').get()?.schema_version;state.cancelForRecoveryExisting(path,'target',1n,2n,10,checked);assert.equal(db.prepare('PRAGMA schema_version').get()?.schema_version,before);assert.equal(db.prepare("SELECT count(*) AS n FROM sqlite_schema WHERE type='index' AND name='codex_thread_fork_handoffs_observed_target'").get()?.n,1);}finally{db.close();}
+}));
+test('a handoff view is not treated as an absent inventory',()=>seeded(async path=>{
+ const db=await openInitialized(path);try{db.exec('DROP TABLE codex_thread_fork_handoffs; CREATE VIEW codex_thread_fork_handoffs AS SELECT 1 AS source_thread_id');assert.throws(()=>state.cancelForRecoveryExisting(path,'target',1n,2n,10,checked),/no such column/);assert.equal(db.prepare('SELECT count(*) AS n FROM codex_turn_queue').get()?.n,1);}finally{db.close();}
+}));

@@ -1,3 +1,11 @@
+# Current addendum — 2026-10-14 05:35 UTC
+
+- Applied850: original recovery custody row is capped before native SQLite returns decoded values, including malformed BLOB storage in nominal numeric columns. Existing-only cancellation no longer initializes lazy handoff schema. Completely absent handoff inventory is empty; partial tables/views still read and propagate failures.
+- Immutable857-file independent runs completed with8750 PASS, zero failures/cancellations/skips; final compiled/source fingerprint matched. Actual1742 source/test/tools files match stage; actual strict0 and focused53 PASS. This is composite evidence, not one monolithic full-suite PASS. See checkpoint-850-composite-verification.json.
+- Queue/intake and related ingress cancellation payload budgets remain pending. Recover/controller, platform/archive final deletion, executable and operating acceptance remain incomplete. Continue implementation after this checkpoint.
+
+## Previous addenda (historical)
+
 # Current addendum — 2026-10-14 04:16 UTC
 
 - Applied847/848: existing-only recovery cancellation, exact original ingress custody, and joined native recovery owner. Actual strict build0 and focused43 PASS. Fixed emitted graph857 files completed independently with8740 PASS, zero failures/cancellations/skips; final fingerprint matches. This is composite evidence, not one monolithic full-suite PASS. See checkpoint-848-composite-verification.json.

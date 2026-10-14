@@ -44,3 +44,35 @@ test('concurrent and oversized original claims fail before another submission',(
 test('late original record mutation prevents check and cancellation',()=>fixture(async(path,record,owner)=>{
  const claim=await owner.claim(record);await edit(path,db=>db.exec("UPDATE discord_ingress_journal SET updated_at=updated_at+1"));await assert.rejects(owner.check(claim),NativeRecoveryUnavailableError);await assert.rejects(owner.cancel(claim),NativeRecoveryUnavailableError);
 }));
+
+
+for(const operation of ['claim','check','cancel'] as const)test('oversized stored evidence refuses native '+operation+' without cancellation',()=>fixture(async(path,record,owner)=>{
+ await state.enqueue(path,queueJob({jobId:'job',ownerUserId:2n,createdAt:1}));
+ const token=operation==='claim'?null:await owner.claim(record);
+ await edit(path,db=>db.prepare("UPDATE discord_ingress_journal SET hold_reason=? WHERE ingress_id='message:3'").run('한'.repeat(349526)));
+ if(operation==='claim')await assert.rejects(owner.claim(record),NativeRecoveryUnavailableError);
+ else if(operation==='check')await assert.rejects(owner.check(token!),NativeRecoveryUnavailableError);
+ else await assert.rejects(owner.cancel(token!),NativeRecoveryUnavailableError);
+ await edit(path,db=>{assert.equal(db.prepare("SELECT phase FROM discord_ingress_journal WHERE ingress_id='message:3'").get()?.phase,operation==='claim'?'processing':'recovery_claimed');assert.equal(db.prepare('SELECT COUNT(*) AS n FROM codex_turn_queue').get()?.n,1);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM codex_request_cancellations').get()?.n,0);});
+}));
+test('claim readback byte guard rolls back oversized trigger mutation',()=>fixture(async(path,record,owner)=>{
+ await edit(path,db=>db.exec("CREATE TRIGGER enlarge_recovery AFTER UPDATE OF phase ON discord_ingress_journal WHEN NEW.phase='recovery_claimed' BEGIN UPDATE discord_ingress_journal SET hold_reason=hex(zeroblob(524289)) WHERE ingress_id=NEW.ingress_id; END"));
+ await assert.rejects(owner.claim(record),NativeRecoveryUnavailableError);
+ await edit(path,db=>{assert.equal(db.prepare("SELECT phase FROM discord_ingress_journal WHERE ingress_id='message:3'").get()?.phase,'processing');assert.equal(db.prepare("SELECT length(hold_reason) AS n FROM discord_ingress_journal WHERE ingress_id='message:3'").get()?.n,0);});
+}));
+
+test('stored evidence scalar gate precedes JSON decode and requires a transaction',()=>fixture(async(path,record,owner)=>{
+ await owner.claim(record);
+ await edit(path,db=>{
+  const expected=getIngressIn(db,'message:3')!;
+  assert.throws(()=>state.validateIngressRecoverySnapshotIn(db,expected),/owning transaction/);
+  db.prepare("UPDATE discord_ingress_journal SET payload_json=? WHERE ingress_id='message:3'").run('{'+ 'x'.repeat(1048576));
+  db.exec('BEGIN');
+  try{assert.throws(()=>state.validateIngressRecoverySnapshotIn(db,expected),/byte budget/);assert.equal(db.isTransaction,true);}finally{db.exec('ROLLBACK');}
+ });
+}));
+
+test('oversized blob in numeric storage is gated before conversion',()=>fixture(async(path,record,owner)=>{
+ await owner.claim(record);
+ await edit(path,db=>{const expected=getIngressIn(db,'message:3')!;db.exec("UPDATE discord_ingress_journal SET application_id=zeroblob(1048577) WHERE ingress_id='message:3'; BEGIN");try{assert.throws(()=>state.validateIngressRecoverySnapshotIn(db,expected),/byte budget/);}finally{db.exec('ROLLBACK');}});
+}));

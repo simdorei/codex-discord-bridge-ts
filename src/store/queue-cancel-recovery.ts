@@ -2,7 +2,7 @@ import type {DatabaseSync,SQLInputValue} from "node:sqlite";
 import {types} from "node:util";
 import {usingInitializedStore,usingExistingStore,withStoreTransaction,commitStore} from "./owned-scope.ts";
 import {requireDiscordText} from "../discord/text.ts";
-import {ensureNoUnresolvedHandoff,ensureSourceNotMoved} from "./fork-handoff-admission.ts";
+import {ensureNoUnresolvedHandoff,ensureSourceNotMoved,requireNoUnresolvedHandoffExistingIn,requireSourceNotMovedExistingIn} from "./fork-handoff-admission.ts";
 import {ingressCancellationOwnersIn} from "./ingress-cancellation-owners.ts";
 import {selectJob,serializeStoredQueueJob} from "./queue-read.ts";
 import {holdIn} from "./execution-hold.ts";
@@ -47,10 +47,20 @@ function validateScope(target:string,channel:bigint,owner:bigint,now:number,chec
  * Cancellation evidence and the final recovery revision remain one transaction.
  * Inventory queries cap at129 to prove that <=128 is complete before mutation. */
 export function cancelForRecoveryIn(db:DatabaseSync,target:string,channel:bigint,owner:bigint,now:number,check:RecoveryCancellationCheck):RecoveryCancellation{
+ return cancelForRecoveryBody(db,target,channel,owner,now,check,true);
+}
+function cancelForRecoveryBody(db:DatabaseSync,target:string,channel:bigint,owner:bigint,now:number,check:RecoveryCancellationCheck,existingOnly:boolean):RecoveryCancellation{
  validateScope(target,channel,owner,now,check);if(!db.isTransaction)throw new StoreIntegrityError("Recovery cancellation requires owning transaction");
  const checked=(db:DatabaseSync):void=>{const result:unknown=check(db);if(types.isPromise(result)){void Promise.prototype.then.call(result,undefined,()=>undefined);throw new TypeError("Expected synchronous recovery custody check");}if(result!==undefined)throw new TypeError("Expected synchronous recovery custody check");};
 
-    checked(db);ensureNoUnresolvedHandoff(db,target);ensureSourceNotMoved(db,target);
+    checked(db);
+    if(existingOnly){
+      // This table is lazily created by legacy admission, so complete absence is
+      // the same empty handoff inventory. A view or partial table is not absence:
+      // read it normally and propagate errors; never repair schema in this lane.
+      const present=one(db,"SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE name='codex_thread_fork_handoffs' AND type IN ('table','view')) AS present");
+      if(decodeI64(present?.present,"handoff presence")!==0n){requireNoUnresolvedHandoffExistingIn(db,target);requireSourceNotMovedExistingIn(db,target);}
+    }else{ensureNoUnresolvedHandoff(db,target);ensureSourceNotMoved(db,target);}
     const q=db.prepare(`SELECT job_id,kind,channel_id,owner_user_id,discord_message_id,CAST(job_id AS BLOB) AS raw,(SELECT encoding FROM pragma_encoding) AS encoding FROM (
       SELECT job_id,'queue' AS kind,channel_id,owner_user_id,discord_message_id FROM codex_turn_queue WHERE target_thread_id=?1 UNION ALL
       SELECT job_id,'intake',channel_id,owner_user_id,discord_message_id FROM codex_prompt_intakes WHERE target_thread_id=?1) LIMIT 129`);q.setReadBigInts(true);
@@ -80,7 +90,7 @@ export function cancelForRecoveryExisting(path:string,target:string,channel:bigi
  * process exit; this only revokes replay authority and preserves evidence. */
 export async function cancelForRecovery(path:string,target:string,channel:bigint,owner:bigint,now:number,check:RecoveryCancellationCheck=()=>undefined):Promise<RecoveryCancellation>{
  requireDiscordText(path);validateScope(target,channel,owner,now,check);
- return usingInitializedStore(path,db=>withStoreTransaction(db,"IMMEDIATE",()=>commitStore(cancelForRecoveryIn(db,target,channel,owner,now,check))));
+ return usingInitializedStore(path,db=>withStoreTransaction(db,"IMMEDIATE",()=>commitStore(cancelForRecoveryBody(db,target,channel,owner,now,check,false))));
 }
 
 /** Internal borrowed transaction cancellation leaf; caller must prove exact custody. */

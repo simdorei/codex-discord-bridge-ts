@@ -10,6 +10,20 @@ import {trimUnicodeWhitespace as trim} from "./queue-preflight-failure.ts";
 import {getOwn,isJsonObject,pointer} from "./async-resolution-json-helpers.ts";
 import {serdeValueEqual} from "../core/serde-value-equal.ts";
 import {SystemTimeError} from "./queue-mark-running.ts";
+/** Native persistence must reject oversized stored evidence before SQLite returns
+ * any text/blob to JS. The scalar preflight and full read share the caller's
+ * transaction, including claim readback after triggers. This is a conservative
+ * refusal budget, never permission to truncate original custody. */
+function boundedRecoveryRecordIn(db:DatabaseSync,key:string):StoredIngress|null{
+ if(!db.isTransaction)throw new StoreIntegrityError("Recovery evidence budget requires owning transaction");
+ const fields=["ingress_id","kind","event_id","application_id","channel_id","owner_user_id","source_message_id","payload_json","runtime_id","state","phase","target_thread_id","canonical_owner","owner_kind","owner_id","outcome_json","confirmation_delivered","hold_reason","created_at","updated_at"];
+ const bytes=fields.map(field=>`COALESCE(length(CAST(${field} AS BLOB)),0)`).join("+");
+ const query=db.prepare(`SELECT ${bytes} AS evidence_bytes FROM discord_ingress_journal WHERE ingress_id=?`);query.setReadBigInts(true);
+ const row=query.get(key);
+ if(row===undefined)return null;
+ if(typeof row.evidence_bytes!=="bigint"||row.evidence_bytes<0n||row.evidence_bytes>1048576n)throw new StoreIntegrityError("Recovery stored evidence exceeds byte budget");
+ return getIngressIn(db,key);
+}
 function refused():never{throw new StoreIntegrityError("recovery admission changed or was already used; no retarget or replay");}
 export function validateRecoveryBindingIn(db:DatabaseSync,binding:unknown,channel:bigint):void{
   const target=getOwn(binding,"target"),command=getOwn(binding,"command");
@@ -37,9 +51,9 @@ const claims=new WeakMap<RecoveryClaim,StoredIngress>();
 export function claimIngressRecoverySnapshotIn(db:DatabaseSync,input:StoredIngress,now:number):StoredIngress{
  const expected=snapshot(input);if(!db.isTransaction)throw new StoreIntegrityError("Recovery claim requires owning transaction");
  if(typeof now!=="number"||!Number.isFinite(now)||now<0)throw new SystemTimeError(-now*1000);
- const record=getIngressIn(db,expected.ingressId);if(record===null||!equal(record,expected)||record.state!=="executing"||record.phase!=="processing")refused();validateRecord(db,record);
+ const record=boundedRecoveryRecordIn(db,expected.ingressId);if(record===null||!equal(record,expected)||record.state!=="executing"||record.phase!=="processing")refused();validateRecord(db,record);
  if(BigInt(db.prepare("UPDATE discord_ingress_journal SET phase='recovery_claimed',updated_at=? WHERE ingress_id=? AND state='executing' AND phase='processing' AND owner_id IS NULL").run(now,record.ingressId).changes)!==1n)refused();
- record.phase="recovery_claimed";record.updatedAt=now;const saved=getIngressIn(db,record.ingressId);if(saved===null||!equal(record,saved))refused();return snapshot(record);
+ record.phase="recovery_claimed";record.updatedAt=now;const saved=boundedRecoveryRecordIn(db,record.ingressId);if(saved===null||!equal(record,saved))refused();return snapshot(record);
 }
 /** Existing-only synchronous boundary for the native recovery owner. */
 export function claimIngressRecoverySnapshotExisting(path:string,input:StoredIngress,now:number):StoredIngress{
@@ -48,7 +62,7 @@ export function claimIngressRecoverySnapshotExisting(path:string,input:StoredIng
 /** Trusted worker-side evidence check. Caller must obtain the expected record
  * from its own admitted claim; arbitrary RPC data must never call this leaf. */
 export function validateIngressRecoverySnapshotIn(db:DatabaseSync,input:StoredIngress):void{
- const original=snapshot(input);if(original.state!=="executing"||original.phase!=="recovery_claimed")refused();const record=getIngressIn(db,original.ingressId);if(record===null||!equal(record,original))refused();validateRecord(db,original);
+ const original=snapshot(input);if(original.state!=="executing"||original.phase!=="recovery_claimed")refused();const record=boundedRecoveryRecordIn(db,original.ingressId);if(record===null||!equal(record,original))refused();validateRecord(db,original);
 }
 /** Single original command, not a retry lease. Selected route still requires runtime selected-snapshot validation. */
 export async function claimIngressRecovery(path:string,input:StoredIngress):Promise<RecoveryClaim>{
