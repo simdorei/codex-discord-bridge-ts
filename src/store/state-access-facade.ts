@@ -215,6 +215,7 @@ export const validateIngressRecoverySnapshotIn: typeof RecoveryCustody.validateI
 export const claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery = RecoveryCustody.claimIngressRecovery;
 export const validateIngressRecovery: typeof RecoveryCustody.validateIngressRecovery = RecoveryCustody.validateIngressRecovery;
 
+export const cancelLatestPendingExisting: typeof PendingCancellation.cancelLatestPendingExisting = PendingCancellation.cancelLatestPendingExisting;
 export const cancelLatestPending: typeof PendingCancellation.cancelLatestPending = PendingCancellation.cancelLatestPending;
 
 export const cancelForRecoveryIn: typeof RecoveryCancellation.cancelForRecoveryIn = RecoveryCancellation.cancelForRecoveryIn;
@@ -690,6 +691,7 @@ export interface IStateAccessFacade {
   readonly cancelForRecoveryIn: typeof RecoveryCancellation.cancelForRecoveryIn;
   readonly cancelForRecoveryExisting: typeof RecoveryCancellation.cancelForRecoveryExisting;
   readonly cancelForRecovery: typeof RecoveryCancellation.cancelForRecovery;
+  readonly cancelLatestPendingExisting: typeof PendingCancellation.cancelLatestPendingExisting;
   readonly cancelLatestPending: typeof PendingCancellation.cancelLatestPending;
   readonly validateRecoveryEffectIn: typeof RecoveryEffect.validateRecoveryEffectIn;
   readonly claimIngressRecoverySnapshotIn: typeof RecoveryCustody.claimIngressRecoverySnapshotIn;
@@ -1056,6 +1058,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   validateIngressRecoverySnapshotIn,
   claimIngressRecovery,
   validateIngressRecovery,
+  cancelLatestPendingExisting,
   cancelLatestPending,
   cancelForRecoveryIn,
   cancelForRecoveryExisting,

@@ -1,3 +1,4 @@
+import {NativeRetractWriter} from './retract-write-native.ts';
 import {AdmittedRecoverExecutor} from './recover-action.ts';
 import {NativeArchiveWriter} from './archive-write-native.ts';
 import {NativeStopPendingReader} from './stop-pending-native.ts';
@@ -92,7 +93,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   this.#intake=intake;  this.#server=server;this.#control=control;this.#componentQueue=new BusyQueueExecutor(paths.mirror,Object.freeze({processAdmittedPrompt:PromptIntakeProcessor.prototype.processAdmittedPrompt.bind(intake)}),undefined,intakeState.admitBusyQueue,intakeState.mirroredThreadId);
   this.#queue=queue;this.#basic=new BasicActionDispatcher(paths,bridge,server,locks,render,timeout,intakeState.mirroredThreadId,threadReads,bridgeOwner,controlReads);
   this.#new=new NewThreadExecutor(paths.mirror,paths.state,queue,intake,bridge,server,backend,get('mirror'),get('reportNewAttempt'),undefined,intakeState.admitPromptIntakeWithIngress,intakeState.getNewFirstReplyFinish,intakeState,createNativeNewProjectLookup(paths.state),bridgeOwner);
-  this.#prompts=new QueuePromptExecutor(paths.mirror,selection,targets,queue,intake,busy);this.#retract=new RetractAction(paths.mirror,selection);
+  this.#prompts=new QueuePromptExecutor(paths.mirror,selection,targets,queue,intake,busy);this.#retract=new RetractAction(paths.mirror,selection,undefined,new NativeRetractWriter(paths.mirror));
   this.#controls=new PromptControlActions(paths.mirror,selection,targets,control,server);this.#open=new OpenThreadAction(selection,targets,bridge,server,timeout,bridgeOwner);
   this.#settingsResolver=new SettingsTargetResolver(paths.state,paths.mirror,bridge,createNativeSettingsBindingReads(paths.state,BridgeState.prototype.path.call(bridge),intakeState.mirroredThreadId),bridgeOwner);
   this.#settings=new AdmittedSettingsExecutor(paths.mirror,new SettingsAction(selection,this.#settingsResolver,bridge,server,control,timeout,bridgeOwner));
@@ -159,7 +160,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
    else if('Stop'in action)result=await this.#stop.execute(actor,action.Stop.reference,key,signal);
    else if('Recover'in action){if(this.#recovery===null)throw new ActionExecutionError('Unsupported','recovery controller is not configured');result=await AdmittedRecoverExecutor.prototype.execute.call(this.#recovery,{key,channelId:actor.channelId,ownerUserId:actor.userId,eventId:actor.discordMessageId,reference:action.Recover.reference},signal);}
    else if('Repair'in action){if(this.#repair===null)throw new MissingActionAppServerError();result=await this.#repair.execute(actor,action.Repair.reference,key,signal);}
-   else if('Retract'in action)result={text:await this.#retract.retract(actor.channelId,actor.userId,action.Retract.reference,signal),waitsForFinal:false,ui:null};
+   else if('Retract'in action)result={text:await this.#retract.retract(actor.channelId,actor.userId,action.Retract.reference,signal,{key,eventId:actor.discordMessageId}),waitsForFinal:false,ui:null};
    else if('Steer'in action)result=await this.#controls.steer(actor.channelId,action.Steer.prompt,signal);
    else if('Open'in action)result=await this.#open.open(action.Open.reference,action.Open.abort,signal);
    else if('DiscardRequest'in action)throw new InvalidActionRequestError('discard-request requires authenticated message custody and live normal admission');

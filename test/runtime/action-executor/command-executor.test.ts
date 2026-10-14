@@ -205,3 +205,25 @@ it('Recover selected route uses the command executor shared native Bridge owner'
  f.executor.configureRecovery(recovery);
  const result=await f.executor.executeWithIngressContext({Recover:{reference:null}},actor,'message:5');assert.equal(starts,1);assert.match(result.text,/receipt.json/);
 }));
+
+import {queueJob} from '../../helpers/queue-job.ts';
+async function retractQueue(path:string){for(const [jobId,createdAt,discordMessageId] of [['older',1,101n],['latest',2,102n]] as const)await state.enqueue(path,queueJob({jobId,targetThreadId:'root',channelId:42n,ownerUserId:3n,discordMessageId,createdAt}));}
+it('installed Retract uses the actual pinned native cancellation lane with original ingress identity',async t=>{
+ const requests:any[]=[],run=OwnedWorkerSlot.prototype.run,prepare=DatabaseSync.prototype.prepare;let armed=false;
+ t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){if(String(args[0]).endsWith('/retract-write-native-worker.ts'))requests.push(args[1]);return run.apply(this,args);});
+ t.mock.method(DatabaseSync.prototype,'prepare',function(this:DatabaseSync,sql:string){if(armed&&(/SELECT job_id,kind,discord_message_id,eligible/.test(sql)||/DELETE FROM codex_turn_queue/.test(sql)))assert.fail('Retract synchronous store execution on main event loop');return prepare.call(this,sql);});
+ await fixture(false,async f=>{await retractQueue(f.path);armed=true;let result;try{result=await f.executor.executeWithIngressContext({Retract:{reference:null}},actor,'message:5');}finally{armed=false;}
+ assert.equal(result.text,'Retracted unstarted request latest for root.');assert.equal(requests.length,1);assert.equal(requests[0].path,f.path);assert.deepEqual({...requests[0].operation,now:0},{ingressKey:'message:5',eventId:5n,target:'root',channelId:42n,ownerUserId:3n,now:0,requireMirror:false});assert.deepEqual((await state.listQueueJobs(f.path)).map(r=>r.jobId),['older']);assert.deepEqual(f.starts,[]);
+ });
+});
+it('gateway Retract confirms only the committed cancellation and duplicate ingress cannot cancel the next request',async t=>{
+ let submitted=0;const run=OwnedWorkerSlot.prototype.run;t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){if(String(args[0]).endsWith('/retract-write-native-worker.ts'))submitted++;return run.apply(this,args);});
+ await fixture(true,f=>pipeline(f,async p=>{await retractQueue(f.path);const lease=await f.queue.locks.acquire('root');try{await p.handle('!retract');await p.handle('!retract');}finally{lease.release();}
+ assert.equal(submitted,1);assert.equal(p.posts.length,1);assert.equal(p.posts[0].content,'Retracted unstarted request latest for root.');assert.equal((await state.getIngress(f.path,'message:5'))?.confirmationDelivered,true);assert.deepEqual((await state.listQueueJobs(f.path)).map(r=>r.jobId),['older']);assert.deepEqual(await f.seen(),[]);
+ }));
+});
+it('gateway Retract lost committed reply holds original ingress and never retries cancel-latest',async t=>{
+ let submitted=0;const run=OwnedWorkerSlot.prototype.run;t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){const task=run.apply(this,args);if(String(args[0]).endsWith('/retract-write-native-worker.ts')){submitted++;return task.then(()=>{throw new Error('lost Retract acknowledgement');});}return task;});
+ await fixture(true,f=>pipeline(f,async p=>{await retractQueue(f.path);await p.handle('!retract');const original=await state.getIngress(f.path,'message:5');assert.equal(original?.state,'held');assert.equal(original?.eventId,5n);assert.equal(original?.confirmationDelivered,false);await p.handle('!retract');assert.equal(submitted,1);assert.deepEqual((await state.listQueueJobs(f.path)).map(r=>r.jobId),['older']);assert.ok(p.posts.every(x=>!String(x.content).startsWith('Retracted unstarted')));assert.deepEqual(await f.seen(),[]);
+ }));
+});
