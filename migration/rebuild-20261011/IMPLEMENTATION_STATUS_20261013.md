@@ -1,3 +1,9 @@
+# Current addendum — 2026-10-14 08:00 UTC
+
+- Implemented856 preserves original Korean recovery interruption/unconfirmed warning and verifies lost controller replies/outcome-write failures never replay the original gateway request. Strict0 and8 affected cases pass.
+- Implemented857 adds executable maintenance entry: npm run build, then npm run maintenance -- --help or --check-config. Existing backup/readiness branches are callable. Unknown admin/gateway plans exit2; errors exit1 without echoing secrets.
+- Strict0,18 affected tests PASS, actual production build and compiled help exit0. This is maintenance-only; production gateway assembly, Windows/controller qualification, packaging/install and operational acceptance remain incomplete.
+
 # Current addendum — 2026-10-14 07:52 UTC
 
 - Implemented854 bounded direct-child controller transport: strict0, focused12 actual child tests pass; Windows process-tree ownership remains unimplemented.

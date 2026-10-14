@@ -1,0 +1,42 @@
+{
+  "status": "EXECUTABLE_MAINTENANCE_ONLY_FOCUSED_PASS",
+  "files": [
+    {
+      "path": "package.json",
+      "sha256": "91f7e98a7474179940a9532800f88e6a192ac4eac92c1b63558056b2c9b27138"
+    },
+    {
+      "path": "src/cli/maintenance-main.ts",
+      "sha256": "a39dcd519c8a017181a6fd6f71c900438e73805e567c0ffbb4e7f3bb4fd7dedd"
+    },
+    {
+      "path": "test/cli/maintenance-main.test.ts",
+      "sha256": "181061ec17b0f66cdde2da49fb233e3523dbc04886030032d7f095df23a8282f"
+    }
+  ],
+  "verification": {
+    "strictBuildExit": 0,
+    "focusedTests": 18,
+    "focusedPass": 18,
+    "focusedFail": 0,
+    "focusedSkipped": 0,
+    "focusedLogSha256": "ad45f2e1a4c9f97fb4f4212bec7a8f792a84029bf6cf5749bfb1510aba549a59",
+    "productionBuildExit": 0,
+    "productionHelpExit": 0,
+    "productionHelpSha256": "80c0b4aad5e36f102a7017c1fcc85d9af3003dd8cb6dd40c477f74739e20f6f6"
+  },
+  "usage": [
+    "npm run build",
+    "npm run maintenance -- --help",
+    "npm run maintenance -- --check-config"
+  ],
+  "scope": [
+    "Actual compiled Node24 maintenance entry delegates existing maintenance implementation.",
+    "Unknown admin or gateway plan exits2 without pretending to start a runtime. Errors exit1 without echoing environment/argv/causes.",
+    "Existing supported backup and restart-readiness branches retain their original native ownership and validation."
+  ],
+  "limits": [
+    "No gateway executable/start script, installer, Windows native process profile, live startup or deployment qualification.",
+    "Only3 relevant test files18 cases plus actual production-build help executed; no whole-suite rerun."
+  ]
+}
