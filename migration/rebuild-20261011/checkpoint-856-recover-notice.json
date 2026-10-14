@@ -1,0 +1,38 @@
+{
+  "status": "RECOVER_NOTICE_AND_FAILURE_REPLAY_FOCUSED_PASS",
+  "files": [
+    {
+      "path": "src/runtime/action-executor/recover-action.ts",
+      "sha256": "a6a406ec1b103b8f28e24b26747441d8550a5d7ec4fcc96f707231664bccbb9d"
+    },
+    {
+      "path": "src/runtime/writer-recovery/message.ts",
+      "sha256": "57fe3b2db5970de8c98db8680e16a2786bc7e8e69353fcecd1fc8a740afe9ee4"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "sha256": "a008096e43f08dd07702d7e31779615fd20c4a73f874ac4bfb9a7c7f417a1a0e"
+    },
+    {
+      "path": "test/runtime/writer-recovery/message.test.ts",
+      "sha256": "c7db712795f0155b1e6e0bd069d53c3ccedadc46a1bfc238bbf7f4649da5b02f"
+    }
+  ],
+  "authority": "simdorei/codex-discord-remote-rust d7e1aa0106b2eefd9ea3f96e8e4bc5afdd296d34 crates/cdr-runtime/src/writer_recovery.rs message(dispatched_tools)",
+  "strictExit": 0,
+  "focused": {
+    "tests": 8,
+    "pass": 8,
+    "fail": 0,
+    "skipped": 0,
+    "logSha256": "721bcff1030dbc6d93f341fe71b902d5f71e56551a391c228c36836f3086666c"
+  },
+  "scope": [
+    "Preserve Korean warning that other app chats/work may be interrupted and restart is not yet confirmed.",
+    "Actual local gateway/store/HTTP with mock controller: lost dispatch reply and failed outcome persistence cannot redispatch original request."
+  ],
+  "limits": [
+    "No full regression rerun; affected8 cases only.",
+    "Production Windows controller/bootstrap and Selected route remain unavailable. No live restart or deployment."
+  ]
+}

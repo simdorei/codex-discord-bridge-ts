@@ -1,3 +1,4 @@
+import {formatRecoveryHandoff} from '../writer-recovery/message.ts';
 import {posix,win32} from 'node:path';
 import {NativeRecoveryOwner,type OriginalRecoveryInput} from '../writer-recovery/native-owner.ts';
 import {handoffRecovery,type RecoveryController} from '../writer-recovery/handoff.ts';
@@ -24,7 +25,7 @@ export class AdmittedRecoverExecutor{
   if(signal!==undefined&&(types.isProxy(signal)||!(signal instanceof AbortSignal)))throw new TypeError('Expected recovery abort signal');
   if(this.#busy)throw new ActionExecutionError('Invalid','recovery controller already has an owned invocation');signal?.throwIfAborted();this.#busy=true;const owner=new NativeRecoveryOwner(this.#database);
   try{const claim=await owner.claimOriginal(input,signal),report=await handoffRecovery(owner,claim,this.#controller,this.#root,this.#platform,signal);
-   return snapshotActionResult({text:`Recovery dispatched for ${report.thread}. Cancelled requests: ${report.cancelled.length}; already started or uncertain: ${report.startedOrUncertain}. Receipt: ${report.receipt}. Restart and tool readiness are not yet confirmed; do not replay cancelled requests.`,waitsForFinal:false,ui:null});
+   return snapshotActionResult({text:formatRecoveryHandoff(report),waitsForFinal:false,ui:null});
   }finally{try{await owner.close();}finally{this.#busy=false;}}
  }
 }

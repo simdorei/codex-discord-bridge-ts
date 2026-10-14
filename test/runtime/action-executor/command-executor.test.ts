@@ -177,7 +177,7 @@ it('Recover command uses original native custody and explicit startup controller
  await state.beginIngressExecution(f.path,'message:5','processing','root',2);
  const op='b'.repeat(32),controller={inspect:async(thread:string)=>{order.push('inspect');assert.equal(thread,'root');return {ThreadId:'root',State:'tools_recovery',RecoveryIdentity:'host'};},start:async(thread:string,identity:string)=>{order.push('start');assert.equal(thread,'root');assert.equal(identity,'host');return {Operation:op,ReceiptPath:'/repo/maintenance_backups/desktop-recovery/'+op+'/receipt.json'};},join:async()=>{order.push('join');}};
  f.executor.configureRecovery(new AdmittedRecoverExecutor(f.path,'/repo','posix',controller));
- const result=await f.executor.executeWithIngressContext(cmd,actor,'message:5');assert.match(result.text,/Recovery dispatched/);assert.match(result.text,/not yet confirmed/);assert.equal(result.waitsForFinal,false);assert.deepEqual(order,['inspect','start','join']);
+ const result=await f.executor.executeWithIngressContext(cmd,actor,'message:5');assert.match(result.text,/이전 요청의 취소 기록을 저장했습니다/);assert.match(result.text,/아직 재시작 완료가 확인된 상태는 아닙니다/);assert.equal(result.waitsForFinal,false);assert.deepEqual(order,['inspect','start','join']);
  await assert.rejects(f.executor.executeWithIngressContext(cmd,actor,'message:5'));assert.deepEqual(order,['inspect','start','join']);
 }));
 it('Recover startup configuration refuses foreign database and replacement',async()=>fixture(false,async f=>{
@@ -187,5 +187,14 @@ it('Recover startup configuration refuses foreign database and replacement',asyn
 }));
 it('gateway Recover confirms dispatched receipt under occupied target lock without replay',async()=>fixture(true,f=>pipeline(f,async p=>{
  let starts=0;const op='c'.repeat(32);f.executor.configureRecovery(new AdmittedRecoverExecutor(f.path,'/repo','posix',{inspect:async thread=>({ThreadId:thread,State:'tools_recovery',RecoveryIdentity:'host'}),start:async()=>{starts++;return {Operation:op,ReceiptPath:'/repo/maintenance_backups/desktop-recovery/'+op+'/receipt.json'};},join:async()=>{}}));
- const lease=await f.queue.locks.acquire('root');try{await p.handle('!recover root');await p.handle('!recover root');assert.deepEqual(p.reports,[]);assert.equal(starts,1);assert.equal(p.posts.length,1);assert.match(p.posts[0].content,/Recovery dispatched/);assert.match(p.posts[0].content,/not yet confirmed/);assert.equal((await state.getIngress(f.path,'message:5'))?.confirmationDelivered,true);}finally{lease.release();}
+ const lease=await f.queue.locks.acquire('root');try{await p.handle('!recover root');await p.handle('!recover root');assert.deepEqual(p.reports,[]);assert.equal(starts,1);assert.equal(p.posts.length,1);assert.match(p.posts[0].content,/이전 요청의 취소 기록을 저장했습니다/);assert.match(p.posts[0].content,/아직 재시작 완료가 확인된 상태는 아닙니다/);assert.equal((await state.getIngress(f.path,'message:5'))?.confirmationDelivered,true);}finally{lease.release();}
+})));
+it('gateway Recover dispatch failure cannot retry original controller operation',async()=>fixture(true,f=>pipeline(f,async p=>{
+ let starts=0;f.executor.configureRecovery(new AdmittedRecoverExecutor(f.path,'/repo','posix',{inspect:async thread=>({ThreadId:thread,State:'tools_recovery',RecoveryIdentity:'host'}),start:async()=>{starts++;throw new Error('dispatch result lost');},join:async()=>{}}));
+ await p.handle('!recover root');await p.handle('!recover root');assert.equal(starts,1);assert.ok(p.posts.every(x=>!String(x.content).startsWith('이전 요청의 취소 기록을 저장했습니다')));assert.notEqual((await state.getIngress(f.path,'message:5'))?.phase,'processing');
+})));
+it('gateway Recover outcome persistence failure never redispatches the original request',async()=>fixture(true,f=>pipeline(f,async p=>{
+ let starts=0;const op='d'.repeat(32);f.executor.configureRecovery(new AdmittedRecoverExecutor(f.path,'/repo','posix',{inspect:async thread=>({ThreadId:thread,State:'tools_recovery',RecoveryIdentity:'host'}),start:async()=>{starts++;return {Operation:op,ReceiptPath:'/repo/maintenance_backups/desktop-recovery/'+op+'/receipt.json'};},join:async()=>{}}));
+ const db=await openInitialized(f.path);try{db.exec("CREATE TRIGGER reject_recover_outcome BEFORE UPDATE OF outcome_json ON discord_ingress_journal WHEN NEW.phase='result_recorded' AND json_type(NEW.outcome_json,'$.response')='text' BEGIN SELECT RAISE(ABORT,'outcome blocked'); END");}finally{db.close();}
+ await p.handle('!recover root');await p.handle('!recover root');assert.equal(starts,1);assert.ok(p.posts.every(x=>!String(x.content).startsWith('이전 요청의 취소 기록을 저장했습니다')));assert.equal((await state.getIngress(f.path,'message:5'))?.confirmationDelivered,false);assert.ok(p.reports.length>0);
 })));
