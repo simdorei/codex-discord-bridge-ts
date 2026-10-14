@@ -1,3 +1,4 @@
+import * as ArchiveDeletion from '../../src/store/archive-deletion.ts';
 import * as ArchivedCleanup from '../../src/store/archived-cleanup.ts';
 import * as MirrorStale from '../../src/store/mirror-stale.ts';
 import * as RoomCleanupPending from '../../src/store/room-cleanup-pending.ts';
@@ -209,6 +210,18 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.upsertMirrorProject, MirrorProjectCreation.upsertMirrorProject);
     assert.strictEqual(StateAccessFacade.archivedCleanupPendingReason, ArchivedCleanup.archivedCleanupPendingReason);
     assert.strictEqual(FacadeExports.archivedCleanupPendingReason, ArchivedCleanup.archivedCleanupPendingReason);
+    assert.strictEqual(StateAccessFacade.deleteArchivedMirrorStateIn, ArchiveDeletion.deleteArchivedMirrorStateIn);
+    assert.strictEqual(FacadeExports.deleteArchivedMirrorStateIn, ArchiveDeletion.deleteArchivedMirrorStateIn);
+    assert.strictEqual(StateAccessFacade.deleteArchivedMirrorStateExisting, ArchiveDeletion.deleteArchivedMirrorStateExisting);
+    assert.strictEqual(FacadeExports.deleteArchivedMirrorStateExisting, ArchiveDeletion.deleteArchivedMirrorStateExisting);
+    assert.strictEqual(StateAccessFacade.beginArchiveDeletionIn, ArchiveDeletion.beginArchiveDeletionIn);
+    assert.strictEqual(FacadeExports.beginArchiveDeletionIn, ArchiveDeletion.beginArchiveDeletionIn);
+    assert.strictEqual(StateAccessFacade.beginArchiveDeletionExisting, ArchiveDeletion.beginArchiveDeletionExisting);
+    assert.strictEqual(FacadeExports.beginArchiveDeletionExisting, ArchiveDeletion.beginArchiveDeletionExisting);
+    assert.strictEqual(StateAccessFacade.completeArchiveDeletionIn, ArchiveDeletion.completeArchiveDeletionIn);
+    assert.strictEqual(FacadeExports.completeArchiveDeletionIn, ArchiveDeletion.completeArchiveDeletionIn);
+    assert.strictEqual(StateAccessFacade.completeArchiveDeletionExisting, ArchiveDeletion.completeArchiveDeletionExisting);
+    assert.strictEqual(FacadeExports.completeArchiveDeletionExisting, ArchiveDeletion.completeArchiveDeletionExisting);
     assert.strictEqual(StateAccessFacade.beginArchivedCleanup, ArchivedCleanup.beginArchivedCleanup);
     assert.strictEqual(FacadeExports.beginArchivedCleanup, ArchivedCleanup.beginArchivedCleanup);
     assert.strictEqual(StateAccessFacade.roomCleanupOwnsToken, RoomCleanup.roomCleanupOwnsToken);
@@ -643,6 +656,12 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "ensureMirrorProjectAdoptable",
       "upsertMirrorProject",
       "archivedCleanupPendingReason",
+      "deleteArchivedMirrorStateIn",
+      "deleteArchivedMirrorStateExisting",
+      "beginArchiveDeletionIn",
+      "beginArchiveDeletionExisting",
+      "completeArchiveDeletionIn",
+      "completeArchiveDeletionExisting",
       "beginArchivedCleanup",
       "roomCleanupOwnsToken",
       "beginRoomCleanup",
@@ -943,7 +962,7 @@ assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimExisting, PromptIntak
     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
 assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
 assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
-    assert.strictEqual(actual.length, 351);
+    assert.strictEqual(actual.length, 357);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

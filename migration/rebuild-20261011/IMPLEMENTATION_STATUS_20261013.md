@@ -1,3 +1,12 @@
+# Current addendum — 2026-10-14 03:54 UTC
+
+- Applied846 now includes original-confirmation durable archive fence, token-guarded mirror deletion helpers and one joined native reservation/mirror/source-backup preparation. All855 independently terminal file runs over one fixed graph yield8723 PASS,0fail/cancel/skip. This is COMPOSITE verification, not one monolithic full-suite run. Final graph/input fingerprint matches. Actual post-apply strict0/focused111 PASS; source/test/tools1738 files match the verified stage.
+- The two interrupted whole-suite attempts remain unverified and are not included in the passing total. Per-file terminal receipts enabled completion without relying on their partial logs.
+- WIP847–848 recovery cancellation/native owner are preserved, focused44 independently rechecked, not applied or whole-suite qualified.
+- Original archive source deletion, DeleteArchiveConfirm command routing, Recover/controller routing, executable assembly, Windows and G1–G7/24-hour operation remain unqualified.
+
+## Previous addenda (historical)
+
 # Current addendum — 2026-10-14 02:59 UTC
 
 - Applied844 archive backup/preflight/postcondition helpers: qualified frozen stage8695 PASS, fail/cancel/skip0; actual strict0/focused63 PASS and exact src/test/tools1732-file equality. No DeleteArchiveConfirm command or source-file deletion enabled.

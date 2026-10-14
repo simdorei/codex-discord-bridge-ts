@@ -1,3 +1,4 @@
+import * as ArchiveDeletion from './archive-deletion.ts';
 import * as ArchivedCleanup from './archived-cleanup.ts';
 import * as MirrorStale from './mirror-stale.ts';
 import * as RoomCleanupPending from './room-cleanup-pending.ts';
@@ -222,6 +223,12 @@ export const beginMirrorProject: typeof MirrorProjectCreation.beginMirrorProject
 export const ensureMirrorProjectAdoptable: typeof MirrorProjectCreation.ensureMirrorProjectAdoptable = MirrorProjectCreation.ensureMirrorProjectAdoptable;
 export const upsertMirrorProject: typeof MirrorProjectCreation.upsertMirrorProject = MirrorProjectCreation.upsertMirrorProject;
 export const archivedCleanupPendingReason: typeof ArchivedCleanup.archivedCleanupPendingReason = ArchivedCleanup.archivedCleanupPendingReason;
+export const deleteArchivedMirrorStateIn: typeof ArchiveDeletion.deleteArchivedMirrorStateIn = ArchiveDeletion.deleteArchivedMirrorStateIn;
+export const deleteArchivedMirrorStateExisting: typeof ArchiveDeletion.deleteArchivedMirrorStateExisting = ArchiveDeletion.deleteArchivedMirrorStateExisting;
+export const beginArchiveDeletionIn: typeof ArchiveDeletion.beginArchiveDeletionIn = ArchiveDeletion.beginArchiveDeletionIn;
+export const beginArchiveDeletionExisting: typeof ArchiveDeletion.beginArchiveDeletionExisting = ArchiveDeletion.beginArchiveDeletionExisting;
+export const completeArchiveDeletionIn: typeof ArchiveDeletion.completeArchiveDeletionIn = ArchiveDeletion.completeArchiveDeletionIn;
+export const completeArchiveDeletionExisting: typeof ArchiveDeletion.completeArchiveDeletionExisting = ArchiveDeletion.completeArchiveDeletionExisting;
 export const beginArchivedCleanup: typeof ArchivedCleanup.beginArchivedCleanup = ArchivedCleanup.beginArchivedCleanup;
 export const roomCleanupOwnsToken: typeof RoomCleanup.roomCleanupOwnsToken = RoomCleanup.roomCleanupOwnsToken;
 export const beginRoomCleanup: typeof RoomCleanup.beginRoomCleanup = RoomCleanup.beginRoomCleanup;
@@ -614,6 +621,12 @@ export interface IStateAccessFacade {
   readonly ensureMirrorProjectAdoptable: typeof MirrorProjectCreation.ensureMirrorProjectAdoptable;
   readonly upsertMirrorProject: typeof MirrorProjectCreation.upsertMirrorProject;
   readonly archivedCleanupPendingReason: typeof ArchivedCleanup.archivedCleanupPendingReason;
+  readonly deleteArchivedMirrorStateIn: typeof ArchiveDeletion.deleteArchivedMirrorStateIn;
+  readonly deleteArchivedMirrorStateExisting: typeof ArchiveDeletion.deleteArchivedMirrorStateExisting;
+  readonly beginArchiveDeletionIn: typeof ArchiveDeletion.beginArchiveDeletionIn;
+  readonly beginArchiveDeletionExisting: typeof ArchiveDeletion.beginArchiveDeletionExisting;
+  readonly completeArchiveDeletionIn: typeof ArchiveDeletion.completeArchiveDeletionIn;
+  readonly completeArchiveDeletionExisting: typeof ArchiveDeletion.completeArchiveDeletionExisting;
   readonly beginArchivedCleanup: typeof ArchivedCleanup.beginArchivedCleanup;
   readonly roomCleanupOwnsToken: typeof RoomCleanup.roomCleanupOwnsToken;
   readonly beginRoomCleanup: typeof RoomCleanup.beginRoomCleanup;
@@ -1019,6 +1032,12 @@ export const StateAccessFacade: IStateAccessFacade = {
   ensureMirrorProjectAdoptable,
   upsertMirrorProject,
   archivedCleanupPendingReason,
+  deleteArchivedMirrorStateIn,
+  deleteArchivedMirrorStateExisting,
+  beginArchiveDeletionIn,
+  beginArchiveDeletionExisting,
+  completeArchiveDeletionIn,
+  completeArchiveDeletionExisting,
   beginArchivedCleanup,
   roomCleanupOwnsToken,
   beginRoomCleanup,
