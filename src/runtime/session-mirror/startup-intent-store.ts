@@ -6,11 +6,11 @@ import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {MirrorStartupCutoff} from './startup-context-reader.ts';
-import {prepareMirrorStartupIntent,snapshotPendingMirrorStartupIntent,type PendingMirrorStartupIntent} from '../../store/mirror-startup-intent.ts';
+import {prepareMirrorStartupIntent,snapshotPendingMirrorStartupIntent,type PendingMirrorStartupIntent,type MirrorStartupTargetState} from '../../store/mirror-startup-intent.ts';
 import {MIRROR_STARTUP_CONTEXT_HOLDS,MirrorStartupContextHeldError,snapshotMirrorStartupContextLimits,snapshotMirrorStartupContextResult,type MirrorStartupContextHold,type MirrorStartupContextLimits} from './startup-context-limits.ts';
 import {snapshotMirrorStartupDatabaseIdentity,type MirrorStartupRecoveryData} from './startup-intent-recovery-data.ts';
-type RecoveryRequest={readonly kind:'RecoverContext';readonly thread:string;readonly operationId:string;readonly limits:MirrorStartupContextLimits}|{readonly kind:'VerifyContext';readonly evidence:MirrorStartupRecoveryData}|{readonly kind:'CompleteContext';readonly evidence:MirrorStartupRecoveryData};
-type Request=RecoveryRequest|{readonly kind:'Read';readonly thread:string}|{readonly kind:'Schema'}|{readonly kind:'Retain';readonly intent:PendingMirrorStartupIntent};
+type RecoveryRequest={readonly kind:'RecoverContext';readonly thread:string;readonly operationId:string;readonly limits:MirrorStartupContextLimits}|{readonly kind:'VerifyContext';readonly evidence:MirrorStartupRecoveryData}|{readonly kind:'CompleteContext';readonly evidence:MirrorStartupRecoveryData}|{readonly kind:'ReconcileContext';readonly evidence:MirrorStartupRecoveryData};
+type Request=RecoveryRequest|{readonly kind:'Read';readonly thread:string}|{readonly kind:'ReadTarget';readonly thread:string;readonly channel:bigint}|{readonly kind:'Schema'}|{readonly kind:'Retain';readonly intent:PendingMirrorStartupIntent};
 export class MirrorStartupIntentStoreReadError extends Error {constructor(detail:string){super('Mirror startup intent read held: '+detail);this.name='MirrorStartupIntentStoreReadError';}}
 export class MirrorStartupIntentWriteUnconfirmedError extends Error {
  readonly operation:'Schema'|'Retain'|'CompleteContext';readonly operationId:string|null;readonly thread:string|null;
@@ -45,6 +45,14 @@ export class NativeMirrorStartupIntentStore {
  async close(reason:unknown=new Error('Mirror startup intent store closed')):Promise<void>{this.#closed=true;this.#controller?.abort(reason);if(this.#inflight!==null)await Promise.allSettled([this.#inflight]);}
  async initializeSchema(signal?:AbortSignal):Promise<void>{await this.#run({kind:'Schema'},signal);}
  async read(thread:string,signal?:AbortSignal):Promise<PendingMirrorStartupIntent|null>{text(thread,16384,true);const value=await this.#run({kind:'Read',thread},signal);return value===null?null:snapshotPendingMirrorStartupIntent(value as PendingMirrorStartupIntent);}
+ async readTarget(thread:string,channel:bigint,signal?:AbortSignal):Promise<MirrorStartupTargetState>{
+  text(thread,16384,true);if(typeof channel!=='bigint'||channel<=0n||channel>=(1n<<63n))throw new RangeError('Expected mapped positive i64 channel');
+  const value=await this.#run({kind:'ReadTarget',thread,channel},signal),kind=own(value,'kind');
+  if(kind==='Absent')return Object.freeze({kind});
+  if(kind==='Pending'){const pending=snapshotPendingMirrorStartupIntent(own(value,'pending') as PendingMirrorStartupIntent);if(pending.thread!==thread)throw new TypeError('Unexpected startup target thread');return Object.freeze({kind,pending});}
+  if(kind==='Bound'){const cursor=snapshotBoundMirrorCursor(own(value,'cursor') as Parameters<typeof snapshotBoundMirrorCursor>[0]);if(cursor.thread!==thread)throw new TypeError('Unexpected startup target thread');return Object.freeze({kind,cursor});}
+  throw new TypeError('Invalid native startup target state');
+ }
  /** Reads only the original persisted N. The caller supplies identifiers, never
   * an allegedly authenticated packet. Held non-LF cutoffs cannot be upgraded. */
  async recoverContext(thread:string,operationId:string,input:MirrorStartupContextLimits,signal?:AbortSignal):Promise<MirrorStartupIntentContextObservation>{
@@ -73,6 +81,16 @@ export class NativeMirrorStartupIntentStore {
    if((kind!=='Completed'&&kind!=='Reconciled')||cursor.thread!==pending.thread||cursor.operationId!==pending.operationId||cursor.updatedAt!==pending.createdAt||cursor.revision!==1n||cursor.turn!==(context.currentTurn??'')||encodeMirrorCursorAnchor(cursor.anchor)!==encodeMirrorCursorAnchor(context.anchor)||cursor.receiptSetHash!=='4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945')throw new TypeError('Unexpected native startup completion packet');
    return Object.freeze({kind,cursor});
   }catch(error){throw new MirrorStartupIntentWriteUnconfirmedError(request,error);}
+ }
+ /** Read-only exact reconciliation only. Does not retry an unconfirmed write,
+  * reopen an EOF or grant a structural recovery packet write authority. */
+ async reconcileRecoveredContext(observation:MirrorStartupIntentContextObservation,signal?:AbortSignal):Promise<import('../../store/mirror-cursor-journal.ts').BoundMirrorCursor|null>{
+  const owned=observation!==null&&typeof observation==='object'?recoveries.get(observation):undefined;
+  if(owned===undefined||owned.owner!==this)throw new TypeError('Expected startup recovery from this database owner');
+  const value=await this.#run({kind:'ReconcileContext',evidence:owned.data},signal);if(value===null)return null;
+  const cursor=snapshotBoundMirrorCursor(value as Parameters<typeof snapshotBoundMirrorCursor>[0]),{pending,context}=owned.data;
+  if(cursor.thread!==pending.thread||cursor.operationId!==pending.operationId||cursor.updatedAt!==pending.createdAt||cursor.revision!==1n||cursor.turn!==(context.currentTurn??'')||encodeMirrorCursorAnchor(cursor.anchor)!==encodeMirrorCursorAnchor(context.anchor)||cursor.receiptSetHash!=='4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945')throw new TypeError('Unexpected native startup reconciliation packet');
+  return cursor;
  }
  async retain(thread:string,cutoff:MirrorStartupCutoff,createdAt:number,operationId:string,signal?:AbortSignal):Promise<PendingMirrorStartupIntent>{
   const captured=MirrorStartupCutoff.prototype.captured.call(cutoff),intent=snapshotPendingMirrorStartupIntent({thread,cutoff:captured,createdAt,operationId});

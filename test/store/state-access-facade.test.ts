@@ -134,6 +134,8 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(FacadeExports.verifyPendingMirrorStartupIntent, MirrorStartupIntent.verifyPendingMirrorStartupIntent);
     assert.strictEqual(StateAccessFacade.readPendingMirrorStartupIntent, MirrorStartupIntent.readPendingMirrorStartupIntent);
     assert.strictEqual(FacadeExports.readPendingMirrorStartupIntent, MirrorStartupIntent.readPendingMirrorStartupIntent);
+    assert.strictEqual(StateAccessFacade.readMirrorStartupTarget, MirrorStartupIntent.readMirrorStartupTarget);
+    assert.strictEqual(FacadeExports.readMirrorStartupTarget, MirrorStartupIntent.readMirrorStartupTarget);
     assert.strictEqual(StateAccessFacade.prepareMirrorStartupIntent, MirrorStartupIntent.prepareMirrorStartupIntent);
     assert.strictEqual(FacadeExports.prepareMirrorStartupIntent, MirrorStartupIntent.prepareMirrorStartupIntent);
     assert.strictEqual(StateAccessFacade.retainPreparedMirrorStartupIntent, MirrorStartupIntent.retainPreparedMirrorStartupIntent);
@@ -644,6 +646,7 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "completePreparedMirrorStartupIntent",
       "initializeMirrorStartupIntentJournal",
       "readPendingMirrorStartupIntent",
+      "readMirrorStartupTarget",
       "verifyPendingMirrorStartupIntent",
       "prepareMirrorStartupIntent",
       "retainPreparedMirrorStartupIntent",
@@ -1005,7 +1008,7 @@ assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimExisting, PromptIntak
     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
 assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
 assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
-    assert.strictEqual(actual.length, 371);
+    assert.strictEqual(actual.length, 372);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

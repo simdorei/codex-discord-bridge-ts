@@ -39,6 +39,14 @@ export async function verifyMirrorStartupRecoveryNative(path:string,input:Mirror
  readIn(path,database,db=>state.verifyPendingMirrorStartupIntent(db,pending));check();
 }
 
+/** Exact read-only reconciliation after joined native write uncertainty. Null
+ * means the original pending packet remains; it never retries the write or
+ * scans the rollout. Replaced DB identity and changed/foreign results hold. */
+export function reconcileMirrorStartupRecoveryNative(path:string,input:MirrorStartupRecoveryData,check:()=>void):import('../../store/mirror-cursor-journal.ts').BoundMirrorCursor|null {
+ nativeOnly();check();const plan=state.prepareMirrorStartupIntentCompletion(input.pending,input.context);
+ const cursor=readIn(path,input.database,db=>state.readPreparedMirrorStartupCompletion(db,plan));check();return cursor;
+}
+
 /** Internal worker protocol only: the owning store authenticates the retained
  * observation before submission. The pending branch rechecks DB/file evidence,
  * then performs one DB-only atomic transition. There remains a filesystem race

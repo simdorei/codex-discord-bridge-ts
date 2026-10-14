@@ -1,0 +1,7 @@
+# Checkpoint 871: bounded per-target mirror bootstrap
+
+2026-10-14 UTC. Single-use zero-queue coordinator captures exact target/channel/path and sequentially joins existing native owners under one total deadline. An exact mapping snapshot reads pending before bound. Existing bound state is reused unchanged; pending resumes original cutoff/operation; only absent state captures EOF once before durable retention and context recovery/completion. Uncertain writes use read-only exact reconciliation, never blind replay or recapture. Explicit schema preparation and caller-stable database/target/mapping/producer ownership remain prerequisites.
+
+Verified Node 24.21.0 strict typecheck, production/emitted build, and 566 selected emitted-JS tests across 70 files with type stripping disabled. Final run: zero failures/cancellations/skips; includes 26 new coordinator/credential-free real-HTTP tests. Initial aggregate had three count/timing test failures; corrected tests separately establish prewrite cancellation and postcommit uncertainty. Final independent read-only review found no P1/P2; race-dependent global-retain assertion was corrected with deterministic stale-Absent CAS coverage.
+
+Runtime CLI/sessionMirror gate remains unchanged. This qualifies the scoped coordinator, not full runtime or live Discord/Codex operation. No production DB, protected fixture, raw log or secret is archived. Overall migration remains WIP.

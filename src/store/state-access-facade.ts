@@ -149,6 +149,7 @@ export const completePreparedMirrorStartupIntent: typeof MirrorStartupIntent.com
 export const initializeMirrorStartupIntentJournal: typeof MirrorStartupIntent.initializeMirrorStartupIntentJournal = MirrorStartupIntent.initializeMirrorStartupIntentJournal;
 export const verifyPendingMirrorStartupIntent: typeof MirrorStartupIntent.verifyPendingMirrorStartupIntent = MirrorStartupIntent.verifyPendingMirrorStartupIntent;
 export const readPendingMirrorStartupIntent: typeof MirrorStartupIntent.readPendingMirrorStartupIntent = MirrorStartupIntent.readPendingMirrorStartupIntent;
+export const readMirrorStartupTarget: typeof MirrorStartupIntent.readMirrorStartupTarget = MirrorStartupIntent.readMirrorStartupTarget;
 export const prepareMirrorStartupIntent: typeof MirrorStartupIntent.prepareMirrorStartupIntent = MirrorStartupIntent.prepareMirrorStartupIntent;
 export const retainPreparedMirrorStartupIntent: typeof MirrorStartupIntent.retainPreparedMirrorStartupIntent = MirrorStartupIntent.retainPreparedMirrorStartupIntent;
 export const claimMirrorEvent: typeof MirrorCursor.claimMirrorEvent = MirrorCursor.claimMirrorEvent;
@@ -540,6 +541,7 @@ export interface IStateAccessFacade {
   initializeMirrorStartupIntentJournal: typeof initializeMirrorStartupIntentJournal;
   verifyPendingMirrorStartupIntent: typeof verifyPendingMirrorStartupIntent;
   readPendingMirrorStartupIntent: typeof readPendingMirrorStartupIntent;
+  readMirrorStartupTarget: typeof readMirrorStartupTarget;
   prepareMirrorStartupIntent: typeof prepareMirrorStartupIntent;
   retainPreparedMirrorStartupIntent: typeof retainPreparedMirrorStartupIntent;
   readonly revalidateStopWire: typeof StopDispatch.revalidateStopWire;
@@ -931,6 +933,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   initializeMirrorStartupIntentJournal,
   verifyPendingMirrorStartupIntent,
   readPendingMirrorStartupIntent,
+  readMirrorStartupTarget,
   prepareMirrorStartupIntent,
   retainPreparedMirrorStartupIntent,
   revalidateStopWire,

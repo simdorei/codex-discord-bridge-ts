@@ -12,6 +12,7 @@ import {receiptText,receiptTextColumns} from './delivery-receipt-key.ts';
 import {decodeTimestamp} from './sqlite-values.ts';
 import {requireMirrorCursorJournalIn,readBoundMirrorCursorInTransaction,snapshotBoundMirrorCursor,type BoundMirrorCursor} from './mirror-cursor-journal.ts';
 import {MIRROR_STARTUP_INTENT_TABLE as TABLE,requireMirrorStartupIntentJournalIn,MirrorStartupIntentConflictError} from './mirror-startup-intent-schema.ts';
+import {requireExactMirrorChannelIn} from './mirror-cursor-mapping.ts';
 export {initializeMirrorStartupIntentJournal,MirrorStartupIntentConflictError,MirrorStartupIntentSchemaError} from './mirror-startup-intent-schema.ts';
 const MAX_CUTOFF_BYTES=262144;
 /** Immutable descriptive pending state only. Reading it grants no native cutoff,
@@ -65,6 +66,19 @@ function readIn(db:DatabaseSync,thread:string):PendingMirrorStartupIntent|null {
 }
 export function readPendingMirrorStartupIntent(db:DatabaseSync,thread:string):PendingMirrorStartupIntent|null {
  text(thread,16384);return withStoreTransaction(db,'DEFERRED',()=>{schema(db);return rollbackStore(readIn(db,thread));});
+}
+export type MirrorStartupTargetState={readonly kind:'Pending';readonly pending:PendingMirrorStartupIntent}|{readonly kind:'Bound';readonly cursor:BoundMirrorCursor}|{readonly kind:'Absent'};
+/** One read-only target snapshot. Pending must be checked first: bound reads
+ * deliberately reject a pending intent, while pending reads reject either
+ * cursor row. Schema and exact channel mapping are required, never repaired.
+ * Mapping is a point-in-time guard, not an application target/channel lock. */
+export function readMirrorStartupTarget(db:DatabaseSync,thread:string,channel:bigint):MirrorStartupTargetState {
+ text(thread,16384);return withStoreTransaction<MirrorStartupTargetState>(db,'DEFERRED',()=>{
+  schema(db);requireExactMirrorChannelIn(db,thread,channel);
+  const pending=readIn(db,thread);if(pending!==null)return rollbackStore(Object.freeze({kind:'Pending',pending}));
+  const cursor=readBoundMirrorCursorInTransaction(db,thread);
+  return rollbackStore(cursor===null?Object.freeze({kind:'Absent'}):Object.freeze({kind:'Bound',cursor}));
+ });
 }
 function same(a:PendingMirrorStartupIntent,b:PendingMirrorStartupIntent):boolean {return a.thread===b.thread&&a.operationId===b.operationId&&a.createdAt===b.createdAt&&encode(a.cutoff)===encode(b.cutoff);}
 /** Read-only exact-packet check. This descriptive input grants no native file or
