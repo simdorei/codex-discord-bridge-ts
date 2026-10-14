@@ -1,6 +1,8 @@
 import {snapshotStoredIngress as snapshot,storedIngressEqual as equal} from "./ingress-snapshot.ts";
 import type {DatabaseSync} from "node:sqlite";
 import {openInitialized} from "./owned-driver.ts";
+import {usingInitializedStore,usingExistingStore,withStoreTransaction,commitStore} from "./owned-scope.ts";
+import {requireDiscordText} from "../discord/text.ts";
 import {getIngressIn,type StoredIngress} from "./ingress-read.ts";
 import {StoreIntegrityError} from "./schema-assembly.ts";
 import {mirroredThreadIdIn} from "./busy-choice.ts";
@@ -30,14 +32,28 @@ function validateRecord(db:DatabaseSync,record:StoredIngress):void{
 const brand:unique symbol=Symbol("recovery custody");
 export interface RecoveryClaim {readonly [brand]:true}
 const claims=new WeakMap<RecoveryClaim,StoredIngress>();
+/** Borrowed claim transaction; returns the exact post-write record for a trusted
+ * native transport. The record by itself is not a runtime capability. */
+export function claimIngressRecoverySnapshotIn(db:DatabaseSync,input:StoredIngress,now:number):StoredIngress{
+ const expected=snapshot(input);if(!db.isTransaction)throw new StoreIntegrityError("Recovery claim requires owning transaction");
+ if(typeof now!=="number"||!Number.isFinite(now)||now<0)throw new SystemTimeError(-now*1000);
+ const record=getIngressIn(db,expected.ingressId);if(record===null||!equal(record,expected)||record.state!=="executing"||record.phase!=="processing")refused();validateRecord(db,record);
+ if(BigInt(db.prepare("UPDATE discord_ingress_journal SET phase='recovery_claimed',updated_at=? WHERE ingress_id=? AND state='executing' AND phase='processing' AND owner_id IS NULL").run(now,record.ingressId).changes)!==1n)refused();
+ record.phase="recovery_claimed";record.updatedAt=now;const saved=getIngressIn(db,record.ingressId);if(saved===null||!equal(record,saved))refused();return snapshot(record);
+}
+/** Existing-only synchronous boundary for the native recovery owner. */
+export function claimIngressRecoverySnapshotExisting(path:string,input:StoredIngress,now:number):StoredIngress{
+ requireDiscordText(path);const expected=snapshot(input);return usingExistingStore(path,db=>withStoreTransaction(db,"IMMEDIATE",()=>commitStore(claimIngressRecoverySnapshotIn(db,expected,now))),100);
+}
+/** Trusted worker-side evidence check. Caller must obtain the expected record
+ * from its own admitted claim; arbitrary RPC data must never call this leaf. */
+export function validateIngressRecoverySnapshotIn(db:DatabaseSync,input:StoredIngress):void{
+ const original=snapshot(input);if(original.state!=="executing"||original.phase!=="recovery_claimed")refused();const record=getIngressIn(db,original.ingressId);if(record===null||!equal(record,original))refused();validateRecord(db,original);
+}
 /** Single original command, not a retry lease. Selected route still requires runtime selected-snapshot validation. */
 export async function claimIngressRecovery(path:string,input:StoredIngress):Promise<RecoveryClaim>{
-  const expected=snapshot(input),db=await openInitialized(path);try{
-    db.exec("BEGIN IMMEDIATE");const record=getIngressIn(db,expected.ingressId);if(record===null||!equal(record,expected)||record.state!=="executing"||record.phase!=="processing")refused();validateRecord(db,record);
-    const now=Date.now()/1000;if(!Number.isFinite(now)||now<0)throw new SystemTimeError(-now*1000);
-    if(BigInt(db.prepare("UPDATE discord_ingress_journal SET phase='recovery_claimed',updated_at=? WHERE ingress_id=? AND state='executing' AND phase='processing' AND owner_id IS NULL").run(now,record.ingressId).changes)!==1n)refused();
-    record.phase="recovery_claimed";record.updatedAt=now;db.exec("COMMIT");const claim=Object.freeze({[brand]:true as const});claims.set(claim,record);return claim;
-  }finally{if(db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
+ const expected=snapshot(input);const record=await usingInitializedStore(path,db=>withStoreTransaction(db,"IMMEDIATE",()=>commitStore(claimIngressRecoverySnapshotIn(db,expected,Date.now()/1000))));
+ const claim=Object.freeze({[brand]:true as const});claims.set(claim,record);return claim;
 }
 /** Call before every consequential step, including inside the cancellation writer transaction. */
 export function validateIngressRecoveryIn(db:DatabaseSync,claim:RecoveryClaim):void{

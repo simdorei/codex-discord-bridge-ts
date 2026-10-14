@@ -437,9 +437,19 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.diagnosticDatabaseCounts, DiagnosticRead.diagnosticDatabaseCounts);
     assert.strictEqual(StateAccessFacade.diagnosticIdleRelease, DiagnosticRead.diagnosticIdleRelease);
     assert.strictEqual(StateAccessFacade.runnerTargetCounts, RunnerCounts.runnerTargetCounts);
+    assert.strictEqual(StateAccessFacade.claimIngressRecoverySnapshotIn, RecoveryCustody.claimIngressRecoverySnapshotIn);
+    assert.strictEqual(FacadeExports.claimIngressRecoverySnapshotIn, RecoveryCustody.claimIngressRecoverySnapshotIn);
+    assert.strictEqual(StateAccessFacade.claimIngressRecoverySnapshotExisting, RecoveryCustody.claimIngressRecoverySnapshotExisting);
+    assert.strictEqual(FacadeExports.claimIngressRecoverySnapshotExisting, RecoveryCustody.claimIngressRecoverySnapshotExisting);
+    assert.strictEqual(StateAccessFacade.validateIngressRecoverySnapshotIn, RecoveryCustody.validateIngressRecoverySnapshotIn);
+    assert.strictEqual(FacadeExports.validateIngressRecoverySnapshotIn, RecoveryCustody.validateIngressRecoverySnapshotIn);
     assert.strictEqual(StateAccessFacade.claimIngressRecovery, RecoveryCustody.claimIngressRecovery);
     assert.strictEqual(StateAccessFacade.validateIngressRecovery, RecoveryCustody.validateIngressRecovery);
     assert.strictEqual(StateAccessFacade.cancelLatestPending, PendingCancellation.cancelLatestPending);
+    assert.strictEqual(StateAccessFacade.cancelForRecoveryIn, RecoveryCancellation.cancelForRecoveryIn);
+    assert.strictEqual(FacadeExports.cancelForRecoveryIn, RecoveryCancellation.cancelForRecoveryIn);
+    assert.strictEqual(StateAccessFacade.cancelForRecoveryExisting, RecoveryCancellation.cancelForRecoveryExisting);
+    assert.strictEqual(FacadeExports.cancelForRecoveryExisting, RecoveryCancellation.cancelForRecoveryExisting);
     assert.strictEqual(StateAccessFacade.cancelForRecovery, RecoveryCancellation.cancelForRecovery);
     assert.strictEqual(StateAccessFacade.beginDeliveryReceipt, DeliveryReceipts.beginDeliveryReceipt);
     assert.strictEqual(StateAccessFacade.confirmDeliveryReceipt, DeliveryReceipts.confirmDeliveryReceipt);
@@ -836,9 +846,14 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "diagnosticIdleRelease",
       "runnerTargetCounts",
       "validateRecoveryEffectIn",
+      "claimIngressRecoverySnapshotIn",
+      "claimIngressRecoverySnapshotExisting",
+      "validateIngressRecoverySnapshotIn",
       "claimIngressRecovery",
       "validateIngressRecovery",
       "cancelLatestPending",
+      "cancelForRecoveryIn",
+      "cancelForRecoveryExisting",
       "cancelForRecovery",
       "beginDeliveryReceipt",
       "confirmDeliveryReceipt",
@@ -962,7 +977,7 @@ assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimExisting, PromptIntak
     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
 assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
 assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
-    assert.strictEqual(actual.length, 357);
+    assert.strictEqual(actual.length, 362);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

@@ -1,0 +1,80 @@
+{
+  "status": "APPLIED_848_COMPOSITE_AND_ACTUAL_FOCUSED_PASS",
+  "files": [
+    {
+      "path": "src/runtime/writer-recovery/native-owner.ts",
+      "beforeSha256": null,
+      "afterSha256": "e187acb0a1b4afcc8a19bef14d74ed8b906efa46406e1686f68d644a7f1d3323"
+    },
+    {
+      "path": "src/runtime/writer-recovery/native-worker.ts",
+      "beforeSha256": null,
+      "afterSha256": "27486eda6e0fba59140748b923dc89d5c071d3181e559c002c8758896c6e1858"
+    },
+    {
+      "path": "src/store/ingress-recovery-custody.ts",
+      "beforeSha256": "55f386e825baeaf1fbf116ed581427ac0719d2d76f8a6e7e9bbbbcf635689f0b",
+      "afterSha256": "e7bc21e222cd2b6af072651cd0d43122a502a6d1e8bad550315b0b1eb035f03c"
+    },
+    {
+      "path": "src/store/queue-cancel-recovery.ts",
+      "beforeSha256": "ad3534497e366dad7bbadced4a7390396d17e2ed11b0e642d03a263652fb3cc6",
+      "afterSha256": "65a1507d3a724acd64d32ab4f4979230795947ca8b47bc5efbedba27755475a1"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "b6ca9b26e405665e37c46b9cca48644cdae44e0d665873a7c77c7575c27148d6",
+      "afterSha256": "2b2cf72c1f5067d0588e2cf5da8d57ac8f2e98a5331a45cb4383b79ca4b3bdf1"
+    },
+    {
+      "path": "test/runtime/writer-recovery/native-owner.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "8b5ab8489a27e89662c5eb91fffd1e890e6d85279da6b6818c194ae58c31a6e2"
+    },
+    {
+      "path": "test/store/queue-cancel-recovery-existing.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "c4d784c107803df767f88fd475d7217357db3ce56525cd92288fd6a7d0c0e2b5"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "4748f0bd10ee7109a632bc7ab99dfb2179ba6cb9c7bcf1b825461c1d63d93b91",
+      "afterSha256": "b096517bf865f9207c7de39cb12bb4aca8a8bfbd44b2de86f1f84451ee582339"
+    }
+  ],
+  "verification": {
+    "status": "COMPOSITE_FROZEN_FILES_COMPLETE",
+    "fingerprint": "043aced9f0fbf9783c41b4ab4550b8eab9861f022ff958197d0cd9dc40e4667f",
+    "testFiles": 857,
+    "counts": {
+      "tests": 8740,
+      "pass": 8740,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "ended": "2026-10-14T04:15:17.916Z",
+    "limitation": "Independently terminal file runs over one unchanged compiled graph, not one monolithic full-suite invocation."
+  },
+  "finalFingerprintMatched": true,
+  "sourceTestToolsFileCount": 1742,
+  "sourceTestToolsManifestSha256": "5250ad69d4b8f678e4b34a1d16823093c60142b5ca9ff5c69c02e5456b7f8b82",
+  "actual": {
+    "strictBuildExit": 0,
+    "focusedExit": 0,
+    "focusedTests": 43,
+    "focusedPass": 43,
+    "focusedFail": 0,
+    "focusedSkipped": 0,
+    "focusedLogSha256": "93725a0f8026104610a70d70954166bfd955eaf918d12ea6d726a67235bcc566"
+  },
+  "limits": [
+    "Independent terminal file runs, not one monolithic full-suite invocation.",
+    "Native owner is implemented but Recover command/controller/process restart not connected.",
+    "Selected-route recovery is refused until native selection custody is implemented; Repair is refused.",
+    "Database payload budgets remain pending review.",
+    "Protected unavailable redaction fixture is neither included, reconstructed, passed nor skipped.",
+    "Windows, live runtime, performance, G1-G7, 24-hour stability and deployment remain unverified."
+  ]
+}

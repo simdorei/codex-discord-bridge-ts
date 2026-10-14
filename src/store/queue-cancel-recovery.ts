@@ -1,6 +1,7 @@
 import type {DatabaseSync,SQLInputValue} from "node:sqlite";
 import {types} from "node:util";
-import {openInitialized} from "./owned-driver.ts";
+import {usingInitializedStore,usingExistingStore,withStoreTransaction,commitStore} from "./owned-scope.ts";
+import {requireDiscordText} from "../discord/text.ts";
 import {ensureNoUnresolvedHandoff,ensureSourceNotMoved} from "./fork-handoff-admission.ts";
 import {ingressCancellationOwnersIn} from "./ingress-cancellation-owners.ts";
 import {selectJob,serializeStoredQueueJob} from "./queue-read.ts";
@@ -35,18 +36,24 @@ function cancelRequest(db:DatabaseSync,target:string,channel:bigint,owner:bigint
   for(const key of owners)db.prepare("UPDATE discord_ingress_journal SET state='completed',phase='cancelled',outcome_json=json_set(CASE WHEN json_type(outcome_json)='object' THEN outcome_json ELSE '{}' END,'$.kind','request_cancelled','$.job_id',?),updated_at=? WHERE ingress_id=?").run(job,now,key);
   result.jobs.push(job);
 }
-/** Explicit full recovery only. External controller must independently prove process exit; this merely revokes replay authority. */
-export async function cancelForRecovery(path:string,target:string,channel:bigint,owner:bigint,now:number,check:RecoveryCancellationCheck=()=>undefined):Promise<RecoveryCancellation>{
-  for(const v of [path,target])if(typeof v!=="string"||/[\uD800-\uDFFF]/u.test(v))throw new TypeError("Expected well-formed text");
+function validateScope(target:string,channel:bigint,owner:bigint,now:number,check:RecoveryCancellationCheck):void{
+  for(const v of [target])if(typeof v!=="string"||/[\uD800-\uDFFF]/u.test(v))throw new TypeError("Expected well-formed text");
   for(const v of [channel,owner])if(typeof v!=="bigint"||v<-(1n<<63n)||v>=(1n<<63n))throw new TypeError("Expected i64 identity");
   if(target===""||channel<=0n||owner<=0n||!Number.isFinite(now)||now<0)throw new StoreIntegrityError("invalid recovery cancellation scope");
   if(typeof check!=="function"||types.isProxy(check)||types.isAsyncFunction(check)||types.isGeneratorFunction(check))throw new TypeError("Expected synchronous recovery custody check");
-  const checked=(db:DatabaseSync):void=>{if(check(db)!==undefined)throw new TypeError("Expected synchronous recovery custody check");};
-  const db=await openInitialized(path);try{
-    db.exec("BEGIN IMMEDIATE");checked(db);ensureNoUnresolvedHandoff(db,target);ensureSourceNotMoved(db,target);
+
+}
+/** Borrowed transaction. Never opens/closes, commits, or rolls back its caller.
+ * Cancellation evidence and the final recovery revision remain one transaction.
+ * Inventory queries cap at129 to prove that <=128 is complete before mutation. */
+export function cancelForRecoveryIn(db:DatabaseSync,target:string,channel:bigint,owner:bigint,now:number,check:RecoveryCancellationCheck):RecoveryCancellation{
+ validateScope(target,channel,owner,now,check);if(!db.isTransaction)throw new StoreIntegrityError("Recovery cancellation requires owning transaction");
+ const checked=(db:DatabaseSync):void=>{const result:unknown=check(db);if(types.isPromise(result)){void Promise.prototype.then.call(result,undefined,()=>undefined);throw new TypeError("Expected synchronous recovery custody check");}if(result!==undefined)throw new TypeError("Expected synchronous recovery custody check");};
+
+    checked(db);ensureNoUnresolvedHandoff(db,target);ensureSourceNotMoved(db,target);
     const q=db.prepare(`SELECT job_id,kind,channel_id,owner_user_id,discord_message_id,CAST(job_id AS BLOB) AS raw,(SELECT encoding FROM pragma_encoding) AS encoding FROM (
       SELECT job_id,'queue' AS kind,channel_id,owner_user_id,discord_message_id FROM codex_turn_queue WHERE target_thread_id=?1 UNION ALL
-      SELECT job_id,'intake',channel_id,owner_user_id,discord_message_id FROM codex_prompt_intakes WHERE target_thread_id=?1)`);q.setReadBigInts(true);
+      SELECT job_id,'intake',channel_id,owner_user_id,discord_message_id FROM codex_prompt_intakes WHERE target_thread_id=?1) LIMIT 129`);q.setReadBigInts(true);
     const rows=q.all(target).map(r=>({job:decodeTextField(r.job_id,r.raw,"job_id",false,textDecoderFor(r.encoding))!,kind:String(r.kind),channel:decodeI64(r.channel_id,"channel_id"),owner:decodeOptionalI64(r.owner_user_id,"owner_user_id"),event:decodeOptionalI64(r.discord_message_id,"discord_message_id")}));
     if(rows.length>128||rows.some(r=>r.channel!==channel||r.owner!==owner))throw new StoreIntegrityError("recovery request scope contains another sender/channel or too many requests");
     const result:RecoveryCancellation={jobs:[],startedOrUncertain:0};for(const row of rows)cancelRequest(db,target,channel,owner,now,row.job,row.kind,row.event,result);
@@ -54,15 +61,26 @@ export async function cancelForRecovery(path:string,target:string,channel:bigint
       FROM discord_ingress_journal WHERE target_thread_id=? AND owner_id IS NULL AND state IN ('staged','acknowledged','executing','held')
       AND json_type(payload_json,'$.version')='integer' AND json_extract(payload_json,'$.version')=1 AND (
       (kind='message' AND (json_type(payload_json,'$.plan.Execute.Ask.prompt')='text' OR json_type(payload_json,'$.plan.Execute.Interview.prompt')='text'))
-      OR (kind='interaction' AND json_extract(payload_json,'$.work.Slash.name') IN ('ask','interview') AND json_type(payload_json,'$.work.Slash.values.prompt.String')='text'))`);ingress.setReadBigInts(true);
+      OR (kind='interaction' AND json_extract(payload_json,'$.work.Slash.name') IN ('ask','interview') AND json_type(payload_json,'$.work.Slash.values.prompt.String')='text')) LIMIT 129`);ingress.setReadBigInts(true);
     const unowned=ingress.all(target).map(r=>{const d=textDecoderFor(r.encoding);return {key:decodeTextField(r.ingress_id,r.raw_id,"ingress_id",false,d)!,event:decodeOptionalI64(r.event_id,"event_id"),channel:decodeI64(r.channel_id,"channel_id"),owner:decodeI64(r.owner_user_id,"owner_user_id"),payload:decodeTextField(r.payload_json,r.raw_payload,"payload_json",false,d)!,state:decodeTextField(r.state,r.raw_state,"state",false,d)!};});
     if(result.jobs.length+unowned.length>128||unowned.some(r=>r.channel!==channel||r.owner!==owner))throw new StoreIntegrityError("recovery ingress scope changed; cancellation rolled back");
     for(const r of unowned){const job=`ingress:${r.key}`;holdIn(db,job,target,"user requested full recovery; do not replay",serializeSerdeValue({ingress_id:r.key,payload:parseSerdeValue(r.payload),state:r.state}));receipt(db,job,target,channel,owner,r.event,now);
       db.prepare("UPDATE discord_ingress_journal SET state='completed',phase='cancelled',owner_kind='cancellation',owner_id=?,outcome_json=json_set(CASE WHEN json_type(outcome_json)='object' THEN outcome_json ELSE '{}' END,'$.kind','request_cancelled','$.job_id',?),updated_at=? WHERE ingress_id=?").run(job,job,now,r.key);
       if(r.state==="executing"||r.state==="held")result.startedOrUncertain++;result.jobs.push(job);
     }
-    checked(db);recordRecoveryCancellationRevisionIn(db,target,channel,owner,result.jobs,now);db.exec("COMMIT");return result;
-  }finally{if(db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
+    checked(db);recordRecoveryCancellationRevisionIn(db,target,channel,owner,result.jobs,now);return result;
+}
+/** Existing-only synchronous runtime boundary; invoke only from a native owner.
+ * The check must be locally trusted and revalidate the exact original custody. */
+export function cancelForRecoveryExisting(path:string,target:string,channel:bigint,owner:bigint,now:number,check:RecoveryCancellationCheck):RecoveryCancellation{
+ requireDiscordText(path);validateScope(target,channel,owner,now,check);
+ return usingExistingStore(path,db=>withStoreTransaction(db,"IMMEDIATE",()=>commitStore(cancelForRecoveryIn(db,target,channel,owner,now,check))),100);
+}
+/** Compatibility initialized entry. External controller must independently prove
+ * process exit; this only revokes replay authority and preserves evidence. */
+export async function cancelForRecovery(path:string,target:string,channel:bigint,owner:bigint,now:number,check:RecoveryCancellationCheck=()=>undefined):Promise<RecoveryCancellation>{
+ requireDiscordText(path);validateScope(target,channel,owner,now,check);
+ return usingInitializedStore(path,db=>withStoreTransaction(db,"IMMEDIATE",()=>commitStore(cancelForRecoveryIn(db,target,channel,owner,now,check))));
 }
 
 /** Internal borrowed transaction cancellation leaf; caller must prove exact custody. */

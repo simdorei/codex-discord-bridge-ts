@@ -198,11 +198,16 @@ export const runnerTargetCounts: typeof RunnerCounts.runnerTargetCounts = Runner
 export const listIngressesForOwner: typeof IngressRead.listIngressesForOwner = IngressRead.listIngressesForOwner;
 
 export const validateRecoveryEffectIn: typeof RecoveryEffect.validateRecoveryEffectIn = RecoveryEffect.validateRecoveryEffectIn;
+export const claimIngressRecoverySnapshotIn: typeof RecoveryCustody.claimIngressRecoverySnapshotIn = RecoveryCustody.claimIngressRecoverySnapshotIn;
+export const claimIngressRecoverySnapshotExisting: typeof RecoveryCustody.claimIngressRecoverySnapshotExisting = RecoveryCustody.claimIngressRecoverySnapshotExisting;
+export const validateIngressRecoverySnapshotIn: typeof RecoveryCustody.validateIngressRecoverySnapshotIn = RecoveryCustody.validateIngressRecoverySnapshotIn;
 export const claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery = RecoveryCustody.claimIngressRecovery;
 export const validateIngressRecovery: typeof RecoveryCustody.validateIngressRecovery = RecoveryCustody.validateIngressRecovery;
 
 export const cancelLatestPending: typeof PendingCancellation.cancelLatestPending = PendingCancellation.cancelLatestPending;
 
+export const cancelForRecoveryIn: typeof RecoveryCancellation.cancelForRecoveryIn = RecoveryCancellation.cancelForRecoveryIn;
+export const cancelForRecoveryExisting: typeof RecoveryCancellation.cancelForRecoveryExisting = RecoveryCancellation.cancelForRecoveryExisting;
 export const cancelForRecovery: typeof RecoveryCancellation.cancelForRecovery = RecoveryCancellation.cancelForRecovery;
 
 export const beginDeliveryReceipt: typeof DeliveryReceipts.beginDeliveryReceipt = DeliveryReceipts.beginDeliveryReceipt;
@@ -662,9 +667,14 @@ export interface IStateAccessFacade {
   readonly newReplyAcknowledgementSendable: typeof NewReplyClaims.newReplyAcknowledgementSendable;
   readonly releaseNewReplyAcknowledgement: typeof NewReplyClaims.releaseNewReplyAcknowledgement;
 
+  readonly cancelForRecoveryIn: typeof RecoveryCancellation.cancelForRecoveryIn;
+  readonly cancelForRecoveryExisting: typeof RecoveryCancellation.cancelForRecoveryExisting;
   readonly cancelForRecovery: typeof RecoveryCancellation.cancelForRecovery;
   readonly cancelLatestPending: typeof PendingCancellation.cancelLatestPending;
   readonly validateRecoveryEffectIn: typeof RecoveryEffect.validateRecoveryEffectIn;
+  readonly claimIngressRecoverySnapshotIn: typeof RecoveryCustody.claimIngressRecoverySnapshotIn;
+  readonly claimIngressRecoverySnapshotExisting: typeof RecoveryCustody.claimIngressRecoverySnapshotExisting;
+  readonly validateIngressRecoverySnapshotIn: typeof RecoveryCustody.validateIngressRecoverySnapshotIn;
   readonly claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery;
   readonly validateIngressRecovery: typeof RecoveryCustody.validateIngressRecovery;
 
@@ -1010,9 +1020,14 @@ export const StateAccessFacade: IStateAccessFacade = {
   runnerTargetCounts,
   listIngressesForOwner,
   validateRecoveryEffectIn,
+  claimIngressRecoverySnapshotIn,
+  claimIngressRecoverySnapshotExisting,
+  validateIngressRecoverySnapshotIn,
   claimIngressRecovery,
   validateIngressRecovery,
   cancelLatestPending,
+  cancelForRecoveryIn,
+  cancelForRecoveryExisting,
   cancelForRecovery,
   beginDeliveryReceipt,
   confirmDeliveryReceipt,

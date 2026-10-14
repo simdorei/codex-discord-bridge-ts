@@ -1,3 +1,12 @@
+# Current addendum — 2026-10-14 04:16 UTC
+
+- Applied847/848: existing-only recovery cancellation, exact original ingress custody, and joined native recovery owner. Actual strict build0 and focused43 PASS. Fixed emitted graph857 files completed independently with8740 PASS, zero failures/cancellations/skips; final fingerprint matches. This is composite evidence, not one monolithic full-suite PASS. See checkpoint-848-composite-verification.json.
+- Recover command/controller/process restart remains unwired. Selected-route and Repair are explicitly refused. Database payload budget review remains pending.
+- Archive source-file deletion and DeleteArchiveConfirm integration, platform ownership, executable packaging, Windows and G1–G7/24-hour acceptance remain unqualified. The protected unavailable redaction fixture is not counted.
+- Continue implementation after preserving this checkpoint.
+
+## Previous addenda (historical)
+
 # Current addendum — 2026-10-14 03:54 UTC
 
 - Applied846 now includes original-confirmation durable archive fence, token-guarded mirror deletion helpers and one joined native reservation/mirror/source-backup preparation. All855 independently terminal file runs over one fixed graph yield8723 PASS,0fail/cancel/skip. This is COMPOSITE verification, not one monolithic full-suite run. Final graph/input fingerprint matches. Actual post-apply strict0/focused111 PASS; source/test/tools1738 files match the verified stage.
