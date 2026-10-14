@@ -20,6 +20,11 @@ export interface MirrorTargetBootstrapInput {
 }
 export interface MirrorTargetBootstrapResult {readonly kind:'Existing'|'Initialized'|'Resumed';readonly cursor:BoundMirrorCursor;readonly reconciled:boolean;}
 export class MirrorBootstrapBindingError extends Error {constructor(){super('Mirror startup target or rollout binding changed');this.name='MirrorBootstrapBindingError';}}
+const reconciliationErrors=new WeakSet<object>();
+/** Exact native error identity, without inspecting an opaque target failure. */
+export function isMirrorBootstrapReconciliationRequiredError(value:unknown):value is MirrorBootstrapReconciliationRequiredError{
+ return value!==null&&typeof value==='object'&&reconciliationErrors.has(value);
+}
 /** Descriptive exact evidence for explicit recovery, never write authority.
  * Native exit was joined. Absence, cancellation or failed reconciliation does
  * not establish rollback and must not prompt a new EOF capture. */
@@ -29,6 +34,7 @@ export class MirrorBootstrapReconciliationRequiredError extends Error {
  constructor(input:MirrorTargetBootstrapInput,operation:'Retain'|'CompleteContext',pending:PendingMirrorStartupIntent,recovery:MirrorStartupRecoveryData|null,cause:unknown,reconciliationError:unknown){
   super('Mirror startup write remains unconfirmed; reconcile the retained original packet before another bootstrap',{cause});this.name='MirrorBootstrapReconciliationRequiredError';
   this.databasePath=input.databasePath;this.channel=input.channel;this.operation=operation;this.pending=pending;this.recovery=recovery;this.reconciliationError=reconciliationError;
+  reconciliationErrors.add(this);Object.freeze(this);
  }
 }
 function bounded(value:unknown,max:number):string {
@@ -59,7 +65,8 @@ function samePending(a:PendingMirrorStartupIntent,b:PendingMirrorStartupIntent):
  * channel ownership, DB path identity and producer append-only history stable.
  * The initial exact mapping guard and sampled file/DB checks are not a global
  * atomic lock, send permission, or proof against unseen ABA/history rewrites.
- * No runtime or CLI integration is enabled by this standalone API. */
+ * The bound worker may invoke this API under an explicit policy. Application
+ * and CLI enablement still require the independent ownership contracts above. */
 export class MirrorTargetBootstrapCoordinator {
  readonly #input:MirrorTargetBootstrapInput;readonly #controller=new AbortController();
  #started=false;#closed=false;#task:Promise<MirrorTargetBootstrapResult>|null=null;

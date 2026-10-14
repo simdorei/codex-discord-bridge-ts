@@ -16,7 +16,9 @@ export class MirrorShutdownReportError extends Error{
  * monitored callback's microtask; joins actual native/HTTP work on both graceful
  * and forced abort. Final unharvested records are reported or retained in error,
  * never discarded just because the outer worker returns void in Rust.
- * Requires explicit bound cursors and trusted transport; no service starts here. */
+ * Requires explicit bound cursors or the opt-in bootstrap policy with prepared
+ * schemas, and trusted transport; no service starts here. Bootstrap uncertainty
+ * is retained in the monitored failure even during shutdown/report failure. */
 export function startSessionMirrorRuntimeWorker(enabled:boolean,config:BoundMirrorWorkerConfig,transport:DiscordReceiptTransport,shutdown:AbortSignal,notifier:RuntimeWorkerExitChannel,render:(error:unknown)=>string,report:(event:RuntimeMirrorObservation)=>void):RuntimeMonitoredWorker|null{
  if(typeof enabled!=='boolean')throw new TypeError('Expected mirror enabled flag');if(!enabled)return null;
  if(types.isProxy(shutdown)||!(shutdown instanceof AbortSignal))throw new TypeError('Expected runtime shutdown signal');

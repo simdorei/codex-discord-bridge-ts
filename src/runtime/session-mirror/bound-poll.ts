@@ -15,6 +15,8 @@ import {NativeMirrorCursorStore} from './cursor-store.ts';import type {MirrorOwn
 import {snapshotMirrorReadLimits,type MirrorReadLimits} from './read-window.ts';
 import {observeAnchoredMirrorBatch} from './continuity-observation.ts';
 import {executeObservedMirrorBatch} from './observed-batch-executor.ts';
+import {MirrorTargetBootstrapCoordinator} from './bootstrap-coordinator.ts';
+import {snapshotMirrorStartupContextLimits,type MirrorStartupContextLimits} from './startup-context-limits.ts';
 export interface BoundMirrorPollOptions{readonly read:MirrorReadLimits;readonly ownership:MirrorOwnershipReadLimits;}
 export class MirrorBoundCursorRequiredError extends Error{constructor(){super('Mirror polling requires an explicitly initialized, generation-bound cursor; no adoption or reset performed');this.name='MirrorBoundCursorRequiredError';}}
 export class MirrorPollRecordHeldError extends Error{readonly stop:string;constructor(stop:string){super('Mirror record held at current cursor: '+stop);this.name='MirrorPollRecordHeldError';this.stop=stop;}}
@@ -52,20 +54,37 @@ export function snapshotBoundMirrorPollOptions(options:BoundMirrorPollOptions):B
  if(typeof maxJobs!=='bigint'||maxJobs<1n||maxJobs>4096n||typeof maxValueBytes!=='bigint'||maxValueBytes<1n||maxValueBytes>4194304n||typeof timeoutMs!=='number'||!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid bound mirror poll ownership limits');
  return Object.freeze({read,ownership:Object.freeze({maxJobs,maxValueBytes,timeoutMs})});
 }
+export interface MirrorWorkerBootstrapPolicy{
+ readonly kind:'SkipExistingHistory';readonly context:MirrorStartupContextLimits;readonly totalTimeoutMs:number;
+}
 export interface BoundMirrorWorkerConfig{
  readonly stateDatabasePath:string;readonly bridgeDatabasePath:string;
  readonly discovery:MirrorSnapshotLimits;readonly ready:MirrorReadyLimits;readonly poll:BoundMirrorPollOptions;
+ /** Explicit opt-in only. Both schemas must be prepared before worker startup.
+  * The caller maintains stable DB identity/mapping and append-only production;
+  * this policy does not acquire ownership from application mapping mutators. */
+ readonly bootstrap?:MirrorWorkerBootstrapPolicy;
 }
 /** Concrete mirror loop using the same shared runner, native discovery and target
  * owner. Configuration is captured once before any async work and cannot retarget
- * a later epoch. Still requires explicit preinitialized bindings, a validated
- * transport, independent producer contract and application-owned abort lifetime.
+ * a later epoch. Bindings must be preinitialized unless bootstrap is explicitly
+ * selected. Bootstrap and polling share the existing target/channel owner and
+ * cancellation lifetime, without an intermediate release or another loop.
+ * Requires a validated transport, independent producer contract and stable DB
+ * identity/mapping under the caller's application-owned abort lifetime.
  * No service boot, schema creation, account login or independent retry mechanism. */
 export async function runBoundMirrorWorker(config:BoundMirrorWorkerConfig,transport:DiscordReceiptTransport,render:(error:unknown)=>string,report:(event:MirrorRunnerObservation)=>void,signal:AbortSignal):Promise<readonly MirrorTargetFinished[]>{
  if(types.isProxy(signal)||!(signal instanceof AbortSignal))throw new TypeError('Expected owned abort signal');if(signal.aborted)return [];
  const captured=captureBoundMirrorWorkerConfig(config);
- const {stateDatabasePath:state,bridgeDatabasePath:bridge,discovery,ready,poll}=captured;
- return runMirrorWorker(()=>new MirrorSnapshotOwner(state,bridge,discovery,ready,(hint,channel,jobs,abort)=>pollBoundMirrorTarget(bridge,hint,channel,jobs,poll,transport,abort),render),render,report,signal);
+ const {stateDatabasePath:state,bridgeDatabasePath:bridge,discovery,ready,poll,bootstrap}=captured;
+ return runMirrorWorker(()=>new MirrorSnapshotOwner(state,bridge,discovery,ready,async(hint,channel,jobs,abort)=>{
+  if(bootstrap!==undefined){
+   const startup=new MirrorTargetBootstrapCoordinator({databasePath:bridge,thread:hint.id,rolloutPath:hint.rolloutPath,channel,operationId:randomUUID(),createdAt:Date.now()/1000,...bootstrap});
+   try{await startup.run(abort);}finally{await startup.close();}
+   abort.throwIfAborted();
+  }
+  return pollBoundMirrorTarget(bridge,hint,channel,jobs,poll,transport,abort);
+ },render),render,report,signal);
 }
 
 /** Capture the complete worker configuration before a monitored task is queued. */
@@ -75,5 +94,13 @@ export function captureBoundMirrorWorkerConfig(config:BoundMirrorWorkerConfig):B
  const readyInput=own(config,'ready'),maxTargets=own(readyInput,'maxTargets'),maxBytes=own(readyInput,'maxBytes');
  if(typeof maxTargets!=='number'||!Number.isSafeInteger(maxTargets)||maxTargets<1||maxTargets>4096||typeof maxBytes!=='number'||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>1048576)throw new RangeError('Invalid mirror ready limits');
  const ready=Object.freeze({maxTargets,maxBytes}),poll=snapshotBoundMirrorPollOptions(own(config,'poll') as BoundMirrorPollOptions);
- return Object.freeze({stateDatabasePath:state,bridgeDatabasePath:bridge,discovery,ready,poll});
+ const policy=Object.getOwnPropertyDescriptor(config,'bootstrap');
+ if(policy!==undefined&&!Object.hasOwn(policy,'value'))throw new TypeError('Expected passive mirror bootstrap policy');
+ let bootstrap:MirrorWorkerBootstrapPolicy|undefined;
+ if(policy?.value!==undefined){
+  const kind=own(policy.value,'kind'),totalTimeoutMs=own(policy.value,'totalTimeoutMs');
+  if(kind!=='SkipExistingHistory'||typeof totalTimeoutMs!=='number'||!Number.isSafeInteger(totalTimeoutMs)||totalTimeoutMs<1||totalTimeoutMs>10000)throw new RangeError('Invalid explicit mirror bootstrap policy');
+  bootstrap=Object.freeze({kind,totalTimeoutMs,context:snapshotMirrorStartupContextLimits(own(policy.value,'context') as MirrorStartupContextLimits)});
+ }
+ return Object.freeze({stateDatabasePath:state,bridgeDatabasePath:bridge,discovery,ready,poll,...(bootstrap===undefined?{}:{bootstrap})});
 }

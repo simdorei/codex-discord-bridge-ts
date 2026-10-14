@@ -10,3 +10,19 @@ test('second worker cannot overlap a held native epoch and shutdown awaits its a
 test('a factory cannot reuse the already closed owner after a shared failure',async()=>fixture(async(state,bridge)=>{const db=new DatabaseSync(bridge);db.exec('DROP TABLE codex_turn_queue');db.close();const owner=new MirrorSnapshotOwner(state,bridge,limits,ready,async()=>ok,String);await assert.rejects(runMirrorWorker(()=>owner,String,()=>{},new AbortController().signal),/fresh owner/);assert.equal(mirrorRunnerBusy(),false);}));
 
 test('diagnostic rendering failure also retains original source error and settled evidence',async()=>fixture(async(state,bridge)=>{const db=new DatabaseSync(bridge);db.exec('DROP TABLE codex_turn_queue');db.close();const reason={render:true};await assert.rejects(runMirrorWorker(()=>new MirrorSnapshotOwner(state,bridge,limits,ready,async()=>ok,String),()=>{throw reason;},()=>{assert.fail('no report');},new AbortController().signal),e=>e instanceof AggregateError&&e.errors[1]===reason&&String(e.errors[0].cause).includes('codex_turn_queue'));assert.equal(mirrorRunnerBusy(),false);}));
+
+for(const shutdown of [false,true])test(`bootstrap reconciliation guard leaves opaque ${shutdown?'shutdown':'harvested'} failures untouched`,async()=>fixture(async(state,bridge)=>{
+ const stop=new AbortController();let hooks=0,entered!:()=>void,reject!:(error:unknown)=>void,reports=0;
+ const error=new Proxy({packet:'opaque'},{get(){hooks++;throw Error('getter');},getPrototypeOf(){hooks++;throw Error('prototype');}});
+ const started=new Promise<void>(resolve=>{entered=resolve;}),held=new Promise<typeof ok>((_resolve,no)=>{reject=no;});
+ const running=runMirrorWorker(()=>new MirrorSnapshotOwner(state,bridge,limits,ready,async()=>{entered();if(shutdown)return held;throw error;},()=> 'opaque failure'),()=> 'opaque failure',event=>{
+  reports++;assert.equal(event.kind,'Targets');if(event.kind==='Targets'){const outcome=event.rows[0]!.finished.outcome;assert.equal(outcome.kind,'Failed');if(outcome.kind==='Failed')assert.equal(outcome.error,error);}stop.abort('reported');
+ },stop.signal);
+ try{
+  await started;if(shutdown){stop.abort('shutdown');reject(error);}
+  const settled=await running;
+  if(shutdown){assert.equal(reports,0);assert.equal(settled.length,1);const outcome=settled[0]!.outcome;assert.equal(outcome.kind,'Cancelled');if(outcome.kind==='Cancelled'){assert.equal(outcome.settled.kind,'Failed');if(outcome.settled.kind==='Failed')assert.equal(outcome.settled.error,error);}}
+  else{assert.equal(reports,1);assert.deepEqual(settled,[]);}
+  assert.equal(hooks,0);assert.equal(mirrorRunnerBusy(),false);
+ }finally{stop.abort('cleanup');if(shutdown)reject(error);await running.catch(()=>undefined);}
+}));

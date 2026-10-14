@@ -6,6 +6,7 @@ import {runMirrorEpoch,MirrorEpochError} from './epoch.ts';
 import {SessionMirrorRetryState,type SessionMirrorRetryDecision} from './retry.ts';
 import type {MirrorDispatchResult} from './dispatch.ts';
 import type {MirrorTargetFinished} from './execution.ts';
+import {MirrorBootstrapWorkerHeldError,isMirrorBootstrapWorkerHeldError,mirrorBootstrapRequiresReconciliation} from './bootstrap-hold.ts';
 export type MirrorRunnerObservation={readonly kind:'Targets';readonly rows:readonly MirrorDispatchResult[]}|{readonly kind:'SharedFailure';readonly failure:MirrorEpochError;readonly decision:SessionMirrorRetryDecision};
 let running=false;
 export function mirrorRunnerBusy():boolean{return running;}
@@ -24,9 +25,16 @@ export async function runMirrorWorker(factory:()=>MirrorSnapshotOwner,render:(er
  try{while(true){
   if(signal.aborted)return [];if(delay!==0){try{await sleep(delay,undefined,{signal});}catch(error){if(signal.aborted)return [];throw error;}}if(signal.aborted)return [];
   const owner=returned(factory());if(!(owner instanceof MirrorSnapshotOwner))throw new TypeError('Factory did not return native mirror owner');if(used.has(owner))throw new TypeError('Mirror runner requires a fresh owner after each ended epoch');used.add(owner);
-  try{return await runMirrorEpoch(owner,rows=>notify({kind:'Targets',rows}),()=>{retry.onSuccess();},signal);}
+  try{
+   const settled=await runMirrorEpoch(owner,rows=>notify({kind:'Targets',rows}),()=>{retry.onSuccess();},signal);
+   if(settled.some(mirrorBootstrapRequiresReconciliation))throw new MirrorBootstrapWorkerHeldError(settled);
+   return settled;
+  }
   catch(error){
    if(!(error instanceof MirrorEpochError)||error.unreported.length!==0)throw error;
+   // Discovery failure may race a submitted bootstrap write. Preserve joined
+   // evidence before rendering/reporting can mask it or start a fresh epoch.
+   if(isMirrorBootstrapWorkerHeldError(error.cause)||error.settled.some(mirrorBootstrapRequiresReconciliation))throw error;
    try{const text=returned(render(error.cause));requireDiscordText(text);if(Buffer.byteLength(text)>16384)throw new RangeError('Mirror shared diagnostic budget exceeded');
    const decision=retry.onFailure(process.hrtime.bigint()-origin,text);delay=Number(decision.retryAfterNanoseconds/1000000n);
    notify({kind:'SharedFailure',failure:error,decision});}catch(reportError){throw new AggregateError([error,reportError],'Mirror failure reporter failed; no new epoch started');}

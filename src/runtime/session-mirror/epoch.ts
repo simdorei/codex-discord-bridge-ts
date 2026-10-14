@@ -2,6 +2,7 @@ import {types} from 'node:util';
 import {MirrorSnapshotOwner} from './snapshot-owner.ts';
 import type {MirrorDispatchResult} from './dispatch.ts';
 import type {MirrorTargetFinished} from './execution.ts';
+import {MirrorBootstrapWorkerHeldError,mirrorBootstrapRequiresReconciliation} from './bootstrap-hold.ts';
 const SECOND=1000000000n,active=new WeakSet<MirrorSnapshotOwner>();
 export class MirrorEpochError extends Error{readonly settled:readonly MirrorTargetFinished[];readonly unreported:readonly MirrorDispatchResult[];constructor(cause:unknown,settled:readonly MirrorTargetFinished[],unreported:readonly MirrorDispatchResult[]){super('Mirror discovery epoch failed after owned work joined',{cause});this.name='MirrorEpochError';this.settled=settled;this.unreported=unreported;}}
 function callback(f:unknown):void{if(typeof f!=='function'||types.isProxy(f)||types.isAsyncFunction(f)||types.isGeneratorFunction(f))throw new TypeError('Expected synchronous mirror observer');}
@@ -26,8 +27,11 @@ export async function runMirrorEpoch(owner:MirrorSnapshotOwner,onResults:(rows:r
  const stop=()=>{closing=owner.close(signal.reason);void closing.catch(()=>undefined);};signal.addEventListener('abort',stop,{once:true});if(signal.aborted)stop();
  try{while(true){
   signal.throwIfAborted();if(process.hrtime.bigint()>=next){await owner.refresh(signal);signal.throwIfAborted();observed(onDiscovery());signal.throwIfAborted();next=origin+((process.hrtime.bigint()-origin)/SECOND+1n)*SECOND;}
-  const rows=owner.harvest();unreported=rows;if(rows.length!==0)observed(onResults(rows));unreported=[];signal.throwIfAborted();owner.dispatch();await waitNext(owner,next,signal);
- }}catch(error){if(!signal.aborted||error!==signal.reason){failed=true;failure=error;}}
+  const rows=owner.harvest(),held=rows.some(row=>mirrorBootstrapRequiresReconciliation(row.finished))?new MirrorBootstrapWorkerHeldError(rows.map(row=>row.finished)):null;
+  unreported=rows;if(rows.length!==0)observed(onResults(rows));unreported=[];
+  if(held!==null)throw held;
+  signal.throwIfAborted();owner.dispatch();await waitNext(owner,next,signal);
+ }}catch(error){if(unreported.length!==0||!signal.aborted||error!==signal.reason){failed=true;failure=error;}}
  finally{try{settled=await (closing??owner.close(signal.aborted?signal.reason:failure));}finally{signal.removeEventListener('abort',stop);active.delete(owner);}}
  if(failed)throw new MirrorEpochError(failure,settled,unreported);return settled;
 }
