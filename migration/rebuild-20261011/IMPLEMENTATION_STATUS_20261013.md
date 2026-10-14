@@ -1,3 +1,8 @@
+# Current addendum — 2026-10-14 11:06 UTC
+
+- WIP858 adds POSIX singleton candidate and seven focused tests. Typecheck/compiled build succeed; actual tests are 1 PASS / 6 FAIL because Unix socket listen is denied with EPERM, including escalated execution. No singleton runtime PASS or bootstrap integration is claimed.
+- No automatic stale-socket unlink: conservative refusal avoids racing another owner. Windows mutex remains absent. Continue independent runtime assembly without treating this candidate as qualified.
+
 # Current addendum — 2026-10-14 08:00 UTC
 
 - Implemented856 preserves original Korean recovery interruption/unconfirmed warning and verifies lost controller replies/outcome-write failures never replay the original gateway request. Strict0 and8 affected cases pass.
