@@ -4,7 +4,7 @@ import {usingInitializedStore,usingExistingStore,withStoreTransaction,commitStor
 import {requireDiscordText} from "../discord/text.ts";
 import {ensureNoUnresolvedHandoff,ensureSourceNotMoved,requireNoUnresolvedHandoffExistingIn,requireSourceNotMovedExistingIn} from "./fork-handoff-admission.ts";
 import {ingressCancellationOwnersIn} from "./ingress-cancellation-owners.ts";
-import {selectJob,serializeStoredQueueJob} from "./queue-read.ts";
+import {COLUMNS,selectJob,serializeStoredQueueJob} from "./queue-read.ts";
 import {holdIn} from "./execution-hold.ts";
 import {recordRecoveryCancellationRevisionIn} from "./stop-revision-recovery.ts";
 import {StoreIntegrityError} from "./schema-assembly.ts";
@@ -15,6 +15,21 @@ export interface RecoveryCancellation {jobs:string[];startedOrUncertain:number}
 /** Trusted, synchronous, internal custody check. Never a transport-provided callback. */
 export type RecoveryCancellationCheck=(db:DatabaseSync)=>undefined;
 function one(db:DatabaseSync,sql:string,...args:SQLInputValue[]):Record<string,unknown>|undefined{const q=db.prepare(sql);q.setReadBigInts(true);return q.get(...args);}
+/** Only static internal SQL identifiers enter this byte-only preflight. No raw
+ * values are returned before the per-row and cumulative budgets are checked.
+ * Repeated reads consume budget again, so trigger changes cannot evade the cap.
+ * Existing-only recovery refuses excess evidence; it never truncates a request. */
+function recoveryReadBudget(db:DatabaseSync){
+ let remaining=8388608n;
+ return (table:string,fields:string,where:string,...args:SQLInputValue[]):void=>{
+  const bytes=fields.split(",").map(field=>`COALESCE(length(CAST(${field.trim()} AS BLOB)),0)`).join("+");
+  const q=db.prepare(`SELECT ${bytes} AS evidence_bytes FROM ${table} WHERE ${where} LIMIT 129`);q.setReadBigInts(true);
+  const rows=q.all(...args);if(rows.length>128)throw new StoreIntegrityError("recovery byte budget: too many requests or related ingress records");
+  for(const row of rows){const n=row.evidence_bytes;if(typeof n!=="bigint"||n<0n||n>1048576n||n>remaining)throw new StoreIntegrityError("recovery evidence exceeds byte budget");remaining-=n;}
+ };
+}
+const INTAKE_FIELDS="job_id,target_thread_id,channel_id,owner_user_id,discord_message_id,raw_prompt,auto_queue_when_busy,require_current_mirror,attempt_count,last_error,retry_after,claim_token,claim_expires_at,created_at,updated_at";
+const INGRESS_FIELDS="ingress_id,kind,event_id,application_id,channel_id,owner_user_id,source_message_id,payload_json,runtime_id,state,phase,target_thread_id,canonical_owner,owner_kind,owner_id,outcome_json,confirmation_delivered,hold_reason,created_at,updated_at";
 function receipt(db:DatabaseSync,job:string,target:string,channel:bigint,owner:bigint,event:bigint|null,now:number):void{
   db.prepare("INSERT INTO codex_request_cancellations(job_id,target_thread_id,channel_id,owner_user_id,discord_message_id,cancelled_at) VALUES(?,?,?,?,?,?)").run(job,target,channel,owner,event,now);
 }
@@ -61,12 +76,22 @@ function cancelForRecoveryBody(db:DatabaseSync,target:string,channel:bigint,owne
       const present=one(db,"SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE name='codex_thread_fork_handoffs' AND type IN ('table','view')) AS present");
       if(decodeI64(present?.present,"handoff presence")!==0n){requireNoUnresolvedHandoffExistingIn(db,target);requireSourceNotMovedExistingIn(db,target);}
     }else{ensureNoUnresolvedHandoff(db,target);ensureSourceNotMoved(db,target);}
+    const budget=existingOnly?recoveryReadBudget(db):null;
+    budget?.("codex_turn_queue",COLUMNS,"target_thread_id=?",target);
+    budget?.("codex_prompt_intakes",INTAKE_FIELDS,"target_thread_id=?",target);
     const q=db.prepare(`SELECT job_id,kind,channel_id,owner_user_id,discord_message_id,CAST(job_id AS BLOB) AS raw,(SELECT encoding FROM pragma_encoding) AS encoding FROM (
       SELECT job_id,'queue' AS kind,channel_id,owner_user_id,discord_message_id FROM codex_turn_queue WHERE target_thread_id=?1 UNION ALL
       SELECT job_id,'intake',channel_id,owner_user_id,discord_message_id FROM codex_prompt_intakes WHERE target_thread_id=?1) LIMIT 129`);q.setReadBigInts(true);
     const rows=q.all(target).map(r=>({job:decodeTextField(r.job_id,r.raw,"job_id",false,textDecoderFor(r.encoding))!,kind:String(r.kind),channel:decodeI64(r.channel_id,"channel_id"),owner:decodeOptionalI64(r.owner_user_id,"owner_user_id"),event:decodeOptionalI64(r.discord_message_id,"discord_message_id")}));
     if(rows.length>128||rows.some(r=>r.channel!==channel||r.owner!==owner))throw new StoreIntegrityError("recovery request scope contains another sender/channel or too many requests");
-    const result:RecoveryCancellation={jobs:[],startedOrUncertain:0};for(const row of rows)cancelRequest(db,target,channel,owner,now,row.job,row.kind,row.event,result);
+    const result:RecoveryCancellation={jobs:[],startedOrUncertain:0};for(const row of rows){
+      budget?.(row.kind==="queue"?"codex_turn_queue":"codex_prompt_intakes",row.kind==="queue"?COLUMNS:INTAKE_FIELDS,"job_id=?",row.job);
+      budget?.("discord_ingress_journal",INGRESS_FIELDS,"owner_id=?1 OR (?2 IS NOT NULL AND event_id=?2)",row.job,row.event);
+      cancelRequest(db,target,channel,owner,now,row.job,row.kind,row.event,result);
+    }
+    // Bound all active unowned target records before JSON filtering as well.
+    // Large non-prompt control evidence conservatively refuses this operation.
+    budget?.("discord_ingress_journal",INGRESS_FIELDS,"target_thread_id=? AND owner_id IS NULL AND state IN ('staged','acknowledged','executing','held')",target);
     const ingress=db.prepare(`SELECT ingress_id,event_id,channel_id,owner_user_id,payload_json,state,CAST(ingress_id AS BLOB) AS raw_id,CAST(payload_json AS BLOB) AS raw_payload,CAST(state AS BLOB) AS raw_state,(SELECT encoding FROM pragma_encoding) AS encoding
       FROM discord_ingress_journal WHERE target_thread_id=? AND owner_id IS NULL AND state IN ('staged','acknowledged','executing','held')
       AND json_type(payload_json,'$.version')='integer' AND json_extract(payload_json,'$.version')=1 AND (

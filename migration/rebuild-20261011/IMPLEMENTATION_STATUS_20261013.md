@@ -1,3 +1,12 @@
+# Current addendum — 2026-10-14 06:00 UTC
+
+- Applied851: existing-only/borrowed recovery cancellation performs bounded scalar byte checks before reading queue/intake and related ingress values. Per-row1MiB, cumulative preflight charges8MiB, at most128rows accepted using129 sentinel. Rechecks catch trigger changes; refusal rolls back all earlier cancellation writes.
+- Immutable858-file independent runs completed with8760 PASS and zero failures/cancellations/skips; final fingerprint matched. Actual1743 source/test/tools files match stage; actual strict0 and focused47 PASS. Composite evidence, not one monolithic full-suite PASS. See checkpoint-851-composite-verification.json.
+- These conservative refusal caps intentionally differ from unbounded Rust acceptance. Repeated reads consume budget again; active non-prompt rows are included in prefilter checks. Initialized compatibility behavior is unchanged.
+- Auxiliary mapping/handoff/native allocation bounds, Recover controller/command wiring, platform/archive final deletion, executable and operational acceptance remain incomplete. Continue implementation after this checkpoint.
+
+## Previous addenda (historical)
+
 # Current addendum — 2026-10-14 05:35 UTC
 
 - Applied850: original recovery custody row is capped before native SQLite returns decoded values, including malformed BLOB storage in nominal numeric columns. Existing-only cancellation no longer initializes lazy handoff schema. Completely absent handoff inventory is empty; partial tables/views still read and propagate failures.
