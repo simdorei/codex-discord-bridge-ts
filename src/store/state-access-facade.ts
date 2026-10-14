@@ -1,3 +1,4 @@
+import * as MirrorStartupIntent from './mirror-startup-intent.ts';
 import * as ArchiveDeletion from './archive-deletion.ts';
 import * as ArchivedCleanup from './archived-cleanup.ts';
 import * as MirrorStale from './mirror-stale.ts';
@@ -142,6 +143,10 @@ export const markArchiveVerified: typeof ArchiveFence.markArchiveVerified = Arch
 export const markArchiveVerifiedExisting: typeof ArchiveFence.markArchiveVerifiedExisting = ArchiveFence.markArchiveVerifiedExisting;
 export const releaseRejectedArchive: typeof ArchiveFence.releaseRejectedArchive = ArchiveFence.releaseRejectedArchive;
 export const releaseRejectedArchiveExisting: typeof ArchiveFence.releaseRejectedArchiveExisting = ArchiveFence.releaseRejectedArchiveExisting;
+export const initializeMirrorStartupIntentJournal: typeof MirrorStartupIntent.initializeMirrorStartupIntentJournal = MirrorStartupIntent.initializeMirrorStartupIntentJournal;
+export const readPendingMirrorStartupIntent: typeof MirrorStartupIntent.readPendingMirrorStartupIntent = MirrorStartupIntent.readPendingMirrorStartupIntent;
+export const prepareMirrorStartupIntent: typeof MirrorStartupIntent.prepareMirrorStartupIntent = MirrorStartupIntent.prepareMirrorStartupIntent;
+export const retainPreparedMirrorStartupIntent: typeof MirrorStartupIntent.retainPreparedMirrorStartupIntent = MirrorStartupIntent.retainPreparedMirrorStartupIntent;
 export const claimMirrorEvent: typeof MirrorCursor.claimMirrorEvent = MirrorCursor.claimMirrorEvent;
 export const cleanupMirrorEvents: typeof MirrorCursor.cleanupMirrorEvents = MirrorCursor.cleanupMirrorEvents;
 export const getOrInitMirrorCursor: typeof MirrorCursor.getOrInitMirrorCursor = MirrorCursor.getOrInitMirrorCursor;
@@ -525,6 +530,10 @@ export const markGoalWaitingExisting: typeof GoalWaiting.markGoalWaitingExisting
 export const requireFinalDeadGenerationUnheldIn: typeof PreparedMutationValidation.requireFinalDeadGenerationUnheldIn = PreparedMutationValidation.requireFinalDeadGenerationUnheldIn;
 export const revalidateStopWire: typeof StopDispatch.revalidateStopWire = StopDispatch.revalidateStopWire;
 export interface IStateAccessFacade {
+  initializeMirrorStartupIntentJournal: typeof initializeMirrorStartupIntentJournal;
+  readPendingMirrorStartupIntent: typeof readPendingMirrorStartupIntent;
+  prepareMirrorStartupIntent: typeof prepareMirrorStartupIntent;
+  retainPreparedMirrorStartupIntent: typeof retainPreparedMirrorStartupIntent;
   readonly revalidateStopWire: typeof StopDispatch.revalidateStopWire;
   readonly requireFinalDeadGenerationUnheldIn: typeof PreparedMutationValidation.requireFinalDeadGenerationUnheldIn;
   readonly remainingDiscordIds: typeof MirrorPolicyRead.remainingDiscordIds;
@@ -908,6 +917,10 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  initializeMirrorStartupIntentJournal,
+  readPendingMirrorStartupIntent,
+  prepareMirrorStartupIntent,
+  retainPreparedMirrorStartupIntent,
   revalidateStopWire,
   requireFinalDeadGenerationUnheldIn,
   remainingDiscordIds,

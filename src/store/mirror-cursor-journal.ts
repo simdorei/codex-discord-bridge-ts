@@ -1,3 +1,4 @@
+import {requireNoPendingMirrorStartupIntentIn} from './mirror-startup-intent-schema.ts';
 import {createHash} from 'node:crypto';
 import {types} from 'node:util';
 import type {DatabaseSync} from 'node:sqlite';
@@ -55,11 +56,17 @@ export function initializeMirrorCursorJournal(db:DatabaseSync):void{
   return commitStore(undefined);
  });
 }
+/** Read-only exact opt-in schema check; never creates or repairs. */
+export function requireMirrorCursorJournalIn(db:DatabaseSync):void {
+ const row=db.prepare(`SELECT type,sql,${receiptTextColumns('sql')} FROM (SELECT type,CASE WHEN typeof(sql)='text' AND length(CAST(sql AS BLOB))<=4096 THEN sql END AS sql FROM sqlite_schema WHERE name=? COLLATE NOCASE)`).get(TABLE);
+ if(row===undefined||row.type!=='table'||receiptText(row,'sql')!==DDL)throw new StoreIntegrityError('Mirror cursor anchor schema is missing or incompatible');
+}
 function rows(db:DatabaseSync,sql:string,thread:string):Record<string,unknown>[]{
  const q=db.prepare(sql);q.setReadBigInts(true);return q.all(thread,thread);
 }
 function bounded(column:string,max:number):string{return `CASE WHEN typeof(${column})='text' AND length(CAST(${column} AS BLOB))<=${max} THEN ${column} END AS ${column}`;}
 function readIn(db:DatabaseSync,thread:string):BoundMirrorCursor|null{
+ requireNoPendingMirrorStartupIntentIn(db,thread);
  const records=rows(db,`SELECT anchor_json,turn_context,operation_id,receipt_set_hash,updated_at,revision,${receiptTextColumns('anchor_json','turn_context','operation_id','receipt_set_hash')} FROM (
   SELECT ${bounded('anchor_json',131072)},${bounded('turn_context',32768)},${bounded('operation_id',256)},${bounded('receipt_set_hash',128)},updated_at,revision FROM ${TABLE}
   WHERE thread_id=? AND CAST(thread_id AS BLOB)=CAST(? AS BLOB) LIMIT 2)`,thread);

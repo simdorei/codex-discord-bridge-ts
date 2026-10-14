@@ -1,3 +1,4 @@
+import * as MirrorStartupIntent from '../../src/store/mirror-startup-intent.ts';
 import * as ArchiveDeletion from '../../src/store/archive-deletion.ts';
 import * as ArchivedCleanup from '../../src/store/archived-cleanup.ts';
 import * as MirrorStale from '../../src/store/mirror-stale.ts';
@@ -121,6 +122,14 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.initializeMirrorStartupIntentJournal, MirrorStartupIntent.initializeMirrorStartupIntentJournal);
+    assert.strictEqual(FacadeExports.initializeMirrorStartupIntentJournal, MirrorStartupIntent.initializeMirrorStartupIntentJournal);
+    assert.strictEqual(StateAccessFacade.readPendingMirrorStartupIntent, MirrorStartupIntent.readPendingMirrorStartupIntent);
+    assert.strictEqual(FacadeExports.readPendingMirrorStartupIntent, MirrorStartupIntent.readPendingMirrorStartupIntent);
+    assert.strictEqual(StateAccessFacade.prepareMirrorStartupIntent, MirrorStartupIntent.prepareMirrorStartupIntent);
+    assert.strictEqual(FacadeExports.prepareMirrorStartupIntent, MirrorStartupIntent.prepareMirrorStartupIntent);
+    assert.strictEqual(StateAccessFacade.retainPreparedMirrorStartupIntent, MirrorStartupIntent.retainPreparedMirrorStartupIntent);
+    assert.strictEqual(FacadeExports.retainPreparedMirrorStartupIntent, MirrorStartupIntent.retainPreparedMirrorStartupIntent);
     assert.strictEqual(StateAccessFacade.asyncTargetDispatchHeldExisting, AsyncAdmission.asyncQuestionTargetDispatchHeldExisting);
     assert.strictEqual(FacadeExports.asyncTargetDispatchHeldExisting, AsyncAdmission.asyncQuestionTargetDispatchHeldExisting);
     assert.strictEqual(StateAccessFacade.eligibleJobsExisting, ExecutionHold.eligibleJobsExisting);
@@ -622,6 +631,10 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
   it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
+      "initializeMirrorStartupIntentJournal",
+      "readPendingMirrorStartupIntent",
+      "prepareMirrorStartupIntent",
+      "retainPreparedMirrorStartupIntent",
       "unfinishedArchiveRequest",
       "unfinishedArchiveRequestExisting",
       "reserveArchiveScope",
@@ -980,7 +993,7 @@ assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimExisting, PromptIntak
     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
 assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
 assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
-    assert.strictEqual(actual.length, 363);
+    assert.strictEqual(actual.length, 367);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
