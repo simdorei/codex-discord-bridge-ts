@@ -89,6 +89,8 @@ test('mirror HTTP adapter validates signal brands without invoking proxy traps o
   const forged=Object.create(AbortSignal.prototype);Object.defineProperty(forged,'aborted',{get(){hooks++;return false;}});
   const proxy=new Proxy(new AbortController().signal,{get(){hooks++;throw new Error('signal trap');},getPrototypeOf(){hooks++;throw new Error('signal prototype trap');}});
   for(const signal of [null,{},forged,proxy])assert.throws(()=>createSessionMirrorHttpTransport(client,signal as AbortSignal),TypeError);
+  const transport=createSessionMirrorHttpTransport(client);
+  for(const signal of [null,{},forged,proxy])assert.throws(()=>transport.sendValidated(request(),signal as AbortSignal),TypeError);
   assert.equal(hooks,0);assert.equal(calls,0);
  });
 });
@@ -112,5 +114,14 @@ for(const phase of ['headers','body'] as const)test(`mirror ${phase} cancellatio
   assert.equal(client.activeRequests,0);
   assert.equal(await createSessionMirrorHttpTransport(client).sendValidated(request()),18446744073709551615n);
   assert.equal(calls,2);assert.equal(client.activeRequests,0);
+ });
+});
+for(const phase of ['body','rate-wait'] as const)test(`mirror operation cancellation joins ${phase} while the application signal and shared client stay live`,{timeout:5000},async()=>{
+ let calls=0;
+ await fixture((_req,res)=>{calls++;if(calls===1){if(phase==='body'){res.writeHead(200);res.write('{');}else{res.setHeader('x-ratelimit-scope','user');res.setHeader('x-ratelimit-bucket','operation-stop');res.setHeader('x-ratelimit-limit','1');res.setHeader('x-ratelimit-remaining','0');res.setHeader('x-ratelimit-reset-after','60');res.writeHead(429);res.end('rate limited');}}else res.end(JSON.stringify(message));},async client=>{
+  const app=new AbortController(),operation=new AbortController(),reason=Error('target cancelled'),transport=createSessionMirrorHttpTransport(client,app.signal);
+  const rejected=assert.rejects(transport.sendValidated(request(),operation.signal),error=>error===reason);
+  await until(()=>calls===1);if(phase==='rate-wait')await until(()=>client.activeRequests===0);operation.abort(reason);await rejected;assert.equal(app.signal.aborted,false);assert.equal(client.activeRequests,0);assert.equal(calls,1);
+  const other=idempotentMessageRequest(92n,'still owned','session-mirror/v1','other-target',0n);assert.equal(await transport.sendValidated(other),18446744073709551615n);assert.equal(calls,2);
  });
 });

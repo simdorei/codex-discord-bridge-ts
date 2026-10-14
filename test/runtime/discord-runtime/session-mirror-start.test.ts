@@ -19,6 +19,16 @@ test('disabled source branch creates no worker or subscriptions and inspects no 
  let hooks=0;const trap=new Proxy({},{get(){hooks++;throw Error('hook')},getOwnPropertyDescriptor(){hooks++;throw Error('hook')}}) as never;
  assert.equal(startSessionMirrorRuntimeWorker(false,trap,trap,trap,trap,trap,trap,trap),null);assert.equal(hooks,0);assert.equal(mirrorRunnerBusy(),false);
 });
+test('forced mirror cancellation reaches the original receipt operation and joins it without app shutdown',{timeout:15000},async()=>fixture(async(config,cursor,queue)=>{
+ const appStop=new AbortController(),notifier=new RuntimeWorkerExitChannel();let entered!:()=>void,operation:AbortSignal|undefined;
+ const started=new Promise<void>(resolve=>entered=resolve),transport={sendValidated:async(_request:unknown,signal?:AbortSignal):Promise<bigint>=>{
+  operation=signal;entered();assert.ok(signal);return new Promise((_resolve,reject)=>{const aborted=()=>reject(signal.reason);signal.addEventListener('abort',aborted,{once:true});if(signal.aborted)aborted();});
+ }};
+ const worker=startSessionMirrorRuntimeWorker(true,config,transport,appStop.signal,notifier,()=> 'cancelled',()=>{},queue)!;notifier.close();
+ try{await started;assert.equal(operation!.aborted,false);assert.equal(queue.locks.tryAcquire('thread'),undefined);worker.abort();
+  assert.deepEqual(await worker.join(),{kind:'Returned',result:{ok:true}});assert.equal(operation!.aborted,true);assert.equal(appStop.signal.aborted,false);assert.equal((await cursor.read('thread'))!.revision,1n);assert.equal(queue.locks.activeTargetCount,0);assert.equal(ownedWorkerUsage().Background,0);
+ }finally{worker.abort();await worker.join();}
+}));
 test('monitored native mirror captures config and transport before scheduling and announces joined exit',async()=>fixture(async(config,cursor,queue)=>{
  const stop=new AbortController(),notifier=new RuntimeWorkerExitChannel(),receiver=notifier.receiver();let calls=0;const transport={async sendValidated(){calls++;return 123n;}};
  const worker=startSessionMirrorRuntimeWorker(true,config,transport,stop.signal,notifier,()=> 'bounded failure',event=>{if(event.kind==='Targets')stop.abort('done');},queue)!;notifier.close();

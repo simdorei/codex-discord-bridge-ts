@@ -1,6 +1,22 @@
 # Explicit per-target mirror bootstrap
 
-The coordinator is available through an explicit opt-in policy in the existing bound mirror worker. The application and CLI mirror gate remains in place. The standalone coordinator does not poll, send Discord messages, create mappings, or authorize a live deployment.
+The coordinator is available through an explicit opt-in policy in the existing bound mirror worker. The local application now accepts an explicit programmatic ownership profile; the CLI mirror gate remains in place. Neither the profile nor the coordinator qualifies a live deployment.
+
+## Explicit local application profile
+
+`runLocalRuntimeApplication(config, environment, root, version, mirrorProfile)` accepts `LocalSessionMirrorProfile` only when `config.sessionMirror` is true. Omitting the profile still rejects the default enabled mirror configuration before startup effects. Supplying it with mirroring disabled also rejects. The CLI supplies no profile, and no environment variable can supply or bypass this qualification.
+
+The profile must explicitly contain:
+
+- `kind: 'RootOwnedAppendOnlyMirror'` and `ownership: 'CooperatingSingletonRootWithStableDatabaseIdentity'`.
+- `producer: {kind: 'CallerQualifiedAppendOnly', qualification: '...'}` with a nonempty, bounded caller-provided description or qualification reference. This records a caller assertion for every rollout discovered through the configured state database. The program does not inspect the reference or certify the producer. The caller must already have established and continue maintaining that contract.
+- The existing `BoundMirrorWorkerConfig`, including an explicit `SkipExistingHistory` bootstrap policy and all existing discovery, ready, poll and bootstrap budgets, plus a bounded `schemaTimeoutMs`.
+
+All profile data and nested budgets are captured before any await. The profile's state and bridge paths must match the resolved application paths before singleton acquisition. The bridge database must be the singleton root's `discord_mirror.sqlite`; external `CODEX_DISCORD_MIRROR_DB` destinations are rejected. Under the actual acquired singleton, read-only checks reject existing nonregular, symlink, hardlinked or out-of-root database/SQLite-sidecar aliases. These are deterministic alias checks, not a guarantee against hostile directory replacement, hidden mount aliases, another process ignoring ownership, or future database replacement. The private/cooperating-root and stable-identity prerequisites remain the caller's responsibility for the complete lifetime.
+
+Startup reuses the existing prepared context's base-store preparation, without repeating its migrations. After that context returns, the application joins both explicit extension-schema preparations before creating the paused gateway or any typed ingress workers. A schema failure closes the prepared resident and releases outer ownership only after cleanup is confirmed; a partially prepared schema is not permission to start polling. The application's original queue and target/global mapping registry are checked against the mirror database, and its original shared Discord HTTP client supplies the receipt adapter. The resulting mirror configuration enters the existing prepared/core worker assembly, exit channel and joined shutdown order. It adds no second queue, lock registry or HTTP owner.
+
+Receipt sends forward the actual target-operation cancellation signal through the captured transport to the shared HTTP client, in addition to any application-level signal. Marker shutdown, peer-worker exits, forced worker cancellation and target deadlines can therefore cancel request/body/rate waits without first closing the shared client. A known accepted message still joins receipt confirmation independently of cancellation; an unconfirmed send retains its durable unknown outcome and does not advance the cursor.
 
 ## Explicit worker integration
 
@@ -16,7 +32,7 @@ The reserved string `mirror-sync-operation` is not a supported thread identity i
 
 The global mapping lease conservatively serializes actual mirror targets, including slow HTTP and native cleanup. The private thread/channel admission, eight-target capacity, cancellation deadline, and single-runner exclusion remain in place. This is correctness serialization, not throughput or complete-runtime performance qualification.
 
-These locks are process-local. They do not establish stable database-path identity, cooperation by another process using a different runtime root, or the external rollout producer's append-only history. Path pinning is not file identity; an eventual enabled profile must bind an external `CODEX_DISCORD_MIRROR_DB` to the same cooperating ownership scope or restrict the store to the singleton-owned root. The producer contract remains unverified. This integration therefore does not enable `sessionMirror` in the local application or CLI, and does not move schema preparation into application startup.
+These locks are process-local. They do not establish stable database-path identity, cooperation by another process using a different runtime root, or the external rollout producer's append-only history. Path pinning is not file identity. The explicit local profile above restricts its store to the singleton-owned root and requires the caller's independent producer qualification; other callers must satisfy the same prerequisites themselves. The producer contract remains externally qualified, and the ordinary CLI remains gated.
 
 ## Caller contract
 
@@ -48,10 +64,10 @@ The integrated worker treats this uncertainty as terminal for that invocation. H
 
 Stages use existing native owners sequentially on the main runtime owner, with no outer worker slot and no nested worker submission. Normal fresh startup uses five workers; both uncertain-write reconciliations bring the finite maximum to seven. The existing global native and cutoff-reader budgets still reject saturation. A monotonic total deadline is checked before each new stage, and an abort timer cancels already-submitted work. Total budget exhaustion stops new work but always waits for actual native exit; this is not a hard upper bound on a blocked OS operation's exit time. `close()` aborts and joins the whole attempt.
 
-## Evidence limits and remaining application decision
+## Evidence limits
 
 Database identity checks during recovery/completion detect observed replacement. Initial target snapshot and retain are not one identity-bracketed transaction; caller-stable database identity remains a prerequisite. Sampled rollout metadata and bounded anchors do not certify unseen middle rewrites, filesystem ABA, or historical integrity. File observations and SQLite commit are not globally atomic.
 
-The existing mirror worker now invokes the coordinator without releasing its target/channel owner and retains reconciliation-needed failures. The remaining application decision is how startup schema preparation and the mirror owner participate in the application's mapping-mutator, stable-database, and producer contracts. The application/CLI gate remains untouched until that contract is established.
+The existing mirror worker invokes the coordinator without releasing its target/channel owner and retains reconciliation-needed failures. The explicit local application profile now composes schema preparation, the original queue/locks and the shared HTTP owner. That composition does not independently establish the caller's stable-database or external producer assertions. The CLI remains gated until a separate real qualification and authorized entrypoint decision.
 
 Credential-free tests exercise a synthetic SQLite store and local HTTP server, both directly and through the monitored worker: initial history produces no messages; the first append passes through existing bound polling and the shared real HTTP adapter, commits its durable receipt/cursor, and later EOF polls send nothing. Worker tests also cover original pending resumption, bound reuse, missing/incompatible schemas, legacy holds, explicit schema preparation, report/render failures, discovery failure during a native write, and abort/join retention. They do not qualify live Discord, production data, Windows behavior, or whole-runtime startup/shutdown.

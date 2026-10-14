@@ -372,3 +372,44 @@ test('core and prepared mirror reject foreign database or queue before claiming 
   assert.equal(port.polls,0);assert.equal(port.disposed,0);assert.equal(gateway.resourcesClosed,false);assert.equal(context.completionReceiver.tryReceive().kind,'Empty');assert.equal(context.serverRequestReceiver.tryReceive().kind,'Empty');assert.equal(mirrorRunnerBusy(),false);assert.equal(context.queue.locks.activeTargetCount,0);assert.deepEqual(seen,[]);
  });}finally{stop.abort();notifier.close();await gateway.shutdown(performance.now()+3000);await context.disposeBeforeWorkers();}
 }));
+
+// This exercises the exact application schema/profile + prepared-worker stages.
+// It does not acquire or substitute a POSIX application singleton.
+for(const mode of ['append','marker-body','sibling-rate'] as const)test(`explicit local profile composes actual prepared workers and ${mode} shared HTTP lifetime`,{timeout:25000},async()=>storeFixture(async unused=>{
+ const {localMirrorProfile}=await import('../../helpers/local-mirror-profile.ts'),{captureLocalSessionMirrorProfile,prepareLocalSessionMirrorSchemas}=await import('../../../src/runtime/discord-runtime/local-session-mirror-profile.ts');
+ const {createSessionMirrorHttpTransport}=await import('../../../src/runtime/discord-runtime/session-mirror-http.ts'),{captureRuntimeMirrorInput}=await import('../../../src/runtime/discord-runtime/session-mirror-start.ts'),{DiscordChannelClient}=await import('../../../src/discord/channel-client.ts');
+ const {createServer}=await import('node:http'),{writeFile,appendFile}=await import('node:fs/promises'),{setTimeout:delay}=await import('node:timers/promises'),{loadRuntimeAutocomplete}=await import('../../../src/runtime/discord-runtime/autocomplete-bootstrap.ts'),{ownedWorkerUsage}=await import('../../../src/runtime/owned-worker-slot.ts');
+ const path=join(dirname(unused),'discord_mirror.sqlite'),o=await input(path),root=o.paths.root,rollout=join(root,'rollout.jsonl'),event=(text:string)=>JSON.stringify({type:'event_msg',payload:{type:'agent_message',message:text}})+'\n';
+ await writeFile(rollout,JSON.stringify({type:'turn_context',payload:{turn_id:'initial-turn'}})+'\n'+event('historical'));
+ const source=new DatabaseSync(o.paths.stateDb);try{source.exec('CREATE TABLE threads(id TEXT,title TEXT,cwd TEXT,updated_at INTEGER,rollout_path TEXT,model TEXT,reasoning_effort TEXT,tokens_used INTEGER,archived INTEGER,archived_at INTEGER)');source.prepare('INSERT INTO threads(id,rollout_path,archived) VALUES(?,?,0)').run('profile-target',rollout);}finally{source.close();}
+ const profile=captureLocalSessionMirrorProfile(localMirrorProfile(o.paths.stateDb,path)),stop=new AbortController(),markers=new PosixDrainMarkerStore(root),controller=await RuntimeDrainController.initialize(posixDrainMarkerPort(markers));o.admission=controller.admissionGate;
+ let context:Awaited<ReturnType<typeof prepareRuntimeContext>>|undefined,http:Awaited<ReturnType<typeof DiscordChannelClient.create>>|undefined,owner:PreparedRuntimeWorkerOwner|undefined,db:DatabaseSync|undefined;const port=new PreparedPort(),gateway=GatewayRuntime.fromOwnedPorts([port],{reportReceiveErrorDrop:()=>{},reportTriggerFailure:()=>{}});let calls=0,body='';
+ const web=createServer((req,res)=>{assert.equal(req.headers.authorization,undefined);if(req.url?.endsWith('/typing')){req.resume();res.writeHead(204);res.end();return;}req.on('data',chunk=>body+=String(chunk));req.on('end',()=>{calls++;assert.equal(req.url,'/api/v10/channels/42/messages');if(mode==='marker-body'){res.writeHead(200);res.write('{');return;}if(mode==='sibling-rate'){res.setHeader('x-ratelimit-scope','user');res.setHeader('x-ratelimit-bucket','local-profile');res.setHeader('x-ratelimit-limit','1');res.setHeader('x-ratelimit-remaining','0');res.setHeader('x-ratelimit-reset-after','60');res.writeHead(429);res.end('rate limited');return;}res.end(JSON.stringify({attachments:[],author:{id:'1',username:'fixture',discriminator:'0'},channel_id:'42',content:'In progress\n\nfirst append',embeds:[],id:'123',type:0,mention_everyone:false,mention_roles:[],mentions:[],pinned:false,timestamp:'2020-01-01T00:00:00+00:00',tts:false}));});});
+ try{
+  // An unsupported loopback bind fails explicitly, before creating native owners.
+  await new Promise<void>((resolve,reject)=>{web.once('error',reject);web.listen(0,'127.0.0.1',resolve);});
+  context=await prepareRuntimeContext(o);db=await openInitialized(path);db.prepare('INSERT INTO mirror_threads VALUES(?,?,?,?,?,?)').run('profile-target','project','title',1n,42n,1);
+  assert.equal(db.prepare("SELECT name FROM sqlite_master WHERE name='cdr_ts_mirror_cursor_anchors_v1'").get(),undefined);
+  await prepareLocalSessionMirrorSchemas(profile,o.paths,stop.signal);assert.equal(port.polls,0);
+  assert.ok(db.prepare("SELECT name FROM sqlite_master WHERE name='cdr_ts_mirror_startup_intents_v1'").get());
+  http=await DiscordChannelClient.create({token:null,testOrigin:`http://127.0.0.1:${(web.address() as {port:number}).port}/api/v10/`,report:()=>{}});
+  const options=localWorkerOptions(root,[]),mirror=captureRuntimeMirrorInput(profile.worker,createSessionMirrorHttpTransport(http,stop.signal),()=> 'safe',()=>{},context.queue);
+  owner=await startPreparedRuntimeWorkers(context,gateway,o.admission,http,await loadRuntimeAutocomplete(context.owner),stop.signal,{...options,interleaving:{...options.interleaving,mirror}});
+  assert.equal(owner.workers.filter(w=>w.name==='session-mirror').length,1);assert.equal(owner.startupOrder.at(-2)?.name,'session-mirror');assert.equal(context.queue.dbPath,path);
+  const until=async(predicate:()=>boolean)=>{const deadline=performance.now()+8000;while(!predicate()){assert.ok(performance.now()<deadline,'expected fixture progress');await delay(10);}};
+  const revision=()=>db!.prepare("SELECT revision FROM cdr_ts_mirror_cursor_anchors_v1 WHERE thread_id='profile-target'").get()?.revision;
+  await until(()=>revision()===1);assert.equal(calls,0);assert.equal(db.prepare('SELECT count(*) AS n FROM cdr_ts_mirror_startup_intents_v1').get()!.n,0);
+  await appendFile(rollout,event('first append'));await until(()=>calls===1);
+  if(mode==='append'){await until(()=>revision()===2);assert.equal(JSON.parse(body).content,'In progress\n\nfirst append');assert.equal(JSON.parse(body).enforce_nonce,true);}
+  else{if(mode==='sibling-rate')await until(()=>http!.activeRequests===0);assert.equal(context.queue.locks.tryAcquire('profile-target'),undefined);assert.equal(context.queue.locks.tryAcquire('mirror-sync-operation'),undefined);}
+  if(mode==='sibling-rate')owner.workers.find(w=>w.name==='ready')!.abort();else await writeFile(join(root,DRAIN_MARKER_NAMES.stop),'stop');
+  const started=performance.now(),result=await runPreparedRuntimeLifetime(owner,controller,stop.signal,{stopRequested:()=>markers.stopRequested(),reportControl:()=>{},reportTransition:()=>{},shutdown:{report:()=>{},fatal:component=>assert.fail('Unexpected hard deadline: '+component)}});
+  assert.ok(performance.now()-started<5000,'HTTP operation must cancel before shutdown deadline');assert.equal(stop.signal.aborted,false);assert.equal(result.cleanup.serverClose.ok,true);assert.equal(result.cleanup.workers.cleanup.ok,true);assert.equal(owner.workers.every(w=>w.peek()!==undefined),true);assert.equal(context.queue.locks.activeTargetCount,0);assert.equal(http.activeRequests,0);assert.equal(calls,1);
+  if(mode==='sibling-rate'){assert.deepEqual(result.selection.cause,{kind:'Worker',worker:'ready'});assert.equal(result.finalized.decision.result.ok,false);}else assert.equal(result.finalized.decision.result.ok,true);
+  assert.equal(revision(),mode==='append'?2:1);const receipt=db.prepare('SELECT message_id FROM codex_delivery_receipts').get();assert.equal(receipt?.message_id,mode==='append'?'123':null);
+  await http.createTyping(99n,new AbortController().signal);assert.equal(http.activeRequests,0);gone(root);
+ }finally{
+  stop.abort();owner?.requestStop();await http?.close();await gateway.shutdown(performance.now()+3000);await owner?.close();owner?.heartbeat.requestStop();await owner?.heartbeat.worker.join();owner?.disposeMonitor();await context?.disposeBeforeWorkers();await controller.dispose();db?.close();web.closeAllConnections();if(web.listening)await new Promise<void>((resolve,reject)=>web.close(error=>error?reject(error):resolve()));
+ }
+ assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0});
+}));

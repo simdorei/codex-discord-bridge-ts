@@ -9,7 +9,7 @@ import {serializeDiscordComponent,type DiscordComponent} from "../../discord/com
 import {requireDiscordText} from "../../discord/text.ts";
 export interface IdempotentChunk {readonly domain:string;readonly logicalKey:string;readonly chunkIndex:bigint|number;readonly content:string}
 /** Trusted adapter must validate the complete provider response before returning its nonzero u64 message ID. No production HTTP decoder is supplied here. */
-export interface DiscordReceiptTransport {sendValidated(request:IdempotentMessageRequest):Promise<bigint>}
+export interface DiscordReceiptTransport {sendValidated(request:IdempotentMessageRequest,signal?:AbortSignal):Promise<bigint>}
 import {DiscordTransportFault,ownedDiscordTransportFault} from "../../discord/transport-fault.ts";
 export {DiscordTransportFault,type DiscordFaultKind} from "../../discord/transport-fault.ts";
 const heldErrors=new WeakSet<object>();
@@ -54,7 +54,7 @@ export async function sendReceiptChunk(path:string,transport:DiscordReceiptTrans
 }
 /** Shared state machine for original facade and explicitly owned native storage.
  * A known accepted message is confirmed even if cancellation happened in flight.
- * Only intent observation uses signal; known rejection/confirmation persistence
+ * Intent observation and transport use signal; known rejection/confirmation persistence
  * is joined independently so cancellation cannot discard its outcome. */
 export async function sendReceiptChunkWithPersistence(store:ReceiptPersistence,transport:DiscordReceiptTransport,channel:bigint,input:IdempotentChunk,inputComponents:readonly DiscordComponent[]=[],guard:DeliveryGuard|null=null,signal?:AbortSignal):Promise<void>{
   signal?.throwIfAborted();
@@ -74,7 +74,7 @@ export async function sendReceiptChunkWithPersistence(store:ReceiptPersistence,t
   }
   let message:bigint;
   try{
-    signal?.throwIfAborted();message=await transport.sendValidated(request);
+    signal?.throwIfAborted();message=await transport.sendValidated(request,signal);
     if(typeof message!=="bigint"||message<=0n||message>=(1n<<64n))throw new DiscordTransportFault("Receipt","transport returned an invalid message identity");
   }catch(error){
     if(signal?.aborted&&error===signal.reason)throw error;

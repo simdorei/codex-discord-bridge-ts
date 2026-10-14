@@ -39,7 +39,7 @@ export function captureRuntimeMirrorInput(config:BoundMirrorWorkerConfig,transpo
  const captured=captureBoundMirrorWorkerConfig(config);captureMirrorMappingLocks(queue,captured.bridgeDatabasePath);const send=own(transport,'sendValidated');
  for(const fn of [send,render,report])if(typeof fn!=='function'||types.isProxy(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected owned mirror callback');
  if(types.isAsyncFunction(render)||types.isAsyncFunction(report))throw new TypeError('Expected synchronous mirror diagnostic');
- const pinned:DiscordReceiptTransport=Object.freeze({sendValidated:(request:Parameters<DiscordReceiptTransport['sendValidated']>[0])=>Reflect.apply(send as Function,transport,[request])});
+ const pinned:DiscordReceiptTransport=Object.freeze({sendValidated:(request:Parameters<DiscordReceiptTransport['sendValidated']>[0],signal?:AbortSignal)=>Reflect.apply(send as Function,transport,[request,signal])});
  const reportContext=Object.freeze({});
  return Object.freeze({config:captured,transport:pinned,render,report:(event:RuntimeMirrorObservation)=>invokeSynchronousVoid(report,reportContext,[event])});
 }
