@@ -1,0 +1,27 @@
+{
+  "checkpoint": 863,
+  "status": "IMPLEMENTED_SCOPED_VERIFIED",
+  "scope": "Selected Recover binds native Bridge epoch to original durable admission, cancellation and controller effect boundaries",
+  "changes": [
+    "RuntimeCommandExecutor installs its shared native Bridge owner into the one-time recovery dependency",
+    "Original selected claim requires exact captured target; opaque epoch retained across claim/check/cancel and synchronous inspect/start boundaries",
+    "Selection away and back remains stale; no target refresh or retargeting",
+    "Close aborts and joins selection preparation; closed owner cannot authorize controller effects",
+    "Native snapshot capture bypasses subclass execute overrides"
+  ],
+  "verification": {
+    "strictCompiledBuildExit": 0,
+    "finalNativeAndSelectionTests": 51,
+    "finalRecoveryIntegrationTests": 13,
+    "finalFailures": 0,
+    "finalSkipped": 0,
+    "earlierBroaderAffectedTests": 131,
+    "countsOverlapDoNotSumWithEarlier": true,
+    "fullSuiteClaim": false
+  },
+  "limits": [
+    "Bridge epoch assumes every in-process writer shares the same owner; not an external-writer detector",
+    "WIP858 Unix socket qualification remains blocked by EPERM",
+    "No default OS recovery controller, Windows qualification, production gateway executable or deployment claim"
+  ]
+}

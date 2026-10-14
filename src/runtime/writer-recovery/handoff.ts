@@ -51,11 +51,13 @@ export async function handoffRecovery(owner:NativeRecoveryOwner,claim:NativeReco
  const timer=setTimeout(()=>deadline.abort(new Error('Recovery handoff deadline; inspect durable receipt before retrying')),totalMs);let cancelled:RecoveryCancellation|null=null,failure:unknown;
  try{
   await NativeRecoveryOwner.prototype.check.call(owner,claim,combined);combined.throwIfAborted();
+  NativeRecoveryOwner.prototype.checkSelection.call(owner,claim);
   const inspection=response(await interrupted(promise(controller.inspect(target,combined)),combined));combined.throwIfAborted();
   if(own(inspection,'ThreadId')!==target||own(inspection,'State')!=='tools_recovery')throw new TypeError('Recovery inspection target or scope differs');
   const identity=checkedText(own(inspection,'RecoveryIdentity'),32768);
   cancelled=await NativeRecoveryOwner.prototype.cancel.call(owner,claim,combined);combined.throwIfAborted();
   await NativeRecoveryOwner.prototype.check.call(owner,claim,combined);combined.throwIfAborted();
+  NativeRecoveryOwner.prototype.checkSelection.call(owner,claim);
   const dispatched=response(await interrupted(promise(controller.start(target,identity,combined)),combined));combined.throwIfAborted();
   const receipt=recoveryReceiptPath(root,dispatched,platform);
   return Object.freeze({phase:'dispatched_tools',thread:target,cancelled:Object.freeze([...cancelled.jobs]),startedOrUncertain:cancelled.startedOrUncertain,receipt});

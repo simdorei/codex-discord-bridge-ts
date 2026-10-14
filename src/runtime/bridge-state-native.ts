@@ -25,12 +25,18 @@ export class NativeBridgeStateOwner{
  readonly #path:string;readonly #slot=new OwnedWorkerSlot('Control');
  #epoch=0n;readonly #snapshots=new WeakMap<object,{epoch:bigint,selected:string|null}>();
  constructor(path:string){requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new TypeError('Invalid Bridge path');this.#path=pinNativeRuntimePath(path);if(Buffer.byteLength(this.#path)>32768)throw new RangeError('Bridge path exceeds budget');Object.freeze(this);}
+ path():string{return this.#path;}
  /** Fresh native selected read plus an in-process epoch token. Not a durable
   * receipt or external-writer detector. Every runtime mutation must share this owner. */
  async captureSelected(signal?:AbortSignal):Promise<BridgeSelectionSnapshot>{
-  const epoch=this.#epoch,selected=await this.execute({kind:'Selected'},signal);
+  const epoch=this.#epoch,selected=await NativeBridgeStateOwner.prototype.execute.call(this,{kind:'Selected'},signal);
   if(this.#epoch!==epoch||this.#slot.busy)throw new Error('Bridge changed while capturing selected snapshot');
   if(selected!==null&&typeof selected!=='string')throw new TypeError('Invalid selected snapshot');const token=Object.freeze({});this.#snapshots.set(token,{epoch,selected});return token;
+ }
+ /** Read only an authentic current snapshot; never refresh a changed selection. */
+ selectedFromSnapshot(token:BridgeSelectionSnapshot):string|null{
+  const snapshot=typeof token==='object'&&token!==null?this.#snapshots.get(token):undefined;
+  if(snapshot===undefined||snapshot.epoch!==this.#epoch||this.#slot.busy)throw new Error('Selected Bridge snapshot is stale or differs');return snapshot.selected;
  }
  /** Synchronous final boundary check: no filesystem read, await or user hook. */
  validateSelected(token:BridgeSelectionSnapshot,expected:string):void{

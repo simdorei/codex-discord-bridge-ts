@@ -68,6 +68,7 @@ export interface RuntimeExecutorDependencies{
  * A native server, queue backend and live gateway still require bootstrap and
  * ownership qualification; this constructor does not start any of them. */
 export class RuntimeCommandExecutor implements MessageBusinessServices{
+ readonly #bridgeOwner:NativeBridgeStateOwner;
  #recovery:AdmittedRecoverExecutor|null=null;
  readonly #stopWorkerFactory:(report:(event:StopWorkerFailure)=>void)=>StopControlWorker;
  readonly #intake:PromptIntakeProcessor;readonly #settingsResolver:SettingsTargetResolver;
@@ -83,7 +84,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   this.#codex=paths.state;this.#database=paths.mirror;
   const intakeState=createNativePromptIntakeState(paths.mirror),threadReads=createNativeActionThreadReads(paths.state,BridgeState.prototype.path.call(bridge));
   const controlReads=createNativeControlReads(paths.mirror,intakeState.mirroredThreadId),stopActionState=Object.freeze({acceptRunningStop:controlStore.acceptRunningStop,acceptUnresolvedStop:controlStore.acceptUnresolvedStop,...controlReads}),stopWorkerState=Object.freeze({pendingStopControlsAfter:controlStore.pendingStopControlsAfter,claimStopControl:controlStore.claimStopControl,recordStopControlError:controlStore.recordStopControlError,...controlReads});
-  const bridgeOwner=new NativeBridgeStateOwner(BridgeState.prototype.path.call(bridge));
+  const bridgeOwner=new NativeBridgeStateOwner(BridgeState.prototype.path.call(bridge));this.#bridgeOwner=bridgeOwner;
   const locks=queue.locks,selection=new ActionThreadSelection(paths.state,paths.mirror,bridge,intakeState.mirroredThreadId,threadReads,bridgeOwner),control=new ControlTurnVerifier(paths.mirror,server,bridge,locks,controlReads,bridgeOwner),busy=new BusyResultProducer(paths.mirror,control,queue.reads);
   const targets=new ActionTargetServices(paths.mirror,bridge,queue,{preparePrompt:prepare,busyResult:BusyResultProducer.prototype.busyResult.bind(busy)},undefined,bridgeOwner),intake=new PromptIntakeProcessor(paths.mirror,queue,targets,{state:intakeState});
   const pendingStopReader=new NativeStopPendingReader(paths.mirror);
@@ -123,7 +124,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   }finally{this.#mirrorConfiguring=false;}
  }
  /** Startup-only installation of an explicitly owned recovery controller. */
- configureRecovery(executor:AdmittedRecoverExecutor):void{if(this.#recovery!==null)throw new InvalidActionRequestError('recovery controller is already configured');AdmittedRecoverExecutor.prototype.requireDatabase.call(executor,this.#database);this.#recovery=executor;}
+ configureRecovery(executor:AdmittedRecoverExecutor):void{if(this.#recovery!==null)throw new InvalidActionRequestError('recovery controller is already configured');AdmittedRecoverExecutor.prototype.requireDatabase.call(executor,this.#database);AdmittedRecoverExecutor.prototype.configureBridge.call(executor,this.#bridgeOwner);this.#recovery=executor;}
  async #syncMirror(channel:bigint,limit:bigint|null,signal?:AbortSignal):Promise<ActionResult>{
   if(this.#mirrorSync===null)throw new ActionExecutionError('Unsupported','mirror sync transport is not configured');
   try{return snapshotActionResult({text:formatMirrorSyncResult(await this.#mirrorSync.sync(channel,limit,signal)),waitsForFinal:false,ui:null});}

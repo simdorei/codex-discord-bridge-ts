@@ -1,3 +1,7 @@
+## 2026-10-14 12:20 UTC — checkpoint 863
+
+Selected Recover now uses the command executor's shared native Bridge owner, retains the original selection epoch, and refuses changed or refreshed targets before cancellation/restart. Close joins selection preparation. Final compiled targeted checks: 51 native/selection + 13 recovery integration, all passed, no skips. An earlier broader 131-test affected run also passed; counts overlap and are not additive. This is scoped verification only. WIP858 Unix socket EPERM, Windows, OS controller and full production executable remain unqualified or incomplete. See checkpoint-863-selected-recovery.json.
+
 # Current addendum — 2026-10-14 11:17 UTC
 
 - Implemented862 corrects861: a lifetime result containing failed native resident disposal does not authorize outer identity cleanup. Identity/ownership remain retained.
