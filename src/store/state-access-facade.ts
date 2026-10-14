@@ -144,6 +144,7 @@ export const markArchiveVerifiedExisting: typeof ArchiveFence.markArchiveVerifie
 export const releaseRejectedArchive: typeof ArchiveFence.releaseRejectedArchive = ArchiveFence.releaseRejectedArchive;
 export const releaseRejectedArchiveExisting: typeof ArchiveFence.releaseRejectedArchiveExisting = ArchiveFence.releaseRejectedArchiveExisting;
 export const initializeMirrorStartupIntentJournal: typeof MirrorStartupIntent.initializeMirrorStartupIntentJournal = MirrorStartupIntent.initializeMirrorStartupIntentJournal;
+export const verifyPendingMirrorStartupIntent: typeof MirrorStartupIntent.verifyPendingMirrorStartupIntent = MirrorStartupIntent.verifyPendingMirrorStartupIntent;
 export const readPendingMirrorStartupIntent: typeof MirrorStartupIntent.readPendingMirrorStartupIntent = MirrorStartupIntent.readPendingMirrorStartupIntent;
 export const prepareMirrorStartupIntent: typeof MirrorStartupIntent.prepareMirrorStartupIntent = MirrorStartupIntent.prepareMirrorStartupIntent;
 export const retainPreparedMirrorStartupIntent: typeof MirrorStartupIntent.retainPreparedMirrorStartupIntent = MirrorStartupIntent.retainPreparedMirrorStartupIntent;
@@ -531,6 +532,7 @@ export const requireFinalDeadGenerationUnheldIn: typeof PreparedMutationValidati
 export const revalidateStopWire: typeof StopDispatch.revalidateStopWire = StopDispatch.revalidateStopWire;
 export interface IStateAccessFacade {
   initializeMirrorStartupIntentJournal: typeof initializeMirrorStartupIntentJournal;
+  verifyPendingMirrorStartupIntent: typeof verifyPendingMirrorStartupIntent;
   readPendingMirrorStartupIntent: typeof readPendingMirrorStartupIntent;
   prepareMirrorStartupIntent: typeof prepareMirrorStartupIntent;
   retainPreparedMirrorStartupIntent: typeof retainPreparedMirrorStartupIntent;
@@ -918,6 +920,7 @@ export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
   initializeMirrorStartupIntentJournal,
+  verifyPendingMirrorStartupIntent,
   readPendingMirrorStartupIntent,
   prepareMirrorStartupIntent,
   retainPreparedMirrorStartupIntent,

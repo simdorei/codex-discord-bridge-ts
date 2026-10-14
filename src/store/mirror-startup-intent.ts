@@ -63,6 +63,12 @@ export function readPendingMirrorStartupIntent(db:DatabaseSync,thread:string):Pe
  text(thread,16384);return withStoreTransaction(db,'DEFERRED',()=>{schema(db);return rollbackStore(readIn(db,thread));});
 }
 function same(a:PendingMirrorStartupIntent,b:PendingMirrorStartupIntent):boolean {return a.thread===b.thread&&a.operationId===b.operationId&&a.createdAt===b.createdAt&&encode(a.cutoff)===encode(b.cutoff);}
+/** Read-only exact-packet check. This descriptive input grants no native file or
+ * write authority; comparison includes original time, operation and held cutoff. */
+export function verifyPendingMirrorStartupIntent(db:DatabaseSync,input:PendingMirrorStartupIntent):void {
+ const expected=snapshotPendingMirrorStartupIntent(input);
+ withStoreTransaction(db,'DEFERRED',()=>{schema(db);const actual=readIn(db,expected.thread);if(actual===null||!same(actual,expected))throw new MirrorStartupIntentConflictError();return rollbackStore(undefined);});
+}
 /** Owns one short transaction. No replace/update/delete, automatic adoption or
  * EOF resampling. Even exact retry checks cursor absence. A crash/lost reply is
  * reconciled by read or the SAME prepared packet, never a later native EOF. */

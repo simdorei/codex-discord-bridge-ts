@@ -2,10 +2,10 @@ import {OwnedWorkerSlot,OwnedWorkerBusyError,OwnedWorkerTimeoutError} from '../o
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
-import {snapshotMirrorCursorAnchor,type MirrorCursorAnchor,type MirrorFileStamp} from '../../core/mirror-cursor-anchor.ts';
+import type {MirrorCursorAnchor,MirrorFileStamp} from '../../core/mirror-cursor-anchor.ts';
 import {captureMirrorCursorAnchor,type MirrorContinuity} from './continuity-observation.ts';
 import {MirrorFileChangedError} from './file-window.ts';
-import {MIRROR_STARTUP_CONTEXT_HOLDS,MirrorStartupContextHeldError,sameMirrorStartupStamp,snapshotMirrorStartupContextLimits,snapshotMirrorStartupCutoffData,type MirrorStartupContextHold,type MirrorStartupContextLimits,type MirrorStartupCutoffData} from './startup-context-limits.ts';
+import {MIRROR_STARTUP_CONTEXT_HOLDS,MirrorStartupContextHeldError,sameMirrorStartupStamp,snapshotMirrorStartupContextLimits,snapshotMirrorStartupCutoffData,snapshotMirrorStartupContextResult,type MirrorStartupContextHold,type MirrorStartupContextLimits,type MirrorStartupCutoffData} from './startup-context-limits.ts';
 export {MirrorStartupContextHeldError,type MirrorStartupContextHold,type MirrorStartupContextLimits} from './startup-context-limits.ts';
 const token=Symbol('owned mirror startup context'),slot=new OwnedWorkerSlot();
 export const mirrorStartupContextReaderBusy=():boolean=>slot.busy;
@@ -54,11 +54,8 @@ export async function readMirrorStartupContext(cutoff:MirrorStartupCutoff,input:
  signal?.throwIfAborted();const data=MirrorStartupCutoff.prototype.captured.call(cutoff),limits=snapshotMirrorStartupContextLimits(input);
  if(data.anchor===null)throw new MirrorStartupContextHeldError('IncompleteBoundary');
  if(data.offset>BigInt(limits.maxBytes))throw new MirrorStartupContextHeldError('ByteBudget');
- const value=await native({kind:'Read',cutoff:data,limits},limits.timeoutMs,signal),anchor=snapshotMirrorCursorAnchor(own(value,'anchor') as MirrorCursorAnchor),continuity=own(value,'continuity'),currentTurn=own(value,'currentTurn'),scannedRecords=own(value,'scannedRecords'),scannedBytes=own(value,'scannedBytes');
- if(currentTurn!==null){if(typeof currentTurn!=='string'||currentTurn===''||currentTurn.length>limits.maxTurnBytes)throw new TypeError('Invalid native mirror startup turn');requireDiscordText(currentTurn);if(Buffer.byteLength(currentTurn)>limits.maxTurnBytes)throw new TypeError('Invalid native mirror startup turn');}
- if(anchor.path!==data.path||anchor.offset!==data.offset||anchor.stamp.dev!==data.stamp.dev||anchor.stamp.ino!==data.stamp.ino||anchor.stamp.birthtimeNs!==data.stamp.birthtimeNs||anchor.stamp.size<data.stamp.size||anchor.prefixHash!==data.anchor.prefixHash||anchor.tailHash!==data.anchor.tailHash||scannedBytes!==data.offset||typeof scannedRecords!=='number'||!Number.isSafeInteger(scannedRecords)||scannedRecords<0||scannedRecords>limits.maxRecords||BigInt(scannedRecords)>scannedBytes||(scannedBytes>0n&&scannedRecords===0)||(continuity!=='UnchangedMetadataAndAnchors'&&continuity!=='SameIdentityGrowthAndAnchors'))throw new TypeError('Invalid native mirror startup evidence');
- if(continuity==='UnchangedMetadataAndAnchors'?!sameMirrorStartupStamp(anchor.stamp,data.stamp):anchor.stamp.size<=data.stamp.size)throw new TypeError('Invalid native mirror startup continuity');
- return new MirrorStartupContextObservation(token,cutoff,anchor,continuity,currentTurn,scannedRecords);
+ const value=await native({kind:'Read',cutoff:data,limits},limits.timeoutMs,signal),result=snapshotMirrorStartupContextResult(data,limits,value);
+ return new MirrorStartupContextObservation(token,cutoff,result.anchor,result.continuity,result.currentTurn,result.scannedRecords);
 }
 function boundedPath(path:string):void{if(typeof path!=='string'||path.length>32768)throw new RangeError('Invalid mirror startup path budget');requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new RangeError('Invalid mirror startup path budget');}
 function deadline(timeoutMs:number):void{if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid mirror startup deadline');}

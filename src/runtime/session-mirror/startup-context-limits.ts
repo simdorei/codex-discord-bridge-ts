@@ -1,3 +1,4 @@
+import type {MirrorContinuity} from './continuity-observation.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {snapshotMirrorCursorAnchor,type MirrorCursorAnchor,type MirrorFileStamp} from '../../core/mirror-cursor-anchor.ts';
@@ -36,4 +37,15 @@ export function snapshotMirrorStartupCutoffData(input:unknown):MirrorStartupCuto
  const anchor=rawAnchor===null?null:snapshotMirrorCursorAnchor(rawAnchor as MirrorCursorAnchor);
  if(anchor===null?offset===0n:anchor.path!==path||anchor.offset!==offset||!sameMirrorStartupStamp(anchor.stamp,stamp))throw new TypeError('Invalid mirror startup boundary evidence');
  return Object.freeze({path,offset,stamp:Object.freeze(stamp),anchor});
+}
+
+/** Validates worker protocol data only. No structural packet becomes native
+ * evidence until an owning reader privately brands its own worker result. */
+export interface MirrorStartupContextResult {readonly anchor:MirrorCursorAnchor;readonly continuity:MirrorContinuity;readonly currentTurn:string|null;readonly scannedRecords:number;readonly scannedBytes:bigint;}
+export function snapshotMirrorStartupContextResult(data:MirrorStartupCutoffData,limits:MirrorStartupContextLimits,value:unknown):MirrorStartupContextResult {
+ const anchor=snapshotMirrorCursorAnchor(own(value,'anchor') as MirrorCursorAnchor),continuity=own(value,'continuity'),currentTurn=own(value,'currentTurn'),scannedRecords=own(value,'scannedRecords'),scannedBytes=own(value,'scannedBytes');
+ if(currentTurn!==null){if(typeof currentTurn!=='string'||currentTurn===''||currentTurn.length>limits.maxTurnBytes)throw new TypeError('Invalid native mirror startup turn');requireDiscordText(currentTurn);if(Buffer.byteLength(currentTurn)>limits.maxTurnBytes)throw new TypeError('Invalid native mirror startup turn');}
+ if(data.offset>BigInt(limits.maxBytes)||data.anchor===null||anchor.path!==data.path||anchor.offset!==data.offset||anchor.stamp.dev!==data.stamp.dev||anchor.stamp.ino!==data.stamp.ino||anchor.stamp.birthtimeNs!==data.stamp.birthtimeNs||anchor.stamp.size<data.stamp.size||anchor.prefixHash!==data.anchor.prefixHash||anchor.tailHash!==data.anchor.tailHash||scannedBytes!==data.offset||typeof scannedRecords!=='number'||!Number.isSafeInteger(scannedRecords)||scannedRecords<0||scannedRecords>limits.maxRecords||BigInt(scannedRecords)>scannedBytes||(scannedBytes>0n&&scannedRecords===0)||(continuity!=='UnchangedMetadataAndAnchors'&&continuity!=='SameIdentityGrowthAndAnchors'))throw new TypeError('Invalid native mirror startup evidence');
+ if(continuity==='UnchangedMetadataAndAnchors'?!sameMirrorStartupStamp(anchor.stamp,data.stamp):anchor.stamp.size<=data.stamp.size)throw new TypeError('Invalid native mirror startup continuity');
+ return Object.freeze({anchor,continuity,currentTurn,scannedRecords,scannedBytes});
 }

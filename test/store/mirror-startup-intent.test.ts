@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {resolve,join} from 'node:path';import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';
 import {initializeMirrorCursorJournal as cursorSchema,initializeFreshMirrorCursor as fresh,readBoundMirrorCursor as cursor} from '../../src/store/mirror-cursor-journal.ts';
-import {initializeMirrorStartupIntentJournal as schema,readPendingMirrorStartupIntent as read,prepareMirrorStartupIntent as prepare,retainPreparedMirrorStartupIntent as retain,MirrorStartupIntentConflictError as Conflict,MirrorStartupIntentSchemaError as SchemaError,type PreparedMirrorStartupIntent} from '../../src/store/mirror-startup-intent.ts';
+import {initializeMirrorStartupIntentJournal as schema,readPendingMirrorStartupIntent as read,verifyPendingMirrorStartupIntent as verify,prepareMirrorStartupIntent as prepare,retainPreparedMirrorStartupIntent as retain,MirrorStartupIntentConflictError as Conflict,MirrorStartupIntentSchemaError as SchemaError,type PreparedMirrorStartupIntent} from '../../src/store/mirror-startup-intent.ts';
 import {StateAccessFacade as facade} from '../../src/store/state-access-facade.ts';
 import type {MirrorStartupCutoffData} from '../../src/runtime/session-mirror/startup-context-limits.ts';
 const TABLE='cdr_ts_mirror_startup_intents_v1',hash='a'.repeat(64);
@@ -103,3 +103,12 @@ test('file-backed reopen retains original cutoff and exact operation without fil
 test('UTF16 store preserves exact Unicode, large integers and held EOF',()=>{
  const db=new DatabaseSync(':memory:');try{db.exec("PRAGMA encoding='UTF-16le'");legacy(db);cursorSchema(db);schema(db);const a=cutoff((1n<<63n)-1n,true),path=resolve('한😀');const original=retain(db,plan({...a,path},'스레드',1.125,'동작'));assert.deepEqual(read(db,'스레드'),original);assert.deepEqual(retain(db,plan({...a,path},'스레드',1.125,'동작')),original);schema(db);}finally{db.close();}
 });
+
+test('read-only exact-packet verification compares every field and never repairs missing or changed pending state',()=>run(db=>{
+ const original=retain(db,plan()),before=db.prepare(`SELECT * FROM ${TABLE}`).all();verify(db,original);assert.equal(facade.verifyPendingMirrorStartupIntent,verify);
+ const changedCutoff=cutoff(11n);
+ for(const expected of [{...original,thread:'other'},{...original,operationId:'other'},{...original,createdAt:2},{...original,cutoff:changedCutoff},{...original,cutoff:cutoff(10n,true)}])assert.throws(()=>verify(db,expected),Conflict);
+ assert.deepEqual(db.prepare(`SELECT * FROM ${TABLE}`).all(),before);assert.equal(db.isTransaction,false);
+ db.exec('BEGIN');assert.throws(()=>verify(db,original));assert.equal(db.isTransaction,true);db.exec('ROLLBACK');
+ db.exec(`DELETE FROM ${TABLE}`);assert.throws(()=>verify(db,original),Conflict);assert.equal(count(db),0);
+}));
