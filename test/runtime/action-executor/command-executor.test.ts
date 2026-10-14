@@ -1,3 +1,4 @@
+import {AdmittedRecoverExecutor} from '../../../src/runtime/action-executor/recover-action.ts';
 import {OwnedWorkerSlot} from '../../../src/runtime/owned-worker-slot.ts';
 import {it} from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {dirname,join} from 'node:path';
 import {storeFixture} from '../../helpers/store-fixture.ts';import {openInitialized} from '../../../src/store/owned-driver.ts';import {StateAccessFacade as state} from '../../../src/store/state-access-facade.ts';import {BridgeState} from '../../../src/runtime/bridge-state.ts';import {QueueStartCoordinator} from '../../../src/runtime/queue-runner/start-coordinator.ts';import {RuntimeCommandExecutor} from '../../../src/runtime/action-executor/command-executor.ts';import {PortableResidentLifecycle} from '../../../src/app-server/portable-resident-lifecycle.ts';import {AppServerTurnBackend} from '../../../src/runtime/app-server-turn-backend.ts';import {createMutationCustodyFence} from '../../../src/runtime/mutation-custody-fence.ts';import {INTERVIEW_HEADER} from '../../../src/runtime/action-executor/interview-header.ts';import {actionExecutionErrorInfo} from '../../../src/runtime/action-executor/action-error.ts';import {joinDiagnosticReaders} from '../../../src/runtime/diagnostic-report.ts';
@@ -169,3 +170,22 @@ it('installed control verifier uses exact native terminal evidence after real ac
  await assert.rejects(verifier.owned('root','v'),/turn completed/);assert.equal(reads,2);assert.deepEqual(await f.seen(),[]);
  },20000,script);
 });
+
+it('Recover command uses original native custody and explicit startup controller',async()=>fixture(false,async f=>{
+ const cmd={Recover:{reference:'root'}},order:string[]=[];
+ await state.admitIngress(f.path,{ingressId:'message:5',kind:'message',eventId:5n,applicationId:null,channelId:42n,ownerUserId:3n,sourceMessageId:5n,targetThreadId:'root',canonicalOwner:null,now:1,payload:{version:1n,plan:{Execute:cmd},lifecycle_binding:{target:'root',route:'Explicit',command:cmd}}});
+ await state.beginIngressExecution(f.path,'message:5','processing','root',2);
+ const op='b'.repeat(32),controller={inspect:async(thread:string)=>{order.push('inspect');assert.equal(thread,'root');return {ThreadId:'root',State:'tools_recovery',RecoveryIdentity:'host'};},start:async(thread:string,identity:string)=>{order.push('start');assert.equal(thread,'root');assert.equal(identity,'host');return {Operation:op,ReceiptPath:'/repo/maintenance_backups/desktop-recovery/'+op+'/receipt.json'};},join:async()=>{order.push('join');}};
+ f.executor.configureRecovery(new AdmittedRecoverExecutor(f.path,'/repo','posix',controller));
+ const result=await f.executor.executeWithIngressContext(cmd,actor,'message:5');assert.match(result.text,/Recovery dispatched/);assert.match(result.text,/not yet confirmed/);assert.equal(result.waitsForFinal,false);assert.deepEqual(order,['inspect','start','join']);
+ await assert.rejects(f.executor.executeWithIngressContext(cmd,actor,'message:5'));assert.deepEqual(order,['inspect','start','join']);
+}));
+it('Recover startup configuration refuses foreign database and replacement',async()=>fixture(false,async f=>{
+ const controller={inspect:async()=>({}),start:async()=>({}),join:async()=>{}};
+ assert.throws(()=>f.executor.configureRecovery(new AdmittedRecoverExecutor(f.path+'.foreign','/repo','posix',controller)),/database differs/);
+ f.executor.configureRecovery(new AdmittedRecoverExecutor(f.path,'/repo','posix',controller));assert.throws(()=>f.executor.configureRecovery(new AdmittedRecoverExecutor(f.path,'/repo','posix',controller)),/already configured/);
+}));
+it('gateway Recover confirms dispatched receipt under occupied target lock without replay',async()=>fixture(true,f=>pipeline(f,async p=>{
+ let starts=0;const op='c'.repeat(32);f.executor.configureRecovery(new AdmittedRecoverExecutor(f.path,'/repo','posix',{inspect:async thread=>({ThreadId:thread,State:'tools_recovery',RecoveryIdentity:'host'}),start:async()=>{starts++;return {Operation:op,ReceiptPath:'/repo/maintenance_backups/desktop-recovery/'+op+'/receipt.json'};},join:async()=>{}}));
+ const lease=await f.queue.locks.acquire('root');try{await p.handle('!recover root');await p.handle('!recover root');assert.deepEqual(p.reports,[]);assert.equal(starts,1);assert.equal(p.posts.length,1);assert.match(p.posts[0].content,/Recovery dispatched/);assert.match(p.posts[0].content,/not yet confirmed/);assert.equal((await state.getIngress(f.path,'message:5'))?.confirmationDelivered,true);}finally{lease.release();}
+})));

@@ -1,3 +1,4 @@
+import {AdmittedRecoverExecutor} from './recover-action.ts';
 import {NativeArchiveWriter} from './archive-write-native.ts';
 import {NativeStopPendingReader} from './stop-pending-native.ts';
 import {createNativeControlReads} from './control-evidence-state.ts';
@@ -67,6 +68,7 @@ export interface RuntimeExecutorDependencies{
  * A native server, queue backend and live gateway still require bootstrap and
  * ownership qualification; this constructor does not start any of them. */
 export class RuntimeCommandExecutor implements MessageBusinessServices{
+ #recovery:AdmittedRecoverExecutor|null=null;
  readonly #stopWorkerFactory:(report:(event:StopWorkerFailure)=>void)=>StopControlWorker;
  readonly #intake:PromptIntakeProcessor;readonly #settingsResolver:SettingsTargetResolver;
  readonly #server:PortableResidentLifecycle|null;readonly #componentQueue:BusyQueueExecutor;readonly #control:ControlTurnVerifier;
@@ -120,6 +122,8 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
    this.#mirrorSync=sync;this.#inspection=inspector;
   }finally{this.#mirrorConfiguring=false;}
  }
+ /** Startup-only installation of an explicitly owned recovery controller. */
+ configureRecovery(executor:AdmittedRecoverExecutor):void{if(this.#recovery!==null)throw new InvalidActionRequestError('recovery controller is already configured');AdmittedRecoverExecutor.prototype.requireDatabase.call(executor,this.#database);this.#recovery=executor;}
  async #syncMirror(channel:bigint,limit:bigint|null,signal?:AbortSignal):Promise<ActionResult>{
   if(this.#mirrorSync===null)throw new ActionExecutionError('Unsupported','mirror sync transport is not configured');
   try{return snapshotActionResult({text:formatMirrorSyncResult(await this.#mirrorSync.sync(channel,limit,signal)),waitsForFinal:false,ui:null});}
@@ -152,6 +156,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
    else if('Archive'in action){if(this.#archive===null)throw new MissingActionAppServerError();result=await this.#archive.execute(actor,action.Archive.reference,key,signal);}
    else if('Resume'in action){if(this.#resume===null)throw new MissingActionAppServerError();result=await this.#resume.execute(actor,action.Resume.reference,key,signal);}
    else if('Stop'in action)result=await this.#stop.execute(actor,action.Stop.reference,key,signal);
+   else if('Recover'in action){if(this.#recovery===null)throw new ActionExecutionError('Unsupported','recovery controller is not configured');result=await AdmittedRecoverExecutor.prototype.execute.call(this.#recovery,{key,channelId:actor.channelId,ownerUserId:actor.userId,eventId:actor.discordMessageId,reference:action.Recover.reference},signal);}
    else if('Repair'in action){if(this.#repair===null)throw new MissingActionAppServerError();result=await this.#repair.execute(actor,action.Repair.reference,key,signal);}
    else if('Retract'in action)result={text:await this.#retract.retract(actor.channelId,actor.userId,action.Retract.reference,signal),waitsForFinal:false,ui:null};
    else if('Steer'in action)result=await this.#controls.steer(actor.channelId,action.Steer.prompt,signal);

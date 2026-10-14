@@ -1,3 +1,10 @@
+# Current addendum — 2026-10-14 07:52 UTC
+
+- Implemented854 bounded direct-child controller transport: strict0, focused12 actual child tests pass; Windows process-tree ownership remains unimplemented.
+- Implemented855 conditional Recover command wiring: explicit startup-owned, database-matched executor; original admission, native cancellation and dispatched receipt. Default remains Unsupported without configuration.
+- Nine dependent files103 PASS; final absolute-root/signal guards strict0 and4 affected Recover cases PASS. No full rerun; overlapping counts are not summed. Gateway/HTTP test with real local store and mocked OS controller confirms one dispatch under occupied target lock.
+- Production Windows controller assets/bootstrap and Selected recovery route remain missing. Restart/Windows/operational qualification is not claimed.
+
 # Current addendum — 2026-10-14 07:41 UTC
 
 - Applied852–853: original Recover admission reads off-thread and validates exact stored custody, then a bounded inspect/cancel/check/dispatch/join handoff. Strict build0 and actual focused52 pass.
