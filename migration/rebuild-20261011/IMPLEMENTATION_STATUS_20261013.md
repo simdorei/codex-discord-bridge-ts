@@ -1,3 +1,8 @@
+# Current addendum — 2026-10-14 11:17 UTC
+
+- Implemented862 corrects861: a lifetime result containing failed native resident disposal does not authorize outer identity cleanup. Identity/ownership remain retained.
+- Strict compiled build0 and seven targeted lifetime tests PASS, including injected disposal rejection with native resident still healthy. No full-suite claim. Continue remaining runtime assembly.
+
 # Current addendum — 2026-10-14 11:15 UTC
 
 - Implemented861 binds completed runtime lifetime to outer Gateway/HTTP and drain cleanup using a module-private receipt. Forged results or foreign owners cannot close resources. HTTP/identify ownership joins before drain identity removal; singleton remains caller-owned.

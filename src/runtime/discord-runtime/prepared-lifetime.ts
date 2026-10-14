@@ -47,12 +47,13 @@ export async function runPreparedRuntimeLifetime(workers:PreparedRuntimeWorkerOw
  const cleanup=await shutdownRuntimeOwners(binding.gateway,workers,binding.resident,selection.cause,deadline,policy);
  const finalized=await finalizeRuntimeShutdown(selection.cause,cleanup,selection.drainKey,controller,workers.heartbeat,userStop,deadline,()=>{},policy,(event,error)=>invokeSynchronousVoid(transitionReport as Function,options,[event,error]));
  workers.disposeMonitor();const result=Object.freeze({selection,cleanup,finalized,deadline});
- completed.set(result,{gateway:binding.gateway,controller});return result;
+ if(cleanup.serverClose.ok)completed.set(result,{gateway:binding.gateway,controller});return result;
 }
 
 /** Outer cleanup is authorized only by this module's completed, joined lifetime.
  * Shared HTTP/identify ownership closes before removing drain identity. An error
  * or fail-stop before the lifetime receipt is produced grants no cleanup authority.
+ * A rejected resident disposal also withholds authority even if all tasks joined.
  * Singleton ownership remains caller-held until this Promise has succeeded. */
 export function closePreparedRuntimeOuter(result:unknown,gateway:RecommendedGateway,controller:RuntimeDrainController):Promise<void>{
  const proof=result!==null&&typeof result==='object'?completed.get(result):undefined;

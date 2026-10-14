@@ -338,3 +338,15 @@ test('completed lifetime binds outer HTTP and drain cleanup to exact owned resou
   stop.abort();workers?.requestStop();await workers?.close();workers?.heartbeat.requestStop();await workers?.heartbeat.worker.join();await gateway?.close();await context?.disposeBeforeWorkers();await controller.dispose();http.closeAllConnections();await new Promise<void>((resolve,reject)=>http.close(error=>error?reject(error):resolve()));
  }
 }));
+
+test('failed native resident disposal cannot authorize outer identity release',{timeout:15000},async()=>lifetimeFixture(async f=>{
+ const {closePreparedRuntimeOuter}=await import('../../../src/runtime/discord-runtime/prepared-lifetime.ts');
+ const original=PortableResidentLifecycle.prototype.dispose,primary=new Error('native disposal failed');
+ PortableResidentLifecycle.prototype.dispose=async()=>{throw primary;};
+ try{
+  const result=await runPreparedRuntimeLifetime(f.owner,f.controller,f.stop.signal,{...f.options,stopRequested:async()=>true});
+  assert.equal(result.cleanup.serverClose.ok,false);assert.equal(f.context.owner.lifecycleSnapshot().healthy,true);
+  assert.throws(()=>closePreparedRuntimeOuter(result,{} as never,f.controller),/completed runtime lifetime/);
+  assert.equal(existsSync(join(f.root,DRAIN_MARKER_NAMES.identity)),true);
+ }finally{PortableResidentLifecycle.prototype.dispose=original;}
+}));
