@@ -315,3 +315,26 @@ test('foreign recovery database rejects before native resident launch or startup
  await assert.rejects(prepareRuntimeContext({...o,executor:{...o.executor,recovery}}),/database differs/);
  assert.equal(existsSync(path),false);assert.equal(existsSync(join(o.paths.root,'pid')),false);
 }));
+
+test('completed lifetime binds outer HTTP and drain cleanup to exact owned resources',{timeout:15000},async()=>storeFixture(async path=>{
+ const {createServer}=await import('node:http'),{RecommendedGateway}=await import('../../../src/discord/gateway/recommended.ts'),{loadRuntimeAutocomplete}=await import('../../../src/runtime/discord-runtime/autocomplete-bootstrap.ts'),{closePreparedRuntimeOuter}=await import('../../../src/runtime/discord-runtime/prepared-lifetime.ts');
+ const http=createServer((_req,res)=>res.end(JSON.stringify({shards:0,url:'wss://gateway.discord.gg',session_start_limit:{max_concurrency:1,remaining:100,total:100,reset_after:0}})));
+ await new Promise<void>((resolve,reject)=>{http.once('error',reject);http.listen(0,'127.0.0.1',resolve);});
+ const o=await input(path),markers=new PosixDrainMarkerStore(o.paths.root),controller=await RuntimeDrainController.initialize(posixDrainMarkerPort(markers));o.admission=controller.admissionGate;
+ let context:Awaited<ReturnType<typeof prepareRuntimeContext>>|undefined,gateway:Awaited<ReturnType<typeof RecommendedGateway.startPausedForTest>>|undefined,workers:PreparedRuntimeWorkerOwner|undefined;const stop=new AbortController();
+ try{
+  context=await prepareRuntimeContext(o);
+  gateway=await RecommendedGateway.startPausedForTest({httpOrigin:`http://127.0.0.1:${(http.address() as {port:number}).port}/api/v10/`,gatewayUrl:'ws://127.0.0.1:1/',messageContent:false,reportReceiveErrorDrop:()=>{},reportTriggerFailure:()=>{},reportHttpError:()=>{}});
+  assert.throws(()=>closePreparedRuntimeOuter({},gateway!,controller),/completed runtime lifetime/);
+  assert.equal(gateway.snapshot().closed,false);
+  workers=await startPreparedRuntimeWorkers(context,gateway.runtime,controller.admissionGate,gateway.http,await loadRuntimeAutocomplete(context.owner),stop.signal,localWorkerOptions(o.paths.root,[]));
+  const result=await runPreparedRuntimeLifetime(workers,controller,stop.signal,{stopRequested:async()=>true,reportControl:()=>{},reportTransition:()=>{},shutdown:{report:()=>{}}});
+  assert.equal(gateway.snapshot().closed,false);assert.equal(existsSync(join(o.paths.root,DRAIN_MARKER_NAMES.identity)),true);
+  assert.throws(()=>closePreparedRuntimeOuter({...result},gateway!,controller),/completed runtime lifetime/);
+  assert.throws(()=>closePreparedRuntimeOuter(result,gateway!,{} as never),/ownership differs/);
+  const closing=closePreparedRuntimeOuter(result,gateway,controller);assert.equal(closePreparedRuntimeOuter(result,gateway,controller),closing);await closing;
+  assert.equal(gateway.snapshot().closed,true);assert.equal(gateway.snapshot().httpSockets,0);assert.equal(existsSync(join(o.paths.root,DRAIN_MARKER_NAMES.identity)),false);
+ }finally{
+  stop.abort();workers?.requestStop();await workers?.close();workers?.heartbeat.requestStop();await workers?.heartbeat.worker.join();await gateway?.close();await context?.disposeBeforeWorkers();await controller.dispose();http.closeAllConnections();await new Promise<void>((resolve,reject)=>http.close(error=>error?reject(error):resolve()));
+ }
+}));

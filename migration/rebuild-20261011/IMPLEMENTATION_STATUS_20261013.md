@@ -1,3 +1,8 @@
+# Current addendum — 2026-10-14 11:15 UTC
+
+- Implemented861 binds completed runtime lifetime to outer Gateway/HTTP and drain cleanup using a module-private receipt. Forged results or foreign owners cannot close resources. HTTP/identify ownership joins before drain identity removal; singleton remains caller-owned.
+- Strict compiled build0 and six targeted lifetime tests PASS, including actual local HTTP and native resident cleanup. No whole-suite or production qualification. WIP858 remains unverified.
+
 # Current addendum — 2026-10-14 11:11 UTC
 
 - Implemented859 connects explicitly provided recovery executor through ordinary/Pro startup options, validates its database before native startup effects, and installs it before intake recovery. No default OS controller is fabricated.

@@ -1,3 +1,4 @@
+import {RecommendedGateway} from '../../discord/gateway/recommended.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {invokeSynchronousVoid} from '../../core/synchronous-void.ts';
@@ -19,6 +20,7 @@ export interface PreparedRuntimeLifetimeOptions{
  readonly shutdown:RuntimeWorkerShutdownOptions&RuntimeHardDeadlineOptions;
 }
 const consumed=new WeakSet<object>();
+const completed=new WeakMap<object,{gateway:GatewayRuntime<import('../../discord/gateway/decoded-interaction.ts').DecodedGatewayInteraction>;controller:RuntimeDrainController;closing?:Promise<void>}>();
 /** Runs actual stop selection, live SQLite/resident drain inspection, joined
  * gateway/workers/resident cleanup and heartbeat finalization for an authentic
  * prepared local-worker owner. All losing waits join under the original selected
@@ -44,5 +46,21 @@ export async function runPreparedRuntimeLifetime(workers:PreparedRuntimeWorkerOw
  const deadline=selection.startedAt+RUNTIME_SHUTDOWN_TIMEOUT_MS;
  const cleanup=await shutdownRuntimeOwners(binding.gateway,workers,binding.resident,selection.cause,deadline,policy);
  const finalized=await finalizeRuntimeShutdown(selection.cause,cleanup,selection.drainKey,controller,workers.heartbeat,userStop,deadline,()=>{},policy,(event,error)=>invokeSynchronousVoid(transitionReport as Function,options,[event,error]));
- workers.disposeMonitor();return Object.freeze({selection,cleanup,finalized,deadline});
+ workers.disposeMonitor();const result=Object.freeze({selection,cleanup,finalized,deadline});
+ completed.set(result,{gateway:binding.gateway,controller});return result;
+}
+
+/** Outer cleanup is authorized only by this module's completed, joined lifetime.
+ * Shared HTTP/identify ownership closes before removing drain identity. An error
+ * or fail-stop before the lifetime receipt is produced grants no cleanup authority.
+ * Singleton ownership remains caller-held until this Promise has succeeded. */
+export function closePreparedRuntimeOuter(result:unknown,gateway:RecommendedGateway,controller:RuntimeDrainController):Promise<void>{
+ const proof=result!==null&&typeof result==='object'?completed.get(result):undefined;
+ if(proof===undefined)throw new TypeError('Expected completed runtime lifetime receipt');
+ RecommendedGateway.prototype.snapshot.call(gateway);
+ if(own(gateway,'runtime')!==proof.gateway||controller!==proof.controller)throw new TypeError('Outer runtime ownership differs');
+ return proof.closing??= (async()=>{
+  await RecommendedGateway.prototype.close.call(gateway);
+  await RuntimeDrainController.prototype.dispose.call(controller);
+ })();
 }
