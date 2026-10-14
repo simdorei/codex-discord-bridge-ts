@@ -21,9 +21,14 @@ export class NativeBridgeStateUnavailableError extends Error{
  * Existing global Control lane serializes accepted operations even across owners.
  * Zero waiting queue; no new worker pool. Timeout/abort always joins native exit. */
 export interface BridgeSelectionSnapshot {readonly __bridgeSelectionSnapshot?:never}
+export interface BridgeSelectionLease {readonly __bridgeSelectionLease?:never}
+/** Internal transport extracted only from an authentic held lease. The shared
+ * word communicates liveness; it is not independently minted authority. */
+export interface BridgeSelectionProof {readonly requestId:string;readonly operationId:string;readonly target:string;readonly active:SharedArrayBuffer}
 export class NativeBridgeStateOwner{
  readonly #path:string;readonly #slot=new OwnedWorkerSlot('Control');
  #epoch=0n;readonly #snapshots=new WeakMap<object,{epoch:bigint,selected:string|null}>();
+ #selectionLease:{lease:BridgeSelectionLease;token:BridgeSelectionSnapshot;proof:BridgeSelectionProof}|null=null;
  constructor(path:string){requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new TypeError('Invalid Bridge path');this.#path=pinNativeRuntimePath(path);if(Buffer.byteLength(this.#path)>32768)throw new RangeError('Bridge path exceeds budget');Object.freeze(this);}
  path():string{return this.#path;}
  /** Fresh native selected read plus an in-process epoch token. Not a durable
@@ -43,8 +48,29 @@ export class NativeBridgeStateOwner{
   text(expected);const snapshot=typeof token==='object'&&token!==null?this.#snapshots.get(token):undefined;
   if(snapshot===undefined||snapshot.epoch!==this.#epoch||this.#slot.busy||snapshot.selected!==expected)throw new Error('Selected Bridge snapshot is stale or differs; no replacement target allowed');
  }
+ /** Same single-owner/no-mixed-writers contract as the epoch snapshots. This
+  * excludes this owner's operations through actual native transaction exit; it
+  * does not detect legacy/external writers or another owner's completed write. */
+ holdSelected(token:BridgeSelectionSnapshot,expected:string,requestId:string,operationId:string):BridgeSelectionLease{
+  if(this.#selectionLease!==null)throw new OwnedWorkerBusyError();text(requestId);text(operationId);
+  NativeBridgeStateOwner.prototype.validateSelected.call(this,token,expected);
+  const lease=Object.freeze({}),active=new SharedArrayBuffer(4);Atomics.store(new Int32Array(active),0,1);
+  this.#selectionLease={lease,token,proof:Object.freeze({requestId,operationId,target:expected,active})};return lease;
+ }
+ validateSelectedLease(lease:BridgeSelectionLease):void{
+  const held=this.#selectionLease;if(held===null||held.lease!==lease)throw new TypeError('Expected authentic held Bridge selection lease');
+  NativeBridgeStateOwner.prototype.validateSelected.call(this,held.token,held.proof.target);
+  if(Atomics.load(new Int32Array(held.proof.active),0)!==1)throw new TypeError('Bridge selection lease is no longer active');
+ }
+ selectedLeaseProof(lease:BridgeSelectionLease):BridgeSelectionProof{
+  NativeBridgeStateOwner.prototype.validateSelectedLease.call(this,lease);return this.#selectionLease!.proof;
+ }
+ releaseSelectedLease(lease:BridgeSelectionLease):void{
+  const held=this.#selectionLease;if(held===null||held.lease!==lease)throw new TypeError('Expected authentic held Bridge selection lease');
+  Atomics.store(new Int32Array(held.proof.active),0,0);this.#selectionLease=null;
+ }
  async execute(input:BridgeOperation,signal?:AbortSignal,timeoutMs=6000):Promise<string|null|readonly string[]|SavedThreadSettings|boolean|undefined>{
-  signal?.throwIfAborted();if(process.platform==='win32')throw new Error('Windows Bridge owner is not yet qualified');if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Bridge owner timeout');const operation=capture(input);if(this.#slot.busy)throw new OwnedWorkerBusyError();
+  signal?.throwIfAborted();if(this.#selectionLease!==null)throw new OwnedWorkerBusyError();if(process.platform==='win32')throw new Error('Windows Bridge owner is not yet qualified');if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Bridge owner timeout');const operation=capture(input);if(this.#slot.busy)throw new OwnedWorkerBusyError();
   const id=randomUUID(),request={id,path:this.#path,operation};let admitted=false,raw:unknown;
   try{const pending=this.#slot.run(new URL('./bridge-state-native-worker.ts',import.meta.url),request,timeoutMs,signal);admitted=this.#slot.busy;if(admitted&&['Select','Remember','Fork','ClearScope'].includes(operation.kind))this.#epoch++;try{raw=await pending;}finally{await this.#slot.join();}}
   catch(error){if(admitted)throw new NativeBridgeStateUnavailableError(operation.kind,error);throw error;}

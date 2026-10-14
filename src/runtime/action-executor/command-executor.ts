@@ -1,4 +1,5 @@
 import {NativeRetractWriter} from './retract-write-native.ts';
+import {NativeStopAcceptanceWriter} from './stop-acceptance-native.ts';
 import {AdmittedRecoverExecutor} from './recover-action.ts';
 import {NativeArchiveWriter} from './archive-write-native.ts';
 import {NativeStopPendingReader} from './stop-pending-native.ts';
@@ -97,7 +98,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   this.#controls=new PromptControlActions(paths.mirror,selection,targets,control,server);this.#open=new OpenThreadAction(selection,targets,bridge,server,timeout,bridgeOwner);
   this.#settingsResolver=new SettingsTargetResolver(paths.state,paths.mirror,bridge,createNativeSettingsBindingReads(paths.state,BridgeState.prototype.path.call(bridge),intakeState.mirroredThreadId),bridgeOwner);
   this.#settings=new AdmittedSettingsExecutor(paths.mirror,new SettingsAction(selection,this.#settingsResolver,bridge,server,control,timeout,bridgeOwner));
-  this.#stop=new AdmittedStopExecutor(paths.mirror,bridge,new StopActionExecutor(paths.mirror,server,bridge,locks,render,stopActionState,bridgeOwner),bridgeOwner);
+  this.#stop=new AdmittedStopExecutor(paths.mirror,bridge,new StopActionExecutor(paths.mirror,server,bridge,locks,render,stopActionState,bridgeOwner,new NativeStopAcceptanceWriter(paths.mirror,bridgeOwner)),bridgeOwner);
   this.#archive=server===null?null:new AdmittedArchiveExecutor(paths.mirror,paths.state,bridge,server,locks,timeout,intakeState.mirroredThreadId,threadReads,{unfinishedArchiveRequest:intakeState.unfinishedArchiveRequest,listFiltered:createNativeQueueReadState(paths.mirror).listFiltered,listPromptIntakes:intakeState.listPromptIntakes,exact:threadReads.exact},readArchivedScopeOffThread,bridgeOwner,new NativeArchiveWriter(paths.mirror));
   this.#resume=server===null?null:new AdmittedResumeExecutor(paths.mirror,paths.state,bridge,server,locks,timeout,intakeState.mirroredThreadId,threadReads,bridgeOwner);
   this.#repair=server===null?null:new AdmittedRepairExecutor(paths.mirror,bridge,server,locks,render,undefined,{listFiltered:createNativeQueueReadState(paths.mirror).listFiltered,listPromptIntakes:intakeState.listPromptIntakes},bridgeOwner);Object.freeze(this);

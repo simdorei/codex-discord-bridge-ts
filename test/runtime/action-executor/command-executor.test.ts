@@ -241,3 +241,14 @@ it('actual Runners and SavedRequest commands share native display owner and pres
   const after=new DatabaseSync(f.path);try{assert.equal(after.prepare("SELECT state FROM discord_ingress_journal WHERE ingress_id='inspect-original'").get()?.state,'held');assert.equal(after.prepare('SELECT COUNT(*) AS n FROM codex_turn_queue').get()?.n,0);}finally{after.close();}
  });
 });
+
+it('actual command Stop uses one native acceptance submission with no synchronous acceptance or interrupt fallback',async t=>{
+ for(const name of ['acceptRunningStop','acceptUnresolvedStop'] as const)t.mock.method(state,name,()=>{throw new Error('main-thread Stop acceptance forbidden');});
+ const run=OwnedWorkerSlot.prototype.run;let submissions=0;t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){if(String(args[0]).includes('stop-acceptance-native-worker'))submissions++;return run.apply(this,args);});
+ await fixture(true,async f=>{await admit(f.path,'Stop');const result=await f.executor.executeWithIngressContext({Stop:{reference:null}},actor,'message:5');assert.match(result.text,/Stop accepted for root/);assert.equal(submissions,1);assert.deepEqual(await f.seen(),[]);assert.equal((await state.getIngress(f.path,'message:5'))!.phase,'stop_accepted');});
+});
+it('actual command Stop lost native acknowledgement retains original ingress and cannot return accepted or fallback interrupt',async t=>{
+ for(const name of ['acceptRunningStop','acceptUnresolvedStop'] as const)t.mock.method(state,name,()=>{throw new Error('main-thread Stop fallback forbidden');});
+ const run=OwnedWorkerSlot.prototype.run;let submissions=0;t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){const task=run.apply(this,args);if(!String(args[0]).includes('stop-acceptance-native-worker'))return task;submissions++;return task.then(()=>{throw new Error('lost acknowledgement after real exit');});});
+ await fixture(true,async f=>{await admit(f.path,'Stop');await assert.rejects(f.executor.executeWithIngressContext({Stop:{reference:null}},actor,'message:5'),(error:any)=>error.name==='NativeStopAcceptanceUnknownError'&&error.ingressKey==='message:5'&&error.operationId==='stop:message:5');assert.equal(submissions,1);assert.deepEqual(await f.seen(),[]);const saved=await state.getIngress(f.path,'message:5');assert.equal(saved!.phase,'stop_accepted');assert.equal(saved!.confirmationDelivered,false);const db=await openInitialized(f.path);try{assert.equal(db.prepare('SELECT count(*) AS n FROM cdr_stop_revision_receipts').get()!.n,1);}finally{db.close();}});
+});

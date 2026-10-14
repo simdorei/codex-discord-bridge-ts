@@ -1,4 +1,5 @@
 import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
+import {NativeStopAcceptanceWriter} from './stop-acceptance-native.ts';
 import type {PortableResidentLifecycle} from "../../app-server/portable-resident-lifecycle.ts";
 import {interruptTurn} from "../../app-server/requests.ts";
 import type {BridgeState} from "../bridge-state.ts";
@@ -21,11 +22,19 @@ function immediate(text:string):PromptActionResult{return {text,waitsForFinal:fa
  * presented as proof that execution stopped. No raw-reference resolver is installed. */
 export class StopActionExecutor{
  readonly #nativeBridge:NativeBridgeStateOwner|undefined;
+ readonly #nativeAcceptance:NativeStopAcceptanceWriter|undefined;
   readonly #render:(error:unknown)=>string;readonly #path:string;readonly #server:Server|null;readonly #bridge:Pick<BridgeState,"selectedThreadId">;readonly #state:Store;readonly #verify:ControlTurnVerifier;
-  constructor(path:string,server:Server|null,bridge:Pick<BridgeState,"selectedThreadId">,locks:TargetLocks,render:(error:unknown)=>string,state:Store=StateAccessFacade,nativeBridge?:NativeBridgeStateOwner){this.#nativeBridge=nativeBridge;this.#render=render;storeActionCheck(()=>{},render);this.#path=path;this.#server=server;this.#bridge=bridge;this.#state=state;this.#verify=new ControlTurnVerifier(path,server,bridge,locks,state,nativeBridge);}
+  constructor(path:string,server:Server|null,bridge:Pick<BridgeState,"selectedThreadId">,locks:TargetLocks,render:(error:unknown)=>string,state:Store=StateAccessFacade,nativeBridge?:NativeBridgeStateOwner,nativeAcceptance?:NativeStopAcceptanceWriter){if(nativeAcceptance!==undefined){if(nativeBridge===undefined)throw new TypeError('Native Stop acceptance requires the original Bridge owner');NativeStopAcceptanceWriter.prototype.assertOwner.call(nativeAcceptance,path,nativeBridge);}this.#nativeAcceptance=nativeAcceptance;this.#nativeBridge=nativeBridge;this.#render=render;storeActionCheck(()=>{},render);this.#path=path;this.#server=server;this.#bridge=bridge;this.#state=state;this.#verify=new ControlTurnVerifier(path,server,bridge,locks,state,nativeBridge);}
   async stopBound(input:StopActionContext,inputBinding:unknown,inputIngress:StoredIngress|null=null,signal?:AbortSignal):Promise<PromptActionResult>{
     signal?.throwIfAborted();
-    const context=cloneOwnedSerdeValue(input) as StopActionContext,binding=snapshotSettingsBinding(inputBinding),ingress=inputIngress===null?null:snapshotStoredIngress(inputIngress),scope={target:binding.target,channel:id(context.channelId),owner:id(context.userId)},check=storeActionCheck(this.#nativeBridge===undefined?()=>validateSelectedSettingsSnapshot(binding,this.#bridge):await captureSelectedSettingsCheck(binding,this.#nativeBridge,signal),this.#render);signal?.throwIfAborted();
+    const context=cloneOwnedSerdeValue(input) as StopActionContext,binding=snapshotSettingsBinding(inputBinding),scope={target:binding.target,channel:id(context.channelId),owner:id(context.userId)};
+    if(this.#nativeAcceptance!==undefined){
+      if(inputIngress===null)throw new TypeError('Original Stop ingress is required for native acceptance');const server=this.#server;
+      const receipt=await NativeStopAcceptanceWriter.prototype.execute.call(this.#nativeAcceptance,{scope,binding,ingress:inputIngress,resident:server===null?null:{id:server.instanceId,generation:id(server.generation())},now:Date.now()/1000},signal);
+      if(receipt.kind==='Running')return immediate(`Stop accepted for ${binding.target}.\noperation_id: ${receipt.operationId}\nExecution end is not confirmed; the original turn will be checked separately. Original requests will not be replayed automatically.`);
+      return immediate(`Stop accepted for ${binding.target}.\nOriginal local requests held (queued, preparing, running or unresolved): ${receipt.jobs}\nUnowned original requests held: ${receipt.ingresses}\nExecution end is not confirmed; original requests will not be replayed automatically.`);
+    }
+    const ingress=inputIngress===null?null:snapshotStoredIngress(inputIngress),check=storeActionCheck(this.#nativeBridge===undefined?()=>validateSelectedSettingsSnapshot(binding,this.#bridge):await captureSelectedSettingsCheck(binding,this.#nativeBridge,signal),this.#render);signal?.throwIfAborted();
     const server=this.#server;
     if(server!==null){const receipt=this.#state.acceptRunningStop(this.#path,scope,binding,ingress,server.instanceId,id(server.generation()),check);if(receipt!==null)return immediate(`Stop accepted for ${binding.target}.\noperation_id: ${receipt.operation_id}\nExecution end is not confirmed; the original turn will be checked separately. Original requests will not be replayed automatically.`);}
     const receipt=this.#state.acceptUnresolvedStop(this.#path,scope,binding,ingress,check);if(receipt!==null)return immediate(`Stop accepted for ${binding.target}.\nOriginal local requests held (queued, preparing, running or unresolved): ${receipt.jobs.length}\nUnowned original requests held: ${receipt.ingresses?.length??0}\nExecution end is not confirmed; original requests will not be replayed automatically.`);
