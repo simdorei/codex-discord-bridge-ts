@@ -24,6 +24,7 @@ import * as MirrorCursor from './mirror-cursor.ts';
 import * as ConfirmedDelivery from './delivery-confirmed.ts';
 import * as DiagnosticRead from './diagnostic-read.ts';
 import * as RunnerCounts from './runner-target-counts.ts';
+import * as RunnerInspection from './runner-inspection.ts';
 import * as MirrorSync from './mirror-mapping.ts';
 import * as MirrorCreation from './mirror-creation.ts';
 import * as NewPromptIntake from './prompt-intake-new-thread.ts';
@@ -204,6 +205,10 @@ export const getIngressForOwnerReadonly: typeof IngressRead.getIngressForOwnerRe
 export const completeConfirmedDelivery: typeof ConfirmedDelivery.completeConfirmedDelivery = ConfirmedDelivery.completeConfirmedDelivery;
 export const diagnosticDatabaseCounts: typeof DiagnosticRead.diagnosticDatabaseCounts = DiagnosticRead.diagnosticDatabaseCounts;
 export const diagnosticIdleRelease: typeof DiagnosticRead.diagnosticIdleRelease = DiagnosticRead.diagnosticIdleRelease;
+export const runnerInspectionDetailExisting: typeof RunnerInspection.runnerInspectionDetailExisting = RunnerInspection.runnerInspectionDetailExisting;
+export const runnerInspectionSummaryExisting: typeof RunnerInspection.runnerInspectionSummaryExisting = RunnerInspection.runnerInspectionSummaryExisting;
+export const runnerInspectionTargetCountsExisting: typeof RunnerInspection.runnerInspectionTargetCountsExisting = RunnerInspection.runnerInspectionTargetCountsExisting;
+export const runnerInspectionGlobalExisting: typeof RunnerInspection.runnerInspectionGlobalExisting = RunnerInspection.runnerInspectionGlobalExisting;
 export const runnerTargetCounts: typeof RunnerCounts.runnerTargetCounts = RunnerCounts.runnerTargetCounts;
 export const listIngressesForOwner: typeof IngressRead.listIngressesForOwner = IngressRead.listIngressesForOwner;
 
@@ -712,6 +717,10 @@ export interface IStateAccessFacade {
   readonly completeConfirmedDelivery: typeof ConfirmedDelivery.completeConfirmedDelivery;
   readonly diagnosticDatabaseCounts: typeof DiagnosticRead.diagnosticDatabaseCounts;
   readonly diagnosticIdleRelease: typeof DiagnosticRead.diagnosticIdleRelease;
+  readonly runnerInspectionDetailExisting: typeof RunnerInspection.runnerInspectionDetailExisting;
+  readonly runnerInspectionSummaryExisting: typeof RunnerInspection.runnerInspectionSummaryExisting;
+  readonly runnerInspectionTargetCountsExisting: typeof RunnerInspection.runnerInspectionTargetCountsExisting;
+  readonly runnerInspectionGlobalExisting: typeof RunnerInspection.runnerInspectionGlobalExisting;
   readonly runnerTargetCounts: typeof RunnerCounts.runnerTargetCounts;
   readonly listIngressesForOwner: typeof IngressRead.listIngressesForOwner;
 
@@ -1049,6 +1058,10 @@ export const StateAccessFacade: IStateAccessFacade = {
   completeConfirmedDelivery,
   diagnosticDatabaseCounts,
   diagnosticIdleRelease,
+  runnerInspectionDetailExisting,
+  runnerInspectionSummaryExisting,
+  runnerInspectionTargetCountsExisting,
+  runnerInspectionGlobalExisting,
   runnerTargetCounts,
   listIngressesForOwner,
   validateRecoveryEffectIn,

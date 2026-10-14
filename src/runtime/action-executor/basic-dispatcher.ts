@@ -18,7 +18,7 @@ import {ThreadStatusAction} from './thread-status.ts';
 import {ContextAction} from './context-action.ts';
 import {UsageAction} from './usage-action.ts';
 import {ControlTurnVerifier} from './control-turn.ts';
-import {RunnerInspection,savedRequestMessage} from './runner-inspection.ts';
+import {RunnerInspection} from './runner-inspection.ts';
 import {SettingsOptionsAction} from './settings-options.ts';
 import {RuntimeServiceActions} from './service-actions.ts';
 import type {DiagnosticPaths} from '../diagnostic-report.ts';
@@ -28,10 +28,10 @@ const immediate=(text:string)=>snapshotActionResult({text,waitsForFinal:false,ui
  * Unsupported commands never fall through to another command or native method.
  * This is not the full message business adapter or runnable bridge bootstrap. */
 export class BasicActionDispatcher{
- readonly #mirror:string;readonly #selection:ActionThreadSelection;readonly #list:ThreadListAction;readonly #status:ThreadStatusAction;readonly #context:ContextAction;readonly #usage:UsageAction;readonly #runners:RunnerInspection;readonly #options:SettingsOptionsAction;readonly #services:RuntimeServiceActions;
+ readonly #selection:ActionThreadSelection;readonly #list:ThreadListAction;readonly #status:ThreadStatusAction;readonly #context:ContextAction;readonly #usage:UsageAction;readonly #runners:RunnerInspection;readonly #options:SettingsOptionsAction;readonly #services:RuntimeServiceActions;
  constructor(input:DiagnosticPaths,bridge:BridgeState,server:PortableResidentLifecycle|null,locks:TargetLocks,render:(error:unknown)=>string,resumeTimeoutMs:number,mapped?:ActionMappingRead,reads?:ActionThreadReads,nativeBridge?:NativeBridgeStateOwner,controlReads?:ConstructorParameters<typeof ControlTurnVerifier>[4]){
   const paths=cloneOwnedSerdeValue(input);for(const key of ['state','mirror','bridge'])requireDiscordText(serdeField(paths,key));
-  const p=paths as DiagnosticPaths;this.#mirror=p.mirror;this.#selection=new ActionThreadSelection(p.state,p.mirror,bridge,mapped,reads,nativeBridge);
+  const p=paths as DiagnosticPaths;this.#selection=new ActionThreadSelection(p.state,p.mirror,bridge,mapped,reads,nativeBridge);
   this.#list=new ThreadListAction(p.state,bridge,server,render,nativeBridge);this.#status=new ThreadStatusAction(this.#selection,server,render);this.#context=new ContextAction(p.state,this.#selection,createNativeContextStoreReads(p.state));this.#usage=new UsageAction(server);
   this.#runners=new RunnerInspection(p.mirror,this.#selection,new ControlTurnVerifier(p.mirror,server,bridge,locks,controlReads,nativeBridge));this.#options=new SettingsOptionsAction(this.#selection,server,resumeTimeoutMs);this.#services=new RuntimeServiceActions(p,server);Object.freeze(this);
  }
@@ -58,7 +58,7 @@ export class BasicActionDispatcher{
   else if('Status'in action)result=await this.#status.status(channel,action.Status.reference,signal);
   else if('Context'in action)result=await this.#context.context(channel,action.Context.all_threads,action.Context.refresh,action.Context.limit,signal);
   else if('Usage'in action)result=await this.#usage.usage(Number(action.Usage.days),signal);
-  else if('SavedRequest'in action)result=immediate(await savedRequestMessage(this.#mirror,channel,user,action.SavedRequest.request_id,signal));
+  else if('SavedRequest'in action)result=immediate(await this.#runners.detail(channel,user,action.SavedRequest.request_id,signal));
   else if('SettingsOptions'in action)result=await this.#options.options(channel,action.SettingsOptions.reference,action.SettingsOptions.field,signal);
   else throw new ActionExecutionError('Unsupported',Object.keys(action)[0]!);
   signal?.throwIfAborted();return snapshotActionResult(result);

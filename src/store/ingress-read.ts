@@ -80,3 +80,6 @@ export function getIngressExisting(path:string,key:string):StoredIngress|null{
  for(const value of [path,key])if(typeof value!=='string'||/[\uD800-\uDFFF]/u.test(value))throw new TypeError('Expected well-formed ingress read text');
  const read=CheckedRead.open(path);try{const result=getIngressIn(read.connection(),key);read.finish();return result;}finally{read.close();}
 }
+
+/** Trusted fixed-SQL caller; retains authorization predicates before decoding. */
+export {rows as ingressRowsIn};

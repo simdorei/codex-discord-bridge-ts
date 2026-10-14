@@ -113,14 +113,16 @@ export function stageOwnedQueueCompletionExisting(
 
 
 
+/** Shared full decoder; caller owns the connection and snapshot. */
+export function listPendingDeliveriesIn(db:DatabaseSync):StoredDelivery[] {
+  const stmt=db.prepare(DELIVERY_SELECT+" ORDER BY created_at,delivery_id");stmt.setReadBigInts(true);
+  const result: StoredDelivery[]=[];
+  for(const row of stmt.iterate()) result.push(decodeDelivery(row));
+  return result;
+}
 export async function listPendingDeliveries(path: string): Promise<StoredDelivery[]> {
   const db=await openInitialized(path);
-  try {
-    const stmt=db.prepare(DELIVERY_SELECT+" ORDER BY created_at,delivery_id");stmt.setReadBigInts(true);
-    const result: StoredDelivery[]=[];
-    for(const row of stmt.iterate()) result.push(decodeDelivery(row));
-    return result;
-  } finally {db.close();}
+  try {return listPendingDeliveriesIn(db);} finally {db.close();}
 }
 export async function recordDeliveryFailure(path: string,id: string,error: string,now: number): Promise<StoredDelivery> {
   validText(path);validText(id);validText(error);if(typeof now!=="number") throw new TypeError("Expected timestamp number");

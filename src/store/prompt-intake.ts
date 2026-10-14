@@ -166,4 +166,4 @@ export function recordPromptIntakeFailureExisting(path:string,id:string,token:st
   return withPromptIntakeWriterExisting(path,db=>recordFailureIn(db,id,token,bounded,retryAfter,ms));
 }
 
-export {writer as withPromptIntakeWriter};
+export {writer as withPromptIntakeWriter, listIntakesIn as listPromptIntakesIn};

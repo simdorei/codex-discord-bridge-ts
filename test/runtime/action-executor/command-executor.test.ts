@@ -1,5 +1,5 @@
 import {AdmittedRecoverExecutor} from '../../../src/runtime/action-executor/recover-action.ts';
-import {OwnedWorkerSlot} from '../../../src/runtime/owned-worker-slot.ts';
+import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../../../src/runtime/owned-worker-slot.ts';
 import {it} from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {dirname,join} from 'node:path';
 import {storeFixture} from '../../helpers/store-fixture.ts';import {openInitialized} from '../../../src/store/owned-driver.ts';import {StateAccessFacade as state} from '../../../src/store/state-access-facade.ts';import {BridgeState} from '../../../src/runtime/bridge-state.ts';import {QueueStartCoordinator} from '../../../src/runtime/queue-runner/start-coordinator.ts';import {RuntimeCommandExecutor} from '../../../src/runtime/action-executor/command-executor.ts';import {PortableResidentLifecycle} from '../../../src/app-server/portable-resident-lifecycle.ts';import {AppServerTurnBackend} from '../../../src/runtime/app-server-turn-backend.ts';import {createMutationCustodyFence} from '../../../src/runtime/mutation-custody-fence.ts';import {INTERVIEW_HEADER} from '../../../src/runtime/action-executor/interview-header.ts';import {actionExecutionErrorInfo} from '../../../src/runtime/action-executor/action-error.ts';import {joinDiagnosticReaders} from '../../../src/runtime/diagnostic-report.ts';
 const actor={channelId:42n,userId:3n,discordMessageId:5n,autoQueueWhenBusy:false};
@@ -226,4 +226,18 @@ it('gateway Retract lost committed reply holds original ingress and never retrie
  let submitted=0;const run=OwnedWorkerSlot.prototype.run;t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){const task=run.apply(this,args);if(String(args[0]).endsWith('/retract-write-native-worker.ts')){submitted++;return task.then(()=>{throw new Error('lost Retract acknowledgement');});}return task;});
  await fixture(true,f=>pipeline(f,async p=>{await retractQueue(f.path);await p.handle('!retract');const original=await state.getIngress(f.path,'message:5');assert.equal(original?.state,'held');assert.equal(original?.eventId,5n);assert.equal(original?.confirmationDelivered,false);await p.handle('!retract');assert.equal(submitted,1);assert.deepEqual((await state.listQueueJobs(f.path)).map(r=>r.jobId),['older']);assert.ok(p.posts.every(x=>!String(x.content).startsWith('Retracted unstarted')));assert.deepEqual(await f.seen(),[]);
  }));
+});
+
+it('actual Runners and SavedRequest commands share native display owner and preserve captured actor, no RPC or effects',async t=>{
+ const operations:string[]=[],original=OwnedWorkerSlot.prototype.run;
+ t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof original>){if(String(args[0]).endsWith('/runner-inspection-native-worker.ts'))operations.push((args[1] as {operation:string}).operation);return original.apply(this,args);});
+ await fixture(true,async f=>{
+  const db=await openInitialized(f.path);try{db.exec(`INSERT INTO discord_ingress_journal(ingress_id,kind,channel_id,owner_user_id,payload_json,state,phase,created_at,updated_at) VALUES('inspect-original','message',42,3,'{"prompt":"private saved content","token":"hidden"}','held','claimed',0,0)`);}finally{db.close();}
+  for(const method of ['getIngressForOwnerReadonly','listIngressesForOwner','runnerTargetCounts','listQueueJobs','listPendingDeliveries','listPromptIntakes','unknownDeliveryReceiptCount','blockedDeliveryReceiptCount','executionHoldReason'] as const)t.mock.method(state,method,()=>{throw new Error('Main-thread display store fallback is forbidden');});
+  const action={SavedRequest:{request_id:'inspect-original'}},context={...actor},pending=f.executor.executeWithIngressContext(action,context,'display-only');action.SavedRequest.request_id='other';context.userId=4n;context.channelId=43n;
+  await assert.rejects(f.executor.executeWithIngressContext('Runners',actor,'overlap'),OwnedWorkerBusyError);
+  const detail=await pending;assert.match(detail.text,/private saved content/);assert.ok(!detail.text.includes('hidden'));assert.equal(detail.waitsForFinal,false);assert.equal(detail.ui,null);
+  const runners=await f.executor.executeWithIngressContext('Runners',actor,'display-only');assert.match(runners.text,/owned_active_turn: unknown/);assert.match(runners.text,/inspect-original \| status: saved/);assert.deepEqual(operations,['Detail','Global','TargetCounts','Summary']);assert.deepEqual(await f.seen(),[]);assert.deepEqual(f.starts,[]);assert.equal(f.notifications(),0);
+  const after=new DatabaseSync(f.path);try{assert.equal(after.prepare("SELECT state FROM discord_ingress_journal WHERE ingress_id='inspect-original'").get()?.state,'held');assert.equal(after.prepare('SELECT COUNT(*) AS n FROM codex_turn_queue').get()?.n,0);}finally{after.close();}
+ });
 });
