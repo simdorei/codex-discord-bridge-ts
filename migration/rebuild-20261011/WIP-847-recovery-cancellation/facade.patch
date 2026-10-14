@@ -1,0 +1,60 @@
+--- a/src/store/state-access-facade.ts
++++ b/src/store/state-access-facade.ts
+@@ -203,6 +203,8 @@
+ 
+ export const cancelLatestPending: typeof PendingCancellation.cancelLatestPending = PendingCancellation.cancelLatestPending;
+ 
++export const cancelForRecoveryIn: typeof RecoveryCancellation.cancelForRecoveryIn = RecoveryCancellation.cancelForRecoveryIn;
++export const cancelForRecoveryExisting: typeof RecoveryCancellation.cancelForRecoveryExisting = RecoveryCancellation.cancelForRecoveryExisting;
+ export const cancelForRecovery: typeof RecoveryCancellation.cancelForRecovery = RecoveryCancellation.cancelForRecovery;
+ 
+ export const beginDeliveryReceipt: typeof DeliveryReceipts.beginDeliveryReceipt = DeliveryReceipts.beginDeliveryReceipt;
+@@ -662,6 +664,8 @@
+   readonly newReplyAcknowledgementSendable: typeof NewReplyClaims.newReplyAcknowledgementSendable;
+   readonly releaseNewReplyAcknowledgement: typeof NewReplyClaims.releaseNewReplyAcknowledgement;
+ 
++  readonly cancelForRecoveryIn: typeof RecoveryCancellation.cancelForRecoveryIn;
++  readonly cancelForRecoveryExisting: typeof RecoveryCancellation.cancelForRecoveryExisting;
+   readonly cancelForRecovery: typeof RecoveryCancellation.cancelForRecovery;
+   readonly cancelLatestPending: typeof PendingCancellation.cancelLatestPending;
+   readonly validateRecoveryEffectIn: typeof RecoveryEffect.validateRecoveryEffectIn;
+@@ -1013,6 +1017,8 @@
+   claimIngressRecovery,
+   validateIngressRecovery,
+   cancelLatestPending,
++  cancelForRecoveryIn,
++  cancelForRecoveryExisting,
+   cancelForRecovery,
+   beginDeliveryReceipt,
+   confirmDeliveryReceipt,
+--- a/test/store/state-access-facade.test.ts
++++ b/test/store/state-access-facade.test.ts
+@@ -440,6 +440,10 @@
+     assert.strictEqual(StateAccessFacade.claimIngressRecovery, RecoveryCustody.claimIngressRecovery);
+     assert.strictEqual(StateAccessFacade.validateIngressRecovery, RecoveryCustody.validateIngressRecovery);
+     assert.strictEqual(StateAccessFacade.cancelLatestPending, PendingCancellation.cancelLatestPending);
++    assert.strictEqual(StateAccessFacade.cancelForRecoveryIn, RecoveryCancellation.cancelForRecoveryIn);
++    assert.strictEqual(FacadeExports.cancelForRecoveryIn, RecoveryCancellation.cancelForRecoveryIn);
++    assert.strictEqual(StateAccessFacade.cancelForRecoveryExisting, RecoveryCancellation.cancelForRecoveryExisting);
++    assert.strictEqual(FacadeExports.cancelForRecoveryExisting, RecoveryCancellation.cancelForRecoveryExisting);
+     assert.strictEqual(StateAccessFacade.cancelForRecovery, RecoveryCancellation.cancelForRecovery);
+     assert.strictEqual(StateAccessFacade.beginDeliveryReceipt, DeliveryReceipts.beginDeliveryReceipt);
+     assert.strictEqual(StateAccessFacade.confirmDeliveryReceipt, DeliveryReceipts.confirmDeliveryReceipt);
+@@ -839,6 +843,8 @@
+       "claimIngressRecovery",
+       "validateIngressRecovery",
+       "cancelLatestPending",
++      "cancelForRecoveryIn",
++      "cancelForRecoveryExisting",
+       "cancelForRecovery",
+       "beginDeliveryReceipt",
+       "confirmDeliveryReceipt",
+@@ -962,7 +968,7 @@
+     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
+ assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
+ assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
+-    assert.strictEqual(actual.length, 357);
++    assert.strictEqual(actual.length, 359);
+   });
+ 
+   it("does not expose unsupplied readPendingAuthority on the facade", () => {
