@@ -7,7 +7,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {appendFileSync} from 'node:fs';
 import {appendFile,readFile,writeFile} from 'node:fs/promises';
 import {dirname,join} from 'node:path';
-import {setTimeout as sleep} from 'node:timers/promises';
+import {setImmediate as nextTurn,setTimeout as sleep} from 'node:timers/promises';
 import {createServer} from 'node:http';
 import {storeFixture} from '../../helpers/store-fixture.ts';
 import {openInitialized} from '../../../src/store/owned-driver.ts';
@@ -49,11 +49,11 @@ async function fixture(run:(config:BoundMirrorWorkerConfig,file:string,cursor:Na
  });
 }
 function trace(fault?:{kind:string;options:object}){
- const original=OwnedWorkerSlot.prototype.run,seen:string[]=[],requests:Record<string,unknown>[]=[];
+ const original=OwnedWorkerSlot.prototype.run,seen:string[]=[],requests:Record<string,unknown>[]=[],runs:{kind:string;slot:OwnedWorkerSlot;signal:AbortSignal|undefined}[]=[];
  const patch=mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,url:URL,value:unknown,timeout:number,signal?:AbortSignal){
-  const q=value as {kind?:string};requests.push(q);seen.push(q.kind??url.pathname.split('/').at(-1)!);const inject=fault!==undefined&&q.kind===fault.kind;
+  const q=value as {kind?:string},kind=q.kind??url.pathname.split('/').at(-1)!;requests.push(q);seen.push(kind);runs.push({kind,slot:this,signal});const inject=fault!==undefined&&q.kind===fault.kind;
   return original.call(this,inject?new URL('./bootstrap-fault-worker.ts',import.meta.url):url,inject?{...q,...fault!.options}:value,timeout,signal);
- });return {seen,requests,patch};
+ });return {seen,requests,runs,patch};
 }
 async function reached(stage:Int32Array):Promise<void>{for(let i=0;i<500;i++){if(Atomics.load(stage,0)===1)return;await sleep(10);}throw Error('Native fault stage not reached');}
 async function once(config:BoundMirrorWorkerConfig,queue:ReturnType<typeof mirrorQueueFixture>,report:(event:MirrorRunnerObservation)=>void=()=>{},transport=noHttp){
@@ -152,16 +152,22 @@ test('shared discovery failure joins an uncertain startup write and never starts
 }));
 
 test('forced monitored shutdown joins startup completion, preserves uncertainty, and holds global runner admission',{timeout:15000},()=>fixture(async(config,_file,cursor,_intents,queue)=>{
- const stage=new Int32Array(new SharedArrayBuffer(4)),observed=trace({kind:'CompleteContext',options:{stage:stage.buffer,delayMs:300}}),stop=new AbortController(),notifier=new RuntimeWorkerExitChannel();let reports=0;
+ const stage=new Int32Array(new SharedArrayBuffer(4)),release=new Int32Array(new SharedArrayBuffer(4)),observed=trace({kind:'CompleteContext',options:{stage:stage.buffer,release:release.buffer}}),stop=new AbortController(),notifier=new RuntimeWorkerExitChannel();let reports=0;
+ const releaseCompletion=()=>{Atomics.store(release,0,1);Atomics.notify(release,0);};
  const worker=startSessionMirrorRuntimeWorker(true,config,noHttp,stop.signal,notifier,String,()=>{reports++;throw Error('No report may replace the retained shutdown error');},queue)!;notifier.close();
  try{
-  await reached(stage);worker.abort();await sleep(20);assert.equal(worker.peek(),undefined);assert.equal(mirrorRunnerBusy(),true);assert.equal(ownedWorkerUsage().Background,1);assert.equal(queue.locks.tryAcquire('thread'),undefined);assert.equal(queue.locks.tryAcquire('mirror-sync-operation'),undefined);
+  await reached(stage);const completion=observed.runs.find(run=>run.kind==='CompleteContext');assert.ok(completion);assert.equal(completion.signal?.aborted,false);assert.equal(completion.slot.busy,true);
+  worker.abort();await nextTurn();assert.equal(completion.signal?.aborted,true);assert.equal(worker.peek(),undefined);assert.equal(mirrorRunnerBusy(),true);
+  // Periodic discovery can still be exiting in another Background slot. The
+  // exact completion owner must stay busy until this test releases native exit.
+  assert.equal(completion.slot.busy,true);assert.equal(queue.locks.tryAcquire('thread'),undefined);assert.equal(queue.locks.tryAcquire('mirror-sync-operation'),undefined);
   await assert.rejects(runBoundMirrorWorker(config,noHttp,String,()=>{},new AbortController().signal,queue),/already running/);
+  releaseCompletion();
   const result=await worker.join();assert.equal(result.kind,'Returned');if(result.kind!=='Returned'||result.result.ok)assert.fail('Expected retained startup failure');
   const error=result.result.error;assert.ok(error instanceof MirrorBootstrapWorkerHeldError);assert.equal(error.finished.length,1);const outcome=error.finished[0]!.outcome;assert.equal(outcome.kind,'Cancelled');assert.equal(mirrorBootstrapRequiresReconciliation(error.finished[0]!),true);
   if(outcome.kind!=='Cancelled'||outcome.settled.kind!=='Failed')assert.fail('Expected joined cancelled failure');const held=outcome.settled.error;assert.ok(held instanceof MirrorBootstrapReconciliationRequiredError);assert.equal(held.operation,'CompleteContext');assert.equal(held.recovery!.context.currentTurn,'original-turn');assert.equal(held.pending.cutoff.offset,BigInt(Buffer.byteLength(history)));
-  assert.equal(reports,0);assert.equal((await cursor.read('thread'))!.revision,1n);assert.equal(observed.seen.filter(k=>k==='CompleteContext').length,1);assert.equal(mirrorRunnerBusy(),false);assert.equal(queue.locks.activeTargetCount,0);
- }finally{stop.abort('cleanup');worker.abort();await worker.join();observed.patch.mock.restore();}
+  assert.equal(reports,0);assert.equal((await cursor.read('thread'))!.revision,1n);assert.equal(observed.seen.filter(k=>k==='CompleteContext').length,1);assert.equal(completion.slot.busy,false);assert.equal(mirrorRunnerBusy(),false);assert.equal(queue.locks.activeTargetCount,0);assert.equal(ownedWorkerUsage().Background,0);
+ }finally{releaseCompletion();stop.abort('cleanup');worker.abort();await worker.join();observed.patch.mock.restore();}
 }));
 
 async function lockCount(locks:ReturnType<typeof mirrorQueueFixture>['locks'],expected:number):Promise<void>{const deadline=performance.now()+5000;while(locks.activeTargetCount!==expected){assert.ok(performance.now()<deadline,'Expected shared lock admission');await sleep(2);}}

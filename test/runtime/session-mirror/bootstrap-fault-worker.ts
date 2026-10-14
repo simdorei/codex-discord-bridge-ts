@@ -11,6 +11,7 @@ try{
   else throw new TypeError('Unexpected fault request');
  }
  if(q.stage!==undefined){const stage=new Int32Array(q.stage);if(stage.length>1)Atomics.store(stage,1,Atomics.load(new Int32Array(q.cancel),0));Atomics.store(stage,0,1);}
+ if(q.release!==undefined){const release=new Int32Array(q.release);while(Atomics.load(release,0)===0)Atomics.wait(release,0,0);}
  if(q.delayMs)Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,q.delayMs);
  if(q.loseReply)process.exit(23);
  parentPort.postMessage({ok:true,value});
