@@ -46,3 +46,30 @@ test('executor sends exact native Pro skill path in the owned claimed turn reque
  assert.deepEqual(input[1],{type:'skill',name:'ask-chatgpt-pro',path:rawRoot+'/plugins/codex-discord-remote/skills/ask-chatgpt-pro/SKILL.md'});
  }finally{db.close();result.disposeReceivers();}
 }));
+
+test('explicit startup recovery executor is installed once and bound to the mirror database',async()=>fixture(async(paths,owner)=>{
+ const {AdmittedRecoverExecutor}=await import('../../../src/runtime/action-executor/recover-action.ts');
+ const recovery=new AdmittedRecoverExecutor(paths.mirrorDb,paths.root,'posix',{inspect:async()=>assert.fail('startup must not inspect'),start:async()=>assert.fail('startup must not restart'),join:async()=>{}});
+ const input={...options(),recovery};const pending=buildRuntimeCommandExecutor(paths,owner,new AdmissionGate(),input);
+ input.recovery=new AdmittedRecoverExecutor(join(paths.root,'foreign.sqlite'),paths.root,'posix',{inspect:async()=>assert.fail(),start:async()=>assert.fail(),join:async()=>{}});
+ const result=await pending;
+ assert.throws(()=>result.executor.configureRecovery(recovery),/already configured/);
+ result.disposeReceivers();
+}));
+test('wrong-database recovery is rejected before queue recovery writes',async()=>fixture(async(paths,owner)=>{
+ const {AdmittedRecoverExecutor}=await import('../../../src/runtime/action-executor/recover-action.ts');
+ const recovery=new AdmittedRecoverExecutor(join(paths.root,'foreign.sqlite'),paths.root,'posix',{inspect:async()=>assert.fail(),start:async()=>assert.fail(),join:async()=>{}});
+ await assert.rejects(buildRuntimeCommandExecutor(paths,owner,new AdmissionGate(),{...options(),recovery}),/database differs/);
+ const db=new DatabaseSync(paths.mirrorDb,{readOnly:true});try{assert.equal(db.prepare('SELECT COUNT(*) AS n FROM cdr_async_recovery_policies').get()!.n,0);}finally{db.close();}
+}));
+test('recovery accessors and forged recovery owners reject before use',async()=>fixture(async(paths,owner)=>{
+ let hooks=0;const input={...options()};Object.defineProperty(input,'recovery',{get(){hooks++;throw new Error('active');}});
+ await assert.rejects(buildRuntimeCommandExecutor(paths,owner,new AdmissionGate(),input),TypeError);assert.equal(hooks,0);
+ await assert.rejects(buildRuntimeCommandExecutor(paths,owner,new AdmissionGate(),{...options(),recovery:{}} as never),TypeError);
+}));
+
+test('proxy bootstrap options reject without reflective hooks',async()=>{
+ const {captureRuntimeExecutorOptions}=await import('../../../src/runtime/discord-runtime/executor-bootstrap.ts');
+ let hooks=0;const proxy=new Proxy(options(),{getOwnPropertyDescriptor(){hooks++;throw new Error('proxy hook');}});
+ assert.throws(()=>captureRuntimeExecutorOptions(proxy),TypeError);assert.equal(hooks,0);
+});

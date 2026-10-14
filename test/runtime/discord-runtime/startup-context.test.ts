@@ -308,3 +308,10 @@ test('mirror configuration failure closes paused gateway before any typed worker
   assert.equal(port.polls,0);assert.equal(port.disposed,1);assert.equal(gateway.resourcesClosed,true);assert.equal(context.owner.lifecycleSnapshot().healthy,true);assert.deepEqual(seen,[]);
  });}finally{stop.abort();await gateway.shutdown(performance.now()+3000);await context.disposeBeforeWorkers();}gone(o.paths.root);
 }));
+
+test('foreign recovery database rejects before native resident launch or startup store writes',async()=>storeFixture(async path=>{
+ const {AdmittedRecoverExecutor}=await import('../../../src/runtime/action-executor/recover-action.ts');
+ const o=await input(path),recovery=new AdmittedRecoverExecutor(join(o.paths.root,'foreign.sqlite'),o.paths.root,'posix',{inspect:async()=>assert.fail(),start:async()=>assert.fail(),join:async()=>{}});
+ await assert.rejects(prepareRuntimeContext({...o,executor:{...o.executor,recovery}}),/database differs/);
+ assert.equal(existsSync(path),false);assert.equal(existsSync(join(o.paths.root,'pid')),false);
+}));

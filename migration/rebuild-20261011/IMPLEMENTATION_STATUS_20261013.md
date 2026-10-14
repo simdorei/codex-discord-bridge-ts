@@ -1,3 +1,9 @@
+# Current addendum — 2026-10-14 11:11 UTC
+
+- Implemented859 connects explicitly provided recovery executor through ordinary/Pro startup options, validates its database before native startup effects, and installs it before intake recovery. No default OS controller is fabricated.
+- Implemented860 adds POSIX SIGTERM to existing cooperative interrupt ownership. Real child SIGINT/SIGTERM cleanup verified. Windows signal qualification remains pending.
+- Strict compiled build0. Initial dependent44 PASS and final affected14 PASS, overlapping counts, no whole-suite claim. WIP858 Unix singleton remains unverified due EPERM and is not enabled. Continue executable integration.
+
 # Current addendum — 2026-10-14 11:06 UTC
 
 - WIP858 adds POSIX singleton candidate and seven focused tests. Typecheck/compiled build succeed; actual tests are 1 PASS / 6 FAIL because Unix socket listen is denied with EPERM, including escalated execution. No singleton runtime PASS or bootstrap integration is claimed.

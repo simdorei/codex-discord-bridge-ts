@@ -1,3 +1,4 @@
+import {AdmittedRecoverExecutor} from '../action-executor/recover-action.ts';
 import {RuntimeDeliveryWake} from './delivery-wake.ts';
 import {invokeSynchronousVoid} from '../../core/synchronous-void.ts';
 import {types} from 'node:util';
@@ -35,6 +36,7 @@ async function prepareContext(input:RuntimeStartupContextOptions|RuntimeProStart
  const initialPolicy=captureRuntimeAccessPolicy(get('access')),reserveLimits=cloneOwnedSerdeValue(get('reserveLimits')) as ReserveRetirementLimits,policyLimits=cloneOwnedSerdeValue(get('policyLimits')) as NativeMirrorPolicyLimits,timeout=get('storageTimeoutMs');
  if(proMode&&(executorOptions as RuntimeProExecutorBootstrapOptions).pro.executable!==own(own(process,'process'),'executable'))throw new TypeError('Pro inventory and resident must use the same executable');
  AdmissionGate.prototype.isSealed.call(admission);
+ if(executorOptions.recovery!==undefined)AdmittedRecoverExecutor.prototype.requireDatabase.call(executorOptions.recovery,paths.mirrorDb);
  const deliveryWake=new RuntimeDeliveryWake(),originalNotify=executorOptions.notifyDeliveryReady;
  const wiredOptions={...executorOptions,notifyDeliveryReady:function(this:object){deliveryWake.notify();invokeSynchronousVoid(originalNotify,this,[]);}};
  const foundation=await startRuntimeFoundation(paths,process,runtimeId,startupChannel,executorOptions.render,reserveLimits,timeout,signal);

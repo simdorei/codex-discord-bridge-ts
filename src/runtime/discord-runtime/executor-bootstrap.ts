@@ -1,3 +1,4 @@
+import {AdmittedRecoverExecutor} from '../action-executor/recover-action.ts';
 import {joinRuntimePath} from '../runtime-paths/path-text.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
@@ -12,6 +13,7 @@ import {ProPromptRuntime,type ProRemoteConnection} from '../../pro/runtime.ts';
 import type {ProRuntimeDiagnostic} from '../../pro/preflight.ts';
 type BusinessOptions=Pick<RuntimeExecutorDependencies,'render'|'preparePrompt'|'mirror'|'reportNewAttempt'|'resumeTimeoutMs'>;
 export interface RuntimeExecutorBootstrapOptions extends BusinessOptions{
+ readonly recovery?:AdmittedRecoverExecutor;
  readonly historyTimeoutMs:number;readonly reportPolicyFailure:(thread:string,error:unknown)=>void;readonly notifyDeliveryReady:()=>void;
 }
 type CommonOptions=Omit<RuntimeExecutorBootstrapOptions,'preparePrompt'>;
@@ -23,13 +25,16 @@ function syncCallback(fn:unknown):asserts fn is (...args:any[])=>unknown{
  if(typeof fn!=='function'||types.isProxy(fn)||types.isAsyncFunction(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected synchronous executor bootstrap diagnostic');
 }
 function captureCommon(options:CommonOptions):CommonOptions{
+ if(options===null||typeof options!=='object'||types.isProxy(options))throw new TypeError('Expected passive executor bootstrap options');
+ const recovery=Object.hasOwn(options,'recovery')?own(options,'recovery') as AdmittedRecoverExecutor:undefined;
+ if(recovery!==undefined&&(recovery===null||typeof recovery!=='object'||types.isProxy(recovery)))throw new TypeError('Expected owned recovery executor');
  const get=<K extends keyof CommonOptions>(key:K)=>own(options,key) as CommonOptions[K];
  const render=get('render'),mirror=get('mirror'),reportNewAttempt=get('reportNewAttempt'),reportPolicyFailure=get('reportPolicyFailure'),notifyDeliveryReady=get('notifyDeliveryReady'),resumeTimeoutMs=get('resumeTimeoutMs'),historyTimeoutMs=get('historyTimeoutMs');
  for(const timeout of [resumeTimeoutMs,historyTimeoutMs])if(typeof timeout!=='number'||!Number.isSafeInteger(timeout)||timeout<0||timeout>2147483647)throw new RangeError('Expected explicit supported executor timeout');
  for(const fn of [render,reportNewAttempt,reportPolicyFailure,notifyDeliveryReady])syncCallback(fn);
  let pinnedMirror:RuntimeExecutorDependencies['mirror']=null;
  if(mirror!==null){const link=own(mirror,'linkNewThread');if(typeof link!=='function'||types.isProxy(link)||types.isGeneratorFunction(link))throw new TypeError('Expected explicit mirror link');pinnedMirror=Object.freeze({linkNewThread:(...args:Parameters<NonNullable<typeof mirror>['linkNewThread']>)=>Reflect.apply(link,mirror,args)});}
- return Object.freeze({render,mirror:pinnedMirror,reportNewAttempt,reportPolicyFailure,notifyDeliveryReady,resumeTimeoutMs,historyTimeoutMs});
+ return Object.freeze({render,mirror:pinnedMirror,reportNewAttempt,reportPolicyFailure,notifyDeliveryReady,resumeTimeoutMs,historyTimeoutMs,...(recovery===undefined?{}:{recovery})});
 }
 /** Pure capture before any earlier asynchronous startup stages. */
 export function captureRuntimeExecutorOptions(options:RuntimeExecutorBootstrapOptions):RuntimeExecutorBootstrapOptions{
@@ -52,6 +57,7 @@ type Prepared={readonly preparePrompt:RuntimeExecutorBootstrapOptions['preparePr
 async function build(paths:Paths,server:PortableResidentLifecycle,admission:AdmissionGate,options:CommonOptions,capture:(root:string,state:string)=>Promise<Prepared>){
  const root=own(paths,'root'),stateDb=own(paths,'stateDb'),mirrorDb=own(paths,'mirrorDb'),bridgePath=own(paths,'bridgeState');for(const v of [root,stateDb,mirrorDb,bridgePath])requireDiscordText(v as string);
  const {render,mirror,reportNewAttempt,reportPolicyFailure,notifyDeliveryReady,resumeTimeoutMs,historyTimeoutMs}=options;
+ if(options.recovery!==undefined)AdmittedRecoverExecutor.prototype.requireDatabase.call(options.recovery,mirrorDb as string);
  const completionReceiver=PortableResidentLifecycle.prototype.subscribeNotifications.call(server);
  let serverRequestReceiver:ReturnType<PortableResidentLifecycle['subscribeServerRequests']>|undefined;let transferred=false;
  try{
@@ -59,6 +65,7 @@ async function build(paths:Paths,server:PortableResidentLifecycle,admission:Admi
   const recovered=await buildRecoveredRuntimeQueue(mirrorDb as string,server,admission,render,reportPolicyFailure,notifyDeliveryReady,{resumeTimeoutMs,historyTimeoutMs,proSkillPath:joinRuntimePath(root as string,'plugins/codex-discord-remote/skills/ask-chatgpt-pro/SKILL.md',process.platform==='win32'?'win32':'posix')});
   const prepared=await capture(root as string,stateDb as string);
   const bridge=new BridgeState(bridgePath as string),executor=new RuntimeCommandExecutor({paths:{state:stateDb as string,mirror:mirrorDb as string,bridge:bridgePath as string},bridge,server,backend:recovered.backend,queue:recovered.queue,render,preparePrompt:prepared.preparePrompt,mirror,reportNewAttempt,resumeTimeoutMs});
+  if(options.recovery!==undefined)RuntimeCommandExecutor.prototype.configureRecovery.call(executor,options.recovery);
   const intakes=await RuntimeCommandExecutor.prototype.recoverPromptIntakesOnStartup.call(executor),requests=serverRequestReceiver;
   const disposeReceivers=()=>{completionReceiver.dispose();requests.dispose();};
   const result=Object.freeze({...recovered,bridge,executor,intakes,pro:prepared.pro,completionReceiver,serverRequestReceiver:requests,disposeReceivers});transferred=true;return result;

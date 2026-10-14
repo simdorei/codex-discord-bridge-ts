@@ -1,0 +1,35 @@
+{
+  "checkpoints": [
+    859,
+    860
+  ],
+  "status": "IMPLEMENTED_SCOPED_VERIFIED",
+  "changes": [
+    "Optional startup-owned AdmittedRecoverExecutor captured before awaits and database checked before resident launch, subscriptions or recovery writes; installed before intake",
+    "POSIX SIGTERM shares existing cooperative SIGINT stop owner and removes only owned listeners"
+  ],
+  "verification": {
+    "compiledStrictBuildExit": 0,
+    "initialDependentTests": {
+      "tests": 44,
+      "pass": 44,
+      "fail": 0
+    },
+    "finalAffectedTests": {
+      "tests": 14,
+      "pass": 14,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "countsOverlap": true,
+    "fullSuiteClaim": false
+  },
+  "limits": [
+    "858 singleton candidate remains WIP: OS socket EPERM; not included as passing",
+    "No default OS recovery controller supplied",
+    "Windows named mutex and production recovery adapter remain unqualified",
+    "SIGTERM is explicit POSIX integration extension; no Windows signal qualification",
+    "Full executable and operating acceptance incomplete"
+  ]
+}
