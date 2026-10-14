@@ -1,3 +1,4 @@
+import {AttachmentHttpClient} from '../attachment-client.ts';
 import {RuntimeCommandExecutor} from '../action-executor/command-executor.ts';
 import {startTypedIngressWorkers} from './typed-ingress-start.ts';
 import {types} from 'node:util';
@@ -19,7 +20,7 @@ import type {RuntimeCompletionOptions} from './completion-start.ts';
 import {captureRuntimeHeartbeatInput} from './heartbeat-start.ts';
 import {captureRuntimeMirrorInput} from './session-mirror-start.ts';
 const claimedResidents=new WeakSet<object>();
-const bindings=new WeakMap<object,Readonly<{gateway:GatewayRuntime<DecodedGatewayInteraction>;resident:RuntimeCoreStartup['owner'];gate:AdmissionGate;database:string}>>();
+const bindings=new WeakMap<object,Readonly<{gateway:GatewayRuntime<DecodedGatewayInteraction>;resident:RuntimeCoreStartup['owner'];gate:AdmissionGate;database:string;attachment:AttachmentHttpClient|null}>>();
 export function preparedRuntimeWorkerBinding(owner:unknown){if(owner===null||typeof owner!=='object'||!bindings.has(owner))throw new TypeError('Expected actual prepared runtime worker owner');return bindings.get(owner)!;}
 export type PreparedRuntimeWorkerOwner=Awaited<ReturnType<typeof startPreparedRuntimeWorkers>>;
 export interface PreparedRuntimeWorkerOptions{
@@ -37,6 +38,8 @@ export class PreparedRuntimeWorkerStartError extends AggregateError{
  * resident. Requires an explicitly disabled remote branch: no remote preparation
  * is silently skipped. Owns the interaction queue, exit channel and exact tasks;
  * gateway/resident/HTTP/drain/instance ownership remains with the application.
+ * A native AttachmentHttpClient is bound for final outer cleanup after all workers
+ * join; custom transport cleanup remains with its caller.
  * Each prepared resident can be claimed once, including a failed startup; retry
  * requires a fresh prepared context after the caller finishes old ownership.
  * A failed start closes the gateway after joining accepted work, but never closes
@@ -54,6 +57,10 @@ export async function startPreparedRuntimeWorkers(input:RuntimeCoreStartup&Runti
  const i=own(options,'interleaving'),h=own(i,'heartbeat'),m=own(i,'mirror'),heartbeat=captureRuntimeHeartbeatInput(own(h,'port') as RuntimeCoreInterleaving['heartbeat']['port'],own(h,'options') as RuntimeCoreInterleaving['heartbeat']['options']);
  const mirror=m===null?null:captureRuntimeMirrorInput(own(m,'config') as NonNullable<RuntimeCoreInterleaving['mirror']>['config'],own(m,'transport') as NonNullable<RuntimeCoreInterleaving['mirror']>['transport'],own(m,'render') as NonNullable<RuntimeCoreInterleaving['mirror']>['render'],own(m,'report') as NonNullable<RuntimeCoreInterleaving['mirror']>['report']);
  const interleaving=Object.freeze({heartbeat,mirror}),ingress=own(options,'ingress') as PreparedTypedIngressOptions;
+ const attachmentInput=own(ingress,'attachmentTransport');
+ if(attachmentInput===null||typeof attachmentInput!=='object'||types.isProxy(attachmentInput))throw new TypeError('Expected owned attachment transport');
+ const attachment=attachmentInput instanceof AttachmentHttpClient?attachmentInput:null;
+ if(attachment!==null)Object.getOwnPropertyDescriptor(AttachmentHttpClient.prototype,'activeRequests')!.get!.call(attachment);
  capturePreparedMessageOptions(context,gate,http,ingress);RuntimeDeliveryWake.prototype.assertAvailable.call(context.deliveryWake);
  if(claimedResidents.has(context.owner))throw new TypeError('Prepared resident worker assembly already owned');claimedResidents.add(context.owner);
  const database=Object.getOwnPropertyDescriptor(QueueStartCoordinator.prototype,'dbPath')!.get!.call(context.queue) as string;
@@ -68,7 +75,7 @@ export async function startPreparedRuntimeWorkers(input:RuntimeCoreStartup&Runti
   core=await startRuntimeCoreWorkers(context,http,gate,signal,notifier,completion,interleaving);signal.throwIfAborted();
   const heartbeatOwner=core.heartbeat!;const workers=Object.freeze([...typed,business.worker,...core.workers]),startupOrder=Object.freeze([...typed,business.worker,...core.startupOrder]);notifier.close();let closing:Promise<readonly RuntimeWorkerJoin[]>|undefined;
   const result=Object.freeze({workers,heartbeat:heartbeatOwner,startupOrder,exits,requestStop,close:()=>{if(closing===undefined){requestStop();closing=Promise.all(workers.map(w=>w.join())).then(results=>Object.freeze(results));}return closing;},disposeMonitor:()=>{if([...workers,heartbeatOwner.worker].some(w=>w.peek()===undefined))throw new TypeError('Join all runtime workers and heartbeat before disposing monitor');exits.dispose();work.sender.dispose();work.receiver.dispose();}});
-  bindings.set(result,Object.freeze({gateway,resident:context.owner,gate,database}));return result;
+  bindings.set(result,Object.freeze({gateway,resident:context.owner,gate,database,attachment}));return result;
  }catch(primary){
   const cleanup:unknown[]=[];try{GatewayRuntime.prototype.beginStopping.call(gateway);}catch(error){cleanup.push(error);}try{requestStop();}catch(error){cleanup.push(error);}
   core?.heartbeat?.requestStop();const accepted=[...typed,...(business===undefined?[]:[business.worker]),...(core===undefined?[]:core.startupOrder)];for(const worker of accepted)worker.abort();

@@ -1,3 +1,4 @@
+import {AttachmentHttpClient} from '../attachment-client.ts';
 import {RecommendedGateway} from '../../discord/gateway/recommended.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
@@ -20,7 +21,7 @@ export interface PreparedRuntimeLifetimeOptions{
  readonly shutdown:RuntimeWorkerShutdownOptions&RuntimeHardDeadlineOptions;
 }
 const consumed=new WeakSet<object>();
-const completed=new WeakMap<object,{gateway:GatewayRuntime<import('../../discord/gateway/decoded-interaction.ts').DecodedGatewayInteraction>;controller:RuntimeDrainController;closing?:Promise<void>}>();
+const completed=new WeakMap<object,{gateway:GatewayRuntime<import('../../discord/gateway/decoded-interaction.ts').DecodedGatewayInteraction>;controller:RuntimeDrainController;attachment:AttachmentHttpClient|null;closing?:Promise<void>}>();
 /** Runs actual stop selection, live SQLite/resident drain inspection, joined
  * gateway/workers/resident cleanup and heartbeat finalization for an authentic
  * prepared local-worker owner. All losing waits join under the original selected
@@ -47,11 +48,12 @@ export async function runPreparedRuntimeLifetime(workers:PreparedRuntimeWorkerOw
  const cleanup=await shutdownRuntimeOwners(binding.gateway,workers,binding.resident,selection.cause,deadline,policy);
  const finalized=await finalizeRuntimeShutdown(selection.cause,cleanup,selection.drainKey,controller,workers.heartbeat,userStop,deadline,()=>{},policy,(event,error)=>invokeSynchronousVoid(transitionReport as Function,options,[event,error]));
  workers.disposeMonitor();const result=Object.freeze({selection,cleanup,finalized,deadline});
- if(cleanup.serverClose.ok)completed.set(result,{gateway:binding.gateway,controller});return result;
+ if(cleanup.serverClose.ok)completed.set(result,{gateway:binding.gateway,controller,attachment:binding.attachment});return result;
 }
 
 /** Outer cleanup is authorized only by this module's completed, joined lifetime.
- * Shared HTTP/identify ownership closes before removing drain identity. An error
+ * Shared HTTP/identify and the bound native attachment client close before
+ * removing drain identity. Custom attachment transports remain caller-owned. An error
  * or fail-stop before the lifetime receipt is produced grants no cleanup authority.
  * A rejected resident disposal also withholds authority even if all tasks joined.
  * Singleton ownership remains caller-held until this Promise has succeeded. */
@@ -62,6 +64,7 @@ export function closePreparedRuntimeOuter(result:unknown,gateway:RecommendedGate
  if(own(gateway,'runtime')!==proof.gateway||controller!==proof.controller)throw new TypeError('Outer runtime ownership differs');
  return proof.closing??= (async()=>{
   await RecommendedGateway.prototype.close.call(gateway);
+  if(proof.attachment!==null)await AttachmentHttpClient.prototype.close.call(proof.attachment);
   await RuntimeDrainController.prototype.dispose.call(controller);
  })();
 }
