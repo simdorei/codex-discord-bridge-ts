@@ -9,6 +9,7 @@ import {DeadGenerationTargetHeldError} from "../../store/fork-completed-target.t
 import {BackendFailureError,QueueIntegerRangeError} from "./errors.ts";
 import {ForkRuntimeError} from "./fork-errors.ts";
 import {TargetLocks} from "./target-locks.ts";
+import {requireThreadTargetKey} from "../../core/keyed-locks.ts";
 export function isNonfatalForkRecoveryBlocker(error:unknown):boolean{
   if(error instanceof ForkRuntimeError)return error.kind==="ForkBackend"||error.kind==="ForkFinalize"||error.kind==="UnresolvedForkHandoff";
   return error instanceof ForkTransitionError||error instanceof ForkHandoffConflictingIntentError||error instanceof UnresolvedConflictError||error instanceof AmbiguousForkCannotBeCancelledError||error instanceof ForkTargetAlreadyObservedError;
@@ -59,7 +60,7 @@ export class QueueForkCoordinator{
     throw new ForkRuntimeError({kind:"UnresolvedForkHandoff",sourceThreadId:source,handoffId:h.handoffId,lastForkError:error});
   }
   async #handoff(source:string,force:boolean,reason:string):Promise<AppServerTarget>{
-    await this.#unheld(source);if(!this.#backend.requiresAppServerFork?.())return unchanged(source);
+    requireThreadTargetKey(source);await this.#unheld(source);if(!this.#backend.requiresAppServerFork?.())return unchanged(source);
     const decision=await this.#locks.run<Decision>(source,async()=>{
       const completed=await this.#chain(source);if(completed!==null)return {kind:"done",target:{threadId:completed,forkedFrom:source,quarantinedJobId:null}};
       const existing=await this.#state.unresolvedAppServerForkHandoffForSource(this.#path,source);
@@ -75,7 +76,7 @@ export class QueueForkCoordinator{
       }
       const target=await this.#request(source,begun.handoff);return {kind:"finalize",source,handoff:begun.handoff.handoffId,target};
     });
-    if(decision.kind==="done")return decision.target;
+    if(decision.kind==="done"){requireThreadTargetKey(decision.target.threadId);return decision.target;}
     // No source lock is retained while awaiting another target. The durable fence blocks replay;
     // finalize rechecks the exact source/target pair inside its write transaction.
     return this.#locks.runPair(decision.source,decision.target,()=>this.#finalize(decision));

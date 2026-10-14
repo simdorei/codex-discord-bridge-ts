@@ -19,6 +19,14 @@ function validateTarget(target: string): void {
   }
 }
 
+/** This existing operation key is reserved for global mapping ownership. It must
+ * never be interpreted as a thread in a nested target-lock protocol. */
+export const MIRROR_SYNC_OPERATION_LOCK='mirror-sync-operation';
+export function requireThreadTargetKey(target:string):void{
+  validateTarget(target);
+  if(target===MIRROR_SYNC_OPERATION_LOCK)throw new TypeError('Reserved mirror mapping lock key cannot be a thread target');
+}
+
 /** Event-loop-local FIFO mutexes, not cross-process or distributed locks. */
 export class TargetLocks {
   readonly #entries = new Map<string, Entry>();
@@ -41,7 +49,9 @@ export class TargetLocks {
   acquire(target: string, signal?: AbortSignal): Promise<TargetLease> {
     validateTarget(target);
     if (signal?.aborted) return Promise.reject(signal.reason);
-    const available = this.tryAcquire(target);
+    // A borrowed authentic registry must not dispatch through a subclass or own
+    // override that can fabricate a lease without entering this registry.
+    const available = TargetLocks.prototype.tryAcquire.call(this, target);
     if (available !== undefined) return Promise.resolve(available);
     const entry = this.#entries.get(target)!;
     return new Promise((resolve, reject) => {
@@ -77,9 +87,10 @@ export class TargetLocks {
     const borrowed=owned.pin();try{return await work(borrowed);}finally{borrowed.release();}
   }
 
-  /** Acquire a pair in one global order. Caller must first release any separately held target lease. */
+  /** Acquire thread targets in byte order; reserved operation keys are not targets.
+   * Caller must first release any separately held target lease. */
   async runPair<T>(left: string, right: string, work: () => T | Promise<T>, signal?: AbortSignal): Promise<T> {
-    validateTarget(left); validateTarget(right);
+    requireThreadTargetKey(left); requireThreadTargetKey(right);
     const targets = [...new Set([left, right])].sort((a,b) => Buffer.compare(Buffer.from(a), Buffer.from(b)));
     const leases: TargetLease[] = [];
     try {

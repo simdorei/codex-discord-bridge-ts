@@ -18,3 +18,9 @@ test("cancellation while second acquisition waits releases the first but not the
   const pending=locks.runPair("a","b",()=>assert.fail("cancelled waiter must not execute"),abort.signal);await tick();abort.abort(reason);
   await assert.rejects(pending,e=>e===reason);assert.equal(locks.activeTargetCount,1);const first=locks.tryAcquire("a");assert.ok(first);assert.equal(locks.tryAcquire("b"),undefined);first.release();foreign.release();assert.equal(locks.activeTargetCount,0);
 });
+
+for(const pair of [['mirror-sync-operation','z'],['z','mirror-sync-operation'],['mirror-sync-operation','mirror-sync-operation']] as const)test(`reserved operation key is rejected before pair acquisition: ${pair.join(',')}`,async()=>{
+ const locks=new TargetLocks(),held=await locks.acquire('z');let called=false;
+ try{await assert.rejects(locks.runPair(pair[0],pair[1],async()=>{called=true;}),/Reserved mirror mapping lock key/);assert.equal(called,false);assert.equal(locks.activeTargetCount,1);const global=locks.tryAcquire('mirror-sync-operation');assert.ok(global);global.release();}
+ finally{held.release();}assert.equal(locks.activeTargetCount,0);
+});

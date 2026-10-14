@@ -353,3 +353,22 @@ test('failed native resident disposal cannot authorize outer identity release',{
   assert.equal(existsSync(join(f.root,DRAIN_MARKER_NAMES.identity)),true);
  }finally{PortableResidentLifecycle.prototype.dispose=original;}
 }));
+
+
+function mirrorBindingConfig(stateDatabasePath:string,bridgeDatabasePath:string){return {stateDatabasePath,bridgeDatabasePath,discovery:{threads:{maxRows:32n,maxValueBytes:1048576n,maxOutputBytes:1048576,timeoutMs:5000},store:{maxTargets:32n,maxJobs:32n,maxValueBytes:1048576n,maxOutputBytes:1048576,timeoutMs:5000}},ready:{maxTargets:32,maxBytes:1048576},poll:{read:{maxWindowBytes:65536,maxRecordBytes:32768,maxRecords:20,decodeTimeoutMs:5000},ownership:{maxJobs:32n,maxValueBytes:1048576n,timeoutMs:5000}}};}
+
+test('core and prepared mirror reject foreign database or queue before claiming runtime workers',{timeout:15000},async()=>storeFixture(async path=>{
+ const {httpFixture}=await import('../../helpers/interaction-worker-fixture.ts'),{startRuntimeCoreWorkers}=await import('../../../src/runtime/discord-runtime/core-workers-start.ts'),{RuntimeWorkerExitChannel}=await import('../../../src/runtime/discord-runtime/monitored-worker.ts'),{QueueStartCoordinator}=await import('../../../src/runtime/queue-runner/start-coordinator.ts'),{loadRuntimeAutocomplete}=await import('../../../src/runtime/discord-runtime/autocomplete-bootstrap.ts'),{mirrorRunnerBusy}=await import('../../../src/runtime/session-mirror/runner.ts');
+ const o=await input(path),context=await prepareRuntimeContext(o),port=new PreparedPort(),gateway=GatewayRuntime.fromOwnedPorts([port],{reportReceiveErrorDrop:()=>{},reportTriggerFailure:()=>{}}),stop=new AbortController(),notifier=new RuntimeWorkerExitChannel(),options=localWorkerOptions(o.paths.root,[]);
+ const mirror={config:mirrorBindingConfig(o.paths.stateDb,path+'.foreign'),transport:{sendValidated:async():Promise<bigint>=>assert.fail('No mirror HTTP')},render:()=>'',report:()=>{}},interleaving={...options.interleaving,mirror};
+ try{await httpFixture(async(http,seen)=>{
+  const catalog=await loadRuntimeAutocomplete(context.owner);
+  await assert.rejects(startRuntimeCoreWorkers(context,http,o.admission,stop.signal,notifier,options.completion,interleaving),/Mirror database differs/);
+  await assert.rejects(startPreparedRuntimeWorkers(context,gateway,o.admission,http,catalog,stop.signal,{...options,interleaving}),/Mirror database differs/);
+  mirror.config.bridgeDatabasePath=path;const foreign=new QueueStartCoordinator(path,context.backend,{admission:o.admission});
+  await assert.rejects(startPreparedRuntimeWorkers({...context,queue:foreign},gateway,o.admission,http,catalog,stop.signal,{...options,interleaving}),/executor queue differs/);
+  const fake=Object.assign(Object.create(QueueStartCoordinator.prototype),{locks:context.queue.locks});
+  await assert.rejects(startPreparedRuntimeWorkers({...context,queue:fake},gateway,o.admission,http,catalog,stop.signal,{...options,interleaving}),TypeError);
+  assert.equal(port.polls,0);assert.equal(port.disposed,0);assert.equal(gateway.resourcesClosed,false);assert.equal(context.completionReceiver.tryReceive().kind,'Empty');assert.equal(context.serverRequestReceiver.tryReceive().kind,'Empty');assert.equal(mirrorRunnerBusy(),false);assert.equal(context.queue.locks.activeTargetCount,0);assert.deepEqual(seen,[]);
+ });}finally{stop.abort();notifier.close();await gateway.shutdown(performance.now()+3000);await context.disposeBeforeWorkers();}
+}));

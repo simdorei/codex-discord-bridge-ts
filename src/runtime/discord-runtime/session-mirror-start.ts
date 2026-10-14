@@ -1,4 +1,6 @@
 import {types} from 'node:util';
+import type {QueueStartCoordinator} from '../queue-runner/start-coordinator.ts';
+import {captureMirrorMappingLocks} from '../session-mirror/mapping-owner.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {invokeSynchronousVoid} from '../../core/synchronous-void.ts';
 import type {DiscordReceiptTransport} from '../completion/receipt-sender.ts';
@@ -19,13 +21,13 @@ export class MirrorShutdownReportError extends Error{
  * Requires explicit bound cursors or the opt-in bootstrap policy with prepared
  * schemas, and trusted transport; no service starts here. Bootstrap uncertainty
  * is retained in the monitored failure even during shutdown/report failure. */
-export function startSessionMirrorRuntimeWorker(enabled:boolean,config:BoundMirrorWorkerConfig,transport:DiscordReceiptTransport,shutdown:AbortSignal,notifier:RuntimeWorkerExitChannel,render:(error:unknown)=>string,report:(event:RuntimeMirrorObservation)=>void):RuntimeMonitoredWorker|null{
+export function startSessionMirrorRuntimeWorker(enabled:boolean,config:BoundMirrorWorkerConfig,transport:DiscordReceiptTransport,shutdown:AbortSignal,notifier:RuntimeWorkerExitChannel,render:(error:unknown)=>string,report:(event:RuntimeMirrorObservation)=>void,queue:QueueStartCoordinator):RuntimeMonitoredWorker|null{
  if(typeof enabled!=='boolean')throw new TypeError('Expected mirror enabled flag');if(!enabled)return null;
  if(types.isProxy(shutdown)||!(shutdown instanceof AbortSignal))throw new TypeError('Expected runtime shutdown signal');
- const {config:captured,transport:pinned,render:capturedRender,report:capturedReport}=captureRuntimeMirrorInput(config,transport,render,report);
+ const {config:captured,transport:pinned,render:capturedRender,report:capturedReport}=captureRuntimeMirrorInput(config,transport,render,report,queue);
  return new RuntimeMonitoredWorker('session-mirror',notifier,async force=>{
   try{
-   const settled=await runBoundMirrorWorker(captured,pinned,capturedRender,capturedReport,AbortSignal.any([shutdown,force]));
+   const settled=await runBoundMirrorWorker(captured,pinned,capturedRender,capturedReport,AbortSignal.any([shutdown,force]),queue);
    if(settled.length!==0)try{capturedReport(Object.freeze({kind:'Shutdown',settled}));}catch(error){throw new MirrorShutdownReportError(error,settled);}
    return {ok:true};
   }catch(error){return {ok:false,error};}
@@ -33,8 +35,8 @@ export function startSessionMirrorRuntimeWorker(enabled:boolean,config:BoundMirr
 }
 
 /** Pure capture for multi-worker startup: validates every mirror input before any task is allocated. */
-export function captureRuntimeMirrorInput(config:BoundMirrorWorkerConfig,transport:DiscordReceiptTransport,render:(error:unknown)=>string,report:(event:RuntimeMirrorObservation)=>void){
- const captured=captureBoundMirrorWorkerConfig(config),send=own(transport,'sendValidated');
+export function captureRuntimeMirrorInput(config:BoundMirrorWorkerConfig,transport:DiscordReceiptTransport,render:(error:unknown)=>string,report:(event:RuntimeMirrorObservation)=>void,queue:QueueStartCoordinator){
+ const captured=captureBoundMirrorWorkerConfig(config);captureMirrorMappingLocks(queue,captured.bridgeDatabasePath);const send=own(transport,'sendValidated');
  for(const fn of [send,render,report])if(typeof fn!=='function'||types.isProxy(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected owned mirror callback');
  if(types.isAsyncFunction(render)||types.isAsyncFunction(report))throw new TypeError('Expected synchronous mirror diagnostic');
  const pinned:DiscordReceiptTransport=Object.freeze({sendValidated:(request:Parameters<DiscordReceiptTransport['sendValidated']>[0])=>Reflect.apply(send as Function,transport,[request])});

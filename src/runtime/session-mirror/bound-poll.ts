@@ -1,4 +1,6 @@
 import {types} from 'node:util';
+import type {QueueStartCoordinator} from '../queue-runner/start-coordinator.ts';
+import {captureMirrorMappingLocks,withMirrorMappingLocks} from './mapping-owner.ts';
 import {MirrorSnapshotOwner} from './snapshot-owner.ts';
 import {runMirrorWorker,type MirrorRunnerObservation} from './runner.ts';
 import type {MirrorTargetFinished} from './execution.ts';
@@ -62,29 +64,31 @@ export interface BoundMirrorWorkerConfig{
  readonly discovery:MirrorSnapshotLimits;readonly ready:MirrorReadyLimits;readonly poll:BoundMirrorPollOptions;
  /** Explicit opt-in only. Both schemas must be prepared before worker startup.
   * The caller maintains stable DB identity/mapping and append-only production;
-  * this policy does not acquire ownership from application mapping mutators. */
+  * the worker shares mapping ownership with the original runtime queue. */
  readonly bootstrap?:MirrorWorkerBootstrapPolicy;
 }
 /** Concrete mirror loop using the same shared runner, native discovery and target
  * owner. Configuration is captured once before any async work and cannot retarget
  * a later epoch. Bindings must be preinitialized unless bootstrap is explicitly
- * selected. Bootstrap and polling share the existing target/channel owner and
- * cancellation lifetime, without an intermediate release or another loop.
+ * selected. Bootstrap and polling share the existing target/channel owner, the
+ * original queue target/global mapping locks, and cancellation lifetime without
+ * an intermediate release or another loop. Global mapping ownership currently
+ * serializes targets; this is a correctness guard, not performance qualification.
  * Requires a validated transport, independent producer contract and stable DB
  * identity/mapping under the caller's application-owned abort lifetime.
  * No service boot, schema creation, account login or independent retry mechanism. */
-export async function runBoundMirrorWorker(config:BoundMirrorWorkerConfig,transport:DiscordReceiptTransport,render:(error:unknown)=>string,report:(event:MirrorRunnerObservation)=>void,signal:AbortSignal):Promise<readonly MirrorTargetFinished[]>{
+export async function runBoundMirrorWorker(config:BoundMirrorWorkerConfig,transport:DiscordReceiptTransport,render:(error:unknown)=>string,report:(event:MirrorRunnerObservation)=>void,signal:AbortSignal,queue:QueueStartCoordinator):Promise<readonly MirrorTargetFinished[]>{
  if(types.isProxy(signal)||!(signal instanceof AbortSignal))throw new TypeError('Expected owned abort signal');if(signal.aborted)return [];
- const captured=captureBoundMirrorWorkerConfig(config);
+ const captured=captureBoundMirrorWorkerConfig(config),locks=captureMirrorMappingLocks(queue,captured.bridgeDatabasePath);
  const {stateDatabasePath:state,bridgeDatabasePath:bridge,discovery,ready,poll,bootstrap}=captured;
- return runMirrorWorker(()=>new MirrorSnapshotOwner(state,bridge,discovery,ready,async(hint,channel,jobs,abort)=>{
+ return runMirrorWorker(()=>new MirrorSnapshotOwner(state,bridge,discovery,ready,async(hint,channel,jobs,abort)=>withMirrorMappingLocks(locks,hint.id,abort,async()=>{
   if(bootstrap!==undefined){
    const startup=new MirrorTargetBootstrapCoordinator({databasePath:bridge,thread:hint.id,rolloutPath:hint.rolloutPath,channel,operationId:randomUUID(),createdAt:Date.now()/1000,...bootstrap});
    try{await startup.run(abort);}finally{await startup.close();}
    abort.throwIfAborted();
   }
   return pollBoundMirrorTarget(bridge,hint,channel,jobs,poll,transport,abort);
- },render),render,report,signal);
+ }),render),render,report,signal);
 }
 
 /** Capture the complete worker configuration before a monitored task is queued. */

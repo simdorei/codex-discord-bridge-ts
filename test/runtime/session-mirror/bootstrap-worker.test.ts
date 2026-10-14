@@ -1,3 +1,6 @@
+import {mirrorQueueFixture} from '../../helpers/mirror-queue-fixture.ts';
+import {mirrorSnapshotDiscoveryBusy} from '../../../src/runtime/session-mirror/discovery-snapshot.ts';
+import {NewThreadMirrorLink} from '../../../src/runtime/mirror-sync/new-mirror-link.ts';
 import test,{mock} from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
@@ -30,7 +33,7 @@ const history=JSON.stringify({type:'turn_context',payload:{turn_id:'original-tur
 const noHttp={async sendValidated():Promise<bigint>{assert.fail('Unexpected HTTP');}};
 const PENDING='cdr_ts_mirror_startup_intents_v1',BOUND='cdr_ts_mirror_cursor_anchors_v1';
 function sql(path:string,text:string):void{const db=new DatabaseSync(path);try{db.exec(text);}finally{db.close();}}
-async function fixture(run:(config:BoundMirrorWorkerConfig,file:string,cursor:NativeMirrorCursorStore,intents:NativeMirrorStartupIntentStore)=>Promise<void>,prepared=true){
+async function fixture(run:(config:BoundMirrorWorkerConfig,file:string,cursor:NativeMirrorCursorStore,intents:NativeMirrorStartupIntentStore,queue:ReturnType<typeof mirrorQueueFixture>)=>Promise<void>,prepared=true){
  await storeFixture(async bridge=>{
   const file=join(dirname(bridge),'rollout.jsonl'),state=join(dirname(bridge),'state.sqlite');await writeFile(file,history);
   const db=await openInitialized(bridge);try{db.prepare('INSERT INTO mirror_threads VALUES(?,?,?,?,?,?)').run('thread','project','title',1n,42n,1);}finally{db.close();}
@@ -41,7 +44,7 @@ async function fixture(run:(config:BoundMirrorWorkerConfig,file:string,cursor:Na
   const cursor=new NativeMirrorCursorStore(bridge),intents=new NativeMirrorStartupIntentStore(bridge);
   try{
    if(prepared)await prepareMirrorBootstrapSchemas(bridge);
-   await run({stateDatabasePath:state,bridgeDatabasePath:bridge,discovery:{threads:{maxRows:32n,maxValueBytes:1048576n,maxOutputBytes:1048576,timeoutMs:5000},store:{maxTargets:32n,maxJobs:32n,maxValueBytes:1048576n,maxOutputBytes:1048576,timeoutMs:5000}},ready:{maxTargets:32,maxBytes:1048576},poll:{read:{maxWindowBytes:65536,maxRecordBytes:32768,maxRecords:20,decodeTimeoutMs:5000},ownership:{maxJobs:32n,maxValueBytes:1048576n,timeoutMs:5000}},bootstrap:{kind:'SkipExistingHistory',context:{...context},totalTimeoutMs:10000}},file,cursor,intents);
+   await run({stateDatabasePath:state,bridgeDatabasePath:bridge,discovery:{threads:{maxRows:32n,maxValueBytes:1048576n,maxOutputBytes:1048576,timeoutMs:5000},store:{maxTargets:32n,maxJobs:32n,maxValueBytes:1048576n,maxOutputBytes:1048576,timeoutMs:5000}},ready:{maxTargets:32,maxBytes:1048576},poll:{read:{maxWindowBytes:65536,maxRecordBytes:32768,maxRecords:20,decodeTimeoutMs:5000},ownership:{maxJobs:32n,maxValueBytes:1048576n,timeoutMs:5000}},bootstrap:{kind:'SkipExistingHistory',context:{...context},totalTimeoutMs:10000}},file,cursor,intents,mirrorQueueFixture(bridge));
   }finally{await intents.close();await cursor.close();assert.equal(mirrorRunnerBusy(),false);assert.equal(ownedWorkerUsage().Background,0);assert.equal(activeMirrorFileReads(),0);}
  });
 }
@@ -53,13 +56,13 @@ function trace(fault?:{kind:string;options:object}){
  });return {seen,requests,patch};
 }
 async function reached(stage:Int32Array):Promise<void>{for(let i=0;i<500;i++){if(Atomics.load(stage,0)===1)return;await sleep(10);}throw Error('Native fault stage not reached');}
-async function once(config:BoundMirrorWorkerConfig,report:(event:MirrorRunnerObservation)=>void=()=>{},transport=noHttp){
+async function once(config:BoundMirrorWorkerConfig,queue:ReturnType<typeof mirrorQueueFixture>,report:(event:MirrorRunnerObservation)=>void=()=>{},transport=noHttp){
  const stop=new AbortController(),timer=setTimeout(()=>stop.abort(Error('Test deadline')),15000);
- try{return await runBoundMirrorWorker(config,transport,String,event=>{report(event);stop.abort('one observed pass');},stop.signal);}
+ try{return await runBoundMirrorWorker(config,transport,String,event=>{report(event);stop.abort('one observed pass');},stop.signal,queue);}
  finally{clearTimeout(timer);stop.abort('cleanup');}
 }
 
-test('monitored opt-in worker skips historical HTTP, sends the first append once, and reuses the bound cursor on later ticks',{timeout:25000},()=>fixture(async(config,file,cursor,intents)=>{
+test('monitored opt-in worker skips historical HTTP, sends the first append once, and reuses the bound cursor on later ticks',{timeout:25000},()=>fixture(async(config,file,cursor,intents,queue)=>{
  const seen:{path:string;body:string;authorization:string|undefined}[]=[],rows:MirrorRunnerObservation[]=[];
  const server=createServer((req,res)=>{let body='';req.on('data',part=>body+=String(part));req.on('end',()=>{
   seen.push({path:req.url!,body,authorization:req.headers.authorization});res.end(JSON.stringify({attachments:[],author:{id:'1',username:'fixture',discriminator:'0'},channel_id:'42',content:'In progress\n\nfirst append',embeds:[],id:'123',type:0,mention_everyone:false,mention_roles:[],mentions:[],pinned:false,timestamp:'2020-01-01T00:00:00+00:00',tts:false}));
@@ -73,7 +76,7 @@ test('monitored opt-in worker skips historical HTTP, sends the first append once
   if(passes===1){assert.deepEqual(outcome.progress,{targets:0n,events:0n,sent:0n});assert.equal(seen.length,0);appendFileSync(file,eventText);}
   else if(passes===2)assert.deepEqual(outcome.progress,{targets:1n,events:1n,sent:1n});
   else{assert.deepEqual(outcome.progress,{targets:0n,events:0n,sent:0n});stop.abort('verified idle after send');}
- })!,eventText=event('first append');notifier.close();
+ },queue)!,eventText=event('first append');notifier.close();
  // Capture happens before the monitored task can observe caller mutation.
  Object.assign(config.bootstrap!.context,{maxBytes:1});Object.assign(config.bootstrap!,{totalTimeoutMs:1});
  try{
@@ -87,41 +90,41 @@ test('monitored opt-in worker skips historical HTTP, sends the first append once
  }finally{clearTimeout(timer);stop.abort('cleanup');worker.abort();await worker.join();observed.patch.mock.restore();receiver.dispose();await client.close();assert.equal(client.ownedSockets,0);server.closeAllConnections();await new Promise<void>((resolve,reject)=>server.close(error=>error?reject(error):resolve()));}
 }));
 
-test('worker resumes the original pending operation and cutoff before its existing bound poll',()=>fixture(async(config,file,cursor,intents)=>{
+test('worker resumes the original pending operation and cutoff before its existing bound poll',()=>fixture(async(config,file,cursor,intents,queue)=>{
  await intents.retain('thread',await captureMirrorStartupCutoff(file),1.25,'original');await appendFile(file,event('after pending cutoff'));
  const observed=trace();let sends=0;
  try{
-  await once(config,event=>{assert.equal(event.kind,'Targets');if(event.kind==='Targets')assert.deepEqual(event.rows[0]!.finished.outcome,{kind:'Completed',progress:{targets:1n,events:1n,sent:1n}});},{async sendValidated(){sends++;return 123n;}});
+  await once(config,queue,event=>{assert.equal(event.kind,'Targets');if(event.kind==='Targets')assert.deepEqual(event.rows[0]!.finished.outcome,{kind:'Completed',progress:{targets:1n,events:1n,sent:1n}});},{async sendValidated(){sends++;return 123n;}});
   assert.equal(sends,1);assert.equal(observed.seen.includes('Capture'),false);assert.equal(observed.seen.includes('Retain'),false);assert.equal(observed.seen.filter(k=>k==='RecoverContext').length,1);assert.equal(await intents.read('thread'),null);assert.equal((await cursor.read('thread'))!.revision,2n);
   const completion=observed.requests.find(q=>q.kind==='CompleteContext')!.evidence as {pending:{operationId:string;createdAt:number;cutoff:{offset:bigint}}};assert.equal(completion.pending.operationId,'original');assert.equal(completion.pending.createdAt,1.25);assert.equal(completion.pending.cutoff.offset,BigInt(Buffer.byteLength(history)));
  }finally{observed.patch.mock.restore();}
 }));
 
-for(const variant of ['missing','incompatible','legacy'] as const)test(`worker holds ${variant} schema or cursor state without capture, DDL, or HTTP`,()=>fixture(async(config,_file,cursor)=>{
+for(const variant of ['missing','incompatible','legacy'] as const)test(`worker holds ${variant} schema or cursor state without capture, DDL, or HTTP`,()=>fixture(async(config,_file,cursor,_intents,queue)=>{
  if(variant==='incompatible')sql(config.bridgeDatabasePath,`ALTER TABLE ${PENDING} ADD COLUMN unexpected TEXT`);
  if(variant==='legacy')sql(config.bridgeDatabasePath,"INSERT INTO codex_session_mirror_offsets VALUES('thread','old',0,1,'')");
  const before=await readFile(config.bridgeDatabasePath),observed=trace();let reported=false;
- try{await once(config,event=>{assert.equal(event.kind,'Targets');if(event.kind==='Targets'){assert.equal(event.rows[0]!.finished.outcome.kind,'Failed');reported=true;}});assert.equal(reported,true);assert.deepEqual(await readFile(config.bridgeDatabasePath),before);assert.equal(observed.seen.filter(k=>k==='ReadTarget').length,1);assert.equal(observed.seen.includes('Capture'),false);assert.equal(observed.seen.includes('Schema'),false);}
+ try{await once(config,queue,event=>{assert.equal(event.kind,'Targets');if(event.kind==='Targets'){assert.equal(event.rows[0]!.finished.outcome.kind,'Failed');reported=true;}});assert.equal(reported,true);assert.deepEqual(await readFile(config.bridgeDatabasePath),before);assert.equal(observed.seen.filter(k=>k==='ReadTarget').length,1);assert.equal(observed.seen.includes('Capture'),false);assert.equal(observed.seen.includes('Schema'),false);}
  finally{observed.patch.mock.restore();}
 },variant!=='missing'));
 
-test('absent policy remains bound-only and cannot bootstrap fresh history',()=>fixture(async(config)=>{
+test('absent policy remains bound-only and cannot bootstrap fresh history',()=>fixture(async(config,_file,_cursor,_intents,queue)=>{
  const {bootstrap:_ignored,...boundOnly}=config,observed=trace();let failed=false;
- try{await once(boundOnly,event=>{if(event.kind==='Targets'){const outcome=event.rows[0]!.finished.outcome;failed=outcome.kind==='Failed'&&String(outcome.error).includes('explicitly initialized');}});assert.equal(failed,true);assert.equal(observed.seen.includes('ReadTarget'),false);assert.equal(observed.seen.includes('Capture'),false);}
+ try{await once(boundOnly,queue,event=>{if(event.kind==='Targets'){const outcome=event.rows[0]!.finished.outcome;failed=outcome.kind==='Failed'&&String(outcome.error).includes('explicitly initialized');}});assert.equal(failed,true);assert.equal(observed.seen.includes('ReadTarget'),false);assert.equal(observed.seen.includes('Capture'),false);}
  finally{observed.patch.mock.restore();}
 }));
 
-test('schema preparation is explicit, sequential, abort-aware, and does not capture a target',()=>fixture(async(config)=>{
+test('schema preparation is explicit, sequential, abort-aware, and does not capture a target',()=>fixture(async(config,_file,_cursor,_intents,queue)=>{
  const observed=trace();try{await prepareMirrorBootstrapSchemas(config.bridgeDatabasePath);assert.deepEqual(observed.seen,['Schema','Schema']);const before=await readFile(config.bridgeDatabasePath),stop=new AbortController();stop.abort('preabort');await assert.rejects(prepareMirrorBootstrapSchemas(config.bridgeDatabasePath,5000,stop.signal),e=>e==='preabort');assert.deepEqual(observed.seen,['Schema','Schema']);assert.deepEqual(await readFile(config.bridgeDatabasePath),before);}finally{observed.patch.mock.restore();}
 },false));
 
-test('bootstrap policy capture rejects active or malformed data without invoking hooks',()=>fixture(async(config)=>{
+test('bootstrap policy capture rejects active or malformed data without invoking hooks',()=>fixture(async(config,_file,_cursor,_intents,queue)=>{
  let hooks=0;assert.throws(()=>captureBoundMirrorWorkerConfig({...config,get bootstrap(){hooks++;return config.bootstrap!;}}),TypeError);
  assert.throws(()=>captureBoundMirrorWorkerConfig({...config,bootstrap:new Proxy(config.bootstrap!,{get(){hooks++;throw Error('trap');}})}),TypeError);
  assert.throws(()=>captureBoundMirrorWorkerConfig({...config,bootstrap:{...config.bootstrap!,totalTimeoutMs:0}}),RangeError);assert.equal(hooks,0);
 }));
 
-for(const kind of ['Retain','CompleteContext'] as const)for(const mode of ['report','report-failure','abort-report-failure','render-failure'] as const)test(`uncertain ${kind} stops worker retries and retains the original packet through ${mode}`,()=>fixture(async(config,_file,_cursor,intents)=>{
+for(const kind of ['Retain','CompleteContext'] as const)for(const mode of ['report','report-failure','abort-report-failure','render-failure'] as const)test(`uncertain ${kind} stops worker retries and retains the original packet through ${mode}`,()=>fixture(async(config,_file,_cursor,intents,queue)=>{
  const observed=trace({kind,options:{loseReply:true,beforeWrite:true}}),reporting={failure:mode};let reports=0,original:unknown;
  const stop=new AbortController(),timer=setTimeout(()=>stop.abort('test deadline'),15000);
  try{
@@ -129,7 +132,7 @@ for(const kind of ['Retain','CompleteContext'] as const)for(const mode of ['repo
    reports++;assert.equal(event.kind,'Targets');if(event.kind==='Targets'){const outcome=event.rows[0]!.finished.outcome;assert.equal(outcome.kind,'Failed');if(outcome.kind==='Failed'){original=outcome.error;assert.ok(Object.isFrozen(original));assert.throws(()=>Object.assign(original as object,{pending:null}),TypeError);}}
    if(mode==='report-failure')throw reporting;
    if(mode==='abort-report-failure'){stop.abort(reporting);throw reporting;}
-  },stop.signal),error=>{
+  },stop.signal,queue),error=>{
    assert.ok(error instanceof MirrorEpochError);
    const finished=mode==='report'?((error.cause as MirrorBootstrapWorkerHeldError).finished):mode==='render-failure'?error.settled:error.unreported.map(row=>row.finished);
    if(mode==='report')assert.ok(error.cause instanceof MirrorBootstrapWorkerHeldError);else assert.equal(error.cause,reporting);
@@ -140,23 +143,54 @@ for(const kind of ['Retain','CompleteContext'] as const)for(const mode of ['repo
  }finally{clearTimeout(timer);stop.abort('cleanup');observed.patch.mock.restore();}
 }));
 
-test('shared discovery failure joins an uncertain startup write and never starts another epoch',{timeout:15000},()=>fixture(async(config)=>{
+test('shared discovery failure joins an uncertain startup write and never starts another epoch',{timeout:15000},()=>fixture(async(config,_file,_cursor,_intents,queue)=>{
  const stage=new Int32Array(new SharedArrayBuffer(4)),observed=trace({kind:'Retain',options:{stage:stage.buffer,delayMs:2000}}),stop=new AbortController(),timer=setTimeout(()=>stop.abort('test deadline'),12000);let reports=0;
- const running=runBoundMirrorWorker(config,noHttp,String,()=>{reports++;},stop.signal);
+ const running=runBoundMirrorWorker(config,noHttp,String,()=>{reports++;},stop.signal,queue);
  const failed=assert.rejects(running,error=>{assert.ok(error instanceof MirrorEpochError);assert.match(String(error.cause),/threads/);assert.equal(error.settled.length,1);assert.equal(mirrorBootstrapRequiresReconciliation(error.settled[0]!),true);return true;});
  try{await reached(stage);sql(config.stateDatabasePath,'DROP TABLE threads');await failed;assert.equal(reports,0);assert.equal(observed.seen.filter(k=>k==='Capture').length,1);assert.equal(observed.seen.filter(k=>k==='Retain').length,1);}
  finally{clearTimeout(timer);stop.abort('cleanup');await running.catch(()=>undefined);observed.patch.mock.restore();}
 }));
 
-test('forced monitored shutdown joins startup completion, preserves uncertainty, and holds global runner admission',{timeout:15000},()=>fixture(async(config,_file,cursor)=>{
+test('forced monitored shutdown joins startup completion, preserves uncertainty, and holds global runner admission',{timeout:15000},()=>fixture(async(config,_file,cursor,_intents,queue)=>{
  const stage=new Int32Array(new SharedArrayBuffer(4)),observed=trace({kind:'CompleteContext',options:{stage:stage.buffer,delayMs:300}}),stop=new AbortController(),notifier=new RuntimeWorkerExitChannel();let reports=0;
- const worker=startSessionMirrorRuntimeWorker(true,config,noHttp,stop.signal,notifier,String,()=>{reports++;throw Error('No report may replace the retained shutdown error');})!;notifier.close();
+ const worker=startSessionMirrorRuntimeWorker(true,config,noHttp,stop.signal,notifier,String,()=>{reports++;throw Error('No report may replace the retained shutdown error');},queue)!;notifier.close();
  try{
-  await reached(stage);worker.abort();await sleep(20);assert.equal(worker.peek(),undefined);assert.equal(mirrorRunnerBusy(),true);assert.equal(ownedWorkerUsage().Background,1);
-  await assert.rejects(runBoundMirrorWorker(config,noHttp,String,()=>{},new AbortController().signal),/already running/);
+  await reached(stage);worker.abort();await sleep(20);assert.equal(worker.peek(),undefined);assert.equal(mirrorRunnerBusy(),true);assert.equal(ownedWorkerUsage().Background,1);assert.equal(queue.locks.tryAcquire('thread'),undefined);assert.equal(queue.locks.tryAcquire('mirror-sync-operation'),undefined);
+  await assert.rejects(runBoundMirrorWorker(config,noHttp,String,()=>{},new AbortController().signal,queue),/already running/);
   const result=await worker.join();assert.equal(result.kind,'Returned');if(result.kind!=='Returned'||result.result.ok)assert.fail('Expected retained startup failure');
   const error=result.result.error;assert.ok(error instanceof MirrorBootstrapWorkerHeldError);assert.equal(error.finished.length,1);const outcome=error.finished[0]!.outcome;assert.equal(outcome.kind,'Cancelled');assert.equal(mirrorBootstrapRequiresReconciliation(error.finished[0]!),true);
   if(outcome.kind!=='Cancelled'||outcome.settled.kind!=='Failed')assert.fail('Expected joined cancelled failure');const held=outcome.settled.error;assert.ok(held instanceof MirrorBootstrapReconciliationRequiredError);assert.equal(held.operation,'CompleteContext');assert.equal(held.recovery!.context.currentTurn,'original-turn');assert.equal(held.pending.cutoff.offset,BigInt(Buffer.byteLength(history)));
-  assert.equal(reports,0);assert.equal((await cursor.read('thread'))!.revision,1n);assert.equal(observed.seen.filter(k=>k==='CompleteContext').length,1);assert.equal(mirrorRunnerBusy(),false);
+  assert.equal(reports,0);assert.equal((await cursor.read('thread'))!.revision,1n);assert.equal(observed.seen.filter(k=>k==='CompleteContext').length,1);assert.equal(mirrorRunnerBusy(),false);assert.equal(queue.locks.activeTargetCount,0);
  }finally{stop.abort('cleanup');worker.abort();await worker.join();observed.patch.mock.restore();}
+}));
+
+async function lockCount(locks:ReturnType<typeof mirrorQueueFixture>['locks'],expected:number):Promise<void>{const deadline=performance.now()+5000;while(locks.activeTargetCount!==expected){assert.ok(performance.now()<deadline,'Expected shared lock admission');await sleep(2);}}
+
+test('actual new-thread linker global ownership excludes bootstrap until its HTTP work joins',()=>fixture(async(config,_file,cursor,_intents,queue)=>{
+ let entered!:()=>void,release!:()=>void;const started=new Promise<void>(r=>entered=r),held=new Promise<void>(r=>release=r),stop=new AbortController();
+ const linker=new NewThreadMirrorLink(config.bridgeDatabasePath,{channel:async()=>{entered();await held;return null;},createThread:async()=>assert.fail('create'),updateThread:async()=>assert.fail('update')},queue.locks);
+ const link=assert.rejects(linker.linkNewThread(42n,'new-thread','prompt','/project',stop.signal),/origin channel is unavailable/);await started;
+ const observed=trace(),running=once(config,queue);try{
+  await lockCount(queue.locks,2);assert.equal(observed.seen.includes('ReadTarget'),false);assert.equal(observed.seen.includes('Capture'),false);assert.equal(await cursor.read('thread'),null);
+  release();await link;await running;assert.equal(observed.seen.filter(k=>k==='ReadTarget').length,1);assert.equal((await cursor.read('thread'))!.revision,1n);assert.equal(queue.locks.activeTargetCount,0);
+ }finally{release();stop.abort('cleanup');await link;await running;observed.patch.mock.restore();}
+}));
+
+for(const waiting of ['target','global'] as const)test(`abort while waiting on shared ${waiting} ownership starts no bootstrap and never releases the other owner`,()=>fixture(async(config,_file,cursor,_intents,queue)=>{
+ const key=waiting==='target'?'thread':'mirror-sync-operation',held=await queue.locks.acquire(key),stop=new AbortController(),observed=trace();
+ const running=runBoundMirrorWorker(config,noHttp,String,()=>assert.fail('Cancelled wait must not report a normal pass'),stop.signal,queue);
+ try{
+  if(waiting==='global')await lockCount(queue.locks,2);else{const deadline=performance.now()+5000;while(!observed.seen.some(name=>name.startsWith('store-discovery-worker.'))||mirrorSnapshotDiscoveryBusy()){assert.ok(performance.now()<deadline,'Expected joined discovery');await sleep(2);}}
+  stop.abort('cancel waiter');const result=await running;assert.equal(result.length,1);assert.equal(result[0]!.outcome.kind,'Cancelled');assert.equal(observed.seen.includes('ReadTarget'),false);assert.equal(observed.seen.includes('Capture'),false);assert.equal(await cursor.read('thread'),null);
+  assert.equal(queue.locks.activeTargetCount,1);assert.equal(queue.locks.tryAcquire(key),undefined);
+ }finally{stop.abort('cleanup');await running;held.release();observed.patch.mock.restore();}
+ assert.equal(queue.locks.activeTargetCount,0);
+}));
+
+
+test('a mapping changed by the current global owner is rejected after waiting without recapturing or retargeting',()=>fixture(async(config,_file,cursor,_intents,queue)=>{
+ const held=await queue.locks.acquire('mirror-sync-operation'),observed=trace();let failed=false;
+ const running=once(config,queue,event=>{assert.equal(event.kind,'Targets');if(event.kind==='Targets')failed=event.rows[0]!.finished.outcome.kind==='Failed';});
+ try{await lockCount(queue.locks,2);assert.equal(observed.seen.includes('ReadTarget'),false);sql(config.bridgeDatabasePath,"UPDATE mirror_threads SET discord_thread_id=43 WHERE codex_thread_id='thread'");held.release();await running;assert.equal(failed,true);assert.equal(observed.seen.filter(k=>k==='ReadTarget').length,1);assert.equal(observed.seen.includes('Capture'),false);assert.equal(observed.seen.includes('Retain'),false);assert.equal(await cursor.read('thread'),null);assert.equal(queue.locks.activeTargetCount,0);}
+ finally{held.release();await running;observed.patch.mock.restore();}
 }));

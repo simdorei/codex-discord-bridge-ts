@@ -60,3 +60,19 @@ test("backend generation is checked even when an ambiguous job supplies the hand
     await assert.rejects(()=>c.ensureTarget("source"),/does not fit/);assert.equal(called,false);assert.equal(await state.unresolvedAppServerForkHandoffForSource(path,"source"),null);
   });
 });
+
+
+test('reserved fork source rejects before global acquisition and cannot deadlock an active mirror target',async()=>{
+ await storeFixture(async path=>{const locks=new TargetLocks(),held=await locks.acquire('z');let calls=0;
+  const c=new QueueForkCoordinator(path,backend(async()=>{calls++;return 'z';}),state,locks);
+  try{await assert.rejects(c.ensureTarget('mirror-sync-operation'),/Reserved mirror mapping lock key/);assert.equal(calls,0);const global=locks.tryAcquire('mirror-sync-operation');assert.ok(global);global.release();assert.equal(await state.unresolvedAppServerForkHandoffForSource(path,'mirror-sync-operation'),null);}
+  finally{held.release();}assert.equal(locks.activeTargetCount,0);
+ });
+});
+test('reserved returned fork target remains durably staged and is never finalized or requested again',async()=>{
+ await storeFixture(async path=>{const locks=new TargetLocks(),global=await locks.acquire('mirror-sync-operation');let calls=0;
+  const c=new QueueForkCoordinator(path,backend(async()=>{calls++;return 'mirror-sync-operation';}),state,locks);
+  try{await assert.rejects(c.ensureTarget('z'),/Reserved mirror mapping lock key/);await assert.rejects(c.ensureTarget('z'),/Reserved mirror mapping lock key/);assert.equal(calls,1);assert.equal((await state.unresolvedAppServerForkHandoffForSource(path,'z'))?.observedTargetThreadId,'mirror-sync-operation');assert.equal(await state.completedAppServerForkTargetForSource(path,'z'),null);assert.equal(locks.activeTargetCount,1);}
+  finally{global.release();}assert.equal(locks.activeTargetCount,0);
+ });
+});

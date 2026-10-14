@@ -50,6 +50,7 @@ export class QueueStartCoordinator {
   readonly #recovery: QueueRecoveryCoordinator;
   readonly #fork: QueueForkCoordinator;
   readonly locks: TargetLocks;
+  readonly #originalLocks: TargetLocks;
   readonly #path: string;
   readonly #backend: QueueStartBackend;
   readonly #state: StartState;
@@ -62,7 +63,7 @@ export class QueueStartCoordinator {
     clock?: () => number; notifyDeliveryReady?: () => void;
   } = {}) {
     this.#path = path; this.#backend = backend; this.#state = options.state ?? StateAccessFacade;
-    this.locks = options.locks ?? new TargetLocks(); this.#gate = options.admission ?? null;
+    this.locks = options.locks ?? new TargetLocks(); this.#originalLocks = this.locks; this.#gate = options.admission ?? null;
     this.#clock = options.clock ?? (() => Date.now() / 1000);
     this.#notify = options.notifyDeliveryReady ?? (() => {});
     this.#fork = new QueueForkCoordinator(path, backend, this.#state, this.locks);
@@ -74,6 +75,8 @@ export class QueueStartCoordinator {
   get dbPath():string{return this.#path;}
   /** Runtime composition may bind only this coordinator's original backend. */
   requireAdmissionGate(gate:AdmissionGate):void{if(this.#gate!==gate)throw new TypeError('Queue admission gate differs from runtime binding');}
+  /** Reject replacement registries before another runtime owner borrows mapping custody. */
+  requireTargetLocks(locks:TargetLocks):void{if(this.#originalLocks!==locks)throw new TypeError('Queue target lock registry differs from runtime binding');}
   requireBackend(backend:QueueStartBackend):void{if(this.#backend!==backend)throw new TypeError('Queue backend differs from runtime resident binding');}
   notifyDeliveryReady():void{this.#notify();}
   enterBackgroundRecovery():readonly [AdmissionPermit,boolean]|null{return this.#gate?.tryEnterControlObserved()??null;}

@@ -55,7 +55,7 @@ export async function startRuntimeCoreWorkers(input:RuntimeCoreStartup,http:Disc
  if(interleaving!==undefined){
   const h=own(interleaving,'heartbeat'),m=own(interleaving,'mirror');
   heartbeatInput=captureRuntimeHeartbeatInput(own(h,'port') as RuntimeHeartbeatPort,own(h,'options') as RuntimeHeartbeatOptions);
-  if(m!==null)mirrorInput=captureRuntimeMirrorInput(own(m,'config') as BoundMirrorWorkerConfig,own(m,'transport') as DiscordReceiptTransport,own(m,'render') as (error:unknown)=>string,own(m,'report') as (event:RuntimeMirrorObservation)=>void);
+  if(m!==null)mirrorInput=captureRuntimeMirrorInput(own(m,'config') as BoundMirrorWorkerConfig,own(m,'transport') as DiscordReceiptTransport,own(m,'render') as (error:unknown)=>string,own(m,'report') as (event:RuntimeMirrorObservation)=>void,queue);
  }
  let heartbeat:RuntimeHeartbeatOwner|null=null;const started:RuntimeMonitoredWorker[]=[];
  const stop=new AbortController(),signal=AbortSignal.any([shutdown,stop.signal]),workers:RuntimeMonitoredWorker[]=[],emit=(error:unknown)=>invokeSynchronousVoid(report as Function,options,[error]);
@@ -67,7 +67,7 @@ export async function startRuntimeCoreWorkers(input:RuntimeCoreStartup,http:Disc
   accept(startNewReplyRuntimeWorker(queue,http,signal,notifier,emit));
   accept(startStopControlRuntimeWorker(executor,signal,notifier,emit));
   accept(startPromptIntakeRuntimeWorker(executor,admission,signal,notifier,emit));
-  if(mirrorInput!==null){const mirror=startSessionMirrorRuntimeWorker(true,mirrorInput.config,mirrorInput.transport,signal,notifier,mirrorInput.render,mirrorInput.report)!;accept(mirror);}
+  if(mirrorInput!==null){const mirror=startSessionMirrorRuntimeWorker(true,mirrorInput.config,mirrorInput.transport,signal,notifier,mirrorInput.render,mirrorInput.report,queue)!;accept(mirror);}
   accept(await startServerRequestRuntimeWorker(captured,database,http,signal,notifier,emit));signal.throwIfAborted();
   const owned=Object.freeze([...workers]);let closing:Promise<readonly RuntimeWorkerJoin[]>|undefined;
   return Object.freeze({workers:owned,heartbeat,startupOrder:Object.freeze([...started]),requestStop:()=>stop.abort(new Error('Core workers stopping')),close:():Promise<readonly RuntimeWorkerJoin[]>=>{if(closing===undefined){stop.abort(new Error('Core workers stopping'));closing=Promise.all(owned.map(worker=>worker.join())).then(results=>Object.freeze(results));}return closing;}});
