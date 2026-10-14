@@ -1,5 +1,5 @@
 import {performance} from 'node:perf_hooks';
-import {recoverMirrorStartupContextNative,verifyMirrorStartupRecoveryNative} from './startup-intent-recovery-native.ts';
+import {recoverMirrorStartupContextNative,verifyMirrorStartupRecoveryNative,completeMirrorStartupRecoveryNative} from './startup-intent-recovery-native.ts';
 import {MirrorStartupContextHeldError,snapshotMirrorStartupContextLimits} from './startup-context-limits.ts';
 import {MirrorFileChangedError} from './file-window.ts';
 import {parentPort,workerData as q} from 'node:worker_threads';
@@ -11,6 +11,8 @@ try{
  const check=()=>{if(Atomics.load(cancel,0)!==0)throw new MirrorStartupContextHeldError('Cancelled');if(performance.now()-started>=q.timeoutMs)throw new MirrorStartupContextHeldError('Deadline');};
  if(q.kind==='RecoverContext'){
   const value=await recoverMirrorStartupContextNative(q.path,q.thread,q.operationId,snapshotMirrorStartupContextLimits(q.limits),check);check();parentPort.postMessage({ok:true,value});
+ }else if(q.kind==='CompleteContext'){
+  const value=await completeMirrorStartupRecoveryNative(q.path,q.evidence,check);check();parentPort.postMessage({ok:true,value});
  }else if(q.kind==='VerifyContext'){
   await verifyMirrorStartupRecoveryNative(q.path,q.evidence,check);check();parentPort.postMessage({ok:true,value:null});
  }else{

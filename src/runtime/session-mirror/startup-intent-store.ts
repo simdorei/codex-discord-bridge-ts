@@ -1,3 +1,6 @@
+import {snapshotBoundMirrorCursor} from '../../store/mirror-cursor-journal.ts';
+import {encodeMirrorCursorAnchor} from '../../core/mirror-cursor-anchor.ts';
+import type {MirrorStartupCompletionResult} from '../../store/mirror-startup-intent.ts';
 import {OwnedWorkerSlot,OwnedWorkerBusyError,OwnedWorkerTimeoutError} from '../owned-worker-slot.ts';
 import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {requireDiscordText} from '../../discord/text.ts';
@@ -6,18 +9,19 @@ import {MirrorStartupCutoff} from './startup-context-reader.ts';
 import {prepareMirrorStartupIntent,snapshotPendingMirrorStartupIntent,type PendingMirrorStartupIntent} from '../../store/mirror-startup-intent.ts';
 import {MIRROR_STARTUP_CONTEXT_HOLDS,MirrorStartupContextHeldError,snapshotMirrorStartupContextLimits,snapshotMirrorStartupContextResult,type MirrorStartupContextHold,type MirrorStartupContextLimits} from './startup-context-limits.ts';
 import {snapshotMirrorStartupDatabaseIdentity,type MirrorStartupRecoveryData} from './startup-intent-recovery-data.ts';
-type RecoveryRequest={readonly kind:'RecoverContext';readonly thread:string;readonly operationId:string;readonly limits:MirrorStartupContextLimits}|{readonly kind:'VerifyContext';readonly evidence:MirrorStartupRecoveryData};
+type RecoveryRequest={readonly kind:'RecoverContext';readonly thread:string;readonly operationId:string;readonly limits:MirrorStartupContextLimits}|{readonly kind:'VerifyContext';readonly evidence:MirrorStartupRecoveryData}|{readonly kind:'CompleteContext';readonly evidence:MirrorStartupRecoveryData};
 type Request=RecoveryRequest|{readonly kind:'Read';readonly thread:string}|{readonly kind:'Schema'}|{readonly kind:'Retain';readonly intent:PendingMirrorStartupIntent};
 export class MirrorStartupIntentStoreReadError extends Error {constructor(detail:string){super('Mirror startup intent read held: '+detail);this.name='MirrorStartupIntentStoreReadError';}}
 export class MirrorStartupIntentWriteUnconfirmedError extends Error {
- readonly operation:'Schema'|'Retain';readonly operationId:string|null;readonly thread:string|null;
- constructor(request:Extract<Request,{kind:'Schema'|'Retain'}>,cause:unknown){super('Mirror startup intent write is unconfirmed; retain the exact operation and reconcile after native exit',{cause});this.name='MirrorStartupIntentWriteUnconfirmedError';this.operation=request.kind;this.operationId=request.kind==='Retain'?request.intent.operationId:null;this.thread=request.kind==='Retain'?request.intent.thread:null;}
+ readonly operation:'Schema'|'Retain'|'CompleteContext';readonly operationId:string|null;readonly thread:string|null;
+ constructor(request:Extract<Request,{kind:'Schema'|'Retain'|'CompleteContext'}>,cause:unknown){super('Mirror startup intent write is unconfirmed; retain the exact operation and reconcile after native exit',{cause});this.name='MirrorStartupIntentWriteUnconfirmedError';this.operation=request.kind;this.operationId=request.kind==='Retain'?request.intent.operationId:request.kind==='CompleteContext'?request.evidence.pending.operationId:null;this.thread=request.kind==='Retain'?request.intent.thread:request.kind==='CompleteContext'?request.evidence.pending.thread:null;}
 }
 function text(value:string,max:number,nonempty=false):void {requireDiscordText(value);if(value.length>max||Buffer.byteLength(value)>max||(nonempty&&value===''))throw new RangeError('Mirror startup intent text budget exceeded');}
 const recoveryToken=Symbol('native pending startup context'),recoveries=new WeakMap<object,{readonly owner:NativeMirrorStartupIntentStore;readonly data:MirrorStartupRecoveryData}>();
 /** Authenticated read-only recovery of one exact pending DB packet. Cutoff and
- * context are descriptive snapshots: neither authorizes finalization, delivery,
- * cursor writes or retirement. The owner rechecks current state on request, not
+ * context are descriptive snapshots: neither is a standalone write capability.
+ * Only the authentic owning store may explicitly complete this exact recovery;
+ * it never authorizes delivery or arbitrary cursor writes. The owner rechecks current state on request, not
  * atomically with any future use. Sampled continuity is not historical integrity:
  * unseen middle rewrites plus growth can escape the bounded anchors. An
  * independent producer append-only contract is still required. */
@@ -29,7 +33,7 @@ export class MirrorStartupIntentContextObservation {
 Object.freeze(MirrorStartupIntentContextObservation.prototype);
 /** Explicit storage adapter only. read() stays descriptive and has no rollout
  * file IO, EOF recapture or schema repair. Retain accepts authentic captured EOF, including a held boundary.
- * No pending-to-bound transition or automatic runtime invocation is exposed. */
+ * Completion is explicit, same-owner only. No automatic runtime invocation. */
 export class NativeMirrorStartupIntentStore {
  readonly #path:string;readonly #timeout:number;readonly #slot=new OwnedWorkerSlot();
  #closed=false;#controller:AbortController|null=null;#inflight:Promise<unknown>|null=null;
@@ -57,6 +61,19 @@ export class NativeMirrorStartupIntentStore {
   if(owned===undefined||owned.owner!==this)throw new TypeError('Expected startup recovery from this database owner');
   await this.#run({kind:'VerifyContext',evidence:owned.data},signal);
  }
+ /** Explicit DB completion only, authenticated before reading public fields.
+  * The exact original packet defines every cursor field and every retry. A
+  * result confirms the atomic DB transition, never filesystem atomicity. */
+ async completeRecoveredContext(observation:MirrorStartupIntentContextObservation,signal?:AbortSignal):Promise<MirrorStartupCompletionResult>{
+  const owned=observation!==null&&typeof observation==='object'?recoveries.get(observation):undefined;
+  if(owned===undefined||owned.owner!==this)throw new TypeError('Expected startup recovery from this database owner');
+  const request={kind:'CompleteContext',evidence:owned.data} as const,value=await this.#run(request,signal);
+  try{
+   const kind=own(value,'kind'),cursor=snapshotBoundMirrorCursor(own(value,'cursor') as Parameters<typeof snapshotBoundMirrorCursor>[0]),{pending,context}=owned.data;
+   if((kind!=='Completed'&&kind!=='Reconciled')||cursor.thread!==pending.thread||cursor.operationId!==pending.operationId||cursor.updatedAt!==pending.createdAt||cursor.revision!==1n||cursor.turn!==(context.currentTurn??'')||encodeMirrorCursorAnchor(cursor.anchor)!==encodeMirrorCursorAnchor(context.anchor)||cursor.receiptSetHash!=='4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945')throw new TypeError('Unexpected native startup completion packet');
+   return Object.freeze({kind,cursor});
+  }catch(error){throw new MirrorStartupIntentWriteUnconfirmedError(request,error);}
+ }
  async retain(thread:string,cutoff:MirrorStartupCutoff,createdAt:number,operationId:string,signal?:AbortSignal):Promise<PendingMirrorStartupIntent>{
   const captured=MirrorStartupCutoff.prototype.captured.call(cutoff),intent=snapshotPendingMirrorStartupIntent({thread,cutoff:captured,createdAt,operationId});
   prepareMirrorStartupIntent(intent.thread,intent.cutoff,intent.createdAt,intent.operationId);
@@ -75,7 +92,7 @@ export class NativeMirrorStartupIntentStore {
     const exited=this.#slot.join();let response:unknown;try{response=await pending;}catch(error){stop();if(recovery&&error instanceof OwnedWorkerTimeoutError)throw new MirrorStartupContextHeldError('Deadline',error);throw error;}finally{await exited;}
     controller.signal.throwIfAborted();if(own(response,'ok')!==true){const reason=own(response,'reason');if(recovery&&typeof reason==='string'&&MIRROR_STARTUP_CONTEXT_HOLDS.includes(reason as MirrorStartupContextHold))throw new MirrorStartupContextHeldError(reason as MirrorStartupContextHold);const detail=own(response,'detail');throw new MirrorStartupIntentStoreReadError(typeof detail==='string'?detail:'invalid native response');}
     const value=own(response,'value');return request.kind==='Read'||request.kind==='Retain'?(value===null?null:snapshotPendingMirrorStartupIntent(value as PendingMirrorStartupIntent)):value;
-   }catch(error){if((request.kind==='Schema'||request.kind==='Retain')&&submitted)throw new MirrorStartupIntentWriteUnconfirmedError(request,error);throw error;}
+   }catch(error){if((request.kind==='Schema'||request.kind==='Retain'||request.kind==='CompleteContext')&&submitted)throw new MirrorStartupIntentWriteUnconfirmedError(request,error);throw error;}
    finally{signal?.removeEventListener('abort',abort);controller.signal.removeEventListener('abort',stop);}
   })();
   this.#inflight=operation;void operation.then(()=>{this.#inflight=null;this.#controller=null;},()=>{this.#inflight=null;this.#controller=null;});return operation;

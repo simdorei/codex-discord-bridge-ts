@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 import type {DatabaseSync} from 'node:sqlite';
 import {isAbsolute} from 'node:path';
 import {gatewayOwnField as own} from '../discord/gateway/values.ts';
@@ -5,11 +6,11 @@ import {requireDiscordText} from '../discord/text.ts';
 import {serializeSerdeValue} from '../core/serde-json.ts';
 import {parseSerdeValue} from '../core/serde-json-parse.ts';
 import {encodeMirrorCursorAnchor,decodeMirrorCursorAnchor} from '../core/mirror-cursor-anchor.ts';
-import {snapshotMirrorStartupCutoffData,type MirrorStartupCutoffData} from '../runtime/session-mirror/startup-context-limits.ts';
+import {snapshotMirrorStartupCutoffData,snapshotMirrorStartupContextResult,type MirrorStartupCutoffData,type MirrorStartupContextResult} from '../runtime/session-mirror/startup-context-limits.ts';
 import {withStoreTransaction,commitStore,rollbackStore} from './owned-scope.ts';
 import {receiptText,receiptTextColumns} from './delivery-receipt-key.ts';
 import {decodeTimestamp} from './sqlite-values.ts';
-import {requireMirrorCursorJournalIn} from './mirror-cursor-journal.ts';
+import {requireMirrorCursorJournalIn,readBoundMirrorCursorInTransaction,snapshotBoundMirrorCursor,type BoundMirrorCursor} from './mirror-cursor-journal.ts';
 import {MIRROR_STARTUP_INTENT_TABLE as TABLE,requireMirrorStartupIntentJournalIn,MirrorStartupIntentConflictError} from './mirror-startup-intent-schema.ts';
 export {initializeMirrorStartupIntentJournal,MirrorStartupIntentConflictError,MirrorStartupIntentSchemaError} from './mirror-startup-intent-schema.ts';
 const MAX_CUTOFF_BYTES=262144;
@@ -53,11 +54,14 @@ function absentCursor(db:DatabaseSync,thread:string):void {
   if(db.prepare(`SELECT 1 FROM ${table} WHERE ${key}=? LIMIT 1`).get(thread)!==undefined)throw new MirrorStartupIntentConflictError();
 }
 function bounded(column:string,max:number):string {return `CASE WHEN typeof(${column})='text' AND length(CAST(${column} AS BLOB))<=${max} THEN ${column} END AS ${column}`;}
-function readIn(db:DatabaseSync,thread:string):PendingMirrorStartupIntent|null {
+function readPacketIn(db:DatabaseSync,thread:string):PendingMirrorStartupIntent|null {
  const q=db.prepare(`SELECT cutoff_json,operation_id,created_at,${receiptTextColumns('cutoff_json','operation_id')} FROM (SELECT ${bounded('cutoff_json',MAX_CUTOFF_BYTES*2)},${bounded('operation_id',256)},CASE WHEN typeof(created_at) IN ('integer','real') THEN created_at END AS created_at FROM ${TABLE} WHERE thread_id=? AND CAST(thread_id AS BLOB)=CAST(? AS BLOB) LIMIT 2)`);q.setReadBigInts(true);const rows=q.all(thread,thread);
  if(rows.length===0)return null;if(rows.length!==1)throw new MirrorStartupIntentConflictError();const row=rows[0]!;
  const result=snapshotPendingMirrorStartupIntent({thread,cutoff:decode(receiptText(row,'cutoff_json')!),operationId:receiptText(row,'operation_id')!,createdAt:decodeTimestamp(row.created_at,'created_at')});
- absentCursor(db,thread);return result;
+ return result;
+}
+function readIn(db:DatabaseSync,thread:string):PendingMirrorStartupIntent|null {
+ const result=readPacketIn(db,thread);if(result!==null)absentCursor(db,thread);return result;
 }
 export function readPendingMirrorStartupIntent(db:DatabaseSync,thread:string):PendingMirrorStartupIntent|null {
  text(thread,16384);return withStoreTransaction(db,'DEFERRED',()=>{schema(db);return rollbackStore(readIn(db,thread));});
@@ -81,5 +85,67 @@ export function retainPreparedMirrorStartupIntent(db:DatabaseSync,plan:PreparedM
   if(db.prepare(`SELECT 1 FROM ${TABLE} WHERE operation_id=? LIMIT 1`).get(desired.operationId)!==undefined)throw new MirrorStartupIntentConflictError();
   if(BigInt(db.prepare(`INSERT INTO ${TABLE}(thread_id,cutoff_json,operation_id,created_at) VALUES(?,?,?,?)`).run(desired.thread,json,desired.operationId,desired.createdAt).changes)!==1n)throw new MirrorStartupIntentConflictError();
   const actual=readIn(db,desired.thread);if(actual===null||!same(actual,desired))throw new MirrorStartupIntentConflictError();return commitStore(actual);
+ });
+}
+
+/** Trusted storage preparation only, not file or recovery authentication. The
+ * runtime must obtain these inputs from its privately owned recovery evidence.
+ * No structural packet passed directly to apply can acquire write authority. */
+export interface PreparedMirrorStartupCompletion {readonly thread:string;readonly operationId:string;}
+export interface MirrorStartupCompletionResult {readonly kind:'Completed'|'Reconciled';readonly cursor:BoundMirrorCursor;}
+const completionPlans=new WeakMap<object,{readonly pending:PendingMirrorStartupIntent;readonly cutoffJson:string;readonly anchorJson:string;readonly desired:BoundMirrorCursor}>();
+export function prepareMirrorStartupIntentCompletion(input:PendingMirrorStartupIntent,context:MirrorStartupContextResult):PreparedMirrorStartupCompletion {
+ const pending=snapshotPendingMirrorStartupIntent(input),captured=snapshotMirrorStartupContextResult(pending.cutoff,{maxBytes:67108864,maxRecords:1048576,maxRecordBytes:262144,maxWindowBytes:1048576,maxTurnBytes:16384,timeoutMs:10000},context);
+ const desired=snapshotBoundMirrorCursor({thread:pending.thread,anchor:captured.anchor,turn:captured.currentTurn??'',updatedAt:pending.createdAt,revision:1n,operationId:pending.operationId,receiptSetHash:createHash('sha256').update(serializeSerdeValue([])).digest('hex')});
+ const plan=Object.freeze({thread:pending.thread,operationId:pending.operationId});completionPlans.set(plan,{pending,cutoffJson:encode(pending.cutoff),anchorJson:encodeMirrorCursorAnchor(desired.anchor),desired});return plan;
+}
+function completion(plan:PreparedMirrorStartupCompletion){
+ const owned=plan!==null&&typeof plan==='object'?completionPlans.get(plan):undefined;if(owned===undefined)throw new TypeError('Expected factory-created mirror startup completion plan');return owned;
+}
+function sameCursor(a:BoundMirrorCursor,b:BoundMirrorCursor):boolean {
+ return a.thread===b.thread&&encodeMirrorCursorAnchor(a.anchor)===encodeMirrorCursorAnchor(b.anchor)&&a.turn===b.turn&&a.updatedAt===b.updatedAt&&a.revision===b.revision&&a.operationId===b.operationId&&a.receiptSetHash===b.receiptSetHash;
+}
+function connectionChanges(db:DatabaseSync):bigint {
+ const query=db.prepare('SELECT total_changes() AS n');query.setReadBigInts(true);const value=query.get()?.n;
+ if(typeof value!=='bigint'||value<0n)throw new MirrorStartupIntentConflictError();return value;
+}
+function noCompletionPendingIn(db:DatabaseSync,pending:PendingMirrorStartupIntent):void {
+ if(db.prepare(`SELECT 1 FROM ${TABLE} WHERE thread_id=? OR operation_id=? LIMIT 1`).get(pending.thread,pending.operationId)!==undefined)throw new MirrorStartupIntentConflictError();
+}
+function completedIn(db:DatabaseSync,owned:ReturnType<typeof completion>):BoundMirrorCursor {
+ noCompletionPendingIn(db,owned.pending);const actual=readBoundMirrorCursorInTransaction(db,owned.pending.thread);
+ if(actual===null||!sameCursor(actual,owned.desired))throw new MirrorStartupIntentConflictError();return actual;
+}
+/** null means the exact original pending packet still owns the absent cursor.
+ * Otherwise reconcile only the exact completed cursor, never a later revision.
+ * Owns a read-only transaction, and refuses an existing caller transaction. */
+export function readPreparedMirrorStartupCompletion(db:DatabaseSync,plan:PreparedMirrorStartupCompletion):BoundMirrorCursor|null {
+ const owned=completion(plan);return withStoreTransaction(db,'DEFERRED',()=>{
+  schema(db);const pending=readIn(db,owned.pending.thread);
+  if(pending===null)return rollbackStore(completedIn(db,owned));
+  if(!same(pending,owned.pending))throw new MirrorStartupIntentConflictError();return rollbackStore(null);
+ });
+}
+/** One owned SQLite transaction, no filesystem/network or caller callbacks.
+ * Both cursor rows install before exact pending retirement. Every postcondition
+ * is checked before commit, including triggers recreating/moving the intent.
+ * This atomic DB transition does not assert atomic filesystem continuity. */
+export function completePreparedMirrorStartupIntent(db:DatabaseSync,plan:PreparedMirrorStartupCompletion):MirrorStartupCompletionResult {
+ const owned=completion(plan),{pending,desired,cutoffJson,anchorJson}=owned;
+ return withStoreTransaction<MirrorStartupCompletionResult>(db,'IMMEDIATE',()=>{
+  schema(db);const actual=readIn(db,pending.thread);
+  if(actual===null)return rollbackStore(Object.freeze({kind:'Reconciled',cursor:completedIn(db,owned)}));
+  if(!same(actual,pending))throw new MirrorStartupIntentConflictError();
+  const before=connectionChanges(db);
+  if(BigInt(db.prepare('INSERT INTO codex_session_mirror_offsets(codex_thread_id,rollout_path,cursor,updated_at,turn_context) VALUES(?,?,?,?,?)').run(desired.thread,desired.anchor.path,desired.anchor.offset,desired.updatedAt,desired.turn).changes)!==1n)throw new MirrorStartupIntentConflictError();
+  if(BigInt(db.prepare('INSERT INTO cdr_ts_mirror_cursor_anchors_v1(thread_id,anchor_json,turn_context,updated_at,revision,operation_id,receipt_set_hash) VALUES(?,?,?,?,?,?,?)').run(desired.thread,anchorJson,desired.turn,desired.updatedAt,desired.revision,desired.operationId,desired.receiptSetHash).changes)!==1n)throw new MirrorStartupIntentConflictError();
+  const retained=readPacketIn(db,pending.thread);if(retained===null||!same(retained,pending))throw new MirrorStartupIntentConflictError();
+  if(BigInt(db.prepare(`DELETE FROM ${TABLE} WHERE thread_id=? AND CAST(thread_id AS BLOB)=CAST(? AS BLOB) AND cutoff_json=? AND CAST(cutoff_json AS BLOB)=CAST(? AS BLOB) AND operation_id=? AND CAST(operation_id AS BLOB)=CAST(? AS BLOB) AND created_at=?`).run(pending.thread,pending.thread,cutoffJson,cutoffJson,pending.operationId,pending.operationId,pending.createdAt).changes)!==1n)throw new MirrorStartupIntentConflictError();
+  const cursor=completedIn(db,owned);
+  // DELETE WHERE/RETURNING observes pre-trigger values. Count every connection
+  // write as well, so BEFORE DELETE cannot rewrite/reinsert the packet and
+  // disappear unnoticed. Extra trigger writes conservatively hold the operation.
+  if(connectionChanges(db)-before!==3n)throw new MirrorStartupIntentConflictError();
+  return commitStore(Object.freeze({kind:'Completed',cursor}));
  });
 }

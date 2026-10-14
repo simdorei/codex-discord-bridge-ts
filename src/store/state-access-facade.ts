@@ -143,6 +143,9 @@ export const markArchiveVerified: typeof ArchiveFence.markArchiveVerified = Arch
 export const markArchiveVerifiedExisting: typeof ArchiveFence.markArchiveVerifiedExisting = ArchiveFence.markArchiveVerifiedExisting;
 export const releaseRejectedArchive: typeof ArchiveFence.releaseRejectedArchive = ArchiveFence.releaseRejectedArchive;
 export const releaseRejectedArchiveExisting: typeof ArchiveFence.releaseRejectedArchiveExisting = ArchiveFence.releaseRejectedArchiveExisting;
+export const prepareMirrorStartupIntentCompletion: typeof MirrorStartupIntent.prepareMirrorStartupIntentCompletion = MirrorStartupIntent.prepareMirrorStartupIntentCompletion;
+export const readPreparedMirrorStartupCompletion: typeof MirrorStartupIntent.readPreparedMirrorStartupCompletion = MirrorStartupIntent.readPreparedMirrorStartupCompletion;
+export const completePreparedMirrorStartupIntent: typeof MirrorStartupIntent.completePreparedMirrorStartupIntent = MirrorStartupIntent.completePreparedMirrorStartupIntent;
 export const initializeMirrorStartupIntentJournal: typeof MirrorStartupIntent.initializeMirrorStartupIntentJournal = MirrorStartupIntent.initializeMirrorStartupIntentJournal;
 export const verifyPendingMirrorStartupIntent: typeof MirrorStartupIntent.verifyPendingMirrorStartupIntent = MirrorStartupIntent.verifyPendingMirrorStartupIntent;
 export const readPendingMirrorStartupIntent: typeof MirrorStartupIntent.readPendingMirrorStartupIntent = MirrorStartupIntent.readPendingMirrorStartupIntent;
@@ -531,6 +534,9 @@ export const markGoalWaitingExisting: typeof GoalWaiting.markGoalWaitingExisting
 export const requireFinalDeadGenerationUnheldIn: typeof PreparedMutationValidation.requireFinalDeadGenerationUnheldIn = PreparedMutationValidation.requireFinalDeadGenerationUnheldIn;
 export const revalidateStopWire: typeof StopDispatch.revalidateStopWire = StopDispatch.revalidateStopWire;
 export interface IStateAccessFacade {
+  prepareMirrorStartupIntentCompletion: typeof prepareMirrorStartupIntentCompletion;
+  readPreparedMirrorStartupCompletion: typeof readPreparedMirrorStartupCompletion;
+  completePreparedMirrorStartupIntent: typeof completePreparedMirrorStartupIntent;
   initializeMirrorStartupIntentJournal: typeof initializeMirrorStartupIntentJournal;
   verifyPendingMirrorStartupIntent: typeof verifyPendingMirrorStartupIntent;
   readPendingMirrorStartupIntent: typeof readPendingMirrorStartupIntent;
@@ -919,6 +925,9 @@ export interface IStateAccessFacade {
 export type StateAccessFacade = IStateAccessFacade;
 
 export const StateAccessFacade: IStateAccessFacade = {
+  prepareMirrorStartupIntentCompletion,
+  readPreparedMirrorStartupCompletion,
+  completePreparedMirrorStartupIntent,
   initializeMirrorStartupIntentJournal,
   verifyPendingMirrorStartupIntent,
   readPendingMirrorStartupIntent,

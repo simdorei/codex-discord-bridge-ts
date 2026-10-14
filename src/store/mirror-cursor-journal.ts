@@ -68,10 +68,10 @@ function bounded(column:string,max:number):string{return `CASE WHEN typeof(${col
 function readIn(db:DatabaseSync,thread:string):BoundMirrorCursor|null{
  requireNoPendingMirrorStartupIntentIn(db,thread);
  const records=rows(db,`SELECT anchor_json,turn_context,operation_id,receipt_set_hash,updated_at,revision,${receiptTextColumns('anchor_json','turn_context','operation_id','receipt_set_hash')} FROM (
-  SELECT ${bounded('anchor_json',131072)},${bounded('turn_context',32768)},${bounded('operation_id',256)},${bounded('receipt_set_hash',128)},updated_at,revision FROM ${TABLE}
+  SELECT ${bounded('anchor_json',131072)},${bounded('turn_context',32768)},${bounded('operation_id',256)},${bounded('receipt_set_hash',128)},CASE WHEN typeof(updated_at) IN ('integer','real') THEN updated_at END AS updated_at,CASE WHEN typeof(revision)='integer' THEN revision END AS revision FROM ${TABLE}
   WHERE thread_id=? AND CAST(thread_id AS BLOB)=CAST(? AS BLOB) LIMIT 2)`,thread);
  const legacy=rows(db,`SELECT rollout_path,turn_context,cursor,updated_at,${receiptTextColumns('rollout_path','turn_context')} FROM (
-  SELECT ${bounded('rollout_path',65536)},${bounded('turn_context',32768)},cursor,updated_at FROM codex_session_mirror_offsets
+  SELECT ${bounded('rollout_path',65536)},${bounded('turn_context',32768)},CASE WHEN typeof(cursor)='integer' THEN cursor END AS cursor,CASE WHEN typeof(updated_at) IN ('integer','real') THEN updated_at END AS updated_at FROM codex_session_mirror_offsets
   WHERE codex_thread_id=? AND CAST(codex_thread_id AS BLOB)=CAST(? AS BLOB) LIMIT 2)`,thread);
  if(records.length===0){if(legacy.length===0)return null;throw new LegacyMirrorCursorUnboundError();}
  if(records.length!==1||legacy.length!==1)throw new MirrorCursorConflictError();
@@ -82,6 +82,11 @@ function readIn(db:DatabaseSync,thread:string):BoundMirrorCursor|null{
 }
 function same(a:BoundMirrorCursor,b:BoundMirrorCursor):boolean{
  return a.thread===b.thread&&encodeMirrorCursorAnchor(a.anchor)===encodeMirrorCursorAnchor(b.anchor)&&a.turn===b.turn&&a.updatedAt===b.updatedAt&&a.revision===b.revision&&a.operationId===b.operationId&&a.receiptSetHash===b.receiptSetHash;
+}
+/** Store-internal read sharing a caller's transaction. Keeps every pending and
+ * legacy/bound consistency guard; never acquires or settles the transaction. */
+export function readBoundMirrorCursorInTransaction(db:DatabaseSync,thread:string):BoundMirrorCursor|null{
+ text(thread,16384);if(!db.isTransaction)throw new TypeError('Mirror cursor read requires active caller transaction');return readIn(db,thread);
 }
 export function readBoundMirrorCursor(db:DatabaseSync,thread:string):BoundMirrorCursor|null{
  text(thread,16384);return withStoreTransaction(db,'DEFERRED',()=>rollbackStore(readIn(db,thread)));

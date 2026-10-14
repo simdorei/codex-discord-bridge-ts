@@ -122,6 +122,12 @@ import * as Preflight from "../../src/store/queue-preflight-failure.ts";
 
 describe("StateAccessFacade runtime function identity (no database)", () => {
   it("exposes exact direct function references on StateAccessFacade", () => {
+    assert.strictEqual(StateAccessFacade.prepareMirrorStartupIntentCompletion, MirrorStartupIntent.prepareMirrorStartupIntentCompletion);
+    assert.strictEqual(FacadeExports.prepareMirrorStartupIntentCompletion, MirrorStartupIntent.prepareMirrorStartupIntentCompletion);
+    assert.strictEqual(StateAccessFacade.readPreparedMirrorStartupCompletion, MirrorStartupIntent.readPreparedMirrorStartupCompletion);
+    assert.strictEqual(FacadeExports.readPreparedMirrorStartupCompletion, MirrorStartupIntent.readPreparedMirrorStartupCompletion);
+    assert.strictEqual(StateAccessFacade.completePreparedMirrorStartupIntent, MirrorStartupIntent.completePreparedMirrorStartupIntent);
+    assert.strictEqual(FacadeExports.completePreparedMirrorStartupIntent, MirrorStartupIntent.completePreparedMirrorStartupIntent);
     assert.strictEqual(StateAccessFacade.initializeMirrorStartupIntentJournal, MirrorStartupIntent.initializeMirrorStartupIntentJournal);
     assert.strictEqual(FacadeExports.initializeMirrorStartupIntentJournal, MirrorStartupIntent.initializeMirrorStartupIntentJournal);
     assert.strictEqual(StateAccessFacade.verifyPendingMirrorStartupIntent, MirrorStartupIntent.verifyPendingMirrorStartupIntent);
@@ -633,6 +639,9 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
 
   it("contains only the supplied writes, checked reads, async admission and observation ledger APIs", () => {
     const expected = [
+      "prepareMirrorStartupIntentCompletion",
+      "readPreparedMirrorStartupCompletion",
+      "completePreparedMirrorStartupIntent",
       "initializeMirrorStartupIntentJournal",
       "readPendingMirrorStartupIntent",
       "verifyPendingMirrorStartupIntent",
@@ -996,7 +1005,7 @@ assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimExisting, PromptIntak
     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
 assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
 assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
-    assert.strictEqual(actual.length, 368);
+    assert.strictEqual(actual.length, 371);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {
