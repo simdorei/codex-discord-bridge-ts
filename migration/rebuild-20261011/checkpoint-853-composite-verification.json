@@ -1,0 +1,87 @@
+{
+  "status": "APPLIED_852_853_COMPOSITE_AND_ACTUAL_FOCUSED_PASS",
+  "files": [
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "2b2cf72c1f5067d0588e2cf5da8d57ac8f2e98a5331a45cb4383b79ca4b3bdf1",
+      "afterSha256": "0b3905703d6bcf9ae20a508d987718c874b2dbd2b5f7170b2e7c7200e86419b3"
+    },
+    {
+      "path": "src/store/ingress-recovery-custody.ts",
+      "beforeSha256": "86ecae16369ec151fe2b97e9369db7759f1fdaf88fd606e24672d3f428161958",
+      "afterSha256": "d16ea002ea51da1cf47838e16f2a83bacf6d64e3814bb07de3f093e68df63665"
+    },
+    {
+      "path": "src/runtime/writer-recovery/native-owner.ts",
+      "beforeSha256": "e187acb0a1b4afcc8a19bef14d74ed8b906efa46406e1686f68d644a7f1d3323",
+      "afterSha256": "cc65fca66826a91fb628a3f4e1c55a44ba22cecd87246fc245a801efbed1560a"
+    },
+    {
+      "path": "src/runtime/writer-recovery/native-worker.ts",
+      "beforeSha256": "27486eda6e0fba59140748b923dc89d5c071d3181e559c002c8758896c6e1858",
+      "afterSha256": "8ccf28fe5dd668d40f32521318f65a957593e1c1df9622c418b3ce9c7293695c"
+    },
+    {
+      "path": "src/runtime/writer-recovery/handoff.ts",
+      "beforeSha256": null,
+      "afterSha256": "8f1a27b647b23594f336174f4a1db5e899fa27acac48892437bc4a85a76592d8"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "b096517bf865f9207c7de39cb12bb4aca8a8bfbd44b2de86f1f84451ee582339",
+      "afterSha256": "7a4a5eaa430475508186ae9ea6a212db33643535f82bd65f406555ee91ce2619"
+    },
+    {
+      "path": "test/runtime/writer-recovery/native-owner.test.ts",
+      "beforeSha256": "0095b83930cfaef084563ca441784e4ef256f8c79b473609fa7d6a4780d629be",
+      "afterSha256": "103c9e03a308eb94212573a74eea142d0da34c866f67941d8a7de6c4dbfac7ed"
+    },
+    {
+      "path": "test/runtime/writer-recovery/handoff.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "5ff0027dc42a30ad3e2c52fa86c3a41430885366866135d7aac5e83c599c4940"
+    }
+  ],
+  "base852": {
+    "status": "COMPOSITE_FROZEN_FILES_COMPLETE",
+    "fingerprint": "802de5ae624e93969079f9be796a7827a057dd90bfbb39346200dc0121b7f63e",
+    "testFiles": 858,
+    "counts": {
+      "tests": 8770,
+      "pass": 8770,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "ended": "2026-10-14T06:27:42.209Z",
+    "limitation": "Independently terminal file runs over one unchanged compiled graph, not one monolithic full-suite invocation."
+  },
+  "base852ReceiptAndLogHashesVerified": true,
+  "base852FinalFingerprintMatched": true,
+  "delta853": {
+    "unchangedBaseSourceAndCompiledGraph": true,
+    "addedSourceFiles": [
+      "src/runtime/writer-recovery/handoff.ts",
+      "test/runtime/writer-recovery/handoff.test.ts"
+    ],
+    "newUniqueTests": 10,
+    "exit": 0,
+    "logSha256": "f39af4c87dcb33fe295405c80e29e61747b5b7e9dc12833e59af0968b691619a"
+  },
+  "compositeUniquePass": 8780,
+  "singleFullRun": false,
+  "sourceTestToolsFileCount": 1745,
+  "actual": {
+    "strictBuildExit": 0,
+    "focusedExit": 0,
+    "focusedPass": 52,
+    "focusedLogSha256": "80b35fb53b1060c4856ad5d77cf9e82e8ac9423f3f12115828209c4905c26498"
+  },
+  "limits": [
+    "Controller is an interface with mock OS tests only; production Windows process adapter and Recover command routing remain unimplemented.",
+    "Dispatched receipt is not process restart or completion proof.",
+    "Selected recovery routes, Windows/live/performance/24hour/deployment remain unqualified.",
+    "Protected redaction fixture unavailable and excluded; no pass/skip claim."
+  ]
+}

@@ -76,3 +76,37 @@ test('oversized blob in numeric storage is gated before conversion',()=>fixture(
  await owner.claim(record);
  await edit(path,db=>{const expected=getIngressIn(db,'message:3')!;db.exec("UPDATE discord_ingress_journal SET application_id=zeroblob(1048577) WHERE ingress_id='message:3'; BEGIN");try{assert.throws(()=>state.validateIngressRecoverySnapshotIn(db,expected),/byte budget/);}finally{db.exec('ROLLBACK');}});
 }));
+test('compact original envelope claims stored custody and exposes only its pinned target',()=>fixture(async(path,_record,owner)=>{
+ await state.enqueue(path,queueJob({jobId:'job',ownerUserId:2n,createdAt:1}));
+ const claim=await owner.claimOriginal({key:'message:3',channelId:1n,ownerUserId:2n,eventId:3n,reference:'target'});
+ assert.equal(owner.target(claim),'target');await owner.check(claim);assert.deepEqual(await owner.cancel(claim),{jobs:['job'],startedOrUncertain:0});assert.throws(()=>owner.target({}),/Unknown/);
+}));
+for(const changed of [{channelId:9n},{ownerUserId:9n},{reference:'different'}])test('compact original envelope refuses mismatching '+Object.keys(changed)[0],()=>fixture(async(path,_record,owner)=>{
+ await assert.rejects(owner.claimOriginal({key:'message:3',channelId:1n,ownerUserId:2n,eventId:3n,reference:'target',...changed}),NativeRecoveryUnavailableError);
+ await edit(path,db=>assert.equal(db.prepare("SELECT phase FROM discord_ingress_journal WHERE ingress_id='message:3'").get()?.phase,'processing'));
+}));
+test('compact envelope cannot pair another key with the original event',()=>fixture(async(path,_record,owner)=>{
+ await assert.rejects(owner.claimOriginal({key:'message:4',channelId:1n,ownerUserId:2n,eventId:3n,reference:'target'}),/envelope/);
+ await edit(path,db=>assert.equal(getIngressIn(db,'message:3')?.phase,'processing'));
+}));
+test('compact envelope does not authorize the unconnected selected route',()=>fixture(async(path,_record,owner)=>{
+ await assert.rejects(owner.claimOriginal({key:'message:3',channelId:1n,ownerUserId:2n,eventId:3n,reference:null}),NativeRecoveryUnavailableError);
+ await edit(path,db=>assert.equal(getIngressIn(db,'message:3')?.phase,'processing'));
+},'Selected'));
+test('compact original reads reject oversized stored payload before claiming',()=>fixture(async(path,_record,owner)=>{
+ await edit(path,db=>db.prepare('UPDATE discord_ingress_journal SET payload_json=?').run('x'.repeat(1048577)));
+ await assert.rejects(owner.claimOriginal({key:'message:3',channelId:1n,ownerUserId:2n,eventId:3n,reference:'target'}),NativeRecoveryUnavailableError);
+ await edit(path,db=>assert.equal(db.prepare('SELECT phase FROM discord_ingress_journal').get()?.phase,'processing'));
+}));
+test('compact envelope captures caller values before the asynchronous boundary',()=>fixture(async(_path,_record,owner)=>{
+ const input={key:'message:3',channelId:1n,ownerUserId:2n,eventId:3n,reference:'target'};
+ const pending=owner.claimOriginal(input);input.ownerUserId=99n;input.reference='other';const claim=await pending;assert.equal(owner.target(claim),'target');await owner.check(claim);
+}));
+test('compact mapped admission checks mapping and returns the same pinned target',()=>fixture(async(_path,_record,owner)=>{
+ const claim=await owner.claimOriginal({key:'message:3',channelId:1n,ownerUserId:2n,eventId:3n,reference:null});assert.equal(owner.target(claim),'target');await owner.check(claim);
+},'Mapped'));
+test('compact original check rejects a changed command plan rather than refreshing it',()=>fixture(async(path,_record,owner)=>{
+ await edit(path,db=>db.exec("UPDATE discord_ingress_journal SET payload_json=json_set(payload_json,'$.plan.Execute.Recover.reference','changed')"));
+ await assert.rejects(owner.claimOriginal({key:'message:3',channelId:1n,ownerUserId:2n,eventId:3n,reference:'target'}),NativeRecoveryUnavailableError);
+ await edit(path,db=>assert.equal(getIngressIn(db,'message:3')?.phase,'processing'));
+}));

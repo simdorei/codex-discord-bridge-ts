@@ -1,3 +1,10 @@
+# Current addendum — 2026-10-14 07:41 UTC
+
+- Applied852–853: original Recover admission reads off-thread and validates exact stored custody, then a bounded inspect/cancel/check/dispatch/join handoff. Strict build0 and actual focused52 pass.
+- Composite8780 unique passes = unchanged qualified852 file runs8770 + new853 handoff tests10. Source and compiled base graph unchanged; not one full-suite invocation.
+- Production Windows recovery controller and Recover command wiring remain unimplemented. Mock-controller tests do not prove process replacement or deployment readiness. Product no longer851; historical addenda follow.
+- Continue implementation after preservation, using affected-path tests per change and whole regression at integration boundaries.
+
 # Current addendum — 2026-10-14 06:00 UTC
 
 - Applied851: existing-only/borrowed recovery cancellation performs bounded scalar byte checks before reading queue/intake and related ingress values. Per-row1MiB, cumulative preflight charges8MiB, at most128rows accepted using129 sentinel. Rechecks catch trigger changes; refusal rolls back all earlier cancellation writes.

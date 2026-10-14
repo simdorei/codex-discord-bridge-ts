@@ -200,6 +200,7 @@ export const listIngressesForOwner: typeof IngressRead.listIngressesForOwner = I
 export const validateRecoveryEffectIn: typeof RecoveryEffect.validateRecoveryEffectIn = RecoveryEffect.validateRecoveryEffectIn;
 export const claimIngressRecoverySnapshotIn: typeof RecoveryCustody.claimIngressRecoverySnapshotIn = RecoveryCustody.claimIngressRecoverySnapshotIn;
 export const claimIngressRecoverySnapshotExisting: typeof RecoveryCustody.claimIngressRecoverySnapshotExisting = RecoveryCustody.claimIngressRecoverySnapshotExisting;
+export const claimOriginalRecoverExisting: typeof RecoveryCustody.claimOriginalRecoverExisting = RecoveryCustody.claimOriginalRecoverExisting;
 export const validateIngressRecoverySnapshotIn: typeof RecoveryCustody.validateIngressRecoverySnapshotIn = RecoveryCustody.validateIngressRecoverySnapshotIn;
 export const claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery = RecoveryCustody.claimIngressRecovery;
 export const validateIngressRecovery: typeof RecoveryCustody.validateIngressRecovery = RecoveryCustody.validateIngressRecovery;
@@ -674,6 +675,7 @@ export interface IStateAccessFacade {
   readonly validateRecoveryEffectIn: typeof RecoveryEffect.validateRecoveryEffectIn;
   readonly claimIngressRecoverySnapshotIn: typeof RecoveryCustody.claimIngressRecoverySnapshotIn;
   readonly claimIngressRecoverySnapshotExisting: typeof RecoveryCustody.claimIngressRecoverySnapshotExisting;
+  readonly claimOriginalRecoverExisting: typeof RecoveryCustody.claimOriginalRecoverExisting;
   readonly validateIngressRecoverySnapshotIn: typeof RecoveryCustody.validateIngressRecoverySnapshotIn;
   readonly claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery;
   readonly validateIngressRecovery: typeof RecoveryCustody.validateIngressRecovery;
@@ -1022,6 +1024,7 @@ export const StateAccessFacade: IStateAccessFacade = {
   validateRecoveryEffectIn,
   claimIngressRecoverySnapshotIn,
   claimIngressRecoverySnapshotExisting,
+  claimOriginalRecoverExisting,
   validateIngressRecoverySnapshotIn,
   claimIngressRecovery,
   validateIngressRecovery,

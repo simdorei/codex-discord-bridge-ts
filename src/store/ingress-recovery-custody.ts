@@ -74,3 +74,18 @@ export function validateIngressRecoveryIn(db:DatabaseSync,claim:RecoveryClaim):v
   const original=claims.get(claim);if(original===undefined)refused();const record=getIngressIn(db,original.ingressId);if(record===null||!equal(record,original))refused();validateRecord(db,original);
 }
 export async function validateIngressRecovery(path:string,claim:RecoveryClaim):Promise<void>{const db=await openInitialized(path);try{validateIngressRecoveryIn(db,claim);}finally{db.close();}}
+
+
+/** Read and claim the original admitted Recover message in one existing-only
+ * native transaction. The caller supplies actor/reference identity, never a
+ * reconstructed payload or a refreshed target. */
+export function claimOriginalRecoverExisting(path:string,key:string,channel:bigint,owner:bigint,event:bigint,reference:string|null,now:number):StoredIngress{
+ requireDiscordText(path);requireDiscordText(key);if(reference!==null)requireDiscordText(reference);
+ for(const n of [channel,owner,event])if(typeof n!=="bigint"||n<=0n||n>=(1n<<63n))throw new TypeError("Expected positive recovery i64 identity");
+ if(key!==`message:${event}`)throw new TypeError("Recovery key differs from original event");
+ return usingExistingStore(path,db=>withStoreTransaction(db,"IMMEDIATE",()=>{
+  const record=boundedRecoveryRecordIn(db,key),command={Recover:{reference}};
+  if(record===null||record.channelId!==channel||record.ownerUserId!==owner||record.eventId!==event||record.sourceMessageId!==event||!serdeValueEqual(getOwn(record.payload,"plan"),{Execute:command})||!serdeValueEqual(pointer(record.payload,"/lifecycle_binding/command"),command)||pointer(record.payload,"/lifecycle_binding/route")==="Selected")refused();
+  return commitStore(claimIngressRecoverySnapshotIn(db,record,now));
+ }),100);
+}
