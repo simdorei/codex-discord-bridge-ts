@@ -1,3 +1,5 @@
+import {assertStopDispatchInputBudget,stopDispatchBudget} from './stop-dispatch-budget.ts';
+import {boundedStopQueueJson,type StopAcceptanceBudget} from './stop-acceptance-budget.ts';
 import {openExisting} from './existing-store.ts';
 import {ownerIsCurrent} from './mutation-attempt.ts';
 import {parseSerdeStruct,type StructShape} from "../core/serde-struct-json.ts";
@@ -36,29 +38,29 @@ function claimValue(input:unknown):StopClaim{const value=cloneOwnedSerdeValue(in
 function original(c:StopControl):string{return `{${fields.map(k=>`${JSON.stringify(k)}:${serializeSerdeValue(c[k])}`).join(",")}}`;}
 function scalar(db:DatabaseSync,sql:string,...args:SQLInputValue[]):bigint{const q=db.prepare(sql);q.setReadBigInts(true);return decodeI64(q.get(...args)?.n,"stop control scalar");}
 function retained(db:DatabaseSync,c:StopControl):boolean{return scalar(db,"SELECT EXISTS(SELECT 1 FROM cdr_stop_controls WHERE operation_id=? AND target_thread_id=? AND resident_owner=? AND generation=? AND turn_id=? AND record_json=?) AS n",c.operation_id,c.target,c.resident,c.generation,c.turn,original(c))!==0n;}
-function validateOriginal(db:DatabaseSync,c:StopControl):void{
-  if(!retained(db,c))refused();validateStopBindingIn(db,c.target,c.channel,c.binding);
+function validateOriginal(db:DatabaseSync,c:StopControl,budget?:StopAcceptanceBudget):void{
+  budget?.control(c.operation_id);if(!retained(db,c))refused();budget?.binding(null);validateStopBindingIn(db,c.target,c.channel,c.binding);
   if(scalar(db,"SELECT EXISTS(SELECT 1 FROM codex_archive_fences WHERE target_thread_id=?1) OR EXISTS(SELECT 1 FROM codex_observed_completions WHERE thread_id=?1 AND turn_id=?2) AS n",c.target,c.turn)!==0n)refused();
   const jobs=c.jobs.map(raw=>({raw,value:parseSerdeValue(raw)})),running=jobs.filter(j=>getOwn(j.value,"state")==="Running");
-  if(running.length!==1)refused();const selected=running[0]!,id=getOwn(selected.value,"job_id");if(typeof id!=="string")refused();const current=selectJob(db,id);
-  if(serializeStoredQueueJob(current)!==selected.raw||completionEvidenceGeneration(current)!==c.generation||current.turnId!==c.turn||current.channelId!==c.channel||current.ownerUserId!==c.owner)refused();
-  for(const j of jobs){const id=getOwn(j.value,"job_id");if(typeof id!=="string"||stopHoldSnapshotIn(db,id)?.[0]!==c.target)refused();}
+  if(running.length!==1)refused();const selected=running[0]!,id=getOwn(selected.value,"job_id");if(typeof id!=="string")refused();budget?.job(id);const current=selectJob(db,id);
+  if((budget===undefined?serializeStoredQueueJob(current):boundedStopQueueJson(current))!==selected.raw||completionEvidenceGeneration(current)!==c.generation||current.turnId!==c.turn||current.channelId!==c.channel||current.ownerUserId!==c.owner)refused();
+  for(const j of jobs){const id=getOwn(j.value,"job_id");if(typeof id!=="string")refused();budget?.hold(id);if(stopHoldSnapshotIn(db,id)?.[0]!==c.target)refused();}
 }
 function owner(input:StopWireOwner):StopWireOwner{const v=cloneOwnedSerdeValue(input) as StopWireOwner;if(v===null||typeof v!=="object"||!text(v.resident)||!i64(v.generation))refused();return v;}
 function wire(input:StopWireRequest):StopWireRequest{const v=cloneOwnedSerdeValue(input) as StopWireRequest;if(v===null||typeof v!=="object"||!text(v.attempt)||!text(v.wire))refused();return v;}
-function validate(db:DatabaseSync,c:StopClaim,o:StopWireOwner,params:unknown):void{
+function validate(db:DatabaseSync,c:StopClaim,o:StopWireOwner,params:unknown,budget?:StopAcceptanceBudget):void{
   if(c.control.resident!==o.resident||c.control.generation!==o.generation||getOwn(params,"threadId")!==c.control.target||getOwn(params,"turnId")!==c.control.turn||c.token==="")refused();
-  validateOriginal(db,c.control);if(scalar(db,"SELECT EXISTS(SELECT 1 FROM cdr_stop_controls WHERE operation_id=? AND phase='dispatching' AND claim_token=?) AS n",c.control.operation_id,c.token)===0n)refused();
+  validateOriginal(db,c.control,budget);if(scalar(db,"SELECT EXISTS(SELECT 1 FROM cdr_stop_controls WHERE operation_id=? AND phase='dispatching' AND claim_token=?) AS n",c.control.operation_id,c.token)===0n)refused();
 }
 export function validateStopClaimIn(db:DatabaseSync,input:unknown,owned:StopWireOwner,inputParams:unknown):StopClaim{const c=claimValue(input),o=owner(owned),params=cloneOwnedSerdeValue(inputParams);validate(db,c,o,params);return c;}
 function existing<T>(path:string,operation:(db:DatabaseSync)=>T):T{return usingExistingStore(path,db=>{db.exec("PRAGMA busy_timeout=500");return operation(db);});}
 export function claimStopControl(path:string,input:unknown,checkSelected:()=>void):StopClaim|null{
-  const c=control(input);
+  assertStopDispatchInputBudget(input);const c=control(input);
   return existing(path,db=>withStoreTransaction(db,"IMMEDIATE",()=>{
-    validateOriginal(db,c);invokeSynchronousVoid(checkSelected,{},[]);const claim=Object.freeze({control:c,token:randomUUID()});
+    const budget=stopDispatchBudget(db,c);validateOriginal(db,c,budget);invokeSynchronousVoid(checkSelected,{},[]);const claim=Object.freeze({control:c,token:randomUUID()});
     const r=db.prepare("UPDATE cdr_stop_controls SET phase='dispatching',claim_token=? WHERE operation_id=? AND phase='accepted' AND NOT EXISTS(SELECT 1 FROM cdr_stop_controls WHERE target_thread_id=? AND resident_owner=? AND generation=? AND turn_id=? AND claim_token IS NOT NULL)").run(claim.token,c.operation_id,c.target,c.resident,c.generation,c.turn);
     if(BigInt(r.changes)!==1n)return rollbackStore(null);
-    validate(db,claim,{resident:c.resident,generation:c.generation},{threadId:c.target,turnId:c.turn});invokeSynchronousVoid(checkSelected,{},[]);return commitStore(claim);
+    validate(db,claim,{resident:c.resident,generation:c.generation},{threadId:c.target,turnId:c.turn},budget);invokeSynchronousVoid(checkSelected,{},[]);return commitStore(claim);
   }));
 }
 function wireMatches(db:DatabaseSync,c:StopClaim,o:StopWireOwner,r:StopWireRequest):boolean{return scalar(db,"SELECT EXISTS(SELECT 1 FROM cdr_stop_controls WHERE operation_id=? AND resident_owner=? AND generation=? AND claim_token=? AND wire_attempt=? AND wire_id=?) AS n",c.control.operation_id,o.resident,o.generation,c.token,r.attempt,r.wire)!==0n;}

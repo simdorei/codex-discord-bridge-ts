@@ -252,3 +252,28 @@ it('actual command Stop lost native acknowledgement retains original ingress and
  const run=OwnedWorkerSlot.prototype.run;let submissions=0;t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){const task=run.apply(this,args);if(!String(args[0]).includes('stop-acceptance-native-worker'))return task;submissions++;return task.then(()=>{throw new Error('lost acknowledgement after real exit');});});
  await fixture(true,async f=>{await admit(f.path,'Stop');await assert.rejects(f.executor.executeWithIngressContext({Stop:{reference:null}},actor,'message:5'),(error:any)=>error.name==='NativeStopAcceptanceUnknownError'&&error.ingressKey==='message:5'&&error.operationId==='stop:message:5');assert.equal(submissions,1);assert.deepEqual(await f.seen(),[]);const saved=await state.getIngress(f.path,'message:5');assert.equal(saved!.phase,'stop_accepted');assert.equal(saved!.confirmationDelivered,false);const db=await openInitialized(f.path);try{assert.equal(db.prepare('SELECT count(*) AS n FROM cdr_stop_revision_receipts').get()!.n,1);}finally{db.close();}});
 });
+
+import {acceptRunningStop as seedRunningStop} from '../../../src/store/stop-control-admission.ts';
+import {NativeStopClaimUnknownError} from '../../../src/runtime/action-executor/stop-dispatch-native.ts';
+const stopDispatchCode=code.replace("seen.push({method:m.method", "if(m.method==='fixture/seed'){emit({method:'turn/started',params:{threadId:'root',turnId:'V'}});reply({});return;}seen.push({method:m.method");
+async function seedStopDispatch(f:F){
+ assert.ok(f.server);const admission=f.server.admitResponse(f.server.generation());try{await admission.client.requestAdmitted(admission.permit,'fixture/seed',{},1000);}finally{admission.release();}
+ const db=await openInitialized(f.path);try{db.prepare("INSERT INTO codex_turn_queue(job_id,target_thread_id,channel_id,owner_user_id,app_server_generation,prompt,queued,ack_sent,state,attempt_count,turn_id,baseline_turn_ids,created_at,updated_at) VALUES('dispatch-job','root',42,3,?,'original',0,1,'running',1,'V','[]',1,1)").run(f.server.generation());}finally{db.close();}
+ return seedRunningStop(f.path,{target:'root',channel:42n,owner:3n},{target:'root',route:'Selected',command:{Stop:{reference:null}}},null,f.server.instanceId,f.server.generation(),()=>{})!;
+}
+it('actual factory Stop workers use native claim/error writes with synchronous methods poisoned and one interrupt',async t=>{
+ for(const name of ['claimStopControl','recordStopControlError','pendingStopControlsAfter'] as const)t.mock.method(state,name,()=>{throw new Error('main-thread Stop dispatch persistence forbidden');});
+ const operations:string[]=[],run=OwnedWorkerSlot.prototype.run,completion=OwnedWorkerSlot.prototype.runControlCompletion;
+ t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){if(String(args[0]).includes('stop-dispatch-native-worker'))operations.push((args[1] as any).operation);return run.apply(this,args);});
+ t.mock.method(OwnedWorkerSlot.prototype,'runControlCompletion',function(this:OwnedWorkerSlot,...args:Parameters<typeof completion>){if(String(args[0]).includes('stop-dispatch-native-worker'))operations.push((args[1] as any).operation);return completion.apply(this,args);});
+ await fixture(true,async f=>{const original=await seedStopDispatch(f),reports:unknown[]=[],worker=f.executor.createStopControlWorker(e=>{reports.push(e);});assert.equal(await worker.process(),1);assert.deepEqual(operations,['Claim','Error']);assert.equal((await f.seen()).filter(row=>row.method==='turn/interrupt').length,1);assert.equal(reports.length,1);assert.equal(state.stopControlPhase(f.path,original.operation_id),'unknown');assert.equal(await worker.process(),0);assert.equal(await f.executor.createStopControlWorker(()=>{}).process(),0);assert.deepEqual(operations,['Claim','Error']);},2000,()=>stopDispatchCode);
+});
+it('actual factory shares a sticky uncertain-claim barrier across cursor cycles and new workers after committed or rolled-back lost ACK',async t=>{
+ for(const rollback of [false,true]){
+ const run=OwnedWorkerSlot.prototype.run;let claims=0;const mock=t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){const task=run.apply(this,args);if(String(args[0]).includes('stop-dispatch-native-worker')){claims++;return task.then(()=>{throw new Error('lost native claim acknowledgement');});}return task;});
+ try{await fixture(true,async f=>{const original=await seedStopDispatch(f);if(rollback){const db=await openInitialized(f.path);try{db.exec("CREATE TRIGGER stop_rollback AFTER UPDATE OF claim_token ON cdr_stop_controls BEGIN SELECT RAISE(ABORT,'rollback'); END");}finally{db.close();}}
+ const reports:unknown[]=[],first=f.executor.createStopControlWorker(e=>{reports.push(e);});let error:unknown;await assert.rejects(first.process(),e=>{error=e;return e instanceof NativeStopClaimUnknownError;});if(rollback){const db=await openInitialized(f.path);try{db.exec('DROP TRIGGER stop_rollback');}finally{db.close();}}
+ for(let n=0;n<3;n++)await assert.rejects(first.process(),e=>e===error);const second=f.executor.createStopControlWorker(e=>{reports.push(e);});await assert.rejects(second.process(),e=>e===error);assert.equal(first.cursor,1n);assert.equal(second.cursor,0n);assert.equal(reports.length,1);assert.equal(claims,1);assert.equal(state.stopControlPhase(f.path,original.operation_id),rollback?'accepted':'dispatching');assert.equal((await f.seen()).some(row=>row.method==='turn/interrupt'),false);
+ },2000,()=>stopDispatchCode);}finally{mock.mock.restore();}
+ }
+});
