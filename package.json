@@ -19,6 +19,7 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "build:test": "node tools/build-test-profile.mjs",
-    "maintenance": "node --no-strip-types dist/src/cli/maintenance-main.js"
+    "maintenance": "node --no-strip-types dist/src/cli/maintenance-main.js",
+    "runtime:local": "node --no-strip-types dist/src/cli/local-runtime-main.js"
   }
 }
