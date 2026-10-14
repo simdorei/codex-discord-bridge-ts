@@ -1,3 +1,12 @@
+# Current addendum — 2026-10-14 02:59 UTC
+
+- Applied844 archive backup/preflight/postcondition helpers: qualified frozen stage8695 PASS, fail/cancel/skip0; actual strict0/focused63 PASS and exact src/test/tools1732-file equality. No DeleteArchiveConfirm command or source-file deletion enabled.
+- Staged845 exact original-confirmation durable fence and token-guarded mirror/cursor deletion: strict0/focused39 PASS. Staged846 one joined native reservation/mirror/source-backup flow: combined focused111 PASS. Active-source-before-reservation regression reproduced RED and corrected GREEN. Combined845–846 full is running independently.
+- Original source deletion still needs exclusive platform file custody. Recovery/host controls, executable assembly, Windows qualification and G1–G7/24-hour operation remain unqualified.
+- Continue implementation during tests and after commits; commit is not a stopping condition.
+
+## Previous addenda (historical)
+
 # Current addendum — 2026-10-14 02:36 UTC
 
 - Applied840 connects BridgeSync to concrete synchronization and startup shared HTTP/locks. Strict build and post-apply 51+4 focused tests pass. Source/test/tools1723 files match the qualified stage with8656 PASS. The older unwired BridgeSync statement below is historical.
