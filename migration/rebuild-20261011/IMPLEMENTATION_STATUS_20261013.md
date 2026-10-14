@@ -1,3 +1,12 @@
+# Current addendum — 2026-10-14 02:36 UTC
+
+- Applied840 connects BridgeSync to concrete synchronization and startup shared HTTP/locks. Strict build and post-apply 51+4 focused tests pass. Source/test/tools1723 files match the qualified stage with8656 PASS. The older unwired BridgeSync statement below is historical.
+- Archive deletion is advancing:841 transactional state/log leaves have19 focused PASS;842 native recovery backup,843 bounded source-derived preflight,844 backup-content/postcondition verification have58 combined focused PASS. These are bounded implementation evidence, not an enabled DeleteArchiveConfirm command or deployment approval.841 full regression is running;842–844 are staged.
+- Remaining archive boundaries include exclusive platform file ownership, metadata replacement and transcript deletion, then original confirmation/reservation binding and command integration. Recovery and host/platform controls, executable packaging, Windows and G1–G7/24-hour acceptance remain unqualified.
+- Git preservation is a checkpoint. Continue implementation after each commit; do not stop for another user prompt. No measured completion percentage is available.
+
+## Historical status below
+
 # Implementation status — 2026-10-13 06:59 UTC
 
 ## Reporting basis

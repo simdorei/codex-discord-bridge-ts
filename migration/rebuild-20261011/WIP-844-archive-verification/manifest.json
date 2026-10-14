@@ -1,0 +1,32 @@
+{
+  "status": "WIP_STAGED_FOCUSED58_PASS_FULL_PENDING",
+  "files": [
+    {
+      "path": "src/runtime/archive-delete/verification.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-844-archive-verification/files/src/runtime/archive-delete/verification.ts",
+      "sha256": "b59edff78e4330aa5108376eac73061778e64a7f9eb1d742702f1520c9f16e40"
+    },
+    {
+      "path": "test/runtime/archive-delete/verification.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-844-archive-verification/files/test/runtime/archive-delete/verification.test.ts",
+      "sha256": "2887e738d4f50a533695a7850858dd37191119b23903049559ade31a24511fb6"
+    }
+  ],
+  "checks": {
+    "strictBuildExit": 0,
+    "combinedFocusedPass": 58,
+    "combinedFocusedFail": 0,
+    "sourceAliasOldRed": true,
+    "sourceAliasCorrectedGreen": true
+  },
+  "scope": [
+    "Bounded backup-derived metadata snapshots with presence/content and inode-alias checks.",
+    "Selected thread/log/transcript final postcondition checks without mutation."
+  ],
+  "limits": [
+    "No metadata writer or transcript deletion enabled. Windows exclusive handle protection is pending.",
+    "Broken transcript symlinks conservatively remain blocked rather than reported deleted.",
+    "Full regression pending for staged842-844 combination.",
+    "841 full regression in progress; protected redaction fixture absent."
+  ]
+}
