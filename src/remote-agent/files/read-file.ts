@@ -1,16 +1,17 @@
 import {RemoteFileFailure} from './error.ts';
+import {captureRemoteReadCancellation} from './read-signal.ts';
 import {types} from 'node:util';import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../../runtime/owned-worker-slot.ts';
-import {RemoteReadOwner} from './read-owner.ts';import {validateRemoteRelativePath,remoteRelativeText} from './path-policy.ts';import {selectRemoteTextLines} from './line-selection.ts';
+import {RemoteReadOwner,readRemoteOwnedBytes,type RemoteNativeRead} from './read-owner.ts';import {validateRemoteRelativePath,remoteRelativeText} from './path-policy.ts';import {selectRemoteTextLines} from './line-selection.ts';
 const slot=new OwnedWorkerSlot();let occupied=false;
 export interface RemoteReadFileOutput{readonly path:string;readonly content:string;readonly sha256:string;readonly start_line:bigint;readonly end_line:bigint;readonly total_lines:bigint;readonly truncated:boolean;readonly redacted:boolean;}
 /** Borrow an already-authorized native owner. One bounded request, no queue.
  * Read/close joins precede CPU rendering; stop waits accepted native work and
  * terminates/joins pure rendering. Not registered as remote project permission. */
-export async function readRemoteFile(owner:RemoteReadOwner,relative:string,start:bigint,maxLines:number,signal?:AbortSignal):Promise<RemoteReadFileOutput>{
- signal?.throwIfAborted();validateRemoteRelativePath(relative,'posix');selectRemoteTextLines('',start,maxLines);
+export async function readRemoteFile(owner:RemoteReadOwner|RemoteNativeRead,relative:string,start:bigint,maxLines:number,signal?:AbortSignal):Promise<RemoteReadFileOutput>{
+ signal=captureRemoteReadCancellation(signal);validateRemoteRelativePath(relative,'posix');selectRemoteTextLines('',start,maxLines);
  if(types.isProxy(owner))throw new TypeError('Expected owned project reader');if(occupied)throw new OwnedWorkerBusyError();occupied=true;
  try{
-  const bytes=await RemoteReadOwner.prototype.readBytes.call(owner,relative);signal?.throwIfAborted();const path=remoteRelativeText(relative);
+  const bytes=await readRemoteOwnedBytes(owner,relative,1048576,signal);signal?.throwIfAborted();const path=remoteRelativeText(relative);
   const pending=slot.runCpu(new URL('./read-file-worker.ts',import.meta.url),{bytes,path,start,maxLines},1000,signal),joined=slot.join();let result:unknown;
   try{result=await pending;}finally{await joined;}signal?.throwIfAborted();
   if(result===null||typeof result!=='object'||!Object.hasOwn(result,'ok'))throw new Error('Invalid remote file result');

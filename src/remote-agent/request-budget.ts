@@ -1,9 +1,11 @@
 import {gatewayOwnField as own} from '../discord/gateway/values.ts';
 import type {RemoteUtcDateTime} from './datetime.ts';
 const BILLION=1000000000n,DAY=86400n,MAX_DURATION=((1n<<64n)-1n)*BILLION+999999999n;
+const failures=new WeakMap<object,'Expired'|'Cancelled'>();
+export function remoteDeadlineFailureKind(value:unknown):'Expired'|'Cancelled'|null{return value!==null&&typeof value==='object'?failures.get(value)??null:null;}
 export class RemoteDeadlineError extends Error{
  readonly kind:'Expired'|'Cancelled';
- constructor(kind:'Expired'|'Cancelled'){super(kind==='Expired'?'The local project request expired before execution.':'The local project request was cancelled with its bridge connection.');this.name='RemoteDeadlineError';this.kind=kind;}
+ constructor(kind:'Expired'|'Cancelled'){super(kind==='Expired'?'The local project request expired before execution.':'The local project request was cancelled with its bridge connection.');this.name='RemoteDeadlineError';this.kind=kind;failures.set(this,kind);}
 }
 function snapshot(value:RemoteUtcDateTime):RemoteUtcDateTime{
  const seconds=own(value,'seconds'),nanosecond=own(value,'nanosecond');
