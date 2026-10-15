@@ -2,7 +2,7 @@ import {randomUUID} from 'node:crypto';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
-import {parseComponentId,type ComponentId} from '../../discord/components.ts';
+import {parseComponentId,type ComponentId,type BusyAction} from '../../discord/components.ts';
 import {routedComponentCustomId} from '../../discord/interaction-routing.ts';
 import {serdeValueEqual} from '../../core/serde-value-equal.ts';
 import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
@@ -10,7 +10,7 @@ import {snapshotInboundInteractionWork,type InboundInteractionWork} from '../dis
 import {snapshotComponentId} from '../discord-dispatch/delivery-identity.ts';
 import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../owned-worker-slot.ts';
-import {serializeBusyChoice} from '../../store/busy-choice.ts';
+import {serializeBusyChoice,type BusyChoice} from '../../store/busy-choice.ts';
 import {captureBusyClaimIdentity,busyClaimBinding,BUSY_CLAIM_REQUEST_BYTES,BUSY_CLAIM_REPLY_BYTES,type BusyClaimIdentity,type BusyClaimOperation} from './busy-claim-snapshot.ts';
 export interface NativeBusyClaim{readonly choiceId:string;readonly readyMarker:string}
 export type NativeBusyClaimResult={readonly kind:'ExecuteAction';readonly claim:NativeBusyClaim}|{readonly kind:'ActionUnconfirmed'|'DeliverConfirmation'|'ExecuteQueue'|'Missing'};
@@ -25,11 +25,12 @@ function signalCheck(signal:AbortSignal|undefined):void{
  * intake/ready acceptance; this owner only reads its ready marker. Non-Queue
  * claims preserve ready -> state -> claim -> ready source ordering. One-use
  * handles settle only the original claim, through the owned completion FIFO.
- * Unknown mutations block every fresh claim, even after TTL; explicit same-
+ * Resolution is one-use and shares this owner's mutation barrier.
+ * Unknown mutations block every fresh claim and resolution, even after TTL; explicit same-
  * original recovery reads only durable ready. Native exit is always joined.
  * This barrier is runtime-local, not restart/crash reconciliation. */
 export class NativeBusyClaimOwner{
- readonly #path:string;readonly #claims=new WeakMap<object,{identity:BusyClaimIdentity;used:boolean}>();
+ readonly #path:string;readonly #claims=new WeakMap<object,{identity:BusyClaimIdentity;used:boolean;resolution:'Unused'|'Pending'|'Confirmed'|'Unknown'}>();
  readonly #timeout:number;readonly #tasks=new Set<Promise<unknown>>();readonly #controllers=new Set<AbortController>();#closed=false;#unresolved:NativeBusyClaimUnknownError|undefined;
  constructor(path:string,timeoutMs=5000){requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new TypeError('Invalid Busy claim path');this.#path=pinNativeRuntimePath(path);if(Buffer.byteLength(this.#path)>32768)throw new RangeError('Busy claim path exceeds native budget');if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Busy claim deadline');this.#timeout=timeoutMs;Object.freeze(this);}
  get busy():boolean{return this.#tasks.size>0;}
@@ -43,7 +44,7 @@ export class NativeBusyClaimOwner{
   signalCheck(signal);const identity=this.#capture(work,input);
   if(this.#unresolved!==undefined&&!this.#sameOriginal(this.#unresolved.identity,identity))throw this.#unresolved;
   const operation=this.#unresolved!==undefined?'RecoverReady':identity.action==='Queue'?'ReadReady':'Claim',value=await this.#run(operation,identity,now,signal);
-  if(value==='ExecuteAction'&&operation==='Claim'){const claim=Object.freeze({choiceId:identity.choiceId,readyMarker:identity.readyMarker});this.#claims.set(claim,{identity,used:false});return Object.freeze({kind:'ExecuteAction',claim});}
+  if(value==='ExecuteAction'&&operation==='Claim'){const claim=Object.freeze({choiceId:identity.choiceId,readyMarker:identity.readyMarker});this.#claims.set(claim,{identity,used:false,resolution:'Unused'});return Object.freeze({kind:'ExecuteAction',claim});}
   if(value==='ActionUnconfirmed'&&operation==='ReadReady')return Object.freeze({kind:'ExecuteQueue'});
   if(value==='Missing'&&operation==='Claim')return Object.freeze({kind:'Missing'});
   if(value==='DeliverConfirmation'||value==='ActionUnconfirmed')return Object.freeze({kind:value});
@@ -57,10 +58,25 @@ export class NativeBusyClaimOwner{
   if(value==='DeliverConfirmation'||value==='ActionUnconfirmed')return value==='DeliverConfirmation';
   throw this.#unknown('ReadReady',identity,new TypeError('Invalid Busy ready state'));
  }
+ /** Only the original private claim may resolve, once, while its caller owns
+  * the target lease. A confirmed result still permits Ready/Release; an unknown
+  * mutation permits neither completion nor another resolution. */
+ resolve(claim:NativeBusyClaim,choice:BusyChoice,action:BusyAction,signal?:AbortSignal):Promise<string|null>{
+  signalCheck(signal);const held=this.#claims.get(claim);
+  if(held===undefined||held.used||held.resolution!=='Unused')throw new TypeError('Expected unresolved original native Busy claim');
+  if(held.identity.choiceJson!==serializeBusyChoice(choice)||held.identity.action!==action||(action!=='Stop'&&action!=='Steer'))throw new TypeError('Crossed original Busy resolution authority');
+  if(this.#unresolved!==undefined)throw this.#unresolved;
+  held.resolution='Pending';let task:Promise<unknown>;
+  try{task=this.#run('Resolve',held.identity,0,signal);}catch(error){held.resolution='Unused';throw error;}
+  return task.then(value=>{
+   if(value!==null){try{requireDiscordText(value);}catch(error){throw this.#unknown('Resolve',held.identity,error);}}
+   held.resolution='Confirmed';return value as string|null;
+  }).catch(error=>{held.resolution=error instanceof NativeBusyClaimUnknownError?'Unknown':'Unused';throw error;});
+ }
  ready(claim:NativeBusyClaim,now:number):Promise<void>{return this.#finish('Ready',claim,now);}
  release(claim:NativeBusyClaim):Promise<void>{return this.#finish('Release',claim,0);}
  #finish(operation:'Ready'|'Release',claim:NativeBusyClaim,now:number):Promise<void>{
-  const held=this.#claims.get(claim);if(held===undefined||held.used)throw new TypeError('Expected unused original native Busy claim');
+  const held=this.#claims.get(claim);if(held===undefined||held.used||held.resolution==='Pending'||held.resolution==='Unknown')throw new TypeError('Expected unused confirmed native Busy claim');
   held.used=true;
   try{return this.#run(operation,held.identity,now).then(value=>{if(typeof value!=='boolean')throw this.#unknown(operation,held.identity,new TypeError('Invalid Busy claim completion'));});}
   catch(error){held.used=false;throw error;} // Proven synchronous refusal submitted no completion.
@@ -69,7 +85,7 @@ export class NativeBusyClaimOwner{
   const error=new NativeBusyClaimUnknownError(operation,identity,cause);if(operation!=='RecoverReady'&&operation!=='ReadReady')this.#unresolved??=error;return error;
  }
  #run(operation:BusyClaimOperation,identity:BusyClaimIdentity,now:number,signal?:AbortSignal):Promise<unknown>{
-  signalCheck(signal);if(this.#closed)throw new Error('Busy claim owner closed');if((operation==='Claim'||operation==='RecoverReady'||operation==='ReadReady')&&this.#tasks.size>0)throw new OwnedWorkerBusyError();if(process.platform==='win32')throw new Error('Windows Busy claim owner unqualified');
+  signalCheck(signal);if(this.#closed)throw new Error('Busy claim owner closed');if((operation==='Claim'||operation==='RecoverReady'||operation==='ReadReady'||operation==='Resolve')&&this.#tasks.size>0)throw new OwnedWorkerBusyError();if(process.platform==='win32')throw new Error('Windows Busy claim owner unqualified');
   const binding=busyClaimBinding(randomUUID(),this.#path,operation,identity,now);if(boundedSerdeByteCount(binding,BUSY_CLAIM_REQUEST_BYTES)===null)throw new RangeError('Busy claim exceeds native budget');
   const slot=new OwnedWorkerSlot('Control'),controller=new AbortController(),abort=()=>controller.abort(signal!.reason);signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();this.#controllers.add(controller);
   const task=(async()=>{let admitted=false;try{

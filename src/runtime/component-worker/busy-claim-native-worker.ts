@@ -1,6 +1,8 @@
 import {parentPort,workerData as q} from 'node:worker_threads';
 import {claimComponentExisting,isComponentClaimLiveExisting} from '../../store/component-claims.ts';
 import {readBusyChoiceStateExisting,claimBusyChoiceExisting,releaseBusyChoiceClaimExisting} from '../../store/busy-choice-store.ts';
+import {resolveBusyControlExisting} from '../../store/control-binding.ts';
+import {parseBusyChoice} from '../../store/busy-choice.ts';
 import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {captureBusyClaimIdentity,busyClaimBinding,BUSY_CLAIM_REQUEST_BYTES,BUSY_CLAIM_REPLY_BYTES} from './busy-claim-snapshot.ts';
 const port=parentPort;if(port===null)throw new Error('Busy claim requires owned native worker');
@@ -11,7 +13,7 @@ try{
  if(Object.keys(q).length!==Object.keys(binding).length)throw new TypeError('Invalid Busy claim request');
  for(const [key,value]of Object.entries(binding))if(!Object.is(q[key],value))throw new TypeError('Crossed Busy claim request');
  const ready=()=>isComponentClaimLiveExisting(q.path,identity.readyMarker,q.now)?'DeliverConfirmation':'ActionUnconfirmed';
- let value:boolean|string;
+ let value:boolean|string|null;
  switch(q.operation){
   case 'Claim':{
    // Separate source operations: no new encompassing transaction, row snapshot
@@ -23,6 +25,7 @@ try{
    value=claimBusyChoiceExisting(q.path,identity.choiceId,q.now)?'ExecuteAction':ready();break;
   }
   case 'ReadReady':case 'RecoverReady':value=ready();break;
+  case 'Resolve':value=resolveBusyControlExisting(q.path,identity.choiceId,parseBusyChoice(identity.choiceJson).targetThreadId!);break;
   case 'Ready':value=claimComponentExisting(q.path,identity.readyMarker,q.now,1800);break;
   case 'Release':value=releaseBusyChoiceClaimExisting(q.path,identity.choiceId);break;
   default:throw new TypeError('Unknown Busy claim operation');

@@ -11,6 +11,7 @@ import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
 import {NativeSteerOriginWriter, NativeSteerOriginUnknownError} from '../action-executor/steer-origin-native.ts';
 import {captureSteerOriginAdmission, type SteerOriginAdmission} from '../action-executor/steer-origin-snapshot.ts';
 import {gatewayOwnField} from '../../discord/gateway/values.ts';
+import {NativeBusyClaimOwner, NativeBusyClaimUnknownError, type NativeBusyClaim} from './busy-claim-native.ts';
 import {BusyComponentError} from './busy-errors.ts';
 import {passiveErrorText} from '../../core/passive-error-text.ts';
 import {readCustodyTimestamp} from '../discord-dispatch/staged-custody.ts';
@@ -27,9 +28,9 @@ export function captureNativeBusySteerServices(input: NativeBusySteerServices, d
 type BusySteerAdmission = SteerOriginAdmission & {readonly channelId: bigint};
 async function beforeDispatch<T>(operation: () => Promise<T> | T): Promise<T> {
   try {return await operation();} catch (error) {
-    // A submitted origin may have committed even though no control was sent.
+    // A submitted origin or resolution may have committed without a control.
     // Never release the claim or record a retry-enabling preflight receipt.
-    if (error instanceof NativeSteerOriginUnknownError) throw error;
+    if (error instanceof NativeSteerOriginUnknownError || error instanceof NativeBusyClaimUnknownError) throw error;
     throw new BusyComponentError('ControlNotDispatched', passiveErrorText(error, 'control preflight failed'));
   }
 }
@@ -38,14 +39,14 @@ async function beforeDispatch<T>(operation: () => Promise<T> | T): Promise<T> {
  * resumed. Shared ControlTurnVerifier locks serialize exact target controls.
  * Installed Steer shares the ordinary writer's unresolved-origin barrier. */
 export async function executeBusyAction(input: BusyChoice, action: BusyAction, server: PortableResidentLifecycle, database: string,
-  verifier: ControlTurnVerifier, now: () => number = systemNow, nativeSteer?: NativeBusySteerServices, ingress?: BusySteerAdmission): Promise<void> {
+  verifier: ControlTurnVerifier, now: () => number = systemNow, nativeSteer?: NativeBusySteerServices, ingress?: BusySteerAdmission, nativeClaim?: {readonly owner: NativeBusyClaimOwner; readonly claim: NativeBusyClaim}): Promise<void> {
   const choice = snapshotBusyChoice(input);
   if (action === 'Ignore') return;
   if (action !== 'Steer' && action !== 'Stop') throw new TypeError('Queue acceptance belongs to the atomic enqueue branch');
   if (action === 'Steer' && isProCommand(choice.prompt)) throw new BusyComponentError('ControlNotDispatched', 'Pro requests cannot be steered; choose Queue next to run Pro connection checks');
   const thread = choice.targetThreadId; if (thread === null) throw new BusyComponentError('NoTarget');
   // All native dependencies and original actor identity are captured before lock
-  // acquisition. Compatibility and Stop retain their original control path.
+  // acquisition. Compatibility and Stop retain their original dispatch path.
   const native = action === 'Steer' && nativeSteer !== undefined ? captureNativeBusySteerServices(nativeSteer, database) : undefined;
   const original = native === undefined ? undefined : (() => {
     if (ingress === undefined || gatewayOwnField(ingress, 'channelId') !== choice.channelId) throw new TypeError('Original busy Steer click identity is required');
@@ -54,10 +55,13 @@ export async function executeBusyAction(input: BusyChoice, action: BusyAction, s
     if (admission.ownerUserId !== choice.ownerUserId) throw new TypeError('Original busy Steer actor changed');
     return admission;
   })();
+  const resolution = nativeClaim === undefined ? undefined : Object.freeze({owner: gatewayOwnField(nativeClaim, 'owner') as NativeBusyClaimOwner, claim: gatewayOwnField(nativeClaim, 'claim') as NativeBusyClaim});
+  if (resolution !== undefined) NativeBusyClaimOwner.prototype.requireDatabase.call(resolution.owner, database);
   if (native !== undefined) NativeSteerOriginWriter.prototype.assertReady.call(native.writer);
   const lease = await beforeDispatch(() => ControlTurnVerifier.prototype.lock.call(verifier, thread));
   try {
-    const expected = await beforeDispatch(() => state.resolveBusyControl(database, choice.choiceId, thread));
+    const expected = await beforeDispatch(() => resolution === undefined ? state.resolveBusyControl(database, choice.choiceId, thread)
+      : NativeBusyClaimOwner.prototype.resolve.call(resolution.owner, resolution.claim, choice, action));
     if (expected === null) throw new BusyComponentError('ControlNotDispatched', 'this choice has no confirmed original turn yet; retry when its preceding task starts, or send a new request');
     const channel = await beforeDispatch(() => {if (choice.channelId < 0n) throw new RangeError('out of range integral type conversion attempted'); return choice.channelId;});
     // Detect the route without consulting Selected for a mapped room. Capture an

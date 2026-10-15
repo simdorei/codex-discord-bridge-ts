@@ -54,7 +54,7 @@ export async function handleBusyComponent(work: Pick<InboundInteractionWork, 'au
     if (current === null) throw new BusyComponentError('Missing');
     if (!await stored(() => state.claimBusyChoice(database, choiceId, at))) return confirmationIfReady(database, marker, at, plan);
   }
-  try {await executeBusyAction(choice, action, server, database, verifier, now, nativeSteer, ingress);}
+  try {await executeBusyAction(choice, action, server, database, verifier, now, nativeSteer, ingress, nativeClaims === undefined ? undefined : {owner:nativeClaims,claim:nativeClaim!});}
   catch (error) {
     const disposition=await stored(async()=>{if(nativeClaims===undefined)return retainOrReleaseBusyClaim(database,choiceId,error);const result=busyActionClaimFailure(error);if(result==='Release')await NativeBusyClaimOwner.prototype.release.call(nativeClaims,nativeClaim!);return result;});
     if (disposition === 'RetainIndeterminate') throw new BusyComponentError('ActionOutcomeIndeterminate', passiveErrorText(error, 'busy control outcome unknown'));

@@ -33,15 +33,37 @@ export function bindBusyControlExisting(path:string,choice:string,thread:string,
  * existing migration trigger pins the first observed turn before goal advances. */
 export function resolveBusyControl(path: string, choice: string, thread: string): Promise<string | null> {
   for (const value of [path, choice, thread]) requireDiscordText(value);
-  return usingInitializedStore(path, db => withStoreTransaction(db, 'IMMEDIATE', () => {
-    const query = db.prepare('SELECT turn_id,job_id,CAST(turn_id AS BLOB) AS raw_turn,CAST(job_id AS BLOB) AS raw_job,(SELECT encoding FROM pragma_encoding) AS encoding FROM codex_busy_control_bindings WHERE choice_id=? AND thread_id=?');
-    query.setReadBigInts(true); const row = query.get(choice, thread); if (row === undefined) return commitStore(null);
-    const decoder = textDecoderFor(row.encoding), turn = decodeTextField(row.turn_id, row.raw_turn, 'turn_id', true, decoder), job = decodeTextField(row.job_id, row.raw_job, 'job_id', true, decoder);
-    if (turn !== null || job === null) return commitStore(turn);
-    const jobs = db.prepare("SELECT turn_id,CAST(turn_id AS BLOB) AS raw_turn,(SELECT encoding FROM pragma_encoding) AS encoding FROM codex_turn_queue WHERE job_id=? AND target_thread_id=? AND state='running' AND goal_waiting=0");
-    jobs.setReadBigInts(true); const running = jobs.get(job, thread);
-    const resolved = running === undefined ? null : decodeTextField(running.turn_id, running.raw_turn, 'turn_id', true, textDecoderFor(running.encoding));
-    if (resolved !== null) db.prepare('UPDATE codex_busy_control_bindings SET turn_id=? WHERE choice_id=? AND turn_id IS NULL').run(resolved, choice);
-    return commitStore(resolved);
+  return usingInitializedStore(path, db => withStoreTransaction(db, 'IMMEDIATE', () => commitStore(resolveBusyControlIn(db, choice, thread, false))));
+}
+/** Existing runtime mutation, never initialization or a read-only observation.
+ * Read back the exact original tuple after pinning before acknowledging commit. */
+export function resolveBusyControlExisting(path: string, choice: string, thread: string): string | null {
+  for (const value of [path, choice, thread]) requireDiscordText(value);
+  return usingExistingStore(path, db => withStoreTransaction(db, 'IMMEDIATE', () => {
+    verifyCurrentCatalogIn(db);
+    return commitStore(resolveBusyControlIn(db, choice, thread, true));
   }));
+}
+function resolveBusyControlIn(db: DatabaseSync, choice: string, thread: string, readback: boolean): string | null {
+  const query = db.prepare('SELECT turn_id,job_id,CAST(turn_id AS BLOB) AS raw_turn,CAST(job_id AS BLOB) AS raw_job,(SELECT encoding FROM pragma_encoding) AS encoding FROM codex_busy_control_bindings WHERE choice_id=? AND thread_id=?');
+  query.setReadBigInts(true);
+  const read = () => {
+    const row = query.get(choice, thread); if (row === undefined) return null;
+    const decoder = textDecoderFor(row.encoding);
+    return {turn: decodeTextField(row.turn_id, row.raw_turn, 'turn_id', true, decoder), job: decodeTextField(row.job_id, row.raw_job, 'job_id', true, decoder)};
+  };
+  const original = read(); if (original === null) return null;
+  const {turn, job} = original;
+  if (turn !== null || job === null) return turn;
+  const jobs = db.prepare("SELECT turn_id,CAST(turn_id AS BLOB) AS raw_turn,(SELECT encoding FROM pragma_encoding) AS encoding FROM codex_turn_queue WHERE job_id=? AND target_thread_id=? AND state='running' AND goal_waiting=0");
+  jobs.setReadBigInts(true); const running = jobs.get(job, thread);
+  const resolved = running === undefined ? null : decodeTextField(running.turn_id, running.raw_turn, 'turn_id', true, textDecoderFor(running.encoding));
+  if (resolved !== null) {
+    db.prepare('UPDATE codex_busy_control_bindings SET turn_id=? WHERE choice_id=? AND turn_id IS NULL').run(resolved, choice);
+    if (readback) {
+      const saved = read();
+      if (saved === null || saved.turn !== resolved || saved.job !== job) throw new TypeError('Original busy control resolution was not preserved');
+    }
+  }
+  return resolved;
 }

@@ -4,7 +4,7 @@ import {parseComponentId,type BusyAction} from '../../discord/components.ts';
 import {parseBusyChoice,serializeBusyChoice} from '../../store/busy-choice.ts';
 import {busyReadyMarker} from './confirmation.ts';
 export const BUSY_CLAIM_REQUEST_BYTES=524288,BUSY_CLAIM_REPLY_BYTES=524288;
-export type BusyClaimOperation='Claim'|'ReadReady'|'RecoverReady'|'Ready'|'Release';
+export type BusyClaimOperation='Claim'|'ReadReady'|'RecoverReady'|'Ready'|'Release'|'Resolve';
 export interface BusyClaimIdentity{
  readonly interactionIngressId:string;readonly interactionId:bigint;readonly applicationId:bigint;
  readonly actorId:bigint;readonly channelId:bigint;readonly sourceMessageId:bigint|null;readonly customId:string;
@@ -24,8 +24,9 @@ export function captureBusyClaimIdentity(input:unknown):BusyClaimIdentity{
 }
 export function busyClaimBinding(id:string,path:string,operation:BusyClaimOperation,identity:BusyClaimIdentity,now:number){
  if(typeof id!=='string'||!/^[0-9a-f-]{36}$/.test(id))throw new TypeError('Expected native Busy operation ID');requireDiscordText(path);
- if(path.includes('\0')||Buffer.byteLength(path)>32768||!['Claim','ReadReady','RecoverReady','Ready','Release'].includes(operation))throw new TypeError('Invalid native Busy claim operation');
+ if(path.includes('\0')||Buffer.byteLength(path)>32768||!['Claim','ReadReady','RecoverReady','Ready','Release','Resolve'].includes(operation))throw new TypeError('Invalid native Busy claim operation');
  if(!Number.isFinite(now)||now<0||!Number.isFinite(now+1800))throw new TypeError('Invalid Busy claim timestamp');
+ if(operation==='Resolve'&&(identity.action!=='Stop'&&identity.action!=='Steer'||parseBusyChoice(identity.choiceJson).targetThreadId===null))throw new TypeError('Resolution requires original Stop or Steer target');
  if((operation==='Claim'||operation==='Ready'||operation==='Release')&&identity.action==='Queue')throw new TypeError('Queue owns its atomic admission and ready transaction');
  return Object.freeze({id,path,operation,...identity,now,expiresAt:now+1800});
 }
