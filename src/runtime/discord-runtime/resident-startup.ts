@@ -1,3 +1,4 @@
+import {NativeDeadGenerationOwner} from '../native-dead-generation.ts';
 import {NativeObservationLedgerOwner} from '../native-observation-ledger.ts';
 import type {IdleReleaseToken} from '../../app-server/idle-release-journal.ts';
 import {NativeIdleBeforeOwner} from '../native-idle-before.ts';
@@ -28,6 +29,7 @@ export async function startRuntimeResident(config:PortableSessionConfig,path:str
  const pinned=cloneOwnedSerdeValue(config) as PortableSessionConfig;
  const custody=await initializeRuntimeCustody(path,runtimeId,startupChannel,render);
  signal?.throwIfAborted();
+ const dead=new NativeDeadGenerationOwner(path,runtimeId,startupChannel,render);
  const native=new NativeMutationOwner(path,runtimeId,render),idle=new NativeIdleBeforeOwner(path,render);
  const observation=new NativeObservationLedgerOwner(path),gaps=new NativeObservationLedgerOwner(path);
  const nativeObservation=Object.freeze({verified:(owner:string,generation:bigint,through:bigint)=>observation.verified({ownerId:owner,generation},through),discoverGap:(owner:string,generation:bigint,upper:bigint)=>gaps.discoverGap({ownerId:owner,generation},upper),recordGap:(owner:string,generation:bigint)=>gaps.markUnknownGap({ownerId:owner,generation},'original observation stream gap'),close:async()=>{await Promise.all([observation.close(),gaps.close()]);}});
@@ -44,8 +46,8 @@ export async function startRuntimeResident(config:PortableSessionConfig,path:str
   // Dead-generation fencing has no separate exit side effect in Rust.
   // The installed idle journal owns exact owner/generation exit settlement.
   oldChildExited(){},
- },signal,{fence:custody.fence,renderError:render,nativeDispatch,nativeIdle,nativeObservation});}
- catch(primary){await native.close();await idle.close();await observation.close();await gaps.close();throw primary;}
+ },signal,{fence:custody.fence,renderError:render,nativeDispatch,nativeIdle,nativeObservation},{capture:(id,work,signal)=>dead.capture(id,work,signal),close:()=>dead.close()});}
+ catch(primary){await dead.close();await native.close();await idle.close();await observation.close();await gaps.close();throw primary;}
  try{
   signal?.throwIfAborted();
   installRuntimeIdleJournal(owner,path,render);

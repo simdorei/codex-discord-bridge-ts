@@ -63,6 +63,7 @@ const entries:readonly (readonly [string,'path'|'mirror'|'mirrorDb'|null])[]=[
  ['runtime/message-worker/native-journal-worker.ts','path'],
  ['runtime/interaction-worker/native-journal-worker.ts','path'],
  ['runtime/native-custody-read-worker.ts','path'],
+ ['runtime/native-dead-generation-worker.ts','path'],
  ['runtime/native-idle-before-worker.ts','path'],
  ['runtime/native-mutation-worker.ts','path'],
  ['runtime/native-observation-ledger-worker.ts','path'],

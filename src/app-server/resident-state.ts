@@ -162,6 +162,29 @@ export class ResidentAdmissionState<C extends ResidentClientPort>{
     if(result==="Settled"||result==="AlreadySettled")return true;
     throw new ResidentStateError({kind:"DeadGenerationFence",message:"dead-generation snapshot changed after durable capture"});
   }
+  /** The encompassing owner holds its restart lock across this await. No await is
+   * inside the synchronous state gate; original client and complete evidence stay
+   * retained until durable acknowledgment and native exit have both been joined. */
+  async fenceDeadGenerationBeforeRestartAsync(persist:(work:DeadGenerationWork)=>Promise<void>,signal?:AbortSignal):Promise<boolean>{
+    signal?.throwIfAborted();const snapshot=this.snapshot(),generation=snapshot.generation;if(!snapshot.restartPending)return true;
+    if(snapshot.client===null)throw new AppServerClosedError();if(this.restartCleanupAuthorized(generation))return true;
+    const original=snapshot.client,client=this.#locked(()=>{this.#generationMatches(generation);return this.#deadClient();});
+    const exited:unknown=client.hasOwnedChildExited(),closed:unknown=client.isTransportClosed();
+    if(typeof exited!=="boolean"||typeof closed!=="boolean")throw new TypeError("Expected synchronous native exit/closure observations");
+    if(!exited)return !closed;if(!closed)return false;
+    const sealed:unknown=client.sealIfNoAdmissions();if(typeof sealed!=="boolean")throw new TypeError("Expected synchronous admission sealing");if(!sealed)return false;
+    const work=this.#captureDeadForFence(generation);if(work===null)return true;
+    const raw=client.deadGenerationWork(generation),observed=raw===null?null:cloneDeadGenerationWork(raw);
+    const pending=persist(work);if(!types.isPromise(pending))throw new TypeError("Native dead-generation persistence must return a Promise");
+    if(await pending!==undefined)throw new TypeError("Native dead-generation persistence must resolve void");signal?.throwIfAborted();
+    const unchanged=this.#locked(()=>{
+      if(this.#terminal||!this.#restartPending||this.#accepting||this.#generation!==generation||this.#client!==original)return false;
+      if(client.hasOwnedChildExited()!==true||client.isTransportClosed()!==true||client.sealIfNoAdmissions()!==true)return false;
+      const current=client.deadGenerationWork(generation);return current!==null&&observed!==null&&deadGenerationWorkEqual(cloneDeadGenerationWork(current),observed);
+    });
+    if(unchanged){const result=this.settleDeadGeneration(generation,work);if(result==="Settled"||result==="AlreadySettled")return true;}
+    throw new ResidentStateError({kind:"DeadGenerationFence",message:"dead-generation owner or snapshot changed after durable capture"});
+  }
   prepareClose(){return this.#locked(()=>{this.#accepting=false;this.#terminal=true;this.#pending(false);const current=this.#client,replacement=this.#replacement;current?.sealAdmissions();replacement?.client.sealAdmissions();return Object.freeze({current,replacement});});}
   /** Explicit owner Drop-equivalent only after terminal cleanup has released all clients. */
   closeLifecycleChanges():void{this.#locked(()=>{if(!this.#terminal||this.#client!==null||this.#replacement!==null)throw replacement("lifecycle watch still has owned client cleanup");this.#changes.close();});}

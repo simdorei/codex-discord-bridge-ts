@@ -1,3 +1,4 @@
+import {pinResidentNativeDeadGeneration,type ResidentNativeDeadGeneration} from './resident-native-dead-generation.ts';
 import {OwnedDispatchAttempt} from './owned-dispatch-attempt.ts';
 import type {PendingServerRequest} from "./server-request-state.ts";
 import {performance} from "node:perf_hooks";
@@ -90,17 +91,17 @@ export class PortableResidentLifecycle{
   readonly #targetGate=new IdleTargetGate();
   readonly #managedObservation=new Set<Promise<boolean>>();
   readonly #maintenance:ResidentMaintenanceOptions|null;readonly #managedIdle=new Set<Promise<unknown>>();readonly #managedDispatch=new Set<Promise<unknown>>();readonly #managedPreparation=new Set<Promise<unknown>>();
-  readonly instanceId=randomUUID();readonly #config:PortableSessionConfig;readonly #render:SessionDiagnosticRenderer;readonly #persistence:ResidentPersistence;
+  readonly instanceId=randomUUID();readonly #config:PortableSessionConfig;readonly #render:SessionDiagnosticRenderer;readonly #persistence:ResidentPersistence;readonly #nativeDeadGeneration:ResidentNativeDeadGeneration|null;
   readonly #lock=new TargetLocks();readonly #generation=new GenerationWatch(1n);
   readonly #notifications=new BoundedBroadcast<ResidentNotificationEvent>(1000);readonly #requests=new BoundedBroadcast<ResidentServerRequestEvent>(500);
   readonly #sessions=new Map<PortableResidentClientPort,PortableAppServerSession>();#state!:ResidentAdmissionState<PortableResidentClientPort>;#forwarders:ResidentForwarders|null=null;#disposed=false;
-  private constructor(config:PortableSessionConfig,render:SessionDiagnosticRenderer,persistence:ResidentPersistence,maintenance:ResidentMaintenanceOptions|null){this.#maintenance=maintenance===null?null:pinResidentMaintenanceOptions(maintenance);syncFunction(render);this.#config=cloneOwnedSerdeValue(config) as PortableSessionConfig;this.#render=render;this.#persistence=pinPersistence(persistence);}
-  static async start(config:PortableSessionConfig,render:SessionDiagnosticRenderer,persistence:ResidentPersistence,signal?:AbortSignal,maintenance:ResidentMaintenanceOptions|null=null):Promise<PortableResidentLifecycle>{
-    const owner=new PortableResidentLifecycle(config,render,persistence,maintenance);let staged:ResidentForwarders|undefined,ready:PortableAppServerSession|undefined;
+  private constructor(config:PortableSessionConfig,render:SessionDiagnosticRenderer,persistence:ResidentPersistence,maintenance:ResidentMaintenanceOptions|null,nativeDeadGeneration:ResidentNativeDeadGeneration|null){this.#nativeDeadGeneration=nativeDeadGeneration===null?null:pinResidentNativeDeadGeneration(nativeDeadGeneration);this.#maintenance=maintenance===null?null:pinResidentMaintenanceOptions(maintenance);syncFunction(render);this.#config=cloneOwnedSerdeValue(config) as PortableSessionConfig;this.#render=render;this.#persistence=pinPersistence(persistence);}
+  static async start(config:PortableSessionConfig,render:SessionDiagnosticRenderer,persistence:ResidentPersistence,signal?:AbortSignal,maintenance:ResidentMaintenanceOptions|null=null,nativeDeadGeneration:ResidentNativeDeadGeneration|null=null):Promise<PortableResidentLifecycle>{
+    const owner=new PortableResidentLifecycle(config,render,persistence,maintenance,nativeDeadGeneration);let staged:ResidentForwarders|undefined,ready:PortableAppServerSession|undefined;
     try{
       const started=await PortableAppServerSession.startObserved(owner.#config,session=>{owner.#sessions.set(session.residentClient(),session);staged=owner.#prepare(session,1n);return {value:staged,dispose(){}};},render,signal);
       ready=started.session;signal?.throwIfAborted();owner.#state=new ResidentAdmissionState(started.session.residentClient());owner.#forwarders=started.observer.value;owner.#forwarders.activate();return owner;
-    }catch(primary){const errors=[primary];if(staged)try{await staged.join();}catch(error){errors.push(error);}if(ready)try{await ready.dispose();}catch(error){errors.push(error);}if(ready&&!ready.resourcesClosed)throw new PortableSessionCleanupPendingError(ready,new AggregateError(errors,"Resident initial startup cleanup failed"));throwErrors(errors,"Resident initial startup cleanup failed");throw primary;}
+    }catch(primary){const errors=[primary];try{await owner.#nativeDeadGeneration?.close();}catch(error){errors.push(error);}if(staged)try{await staged.join();}catch(error){errors.push(error);}if(ready)try{await ready.dispose();}catch(error){errors.push(error);}if(ready&&!ready.resourcesClosed)throw new PortableSessionCleanupPendingError(ready,new AggregateError(errors,"Resident initial startup cleanup failed"));throwErrors(errors,"Resident initial startup cleanup failed");throw primary;}
   }
   #prepare(session:PortableAppServerSession,generation:bigint):ResidentForwarders{return new ResidentForwarders(session,generation,this.#notifications,this.#requests,this.#generation.subscribe(),{waitClosed:signal=>session.waitClosed(signal),onClosed:()=>this.#state.markCurrentClosed(session.residentClient(),generation)});}
   #session(port:PortableResidentClientPort):PortableAppServerSession{const session=this.#sessions.get(port);if(!session)throw new ResidentStateError({kind:"ReplacementState",message:"owned native session is missing"});return session;}
@@ -457,7 +458,9 @@ export class PortableResidentLifecycle{
     syncFunction(observe);return this.#lock.run("restart",async()=>{
       signal?.throwIfAborted();if(forced!==null&&this.generation()!==forced)return "Restarted";if(forced!==null)this.#state.requestRestart();if(expected!==null&&!this.#state.restartPendingFor(expected))return "Settled";
       const debt=this.#state.replacementCleanup();if(debt!==null)await this.#cleanupDebt(debt);
-      if(!this.#state.fenceDeadGenerationBeforeRestart(work=>this.#persistence.persistDeadWork(this.instanceId,work)))return "Deferred";
+      const fenced=this.#nativeDeadGeneration===null?this.#state.fenceDeadGenerationBeforeRestart(work=>this.#persistence.persistDeadWork(this.instanceId,work)):
+        await this.#state.fenceDeadGenerationBeforeRestartAsync(work=>this.#nativeDeadGeneration!.capture(this.instanceId,work,signal),signal);
+      if(!fenced)return "Deferred";
       const candidate=this.#state.restartCandidate(expected);if(candidate.kind!=="Sealed")return candidate.kind==="NotPending"?"Settled":"Deferred";
       const next=this.#state.replacementGeneration(),oldPort=candidate.client,old=this.#session(oldPort),oldGeneration=this.generation();
       this.#acceptGapWrites=false;await this.#stopForwarders();await old.dispose();await this.#joinGaps();this.#journalExit(old,oldGeneration);signal?.throwIfAborted();
@@ -495,6 +498,7 @@ export class PortableResidentLifecycle{
       await Promise.allSettled([...this.#managedIdle]);
       await Promise.allSettled([...this.#managedDispatch]);
       let nativeClosed=true;try{await this.#joinGaps();}catch(error){nativeClosed=false;errors.push(error);}
+      try{await this.#nativeDeadGeneration?.close();}catch(error){nativeClosed=false;errors.push(error);}
       try{await this.#maintenance?.nativeDispatch?.close();}catch(error){nativeClosed=false;errors.push(error);}
       try{await this.#maintenance?.nativeIdle?.close();}catch(error){nativeClosed=false;errors.push(error);}
       try{await this.#maintenance?.nativeObservation?.close();}catch(error){nativeClosed=false;errors.push(error);}
