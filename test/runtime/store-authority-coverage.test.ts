@@ -20,14 +20,14 @@ function audit(root:string,extension:'.ts'|'.js'){
  assert.deepEqual(native,['runtime/owned-worker-slot'+extension]);assert.deepEqual(writerFactories,['store/authority-connection'+extension]);assert.deepEqual(sideChannel,['runtime/store-worker-authority'+extension]);assert.deepEqual(lifetimeBypasses,[]);
  assert.deepEqual(backups.sort(),['runtime/archive-delete/backup-core','runtime/archive-delete/preparation-worker','store/cutover-backup-worker','store/owned-driver'].map(x=>x+extension).sort());
  const manifest=storeWorkerManifest(),mapped=manifest.map(x=>new URL(relative(fileURLToPath(new URL('../../src/',import.meta.url)),fileURLToPath(x.url)).replace(/\.(?:ts|js)$/,extension),pathToFileURL(root+'/')).href);
- assert.equal(urls.size,76);assert.deepEqual([...urls].sort(),mapped.sort());assert.equal(manifest.filter(x=>x.field!==null).length,43);
+ assert.equal(urls.size,77);assert.deepEqual([...urls].sort(),mapped.sort());assert.equal(manifest.filter(x=>x.field!==null).length,44);
  const actualWriters=manifest.filter(x=>x.field!==null).map(x=>[relative(fileURLToPath(new URL('../../src/',import.meta.url)),fileURLToPath(x.url)).replace(/\.js$/,'.ts'),x.field]);
  assert.deepEqual(actualWriters,expectedWriters);
  auditStoreAuthoritySyntax(root,all);
  for(const item of manifest)assert.notEqual(storeWorkerClassification(new URL(item.url)),undefined);
 }
 
-test('source and emitted graphs have a closed 76-module inventory and no writable/worker/lifecycle bypass',()=>{
+test('source and emitted graphs have a closed 77-module inventory and no writable/worker/lifecycle bypass',()=>{
  const root=repository();audit(join(root,'src'),'.ts');const current=fileURLToPath(new URL('../../src/',import.meta.url));if(import.meta.url.endsWith('.js'))audit(current,'.js');
 });
 
@@ -55,6 +55,7 @@ const expectedWriters=[
  ['runtime/component-worker/async-choice-native-worker.ts','path'],
  ['runtime/component-worker/busy-claim-native-worker.ts','path'],
  ['runtime/component-worker/standard-claim-native-worker.ts','path'],
+ ['runtime/component-worker/recovery-decision-native-worker.ts','path'],
  ['runtime/discord-runtime/ingress-recovery-worker.ts','path'],
  ['runtime/discord-runtime/reserve-retirement-worker.ts','path'],
  ['runtime/discord-runtime/resume-recovery-worker.ts','path'],

@@ -14,7 +14,7 @@ import {NativeCompletionReceiptStore, CompletionReceiptUnconfirmedError} from '.
 import {OwnedWorkerSlot, OwnedWorkerBudgetError, ownedWorkerUsage} from '../../../src/runtime/owned-worker-slot.ts';
 import {standardConfirmationPlan,busyConfirmationPlan,asyncQuestionConfirmationPlan,publicationIntentConfirmationPlan,abandonmentConfirmationPlan,confirmationErrorInfo,type ConfirmationPlan} from '../../../src/runtime/component-worker/confirmation.ts';
 import {deliverConfirmationAndClear} from '../../../src/runtime/component-worker/confirmation-delivery.ts';
-const plans=()=>[standardConfirmationPlan({Approval:{thread_id:'t',answer:'Approve'}},'original 😀'),busyConfirmationPlan('original 😀'),asyncQuestionConfirmationPlan('original 😀')];
+const plans=()=>[standardConfirmationPlan({Approval:{thread_id:'t',answer:'Approve'}},'original 😀'),busyConfirmationPlan('original 😀'),asyncQuestionConfirmationPlan('original 😀'),publicationIntentConfirmationPlan('a'.repeat(32),1n,'KeepHeld'),abandonmentConfirmationPlan('a'.repeat(32),1n,'KeepHeld')];
 const key=(plan:ConfirmationPlan,channel=1n,index=0n)=>serializeSerdeValue([channel,plan.domain,plan.logicalKey,index]);
 function read(path:string,k?:string){const db=new DatabaseSync(path,{readOnly:true});try{return db.prepare('SELECT * FROM codex_delivery_receipts'+(k===undefined?'':' WHERE receipt_key=?')).get(...(k===undefined?[]:[k]));}finally{db.close();}}
 async function initialize(path:string){const db=await openInitialized(path);db.close();}
@@ -29,7 +29,7 @@ async function http(run:(client:DiscordChannelClient,seen:Request[])=>Promise<vo
 for(const plan of plans())test(`${plan.domain}: native profile accepts only original null-guard index-zero identity and refuses missing store`,async()=>storeFixture(async path=>{
  const hash=receiptHash(plan.content),guard={jobId:'j',threadId:'t',turnId:'v'};
  for(const [k,g] of [[key(plan),guard],[key(plan,1n,1n),null],[key(plan,0n),null],[key(plan,1n<<63n),null]] as const)assert.throws(()=>new NativeCompletionReceiptStore(path,k,hash,g),TypeError);
- for(const domain of ['component/confirmation/v2','component/busy-confirmation/v1/','arbitrary','async-question-confirmation-v1/','recovery-publication-intent-confirmation-v1','recovery-abandonment-confirmation-v1'])assert.throws(()=>new NativeCompletionReceiptStore(path,serializeSerdeValue([1n,domain,'original',0n]),hash,null),TypeError);
+ for(const domain of ['component/confirmation/v2','component/busy-confirmation/v1/','arbitrary','async-question-confirmation-v1/','recovery-publication-intent-confirmation-v1/','recovery-abandonment-confirmation-v1/','recovery-publication-review-v1','recovery-abandonment-review-v1'])assert.throws(()=>new NativeCompletionReceiptStore(path,serializeSerdeValue([1n,domain,'original',0n]),hash,null),TypeError);
  const store=new NativeCompletionReceiptStore(path,key(plan),hash,null);try{await assert.rejects(store.begin(key(plan),hash,guard),TypeError);await assert.rejects(store.begin(key(plan),hash,null),CompletionReceiptUnconfirmedError);assert.equal(existsSync(path),false);new DatabaseSync(path).close();await assert.rejects(store.begin(key(plan),hash,null),CompletionReceiptUnconfirmedError);const empty=new DatabaseSync(path);try{assert.deepEqual(empty.prepare('SELECT name FROM sqlite_master').all(),[]);}finally{empty.close();}}finally{await store.close();}
 }));
 for(const plan of plans())test(`${plan.domain}: explicit native receipt commits before independent u64 source PATCH and clear retry`,async()=>storeFixture(async path=>{
@@ -47,7 +47,7 @@ test('native plan authority, invalid identities, profile and excluded domains fa
  const plan=busyConfirmationPlan('original');await assert.rejects(deliverConfirmationAndClear(client,path,1n,null,{...plan},undefined,true),TypeError);
  for(const id of [0n,-1n,1n<<64n])await assert.rejects(deliverConfirmationAndClear(client,path,1n,id,plan,undefined,true),TypeError);
  await assert.rejects(deliverConfirmationAndClear(client,path,1n,null,plan,undefined,1 as never),TypeError);
- for(const excluded of [publicationIntentConfirmationPlan('a'.repeat(32),1n,'KeepHeld'),abandonmentConfirmationPlan('a'.repeat(32),1n,'KeepHeld')])await assert.rejects(deliverConfirmationAndClear(client,path,1n,null,excluded,undefined,true),e=>confirmationErrorInfo(e)?.kind==='Delivery');
+ // Recovery decision domains are covered by the explicit native plan matrix above.
  const c=new AbortController(),reason=Error('cancelled');c.abort(reason);await assert.rejects(deliverConfirmationAndClear(client,path,1n,null,plan,c.signal,true),e=>e===reason);assert.deepEqual(seen,[]);assert.equal(existsSync(path),false);
 })));
 for(const status of [400,503])test(`native ${status} preserves original receipt disposition and nonce without implicit resend`,async t=>storeFixture(async path=>{

@@ -1,4 +1,8 @@
 import {DatabaseSync} from 'node:sqlite';
+import {usingExistingReadOnlyStore} from './owned-scope.ts';
+import {serializeStoredPublicationProposal} from './publication-codec.ts';
+import {serializeSerdeValue} from '../core/serde-json.ts';
+import {recoverySnapshot,requireRecoverySnapshot,type RecoveryDecisionClick} from './recovery-decision-binding.ts';
 import {withStoreTransaction,commitStore} from './owned-scope.ts';
 import {readPublicationProposalIn,invalidPublication} from './publication-proposal.ts';
 import {validPublicationId,type PublicationProposal} from './publication-codec.ts';
@@ -23,4 +27,15 @@ export function deliveredPublicationProposal(path:string,id:string,revision:bigi
   const bound=decodeI64(row.revision,'revision'),message=decodeI64(row.message_id,'message'),sha=receiptText(row,'body_sha256');
   if(stored.proposal.revision!==revision||bound!==revision||message<=0n||sha!==stored.proposal.review_sha256)return invalidPublication('delivered proposal revision or body changed');return commitStore(new DeliveredPublicationProposal(owned,stored.proposal,message));
  });}finally{db.close();}
+}
+
+/** Borrowed canonical display plus complete seal, never a cloned class authority. */
+export function publicationDecisionSnapshotIn(db:DatabaseSync,id:string,revision:bigint) {
+ const stored=readPublicationProposalIn(db,id),row=receiptRow(db,`SELECT revision,message_id,body_sha256,${receiptTextColumns('body_sha256')} FROM cdr_recovery_publication_deliveries WHERE proposal_id=?`,id);
+ if(row===undefined)throw new PublicationRowMissingError();const message=decodeI64(row.message_id,'message_id');
+ if(stored.proposal.revision!==revision||decodeI64(row.revision,'revision')!==revision||message<=0n||receiptText(row,'body_sha256')!==stored.proposal.review_sha256)return invalidPublication('delivered proposal revision or body changed');
+ return recoverySnapshot('Publication',serializeStoredPublicationProposal(stored),serializeSerdeValue({proposal:stored.proposal,message_id:message}));
+}
+export function readPublicationDecisionSnapshotExisting(path:string,click:RecoveryDecisionClick) {
+ return usingExistingReadOnlyStore(path,db=>withStoreTransaction(db,'DEFERRED',()=>{const value=publicationDecisionSnapshotIn(db,click.proposalId,click.revision);requireRecoverySnapshot(click,value);return commitStore(value);}));
 }

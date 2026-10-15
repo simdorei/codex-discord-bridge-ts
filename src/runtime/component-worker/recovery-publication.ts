@@ -1,3 +1,5 @@
+import {NativeRecoveryDecisionOwner} from './recovery-decision-native.ts';
+import {handleNativeRecoveryDecision} from './recovery-decision.ts';
 import {realpath} from 'node:fs/promises';
 import {AdmissionPermit} from '../../admission/drain-gate.ts';
 import type {ComponentId} from '../../discord/components.ts';
@@ -23,17 +25,20 @@ function sqlId(value: bigint): bigint {
  * used by execution. No server, start, replay or publisher API is reachable here.
  * A cloned admission permit pins maintenance custody until all I/O has joined. */
 export async function handleRecoveryPublication(input: InboundInteractionWork, componentInput: ComponentId,
-  database: string, verifier: ControlTurnVerifier, now: () => number = systemNow): Promise<ConfirmationPlan> {
+  database: string, verifier: ControlTurnVerifier, now: () => number = systemNow, native?:NativeRecoveryDecisionOwner): Promise<ConfirmationPlan> {
   requireDiscordText(database);
+  if(native!==undefined)NativeRecoveryDecisionOwner.prototype.requireDatabase.call(native,database);
+  const preflightRefusal=(message:string):never=>{if(native!==undefined)throw new ComponentWorkerError('RecoveryDecisionHeld',message);return invalid(message);};
   const work = snapshotInboundInteractionWork(input), component = snapshotComponentId(componentInput);
   if (!('RecoveryPublicationDecision' in component)) throw new ComponentWorkerError('InvalidComponent');
   if (work.admissionPermit === null || work.processingMode !== 'Execute'
-    || !serdeValueEqual(work.work, {Component: component})) return invalid('publication intent has no matching live admission');
+    || !serdeValueEqual(work.work, {Component: component})) return preflightRefusal('publication intent has no matching live admission');
   let permit: AdmissionPermit;
   try {permit = AdmissionPermit.prototype.clone.call(work.admissionPermit);}
-  catch {return invalid('publication intent has no matching live admission');}
+  catch {return preflightRefusal('publication intent has no matching live admission');}
   try {
-    if (await realpath(database) !== await realpath(work.custodyDatabase)) return invalid('publication intent custody database changed');
+    if (await realpath(database) !== await realpath(work.custodyDatabase)) return preflightRefusal('publication intent custody database changed');
+    if(native!==undefined)return await handleNativeRecoveryDecision(work,component,native,verifier,now);
     const {proposal_id: id, revision} = component.RecoveryPublicationDecision;
     const authorized = () => {
       const bound = state.deliveredPublicationProposal(database, id, revision);

@@ -1,7 +1,8 @@
+import {requireRecoveryDecisionIn,type RecoveryDecisionClick,type RecoveryDecisionSnapshot} from './recovery-decision-binding.ts';
 import type {DatabaseSync} from 'node:sqlite';
-import {usingExistingStore,withStoreTransaction,commitStore} from './owned-scope.ts';
+import {usingExistingStore,usingExistingReadOnlyStore,withStoreTransaction,commitStore} from './owned-scope.ts';
 import {AbandonmentIntegrityError} from './schema-abandonment.ts';
-import {readAbandonmentProposalIn,requireAbandonmentDatabase,verifyAbandonmentFreshIn,latestAbandonmentRevisionIn} from './abandonment-proposal-read.ts';
+import {readAbandonmentProposalIn,requireAbandonmentDatabase,verifyAbandonmentFreshIn,latestAbandonmentRevisionIn,abandonmentDecisionSnapshotIn} from './abandonment-proposal-read.ts';
 import {verifyAbandonmentClickIn} from './abandonment-identity.ts';
 import {captureAbandonmentJobRowIn,captureAbandonmentContextIn} from './abandonment-snapshot.ts';
 import {serializeStoredAbandonmentProposal,type StoredAbandonmentProposal,type AbandonmentDecision,type AbandonmentDecisionReceipt} from './abandonment-codec.ts';
@@ -66,7 +67,12 @@ export function recordAbandonmentDecision(path:string,value:AbandonmentDecisionI
  requireDiscordText(id);requireDiscordText(ingress);
  if(typeof revision!=='bigint'||revision<1n||revision>=1n<<63n||typeof now!=='number'||!Number.isFinite(now)||now<0)return invalid('invalid decision revision or host time');
  if(decision!=='AbandonOnly'&&decision!=='KeepHeld')throw new TypeError('Expected abandonment decision');
- return usingExistingStore(path,db=>withStoreTransaction(db,'IMMEDIATE',()=>{
+ return usingExistingStore(path,db=>recordAbandonmentDecisionIn(db,path,{proposal_id:id,revision,ingress_id:ingress,decision,now}));
+}
+function recordAbandonmentDecisionIn(db:DatabaseSync,path:string,input:AbandonmentDecisionInput,original?:{click:RecoveryDecisionClick;snapshot:RecoveryDecisionSnapshot}):AbandonmentDecisionReceipt {
+ const {proposal_id:id,revision,ingress_id:ingress,decision,now}=input;
+ return withStoreTransaction(db,'IMMEDIATE',()=>{
+  if(original!==undefined)requireRecoveryDecisionIn(db,original.click,original.snapshot,abandonmentDecisionSnapshotIn(db,id,revision));
   const stored=readAbandonmentProposalIn(db,id);requireAbandonmentDatabase(path,stored);const p=stored.proposal;
   if(p.revision!==revision)return invalid('decision revision differs');
   const existing=readAbandonmentDecisionIn(db,stored);
@@ -81,6 +87,22 @@ export function recordAbandonmentDecision(path:string,value:AbandonmentDecisionI
    ||!serdeValueEqual(readAbandonmentDecisionIn(db,retained),receipt)||verifyAbandonmentClickIn(db,retained,ingress,decision,true)!==event)
    return invalid('decision or original evidence was lost or altered');
   if(latestAbandonmentRevisionIn(db,p.job_id)!==p.revision)return invalid('proposal was superseded during disposition');
+  if(original!==undefined)requireRecoveryDecisionIn(db,original.click,original.snapshot,abandonmentDecisionSnapshotIn(db,id,revision));
+  return commitStore(receipt);
+ });
+}
+
+export function recordAbandonmentDecisionExisting(path:string,click:RecoveryDecisionClick,snapshot:RecoveryDecisionSnapshot,now:number):AbandonmentDecisionReceipt {
+ if(click.flow!=='Abandonment'||click.decision==='ApproveExact'||typeof now!=='number'||!Number.isFinite(now)||now<0)throw new TypeError('Expected abandonment click and host time');
+ return usingExistingStore(path,db=>recordAbandonmentDecisionIn(db,path,{proposal_id:click.proposalId,revision:click.revision,ingress_id:click.interactionIngressId,decision:click.decision as 'AbandonOnly'|'KeepHeld',now},{click,snapshot}));
+}
+/** Read-only recovery verifies original consumed identity, exact tombstone, and no executable queue row. */
+export function recoverAbandonmentDecisionExisting(path:string,click:RecoveryDecisionClick,snapshot:RecoveryDecisionSnapshot):AbandonmentDecisionReceipt|null {
+ if(click.flow!=='Abandonment'||click.decision==='ApproveExact')throw new TypeError('Expected abandonment click');
+ return usingExistingReadOnlyStore(path,db=>withStoreTransaction(db,'DEFERRED',()=>{
+  requireRecoveryDecisionIn(db,click,snapshot,abandonmentDecisionSnapshotIn(db,click.proposalId,click.revision));
+  const stored=readAbandonmentProposalIn(db,click.proposalId);requireAbandonmentDatabase(path,stored);const receipt=readAbandonmentDecisionIn(db,stored);
+  if(receipt!==null&&(receipt.ingress_id!==click.interactionIngressId||receipt.interaction_id!==click.interactionId||receipt.decision!==click.decision||verifyAbandonmentClickIn(db,stored,click.interactionIngressId,click.decision,false)!==click.interactionId))return invalid('receipt belongs to another original interaction');
   return commitStore(receipt);
  }));
 }

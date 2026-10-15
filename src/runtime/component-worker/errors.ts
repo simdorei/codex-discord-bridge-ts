@@ -1,7 +1,7 @@
 import {passiveErrorText} from '../../core/passive-error-text.ts';
 import {confirmationErrorInfo} from './confirmation.ts';
 import {busyComponentErrorInfo} from './busy-errors.ts';
-export type ComponentWorkerErrorKind = 'Abandonment' | 'AbandonmentNotice' | 'PublicationConsent' | 'AsyncQuestion' | 'MissingSourceMessage' | 'NoPendingRequest'
+export type ComponentWorkerErrorKind = 'RecoveryDecisionHeld' | 'RecoveryDecisionUnconfirmed' | 'Abandonment' | 'AbandonmentNotice' | 'PublicationConsent' | 'AsyncQuestion' | 'MissingSourceMessage' | 'NoPendingRequest'
   | 'AmbiguousPendingRequest' | 'LegacyComponentExpired' | 'BusyChoice' | 'InvalidComponent' | 'Authority' | 'AlreadyHandled' | 'ActionUnconfirmed'
   | 'ActionOutcomeIndeterminate' | 'AppServer' | 'Store' | 'Discord' | 'ConfirmationPlan' | 'Confirmation' | 'Clear' | 'Busy';
 const fixed = new Map<ComponentWorkerErrorKind, string>([
@@ -12,6 +12,8 @@ const fixed = new Map<ComponentWorkerErrorKind, string>([
   ['ActionUnconfirmed', 'this component action is claimed, but no durable success marker exists; it may still be in flight or its result is indeterminate'],
 ]);
 const prefix = new Map<ComponentWorkerErrorKind, string>([
+  ['RecoveryDecisionHeld', 'recovery decision held: '],
+  ['RecoveryDecisionUnconfirmed', 'recovery decision result remains unconfirmed; no fresh decision or request replay: '],
   ['Abandonment', 'saved-request disposition held: '], ['AbandonmentNotice', 'saved-request decision is recorded; notification incomplete, without request replay: '],
   ['PublicationConsent', 'publication consent was not recorded: '], ['ActionOutcomeIndeterminate', 'component action acceptance is indeterminate; claim retained to prevent duplicate execution: '],
   ['Clear', 'could not clear handled Discord buttons: '],

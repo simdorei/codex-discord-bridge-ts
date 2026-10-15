@@ -1,3 +1,5 @@
+import {NativeRecoveryDecisionOwner} from './recovery-decision-native.ts';
+import {handleNativeRecoveryDecision} from './recovery-decision.ts';
 import {realpath} from 'node:fs/promises';
 import {AdmissionPermit} from '../../admission/drain-gate.ts';
 import type {ComponentId} from '../../discord/components.ts';
@@ -20,14 +22,15 @@ function sqlId(value:bigint):bigint {
  * reachable. The same shared target lock and a cloned admission permit span all
  * awaits and the synchronous atomic store decision. */
 export async function handleRecoveryAbandonment(input:InboundInteractionWork,componentInput:ComponentId,database:string,
- verifier:ControlTurnVerifier,now:()=>number=systemNow):Promise<ConfirmationPlan> {
- requireDiscordText(database);const work=snapshotInboundInteractionWork(input),component=snapshotComponentId(componentInput);
+ verifier:ControlTurnVerifier,now:()=>number=systemNow,native?:NativeRecoveryDecisionOwner):Promise<ConfirmationPlan> {
+ requireDiscordText(database);if(native!==undefined)NativeRecoveryDecisionOwner.prototype.requireDatabase.call(native,database);const work=snapshotInboundInteractionWork(input),component=snapshotComponentId(componentInput);
  if(!('RecoveryAbandonDecision' in component))throw new ComponentWorkerError('InvalidComponent');
  if(work.admissionPermit===null||work.processingMode!=='Execute'||!serdeValueEqual(work.work,{Component:component})
   ||work.custodyIngressId!==`interaction:${work.interactionId}`)return invalid('no matching live normal admission');
  let permit:AdmissionPermit;try{permit=AdmissionPermit.prototype.clone.call(work.admissionPermit);}catch{return invalid('no matching live normal admission');}
  try{
   if(await realpath(database)!==await realpath(work.custodyDatabase))return invalid('custody database changed');
+  if(native!==undefined)return await handleNativeRecoveryDecision(work,component,native,verifier,now);
   const {proposal_id:id,revision,decision}=component.RecoveryAbandonDecision;
   const authorize=()=>{
    if(work.sourceMessageId===null)throw new ComponentWorkerError('MissingSourceMessage');

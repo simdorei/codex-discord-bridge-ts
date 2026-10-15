@@ -1,3 +1,6 @@
+import {recoverySnapshot} from './recovery-decision-binding.ts';
+import {serializeStoredAbandonmentProposal} from './abandonment-codec.ts';
+import {serializeSerdeValue} from '../core/serde-json.ts';
 import type {DatabaseSync} from 'node:sqlite';
 import {checkAbandonmentCompatibility,AbandonmentIntegrityError} from './schema-abandonment.ts';
 import {receiptRow,receiptText,receiptTextColumns} from './delivery-receipt-key.ts';
@@ -60,4 +63,10 @@ export function requireAbandonmentActor(delivered:DeliveredAbandonmentProposal,a
  if([application,channel,actor,message].some(v=>typeof v!=='bigint'||v<=0n||v>=1n<<63n)
   ||application!==p.application_id||channel!==p.channel_id||actor!==p.owner_user_id||message!==delivered.message_id)
   invalid('authenticated delivery identity differs');
+}
+
+/** Canonical complete private seal and exact displayed proposal, read in one snapshot. */
+export function abandonmentDecisionSnapshotIn(db:DatabaseSync,id:string,revision:bigint) {
+ const stored=readAbandonmentProposalIn(db,id),delivered=readDeliveredAbandonmentIn(db,id,revision);
+ return recoverySnapshot('Abandonment',serializeStoredAbandonmentProposal(stored),serializeSerdeValue(delivered));
 }

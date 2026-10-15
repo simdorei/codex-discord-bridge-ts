@@ -1,7 +1,8 @@
+import {requireRecoverySnapshot,type RecoveryDecisionClick} from './recovery-decision-binding.ts';
 import type {DatabaseSync} from 'node:sqlite';
 import {usingExistingReadOnlyStore,withStoreTransaction,commitStore} from './owned-scope.ts';
 import {checkAbandonmentCompatibility,AbandonmentIntegrityError} from './schema-abandonment.ts';
-import {readAbandonmentProposalIn,readDeliveredAbandonmentIn,requireAbandonmentActor,requireAbandonmentDatabase,verifyAbandonmentFreshIn,type DeliveredAbandonmentProposal} from './abandonment-proposal-read.ts';
+import {readAbandonmentProposalIn,readDeliveredAbandonmentIn,requireAbandonmentActor,requireAbandonmentDatabase,verifyAbandonmentFreshIn,type DeliveredAbandonmentProposal,abandonmentDecisionSnapshotIn} from './abandonment-proposal-read.ts';
 import {readAbandonmentDecisionIn} from './abandonment-decision.ts';
 import {verifyAbandonmentClickIn,AbandonmentRowMissingError} from './abandonment-identity.ts';
 import {asyncResolutionHeldIn} from './async-resolution-admission.ts';
@@ -38,7 +39,10 @@ export function authorizeAbandonmentDecision(path:string,value:AbandonmentDecisi
  requireDiscordText(id);if(!i64(revision)||!i64(app)||!i64(channel)||!i64(owner)||!i64(message))throw new TypeError('Expected i64 abandonment routing identities');
  if(!i64(event)||event<=0n||typeof now!=='number'||!Number.isFinite(now)||now<0)return invalid('invalid authenticated interaction identity');
  if(decision!=='AbandonOnly'&&decision!=='KeepHeld')throw new TypeError('Expected abandonment decision');
- return usingExistingReadOnlyStore(path,db=>withStoreTransaction(db,'DEFERRED',()=>{
+ return usingExistingReadOnlyStore(path,db=>withStoreTransaction(db,'DEFERRED',()=>commitStore(authorizeAbandonmentDecisionIn(db,path,{proposal_id:id,revision,interaction_id:event,application_id:app,channel_id:channel,owner_user_id:owner,source_message_id:message,decision,now}))));
+}
+function authorizeAbandonmentDecisionIn(db:DatabaseSync,path:string,value:AbandonmentDecisionRouteInput):DeliveredAbandonmentProposal {
+ const {proposal_id:id,revision,interaction_id:event,application_id:app,channel_id:channel,owner_user_id:owner,source_message_id:message,decision,now}=value;
   const stored=readAbandonmentProposalIn(db,id);requireAbandonmentDatabase(path,stored);const delivered=readDeliveredAbandonmentIn(db,id,revision);
   requireAbandonmentActor(delivered,app,channel,owner,message);requireMapping(db,delivered.proposal.thread_id,channel);
   const receipt=readAbandonmentDecisionIn(db,stored);
@@ -46,8 +50,7 @@ export function authorizeAbandonmentDecision(path:string,value:AbandonmentDecisi
    if(receipt.ingress_id!==ingress||receipt.interaction_id!==event||receipt.decision!==decision||verifyAbandonmentClickIn(db,stored,ingress,decision,false)!==event)
     return invalid('decision was already consumed by another interaction');
   }else verifyAbandonmentFreshIn(db,path,stored,now);
-  return commitStore(delivered);
- }));
+  return delivered;
 }
 /** Historical read-only identity. Does not assert freshness or grant consent. */
 export function deliveredAbandonmentProposal(path:string,id:string,revision:bigint):DeliveredAbandonmentProposal {
@@ -62,5 +65,14 @@ export function abandonmentDecisionStatus(path:string,id:string,revision:bigint)
   const stored=readAbandonmentProposalIn(db,id);requireAbandonmentDatabase(path,stored);
   if(revision<1n||stored.proposal.revision!==revision)return invalid('status revision differs');
   return commitStore(readAbandonmentDecisionIn(db,stored));
+ }));
+}
+
+export function readAbandonmentDecisionSnapshotExisting(path:string,click:RecoveryDecisionClick,now:number) {
+ if(click.flow!=='Abandonment'||click.decision==='ApproveExact')throw new TypeError('Expected abandonment click');
+ const decision=click.decision;
+ return usingExistingReadOnlyStore(path,db=>withStoreTransaction(db,'DEFERRED',()=>{
+  authorizeAbandonmentDecisionIn(db,path,{proposal_id:click.proposalId,revision:click.revision,interaction_id:click.interactionId,application_id:click.applicationId,channel_id:click.channelId,owner_user_id:click.actorId,source_message_id:click.sourceMessageId,decision,now});
+  const value=abandonmentDecisionSnapshotIn(db,click.proposalId,click.revision);requireRecoverySnapshot(click,value);return commitStore(value);
  }));
 }

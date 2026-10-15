@@ -1,5 +1,7 @@
+import {publicationDecisionSnapshotIn} from './publication-binding.ts';
+import {requireRecoveryDecisionIn,type RecoveryDecisionClick,type RecoveryDecisionSnapshot} from './recovery-decision-binding.ts';
 import type {DatabaseSync} from 'node:sqlite';
-import {usingInitializedStore,withStoreTransaction,commitStore} from './owned-scope.ts';
+import {usingInitializedStore,usingExistingStore,usingExistingReadOnlyStore,withStoreTransaction,commitStore} from './owned-scope.ts';
 import {readPublicationProposalIn,verifyPublicationFreshIn,invalidPublication} from './publication-proposal.ts';
 import {publicationTimeBits,type PublicationProposal,type StoredPublicationProposal} from './publication-codec.ts';
 import {PublicationRowMissingError} from './publication-snapshot.ts';
@@ -37,10 +39,30 @@ function existingReceipt(db:DatabaseSync,input:PublicationConsentInput,stored:St
  * fresh evidence. This function never starts work or releases an existing hold. */
 export function recordPublicationConsent(path:string,value:PublicationConsentInput):Promise<PublicationDecisionReceipt>{
  requireDiscordText(path);const id=serdeField(value,'proposal_id'),revision=serdeField(value,'revision'),ingress=serdeField(value,'ingress_id'),now=serdeField(value,'now');requireDiscordText(id);requireDiscordText(ingress);if(typeof revision!=='bigint'||revision<-(1n<<63n)||revision>=1n<<63n||typeof now!=='number')throw new TypeError('Expected publication consent i64 revision and f64 clock');const input={proposal_id:id,revision,ingress_id:ingress,now};
- return usingInitializedStore(path,db=>withStoreTransaction(db,'IMMEDIATE',()=>{
+ return usingInitializedStore(path,db=>recordPublicationConsentIn(db,input));
+}
+function recordPublicationConsentIn(db:DatabaseSync,input:PublicationConsentInput,original?:{click:RecoveryDecisionClick;snapshot:RecoveryDecisionSnapshot}):PublicationDecisionReceipt {
+ const {proposal_id:id,revision,ingress_id:ingress,now}=input;
+ return withStoreTransaction(db,'IMMEDIATE',()=>{
+  if(original!==undefined)requireRecoveryDecisionIn(db,original.click,original.snapshot,publicationDecisionSnapshotIn(db,id,revision));
   const stored=readPublicationProposalIn(db,id);if(stored.proposal.revision!==revision)return invalidPublication('component revision differs from stored proposal');const click=clickIn(db,input,stored.proposal),existing=existingReceipt(db,input,stored,click);if(existing!==null)return commitStore(existing);
   verifyPublicationFreshIn(db,stored,now);const bits=publicationTimeBits(now).toString();db.prepare('INSERT INTO cdr_recovery_publication_decisions (proposal_id,revision,ingress_id,interaction_id,decision,recorded_at_bits) VALUES(?,?,?,?,?,?)').run(id,revision,ingress,click.event,click.decision==='ApproveExact'?'approve_exact':'keep_held',bits);
   const receipt=receiptIn(db,id);if(receipt===null)return invalidPublication('decision insert was ignored');const exact=receiptExists(db,'SELECT EXISTS(SELECT 1 FROM cdr_recovery_publication_decisions WHERE proposal_id=? AND revision=? AND recorded_at_bits=?) AS held',id,revision,bits);
-  if(!exact||receipt.original_ingress_id!==ingress||receipt.original_interaction_id!==click.event||receipt.decision!==click.decision)return invalidPublication('decision insert was altered');verifyPublicationFreshIn(db,stored,now);if(!serdeValueEqual(clickIn(db,input,stored.proposal).identity,click.identity))return invalidPublication('interaction changed during decision commit');return commitStore(Object.freeze({...receipt,already_recorded:false}));
+  if(!exact||receipt.original_ingress_id!==ingress||receipt.original_interaction_id!==click.event||receipt.decision!==click.decision)return invalidPublication('decision insert was altered');verifyPublicationFreshIn(db,stored,now);if(!serdeValueEqual(clickIn(db,input,stored.proposal).identity,click.identity))return invalidPublication('interaction changed during decision commit');if(original!==undefined)requireRecoveryDecisionIn(db,original.click,original.snapshot,publicationDecisionSnapshotIn(db,id,revision));return commitStore(Object.freeze({...receipt,already_recorded:false}));
+ });
+}
+
+/** Installed native path: existing-only, with original click and full seal checked inside IMMEDIATE. */
+export function recordPublicationConsentExisting(path:string,click:RecoveryDecisionClick,snapshot:RecoveryDecisionSnapshot,now:number):PublicationDecisionReceipt {
+ if(click.flow!=='Publication'||click.decision==='AbandonOnly')throw new TypeError('Expected publication click');
+ return usingExistingStore(path,db=>recordPublicationConsentIn(db,{proposal_id:click.proposalId,revision:click.revision,ingress_id:click.interactionIngressId,now},{click,snapshot}));
+}
+/** Exact-original receipt recovery only. A missing receipt establishes no replay permission. */
+export function recoverPublicationConsentExisting(path:string,click:RecoveryDecisionClick,snapshot:RecoveryDecisionSnapshot):PublicationDecisionReceipt|null {
+ return usingExistingReadOnlyStore(path,db=>withStoreTransaction(db,'DEFERRED',()=>{
+  requireRecoveryDecisionIn(db,click,snapshot,publicationDecisionSnapshotIn(db,click.proposalId,click.revision));
+  const receipt=receiptIn(db,click.proposalId);if(receipt!==null&&(receipt.original_ingress_id!==click.interactionIngressId||receipt.original_interaction_id!==click.interactionId||receipt.decision!==click.decision))return invalidPublication('receipt belongs to another original interaction');
+  if(receipt!==null)clickIn(db,{proposal_id:click.proposalId,revision:click.revision,ingress_id:click.interactionIngressId,now:0},readPublicationProposalIn(db,click.proposalId).proposal);
+  return commitStore(receipt);
  }));
 }

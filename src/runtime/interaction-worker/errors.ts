@@ -27,5 +27,5 @@ export function interactionErrorDisposition(error: unknown): InteractionErrorDis
   const component = componentWorkerErrorInfo(info.source)!;
   const kind = component.kind === 'Busy' ? busyComponentErrorInfo(component.source)?.kind : component.kind;
   if (kind === 'AlreadyHandled') return 'IgnoreDuplicate';
-  return kind === 'ActionUnconfirmed' || kind === 'ActionOutcomeIndeterminate' || kind === 'Confirmation' ? 'LogOnly' : 'Report';
+  return kind === 'RecoveryDecisionUnconfirmed' || kind === 'ActionUnconfirmed' || kind === 'ActionOutcomeIndeterminate' || kind === 'Confirmation' ? 'LogOnly' : 'Report';
 }
