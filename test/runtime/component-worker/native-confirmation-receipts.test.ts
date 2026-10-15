@@ -14,7 +14,7 @@ import {NativeCompletionReceiptStore, CompletionReceiptUnconfirmedError} from '.
 import {OwnedWorkerSlot, OwnedWorkerBudgetError, ownedWorkerUsage} from '../../../src/runtime/owned-worker-slot.ts';
 import {standardConfirmationPlan,busyConfirmationPlan,asyncQuestionConfirmationPlan,publicationIntentConfirmationPlan,abandonmentConfirmationPlan,confirmationErrorInfo,type ConfirmationPlan} from '../../../src/runtime/component-worker/confirmation.ts';
 import {deliverConfirmationAndClear} from '../../../src/runtime/component-worker/confirmation-delivery.ts';
-const plans=()=>[standardConfirmationPlan({Approval:{thread_id:'t',answer:'Approve'}},'original 😀'),busyConfirmationPlan('original 😀')];
+const plans=()=>[standardConfirmationPlan({Approval:{thread_id:'t',answer:'Approve'}},'original 😀'),busyConfirmationPlan('original 😀'),asyncQuestionConfirmationPlan('original 😀')];
 const key=(plan:ConfirmationPlan,channel=1n,index=0n)=>serializeSerdeValue([channel,plan.domain,plan.logicalKey,index]);
 function read(path:string,k?:string){const db=new DatabaseSync(path,{readOnly:true});try{return db.prepare('SELECT * FROM codex_delivery_receipts'+(k===undefined?'':' WHERE receipt_key=?')).get(...(k===undefined?[]:[k]));}finally{db.close();}}
 async function initialize(path:string){const db=await openInitialized(path);db.close();}
@@ -29,7 +29,7 @@ async function http(run:(client:DiscordChannelClient,seen:Request[])=>Promise<vo
 for(const plan of plans())test(`${plan.domain}: native profile accepts only original null-guard index-zero identity and refuses missing store`,async()=>storeFixture(async path=>{
  const hash=receiptHash(plan.content),guard={jobId:'j',threadId:'t',turnId:'v'};
  for(const [k,g] of [[key(plan),guard],[key(plan,1n,1n),null],[key(plan,0n),null],[key(plan,1n<<63n),null]] as const)assert.throws(()=>new NativeCompletionReceiptStore(path,k,hash,g),TypeError);
- for(const domain of ['component/confirmation/v2','component/busy-confirmation/v1/','arbitrary','async-question-confirmation-v1','recovery-publication-intent-confirmation-v1','recovery-abandonment-confirmation-v1'])assert.throws(()=>new NativeCompletionReceiptStore(path,serializeSerdeValue([1n,domain,'original',0n]),hash,null),TypeError);
+ for(const domain of ['component/confirmation/v2','component/busy-confirmation/v1/','arbitrary','async-question-confirmation-v1/','recovery-publication-intent-confirmation-v1','recovery-abandonment-confirmation-v1'])assert.throws(()=>new NativeCompletionReceiptStore(path,serializeSerdeValue([1n,domain,'original',0n]),hash,null),TypeError);
  const store=new NativeCompletionReceiptStore(path,key(plan),hash,null);try{await assert.rejects(store.begin(key(plan),hash,guard),TypeError);await assert.rejects(store.begin(key(plan),hash,null),CompletionReceiptUnconfirmedError);assert.equal(existsSync(path),false);new DatabaseSync(path).close();await assert.rejects(store.begin(key(plan),hash,null),CompletionReceiptUnconfirmedError);const empty=new DatabaseSync(path);try{assert.deepEqual(empty.prepare('SELECT name FROM sqlite_master').all(),[]);}finally{empty.close();}}finally{await store.close();}
 }));
 for(const plan of plans())test(`${plan.domain}: explicit native receipt commits before independent u64 source PATCH and clear retry`,async()=>storeFixture(async path=>{
@@ -47,13 +47,13 @@ test('native plan authority, invalid identities, profile and excluded domains fa
  const plan=busyConfirmationPlan('original');await assert.rejects(deliverConfirmationAndClear(client,path,1n,null,{...plan},undefined,true),TypeError);
  for(const id of [0n,-1n,1n<<64n])await assert.rejects(deliverConfirmationAndClear(client,path,1n,id,plan,undefined,true),TypeError);
  await assert.rejects(deliverConfirmationAndClear(client,path,1n,null,plan,undefined,1 as never),TypeError);
- for(const excluded of [asyncQuestionConfirmationPlan('q'),publicationIntentConfirmationPlan('a'.repeat(32),1n,'KeepHeld'),abandonmentConfirmationPlan('a'.repeat(32),1n,'KeepHeld')])await assert.rejects(deliverConfirmationAndClear(client,path,1n,null,excluded,undefined,true),e=>confirmationErrorInfo(e)?.kind==='Delivery');
+ for(const excluded of [publicationIntentConfirmationPlan('a'.repeat(32),1n,'KeepHeld'),abandonmentConfirmationPlan('a'.repeat(32),1n,'KeepHeld')])await assert.rejects(deliverConfirmationAndClear(client,path,1n,null,excluded,undefined,true),e=>confirmationErrorInfo(e)?.kind==='Delivery');
  const c=new AbortController(),reason=Error('cancelled');c.abort(reason);await assert.rejects(deliverConfirmationAndClear(client,path,1n,null,plan,c.signal,true),e=>e===reason);assert.deepEqual(seen,[]);assert.equal(existsSync(path),false);
 })));
 for(const status of [400,503])test(`native ${status} preserves original receipt disposition and nonce without implicit resend`,async t=>storeFixture(async path=>{
  for(const name of ['beginDeliveryReceipt','confirmDeliveryReceipt','releaseRejectedDelivery','blockRejectedDelivery'] as const)t.mock.method(state,name,()=>assert.fail('main-thread receipt fallback'));
  const operations:string[]=[],complete=OwnedWorkerSlot.prototype.runControlCompletion;t.mock.method(OwnedWorkerSlot.prototype,'runControlCompletion',function(this:OwnedWorkerSlot,...args:Parameters<typeof complete>){if(String(args[0]).endsWith('/native-receipt-store-worker.ts'))operations.push((args[1] as {operation:string}).operation);return complete.apply(this,args);});
- await initialize(path);const plan=busyConfirmationPlan('rejection');await http(async(client,seen)=>{
+ await initialize(path);const plan=asyncQuestionConfirmationPlan('rejection');await http(async(client,seen)=>{
   await assert.rejects(deliverConfirmationAndClear(client,path,1n,9n,plan,undefined,true),e=>confirmationErrorInfo(e)?.kind==='Delivery');const saved=read(path)!;assert.equal(saved.retryable,0);assert.equal(saved.message_id,null);assert.equal(saved.blocked_reason===null,status!==400);
   await assert.rejects(deliverConfirmationAndClear(client,path,1n,9n,plan,undefined,true));assert.deepEqual(seen.map(x=>x.method),['POST']);
  },(_request,count)=>count===1?status:200);assert.deepEqual(operations,status===400?['Block']:[]);
@@ -63,14 +63,14 @@ test('owned validated 429 rejection releases native intent and explicit retry pr
  for(const name of ['beginDeliveryReceipt','confirmDeliveryReceipt','releaseRejectedDelivery','blockRejectedDelivery'] as const)t.mock.method(state,name,()=>assert.fail('main-thread receipt fallback'));
  t.mock.method(DiscordChannelClient.prototype,'sendValidated',async function(this:DiscordChannelClient,...args:Parameters<typeof send>){bodies.push(args[0].body);if(bodies.length===1)throw new DiscordTransportFault('Response','validated fixture rate rejection',429);return send.apply(this,args);});
  t.mock.method(OwnedWorkerSlot.prototype,'runControlCompletion',function(this:OwnedWorkerSlot,...args:Parameters<typeof complete>){if(String(args[0]).endsWith('/native-receipt-store-worker.ts'))operations.push((args[1] as {operation:string}).operation);return complete.apply(this,args);});
- await http(async(client,seen)=>{const plan=busyConfirmationPlan('rate rejection');await assert.rejects(deliverConfirmationAndClear(client,path,1n,9n,plan,undefined,true),e=>confirmationErrorInfo(e)?.kind==='Delivery');assert.equal(read(path)!.retryable,1);assert.equal(seen.length,0);await deliverConfirmationAndClear(client,path,1n,9n,plan,undefined,true);assert.equal(bodies[0],bodies[1]);assert.equal(read(path)!.message_id,'9007199254740993');assert.deepEqual(operations,['Release','Confirm']);assert.deepEqual(seen.map(x=>x.method),['POST','PATCH']);});
+ await http(async(client,seen)=>{const plan=asyncQuestionConfirmationPlan('rate rejection');await assert.rejects(deliverConfirmationAndClear(client,path,1n,9n,plan,undefined,true),e=>confirmationErrorInfo(e)?.kind==='Delivery');assert.equal(read(path)!.retryable,1);assert.equal(seen.length,0);await deliverConfirmationAndClear(client,path,1n,9n,plan,undefined,true);assert.equal(bodies[0],bodies[1]);assert.equal(read(path)!.message_id,'9007199254740993');assert.deepEqual(operations,['Release','Confirm']);assert.deepEqual(seen.map(x=>x.method),['POST','PATCH']);});
 }));
 test('actual HTTP429 keeps existing client retry behavior with stable nonce inside one native receipt intent',async()=>storeFixture(async path=>{
  await initialize(path);await http(async(client,seen)=>{await deliverConfirmationAndClear(client,path,1n,9n,busyConfirmationPlan('wire retry'),undefined,true);assert.deepEqual(seen.map(x=>x.method),['POST','POST','PATCH']);assert.equal(seen[0]!.body,seen[1]!.body);assert.equal(read(path)!.message_id,'9007199254740993');},(_request,count)=>count===1?429:200);
 }));
 test('native failed confirmation keeps unknown intent, never clears and never resends accepted POST',async()=>storeFixture(async path=>{
  await initialize(path);const db=new DatabaseSync(path);db.exec("CREATE TRIGGER refuse_confirm BEFORE UPDATE OF message_id ON codex_delivery_receipts BEGIN SELECT RAISE(ABORT,'fixture refusal'); END");db.close();
- await http(async(client,seen)=>{const plan=busyConfirmationPlan('failed confirm');for(let i=0;i<2;i++)await assert.rejects(deliverConfirmationAndClear(client,path,1n,9n,plan,undefined,true),e=>confirmationErrorInfo(e)?.kind==='Delivery');assert.deepEqual(seen.map(x=>x.method),['POST']);assert.equal(read(path)!.message_id,null);assert.equal(read(path)!.retryable,0);});
+ await http(async(client,seen)=>{const plan=asyncQuestionConfirmationPlan('failed confirm');for(let i=0;i<2;i++)await assert.rejects(deliverConfirmationAndClear(client,path,1n,9n,plan,undefined,true),e=>confirmationErrorInfo(e)?.kind==='Delivery');assert.deepEqual(seen.map(x=>x.method),['POST']);assert.equal(read(path)!.message_id,null);assert.equal(read(path)!.retryable,0);});
 }));
 test('known accepted HTTP is confirmed after caller cancellation and only PATCH waits for an explicit later retry',async t=>storeFixture(async path=>{
  await initialize(path);const c=new AbortController(),reason=Error('caller stopped'),send=DiscordChannelClient.prototype.sendValidated;
@@ -80,7 +80,7 @@ test('known accepted HTTP is confirmed after caller cancellation and only PATCH 
 test('lost native Begin acknowledgement joins original intent and prohibits POST and later automatic resend',async t=>storeFixture(async path=>{
  await initialize(path);let begins=0;const run=OwnedWorkerSlot.prototype.run;
  t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){const task=run.apply(this,args);if(String(args[0]).endsWith('/native-receipt-store-worker.ts')&&(args[1] as {operation:string}).operation==='Begin'&&++begins===1)return task.then(()=>{throw Error('lost receipt ACK');});return task;});
- await http(async(client,seen)=>{const plan=busyConfirmationPlan('unknown begin');for(let i=0;i<2;i++)await assert.rejects(deliverConfirmationAndClear(client,path,1n,9n,plan,undefined,true),e=>confirmationErrorInfo(e)?.kind==='Delivery');assert.deepEqual(seen,[]);assert.equal(begins,2);assert.equal(read(path)!.message_id,null);});
+ await http(async(client,seen)=>{const plan=asyncQuestionConfirmationPlan('unknown begin');for(let i=0;i<2;i++)await assert.rejects(deliverConfirmationAndClear(client,path,1n,9n,plan,undefined,true),e=>confirmationErrorInfo(e)?.kind==='Delivery');assert.deepEqual(seen,[]);assert.equal(begins,2);assert.equal(read(path)!.message_id,null);});
 }));
 for(const operation of ['Begin','Confirm'] as const)test(`native confirmation ${operation} deadline retains slot through lock wait and actual late exit`,async()=>storeFixture(async path=>{
  await initialize(path);const plan=busyConfirmationPlan('locked'),k=key(plan),hash=receiptHash(plan.content),store=new NativeCompletionReceiptStore(path,k,hash,null,30);

@@ -1,7 +1,7 @@
 import {openInitialized} from "./owned-driver.ts";
 import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
 import {serializeSerdeValue} from "../core/serde-json.ts";
-import {usingInitializedStore,withStoreTransaction,commitStore,rollbackStore} from "./owned-scope.ts";
+import {usingInitializedStore,usingExistingStore,withStoreTransaction,commitStore,rollbackStore} from "./owned-scope.ts";
 import {receiptRow,receiptText,receiptTextColumns} from "./delivery-receipt-key.ts";
 import {decodeI64} from "./sqlite-values.ts";
 import {readAsyncQuestionIn,AsyncQuestionNotFoundError,type StoredAsyncQuestion} from "./async-question-read.ts";
@@ -11,6 +11,8 @@ import {StoreIntegrityError} from "./schema-assembly.ts";
 export const ASYNC_QUESTION_DELIVERY_DOMAIN="async-question-v1";
 function text(v:unknown):asserts v is string{if(typeof v!=="string"||/[\uD800-\uDFFF]/u.test(v))throw new TypeError("Expected well-formed question identity");}
 export async function getAsyncQuestion(path:string,id:string):Promise<StoredAsyncQuestion>{text(id);return usingInitializedStore(path,db=>readAsyncQuestionIn(db,id));}
+/** Existing-only scalar read: no schema initialization or added transaction. */
+export function getAsyncQuestionExisting(path:string,id:string):StoredAsyncQuestion{text(id);return usingExistingStore(path,db=>readAsyncQuestionIn(db,id));}
 export async function pendingAsyncQuestions(path:string,runtime:string):Promise<StoredAsyncQuestion[]>{
   text(runtime);return usingInitializedStore(path,db=>{
     const ids=db.prepare(`SELECT id,${receiptTextColumns("id")} FROM cdr_async_questions WHERE runtime_id=? AND state='observed' ORDER BY created_at,json_extract(body,'$.index'),id LIMIT 100`).all(runtime).map(r=>receiptText(r,"id")!);
@@ -29,6 +31,9 @@ export async function confirmAsyncQuestionOwner(path:string,id:string):Promise<b
 }
 export async function requireCurrentAsyncQuestionMapping(path:string,input:StoredAsyncQuestion):Promise<void>{
   const q=cloneOwnedSerdeValue(input) as StoredAsyncQuestion;return usingInitializedStore(path,db=>validateAsyncQuestionMappingIn(db,q));
+}
+export function requireCurrentAsyncQuestionMappingExisting(path:string,input:StoredAsyncQuestion):void{
+  const q=cloneOwnedSerdeValue(input) as StoredAsyncQuestion;usingExistingStore(path,db=>validateAsyncQuestionMappingIn(db,q));
 }
 export function asyncQuestionReceiptKey(q:Pick<StoredAsyncQuestion,"channelId"|"id">):string{
   const own=cloneOwnedSerdeValue(q) as typeof q;text(own.id);if(typeof own.channelId!=="bigint"||own.channelId<-(1n<<63n)||own.channelId>=(1n<<63n))throw new TypeError("Expected i64 question channel");

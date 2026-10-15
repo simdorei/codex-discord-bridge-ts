@@ -40,6 +40,7 @@ const entries:readonly (readonly [string,'path'|'mirror'|'mirrorDb'|null])[]=[
  ['runtime/completion/native-progress-state-worker.ts','path'],
  ['runtime/completion/native-receipt-store-worker.ts','path'],
  ['runtime/completion/native-typing-worker.ts','path'],
+ ['runtime/component-worker/async-choice-native-worker.ts','path'],
  ['runtime/component-worker/busy-claim-native-worker.ts','path'],
  ['runtime/component-worker/standard-claim-native-worker.ts','path'],
  ['runtime/diagnostic-worker.ts',null],

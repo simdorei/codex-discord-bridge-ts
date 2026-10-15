@@ -15,6 +15,7 @@ import {NativeBusyClaimOwner} from './busy-claim-native.ts';
 import {prepareBusyConfirmationOnly} from './busy-preflight.ts';
 import {handleBusyComponent} from './busy.ts';
 import {captureNativeBusySteerServices, type NativeBusySteerServices} from './busy-control.ts';
+import {NativeAsyncChoiceOwner} from './async-choice-native.ts';
 import {handleAsyncChoice} from './async-choice.ts';
 import {handleRecoveryAbandonment} from './recovery-abandonment.ts';
 import {handleRecoveryPublication} from './recovery-publication.ts';
@@ -31,7 +32,7 @@ export class PreparedOrdinaryComponentConfirmation {
     if (key !== token || !isConfirmationPlan(plan)) throw new TypeError('Expected prepared ordinary confirmation');
     if (typeof nativeReceipts !== 'boolean') throw new TypeError('Expected native confirmation receipt profile');
     // The installed profile migrates only these completed ordinary actions.
-    this.#nativeReceipts = nativeReceipts && (plan.domain === COMPONENT_CONFIRMATION_DOMAIN || plan.domain === BUSY_CONFIRMATION_DOMAIN);
+    this.#nativeReceipts = nativeReceipts && (plan.domain === COMPONENT_CONFIRMATION_DOMAIN || plan.domain === BUSY_CONFIRMATION_DOMAIN || plan.domain === 'async-question-confirmation-v1');
     this.#database = database; this.#channel = channel; this.#source = source; this.#plan = plan; this.#http = http; owned.add(this); Object.freeze(this);
   }
   readonly deliver = async (): Promise<void> => {
@@ -47,10 +48,11 @@ export class PreparedOrdinaryComponentConfirmation {
 /* Recovery variants are dispatched before ordinary approvals and confirmation-
  * only busy handling. Their dedicated sinks never substitute a native action. */
 export function createOrdinaryComponentHandler(database: string, server: PortableResidentLifecycle, http: DiscordChannelClient,
-  queue: BusyQueueExecutor, verifier: ControlTurnVerifier, notifyDeliveryReady: () => void, nativeSteer?: NativeBusySteerServices, nativeReceipts=false, nativeClaims?: NativeStandardClaimOwner, nativeBusyClaims?: NativeBusyClaimOwner, inputAuthorityReads?: PromptAuthorityReads) {
+  queue: BusyQueueExecutor, verifier: ControlTurnVerifier, notifyDeliveryReady: () => void, nativeSteer?: NativeBusySteerServices, nativeReceipts=false, nativeClaims?: NativeStandardClaimOwner, nativeBusyClaims?: NativeBusyClaimOwner, inputAuthorityReads?: PromptAuthorityReads, nativeAsyncChoices?:NativeAsyncChoiceOwner) {
   requireDiscordText(database);
   if (nativeBusyClaims !== undefined) NativeBusyClaimOwner.prototype.requireDatabase.call(nativeBusyClaims, database);
   if (nativeClaims !== undefined) NativeStandardClaimOwner.prototype.requireDatabase.call(nativeClaims, database);
+  if (nativeAsyncChoices !== undefined) NativeAsyncChoiceOwner.prototype.requireDatabase.call(nativeAsyncChoices, database);
   const authorityReads = inputAuthorityReads === undefined ? undefined : capturePromptAuthorityReads(database, inputAuthorityReads);
   if (typeof nativeReceipts !== 'boolean') throw new TypeError('Expected native confirmation receipt profile');
   const steer = nativeSteer === undefined ? undefined : captureNativeBusySteerServices(nativeSteer, database);
@@ -61,7 +63,7 @@ export function createOrdinaryComponentHandler(database: string, server: Portabl
     let plan: ConfirmationPlan;
     if ('RecoveryAbandonDecision' in component) plan = await handleRecoveryAbandonment(work, component, database, verifier);
     else if ('RecoveryPublicationDecision' in component) plan = await handleRecoveryPublication(work, component, database, verifier);
-    else if ('AsyncChoice' in component) plan = await handleAsyncChoice(work, component.AsyncChoice.question_id, component.AsyncChoice.option, database, server, verifier, notifyDeliveryReady);
+    else if ('AsyncChoice' in component) plan = await handleAsyncChoice(work, component.AsyncChoice.question_id, component.AsyncChoice.option, database, server, verifier, notifyDeliveryReady, undefined, nativeAsyncChoices);
     else if (work.processingMode === 'ConfirmationOnly' || 'Busy' in component) {
       try {plan = work.processingMode === 'ConfirmationOnly' ? await prepareBusyConfirmationOnly(work, component, database, undefined, nativeBusyClaims) : await handleBusyComponent(work, component, database, queue, server, verifier, undefined, steer, nativeBusyClaims);}
       catch (error) {

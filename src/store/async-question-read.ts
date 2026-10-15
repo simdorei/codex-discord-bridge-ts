@@ -1,3 +1,4 @@
+import {serializeSerdeValue} from "../core/serde-json.ts";
 import type {DatabaseSync} from "node:sqlite";
 import {decodeQuestionBody,type QuestionBody} from "./async-question-body.ts";
 import {receiptRow,receiptText,receiptTextColumns} from "./delivery-receipt-key.ts";
@@ -22,3 +23,7 @@ export function readAsyncQuestionIn(db:DatabaseSync,id:string):StoredAsyncQuesti
   const replyJobId=receiptText(row,"reply_job_id",true),error=receiptText(row,"error")!,payload=receiptText(row,"body")!;
   return {id,runtimeId,generation,threadId,turnId,itemId,originJobId,channelId,ownerUserId,body:decodeQuestionBody(payload),state,messageId,chosen,replyJobId,error};
 }
+
+/** Immutable question occurrence, excluding only its evolving dispatch outcome. */
+export function asyncQuestionOccurrence(q:StoredAsyncQuestion):string{return serializeSerdeValue({id:q.id,runtimeId:q.runtimeId,generation:q.generation,threadId:q.threadId,turnId:q.turnId,itemId:q.itemId,originJobId:q.originJobId,channelId:q.channelId,ownerUserId:q.ownerUserId,body:q.body,messageId:q.messageId});}
+export function requireAsyncQuestionOccurrence(q:StoredAsyncQuestion,expected:StoredAsyncQuestion|undefined):void{if(expected!==undefined&&asyncQuestionOccurrence(q)!==asyncQuestionOccurrence(expected))throw new StoreIntegrityError("original async question occurrence changed");}
