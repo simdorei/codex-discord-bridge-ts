@@ -8,6 +8,7 @@ import {SecretToken} from '../../config/remote.ts';
 import {RemoteAgentStatus,RemoteAgentControl} from '../../remote-agent/agent-state.ts';
 import {ownedPort,type RemoteProjectBinding} from '../../remote-agent/dispatcher-ports.ts';
 import {prepareManagedRemoteAgent,runManagedRemoteAgent,requestManagedRemoteStop,closePreparedManagedRemoteAgent,managedRemoteSnapshot,ManagedRemoteOwnershipRetainedError,type PreparedManagedRemoteAgent,type SyntheticManagedRemoteConfiguration} from '../../remote-agent/managed-agent.ts';
+import {capturePosixRuntimeRestartHandoff,type PosixRuntimeRestartHandoff} from '../../remote-agent/restart-handoff-lifecycle.ts';
 import {PosixDrainMarkerStore} from '../restart-readiness/drain-marker.ts';
 import {preparedRuntimeRemoteContextBinding} from './startup-context.ts';
 import {RuntimeMonitoredWorker,RuntimeWorkerExitChannel} from './monitored-worker.ts';
@@ -15,9 +16,9 @@ import type {ProRemoteConnection} from '../../pro/runtime.ts';
 import type {RuntimeCoreStartup} from './core-workers-start.ts';
 import type {AdmissionGate} from '../../admission/drain-gate.ts';
 
-/** Explicit loopback fixture profile. Its ports are not native project authority,
- * encryption, durable persistence or permission to enable remote configuration. */
-export interface SyntheticRuntimeRemoteConfiguration extends Omit<SyntheticManagedRemoteConfiguration,'kind'|'status'|'control'>{readonly kind:'SyntheticRuntimeRemote';}
+/** Explicit loopback fixture profile. Optional POSIX ciphertext persistence does
+ * not qualify native project authority, a protector, or configured remote use. */
+export interface SyntheticRuntimeRemoteConfiguration extends Omit<SyntheticManagedRemoteConfiguration,'kind'|'status'|'control'|'handoff'>{readonly kind:'SyntheticRuntimeRemote';readonly handoff:SyntheticManagedRemoteConfiguration['handoff']|PosixRuntimeRestartHandoff;}
 export interface SyntheticRuntimeRemoteProfile{readonly kind:'SyntheticRuntimeRemoteProfile';}
 export interface PreparedRuntimeRemote{readonly kind:'PreparedSyntheticRuntimeRemote';}
 export type RuntimeRemoteBranch={readonly kind:'DisabledRemote'}|PreparedRuntimeRemote;
@@ -37,11 +38,17 @@ export function createSyntheticRuntimeRemoteProfile(input:SyntheticRuntimeRemote
  if(types.isProxy(token))throw new TypeError('Expected synthetic token');const secret=SecretToken.prototype.expose.call(token);if(typeof secret!=='string'||!secret.startsWith('synthetic-')||secret.length>4096)throw new TypeError('Expected synthetic token');validateHeaderValue('Authorization','Bearer '+secret);
  const delay=own(input,'reconnectDelaySeconds');if(typeof delay!=='bigint'||delay<0n||delay>18446744073709551615n)throw new TypeError('Invalid synthetic reconnect delay');
  const d=own(input,'dispatcher'),dispatcher=Object.freeze({openProject:ownedPort<SyntheticManagedRemoteConfiguration['dispatcher']['openProject']>(d,'openProject'),nowUtc:ownedPort<SyntheticManagedRemoteConfiguration['dispatcher']['nowUtc']>(d,'nowUtc'),nowMonotonic:ownedPort<SyntheticManagedRemoteConfiguration['dispatcher']['nowMonotonic']>(d,'nowMonotonic')});
- const h=own(input,'handoff');if(own(h,'kind')!=='SyntheticProtectedBindingPorts')throw new TypeError('Expected synthetic protected binding ports');
- const handoff=Object.freeze({kind:'SyntheticProtectedBindingPorts' as const,restore:ownedPort<(signal:AbortSignal)=>Promise<readonly RemoteProjectBinding[]>>(h,'restore'),protect:ownedPort<(bindings:readonly RemoteProjectBinding[])=>Promise<void>>(h,'protect')}),disconnected=ownedPort<SyntheticManagedRemoteConfiguration['disconnected']>(input,'disconnected');
+ const h=own(input,'handoff'),handoff=own(h,'kind')==='PosixCiphertextRestartHandoff'
+  ?capturePosixRuntimeRestartHandoff(h as PosixRuntimeRestartHandoff,Object.freeze({bridgeUrl,deviceId}),dispatcher.nowUtc)
+  :captureFixtureHandoff(h);
+ const disconnected=ownedPort<SyntheticManagedRemoteConfiguration['disconnected']>(input,'disconnected');
  const status=new RemoteAgentStatus(),control=new RemoteAgentControl(),deviceToken=new SecretToken(secret);Object.freeze(deviceToken);
  const config:SyntheticManagedRemoteConfiguration=Object.freeze({kind:'SyntheticManagedRemote',socket:Object.freeze({bridgeUrl,deviceId,deviceToken}),reconnectDelaySeconds:delay,dispatcher,status,control,handoff,disconnected});
  const result:SyntheticRuntimeRemoteProfile=Object.freeze({kind:'SyntheticRuntimeRemoteProfile'});profiles.set(result,{config,connection:Object.freeze({deviceId,isConnected:()=>RemoteAgentStatus.prototype.isConnected.call(status)}),phase:'new'});return result;
+}
+function captureFixtureHandoff(h:unknown):SyntheticManagedRemoteConfiguration['handoff']{
+ if(own(h,'kind')!=='SyntheticProtectedBindingPorts')throw new TypeError('Expected explicit synthetic remote handoff');
+ return Object.freeze({kind:'SyntheticProtectedBindingPorts' as const,restore:ownedPort<(signal:AbortSignal)=>Promise<readonly RemoteProjectBinding[]>>(h,'restore'),protect:ownedPort<SyntheticManagedRemoteConfiguration['handoff']['protect']>(h,'protect')});
 }
 /** Internal startup transfer: single-use, before any resident/store effects. The
  * exact closure is installed by prepareRuntimeProContext, never caller readiness. */

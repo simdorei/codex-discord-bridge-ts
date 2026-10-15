@@ -22,7 +22,9 @@ import type {RemoteUtcDateTime} from './datetime.ts';
 export interface SyntheticRemoteHandoffPorts{
  readonly kind:'SyntheticProtectedBindingPorts';
  readonly restore:(signal:AbortSignal)=>Promise<readonly RemoteProjectBinding[]>;
- readonly protect:(bindings:readonly RemoteProjectBinding[])=>Promise<void>;
+ /** Legacy fixtures may return void. A concrete adapter returns its actual
+  * writer boolean; now is the owner's exact post-cleanup expiry sample. */
+ readonly protect:(bindings:readonly RemoteProjectBinding[],now:RemoteUtcDateTime)=>Promise<void|boolean>;
 }
 export interface SyntheticManagedRemoteConfiguration{
  readonly kind:'SyntheticManagedRemote';
@@ -131,13 +133,13 @@ export function runManagedRemoteAgent(owner:PreparedManagedRemoteAgent,shutdown:
   try{await RemoteProjectDispatcher.prototype.close.call(s.dispatcher);s.phase='closed';}
   catch(cleanup){s.phase='retained';throw new ManagedRemoteOwnershipRetainedError(failed?primary:new Error('Managed remote final cleanup failed'),cleanup,owner);}
   if(failed)throw primary;
-  // Empty bindings never manufacture a persisted handoff. This trusted port is
-  // synthetic; neither encryption nor durable storage is implemented here.
+  // Empty bindings never manufacture a persisted handoff. The existing fixture
+  // port or explicit runtime persistence adapter owns the actual completion.
   if(restart!==null&&restart.length>0){
    // Explicit asynchronous project cleanup may outlive a binding. Re-filter at
    // the actual protection boundary; never persist a stale pre-cleanup view.
    const now=date(call(s.nowUtc));restart=Object.freeze(restart.filter(binding=>binding.expiresAt.seconds>now.seconds||binding.expiresAt.seconds===now.seconds&&binding.expiresAt.nanosecond>now.nanosecond));
-   if(restart.length>0){s.phase='protecting';try{await ownedPromise(call(s.protect,restart));s.handoffPrepared=true;}finally{s.phase='closed';}}
+   if(restart.length>0){s.phase='protecting';try{const written=await ownedPromise(call(s.protect,restart,now));if(written!==undefined&&typeof written!=='boolean')throw new TypeError('Invalid managed handoff completion');s.handoffPrepared=written!==false;}finally{s.phase='closed';}}
   }
  })();return s.completion;
 }
