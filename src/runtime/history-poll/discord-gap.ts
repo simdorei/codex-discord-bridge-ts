@@ -10,6 +10,7 @@ import {passiveErrorText} from '../../core/passive-error-text.ts';
 import {SettingsTargetResolver} from '../settings-binding.ts';
 import {classifyGatewayMessage,MessageCandidate} from '../message-worker/classification.ts';
 import {AdmittedMessage,admitMessageCandidateAt} from '../message-worker/admission.ts';
+import {captureNativePromptReceipts} from '../server-prompt-receipt-profile.ts';
 import {createMessageProcessor,type MessageProcessorContext} from '../message-worker/processor.ts';
 import {messageErrorReportTarget,processMessageWithErrorReport,reportMessageProcessingError,type MessageErrorReportTarget} from '../message-worker/processing-boundary.ts';
 import type {MessageHandlerOptions} from '../discord-runtime/message-handler.ts';
@@ -33,6 +34,7 @@ async function runDiscordHistory(options:DiscordHistoryGapOptions,channel:bigint
  signal?.throwIfAborted();if(typeof channel!=='bigint'||channel<=0n||channel>=1n<<64n)throw new TypeError('Expected history channel');
  const raw=own(options,'context'),context={} as Record<string,unknown>;
  for(const key of ['database','server','http','config','attachmentRoot','attachmentTransport','attachmentReport','controlVerifier','services'])context[key]=own(raw,key);
+ context.nativePromptReceipts=captureNativePromptReceipts(raw);
  const clock=Object.getOwnPropertyDescriptor(raw as object,'now');if(clock!==undefined&&!Object.hasOwn(clock,'value'))throw new TypeError('Expected clock data');context.now=clock?.value??systemNow;context.applicationId=own(options,'applicationId');
  const processor=createMessageProcessor(context as unknown as MessageProcessorContext),database=context.database as string,http=context.http as DiscordChannelClient,now=context.now as ()=>number;
  const gate=own(options,'gate') as AdmissionGate,basePolicy=own(options,'policy') as InteractionAccessPolicy,resolver=own(options,'resolver') as SettingsTargetResolver,bot=own(options,'botUserId') as bigint|null,report=own(options,'report') as MessageHandlerOptions['report'];

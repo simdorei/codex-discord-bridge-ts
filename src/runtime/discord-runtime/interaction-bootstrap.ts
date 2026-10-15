@@ -19,6 +19,6 @@ export async function startPreparedInteractionWorker(input:RuntimeInteractionSta
  const owner=own(input,'owner') as PortableResidentLifecycle,queue=own(input,'queue') as QueueStartCoordinator,executor=own(input,'executor') as RuntimeCommandExecutor;
  if(typeof report!=='function'||types.isProxy(report)||types.isAsyncFunction(report)||types.isGeneratorFunction(report))throw new TypeError('Expected synchronous interaction report');
  RuntimeCommandExecutor.prototype.requireRuntimeQueue.call(executor,queue);RuntimeCommandExecutor.prototype.requireRuntimeResident.call(executor,owner);PortableResidentLifecycle.prototype.lifecycleSnapshot.call(owner);Object.getOwnPropertyDescriptor(DiscordChannelClient.prototype,'activeRequests')!.get!.call(http);
- const database=Object.getOwnPropertyDescriptor(QueueStartCoordinator.prototype,'dbPath')!.get!.call(queue) as string,services=RuntimeCommandExecutor.prototype.interactionServices.call(executor,http),process=createInteractionProcessor(database,owner,http,services);
+ const database=Object.getOwnPropertyDescriptor(QueueStartCoordinator.prototype,'dbPath')!.get!.call(queue) as string,services=RuntimeCommandExecutor.prototype.interactionServices.call(executor,http),process=createInteractionProcessor(database,owner,http,services,true);
  return startInteractionRuntimeWorker(work,database,http,{process,notifyDeliveryReady:()=>RuntimeCommandExecutor.prototype.notifyDeliveryReady.call(executor),report:(...args)=>invokeSynchronousVoid(report,{},args)},notifier);
 }

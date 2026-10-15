@@ -35,14 +35,15 @@ async function record(custody: ExecutionCustody, outcome: unknown): Promise<void
 }
 /** Source process_interaction_work sequencing. Required business services remain
  * explicit; no generic stub silently claims all commands are implemented. */
-export function createInteractionProcessor(database: string, server: PortableResidentLifecycle, http: DiscordChannelClient, services: InteractionBusinessServices) {
+export function createInteractionProcessor(database: string, server: PortableResidentLifecycle, http: DiscordChannelClient, services: InteractionBusinessServices, nativePromptReceipts=false) {
+  if(typeof nativePromptReceipts!=='boolean')throw new TypeError('Expected native prompt receipt profile flag');
   const execute = functionField(services, 'executeWithIngressContext'), prepare = functionField(services, 'prepareComponent');
   return async (work: InboundInteractionWork, custody: ExecutionCustody): Promise<boolean> => {
     let rejection: string | null;
     try {rejection = await custody.requestRejection(work);} catch (error) {throw new InteractionWorkerError('Custody', error);}
     if (rejection !== null) {
       await record(custody, {kind: 'request_rejected', action_completed: false, control_dispatched: false, error: rejection});
-      await deliverActionResult(work, {text: `ERROR: ${rejection}`, waitsForFinal: false, ui: null}, database, server, http); return false;
+      await deliverActionResult(work, {text: `ERROR: ${rejection}`, waitsForFinal: false, ui: null}, database, server, http, nativePromptReceipts); return false;
     }
     const routed = work.work; if (!isRoutedInteractionWork(routed)) throw new TypeError('Expected owned interaction work');
     if (Object.hasOwn(routed, 'Autocomplete')) throw new InteractionWorkerError('Unsupported', 'autocomplete');
@@ -78,6 +79,6 @@ export function createInteractionProcessor(database: string, server: PortableRes
       throw new InteractionWorkerError('Action', error);
     }
     await record(custody, {kind: 'slash', action_completed: true, waits_for_final: result.waitsForFinal, response: result.text});
-    await deliverActionResult(work, result, database, server, http); return result.waitsForFinal;
+    await deliverActionResult(work, result, database, server, http, nativePromptReceipts); return result.waitsForFinal;
   };
 }

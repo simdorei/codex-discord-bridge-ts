@@ -6,16 +6,18 @@ import {serializeSerdeValue} from '../core/serde-json.ts';
 import {DiscordChannelClient} from '../discord/channel-client.ts';
 import {gatewayOwnField} from '../discord/gateway/values.ts';
 import {requireDiscordText, splitDeliveryChunks} from '../discord/text.ts';
+import {captureNativePromptReceipts} from './server-prompt-receipt-profile.ts';
 import {sendReceiptChunk} from './completion/receipt-sender.ts';
 import {prepareOneServerPrompt, preparedPromptEqual, isPreparedPrompt, PromptRedisplayChangedError, type PreparedPrompt} from './server-prompt-redisplay.ts';
 export interface PromptDeliveryContext {
   readonly database: string; readonly server: PortableResidentLifecycle; readonly http: DiscordChannelClient;
-  readonly channelId: bigint; readonly userId: bigint; readonly commandKey: string; readonly signal?:AbortSignal;
+  readonly channelId: bigint; readonly userId: bigint; readonly commandKey: string; readonly signal?:AbortSignal; readonly nativePromptReceipts?:boolean;
 }
 /** Deliver existing prompts only, revalidating each chunk. Caller retains all
  * borrowed owners until this promise and any failed HTTP/receipt writes settle.
  * No approval/input response is submitted, and no prompt occurrence is created. */
 export async function deliverServerPrompts(context: PromptDeliveryContext, input: readonly PreparedPrompt[]): Promise<void> {
+  const nativePromptReceipts=captureNativePromptReceipts(context);
   const signalDescriptor=Object.getOwnPropertyDescriptor(context,'signal');if(signalDescriptor!==undefined&&!Object.hasOwn(signalDescriptor,'value'))throw new TypeError('Expected signal data');const signal=signalDescriptor?.value as AbortSignal|undefined;signal?.throwIfAborted();
   const database = gatewayOwnField(context, 'database'), commandKey = gatewayOwnField(context, 'commandKey');
   requireDiscordText(database); requireDiscordText(commandKey);
@@ -38,7 +40,7 @@ export async function deliverServerPrompts(context: PromptDeliveryContext, input
       if (!preparedPromptEqual(current, prepared)
         || !PortableResidentLifecycle.prototype.pendingServerRequests.call(server, null).some(request => pendingServerRequestEqual(request, prepared.request))) throw new PromptRedisplayChangedError();
       const components = index + 1 === chunks.length ? prepared.prompt.components : [];
-      await sendReceiptChunk(database, transport, channel, {domain: 'server-request/redisplay/v1', logicalKey: key, chunkIndex: index, content: chunks[index]!}, components,null,signal);
+      await sendReceiptChunk(database, transport, channel, {domain: 'server-request/redisplay/v1', logicalKey: key, chunkIndex: index, content: chunks[index]!}, components,null,signal,nativePromptReceipts);
     }
   }
 }

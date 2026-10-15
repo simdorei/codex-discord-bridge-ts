@@ -17,8 +17,9 @@ export class ServerRequestSnapshotUnstable extends Error{readonly attempts=3;con
  * work; a late known acceptance is still committed by the receipt state machine.
  * Scheduler retries and runtime startup binding are separate. */
 export class ServerRequestDelivery{
- readonly #database:string;readonly #server:PortableResidentLifecycle;readonly #transport:DiscordReceiptTransport;readonly #sent=new SentServerPromptCache();#busy=false;#workerOwned=false;
- constructor(database:string,server:PortableResidentLifecycle,transport:DiscordReceiptTransport){
+ readonly #nativePromptReceipts:boolean;readonly #database:string;readonly #server:PortableResidentLifecycle;readonly #transport:DiscordReceiptTransport;readonly #sent=new SentServerPromptCache();#busy=false;#workerOwned=false;
+ constructor(database:string,server:PortableResidentLifecycle,transport:DiscordReceiptTransport,nativePromptReceipts=false){
+  if(typeof nativePromptReceipts!=='boolean')throw new TypeError('Expected native prompt receipt profile flag');this.#nativePromptReceipts=nativePromptReceipts;
   requireDiscordText(database);PortableResidentLifecycle.prototype.lifecycleSnapshot.call(server);const send=own(transport,'sendValidated');if(typeof send!=='function'||types.isProxy(send)||types.isGeneratorFunction(send))throw new TypeError('Expected owned server prompt transport');
   this.#database=database;this.#server=server;this.#transport=Object.freeze({sendValidated:(request:Parameters<DiscordReceiptTransport['sendValidated']>[0])=>Reflect.apply(send,transport,[request])});
  }
@@ -31,7 +32,7 @@ export class ServerRequestDelivery{
   const chunks=splitDeliveryChunks(prompt.text,true);
   for(let index=0;index<chunks.length;index++){
    signal?.throwIfAborted();this.#generation(generation);const current=await verifyPromptAuthority(this.#database,this.#server,request,generation);if(current.channelId!==authority.channelId)throw new PromptAuthorityError('original delivery channel changed');signal?.throwIfAborted();
-   await sendReceiptChunk(this.#database,this.#transport,authority.channelId,{domain:SERVER_REQUEST_PROMPT_DOMAIN,logicalKey:key,chunkIndex:index,content:chunks[index]!},index+1===chunks.length?prompt.components:[],null,signal);
+   await sendReceiptChunk(this.#database,this.#transport,authority.channelId,{domain:SERVER_REQUEST_PROMPT_DOMAIN,logicalKey:key,chunkIndex:index,content:chunks[index]!},index+1===chunks.length?prompt.components:[],null,signal,this.#nativePromptReceipts);
   }
   this.#sent.remember(generation,key);
  }

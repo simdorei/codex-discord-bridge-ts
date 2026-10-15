@@ -11,6 +11,7 @@ import {ControlTurnVerifier} from '../action-executor/control-turn.ts';
 import {snapshotActionResult,type ActionResult} from '../action-result.ts';
 import type {CommandAction} from '../command-plan.ts';
 import {renderActionUi} from '../action-ui.ts';
+import {captureNativePromptReceipts} from '../server-prompt-receipt-profile.ts';
 import {deliverServerPrompts} from '../server-prompt-delivery.ts';
 import {handlePendingTextReply} from '../component-worker/text-reply.ts';
 import {enrichMessageAttachments,type AttachmentConfig,type AttachmentReporter} from '../attachments.ts';
@@ -35,7 +36,7 @@ export interface MessageBusinessServices {
 export interface MessageProcessorContext {
  readonly database:string;readonly applicationId:bigint;readonly server:PortableResidentLifecycle;readonly http:DiscordChannelClient;
  readonly config:AttachmentConfig;readonly attachmentRoot:string;readonly attachmentTransport:AttachmentTransport;
- readonly attachmentReport:AttachmentReporter;readonly controlVerifier:ControlTurnVerifier;readonly services:MessageBusinessServices;readonly now?:()=>number;
+ readonly attachmentReport:AttachmentReporter;readonly controlVerifier:ControlTurnVerifier;readonly services:MessageBusinessServices;readonly now?:()=>number;readonly nativePromptReceipts?:boolean;
 }
 function method(input:object,key:string,synchronous=false):Function {
  const f=gatewayOwnField(input,key);if(typeof f!=='function'||types.isProxy(f)||types.isGeneratorFunction(f)||(synchronous&&types.isAsyncFunction(f)))throw new TypeError('Expected owned message service');return f;
@@ -47,6 +48,7 @@ async function runMessageOperation<T>(kind:ConstructorParameters<typeof MessageW
 /** Exact message processing order and joined custody, with explicit unimplemented
  * business ports. Call through the central error-report boundary. No auto retry. */
 export function createMessageProcessor(context:MessageProcessorContext):(admitted:AdmittedMessage,signal?:AbortSignal)=>Promise<void>{
+ const nativePromptReceipts=captureNativePromptReceipts(context);
  const database=gatewayOwnField(context,'database'),applicationId=gatewayOwnField(context,'applicationId'),root=gatewayOwnField(context,'attachmentRoot');requireDiscordText(database);requireDiscordText(root);
  if(typeof applicationId!=='bigint'||applicationId<=0n||applicationId>=1n<<64n)throw new TypeError('Expected application ID');
  const services=gatewayOwnField(context,'services') as MessageBusinessServices,execute=method(services,'executeWithIngressContext'),target=method(services,'targetThreadId'),notify=method(services,'notifyDeliveryReady',true);
@@ -92,7 +94,7 @@ export function createMessageProcessor(context:MessageProcessorContext):(admitte
     catch(error){if(signal?.aborted&&error===signal.reason)throw error;knownRefusal=await deliverMessageCleanupRefusal(message,database,http,error,now,signal);}
     if(result!==null){
      await record({response:result.text,waits_for_final:result.waitsForFinal});
-     if(result.ui?.kind==='ServerPrompts'){const prompts=result.ui.prompts;await operation('PromptDelivery',()=>deliverServerPrompts({database,server,http,channelId,userId,commandKey:key,...(signal===undefined?{}:{signal})},prompts));}
+     if(result.ui?.kind==='ServerPrompts'){const prompts=result.ui.prompts;await operation('PromptDelivery',()=>deliverServerPrompts({database,server,http,channelId,userId,commandKey:key,nativePromptReceipts,...(signal===undefined?{}:{signal})},prompts));}
      else {
       let components;try{components=renderActionUi(result.ui);}catch(error){throw new MessageWorkerError('Ui',error);}
       if(components.length===0)await text(typeof plan.Execute==='object'&&'SavedRequest'in plan.Execute?'SavedRequest':'ActionResult',result.text);
