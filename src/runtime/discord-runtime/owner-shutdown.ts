@@ -1,3 +1,4 @@
+import {assertRuntimeRemoteWorkerReleased} from './remote-start.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {invokeSynchronousVoid} from '../../core/synchronous-void.ts';
@@ -35,6 +36,7 @@ export async function shutdownRuntimeOwners<I extends object>(gateway:GatewayRun
  const pinned:RuntimeWorkerShutdownOptions&RuntimeHardDeadlineOptions={report:(...args)=>invokeSynchronousVoid(report as Function,options,args),...(fatal===undefined?{}:{fatal:fatal as (name:string)=>never}),...(pinnedClock===undefined?{}:{clock:pinnedClock})};
  if(busy.has(gateway)||busy.has(owner))throw new TypeError('Runtime owner shutdown already active');busy.add(gateway);busy.add(owner);
  try{
+  const ownershipChecks=[...workers];
   GatewayRuntime.prototype.beginStopping.call(gateway);invokeSynchronousVoid(stop,core,[]);
   const drainDeadline=Math.max(0,deadline-NON_HEARTBEAT_RESERVE_MS),nativeDeadline=Math.max(0,deadline-HEARTBEAT_JOIN_RESERVE_MS);
   const [g,w]=await Promise.allSettled([GatewayRuntime.prototype.shutdownForCause.call(gateway,drainDeadline,shardTrigger as number|null),joinRuntimeWorkersForCause(workers,drainDeadline,workerTrigger==='heartbeat'?null:workerTrigger as string|null,pinned)]);
@@ -42,6 +44,7 @@ export async function shutdownRuntimeOwners<I extends object>(gateway:GatewayRun
   if(g.status==='fulfilled')gatewayResult=g.value;else if(g.reason instanceof GatewayShutdownReportingError){gatewayResult=g.reason.report;diagnosticFailures.push(g.reason.reportingError);}else unknown.push(g.reason);
   if(w.status==='fulfilled')workerResult=w.value;else if(w.reason instanceof RuntimeWorkerReportingError){workerResult=w.reason.report;diagnosticFailures.push(w.reason.reportingError);}else unknown.push(w.reason);
   if(unknown.length||gatewayResult===undefined||workerResult===undefined)throw new RuntimeOwnerShutdownIncompleteError(unknown);
+  for(const worker of ownershipChecks)assertRuntimeRemoteWorkerReleased(worker);
   let serverClose:RuntimeWorkerResult;
   // Deadline observer must not be caught as an ordinary closed result. Only the
   // actual native dispose rejection is converted to the source close error.

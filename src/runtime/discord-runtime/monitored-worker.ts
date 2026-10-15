@@ -15,13 +15,16 @@ export class RuntimeWorkerExitChannel{
 const owners=new WeakSet<object>();
 /** Actual Promise custody, not a timeout wrapper. Abort requests cooperative
  * cancellation; join resolves only after the actual callback and its finally
- * blocks settle. Node cannot forcibly drop an arbitrary future as Tokio can. */
+ * blocks settle. An optional abandoned-owner hook runs only if cancellation
+ * prevented callback entry, and joins before the task/exit lease completes.
+ * Node cannot forcibly drop an arbitrary future as Tokio can. */
 export class RuntimeMonitoredWorker{
  readonly name:string;readonly #abort=new AbortController();readonly #reason=Object.freeze(new Error('Runtime worker cancelled'));readonly #join:Promise<RuntimeWorkerJoin>;#result:RuntimeWorkerJoin|undefined;
- constructor(name:string,notifier:RuntimeWorkerExitChannel,start:(signal:AbortSignal)=>Promise<RuntimeWorkerResult>){
+ constructor(name:string,notifier:RuntimeWorkerExitChannel,start:(signal:AbortSignal)=>Promise<RuntimeWorkerResult>,abandoned?:()=>Promise<void>){
   if(new.target!==RuntimeMonitoredWorker)throw new TypeError('Expected exact worker owner');if(typeof name!=='string'||/[\uD800-\uDFFF]/u.test(name))throw new TypeError('Expected worker name');if(typeof start!=='function'||types.isProxy(start)||types.isGeneratorFunction(start))throw new TypeError('Expected worker callback');
+  if(abandoned!==undefined&&(typeof abandoned!=='function'||types.isProxy(abandoned)||types.isGeneratorFunction(abandoned)))throw new TypeError('Expected abandoned ownership cleanup');
   const lease=RuntimeWorkerExitChannel.prototype.acquire.call(notifier);this.name=name;
-  this.#join=Promise.resolve().then(async()=>{let entered=false;try{this.#abort.signal.throwIfAborted();entered=true;const work=start(this.#abort.signal);if(!types.isPromise(work))throw new TypeError('Worker callback must return Promise');const result=await work,ok=gatewayOwnField(result,'ok');if(ok!==true&&ok!==false)throw new TypeError('Expected worker result');const captured:RuntimeWorkerResult=ok?Object.freeze({ok:true}):Object.freeze({ok:false,error:gatewayOwnField(result,'error')});return Object.freeze({kind:'Returned' as const,result:captured});}catch(error){return Object.freeze({kind:'TaskFailure' as const,error,cancelled:this.#abort.signal.aborted&&error===this.#reason});}finally{lease.finish(name,entered);}}).then(result=>{this.#result=result;return result;});
+  this.#join=Promise.resolve().then(async()=>{let entered=false;try{this.#abort.signal.throwIfAborted();entered=true;const work=start(this.#abort.signal);if(!types.isPromise(work))throw new TypeError('Worker callback must return Promise');const result=await work,ok=gatewayOwnField(result,'ok');if(ok!==true&&ok!==false)throw new TypeError('Expected worker result');const captured:RuntimeWorkerResult=ok?Object.freeze({ok:true}):Object.freeze({ok:false,error:gatewayOwnField(result,'error')});return Object.freeze({kind:'Returned' as const,result:captured});}catch(error){if(!entered&&abandoned!==undefined){try{const cleanup=Reflect.apply(abandoned,undefined,[]);if(!types.isPromise(cleanup))throw new TypeError('Abandoned ownership cleanup must return Promise');await cleanup;}catch(cleanup){return Object.freeze({kind:'TaskFailure' as const,error:new AggregateError([error,cleanup],'Abandoned worker ownership cleanup failed'),cancelled:false});}}return Object.freeze({kind:'TaskFailure' as const,error,cancelled:this.#abort.signal.aborted&&error===this.#reason});}finally{lease.finish(name,entered);}}).then(result=>{this.#result=result;return result;});
   Object.freeze(this.#join);owners.add(this);Object.freeze(this);
  }
  abort():void{this.#abort.abort(this.#reason);}

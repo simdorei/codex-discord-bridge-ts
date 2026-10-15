@@ -1,6 +1,6 @@
 # Managed remote ownership foundation (911)
 
-This is a complete synthetic/offline-qualified managed ownership slice. It does not enable the runtime root or CLI remote branch. `SyntheticManagedRemote` explicitly accepts only a literal `ws://127.0.0.1:<port>` destination and a supplied `synthetic-` token. Tests open only local fixture listeners. There is no environment or credential lookup, operational connection, TLS relaxation, native filesystem/UI/terminal implementation, or production protected persistence.
+This is a complete synthetic/offline-qualified managed ownership slice. It does not enable the runtime root or CLI remote branch. `SyntheticManagedRemote` explicitly accepts only a `ws:` destination whose parsed hostname normalizes to `127.0.0.1`, with an explicit nonzero port and a supplied `synthetic-` token. Tests open only local fixture listeners. There is no environment or credential lookup, operational connection, TLS relaxation, native filesystem/UI/terminal implementation, or production protected persistence.
 
 ## Source authority
 
@@ -35,7 +35,7 @@ The restore boundary rejects duplicate bindings and more than 16 projects before
 
 `SyntheticProtectedBindingPorts` is a named fixture boundary, not encryption or durable storage. It implements none of Rust's format-1/protocol-10 envelope, exact gateway/device fingerprint, 120-second resume window, 128-project native handoff limit, canonical-directory validation, claim-by-rename, claimed-file removal, current-user Windows protection, sync/atomic replacement or protected read/write backend. Rust's system protector is unavailable on unsupported platforms; there is no plaintext fallback here. Synthetic callbacks do not establish native protection, filesystem confinement, account authorization or persistent restore parity.
 
-Root work remains separate: prepare/restore before gateway opening; shared status supplied to Pro; source-ordered typed ingress, interaction, remote-MCP, supervisor, heartbeat, completion; monitored remote exit and partial-startup join; restart-marker/control sampling before requestStop; and singleton exclusion held through all real cleanup. No such root startup/singleton claims are made by this slice. CLI rejection, final wire/schema authority and inactive 893 are unchanged.
+The subsequent [912 synthetic runtime installation](synthetic-remote-runtime.md) connects this owner to shared Pro status, prepared startup, monitored remote-MCP, pre-stop marker sampling and joined runtime cleanup through an explicit loopback-only programmatic profile. Its root custody tests use a synthetic singleton seam and do not qualify native UNIX exclusion. The 911 foundation itself still makes no root/singleton claim. CLI configured-remote rejection, final wire/schema authority and inactive 893 are unchanged.
 
 ## Verification boundary
 

@@ -7,7 +7,7 @@ import {RuntimeMonitoredWorker,isRuntimeMonitoredWorker,type RuntimeWorkerResult
 import {joinRuntimeWorkersForCause,RuntimeWorkerReportingError,type RuntimeWorkerShutdownOptions} from './worker-shutdown.ts';
 import {resolveRuntimeShutdown,validateRuntimeDrainCleanup,type RuntimeShutdownCause,type RuntimeShutdownDecision} from './shutdown-policy.ts';
 import type {RuntimeOwnerShutdownReport} from './owner-shutdown.ts';
-import {HEARTBEAT_JOIN_RESERVE_MS} from './shutdown-deadline.ts';
+import {HEARTBEAT_JOIN_RESERVE_MS,completeBeforeRuntimeShutdownDeadline} from './shutdown-deadline.ts';
 import {nativeGatewayShutdownClock} from '../../discord/gateway/shutdown.ts';
 const used=new WeakSet<RuntimeMonitoredWorker>();
 export interface RuntimeHeartbeatOwner{readonly worker:RuntimeMonitoredWorker;readonly requestStop:()=>void;}
@@ -16,12 +16,13 @@ export interface RuntimeHeartbeatOwner{readonly worker:RuntimeMonitoredWorker;re
  * the matching drain ACK/restart-marker handshake, then uses a fresh 1s reserve.
  * Ordinary shutdown uses its original absolute deadline. This does not release
  * the singleton guard, close HTTP, or claim platform/runtime qualification. */
-export async function finalizeRuntimeShutdown(cause:RuntimeShutdownCause,cleanup:RuntimeOwnerShutdownReport,drainKey:DrainFenceKey|null,controller:RuntimeDrainController,heartbeat:RuntimeHeartbeatOwner,transitionStop:AbortSignal,deadline:number,requestRestartHandoff:()=>void,options:RuntimeWorkerShutdownOptions,reportTransition:(event:string,error:unknown)=>void){
+export async function finalizeRuntimeShutdown(cause:RuntimeShutdownCause,cleanup:RuntimeOwnerShutdownReport,drainKey:DrainFenceKey|null,controller:RuntimeDrainController,heartbeat:RuntimeHeartbeatOwner,transitionStop:AbortSignal,deadline:number,requestRestartHandoff:()=>void|Promise<void>,options:RuntimeWorkerShutdownOptions,reportTransition:(event:string,error:unknown)=>void){
  if(!Number.isFinite(deadline)||deadline<0||types.isProxy(transitionStop)||!(transitionStop instanceof AbortSignal))throw new TypeError('Invalid final shutdown scope');
  Object.getOwnPropertyDescriptor(RuntimeDrainController.prototype,'admissionGate')!.get!.call(controller);
  const worker=own(heartbeat,'worker'),stop=own(heartbeat,'requestStop');if(!isRuntimeMonitoredWorker(worker)||worker.name!=='heartbeat')throw new TypeError('Expected exact heartbeat task');
- for(const fn of [stop,requestRestartHandoff,reportTransition])if(typeof fn!=='function'||types.isProxy(fn)||types.isAsyncFunction(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected synchronous final shutdown callback');
+ for(const fn of [stop,reportTransition])if(typeof fn!=='function'||types.isProxy(fn)||types.isAsyncFunction(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected synchronous final shutdown callback');
  if(drainKey!==null&&(getDrainFenceKeyRecord(drainKey)===null||own(cause,'kind')!=='Control'||own(own(cause,'result'),'ok')!==true))throw new TypeError('Drain key requires winning successful control');
+ if(typeof requestRestartHandoff!=='function'||types.isProxy(requestRestartHandoff)||types.isGeneratorFunction(requestRestartHandoff))throw new TypeError('Expected owned final handoff callback');
  const gateway=own(cleanup,'gateway') as RuntimeOwnerShutdownReport['gateway'],workers=own(cleanup,'workers') as RuntimeOwnerShutdownReport['workers'],serverClose=own(cleanup,'serverClose') as RuntimeWorkerResult;
  const validatedCleanup=validateRuntimeDrainCleanup(gateway,workers,serverClose),rawDiagnostics=own(cleanup,'diagnosticFailures');if(!Array.isArray(rawDiagnostics)||types.isProxy(rawDiagnostics)||rawDiagnostics.length>1024)throw new TypeError('Invalid cleanup diagnostic list');const diagnosticFailures:unknown[]=[];for(let i=0;i<rawDiagnostics.length;i++)diagnosticFailures.push(own(rawDiagnostics,String(i)));
  const report=own(options,'report'),fatal=Object.hasOwn(options,'fatal')?own(options,'fatal'):undefined,rawClock=Object.hasOwn(options,'clock')?own(options,'clock'):undefined;
@@ -33,10 +34,16 @@ export async function finalizeRuntimeShutdown(cause:RuntimeShutdownCause,cleanup
  let transition:DrainedTransition|null=null,drained:RuntimeWorkerResult={ok:true};
  if(drainKey!==null){
   drained=validatedCleanup;
-  if(drained.ok)try{transition=await RuntimeDrainController.prototype.waitForTransition.call(controller,drainKey,true,transitionStop,reportTransition);if(transition==='Restart')invokeSynchronousVoid(requestRestartHandoff,{},[]);}catch(error){drained={ok:false,error};}
+  if(drained.ok)try{transition=await RuntimeDrainController.prototype.waitForTransition.call(controller,drainKey,true,transitionStop,reportTransition);}catch(error){drained={ok:false,error};}
+ }
+ const end=drainKey===null?deadline:clock.now()+HEARTBEAT_JOIN_RESERVE_MS;
+ if(transition==='Restart'){
+  // A native marker read may be asynchronous in TS. Join it within the existing
+  // final heartbeat reserve; a timeout must retain ownership, never look closed.
+  const handoff=Promise.resolve().then(()=>{const value=Reflect.apply(requestRestartHandoff,undefined,[]);if(value!==undefined&&!types.isPromise(value))throw new TypeError('Final handoff must return void or native Promise');return value;}).then(()=>({ok:true} as const),error=>({ok:false,error} as const));
+  const outcome=await completeBeforeRuntimeShutdownDeadline(end,'remote-restart-marker',handoff,pinned);if(!outcome.ok)drained=outcome;
  }
  invokeSynchronousVoid(stop as Function,heartbeat,[]);
- const end=drainKey===null?deadline:clock.now()+HEARTBEAT_JOIN_RESERVE_MS;
  let heartbeatResult:RuntimeWorkerResult;
  // Node heartbeat cleanup awaits real asynchronous marker IO. In the fresh 1s
  // drained branch, subtracting the worker-set's 1s abort reserve leaves zero

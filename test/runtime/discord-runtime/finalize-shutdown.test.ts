@@ -27,3 +27,13 @@ test('fresh heartbeat gets one full one-second budget and unjoined cleanup is fa
  const k=await key(c,root),exits=new RuntimeWorkerExitChannel(),fatal=new Error('test fatal'),deadlines:number[]=[];let release!:()=>void,requested=false;const blocked=new Promise<void>(r=>release=r),worker=new RuntimeMonitoredWorker('heartbeat',exits,async()=>{await blocked;return okay();}),stop=new AbortController();stop.abort();
  try{await assert.rejects(finalizeRuntimeShutdown(cause,clean(),k,c,{worker,requestStop:()=>{requested=true;}},stop.signal,30000,()=>{}, {report:()=>{},clock:{now:()=>100,sleepUntil:async d=>{deadlines.push(d);}},fatal:()=>{throw fatal;}},()=>{}),e=>e===fatal);assert.equal(requested,true);assert.deepEqual(deadlines,[1100]);assert.equal(worker.peek(),undefined);}finally{release();await worker.join();exits.close();}
 }));
+
+test('late asynchronous handoff check joins before heartbeat stop and propagates its settled failure',async()=>fixture(async(c,root)=>{
+ const k=await key(c,root),h=heartbeat(),failure=Error('late marker read failed');let entered!:()=>void,release!:()=>void;const started=new Promise<void>(r=>entered=r),blocked=new Promise<void>(r=>release=r);writeFileSync(join(root,DRAIN_MARKER_NAMES.restart),marker);
+ try{const pending=finalizeRuntimeShutdown(cause,clean(),k,c,h,new AbortController().signal,performance.now()+30000,async function(this:unknown){assert.equal(this,undefined);entered();await blocked;throw failure;},options,()=>{});await started;assert.equal(h.stopped(),false);release();const result=await pending;assert.equal(result.decision.result.ok,false);if(!result.decision.result.ok)assert.equal(result.decision.result.error,failure);assert.equal(h.stopped(),true);}finally{release();await h.dispose();}
+}));
+
+test('unjoined late handoff check cannot authorize successful finalization or stop heartbeat',async()=>fixture(async(c,root)=>{
+ const k=await key(c,root),h=heartbeat(),fatal=Error('late handoff deadline');let release!:()=>void;const blocked=new Promise<void>(r=>release=r);writeFileSync(join(root,DRAIN_MARKER_NAMES.restart),marker);
+ try{await assert.rejects(finalizeRuntimeShutdown(cause,clean(),k,c,h,new AbortController().signal,30000,()=>blocked,{report:()=>{},clock:{now:()=>100,sleepUntil:async()=>{}},fatal:()=>{throw fatal;}},()=>{}),e=>e===fatal);assert.equal(h.stopped(),false);}finally{release();await h.dispose();}
+}));

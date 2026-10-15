@@ -1,3 +1,4 @@
+import {requestPreparedRuntimeRemoteHandoff,assertPreparedRuntimeRemoteReleased} from './remote-start.ts';
 import {AttachmentHttpClient} from '../attachment-client.ts';
 import {RecommendedGateway} from '../../discord/gateway/recommended.ts';
 import {types} from 'node:util';
@@ -12,7 +13,7 @@ import {runGatewayControlLoop} from './gateway-control.ts';
 import {waitRuntimeShutdownCause} from './shutdown-watch.ts';
 import {shutdownRuntimeOwners} from './owner-shutdown.ts';
 import {finalizeRuntimeShutdown} from './finalize-shutdown.ts';
-import {RUNTIME_SHUTDOWN_TIMEOUT_MS,type RuntimeHardDeadlineOptions} from './shutdown-deadline.ts';
+import {RUNTIME_SHUTDOWN_TIMEOUT_MS,completeBeforeRuntimeShutdownDeadline,type RuntimeHardDeadlineOptions} from './shutdown-deadline.ts';
 import type {RuntimeWorkerShutdownOptions} from './worker-shutdown.ts';
 export interface PreparedRuntimeLifetimeOptions{
  readonly stopRequested:()=>Promise<boolean>;
@@ -24,9 +25,10 @@ const consumed=new WeakSet<object>();
 const completed=new WeakMap<object,{gateway:GatewayRuntime<import('../../discord/gateway/decoded-interaction.ts').DecodedGatewayInteraction>;controller:RuntimeDrainController;attachment:AttachmentHttpClient|null;closing?:Promise<void>}>();
 /** Runs actual stop selection, live SQLite/resident drain inspection, joined
  * gateway/workers/resident cleanup and heartbeat finalization for an authentic
- * prepared local-worker owner. All losing waits join under the original selected
- * deadline. Remote is explicitly disabled by that owner's constructor, so there
- * is no remote restart handoff. HTTP, drain and singleton remain caller-owned.
+ * prepared worker owner. All losing waits join under the original selected
+ * deadline. A bound synthetic remote samples its owned restart marker before
+ * stop; its actual resource cleanup joins before resident/outer release.
+ * HTTP, drain and singleton remain caller-owned.
  * A fail-stop exception never authorizes releasing still-live native ownership. */
 export async function runPreparedRuntimeLifetime(workers:PreparedRuntimeWorkerOwner,controller:RuntimeDrainController,userStop:AbortSignal,options:PreparedRuntimeLifetimeOptions){
  const binding=preparedRuntimeWorkerBinding(workers);
@@ -40,13 +42,15 @@ export async function runPreparedRuntimeLifetime(workers:PreparedRuntimeWorkerOw
  if(fatal!==undefined&&(typeof fatal!=='function'||types.isProxy(fatal)||types.isAsyncFunction(fatal)||types.isGeneratorFunction(fatal)))throw new TypeError('Expected nonreturning runtime fatal policy');
  const now=own(sourceClock,'now'),sleep=own(sourceClock,'sleepUntil');for(const fn of [now,sleep])if(typeof fn!=='function'||types.isProxy(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected owned runtime clock');if(types.isAsyncFunction(now))throw new TypeError('Expected synchronous monotonic clock');
  const clock=Object.freeze({now:()=>{const value=Reflect.apply(now as Function,sourceClock,[]);if(typeof value!=='number'||!Number.isFinite(value)||value<0)throw new TypeError('Invalid runtime clock');return value;},sleepUntil:(deadline:number,signal:AbortSignal)=>{const work=Reflect.apply(sleep as Function,sourceClock,[deadline,signal]);if(!types.isPromise(work))throw new TypeError('Runtime clock must return native Promise');return work as Promise<void>;}});
- clock.now();const policy={clock,report:(...args:Parameters<RuntimeWorkerShutdownOptions['report']>)=>invokeSynchronousVoid(report as Function,raw,args),...(fatal===undefined?{}:{fatal:fatal as (component:string)=>never})};
- const ports=Object.freeze({stopRequested:()=>{const work=Reflect.apply(stop as Function,options,[]);if(!types.isPromise(work))throw new TypeError('Stop marker port must return native Promise');return work as Promise<boolean>;},inspect:(signal:AbortSignal)=>checkRuntimeQuiescence(binding.database,binding.resident,signal),report:(event:string,detail:unknown)=>invokeSynchronousVoid(controlReport as Function,options,[event,detail])});
+ clock.now();const policy={clock,report:(...args:Parameters<RuntimeWorkerShutdownOptions['report']>)=>invokeSynchronousVoid(report as Function,{},args),...(fatal===undefined?{}:{fatal:fatal as (component:string)=>never})};
+ const ports=Object.freeze({stopRequested:()=>{const work=Reflect.apply(stop as Function,undefined,[]);if(!types.isPromise(work))throw new TypeError('Stop marker port must return native Promise');return work as Promise<boolean>;},inspect:(signal:AbortSignal)=>checkRuntimeQuiescence(binding.database,binding.resident,signal),report:(event:string,detail:unknown)=>invokeSynchronousVoid(controlReport as Function,{},[event,detail])});
  if(consumed.has(workers))throw new TypeError('Prepared runtime lifetime already consumed');consumed.add(workers);
  const selection=await waitRuntimeShutdownCause({control:signal=>runGatewayControlLoop(controller,ports,AbortSignal.any([userStop,signal])),workerExit:signal=>workers.exits.receive(signal),gatewayExit:signal=>GatewayRuntime.prototype.waitForShardExit.call(binding.gateway,signal)},userStop,policy);
  const deadline=selection.startedAt+RUNTIME_SHUTDOWN_TIMEOUT_MS;
+ if(binding.remote!==null)await completeBeforeRuntimeShutdownDeadline(deadline,'remote-restart-marker',requestPreparedRuntimeRemoteHandoff(binding.remote),policy);
  const cleanup=await shutdownRuntimeOwners(binding.gateway,workers,binding.resident,selection.cause,deadline,policy);
- const finalized=await finalizeRuntimeShutdown(selection.cause,cleanup,selection.drainKey,controller,workers.heartbeat,userStop,deadline,()=>{},policy,(event,error)=>invokeSynchronousVoid(transitionReport as Function,options,[event,error]));
+ const finalized=await finalizeRuntimeShutdown(selection.cause,cleanup,selection.drainKey,controller,workers.heartbeat,userStop,deadline,()=>binding.remote===null?undefined:requestPreparedRuntimeRemoteHandoff(binding.remote),policy,(event,error)=>invokeSynchronousVoid(transitionReport as Function,{},[event,error]));
+ if(binding.remote!==null)assertPreparedRuntimeRemoteReleased(binding.remote);
  workers.disposeMonitor();const result=Object.freeze({selection,cleanup,finalized,deadline});
  if(cleanup.serverClose.ok)completed.set(result,{gateway:binding.gateway,controller,attachment:binding.attachment});return result;
 }
