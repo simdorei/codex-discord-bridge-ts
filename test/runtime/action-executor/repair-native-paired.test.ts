@@ -1,3 +1,7 @@
+import {OwnedWorkerSlot,ownedWorkerUsage} from '../../../src/runtime/owned-worker-slot.ts';
+import {NativeBridgeStateOwner} from '../../../src/runtime/bridge-state-native.ts';
+import {NativeRepairClaimUnknownError} from '../../../src/runtime/writer-recovery/native-repair-owner.ts';
+import {DatabaseSync} from 'node:sqlite';
 import {createNativeQueueReadState} from '../../../src/runtime/queue-runner/native-read-state.ts';
 import {type AdmissionReads} from '../../../src/runtime/action-executor/admission-read-state.ts';
 import {createNativePromptIntakeState} from '../../../src/runtime/prompt-intake/native-state.ts';
@@ -172,4 +176,33 @@ it('native Repair admission keeps a stale original Stop revision and refuses res
  // This mutation-fence error is not RecoveryGuard's owned pre-send rejection.
  // Preserve the existing conservative lease and uncertain-outcome receipt.
  assert.equal((await state.getIngress(f.path,'message:3'))!.phase,'recovery_claimed');assert.equal(f.locks.tryAcquire('T'),undefined);assert.equal(f.locks.activeTargetCount,1);assert.equal((await f.receipt()).phase,'outcome_unknown');
+}));
+
+for(const outcome of ['commit','rollback'] as const)it('installed Repair retains one owner and refuses fresh claim after '+outcome+' without RPC',async t=>fixture('ready',async f=>{
+ if(outcome==='rollback')await f.sql("CREATE TRIGGER reject_claim BEFORE UPDATE OF phase ON discord_ingress_journal WHEN NEW.phase='recovery_claimed' BEGIN SELECT RAISE(ABORT,'fixture rejection'); END");
+ const run=OwnedWorkerSlot.prototype.run;let claims=0;t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){const pending=run.apply(this,args);if(!String(args[0]).includes('/native-repair-worker.'))return pending;claims++;return pending.then(value=>{if(outcome==='commit')throw new Error('lost ACK after commit');return value;});});
+ await assert.rejects(f.action.execute(actor,null,'message:3'),NativeRepairClaimUnknownError);assert.equal((await state.getIngress(f.path,'message:3'))!.phase,outcome==='commit'?'recovery_claimed':'processing');
+ if(outcome==='rollback'){await f.sql('DROP TRIGGER reject_claim');await assert.rejects(f.action.execute(actor,null,'message:3'),NativeRepairClaimUnknownError);}
+ await f.admit(4n);await assert.rejects(f.action.execute({...actor,discordMessageId:4n},null,'message:4'),NativeRepairClaimUnknownError);
+ assert.equal(claims,1);assert.equal((await state.getIngress(f.path,'message:4'))!.phase,'processing');assert.deepEqual(await f.raw('seen'),[]);assert.equal(f.locks.activeTargetCount,0);assert.equal(ownedWorkerUsage().Control,0);
+}));
+it('installed Repair claim cancellation joins blocked native exit before returning and sends no RPC',async t=>fixture('ready',async f=>{
+ const c=new AbortController(),run=OwnedWorkerSlot.prototype.run;let blocker:DatabaseSync|undefined,entered!:()=>void,claims=0,settled=false;const started=new Promise<void>(r=>entered=r);
+ t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){if(String(args[0]).includes('/native-repair-worker.')){claims++;blocker=new DatabaseSync(f.path);blocker.exec('BEGIN IMMEDIATE');const pending=run.apply(this,args);entered();return pending;}return run.apply(this,args);});
+ const pending=f.action.execute(actor,null,'message:3',c.signal),failure=assert.rejects(pending,NativeRepairClaimUnknownError);void pending.then(()=>{settled=true;},()=>{settled=true;});
+ try{await started;c.abort(new Error('cancel claim'));await new Promise(r=>setTimeout(r,30));assert.equal(settled,false);assert.equal(ownedWorkerUsage().Control,1);assert.equal(f.locks.activeTargetCount,0);assert.deepEqual(await f.raw('seen'),[]);blocker!.exec('ROLLBACK');await failure;assert.equal(claims,1);assert.equal(ownedWorkerUsage().Control,0);assert.deepEqual(await f.raw('seen'),[]);assert.equal(f.locks.activeTargetCount,0);}finally{if(blocker?.isTransaction)blocker.exec('ROLLBACK');await failure;blocker?.close();}
+}));
+it('later Stop during native Repair claim keeps the original origin and refuses all mutation dispatch',async t=>fixture('ready',async f=>{
+ const run=OwnedWorkerSlot.prototype.run;t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){const pending=run.apply(this,args);if(!String(args[0]).includes('/native-repair-worker.'))return pending;return pending.then(async value=>{await f.sql("UPDATE cdr_stop_clock SET revision=1; INSERT INTO cdr_stop_revision_receipts VALUES('later-native-stop','T',1,'{}'); INSERT INTO cdr_stop_revisions VALUES('T',1,'later-native-stop')");return value;});});
+ await assert.rejects(f.action.execute(actor,null,'message:3'),/predates stop|revision evidence/);assert.deepEqual((await f.raw('seen')).map((v:any)=>v.method),['thread/read','mcpServerStatus/list']);assert.equal((await state.getIngress(f.path,'message:3'))!.phase,'recovery_claimed');assert.equal(f.locks.activeTargetCount,1);assert.equal((await f.receipt()).phase,'outcome_unknown');
+}));
+it('archive created after native claim is checked synchronously before any Repair RPC or target acquisition',async t=>fixture('ready',async f=>{
+ const run=OwnedWorkerSlot.prototype.run;t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){const pending=run.apply(this,args);if(!String(args[0]).includes('/native-repair-worker.'))return pending;return pending.then(async value=>{await f.sql("INSERT INTO codex_archive_fences VALUES('T','archive',NULL,'attempted')");return value;});});
+ await assert.rejects(f.action.execute(actor,null,'message:3'),/archive fence/);assert.deepEqual(await f.raw('seen'),[]);assert.equal(f.locks.activeTargetCount,0);assert.equal((await state.getIngress(f.path,'message:3'))!.phase,'recovery_claimed');assert.equal(await state.archiveTargetFenced(f.path,'T'),true);
+}));
+it('native Selected Repair captures once and rejects away-and-back before its first actual wire check',async t=>fixture('ready',async f=>{
+ const native=new NativeBridgeStateOwner(f.bridge.path()),queue=createNativeQueueReadState(f.path),run=OwnedWorkerSlot.prototype.run;let selectedReads=0,claims=0;
+ t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){if(String(args[0]).includes('/bridge-state-native-worker.')&&(args[1] as any).operation.kind==='Selected')selectedReads++;if(String(args[0]).includes('/native-repair-worker.'))claims++;return run.apply(this,args);});
+ const action=new AdmittedRepairExecutor(f.path,f.bridge,f.server,f.locks,render,undefined,{async listFiltered(path,target,generation){const rows=await queue.listFiltered(path,target,generation);await native.execute({kind:'Select',id:'other'});await native.execute({kind:'Select',id:'T'});return rows;},listPromptIntakes:createNativePromptIntakeState(f.path).listPromptIntakes},native,f.admission);
+ await assert.rejects(action.execute(actor,null,'message:3'),/stale|differs/);assert.equal(selectedReads,1);assert.equal(claims,1);assert.deepEqual(await f.raw('seen'),[]);assert.equal(f.locks.activeTargetCount,0);assert.equal((await state.getIngress(f.path,'message:3'))!.phase,'recovery_claimed');
 }));
