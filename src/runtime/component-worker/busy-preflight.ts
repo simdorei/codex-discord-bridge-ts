@@ -8,6 +8,7 @@ import {now as systemNow} from '../../store/queue-attach-goal.ts';
 import {readCustodyTimestamp} from '../discord-dispatch/staged-custody.ts';
 import {busyConfirmationPlan, busyReadyMarker, confirmationReady, type ConfirmationPlan} from './confirmation.ts';
 import {BusyComponentError} from './busy-errors.ts';
+import {NativeBusyClaimOwner} from './busy-claim-native.ts';
 function signedId(value: bigint): bigint {
   if (typeof value !== 'bigint' || value < 0n || value >= 1n << 64n) throw new TypeError('Expected u64 busy actor');
   if (value >= 1n << 63n) throw new BusyComponentError('IntegerRange'); return value;
@@ -29,11 +30,13 @@ export function authorizedBusyChoice(work: Pick<InboundInteractionWork, 'authori
 /** ConfirmationOnly uses the original pre-ACK snapshot and exact actor-bound
  * ready marker. It never recreates a choice, claims or executes its action. */
 export async function prepareBusyConfirmationOnly(work: Pick<InboundInteractionWork, 'authorizedBusyChoice' | 'userId' | 'channelId'>,
-  input: ComponentId, database: string, now: () => number = systemNow): Promise<ConfirmationPlan> {
+  input: ComponentId, database: string, now: () => number = systemNow, nativeClaims?: NativeBusyClaimOwner): Promise<ConfirmationPlan> {
   const component = snapshotComponentId(input); if (!('Busy' in component)) throw new BusyComponentError('ActionUnconfirmed');
   const choice = authorizedBusyChoice(work, component.Busy.choice_id), user = gatewayOwnField(work, 'userId') as bigint, channel = gatewayOwnField(work, 'channelId') as bigint;
   validateBusyChoice(choice, component.Busy.action, user, channel);
   const plan = busyConfirmationPlan(component.Busy.choice_id), marker = busyReadyMarker(component.Busy.choice_id, user, channel);
-  if (!await confirmationReady(database, marker, readCustodyTimestamp(now))) throw new BusyComponentError('ActionUnconfirmed');
+  if(nativeClaims!==undefined)NativeBusyClaimOwner.prototype.requireDatabase.call(nativeClaims,database);
+  const ready=nativeClaims===undefined?await confirmationReady(database,marker,readCustodyTimestamp(now)):await NativeBusyClaimOwner.prototype.confirmationReady.call(nativeClaims,work as InboundInteractionWork,component,readCustodyTimestamp(now));
+  if (!ready) throw new BusyComponentError('ActionUnconfirmed');
   return plan;
 }

@@ -1,7 +1,8 @@
 import {randomUUID} from "node:crypto";
 import type {DatabaseSync} from "node:sqlite";
 import {withPromptIntakeWriter,withPromptIntakeWriterExisting} from "./prompt-intake.ts";
-import {openInitialized} from "./owned-driver.ts";
+import {openInitialized,verifyCurrentCatalogIn} from "./owned-driver.ts";
+import {usingExistingStore,withStoreTransaction,rollbackStore} from "./owned-scope.ts";
 import {snapshotBusyChoice,busyChoiceDataField,mirroredThreadIdIn,verifyBusyChoiceRouteIn,type BusyChoice} from "./busy-choice.ts";
 import {decodeI64,decodeTimestamp,decodeTextField,textDecoderFor} from "./sqlite-values.ts";
 export interface NewBusyChoice {ownerUserId:bigint;channelId:bigint;targetThreadId:string|null;prompt:string;allowSteer:boolean;now:number;timeToLive:number}
@@ -69,15 +70,25 @@ export async function getBusyChoice(path:string,id:string,now:number):Promise<Bu
 /** Source runtime busy-state read: decode before expiry filter, retain claimed
  * state, and never delete expired rows as getBusyChoice intentionally does. */
 export function readBusyChoiceState(path:string,id:string,now:number):Promise<BusyChoiceState|null>{
-  text(id);timestamp(now);return owned(path,db=>{const row=readBusyChoiceRow(db,id);return row===null||row.choice.expiresAt<=now?null:row;});
+  text(id);timestamp(now);return owned(path,db=>readStateIn(db,id,now));
 }
 async function owned<T>(path:string,work:(db:DatabaseSync)=>T):Promise<T>{const db=await openInitialized(path);try{return work(db);}finally{db.close();}}
+function readStateIn(db:DatabaseSync,id:string,now:number):BusyChoiceState|null{const row=readBusyChoiceRow(db,id);return row===null||row.choice.expiresAt<=now?null:row;}
+function checkedExisting<T>(path:string,work:(db:DatabaseSync)=>T):T{return usingExistingStore(path,db=>{withStoreTransaction(db,"DEFERRED",()=>{verifyCurrentCatalogIn(db);return rollbackStore(undefined);});return work(db);});}
+/** Existing-only source read; decode before expiry, no cleanup or claim. */
+export function readBusyChoiceStateExisting(path:string,id:string,now:number):BusyChoiceState|null{text(id);timestamp(now);return checkedExisting(path,db=>readStateIn(db,id,now));}
+function claimIn(db:DatabaseSync,id:string,now:number):boolean{return BigInt(db.prepare("UPDATE busy_choices SET claimed_at=? WHERE choice_id=? AND claimed_at IS NULL AND expires_at>?").run(now,id,now).changes)===1n;}
 export async function claimBusyChoice(path:string,id:string,now:number):Promise<boolean>{
-  text(id);timestamp(now);return owned(path,db=>BigInt(db.prepare("UPDATE busy_choices SET claimed_at=? WHERE choice_id=? AND claimed_at IS NULL AND expires_at>?").run(now,id,now).changes)===1n);
+  text(id);timestamp(now);return owned(path,db=>claimIn(db,id,now));
 }
+/** Preserve the separate source single-statement autocommit claim. */
+export function claimBusyChoiceExisting(path:string,id:string,now:number):boolean{text(id);timestamp(now);return checkedExisting(path,db=>claimIn(db,id,now));}
+function releaseIn(db:DatabaseSync,id:string):boolean{return BigInt(db.prepare("UPDATE busy_choices SET claimed_at=NULL WHERE choice_id=? AND claimed_at IS NOT NULL").run(id).changes)===1n;}
 export async function releaseBusyChoiceClaim(path:string,id:string):Promise<boolean>{
-  text(id);return owned(path,db=>BigInt(db.prepare("UPDATE busy_choices SET claimed_at=NULL WHERE choice_id=? AND claimed_at IS NOT NULL").run(id).changes)===1n);
+  text(id);return owned(path,db=>releaseIn(db,id));
 }
+/** Preserve the separate source single-statement autocommit release. */
+export function releaseBusyChoiceClaimExisting(path:string,id:string):boolean{text(id);return checkedExisting(path,db=>releaseIn(db,id));}
 export async function cleanupBusyChoices(path:string,now:number):Promise<bigint>{timestamp(now);return owned(path,db=>BigInt(db.prepare("DELETE FROM busy_choices WHERE expires_at<=?").run(now).changes));}
 export async function busyChoiceCounts(path:string,now:number):Promise<readonly [bigint,bigint]>{
   timestamp(now);return owned(path,db=>{
