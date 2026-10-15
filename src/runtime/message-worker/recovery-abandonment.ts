@@ -1,3 +1,4 @@
+import {captureMessageJournalEffects,type MessageJournalEffects} from './journal.ts';
 import {randomUUID} from 'node:crypto';
 import {AdmissionPermit} from '../../admission/drain-gate.ts';
 import {isDecodedGatewayMessage,type DecodedGatewayMessage} from '../../discord/gateway/decoded-message.ts';
@@ -19,8 +20,8 @@ function sql(value:bigint):bigint{if(typeof value!=='bigint'||value<=0n||value>=
 /** Authenticated proposal producer only. No queue execution, cancellation or
  * native approval occurs. Permit and shared target lease survive every await. */
 export async function proposeMessageAbandonment(message:DecodedGatewayMessage,job:string,permit:AdmissionPermit|null,database:string,
- applicationId:bigint,http:DiscordChannelClient,verifier:ControlTurnVerifier,now:()=>number=systemNow,signal?:AbortSignal):Promise<void>{
- signal?.throwIfAborted();
+ applicationId:bigint,http:DiscordChannelClient,verifier:ControlTurnVerifier,now:()=>number=systemNow,signal?:AbortSignal,inputJournal?:MessageJournalEffects):Promise<void>{
+ signal?.throwIfAborted();const journal=captureMessageJournalEffects(database,inputJournal);
  if(!isDecodedGatewayMessage(message))throw new TypeError('Expected decoded gateway message');requireDiscordText(database);requireDiscordText(job);
  let owned:AdmissionPermit;try{if(permit===null)return invalid('proposal requires live normal admission');owned=AdmissionPermit.prototype.clone.call(permit);}catch{return invalid('proposal requires live normal admission');}
  try{
@@ -36,13 +37,14 @@ export async function proposeMessageAbandonment(message:DecodedGatewayMessage,jo
    signal?.throwIfAborted();const at=readCustodyTimestamp(now),proposal=state.proposeAbandonment(database,{proposal_id:randomUUID().replaceAll('-',''),job_id:job,ingress_id:ingress,application_id:applicationId,now:at,expires_at:at+120});
    const components=abandonmentDecisionRows(proposal.id,proposal.revision),logicalKey=`${proposal.id}:${proposal.revision}`,deadline=new AbortController(),timer=setTimeout(()=>deadline.abort(),10000);
    const transport=Object.freeze({sendValidated:(request:Parameters<DiscordChannelClient['sendValidated']>[0])=>DiscordChannelClient.prototype.sendValidated.call(http,request,signal===undefined?deadline.signal:AbortSignal.any([deadline.signal,signal]))});
-   try{await sendReceiptChunk(database,transport,channel,{domain:DOMAIN,logicalKey,chunkIndex:0,content:proposal.review_text},components,null,signal);if(signal?.aborted)throw signal.reason;if(deadline.signal.aborted)return invalid('proposal delivery is unconfirmed; no automatic resend');}
+   try{await sendReceiptChunk(database,transport,channel,{domain:DOMAIN,logicalKey,chunkIndex:0,content:proposal.review_text},components,null,signal);}
    catch(error){if(signal?.aborted)throw signal.reason;if(deadline.signal.aborted)return invalid('proposal delivery is unconfirmed; no automatic resend');throw error;}finally{clearTimeout(timer);}
    const key=serializeSerdeValue([channel,DOMAIN,logicalKey,0n]),hash=receiptHash(`[${JSON.stringify(proposal.review_text)},[${components.map(serializeDiscordComponent).join(',')}]]`),receipt=await state.beginDeliveryReceipt(database,key,hash);
    if(receipt.kind!=='Delivered')return invalid('proposal has no confirmed exact message receipt');
    const matched=/^[+-]?[0-9]+/u.exec(receipt.messageId);if(matched===null||matched[0]!==receipt.messageId)return invalid('proposal receipt identity is invalid');const sent=BigInt(receipt.messageId);if(sent<-(1n<<63n)||sent>=1n<<63n)return invalid('proposal receipt identity is invalid');
-   signal?.throwIfAborted();state.bindAbandonmentDelivery(database,proposal.id,sent,proposal.review_sha256,readCustodyTimestamp(now));
-   await state.recordIngressResult(database,ingress,{kind:'abandonment_proposal',proposal_id:proposal.id,revision:proposal.revision,decision_recorded:false,request_started:false},readCustodyTimestamp(now));
+   // A known delivered proposal must retain its binding/result despite cancellation.
+   state.bindAbandonmentDelivery(database,proposal.id,sent,proposal.review_sha256,readCustodyTimestamp(now));
+   await journal.recordIngressResult(database,ingress,{kind:'abandonment_proposal',proposal_id:proposal.id,revision:proposal.revision,decision_recorded:false,request_started:false},readCustodyTimestamp(now));
   }finally{lease.release();}
  }finally{AdmissionPermit.prototype.release.call(owned);}
 }

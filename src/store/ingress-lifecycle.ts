@@ -32,12 +32,20 @@ export function acknowledgeIngress(path:string,key:string,now:number):Promise<bo
 export function beginIngressConfirmation(path:string,key:string,now:number):Promise<boolean>{
   text(key);time(now);return connection(path,false,db=>changed(db,"UPDATE discord_ingress_journal SET phase='confirmation_retry',updated_at=? WHERE ingress_id=? AND state='owned' AND phase='canonical_duplicate' AND owner_kind='prompt'",now,key));
 }
-export function beginIngressExecution(path:string,key:string,phase:string,target:string|null,now:number):Promise<boolean>{
-  text(key);text(phase);if(target!==null)text(target);time(now);return connection(path,true,db=>{
+export function captureIngressExecution(key:string,phase:string,target:string|null,now:number){
+  text(key);text(phase);if(target!==null)text(target);time(now);return {key,phase,target,now};
+}
+function beginIngressExecutionBody(db:DatabaseSync,key:string,phase:string,target:string|null,now:number):boolean{
     const record=getIngressIn(db,key),original=record===null?null:frozenSlashTarget(record);
     if(original!==null&&((target!==null&&target!==original)||mirroredThreadIdIn(db,record!.channelId)!==original))throw new StoreIntegrityError("original slash prompt mapping changed; no execution was claimed");
     return changed(db,"UPDATE discord_ingress_journal SET state='executing',phase=?,target_thread_id=COALESCE(?,target_thread_id),updated_at=? WHERE ingress_id=? AND state IN ('staged','acknowledged')",phase,target,now,key);
-  });
+}
+export function beginIngressExecution(path:string,key:string,phase:string,target:string|null,now:number):Promise<boolean>{
+  const q=captureIngressExecution(key,phase,target,now);return connection(path,true,db=>beginIngressExecutionBody(db,q.key,q.phase,q.target,q.now));
+}
+/** Existing-only native leaf, sharing the original IMMEDIATE body. */
+export function beginIngressExecutionExisting(path:string,key:string,phase:string,target:string|null,now:number):boolean{
+  const q=captureIngressExecution(key,phase,target,now);return existingConnection(path,true,db=>beginIngressExecutionBody(db,q.key,q.phase,q.target,q.now));
 }
 export function captureIngressThreadStart(key:string,gen:bigint,now:number){
   text(key);generation(gen);time(now);if(gen<=0n)throw new StoreIntegrityError("invalid thread/start generation");return {key,gen,now};
@@ -68,9 +76,10 @@ export function recordIngressCreatedThreadExisting(path:string,key:string,gen:bi
  const q=captureIngressCreatedThread(key,gen,target,now);return usingExistingStore(path,db=>{withStoreTransaction(db,'DEFERRED',()=>{verifyCurrentCatalogIn(db);return commitStore(undefined);});return recordIngressCreatedThreadBody(db,q.key,q.gen,q.target,q.now);});
 }
 
-export function recordIngressResult(path:string,key:string,input:unknown,now:number):Promise<void>{
-  text(key);time(now);const outcome=parseSerdeValue(serializeSerdeValue(input));
-  return connection(path,true,db=>{
+export function captureIngressResult(key:string,input:unknown,now:number){
+  text(key);time(now);return {key,outcome:parseSerdeValue(serializeSerdeValue(input)),now};
+}
+function recordIngressResultBody(db:DatabaseSync,key:string,outcome:unknown,now:number):void{
     const record=getIngressIn(db,key);if(record===null)throw new StoreIntegrityError(`missing ingress result: ${key}`);
     if(record.phase==="cancelled"){
       const q=db.prepare("SELECT EXISTS(SELECT 1 FROM codex_request_cancellations WHERE job_id=? AND target_thread_id=? AND owner_user_id=?) AS held");q.setReadBigInts(true);
@@ -82,22 +91,47 @@ export function recordIngressResult(path:string,key:string,input:unknown,now:num
     if(stopReceipt!==undefined){if(!isJsonObject(outcome))throw new StoreIntegrityError("result must preserve stop acceptance evidence");outcome.stop_receipt=stopReceipt;}
     for(const field of ["new_creation","new_verification","new_input"]){const saved=getOwn(record.outcome,field);if(saved!==undefined){if(!isJsonObject(outcome))throw new StoreIntegrityError("new result must preserve creation evidence");outcome[field]=saved;}}
     if(!changed(db,"UPDATE discord_ingress_journal SET state=CASE WHEN owner_id IS NULL THEN 'completed' ELSE 'owned' END,phase='result_recorded',outcome_json=?,updated_at=? WHERE ingress_id=? AND state <> 'held'",serializeSerdeValue(outcome),now,key))throw new StoreIntegrityError(`ingress result cannot be recorded: ${key}`);
-  });
 }
-/** Retains source's separate first-reply lookup and outcome update; not a new atomic acknowledgement guarantee. */
-export async function confirmIngress(path:string,key:string,now:number):Promise<void>{
-  text(key);time(now);await connection(path,false,db=>{
+export function recordIngressResult(path:string,key:string,input:unknown,now:number):Promise<void>{
+  const q=captureIngressResult(key,input,now);return connection(path,true,db=>recordIngressResultBody(db,q.key,q.outcome,q.now));
+}
+export function recordIngressResultExisting(path:string,key:string,input:unknown,now:number):void{
+  const q=captureIngressResult(key,input,now);return existingConnection(path,true,db=>recordIngressResultBody(db,q.key,q.outcome,q.now));
+}
+function confirmIngressFirstReplyBody(db:DatabaseSync,key:string):void{
     const row=db.prepare("SELECT job_id,CAST(job_id AS BLOB) AS raw,(SELECT encoding FROM pragma_encoding) AS encoding FROM codex_new_first_replies WHERE ingress_id=?").get(key);
     if(row!==undefined){const job=decodeTextField(row.job_id,row.raw,"job_id",false,textDecoderFor(row.encoding))!,record=newReplyIn(db,job);
       if(record!==null&&!record.confirmationDelivered&&record.identity.kind!=="action")throw new StoreIntegrityError("new first reply cannot be confirmed without its normal acknowledgement receipt");}
-  });
-  await connection(path,false,db=>{if(!changed(db,"UPDATE discord_ingress_journal SET confirmation_delivered=1,updated_at=? WHERE ingress_id=? AND state IN ('completed','owned')",now,key))throw new StoreIntegrityError(`ingress confirmation has no outcome: ${key}`);});
 }
-export function recordIngressProcessingMode(path:string,key:string,mode:string):Promise<void>{
-  text(key);text(mode);return connection(path,true,db=>{
+function confirmIngressOutcomeBody(db:DatabaseSync,key:string,now:number):void{
+  if(!changed(db,"UPDATE discord_ingress_journal SET confirmation_delivered=1,updated_at=? WHERE ingress_id=? AND state IN ('completed','owned')",now,key))throw new StoreIntegrityError(`ingress confirmation has no outcome: ${key}`);
+}
+/** Retains source's separate first-reply lookup and outcome update; not a new atomic acknowledgement guarantee. */
+export async function confirmIngress(path:string,key:string,now:number):Promise<void>{
+  text(key);time(now);await connection(path,false,db=>confirmIngressFirstReplyBody(db,key));
+  await connection(path,false,db=>confirmIngressOutcomeBody(db,key,now));
+}
+/** Deliberately TWO existing connections and no combined transaction. */
+export function confirmIngressExisting(path:string,key:string,now:number):void{
+  text(key);time(now);existingConnection(path,false,db=>confirmIngressFirstReplyBody(db,key));
+  existingConnection(path,false,db=>confirmIngressOutcomeBody(db,key,now));
+}
+function recordIngressProcessingModeBody(db:DatabaseSync,key:string,mode:string):void{
     const record=getIngressIn(db,key);if(record===null)throw new StoreIntegrityError("missing admitted message custody");if(record.state!=="staged")throw new StoreIntegrityError("message processing mode already frozen");
     if(!isJsonObject(record.payload))throw new StoreIntegrityError("admitted message payload is not an object");record.payload.processing_mode=mode;
     db.prepare("UPDATE discord_ingress_journal SET payload_json=? WHERE ingress_id=?").run(serializeSerdeValue(record.payload),key);
+}
+export function recordIngressProcessingMode(path:string,key:string,mode:string):Promise<void>{
+  text(key);text(mode);return connection(path,true,db=>recordIngressProcessingModeBody(db,key,mode));
+}
+export function recordIngressProcessingModeExisting(path:string,key:string,mode:string):void{
+  text(key);text(mode);return existingConnection(path,true,db=>recordIngressProcessingModeBody(db,key,mode));
+}
+/** Catalog validation does not turn a source autocommit operation into a new transaction. */
+function existingConnection<T>(path:string,transaction:boolean,run:(db:DatabaseSync)=>T):T{
+  text(path);return usingExistingStore(path,db=>{
+    if(transaction)return withStoreTransaction(db,'IMMEDIATE',()=>{verifyCurrentCatalogIn(db);return commitStore(run(db));});
+    withStoreTransaction(db,'DEFERRED',()=>{verifyCurrentCatalogIn(db);return commitStore(undefined);});return run(db);
   });
 }
 

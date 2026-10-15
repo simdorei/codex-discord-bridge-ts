@@ -6,7 +6,7 @@ import type {DecodedGatewayMessage} from '../../discord/gateway/decoded-message.
 import type {RuntimeConfig} from '../../config/runtime.ts';
 import {classifyGatewayMessage,MessageCandidate} from '../message-worker/classification.ts';
 import {AdmittedMessage,admitMessageCandidateAt} from '../message-worker/admission.ts';
-import type {MessageCustodyOptions} from '../message-worker/custody.ts';
+import {captureMessageCustodyOptions,type MessageCustodyOptions} from '../message-worker/custody.ts';
 import {messageErrorReportTarget,processMessageWithErrorReport,type MessageErrorReportTarget} from '../message-worker/processing-boundary.ts';
 import {MessageWorkerError} from '../message-worker/errors.ts';
 import {SettingsTargetResolver} from '../settings-binding.ts';
@@ -48,7 +48,8 @@ export interface MessageCreateOptions {
  * The outer normal/emergency consumer and cancellation wiring remain separate. */
 export async function prepareGatewayMessage(message:DecodedGatewayMessage,botUserId:bigint|null,options:MessageCreateOptions,signal?:AbortSignal):Promise<PreparedGatewayMessage>{
  signal?.throwIfAborted();
- const target=messageErrorReportTarget(message),{database,config,basePolicy,gate,allowDrainControl,resolver,observedAt,custody}=options;
+ const target=messageErrorReportTarget(message),{database,config,basePolicy,gate,allowDrainControl,resolver,observedAt}=options;
+ const custody=captureMessageCustodyOptions(database,options.custody);
  if(typeof allowDrainControl!=='boolean')throw new TypeError('Expected drain control availability');
  const result=await classifyGatewayMessage(message,database,config,await refreshMirrorPolicy(basePolicy,database),botUserId);
  const simple=(kind:Kind,ignored:PreparedGatewayMessage['ignored']=null)=>new PreparedGatewayMessage(token,kind,target,null,null,ignored);

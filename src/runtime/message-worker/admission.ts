@@ -2,11 +2,11 @@ import {rustDebugString} from '../../core/rust-debug.ts';
 import {AdmissionPermit} from '../../admission/drain-gate.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {getOwn,pointer} from '../../store/async-resolution-json-helpers.ts';
-import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
+import {admitOriginalMessageJournal} from './journal.ts';
 import {StoreIntegrityError} from '../../store/schema-assembly.ts';
 import type {NewIngress} from '../../store/ingress-types.ts';
 import {MessageCandidate,type MessageCandidateParts,type FrozenMessagePlan} from './classification.ts';
-import {MessageCustody,type MessageCustodyOptions} from './custody.ts';
+import {MessageCustody,captureMessageCustodyOptions,type MessageCustodyOptions} from './custody.ts';
 export type MessageProcessingMode='Normal'|'PendingReplyOnly';
 export interface MessageProcessingParts {
  readonly message:MessageCandidateParts['message'];readonly channelId:bigint;readonly userId:bigint;
@@ -46,7 +46,7 @@ export class AdmittedMessage {
   this.#available();const next=permit===null?null:AdmissionPermit.prototype.clone.call(permit);if(this.#permit!==null)AdmissionPermit.prototype.release.call(this.#permit);this.#permit=next;return this;
  }
  requirePendingReply():Promise<this>{
-  this.#available();const pending=state.recordIngressProcessingMode(this.#parts.database,`message:${this.#parts.persistedId}`,'pending_reply_only').then(()=>{this.#mode='PendingReplyOnly';return this;}).finally(()=>{this.#pending=null;});this.#pending=pending;return pending;
+  this.#available();const pending=MessageCustody.prototype.mode.call(this.#custody,'pending_reply_only').then(()=>{this.#mode='PendingReplyOnly';return this;}).finally(()=>{this.#pending=null;});this.#pending=pending;return pending;
  }
  intoProcessingParts(contextDatabase:string):MessageProcessingParts {
   this.#available();if(!sameMessageDatabasePath(this.#parts.database,contextDatabase))throw new MessageDatabaseMismatchError(this.#parts.database,contextDatabase);
@@ -65,8 +65,10 @@ export async function admitMessageCandidateAt(candidate:MessageCandidate,observe
  const parts=MessageCandidate.prototype.intoAdmissionParts.call(candidate);
  if(process.platform==='win32')throw new TypeError('Windows message admission affinity is not implemented');
  if(typeof observedAt!=='number'||!Number.isFinite(observedAt)||observedAt<0)throw new TypeError('Expected nonnegative finite admission time');
- const input=request(parts,observedAt),custody=new MessageCustody(parts.database,input.ingressId,options);
- const admission=await state.admitIngress(parts.database,input);if(!admission.created)return null;
+ const input=request(parts,observedAt),captured=captureMessageCustodyOptions(parts.database,options);
+ const {admission,owner}=await admitOriginalMessageJournal(parts.database,input,captured.messageJournal!);if(!admission.created)return null;
+ const custody=new MessageCustody(parts.database,input.ingressId,captured,owner!);
+ try{
  let plan=parts.frozenPlan;const payload=admission.record?.payload;
  if(payload!==undefined&&(getOwn(payload,'new_prompt_arm')!==undefined||getOwn(payload,'new_prompt_arm_ref')!==undefined||typeof getOwn(payload,'new_prompt_mention_arm')==='string')){
   const response=pointer(payload,'/plan/Respond'),prompt=pointer(payload,'/plan/Execute/New/prompt');
@@ -75,4 +77,5 @@ export async function admitMessageCandidateAt(candidate:MessageCandidate,observe
   else throw new StoreIntegrityError('invalid persisted !new decision');
  }
  return new AdmittedMessage(token,parts,plan,custody);
+ }catch(error){await custody.dispose();throw error;}
 }

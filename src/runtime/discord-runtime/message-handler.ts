@@ -1,3 +1,4 @@
+import {captureMessageJournalContext} from '../message-worker/journal.ts';
 import {capturePromptAuthorityReadContext} from '../server-prompt-authority-reads.ts';
 import {types} from 'node:util';
 import {AdmissionGate} from '../../admission/drain-gate.ts';
@@ -34,7 +35,8 @@ export function createGatewayMessageHandler(options:MessageHandlerOptions):Gatew
  const sourceConfig=capture('config'),clock=Object.getOwnPropertyDescriptor(original,'now');if(clock!==undefined&&!Object.hasOwn(clock,'value'))throw new TypeError('Expected clock data');
  const nativePromptReceipts=captureNativePromptReceipts(original);
  const database=capture('database'),promptAuthorityReads=capturePromptAuthorityReadContext(database,original);
- const context=Object.freeze({nativePromptReceipts,promptAuthorityReads,database,server:capture('server'),http:capture('http'),config:Object.freeze({attachmentsEnabled:gatewayOwnField(sourceConfig,'attachmentsEnabled') as boolean,attachmentMaxBytes:gatewayOwnField(sourceConfig,'attachmentMaxBytes') as bigint,attachmentTextInlineMaxBytes:gatewayOwnField(sourceConfig,'attachmentTextInlineMaxBytes') as bigint}),attachmentRoot:capture('attachmentRoot'),attachmentTransport:capture('attachmentTransport'),attachmentReport:capture('attachmentReport'),controlVerifier:capture('controlVerifier'),services:Object.freeze({targetThreadId:bound('targetThreadId'),executeWithIngressContext:bound('executeWithIngressContext'),notifyDeliveryReady:bound('notifyDeliveryReady')}) as MessageHandlerOptions['context']['services'],now:clock?.value??systemNow});
+ const messageJournal=captureMessageJournalContext(database,original);
+ const context=Object.freeze({messageJournal,nativePromptReceipts,promptAuthorityReads,database,server:capture('server'),http:capture('http'),config:Object.freeze({attachmentsEnabled:gatewayOwnField(sourceConfig,'attachmentsEnabled') as boolean,attachmentMaxBytes:gatewayOwnField(sourceConfig,'attachmentMaxBytes') as bigint,attachmentTextInlineMaxBytes:gatewayOwnField(sourceConfig,'attachmentTextInlineMaxBytes') as bigint}),attachmentRoot:capture('attachmentRoot'),attachmentTransport:capture('attachmentTransport'),attachmentReport:capture('attachmentReport'),controlVerifier:capture('controlVerifier'),services:Object.freeze({targetThreadId:bound('targetThreadId'),executeWithIngressContext:bound('executeWithIngressContext'),notifyDeliveryReady:bound('notifyDeliveryReady')}) as MessageHandlerOptions['context']['services'],now:clock?.value??systemNow});
  const gate=gatewayOwnField(options,'gate') as AdmissionGate,policy=gatewayOwnField(options,'policy') as InteractionAccessPolicy,resolver=gatewayOwnField(options,'resolver') as SettingsTargetResolver,report=gatewayOwnField(options,'report') as MessageRuntimeReport;
  if(resolver===null||types.isProxy(resolver)||!(resolver instanceof SettingsTargetResolver))throw new TypeError('Expected original settings resolver');
  if(typeof report!=='function'||types.isProxy(report)||types.isAsyncFunction(report)||types.isGeneratorFunction(report))throw new TypeError('Expected synchronous runtime reporter');
@@ -53,7 +55,7 @@ export function createGatewayMessageHandler(options:MessageHandlerOptions):Gatew
    catch(error){if(signal.aborted&&error===signal.reason)throw error;emit(phase,passiveErrorText(error,'pending text probe failed'));}
   }
   signal.throwIfAborted();const process=createMessageProcessor({...context,applicationId:application});
-  const prepared=await prepareGatewayMessage(message,bot,{database:context.database,config:classification,basePolicy:policy,gate,allowDrainControl,resolver,observedAt:readCustodyTimestamp(now),custody:{now,report:value=>emit(value.code,passiveErrorText(value.error,'custody hold failed'))}},signal);
+  const prepared=await prepareGatewayMessage(message,bot,{database:context.database,config:classification,basePolicy:policy,gate,allowDrainControl,resolver,observedAt:readCustodyTimestamp(now),custody:{messageJournal,now,report:value=>emit(value.code,passiveErrorText(value.error,'custody hold failed'))}},signal);
   try{
    if(prepared.ignored!==null)emit('ignored_message',`${prepared.ignored.reason} chat=${prepared.ignored.channelId} user=${prepared.ignored.userId}`);
    await prepared.dispatch(admitted=>process(admitted,signal),(target,error)=>{

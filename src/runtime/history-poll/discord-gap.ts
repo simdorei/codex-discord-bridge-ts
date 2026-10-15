@@ -1,3 +1,4 @@
+import {captureMessageJournalContext,type MessageJournal} from '../message-worker/journal.ts';
 import {capturePromptAuthorityReadContext} from '../server-prompt-authority-reads.ts';
 import {types} from 'node:util';
 import {AdmissionGate,AdmissionPermit} from '../../admission/drain-gate.ts';
@@ -35,6 +36,7 @@ async function runDiscordHistory(options:DiscordHistoryGapOptions,channel:bigint
  signal?.throwIfAborted();if(typeof channel!=='bigint'||channel<=0n||channel>=1n<<64n)throw new TypeError('Expected history channel');
  const raw=own(options,'context'),context={} as Record<string,unknown>;
  for(const key of ['database','server','http','config','attachmentRoot','attachmentTransport','attachmentReport','controlVerifier','services'])context[key]=own(raw,key);
+ context.messageJournal=captureMessageJournalContext(context.database as string,raw);
  context.nativePromptReceipts=captureNativePromptReceipts(raw);
  context.promptAuthorityReads=capturePromptAuthorityReadContext(context.database as string,raw);
  const clock=Object.getOwnPropertyDescriptor(raw as object,'now');if(clock!==undefined&&!Object.hasOwn(clock,'value'))throw new TypeError('Expected clock data');context.now=clock?.value??systemNow;context.applicationId=own(options,'applicationId');
@@ -60,7 +62,7 @@ async function runDiscordHistory(options:DiscordHistoryGapOptions,channel:bigint
     const classified=await classifyGatewayMessage(message,database,config,policy,bot);ownedSignal?.throwIfAborted();if(classified.kind==='Ignore')return {kind:'Lost'} as const;
     await MessageCandidate.prototype.bindSettings.call(classified.candidate,resolver);ownedSignal?.throwIfAborted();
     if(purpose==='Discard'){const won=await DiscordHistoryDiscardFence.prototype.claim.call(discard!,classified.candidate,observedAt,ownedSignal);return won?{kind:'Won',admitted:{kind:'Discarded'}} as const:{kind:'Lost'} as const;}
-    const admitted=await admitMessageCandidateAt(classified.candidate,observedAt,{now,report:value=>emit(value.code,passiveErrorText(value.error,'history custody hold failed'))});
+    const admitted=await admitMessageCandidateAt(classified.candidate,observedAt,{messageJournal:context.messageJournal as MessageJournal|undefined,now,report:value=>emit(value.code,passiveErrorText(value.error,'history custody hold failed'))});
     if(admitted===null)return {kind:'Lost'} as const;pending.add(admitted);AdmittedMessage.prototype.retainAdmission.call(admitted,permit);
     return {kind:'Won',admitted:{kind:'Process',admitted,target:messageErrorReportTarget(message)}} as const;
    },

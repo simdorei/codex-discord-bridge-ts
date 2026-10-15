@@ -26,12 +26,13 @@ export function cleanupNotificationFailureInfo(value: unknown): Readonly<Cleanup
  * This is an error boundary, not a capability proving refusal or permission.
  * The original error survives secondary clock/hold failure. */
 export async function recordCleanupNotificationFailure(database: string, ingressId: string,
-  kind: 'delivery' | 'confirmation', source: unknown, now: () => number = systemNow): Promise<CleanupNotificationFailure> {
+  kind: 'delivery' | 'confirmation', source: unknown, now: () => number = systemNow, holdIngress:typeof state.holdIngress=hold): Promise<CleanupNotificationFailure> {
   requireDiscordText(database); requireDiscordText(ingressId);
   if (kind !== 'delivery' && kind !== 'confirmation') throw new TypeError('Expected notification boundary');
   if (typeof now !== 'function' || types.isProxy(now) || types.isAsyncFunction(now) || types.isGeneratorFunction(now)) throw new TypeError('Expected synchronous notification clock');
+  if(typeof holdIngress!=='function'||types.isProxy(holdIngress)||types.isGeneratorFunction(holdIngress))throw new TypeError('Expected captured hold persistence');
   const stage = stages[kind]; let holdStatus = 'saved', holdError: unknown, holdSaved = true;
-  try {await hold(database, ingressId, stage, false, readCustodyTimestamp(now));}
+  try {const pending=holdIngress(database, ingressId, stage, false, readCustodyTimestamp(now));if(!types.isPromise(pending))throw new TypeError('Expected hold persistence Promise');await pending;}
   catch (error) {holdError = error; holdSaved = false; holdStatus = passiveErrorText(error, 'hold persistence failed');}
   return new CleanupNotificationFailure(token, {stage, source, holdStatus, holdError, holdSaved});
 }
