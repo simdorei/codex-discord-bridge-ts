@@ -1,3 +1,4 @@
+import {NativeSteerOriginWriter} from './steer-origin-native.ts';
 import {NativeStopDispatchWriter} from './stop-dispatch-native.ts';
 import {NativeRetractWriter} from './retract-write-native.ts';
 import {NativeStopAcceptanceWriter} from './stop-acceptance-native.ts';
@@ -96,7 +97,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   this.#queue=queue;this.#basic=new BasicActionDispatcher(paths,bridge,server,locks,render,timeout,intakeState.mirroredThreadId,threadReads,bridgeOwner,controlReads);
   this.#new=new NewThreadExecutor(paths.mirror,paths.state,queue,intake,bridge,server,backend,get('mirror'),get('reportNewAttempt'),undefined,intakeState.admitPromptIntakeWithIngress,intakeState.getNewFirstReplyFinish,intakeState,createNativeNewProjectLookup(paths.state),bridgeOwner);
   this.#prompts=new QueuePromptExecutor(paths.mirror,selection,targets,queue,intake,busy);this.#retract=new RetractAction(paths.mirror,selection,undefined,new NativeRetractWriter(paths.mirror));
-  this.#controls=new PromptControlActions(paths.mirror,selection,targets,control,server);this.#open=new OpenThreadAction(selection,targets,bridge,server,timeout,bridgeOwner);
+  this.#controls=new PromptControlActions(paths.mirror,selection,targets,control,server,undefined,new NativeSteerOriginWriter(paths.mirror),bridgeOwner);this.#open=new OpenThreadAction(selection,targets,bridge,server,timeout,bridgeOwner);
   this.#settingsResolver=new SettingsTargetResolver(paths.state,paths.mirror,bridge,createNativeSettingsBindingReads(paths.state,BridgeState.prototype.path.call(bridge),intakeState.mirroredThreadId),bridgeOwner);
   this.#settings=new AdmittedSettingsExecutor(paths.mirror,new SettingsAction(selection,this.#settingsResolver,bridge,server,control,timeout,bridgeOwner),intakeState);
   this.#stop=new AdmittedStopExecutor(paths.mirror,bridge,new StopActionExecutor(paths.mirror,server,bridge,locks,render,stopActionState,bridgeOwner,new NativeStopAcceptanceWriter(paths.mirror,bridgeOwner)),bridgeOwner,intakeState);
@@ -163,7 +164,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
    else if('Recover'in action){if(this.#recovery===null)throw new ActionExecutionError('Unsupported','recovery controller is not configured');result=await AdmittedRecoverExecutor.prototype.execute.call(this.#recovery,{key,channelId:actor.channelId,ownerUserId:actor.userId,eventId:actor.discordMessageId,reference:action.Recover.reference},signal);}
    else if('Repair'in action){if(this.#repair===null)throw new MissingActionAppServerError();result=await this.#repair.execute(actor,action.Repair.reference,key,signal);}
    else if('Retract'in action)result={text:await this.#retract.retract(actor.channelId,actor.userId,action.Retract.reference,signal,{key,eventId:actor.discordMessageId}),waitsForFinal:false,ui:null};
-   else if('Steer'in action)result=await this.#controls.steer(actor.channelId,action.Steer.prompt,signal);
+   else if('Steer'in action)result=await this.#controls.steer(actor.channelId,action.Steer.prompt,signal,{ingressKey:key,eventId:actor.discordMessageId,ownerUserId:actor.userId});
    else if('Open'in action)result=await this.#open.open(action.Open.reference,action.Open.abort,signal);
    else if('DiscardRequest'in action)throw new InvalidActionRequestError('discard-request requires authenticated message custody and live normal admission');
    else result=await this.#basic.execute(action,actor,signal);

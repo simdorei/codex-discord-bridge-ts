@@ -253,6 +253,13 @@ export class PortableResidentLifecycle{
     return this.#requestScoped(own.method,own.params,own.timeoutMs,generation,false,{check,queueClaim:null,stopClaim:null,clientPin:client},signal);
   }
   execute(request:AppRequest,expectedGeneration:bigint|null=null,signal?:AbortSignal):Promise<unknown>{const own=cloneAppRequest(request);return this.request(own.method,own.params,own.timeoutMs,expectedGeneration,signal);}
+  /** Exact ordinary Steer uses the same durable mutation path, carrying a
+   * synchronous original-selection/turn check through the actual wire writer. */
+  executeSteerControl(request:AppRequest,generation:bigint,check:()=>void,signal?:AbortSignal):Promise<unknown>{
+    const own=cloneAppRequest(request),target=extractThreadId(own.params),turn=serdeField(own.params,"expectedTurnId");
+    if(this.#maintenance?.fence==null||own.method!=="turn/steer"||target===null||rustTrim(target)===""||typeof turn!=="string"||rustTrim(turn)===""||typeof generation!=="bigint"||generation<0n||generation>=(1n<<64n))throw new ResidentStateError({kind:"MutationHeld",message:"Steer dispatch requires the original exact target, turn, generation and mutation fence"});
+    syncFunction(check);return this.#requestScoped(own.method,own.params,own.timeoutMs,generation,false,{check,queueClaim:null,stopClaim:null,clientPin:null},signal);
+  }
   executeQueueTurn(request:AppRequest,generation:bigint,inputClaim:unknown,signal?:AbortSignal):Promise<unknown>{
     request=cloneAppRequest(request);
     const claim=cloneOwnedSerdeValue(inputClaim),params=cloneOwnedSerdeValue(request.params),target=serdeField(params,"threadId"),claimedGeneration=serdeField(claim,"app_server_generation");
