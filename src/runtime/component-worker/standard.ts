@@ -12,7 +12,8 @@ import {passiveErrorText} from '../../core/passive-error-text.ts';
 import {verifyPromptAuthority} from '../server-prompt-authority.ts';
 import {prepareComponentResponse} from './response.ts';
 import {ComponentWorkerError} from './errors.ts';
-import {retainOrReleaseComponentClaim} from './claim-failure.ts';
+import {appServerClaimFailure, retainOrReleaseComponentClaim} from './claim-failure.ts';
+import {NativeStandardClaimOwner, type NativeStandardClaim} from './standard-claim-native.ts';
 import {claimStandardAction, standardConfirmationPlan, standardReadyMarker, recordConfirmationReady, ConfirmationError, type ConfirmationPlan} from './confirmation.ts';
 const ttl = 1800;
 function id(value: unknown): asserts value is bigint {if (typeof value !== 'bigint' || value <= 0n || value >= 1n << 64n) throw new TypeError('Expected nonzero Discord identity');}
@@ -20,7 +21,7 @@ function recovery(error: unknown): ComponentWorkerError {return new ComponentWor
 /** Bound approval/input branch only. Caller routes Busy, AsyncChoice and recovery
  * components separately and owns processing-mode/execution-custody admission. */
 export async function prepareStandardComponentAction(work: Pick<InboundInteractionWork, 'sourceMessageId' | 'userId' | 'channelId'>,
-  input: ComponentId, database: string, server: PortableResidentLifecycle, now: () => number = systemNow): Promise<ConfirmationPlan> {
+  input: ComponentId, database: string, server: PortableResidentLifecycle, now: () => number = systemNow, nativeClaims?: NativeStandardClaimOwner): Promise<ConfirmationPlan> {
   requireDiscordText(database); const component = snapshotComponentId(input);
   if ('Busy' in component) throw new ComponentWorkerError('BusyChoice');
   const message = gatewayOwnField(work, 'sourceMessageId'); if (message === null) throw new ComponentWorkerError('MissingSourceMessage'); id(message);
@@ -29,13 +30,23 @@ export async function prepareStandardComponentAction(work: Pick<InboundInteracti
   const user = gatewayOwnField(work, 'userId'), channel = gatewayOwnField(work, 'channelId'); id(user); id(channel);
   const key = persistentComponentClaimKey(message, component); if (key === null) throw new ComponentWorkerError('InvalidComponent');
   const claimId = `actor-v1:${key}:${user}:${channel}`, plan = standardConfirmationPlan(component, claimId), marker = standardReadyMarker(claimId);
-  let claimed: Awaited<ReturnType<typeof claimStandardAction>>;
-  try {claimed = await claimStandardAction(database, claimId, marker, readCustodyTimestamp(now), ttl);}
+  let claimed: Awaited<ReturnType<typeof claimStandardAction>>, nativeClaim: NativeStandardClaim | undefined;
+  try {
+    if (nativeClaims === undefined) claimed = await claimStandardAction(database, claimId, marker, readCustodyTimestamp(now), ttl);
+    else {
+      NativeStandardClaimOwner.prototype.requireDatabase.call(nativeClaims, database);
+      const result = await NativeStandardClaimOwner.prototype.claim.call(nativeClaims, work as InboundInteractionWork, component, readCustodyTimestamp(now));
+      claimed = result.kind; if (result.kind === 'ExecuteAction') nativeClaim = result.claim;
+    }
+  }
   catch (error) {throw new ComponentWorkerError('Store', error);}
   if (claimed === 'DeliverConfirmation') return plan;
   if (claimed === 'ActionUnconfirmed') throw new ComponentWorkerError('ActionUnconfirmed');
   let response: ReturnType<typeof prepareComponentResponse>;
-  const release = async () => {try {await state.releaseComponentClaim(database, claimId);} catch (error) {throw new ComponentWorkerError('Store', error);}};
+  const release = async () => {try {
+    if (nativeClaims === undefined) await state.releaseComponentClaim(database, claimId);
+    else await NativeStandardClaimOwner.prototype.release.call(nativeClaims, nativeClaim!);
+  } catch (error) {throw new ComponentWorkerError('Store', error);}};
   try {response = prepareComponentResponse(component, server);} catch (error) {await release(); throw error;}
   try {
     let requests;
@@ -49,10 +60,16 @@ export async function prepareStandardComponentAction(work: Pick<InboundInteracti
   try {await PortableResidentLifecycle.prototype.respond.call(server, response.requestId, response.occurrence, response.payload, response.generation);}
   catch (error) {
     let disposition;
-    try {disposition = await retainOrReleaseComponentClaim(database, claimId, error);} catch (storeError) {throw new ComponentWorkerError('Store', storeError);}
+    try {
+      if (nativeClaims === undefined) disposition = await retainOrReleaseComponentClaim(database, claimId, error);
+      else {disposition = appServerClaimFailure(error); if (disposition === 'Release') await release();}
+    } catch (storeError) {throw new ComponentWorkerError('Store', storeError);}
     if (disposition === 'RetainIndeterminate') throw new ComponentWorkerError('ActionOutcomeIndeterminate', passiveErrorText(error, 'app-server response outcome unknown'));
     throw new ComponentWorkerError('AppServer', error);
   }
-  try {await recordConfirmationReady(database, marker, readCustodyTimestamp(now), ttl);} catch (error) {throw recovery(error);}
+  try {
+    if (nativeClaims === undefined) await recordConfirmationReady(database, marker, readCustodyTimestamp(now), ttl);
+    else await NativeStandardClaimOwner.prototype.ready.call(nativeClaims, nativeClaim!, readCustodyTimestamp(now));
+  } catch (error) {throw recovery(error);}
   return plan;
 }
