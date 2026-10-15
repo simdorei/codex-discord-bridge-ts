@@ -1,3 +1,4 @@
+import {NativeQuestionPublicationOwner} from "./async-question-publication-native.ts";
 import {types} from "node:util";
 import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
 import {serializeSerdeValue} from "../core/serde-json.ts";
@@ -14,24 +15,31 @@ function diagnostic(error:unknown,render:AsyncQuestionFailureRenderer):string{
  if(typeof render!=="function"||types.isProxy(render)||types.isAsyncFunction(render)||types.isGeneratorFunction(render))throw new TypeError("Expected public-safe synchronous question diagnostic renderer");
  const message=render(error);if(types.isPromise(message))void Promise.prototype.then.call(message,undefined,()=>undefined);requireDiscordText(message);return message;
 }
-async function deliverOne(path:string,transport:DiscordReceiptTransport,q:StoredAsyncQuestion):Promise<void>{
+async function deliverOne(path:string,transport:DiscordReceiptTransport,q:StoredAsyncQuestion,publication?:NativeQuestionPublicationOwner,signal?:AbortSignal):Promise<void>{
  if(q.channelId<=0n||q.channelId>=(1n<<64n))throw new CompletionChannelIdError();
- const send=async(domain:string,key:string,text:string)=>{const chunks=splitExactDeliveryChunks(text,true);for(let i=0;i<chunks.length;i++)await sendReceiptChunk(path,transport,q.channelId,{domain,logicalKey:key,chunkIndex:i,content:chunks[i]!});};
+ const send=async(domain:string,key:string,text:string)=>{const chunks=splitExactDeliveryChunks(text,true);for(let i=0;i<chunks.length;i++)await sendReceiptChunk(path,transport,q.channelId,{domain,logicalKey:key,chunkIndex:i,content:chunks[i]!},[],null,signal,publication!==undefined);};
  if(q.body.source_text!=="")await send("async-question-item-text-v1",serializeSerdeValue([q.threadId,q.turnId,q.itemId]),q.body.source_text);
  let body=`질문 ${q.body.index+1n}\n${q.body.title}`;for(let i=0;i<q.body.options.length;i++)body+=`\n${i+1}. ${q.body.options[i]}`;
  let rows:ActionRowComponent[],controls:string;
  try{rows=asyncChoiceRows(q.id,q.body.options);controls=`질문 ${q.body.index+1n}의 답변을 선택하세요.`;}
  catch(error){if(!(error instanceof ComponentError))throw error;rows=[];controls=`질문 ${q.body.index+1n}: 선택 버튼을 만들 수 없습니다 (${error.message}). 자유 입력 또는 1~25개 범위를 벗어난 선택지는 이 버튼 경로에서 지원하지 않습니다. 새 메시지로 답해주세요.`;}
  await send("async-question-body-v1",q.id,body);
- await sendReceiptChunk(path,transport,q.channelId,{domain:ASYNC_QUESTION_DELIVERY_DOMAIN,logicalKey:q.id,chunkIndex:0,content:controls},rows);
- await state.bindAsyncQuestionReceipt(path,q.id,rows.length!==0);
+ await sendReceiptChunk(path,transport,q.channelId,{domain:ASYNC_QUESTION_DELIVERY_DOMAIN,logicalKey:q.id,chunkIndex:0,content:controls},rows,null,signal,publication!==undefined);
+ // A known final control receipt must bind even if cancellation arrived in flight.
+ if(publication===undefined)await state.bindAsyncQuestionReceipt(path,q.id,rows.length!==0);else await publication.bind(rows.length!==0);
 }
 /** Original owner + mapping before every question; all body/control chunks use durable
  * identities. Trusted transport still owns actual HTTP and provider receipt validation. */
-export async function deliverCheckedAsyncQuestion(path:string,gen:bigint,transport:DiscordReceiptTransport,input:StoredAsyncQuestion,render:AsyncQuestionFailureRenderer):Promise<void>{
+export async function deliverCheckedAsyncQuestion(path:string,gen:bigint,transport:DiscordReceiptTransport,input:StoredAsyncQuestion,render:AsyncQuestionFailureRenderer,native=false,signal?:AbortSignal):Promise<void>{
+ if(typeof native!=="boolean")throw new TypeError("Expected native question publication flag");
  const q=cloneOwnedSerdeValue(input) as StoredAsyncQuestion;if(q.generation<0n||q.generation!==gen||q.state!=="observed")return;
- try{await state.requireCurrentAsyncQuestionMapping(path,q);if(await state.confirmAsyncQuestionOwner(path,q.id))await deliverOne(path,transport,q);}
- catch(error){await state.recordAsyncQuestionError(path,q.id,diagnostic(error,render));throw error;}
+ const publication=native?new NativeQuestionPublicationOwner(path,q):undefined;
+ try{
+  signal?.throwIfAborted();let confirmed:boolean;
+  if(publication===undefined){await state.requireCurrentAsyncQuestionMapping(path,q);confirmed=await state.confirmAsyncQuestionOwner(path,q.id);}else confirmed=await publication.prepare(signal);
+  if(confirmed)await deliverOne(path,transport,publication?.question??q,publication,signal);
+ }catch(error){const display=diagnostic(error,render);if(publication===undefined)await state.recordAsyncQuestionError(path,q.id,display);else await publication.recordError(display);throw error;}
+ finally{await publication?.close();}
 }
 /** Sequential bounded pending pass; retain the first error but try independent later
  * questions. Shared item context is deduplicated by its original durable receipt. */

@@ -28,6 +28,7 @@ const entries:readonly (readonly [string,'path'|'mirror'|'mirrorDb'|null])[]=[
  ['runtime/archive-delete/backup-worker.ts',null],
  ['runtime/archive-delete/preparation-worker.ts','mirror'],
  ['runtime/archive-delete/row-digest-worker.ts',null],
+ ['runtime/async-question-publication-native-worker.ts','path'],
  ['runtime/bridge-state-native-worker.ts',null],
  ['runtime/completion/native-discovery-worker.ts',null],
  ['runtime/completion/native-final-state-worker.ts','path'],

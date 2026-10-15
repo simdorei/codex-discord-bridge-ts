@@ -3,7 +3,7 @@ import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
 import {serializeSerdeValue} from "../core/serde-json.ts";
 import {rustTrim} from "../app-server/value.ts";
 import {usingInitializedStore,usingExistingStore,withStoreTransaction,commitStore} from "./owned-scope.ts";
-import {readAsyncQuestionIn,requireAsyncQuestionOccurrence,type StoredAsyncQuestion} from "./async-question-read.ts";
+import {readAsyncQuestionIn,readAsyncQuestionWithBodyIn,requireAsyncQuestionOccurrence,type StoredAsyncQuestion} from "./async-question-read.ts";
 import {validateAsyncQuestionMappingIn,asyncQuestionRunningMatches,sealAsyncQuestionIn,verifyAsyncQuestionIdentityIn} from "./async-question-guard.ts";
 import {allJobs,QUARANTINED_TURN_PREFIX,QUARANTINED_ERROR_PREFIX} from "./queue-read.ts";
 import {enqueueInTransaction} from "./queue-enqueue.ts";
@@ -58,7 +58,17 @@ function boundedError(id:string,error:string):string{text(id);text(error);return
 function errorIn(db:DatabaseSync,id:string,error:string):void{db.prepare("UPDATE cdr_async_questions SET error=?,updated_at=unixepoch() WHERE id=?").run(error,id);}
 export async function recordAsyncQuestionError(path:string,id:string,error:string):Promise<void>{const bounded=boundedError(id,error);await usingInitializedStore(path,db=>errorIn(db,id,bounded));}
 /** Original bounded scalar autocommit, without a new row read or transaction. */
-export function recordAsyncQuestionErrorExisting(path:string,id:string,error:string):void{const bounded=boundedError(id,error);usingExistingStore(path,db=>errorIn(db,id,bounded));}
+export function recordAsyncQuestionErrorExisting(path:string,id:string,error:string,expected?:StoredAsyncQuestion):void{
+ const bounded=boundedError(id,error),original=expected===undefined?undefined:cloneOwnedSerdeValue(expected) as StoredAsyncQuestion;
+ usingExistingStore(path,db=>{
+  if(original===undefined){errorIn(db,id,bounded);return;}
+  const {question:q,rawBody}=readAsyncQuestionWithBodyIn(db,id);requireAsyncQuestionOccurrence(q,original);
+  const changes=db.prepare(`UPDATE cdr_async_questions SET error=?,updated_at=unixepoch() WHERE id=?
+   AND runtime_id=? AND generation=? AND thread_id=? AND turn_id=? AND item_id=? AND origin_job_id=? AND channel_id=? AND owner_user_id=? AND body=? AND message_id IS ?`)
+   .run(bounded,id,q.runtimeId,q.generation,q.threadId,q.turnId,q.itemId,q.originJobId,q.channelId,q.ownerUserId,rawBody,q.messageId).changes;
+  if(BigInt(changes)!==1n)invalid("original async question occurrence changed before error recording");
+ });
+}
 /** Call ONLY for a proved pre-send failure or authoritative rejection, never timeout. */
 export async function rejectDefiniteAsyncQuestion(path:string,id:string,error:string):Promise<void>{const bounded=boundedError(id,error);await usingInitializedStore(path,db=>rejectIn(db,id,bounded));}
 export function rejectDefiniteAsyncQuestionExisting(path:string,id:string,error:string,expected:StoredAsyncQuestion):void{const bounded=boundedError(id,error),original=cloneOwnedSerdeValue(expected) as StoredAsyncQuestion;usingExistingStore(path,db=>rejectIn(db,id,bounded,original));}

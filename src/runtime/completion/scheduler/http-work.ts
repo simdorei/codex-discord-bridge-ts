@@ -11,7 +11,7 @@ import type {DiscordReceiptTransport} from "../receipt-sender.ts";
 export interface CompletionResidentIdentity{instanceId():string;generation():bigint}
 /** REQUIRED checked UI adapter: must validate the original occurrence/current generation
  * and receipt claim before any send. No unchecked/default question sender is supplied. */
-export interface CheckedQuestionDelivery{deliverChecked(path:string,currentGeneration:bigint,transport:DiscordReceiptTransport,question:StoredAsyncQuestion):Promise<void>}
+export interface CheckedQuestionDelivery{deliverChecked(path:string,currentGeneration:bigint,transport:DiscordReceiptTransport,question:StoredAsyncQuestion,signal?:AbortSignal):Promise<void>}
 /** Called by a separately channel-serialized HTTP lane. Loading is revalidated metadata,
  * not send authority; each branch retains its own writer/preflight and receipt guards. */
 export async function deliverCompletionEntry(path:string,input:CompletionEntry,resident:CompletionResidentIdentity,options:FinalDeliveryOptions,questions:CheckedQuestionDelivery,native?:Pick<NativeHttpPayloadReader,'read'>,signal?:AbortSignal):Promise<void>{
@@ -25,7 +25,7 @@ export async function deliverCompletionEntry(path:string,input:CompletionEntry,r
     case "StartFailure":await deliverStartNotice(path,payload.value,fixed.transport,native!==undefined);return;
     case "Question":{
       const current=resident.generation();if(typeof current!=="bigint"||current<0n||current>=(1n<<64n))throw new QueueIntegerRangeError();
-      await checked(path,current,fixed.transport,payload.value);return;
+      await checked(path,current,fixed.transport,payload.value,signal);return;
     }
     case "Observed":return;
   }

@@ -11,7 +11,9 @@ export interface StoredAsyncQuestion{
 /** Node get() returns undefined for absence; this typed adapter is not a native SQLite exception. */
 export class AsyncQuestionNotFoundError extends Error{readonly kind="QueryReturnedNoRows";constructor(){super("async question row not found");this.name="AsyncQuestionNotFoundError";}}
 /** Borrowed immutable occurrence read only; does not confirm ownership or authorize dispatch. */
-export function readAsyncQuestionIn(db:DatabaseSync,id:string):StoredAsyncQuestion{
+export function readAsyncQuestionIn(db:DatabaseSync,id:string):StoredAsyncQuestion{return readAsyncQuestionWithBodyIn(db,id).question;}
+/** One selected row retains its exact stored body bytes for a later conditional write. */
+export function readAsyncQuestionWithBodyIn(db:DatabaseSync,id:string):{question:StoredAsyncQuestion;rawBody:string}{
   if(typeof id!=="string"||/[\uD800-\uDFFF]/u.test(id))throw new TypeError("Expected well-formed question identity");
   const row=receiptRow(db,`SELECT runtime_id,generation,thread_id,turn_id,item_id,origin_job_id,channel_id,owner_user_id,body,state,message_id,chosen,reply_job_id,error,
     ${receiptTextColumns("runtime_id","thread_id","turn_id","item_id","origin_job_id","body","state","message_id","reply_job_id","error")} FROM cdr_async_questions WHERE id=?`,id);
@@ -21,7 +23,7 @@ export function readAsyncQuestionIn(db:DatabaseSync,id:string):StoredAsyncQuesti
   const state=receiptText(row,"state")!,messageId=receiptText(row,"message_id",true),chosen=decodeOptionalI64(row.chosen,"chosen");
   if(chosen!==null&&(chosen<0n||chosen>65535n))throw new StoreIntegrityError("async question chosen is outside u16 range");
   const replyJobId=receiptText(row,"reply_job_id",true),error=receiptText(row,"error")!,payload=receiptText(row,"body")!;
-  return {id,runtimeId,generation,threadId,turnId,itemId,originJobId,channelId,ownerUserId,body:decodeQuestionBody(payload),state,messageId,chosen,replyJobId,error};
+  return {question:{id,runtimeId,generation,threadId,turnId,itemId,originJobId,channelId,ownerUserId,body:decodeQuestionBody(payload),state,messageId,chosen,replyJobId,error},rawBody:payload};
 }
 
 /** Immutable question occurrence, excluding only its evolving dispatch outcome. */

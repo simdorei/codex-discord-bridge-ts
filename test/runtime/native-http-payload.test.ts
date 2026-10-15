@@ -53,3 +53,9 @@ test('preabort, invalid source and getter input do not allocate worker or databa
 test('malformed selected Question body fails closed without rewriting its stored evidence',async()=>storeFixture(async path=>{
  const db=await openInitialized(path);try{db.exec("INSERT INTO cdr_async_questions(id,runtime_id,generation,thread_id,turn_id,item_id,origin_job_id,channel_id,owner_user_id,body,created_at,updated_at) VALUES('q','runtime',1,'t','turn','i','j',1,2,'{\"index\":0}',1,1)");}finally{db.close();}const e=await head(path,'Question'),reader=new NativeHttpPayloadReader(path);try{await assert.rejects(reader.read(e,'runtime',1n),NativeHttpPayloadUnavailable);const check=await openInitialized(path);try{assert.equal(check.prepare("SELECT body FROM cdr_async_questions WHERE id='q'").get()!.body,'{"index":0}');}finally{check.close();}}finally{await reader.close();}
 }));
+
+test('Question HTTP adapter forwards the exact lane signal after native payload capture',async()=>storeFixture(async path=>{
+ const db=await openInitialized(path);try{db.exec("INSERT INTO cdr_async_questions(id,runtime_id,generation,thread_id,turn_id,item_id,origin_job_id,channel_id,owner_user_id,body,created_at,updated_at) VALUES('q','runtime',1,'t','turn','i','j',1,2,'{\"index\":0,\"title\":\"Q\",\"options\":[]}',1,1)");}finally{db.close();}
+ const entry=await head(path,'Question'),reader=new NativeHttpPayloadReader(path),controller=new AbortController();let calls=0;
+ try{await deliverCompletionEntry(path,entry,resident,delivery([]),{async deliverChecked(_p,_g,_t,_q,signal){calls++;assert.equal(signal,controller.signal);}},reader,controller.signal);assert.equal(calls,1);}finally{await reader.close();}
+}));
