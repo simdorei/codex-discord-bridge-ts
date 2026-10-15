@@ -11,7 +11,7 @@ import {InteractionAccessPolicy} from '../../discord/interaction-access.ts';
 import {invokeSynchronousVoid} from '../../core/synchronous-void.ts';
 import {passiveErrorText} from '../../core/passive-error-text.ts';
 import {SettingsTargetResolver} from '../settings-binding.ts';
-import {classifyGatewayMessage,MessageCandidate} from '../message-worker/classification.ts';
+import {captureMessageClassifier,takeMessageClassificationCapacityRefusal,MessageCandidate,type MessageClassification} from '../message-worker/classification.ts';
 import {AdmittedMessage,admitMessageCandidateAt} from '../message-worker/admission.ts';
 import {captureNativePromptReceipts} from '../server-prompt-receipt-profile.ts';
 import {createMessageProcessor,type MessageProcessorContext} from '../message-worker/processor.ts';
@@ -24,7 +24,7 @@ import {now as systemNow} from '../../store/queue-attach-goal.ts';
 import {HistoryPollState,historyMessageWatermark,type HistoryBatchItem,type HistoryWatermark} from './state.ts';
 import type {MessageGapReceiver} from '../../discord/gateway/message-gaps.ts';
 import {DiscordHistoryDiscardFence} from './discard-fence.ts';
-import {runHistoryGapRecovery,runBegunHistoryPollCycle,type HistoryPollOutcome,type HistoryPollIo,type HistoryGapOutcome} from './runner.ts';
+import {runHistoryGapRecovery,runBegunHistoryPollCycle,HistoryPollRunError,type HistoryPollOutcome,type HistoryPollIo,type HistoryGapOutcome} from './runner.ts';
 export type HistoryPolicyRefresh=(policy:InteractionAccessPolicy,database:string,signal?:AbortSignal)=>Promise<InteractionAccessPolicy>;
 export interface DiscordHistoryGapOptions extends MessageHandlerOptions {readonly applicationId:bigint;readonly botUserId:bigint|null;readonly refreshPolicy?:HistoryPolicyRefresh;readonly acceptedMessages?:GatewayAcceptedMessageView}
 /** Capture only an own-data callback; compatibility callers keep the legacy port. */
@@ -33,6 +33,11 @@ export function captureHistoryPolicyRefresh(options:unknown):HistoryPolicyRefres
  const field=Object.getOwnPropertyDescriptor(options,'refreshPolicy');if(field!==undefined&&!Object.hasOwn(field,'value'))throw new TypeError('Expected history policy callback data');
  const refresh=field?.value===undefined?refreshMirrorPolicy:field.value;
  if(typeof refresh!=='function'||types.isProxy(refresh)||types.isGeneratorFunction(refresh))throw new TypeError('Expected history policy refresh function');return refresh as HistoryPolicyRefresh;
+}
+const classificationErrors=new WeakMap<object,object>(),classificationRefusals=new WeakMap<Promise<HistoryGapOutcome>,unknown>();
+class DiscordHistoryClassificationCapacityError extends Error{constructor(source:unknown,origin:object){super('Discord history classification capacity is occupied; no read submitted',{cause:source});this.name='DiscordHistoryClassificationCapacityError';classificationErrors.set(this,origin);}}
+export function takeHistoryClassificationCapacityRefusal(pending:Promise<HistoryGapOutcome>|undefined,error:unknown):boolean{
+ if(pending===undefined||!classificationRefusals.has(pending)||classificationRefusals.get(pending)!==error)return false;classificationRefusals.delete(pending);return true;
 }
 const policyErrors=new WeakSet<object>(),capacityOrigins=new WeakMap<object,object>(),capacityRefusals=new WeakMap<Promise<HistoryGapOutcome>,unknown>();
 /** One-use proof for the exact channel attempt, never a public error tag/cause. */
@@ -60,7 +65,7 @@ async function runDiscordHistory(options:DiscordHistoryGapOptions,channel:bigint
  if(resolver===null||types.isProxy(resolver)||!(resolver instanceof SettingsTargetResolver))throw new TypeError('Expected settings resolver');
  const rawConfig=own(options,'classification'),ids=own(rawConfig,'plainAskMentionUserIds');if(types.isProxy(ids))throw new TypeError('Expected mention set');const mentions=new Set<bigint>();Set.prototype.forEach.call(ids,(id:bigint)=>mentions.add(id));const config={enableMessageContent:own(rawConfig,'enableMessageContent') as boolean,plainAskMentionUserIds:mentions};
  const emit=(code:string,detail:string)=>invokeSynchronousVoid(report,{},[code,detail]);
- const refresh=captureHistoryPolicyRefresh(options),accepted=captureAcceptedGatewayMessages(Object.hasOwn(options,'acceptedMessages')?own(options,'acceptedMessages'):undefined);
+ const refresh=captureHistoryPolicyRefresh(options),classify=captureMessageClassifier(options),accepted=captureAcceptedGatewayMessages(Object.hasOwn(options,'acceptedMessages')?own(options,'acceptedMessages'):undefined);
  const permit=AdmissionGate.prototype.tryEnter.call(gate),pending=new Set<AdmittedMessage>();
  try{
   const discard=mode.kind==='Poll'?DiscordHistoryDiscardFence.capture(mode.gaps,channel,accepted??undefined):null;
@@ -77,7 +82,10 @@ async function runDiscordHistory(options:DiscordHistoryGapOptions,channel:bigint
    claim:async(message:DecodedGatewayMessage,purpose:'Discard'|'Process',ownedSignal?:AbortSignal)=>{
     ownedSignal?.throwIfAborted();if(purpose==='Discard'&&discard===null)throw new TypeError('Gap-only adapter cannot discard historical messages');
     if(isForceRestartMessage(message.content))return {kind:'Lost'} as const;
-    const classified=await classifyGatewayMessage(message,database,config,policy,bot);ownedSignal?.throwIfAborted();if(classified.kind==='Ignore')return {kind:'Lost'} as const;
+    let classified:MessageClassification,classificationPending:Promise<MessageClassification>|undefined;
+    try{classificationPending=classify(message,database,config,policy,bot,ownedSignal);if(!types.isPromise(classificationPending))throw new TypeError('Expected classifier Promise');classified=await classificationPending;}
+    catch(error){if(ownedSignal?.aborted&&error===ownedSignal.reason)throw error;const capacity=takeMessageClassificationCapacityRefusal(classificationPending,error);if(capacity&&origin!==undefined)throw new DiscordHistoryClassificationCapacityError(error,origin);throw error;}
+    ownedSignal?.throwIfAborted();if(classified.kind==='Ignore')return {kind:'Lost'} as const;
     await MessageCandidate.prototype.bindSettings.call(classified.candidate,resolver);ownedSignal?.throwIfAborted();
     if(purpose==='Discard'){const won=await DiscordHistoryDiscardFence.prototype.claim.call(discard!,classified.candidate,observedAt,ownedSignal);return won?{kind:'Won',admitted:{kind:'Discarded'}} as const:{kind:'Lost'} as const;}
     const admitted=await admitMessageCandidateAt(classified.candidate,observedAt,{messageJournal:context.messageJournal as MessageJournal|undefined,now,report:value=>emit(value.code,passiveErrorText(value.error,'history custody hold failed'))});
@@ -97,7 +105,7 @@ async function runDiscordHistory(options:DiscordHistoryGapOptions,channel:bigint
 
 export function recoverDiscordHistoryChannel(options:DiscordHistoryGapOptions,channel:bigint,floor:HistoryWatermark,signal?:AbortSignal):Promise<HistoryGapOutcome>{
  const origin={};
- const pending=runDiscordHistory(options,channel,{kind:'Gap',floor},signal,origin).then(out=>{if(out===null||!('coverage' in out))throw new TypeError('Expected gap outcome');return out;}).catch((error:unknown)=>{if(error!==null&&typeof error==='object'&&capacityOrigins.get(error)===origin)capacityRefusals.set(pending,error);throw error;});
+ const pending=runDiscordHistory(options,channel,{kind:'Gap',floor},signal,origin).then(out=>{if(out===null||!('coverage' in out))throw new TypeError('Expected gap outcome');return out;}).catch((error:unknown)=>{if(error!==null&&typeof error==='object'&&capacityOrigins.get(error)===origin)capacityRefusals.set(pending,error);if(error instanceof HistoryPollRunError&&error.stage==='Claim'&&error.source!==null&&typeof error.source==='object'&&classificationErrors.get(error.source)===origin)classificationRefusals.set(pending,error);throw error;});
  return pending;
 }
 /** null means an existing sticky gap prevented this channel's periodic cycle. */

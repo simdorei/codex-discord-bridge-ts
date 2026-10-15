@@ -1,3 +1,4 @@
+import {DatabaseSync} from 'node:sqlite';
 import {it} from 'node:test';import assert from 'node:assert/strict';import {createServer} from 'node:http';import {dirname,join} from 'node:path';
 import {storeFixture} from '../../helpers/store-fixture.ts';import {asyncChoiceServer} from '../../helpers/async-choice-server.ts';
 import {recoverDiscordHistoryChannel,type DiscordHistoryGapOptions} from '../../../src/runtime/history-poll/discord-gap.ts';
@@ -179,4 +180,20 @@ for(const content of ['!repair t','!recover t'])it(`periodic discard protects qu
  let original:import('../../../src/discord/gateway/ingress.ts').MessageIngress|null=null;
  try{owner.publish({kind:'Message',event},1);assert.equal(owner.receivers.emergencyMessages.length,1);for(const active of [false,true]){if(active)original=await owner.receivers.emergencyMessages.receive();await runPeriodicDiscordHistory(history,rx,options);assert.equal(await state.isProcessedMessage(f.path,2n),false);assert.equal(await state.getIngress(f.path,'message:2'),null);assert.equal(history.isPrimed(1n),false);assert.equal(view.size,1);assert.notEqual(rx.captureClearFence(1n),null);}assert.deepEqual(f.calls,[]);
  }finally{if(original!==null)owner.receivers.emergencyMessages.complete(original);for(const lane of Object.values(owner.receivers))lane.dispose();rx.dispose();owner.close();}
+}));
+
+import {createNativeMessageClassifier} from '../../../src/runtime/message-worker/classification.ts';
+import {openInitialized} from '../../../src/store/owned-driver.ts';
+const classificationLimits={maxRows:100n,maxValueBytes:65536n,maxOutputBytes:65536,timeoutMs:5000};
+it('native same-page classify-bind-admit-process makes !new visible and consumed arms cannot be reused',async()=>{
+ const page=[message(3,'first prompt'),message(2,'!new')];await fixture(page,async f=>{
+  (await openInitialized(f.path)).close();f.options.classification.plainAskMentionUserIds.add(777n);const options={...f.options,classifyMessage:createNativeMessageClassifier(f.path,classificationLimits)};
+  const first=await recoverDiscordHistoryChannel(options,1n,floor);assert.equal(first.processed,2);assert.deepEqual(f.calls,[{action:{New:{prompt:'first prompt'}},key:'message:3'}]);assert.equal(((await state.getIngress(f.path,'message:3'))!.payload as any).new_prompt_arm_ref,'message:2');
+  page.splice(0,page.length,message(4,'second unmentioned'));const next=await recoverDiscordHistoryChannel(options,1n,floor);assert.equal(next.processed,0);assert.equal(await state.getIngress(f.path,'message:4'),null);assert.equal(f.calls.length,1);
+ });
+});
+it('native same-page mapping change after !new is rechecked and cannot retarget first prompt',async()=>fixture([message(3,'first prompt'),message(2,'!new')],async f=>{
+ (await openInitialized(f.path)).close();f.options.classification.plainAskMentionUserIds.add(777n);const native=createNativeMessageClassifier(f.path,classificationLimits);let calls=0;
+ const options={...f.options,classifyMessage:(...args:Parameters<typeof native>)=>{if(++calls===2){const db=new DatabaseSync(f.path);try{db.exec("INSERT INTO mirror_threads VALUES('changed','p','title',9,1,1)");}finally{db.close();}}return native(...args);}};
+ const out=await recoverDiscordHistoryChannel(options,1n,floor);assert.equal(out.processed,2);assert.deepEqual(f.calls,[]);assert.match(JSON.stringify(((await state.getIngress(f.path,'message:3'))!.payload as any).plan),/방 연결이 변경/);
 }));

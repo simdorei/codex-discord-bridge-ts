@@ -98,7 +98,7 @@ test('native policy reads bypass poisoned legacy facade and replace removed exac
 }));
 
 test('classification failure after native policy success remains fatal without capacity retry',async t=>fixture(async c=>{
- const failure=new OwnedWorkerBudgetError();let calls=0;t.mock.method(state,'newThreadOrigin',async()=>{calls++;throw failure;});await assert.rejects(c.handler(message(),identity,signal()),e=>e===failure);assert.equal(calls,1);assert.deepEqual(c.clock.deadlines,[]);assert.equal(posts(c.seen),0);
+ const failure=new OwnedWorkerBudgetError();let calls=0;t.mock.method(state,'newThreadOrigin',async()=>{calls++;throw failure;});await assert.rejects(createGatewayMessageHandler(c.direct)(message(),identity,signal()),e=>e===failure);assert.equal(calls,1);assert.deepEqual(c.clock.deadlines,[]);assert.equal(posts(c.seen),0);
 }));
 
 test('handler captures path, refresh callback, report, first clock and retry clock methods before await',async()=>fixture(async c=>{
@@ -121,7 +121,7 @@ test('processor validation precedes policy refresh and durable admission',async(
 }));
 
 test('a distinct classification failure concurrent with cancellation is preserved for the identity guard',async t=>fixture(async c=>{
- const abort=new AbortController(),failure=Error('distinct classification failure'),reason=Error('cancel');t.mock.method(state,'newThreadOrigin',async()=>{abort.abort(reason);throw failure;});await assert.rejects(c.handler(message(),identity,abort.signal),e=>e===failure);assert.deepEqual(c.clock.deadlines,[]);assert.equal(posts(c.seen),0);assert.equal(await state.isProcessedMessage(c.f.path,messageId),false);
+ const abort=new AbortController(),failure=Error('distinct classification failure'),reason=Error('cancel');t.mock.method(state,'newThreadOrigin',async()=>{abort.abort(reason);throw failure;});await assert.rejects(createGatewayMessageHandler(c.direct)(message(),identity,abort.signal),e=>e===failure);assert.deepEqual(c.clock.deadlines,[]);assert.equal(posts(c.seen),0);assert.equal(await state.isProcessedMessage(c.f.path,messageId),false);
 }));
 
 test('a genuine old policy capacity error after an uncertain journal admission cannot retry',async()=>fixture(async c=>{

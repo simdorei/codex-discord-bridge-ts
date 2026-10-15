@@ -6,7 +6,7 @@ import {invokeSynchronousVoid} from '../../core/synchronous-void.ts';
 import {passiveErrorText} from '../../core/passive-error-text.ts';
 import {historyMessageWatermark} from '../history-poll/state.ts';
 import {HistoryPollRunError} from '../history-poll/runner.ts';
-import {recoverDiscordHistoryChannel,isDiscordHistoryPolicyError,takeHistoryPolicyCapacityRefusal,type DiscordHistoryGapOptions} from '../history-poll/discord-gap.ts';
+import {recoverDiscordHistoryChannel,isDiscordHistoryPolicyError,takeHistoryPolicyCapacityRefusal,takeHistoryClassificationCapacityRefusal,type DiscordHistoryGapOptions} from '../history-poll/discord-gap.ts';
 export interface HistoryRecoveryDisposition{readonly retryCapacity:boolean;}
 /** Source gap pass only. Acknowledgement uses the original revision-bound notice,
  * never a fresh snapshot after effects. Incomplete coverage and recoverable errors
@@ -27,6 +27,7 @@ export async function recoverPendingDiscordHistory(gaps:MessageGapReceiver,optio
    if(signal?.aborted&&error===signal.reason)throw error;
    if(drainGateErrorInfo(error)?.kind==='Sealed'){emit('discord_message_gap_deferred','restart_drain_sealed');return disposition();}
    if(takeHistoryPolicyCapacityRefusal(pending,error)){retryCapacity=true;emit('discord_message_gap_deferred',`channel=${channel} reason=policy_capacity`);continue;}
+   if(takeHistoryClassificationCapacityRefusal(pending,error)){retryCapacity=true;emit('discord_message_gap_deferred',`channel=${channel} reason=classification_capacity`);continue;}
    if(isDiscordHistoryPolicyError(error)){emit('discord_message_gap_failed',`channel=${channel} stage=policy ${passiveErrorText(error,'policy failed')}`);continue;}
    if(error instanceof HistoryPollRunError&&['Source','Adaptation','Claim'].includes(error.stage)){emit('discord_message_gap_failed',`channel=${channel} stage=${error.stage.toLowerCase()} ${passiveErrorText(error,'history failed')}`);continue;}
    throw error;

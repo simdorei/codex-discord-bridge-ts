@@ -1,3 +1,4 @@
+import type {SelectedReadBudget} from './selected-read-budget.ts';
 import type {DatabaseSync} from 'node:sqlite';
 import {asU64,getOwn} from './async-resolution-json-helpers.ts';
 import {serdeValueEqual} from '../core/serde-value-equal.ts';
@@ -37,13 +38,14 @@ const SQL=`SELECT EXISTS(
  * certified failed/interrupted terminal must not supersede the old Stop.
  * Read-only exception for exact unbound legacy Stop. No record deletion,
  * requeue, acknowledgement or release of an individual execution hold. */
-export function legacyStopSupersededIn(db:DatabaseSync,thread:string,ingress:string,payload:unknown):boolean{
+export function legacyStopSupersededIn(db:DatabaseSync,thread:string,ingress:string,payload:unknown,budget?:SelectedReadBudget):boolean{
  requireDiscordText(thread);requireDiscordText(ingress);
  if(asU64(getOwn(payload,'version'))!==1n||!serdeValueEqual(getOwn(payload,'plan'),{Execute:{Stop:{reference:null}}})||
    ['lifecycle_binding','stop_origin','work','command'].some(k=>{const v=getOwn(payload,k);return v!==undefined&&v!==null;}))return false;
  const probe=db.prepare("SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE type='table' AND name=?) AS present");probe.setReadBigInts(true);
- if(decodeI64(probe.get('cdr_recovery_ingress_order')?.present,'present')===0n)return false;
+ const present=probe.get('cdr_recovery_ingress_order');budget?.row(present);
+ if(decodeI64(present?.present,'present')===0n)return false;
  checkAdmissionOrderCompatibility(db,1n);
  const query=db.prepare(SQL);query.setReadBigInts(true);
- return decodeI64(query.get(ingress,thread)?.witnessed,'legacy stop witness')!==0n;
+ const witness=query.get(ingress,thread);budget?.row(witness);return decodeI64(witness?.witnessed,'legacy stop witness')!==0n;
 }

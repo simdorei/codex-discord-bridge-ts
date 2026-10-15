@@ -1,3 +1,4 @@
+import type {SelectedReadBudget} from './selected-read-budget.ts';
 import type {DatabaseSync} from "node:sqlite";
 import {openInitialized} from "./owned-driver.ts";
 import {snapshotNewIngress,type NewIngress} from "./ingress-types.ts";
@@ -9,12 +10,14 @@ import {trimUnicodeWhitespace as trim} from "./queue-preflight-failure.ts";
 import {decodeI64,decodeTextField,textDecoderFor} from "./sqlite-values.ts";
 import {StoreIntegrityError} from "./schema-assembly.ts";
 const PENDING="FROM discord_ingress_journal WHERE channel_id=? AND owner_user_id=? AND kind='message' AND json_type(payload_json,'$.new_prompt_arm')='object' ORDER BY event_id DESC LIMIT 1";
+export function pendingNewPromptIn(db:DatabaseSync,channel:bigint,user:bigint,event:bigint,budget?:SelectedReadBudget):string|null{
+  for(const value of [channel,user,event])if(typeof value!=="bigint"||value<-(1n<<63n)||value>=(1n<<63n))throw new TypeError("Expected i64 identity");
+  const q=db.prepare(`SELECT ingress_id,CAST(ingress_id AS BLOB) AS raw,(SELECT encoding FROM pragma_encoding) AS encoding,event_id < ? AND json_extract(payload_json,'$.new_prompt_arm.consumed_by') IS NULL AS pending ${PENDING}`);q.setReadBigInts(true);const r=q.get(event,channel,user);budget?.row(r);
+  if(r===undefined)return null;const id=decodeTextField(r.ingress_id,r.raw,"ingress_id",false,textDecoderFor(r.encoding))!;return decodeI64(r.pending,"pending")!==0n?id:null;
+}
 export async function pendingNewPrompt(path:string,channel:bigint,user:bigint,event:bigint):Promise<string|null>{
   for(const value of [channel,user,event])if(typeof value!=="bigint"||value<-(1n<<63n)||value>=(1n<<63n))throw new TypeError("Expected i64 identity");
-  const db=await openInitialized(path);try{
-    const q=db.prepare(`SELECT ingress_id,CAST(ingress_id AS BLOB) AS raw,(SELECT encoding FROM pragma_encoding) AS encoding,event_id < ? AND json_extract(payload_json,'$.new_prompt_arm.consumed_by') IS NULL AS pending ${PENDING}`);q.setReadBigInts(true);const r=q.get(event,channel,user);
-    if(r===undefined)return null;const id=decodeTextField(r.ingress_id,r.raw,"ingress_id",false,textDecoderFor(r.encoding))!;return decodeI64(r.pending,"pending")!==0n?id:null;
-  }finally{db.close();}
+  const db=await openInitialized(path);try{return pendingNewPromptIn(db,channel,user,event);}finally{db.close();}
 }
 /** Access checks remain the caller's responsibility. Consumption shares the admission writer transaction. */
 export function prepareNewPromptArmIn(db:DatabaseSync,original:NewIngress):NewIngress{

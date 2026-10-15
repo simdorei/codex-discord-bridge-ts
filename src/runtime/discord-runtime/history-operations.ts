@@ -1,3 +1,4 @@
+import {captureMessageClassifier} from '../message-worker/classification.ts';
 import {captureAcceptedGatewayMessages} from '../../discord/gateway/message-custody.ts';
 import {captureNativeHistoryTargetLimits,type NativeHistoryTargetLimits} from './native-history-targets.ts';
 import {types} from 'node:util';
@@ -17,7 +18,7 @@ export function createDiscordHistoryOperations(gaps:MessageGapReceiver,options:D
  const source=own(options,'context'),context={} as Record<string,unknown>;
  for(const key of ['database','server','http','config','attachmentRoot','attachmentTransport','attachmentReport','controlVerifier','services'])context[key]=own(source,key);
  for(const key of ['now','messageJournal','nativePromptReceipts','promptAuthorityReads'])if(Object.hasOwn(source as object,key))context[key]=own(source,key);
- const captured={context:Object.freeze(context),refreshPolicy:captureHistoryPolicyRefresh(options)} as Record<string,unknown>;for(const key of ['gate','classification','policy','resolver','report','startupChannelId'])captured[key]=own(options,key);captured.allowedChannelIds=ids;if(Object.hasOwn(options,'nativeTargetLimits'))captured.nativeTargetLimits=captureNativeHistoryTargetLimits(own(options,'nativeTargetLimits') as NativeHistoryTargetLimits);if(Object.hasOwn(options,'acceptedMessages'))captured.acceptedMessages=captureAcceptedGatewayMessages(own(options,'acceptedMessages'))??undefined;Object.freeze(captured);
+ const captured={context:Object.freeze(context),refreshPolicy:captureHistoryPolicyRefresh(options),classifyMessage:captureMessageClassifier(options)} as Record<string,unknown>;for(const key of ['gate','classification','policy','resolver','report','startupChannelId'])captured[key]=own(options,key);captured.allowedChannelIds=ids;if(Object.hasOwn(options,'nativeTargetLimits'))captured.nativeTargetLimits=captureNativeHistoryTargetLimits(own(options,'nativeTargetLimits') as NativeHistoryTargetLimits);if(Object.hasOwn(options,'acceptedMessages'))captured.acceptedMessages=captureAcceptedGatewayMessages(own(options,'acceptedMessages'))??undefined;Object.freeze(captured);
  const bind=(identity:GatewayIdentity):PeriodicHistoryOptions=>Object.freeze({...captured,applicationId:gatewayId(own(identity,'applicationId')),botUserId:gatewayId(own(identity,'userId'))}) as unknown as PeriodicHistoryOptions;
  return Object.freeze({recover:(identity,signal)=>recoverPendingDiscordHistory(gaps,bind(identity),signal),poll:async(history,identity,signal)=>{await runPeriodicDiscordHistory(history,gaps,bind(identity),signal);}} satisfies HistoryConsumerOperations);
 }

@@ -9,18 +9,21 @@ import type {NewThreadOrigin} from '../../store/new-thread-origin.ts';
 import {StoreIntegrityError} from '../../store/schema-assembly.ts';
 import {cloneOwnedSerdeValue} from '../../core/owned-serde-value.ts';
 import {isProCommand} from '../../pro/prompt.ts';
-import {planMessage,MessagePlanError,type MessagePlan} from '../message-plan.ts';
+import {messageSqlId as sql,needsNewPromptArm,frozenMessagePlan,discardClassificationJob,type ClassificationFacts,type FrozenMessagePlan} from './classification-plan.ts';
+export {MessageAdmissionIntegerRangeError,type FrozenMessagePlan} from './classification-plan.ts';
+import {OwnedWorkerSlot,takeOwnedWorkerAdmissionRefusal,OwnedWorkerBusyError} from '../owned-worker-slot.ts';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
+import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
+import {captureNativeMessageClassificationLimits,captureClassificationReadResult,throwClassificationReadFailure,NativeMessageClassificationError,type NativeMessageClassificationLimits,type ClassificationReadResult} from './classification-wire.ts';
+export {captureNativeMessageClassificationLimits,NativeMessageClassificationError,type NativeMessageClassificationLimits} from './classification-wire.ts';
 import {SettingsTargetResolver,isSettingsRequestRejection,settingsErrorText} from '../settings-binding.ts';
 import type {FrozenSettingsBinding} from '../action-executor/settings-snapshot.ts';
-export type FrozenMessagePlan={readonly ok:true;readonly value:MessagePlan}|{readonly ok:false;readonly error:MessagePlanError};
 export interface MessageCandidateParts {
  readonly message:DecodedGatewayMessage;readonly database:string;readonly persistedId:bigint;readonly channelId:bigint;readonly userId:bigint;
  readonly frozenPlan:FrozenMessagePlan;readonly routingTarget:string|null;readonly newOrigin:NewThreadOrigin;readonly newPromptMentionArm:string|null;
  readonly settingsBinding:FrozenSettingsBinding|null;readonly lifecycleBinding:FrozenSettingsBinding|null;
 }
 export type MessageClassification={readonly kind:'Ignore';readonly reason:string;readonly channelId:bigint;readonly userId:bigint}|{readonly kind:'Candidate';readonly candidate:MessageCandidate};
-export class MessageAdmissionIntegerRangeError extends Error{constructor(){super('Discord identifier does not fit the SQLite integer contract');this.name='MessageAdmissionIntegerRangeError';Object.freeze(this);}}
-const sql=(id:bigint)=>{if(id<0n||id>=1n<<63n)throw new MessageAdmissionIntegerRangeError();return id;};
 const token=Symbol('MessageCandidate');
 const respond=(text:string):FrozenMessagePlan=>Object.freeze({ok:true,value:Object.freeze({Respond:text})});
 function sameRoute(binding:FrozenSettingsBinding,routed:string|null){return binding.route==='Explicit'||(binding.route==='Mapped'?routed===binding.target:routed===null);}
@@ -52,26 +55,74 @@ export class MessageCandidate {
  intoAdmissionParts():MessageCandidateParts{this.#available();this.#consumed=true;return this.#parts;}
 }
 Object.freeze(MessageCandidate.prototype);
-export async function classifyGatewayMessage(message:DecodedGatewayMessage,database:string,
- config:Pick<RuntimeConfig,'enableMessageContent'|'plainAskMentionUserIds'>,policy:InteractionAccessPolicy,botUserId:bigint|null):Promise<MessageClassification>{
+type Config=Pick<RuntimeConfig,'enableMessageContent'|'plainAskMentionUserIds'>;
+export type MessageClassifier=(message:DecodedGatewayMessage,database:string,config:Config,policy:InteractionAccessPolicy,botUserId:bigint|null,signal?:AbortSignal)=>Promise<MessageClassification>;
+/** Callback and options are captured before the first asynchronous step. */
+export function captureMessageClassifier(options:unknown):MessageClassifier{
+ if(options===null||typeof options!=='object'||types.isProxy(options))throw new TypeError('Expected classification options');
+ const field=Object.getOwnPropertyDescriptor(options,'classifyMessage');if(field!==undefined&&!Object.hasOwn(field,'value'))throw new TypeError('Expected classifier callback data');
+ const fn=field?.value===undefined?classifyGatewayMessage:field.value;if(typeof fn!=='function'||types.isProxy(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected message classifier');return fn as MessageClassifier;
+}
+function capture(message:DecodedGatewayMessage,database:string,config:Config,policy:InteractionAccessPolicy,botUserId:bigint|null){
  if(!isDecodedGatewayMessage(message))throw new TypeError('Expected fully decoded gateway message');requireDiscordText(database);
  if(botUserId!==null&&(typeof botUserId!=='bigint'||botUserId<0n||botUserId>=1n<<64n))throw new TypeError('Expected optional u64 bot identity');
  const enabled=gatewayOwnField(config,'enableMessageContent');if(typeof enabled!=='boolean')throw new TypeError('Expected message content flag');
  const raw=gatewayOwnField(config,'plainAskMentionUserIds');if(raw===null||typeof raw!=='object'||types.isProxy(raw))throw new TypeError('Expected native mention ID set');const required:bigint[]=[];
  Set.prototype.forEach.call(raw,(id:unknown)=>{if(typeof id!=='bigint'||id<0n||id>=1n<<64n)throw new TypeError('Expected u64 mention identity');required.push(id);});
  const access=InteractionAccessPolicy.prototype.messageAccess.call(policy,message);
- const persistedId=sql(message.id),channelId=message.channel_id,storedChannel=sql(channelId),author=message.author as Readonly<{id:bigint;bot:boolean}>,userId=author.id;
- const newOrigin=cloneOwnedSerdeValue(await state.newThreadOrigin(database,storedChannel)) as NewThreadOrigin,routingTarget=newOrigin.target;
- const mentions=(message.mentions as readonly Readonly<{id:bigint}>[]).map(v=>v.id);
- const arm=routingTarget===null&&!author.bot&&!message.content.replace(/^\p{White_Space}+/u,'').startsWith('!')&&required.length!==0&&!mentions.some(id=>required.includes(id))
-  ?await state.pendingNewPrompt(database,storedChannel,sql(userId),persistedId):null;
- let frozenPlan:FrozenMessagePlan;
- try{frozenPlan=Object.freeze({ok:true,value:planMessage({content:message.content,messageContentEnabled:enabled,channelAllowed:access.channelAllowed,userAllowed:access.userAllowed,authorIsBot:author.bot,authorIsSelf:botUserId===userId,authorMentionsBridge:botUserId!==null&&mentions.includes(botUserId),hasAttachments:(message.attachments as readonly unknown[]).length!==0,mirroredTarget:routingTarget!==null||arm!==null,mentionedUserIds:mentions,requiredPlainAskUserIds:required})});}
- catch(error){if(!(error instanceof MessagePlanError))throw error;frozenPlan=Object.freeze({ok:false,error});}
- if(frozenPlan.ok&&'Execute'in frozenPlan.value&&typeof frozenPlan.value.Execute==='object'&&'DiscardRequest'in frozenPlan.value.Execute){
-  const target=state.abandonmentCommandTarget(database,frozenPlan.value.Execute.DiscardRequest.job_id,storedChannel,sql(userId));
-  if(routingTarget!==target)throw new StoreIntegrityError('discard-request mapping changed during classification; no proposal created');
- }
+ const persistedId=sql(message.id),channelId=sql(message.channel_id),author=message.author as Readonly<{id:bigint;bot:boolean}>,userId=author.id;
+ const mentions=Object.freeze((message.mentions as readonly Readonly<{id:bigint}>[]).map(v=>v.id));
+ const facts:ClassificationFacts=Object.freeze({content:message.content,messageContentEnabled:enabled,channelAllowed:access.channelAllowed,userAllowed:access.userAllowed,authorIsBot:author.bot,authorIsSelf:botUserId===userId,authorMentionsBridge:botUserId!==null&&mentions.includes(botUserId),hasAttachments:(message.attachments as readonly unknown[]).length!==0,mentionedUserIds:mentions,requiredPlainAskUserIds:Object.freeze(required)});
+ return Object.freeze({message,database,persistedId,channelId,userId,facts});
+}
+function finish(input:ReturnType<typeof capture>,read:ClassificationReadResult):MessageClassification{
+ const {message,database,persistedId,channelId,userId,facts}=input,newOrigin=read.origin,routingTarget=newOrigin.target,arm=read.arm;
+ if(needsNewPromptArm(facts,routingTarget))sql(userId);
+ if(!needsNewPromptArm(facts,routingTarget)&&arm!==null)throw new NativeMessageClassificationError('Unexpected mention arm');
+ const frozenPlan=frozenMessagePlan(facts,routingTarget,arm),job=discardClassificationJob(frozenPlan);
+ if(job!==null){sql(userId);if(read.abandonmentTarget!==routingTarget||read.abandonmentTarget===null)throw new StoreIntegrityError('discard-request mapping changed during classification; no proposal created');}
+ else if(read.abandonmentTarget!==null)throw new NativeMessageClassificationError('Unexpected abandonment target');
  if(frozenPlan.ok&&'Ignore'in frozenPlan.value)return Object.freeze({kind:'Ignore',reason:frozenPlan.value.Ignore,channelId,userId});
  return Object.freeze({kind:'Candidate',candidate:new MessageCandidate(token,Object.freeze({message,database,persistedId,channelId,userId,frozenPlan,routingTarget,newOrigin,newPromptMentionArm:arm,settingsBinding:null,lifecycleBinding:null}))});
+}
+/** Direct compatibility path retains the original facade calls and observations. */
+export async function classifyGatewayMessage(message:DecodedGatewayMessage,database:string,config:Config,policy:InteractionAccessPolicy,botUserId:bigint|null):Promise<MessageClassification>{
+ const input=capture(message,database,config,policy,botUserId),{channelId,persistedId,userId,facts}=input;
+ const origin=cloneOwnedSerdeValue(await state.newThreadOrigin(database,channelId)) as NewThreadOrigin;
+ const arm=needsNewPromptArm(facts,origin.target)?await state.pendingNewPrompt(database,channelId,sql(userId),persistedId):null;
+ const job=discardClassificationJob(frozenMessagePlan(facts,origin.target,arm)),abandonmentTarget=job===null?null:state.abandonmentCommandTarget(database,job,channelId,sql(userId));
+ return finish(input,{origin,arm,abandonmentTarget});
+}
+const capacityOrigins=new WeakMap<object,object>(),capacityRefusals=new WeakMap<Promise<MessageClassification>,unknown>();
+class MessageClassificationCapacityError extends OwnedWorkerBusyError{constructor(origin:object){super();this.name='MessageClassificationCapacityError';this.message='Message classification capacity is occupied; no read submitted';capacityOrigins.set(this,origin);}}
+export function takeMessageClassificationCapacityRefusal(pending:Promise<MessageClassification>|undefined,error:unknown):boolean{
+ if(pending===undefined||!capacityRefusals.has(pending)||capacityRefusals.get(pending)!==error)return false;capacityRefusals.delete(pending);return true;
+}
+function capturePath(path:string):string{
+ requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new RangeError('Invalid native classification path');const fixed=pinNativeRuntimePath(path);if(Buffer.byteLength(fixed)>32768)throw new RangeError('Invalid native classification path');return fixed;
+}
+/** One zero-queue Control read per invocation. Shared class budget is unchanged;
+ * cancellation/timeout joins actual native exit, never terminates database I/O. */
+export function createNativeMessageClassifier(database:string,limits:NativeMessageClassificationLimits):MessageClassifier{
+ const path=capturePath(database),fixed=captureNativeMessageClassificationLimits(limits);
+ return (message,given,config,policy,botUserId,signal)=>{
+  const origin={};
+  const pending=classifyNative(origin,message,given,config,policy,botUserId,signal).catch((error:unknown)=>{if(error!==null&&typeof error==='object'&&capacityOrigins.get(error)===origin)capacityRefusals.set(pending,error);throw error;});return pending;
+ };
+ async function classifyNative(origin:object,message:DecodedGatewayMessage,given:string,config:Config,policy:InteractionAccessPolicy,botUserId:bigint|null,signal?:AbortSignal):Promise<MessageClassification>{
+  signal?.throwIfAborted();if(given!==database)throw new TypeError('Classifier belongs to another database');
+  const input=capture(message,given,config,policy,botUserId);
+  if(boundedSerdeByteCount(input.facts,4194304)===null)throw new RangeError('Classification input exceeds native budget');
+  const slot=new OwnedWorkerSlot('Control');let pending:Promise<unknown>|undefined,response:unknown,admitted=false,joined=Promise.resolve();
+  try{
+   try{pending=slot.run(new URL('./native-classification-worker.ts',import.meta.url),{path,limits:fixed,facts:input.facts,channel:input.channelId,event:input.persistedId,actor:input.userId},fixed.timeoutMs,signal);}
+   finally{admitted=slot.busy;joined=slot.join();}
+   response=await pending;
+  }catch(error){if(!admitted&&takeOwnedWorkerAdmissionRefusal(slot,pending,error))throw new MessageClassificationCapacityError(origin);throw error;}
+  finally{await joined;}
+  signal?.throwIfAborted();
+  if(boundedSerdeByteCount(response,fixed.maxOutputBytes+16384)===null||response===null||typeof response!=='object'||Object.getOwnPropertyNames(response).length!==2)throw new NativeMessageClassificationError('Invalid complete worker response');
+  const ok=gatewayOwnField(response,'ok');if(ok===false)throwClassificationReadFailure(gatewayOwnField(response,'error'));if(ok!==true)throw new NativeMessageClassificationError('Invalid worker response');
+  return finish(input,captureClassificationReadResult(gatewayOwnField(response,'value'),input.channelId,fixed));
+ }
 }

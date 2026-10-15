@@ -4,7 +4,7 @@ import {drainGateErrorInfo} from '../../admission/owned-key.ts';
 import {InteractionAccessPolicy} from '../../discord/interaction-access.ts';
 import type {DecodedGatewayMessage} from '../../discord/gateway/decoded-message.ts';
 import type {RuntimeConfig} from '../../config/runtime.ts';
-import {classifyGatewayMessage,MessageCandidate} from '../message-worker/classification.ts';
+import {captureMessageClassifier,takeMessageClassificationCapacityRefusal,MessageCandidate,type MessageClassifier,type MessageClassification} from '../message-worker/classification.ts';
 import {AdmittedMessage,admitMessageCandidateAt} from '../message-worker/admission.ts';
 import {captureMessageCustodyOptions,type MessageCustodyOptions} from '../message-worker/custody.ts';
 import {messageErrorReportTarget,processMessageWithErrorReport,type MessageErrorReportTarget} from '../message-worker/processing-boundary.ts';
@@ -47,6 +47,11 @@ export function captureMessagePolicyRefresh(options:unknown):MessagePolicyRefres
  if(typeof refresh!=='function'||types.isProxy(refresh)||types.isGeneratorFunction(refresh))throw new TypeError('Expected message policy refresh function');return refresh as MessagePolicyRefresh;
 }
 const capacityOrigins=new WeakMap<object,object>(),capacityRefusals=new WeakMap<Promise<PreparedGatewayMessage>,unknown>();
+const classificationOrigins=new WeakMap<object,object>(),classificationRefusals=new WeakMap<Promise<PreparedGatewayMessage>,unknown>();
+class GatewayMessageClassificationCapacityError extends Error{constructor(source:unknown,origin:object){super('Gateway message classification capacity is occupied; no read submitted',{cause:source});this.name='GatewayMessageClassificationCapacityError';classificationOrigins.set(this,origin);}}
+export function takeGatewayMessageClassificationCapacityRefusal(pending:Promise<PreparedGatewayMessage>|undefined,error:unknown):boolean{
+ if(pending===undefined||!classificationRefusals.has(pending)||classificationRefusals.get(pending)!==error)return false;classificationRefusals.delete(pending);return true;
+}
 class GatewayMessagePolicyCapacityError extends Error{constructor(source:unknown,origin:object){super('Gateway message policy capacity is occupied; no refresh submitted',{cause:source});this.name='GatewayMessagePolicyCapacityError';capacityOrigins.set(this,origin);}}
 /** Only this exact preparation Promise can consume its single-use retry proof. */
 export function takeGatewayMessagePolicyCapacityRefusal(pending:Promise<PreparedGatewayMessage>|undefined,error:unknown):boolean{
@@ -55,7 +60,7 @@ export function takeGatewayMessagePolicyCapacityRefusal(pending:Promise<Prepared
 export interface MessageCreateOptions {
  readonly database:string;readonly config:Pick<RuntimeConfig,'enableMessageContent'|'plainAskMentionUserIds'>;
  readonly basePolicy:InteractionAccessPolicy;readonly gate:AdmissionGate;readonly allowDrainControl:boolean;
- readonly resolver:SettingsTargetResolver|null;readonly observedAt:number;readonly custody:MessageCustodyOptions;readonly refreshPolicy?:MessagePolicyRefresh;
+ readonly resolver:SettingsTargetResolver|null;readonly observedAt:number;readonly custody:MessageCustodyOptions;readonly refreshPolicy?:MessagePolicyRefresh;readonly classifyMessage?:MessageClassifier;
 }
 /** Mandatory fresh mirror policy precedes classification/settings binding,
  * gate entry and durable deduplication. Caller determines allowDrainControl by
@@ -63,7 +68,7 @@ export interface MessageCreateOptions {
  * The outer normal/emergency consumer and cancellation wiring remain separate. */
 export function prepareGatewayMessage(message:DecodedGatewayMessage,botUserId:bigint|null,options:MessageCreateOptions,signal?:AbortSignal):Promise<PreparedGatewayMessage>{
  const origin={};
- const pending=prepare(message,botUserId,options,signal,origin).catch((error:unknown)=>{if(error!==null&&typeof error==='object'&&capacityOrigins.get(error)===origin)capacityRefusals.set(pending,error);throw error;});
+ const pending=prepare(message,botUserId,options,signal,origin).catch((error:unknown)=>{if(error!==null&&typeof error==='object'&&capacityOrigins.get(error)===origin)capacityRefusals.set(pending,error);if(error!==null&&typeof error==='object'&&classificationOrigins.get(error)===origin)classificationRefusals.set(pending,error);throw error;});
  return pending;
 }
 async function prepare(message:DecodedGatewayMessage,botUserId:bigint|null,options:MessageCreateOptions,signal:AbortSignal|undefined,origin:object):Promise<PreparedGatewayMessage>{
@@ -71,11 +76,13 @@ async function prepare(message:DecodedGatewayMessage,botUserId:bigint|null,optio
  const target=messageErrorReportTarget(message),{database,config,basePolicy,gate,allowDrainControl,resolver,observedAt}=options;
  const custody=captureMessageCustodyOptions(database,options.custody);
  if(typeof allowDrainControl!=='boolean')throw new TypeError('Expected drain control availability');
- const refresh=captureMessagePolicyRefresh(options);let policy:InteractionAccessPolicy,refreshPending:Promise<InteractionAccessPolicy>|undefined;
+ const refresh=captureMessagePolicyRefresh(options),classify=captureMessageClassifier(options);let policy:InteractionAccessPolicy,refreshPending:Promise<InteractionAccessPolicy>|undefined;
  try{refreshPending=refresh(basePolicy,database,signal);if(!types.isPromise(refreshPending))throw new TypeError('Expected message policy refresh Promise');policy=await refreshPending;}
  catch(error){if(signal?.aborted&&error===signal.reason)throw error;if(takeMirrorPolicyCapacityRefusal(refreshPending,error))throw new GatewayMessagePolicyCapacityError(error,origin);throw error;}
  signal?.throwIfAborted();
- const result=await classifyGatewayMessage(message,database,config,policy,botUserId);
+ let result:MessageClassification,classificationPending:Promise<MessageClassification>|undefined;
+ try{classificationPending=classify(message,database,config,policy,botUserId,signal);if(!types.isPromise(classificationPending))throw new TypeError('Expected classifier Promise');result=await classificationPending;}
+ catch(error){if(signal?.aborted&&error===signal.reason)throw error;if(takeMessageClassificationCapacityRefusal(classificationPending,error))throw new GatewayMessageClassificationCapacityError(error,origin);throw error;}
  const simple=(kind:Kind,ignored:PreparedGatewayMessage['ignored']=null)=>new PreparedGatewayMessage(token,kind,target,null,null,ignored);
  if(result.kind==='Ignore')return simple('Ignore',Object.freeze({reason:result.reason,channelId:result.channelId,userId:result.userId}));
  signal?.throwIfAborted();const candidate=result.candidate;if(resolver!==null)await MessageCandidate.prototype.bindSettings.call(candidate,resolver);

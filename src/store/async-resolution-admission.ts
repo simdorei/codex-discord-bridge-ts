@@ -1,3 +1,4 @@
+import type {SelectedReadBudget} from './selected-read-budget.ts';
 import {usingExistingStore} from './owned-scope.ts';
 import {legacyStopSupersededIn} from './async-resolution-legacy-stop.ts';
 import type { DatabaseSync } from "node:sqlite";
@@ -21,26 +22,26 @@ function requireThread(thread: string): void {
   }
 }
 
-function exists(db: DatabaseSync, sql: string, value: string): boolean {
+function exists(db: DatabaseSync, sql: string, value: string,budget?:SelectedReadBudget): boolean {
   const statement = db.prepare(sql);
   statement.setReadBigInts(true);
-  const row = statement.get(value);
+  const row = statement.get(value);budget?.row(row);
   if (row === undefined || typeof row.held !== "bigint") {
     throw new StoreIntegrityError("Expected integer EXISTS result");
   }
   return row.held !== 0n;
 }
 
-function hasTable(db: DatabaseSync, table: string): boolean {
+function hasTable(db: DatabaseSync, table: string,budget?:SelectedReadBudget): boolean {
   return exists(db,
-    "SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE type='table' AND name=?) AS held", table);
+    "SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE type='table' AND name=?) AS held", table,budget);
 }
 
 /** Borrowed handle; caller has already checked the obligations table. */
-export function asyncUnsettledObligationHeldIn(db: DatabaseSync, thread: string): boolean {
+export function asyncUnsettledObligationHeldIn(db: DatabaseSync, thread: string,budget?:SelectedReadBudget): boolean {
   requireThread(thread);
   return exists(db,
-    "SELECT EXISTS(SELECT 1 FROM cdr_async_unsettled_obligations WHERE thread_id=?) AS held", thread);
+    "SELECT EXISTS(SELECT 1 FROM cdr_async_unsettled_obligations WHERE thread_id=?) AS held", thread,budget);
 }
 
 // Project type and bytes, never TEXT: node:sqlite eagerly converts row columns.
@@ -57,11 +58,11 @@ const LIFECYCLE_SQL = `
   ORDER BY created_at,ingress_id LIMIT 129`;
 
 /** Read-only admission check, without opening/closing or managing a transaction. */
-export function asyncLifecycleAdmissionHeldIn(db: DatabaseSync, thread: string): boolean {
+export function asyncLifecycleAdmissionHeldIn(db: DatabaseSync, thread: string,budget?:SelectedReadBudget): boolean {
   requireThread(thread);
   if (!exists(db,
-    "SELECT EXISTS(SELECT 1 FROM cdr_async_execution_obligations WHERE thread_id=?) AS held", thread)
-    || !hasTable(db, "discord_ingress_journal")) return false;
+    "SELECT EXISTS(SELECT 1 FROM cdr_async_execution_obligations WHERE thread_id=?) AS held", thread,budget)
+    || !hasTable(db, "discord_ingress_journal",budget)) return false;
 
   let decoder: ReturnType<typeof textDecoderFor> | undefined;
   function decode(kind: unknown, bytes: unknown, column: string): string | null {
@@ -69,7 +70,7 @@ export function asyncLifecycleAdmissionHeldIn(db: DatabaseSync, thread: string):
     if (kind !== "text" || !(bytes instanceof Uint8Array)) {
       throw new StoreIntegrityError(`Expected SQLite TEXT or NULL for ${column}`);
     }
-    decoder ??= textDecoderFor(db.prepare("PRAGMA encoding").get()?.encoding);
+    if(decoder===undefined){const encoding=db.prepare("PRAGMA encoding").get();budget?.row(encoding);decoder=textDecoderFor(encoding?.encoding);}
     try {
       return decoder.decode(bytes);
     } catch {
@@ -83,6 +84,7 @@ export function asyncLifecycleAdmissionHeldIn(db: DatabaseSync, thread: string):
   statement.setReadBigInts(true);
   let count = 0;
   for (const row of statement.iterate(thread, EVIDENCE_BYTES)) {
+    budget?.row(row);
     if (++count > TARGET_RECORDS) return true;
     const encoded = decode(row.payload_type, row.payload_bytes, "payload_json");
     if (encoded === null) return true;
@@ -93,7 +95,7 @@ export function asyncLifecycleAdmissionHeldIn(db: DatabaseSync, thread: string):
 
     const ingress = decode(row.ingress_type, row.ingress_bytes, "ingress_id");
     if (ingress === null) throw new StoreIntegrityError("Expected SQLite TEXT for ingress_id");
-    if (legacyStopSupersededIn(db, thread, ingress, payload)) continue;
+    if (legacyStopSupersededIn(db, thread, ingress, payload,budget)) continue;
 
     const outcomeText = decode(row.outcome_type, row.outcome_bytes, "outcome_json");
     let outcome: unknown;
@@ -106,13 +108,13 @@ export function asyncLifecycleAdmissionHeldIn(db: DatabaseSync, thread: string):
 }
 
 /** Parent order is part of the contract: policy, unsettled, lifecycle, legacy. */
-export function asyncResolutionHeldIn(db: DatabaseSync, thread: string): boolean {
-  if (asyncRecoveryPolicyHeldIn(db, thread)) return true;
-  if (hasTable(db, "cdr_async_execution_obligations")) {
-    if (asyncUnsettledObligationHeldIn(db, thread)) return true;
-    if (asyncLifecycleAdmissionHeldIn(db, thread)) return true;
+export function asyncResolutionHeldIn(db: DatabaseSync, thread: string,budget?:SelectedReadBudget): boolean {
+  if (asyncRecoveryPolicyHeldIn(db, thread,budget)) return true;
+  if (hasTable(db, "cdr_async_execution_obligations",budget)) {
+    if (asyncUnsettledObligationHeldIn(db, thread,budget)) return true;
+    if (asyncLifecycleAdmissionHeldIn(db, thread,budget)) return true;
   }
-  return asyncLegacySteerHeldIn(db, thread);
+  return asyncLegacySteerHeldIn(db, thread,budget);
 }
 
 export class AsyncResolutionHeldError extends Error {

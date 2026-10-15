@@ -1,3 +1,4 @@
+import {captureMessageClassifier,type MessageClassifier} from '../message-worker/classification.ts';
 import {captureMessageJournalContext} from '../message-worker/journal.ts';
 import {capturePromptAuthorityReadContext} from '../server-prompt-authority-reads.ts';
 import {types} from 'node:util';
@@ -16,7 +17,7 @@ import {createMessageProcessor,type MessageProcessorContext} from '../message-wo
 import {reportMessageProcessingError} from '../message-worker/processing-boundary.ts';
 import {readCustodyTimestamp} from '../discord-dispatch/staged-custody.ts';
 import {now as systemNow} from '../../store/queue-attach-goal.ts';
-import {prepareGatewayMessage,captureMessagePolicyRefresh,takeGatewayMessagePolicyCapacityRefusal,type MessagePolicyRefresh,type PreparedGatewayMessage} from './message-create.ts';
+import {prepareGatewayMessage,captureMessagePolicyRefresh,takeGatewayMessagePolicyCapacityRefusal,takeGatewayMessageClassificationCapacityRefusal,type MessagePolicyRefresh,type PreparedGatewayMessage} from './message-create.ts';
 import {nativeGatewayShutdownClock,type GatewayShutdownClock} from '../../discord/gateway/shutdown.ts';
 import type {GatewayMessageHandler} from './message-consumer.ts';
 export type MessageRuntimeReport=(code:string,detail:string)=>void;
@@ -24,7 +25,7 @@ export interface MessageHandlerOptions {
  readonly context:Omit<MessageProcessorContext,'applicationId'>;readonly gate:AdmissionGate;
  readonly classification:Pick<RuntimeConfig,'enableMessageContent'|'plainAskMentionUserIds'>;
  readonly policy:InteractionAccessPolicy;readonly resolver:SettingsTargetResolver;readonly report:MessageRuntimeReport;
- readonly refreshPolicy?:MessagePolicyRefresh;readonly policyRetryClock?:GatewayShutdownClock;
+ readonly refreshPolicy?:MessagePolicyRefresh;readonly classifyMessage?:MessageClassifier;readonly policyRetryClock?:GatewayShutdownClock;
 }
 const retryDelays=Object.freeze([1000,2000,4000,8000,16000,30000]);
 export function messagePolicyCapacityRetryDelay(index:number):number{if(!Number.isSafeInteger(index)||index<0)throw new TypeError('Expected message retry index');return retryDelays[Math.min(index,5)]!;}
@@ -55,7 +56,7 @@ export function createGatewayMessageHandler(options:MessageHandlerOptions):Gatew
  const sourceClassification=gatewayOwnField(options,'classification'),raw=gatewayOwnField(sourceClassification,'plainAskMentionUserIds');if(types.isProxy(raw))throw new TypeError('Expected native mention set');const mentions=new Set<bigint>();Set.prototype.forEach.call(raw,(id:bigint)=>mentions.add(id));
  const classification=Object.freeze({enableMessageContent:gatewayOwnField(sourceClassification,'enableMessageContent') as boolean,plainAskMentionUserIds:mentions});
  const services=context.services,target=gatewayOwnField(services,'targetThreadId');if(typeof target!=='function'||types.isProxy(target)||types.isGeneratorFunction(target))throw new TypeError('Expected target service');
- const now=context.now??systemNow,refreshPolicy=captureMessagePolicyRefresh(options),retryClock=captureRetryClock(options);
+ const now=context.now??systemNow,refreshPolicy=captureMessagePolicyRefresh(options),classifyMessage=captureMessageClassifier(options),retryClock=captureRetryClock(options);
  return async(message,identity,signal)=>{
   signal.throwIfAborted();if(!isDecodedGatewayMessage(message))throw new TypeError('Expected decoded message');
   const bot=gatewayId(gatewayOwnField(identity,'userId')),application=gatewayId(gatewayOwnField(identity,'applicationId'));
@@ -70,9 +71,9 @@ export function createGatewayMessageHandler(options:MessageHandlerOptions):Gatew
    catch(error){if(signal.aborted&&error===signal.reason)throw error;emit(phase,passiveErrorText(error,'pending text probe failed'));}
   }
   signal.throwIfAborted();process??=createMessageProcessor({...context,applicationId:application});observedAt??=readCustodyTimestamp(now);let pending:Promise<PreparedGatewayMessage>|undefined;
-  try{pending=prepareGatewayMessage(message,bot,{database:context.database,config:classification,basePolicy:policy,refreshPolicy,gate,allowDrainControl,resolver,observedAt,custody:{messageJournal,now,report:value=>emit(value.code,passiveErrorText(value.error,'custody hold failed'))}},signal);prepared=await pending;break;}
+  try{pending=prepareGatewayMessage(message,bot,{database:context.database,config:classification,basePolicy:policy,refreshPolicy,classifyMessage,gate,allowDrainControl,resolver,observedAt,custody:{messageJournal,now,report:value=>emit(value.code,passiveErrorText(value.error,'custody hold failed'))}},signal);prepared=await pending;break;}
   catch(error){
-   if(!takeGatewayMessagePolicyCapacityRefusal(pending,error))throw error;signal.throwIfAborted();
+   if(!takeGatewayMessagePolicyCapacityRefusal(pending,error)&&!takeGatewayMessageClassificationCapacityRefusal(pending,error))throw error;signal.throwIfAborted();
    const time=retryClock.now(),deadline=time+messagePolicyCapacityRetryDelay(retryIndex);if(!Number.isFinite(deadline)||deadline<=time)throw new TypeError('Invalid message retry deadline');retryIndex=Math.min(retryIndex+1,5);
    await retryClock.sleepUntil(deadline,signal);
   }

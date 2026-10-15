@@ -1,3 +1,5 @@
+import {decodeI64} from './sqlite-values.ts';
+import type {SelectedReadBudget} from './selected-read-budget.ts';
 import {requireRecoverySnapshot,type RecoveryDecisionClick} from './recovery-decision-binding.ts';
 import type {DatabaseSync} from 'node:sqlite';
 import {usingExistingReadOnlyStore,withStoreTransaction,commitStore} from './owned-scope.ts';
@@ -6,26 +8,27 @@ import {readAbandonmentProposalIn,readDeliveredAbandonmentIn,requireAbandonmentA
 import {readAbandonmentDecisionIn} from './abandonment-decision.ts';
 import {verifyAbandonmentClickIn,AbandonmentRowMissingError} from './abandonment-identity.ts';
 import {asyncResolutionHeldIn} from './async-resolution-admission.ts';
-import {receiptRow,receiptText,receiptTextColumns,receiptExists} from './delivery-receipt-key.ts';
+import {receiptRow,receiptText,receiptTextColumns} from './delivery-receipt-key.ts';
 import type {AbandonmentDecision,AbandonmentDecisionReceipt} from './abandonment-codec.ts';
 import {requireDiscordText} from '../discord/text.ts';
 import {serdeField} from '../app-server/value.ts';
 import {isRustUuidText} from '../core/rust-uuid-text.ts';
 const invalid=(reason:string):never=>{throw new AbandonmentIntegrityError(reason);};
 const i64=(v:unknown):v is bigint=>typeof v==='bigint'&&v>=-(1n<<63n)&&v<1n<<63n;
-function requireMapping(db:DatabaseSync,target:string,channel:bigint):void {
- if(!receiptExists(db,'SELECT count(*)=1 AND MAX(codex_thread_id=?1 AND discord_thread_id=?2) AS held FROM mirror_threads WHERE codex_thread_id=?1 OR discord_thread_id=?2',target,channel))invalid('exact original mapping is unavailable');
+function requireMapping(db:DatabaseSync,target:string,channel:bigint,budget?:SelectedReadBudget):void {
+ const row=receiptRow(db,'SELECT count(*)=1 AND MAX(codex_thread_id=?1 AND discord_thread_id=?2) AS held FROM mirror_threads WHERE codex_thread_id=?1 OR discord_thread_id=?2',target,channel);budget?.row(row);
+ if(decodeI64(row?.held,'held')===0n)invalid('exact original mapping is unavailable');
 }
 /** Read-only routing identity only. No selected-target fallback or permission. */
-export function abandonmentCommandTarget(path:string,job:string,channel:bigint,owner:bigint):string {
+export function abandonmentCommandTarget(path:string,job:string,channel:bigint,owner:bigint,budget?:SelectedReadBudget):string {
  requireDiscordText(path);
  if(!i64(channel)||channel<=0n||!i64(owner)||owner<=0n||!isRustUuidText(job)||job.length!==36||job.toLowerCase()!==job)return invalid('exact job and authenticated actor are required');
  return usingExistingReadOnlyStore(path,db=>withStoreTransaction(db,'DEFERRED',()=>{
   checkAbandonmentCompatibility(db,1n);
   const row=receiptRow(db,`SELECT target_thread_id,${receiptTextColumns('target_thread_id')} FROM codex_turn_queue WHERE job_id=? AND channel_id=? AND owner_user_id=?
    AND state='pending' AND turn_id IS NULL AND goal_waiting=0 AND discord_message_id>0 AND app_server_generation>0 AND length(target_thread_id) BETWEEN 1 AND 256`,job,channel,owner);
-  if(row===undefined)throw new AbandonmentRowMissingError();const target=receiptText(row,'target_thread_id')!;
-  if(!asyncResolutionHeldIn(db,target))return invalid('original request is not held');requireMapping(db,target,channel);return commitStore(target);
+  budget?.row(row);if(row===undefined)throw new AbandonmentRowMissingError();const target=receiptText(row,'target_thread_id')!;
+  if(!asyncResolutionHeldIn(db,target,budget))return invalid('original request is not held');requireMapping(db,target,channel,budget);return commitStore(target);
  }));
 }
 export interface AbandonmentDecisionRouteInput {

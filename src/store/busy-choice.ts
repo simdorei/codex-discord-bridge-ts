@@ -1,3 +1,4 @@
+import type {SelectedReadBudget} from './selected-read-budget.ts';
 import {parseSerdeStruct,type StructShape} from "../core/serde-struct-json.ts";
 import {openInitialized,CheckedRead} from "./owned-driver.ts";
 import type {DatabaseSync} from "node:sqlite";
@@ -28,12 +29,13 @@ export function serializeBusyChoice(choice:BusyChoice):string{
   return `{"choice_id":${s(c.choiceId)},"owner_user_id":${s(c.ownerUserId)},"channel_id":${s(c.channelId)},"target_thread_id":${s(c.targetThreadId)},"prompt":${s(c.prompt)},"allow_steer":${s(c.allowSteer)},"created_at":${f(c.createdAt)},"expires_at":${f(c.expiresAt)}}`;
 }
 /** Mapping read contract differs from queue's exact mirror assertion: duplicate exact rooms are an integrity error. */
-export function mirroredThreadIdIn(db:DatabaseSync,channel:bigint|null):string|null{
+export function mirroredThreadIdIn(db:DatabaseSync,channel:bigint|null,budget?:SelectedReadBudget):string|null{
   if(channel===null||channel===0n)return null;
   const count=db.prepare("SELECT COUNT(*) AS n FROM mirror_threads WHERE discord_thread_id=?");count.setReadBigInts(true);
-  if(decodeI64(count.get(channel)?.n,"mirror count")>1n)throw new StoreIntegrityError(`Discord room ${channel} is mapped to multiple Codex threads; routing refused`);
+  const counted=count.get(channel);budget?.row(counted);
+  if(decodeI64(counted?.n,"mirror count")>1n)throw new StoreIntegrityError(`Discord room ${channel} is mapped to multiple Codex threads; routing refused`);
   const query=(where:string)=>db.prepare(`SELECT codex_thread_id,CAST(codex_thread_id AS BLOB) AS raw,(SELECT encoding FROM pragma_encoding) AS encoding FROM mirror_threads ${where}`);
-  const decode=(row:Record<string,unknown>)=>decodeTextField(row.codex_thread_id,row.raw,"codex_thread_id",false,textDecoderFor(row.encoding))!;
+  const decode=(row:Record<string,unknown>)=>{budget?.row(row);return decodeTextField(row.codex_thread_id,row.raw,"codex_thread_id",false,textDecoderFor(row.encoding))!;};
   const exact=query("WHERE discord_thread_id=?").get(channel);if(exact!==undefined)return decode(exact);
   const rows:string[]=[];for(const row of query("WHERE discord_channel_id=? ORDER BY updated_at DESC LIMIT 2").iterate(channel))rows.push(decode(row));
   return rows.length===1?rows[0]!:null;
