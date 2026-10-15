@@ -16,6 +16,7 @@ import {RemoteRequestBudget} from './request-budget.ts';
 import {remoteFileErrorResult} from './file-error-result.ts';
 import {requireImmutableRemoteDto,serializeBridgeMessageOffThread} from './native-decode.ts';
 import {RemoteWorkerCapacityError} from './bounded-workers.ts';
+import {utf8Compare} from './request-input.ts';
 import {DispatcherLock} from './dispatcher-lock.ts';
 import {captureProjectBackend,captureSessionBackend,ownedPort,ownedPromise,type RemoteProjectBackend,type RemoteSessionBackend,type RemoteProjectBinding,type RemoteOperationContext} from './dispatcher-ports.ts';
 
@@ -38,14 +39,15 @@ function generation(value:unknown):bigint{if(typeof value!=='bigint'||value<0n||
 function date(value:RemoteUtcDateTime):RemoteUtcDateTime{formatRemoteUtcDateTime(value);return Object.freeze({seconds:own(value,'seconds') as bigint,nanosecond:own(value,'nanosecond') as bigint});}
 function expired(value:RemoteUtcDateTime,now:RemoteUtcDateTime):boolean{return value.seconds<now.seconds||value.seconds===now.seconds&&value.nanosecond<=now.nanosecond;}
 function signal(value:unknown):asserts value is AbortSignal{if(types.isProxy(value)||!(value instanceof AbortSignal))throw new TypeError('Expected owned abort signal');}
+function call<T extends (...args:never[])=>unknown>(fn:T,...args:Parameters<T>):ReturnType<T>{return Reflect.apply(fn,undefined,args) as ReturnType<T>;}
 function capability(requestId:string):BridgeResult{return Object.freeze({type:'operation_error',request_id:requestId,error_code:'projectcapability',message:'This project capability has no qualified local backend.'});}
 function charge(command:GatewayCommand):number{
  requireImmutableRemoteDto(command,Math.floor(MAX_BYTES/3));let size=128;
  const visit=(v:unknown):void=>{if(typeof v==='string')size+=v.length*3;else if(v!==null&&typeof v==='object')for(const k of Object.keys(v)){size+=k.length*3;visit(own(v,k));}else size+=16;};visit(command);return size;
 }
 
-/** Owned dispatcher foundation, deliberately uninstalled from native connection
- * and CLI roots. Callers provide already decoded commands and qualified resource
+/** Owned dispatcher foundation, connected only by an explicit managed adapter
+ * and still uninstalled from CLI roots. Callers provide already decoded commands and qualified resource
  * factories, never an arbitrary execute callback. The outer command loop remains
  * the sole 4-active/16-total worker queue; this owner only rejects excess direct
  * calls and bounds its lock waiters and retained command text to four/4 MiB.
@@ -57,10 +59,16 @@ export class RemoteProjectDispatcher {
  #connection:RemoteDispatcherConnection|null=null;#highest:bigint|null=null;#transition:Promise<void>|null=null;#closed=false;#faulted=false;#bytes=0;#closeReceipt:Promise<void>|null=null;
  constructor(config:RemoteDispatcherConfiguration){this.#open=ownedPort(config,'openProject');this.#utc=ownedPort(config,'nowUtc');this.#mono=ownedPort(config,'nowMonotonic');}
  #cleanupFailed():boolean{return this.#failedSessions.size>0||this.#failedProjects.size>0||this.#quarantine.size>0;}
- #now():RemoteUtcDateTime{return date(this.#utc());}
+ #now():RemoteUtcDateTime{return date(call(this.#utc));}
  #current(connection:RemoteDispatcherConnection):boolean{return this.#connection===connection&&!this.#closed&&!this.#faulted&&this.#transition===null;}
  #auth(connection:RemoteDispatcherConnection):void{if(connection===null||typeof connection!=='object'||types.isProxy(connection)||!this.#connections.has(connection))throw new TypeError('Foreign or forged dispatcher connection');}
  snapshot(){return Object.freeze({generation:this.#connection?.generation??null,projects:this.#projects.size,accepted:this.#accepted.size,retainedCommandBytes:this.#bytes,transitioning:this.#transition!==null,closed:this.#closed,faulted:this.#faulted||this.#cleanupFailed(),failedSessionCleanups:this.#failedSessions.size,failedProjectCleanups:this.#failedProjects.size,quarantinedResources:this.#quarantine.size});}
+ /** Binding metadata only, after retirement has joined sessions and operations.
+  * No session identity, cache, command or uncertain outcome is restart state. */
+ snapshotRetiredBindings():readonly RemoteProjectBinding[]{
+  if(this.#connection!==null||this.#transition!==null||this.#accepted.size!==0||this.#closed||this.#faulted||this.#cleanupFailed())throw new Error('Dispatcher bindings require successful retired ownership');
+  const now=this.#now();return Object.freeze([...this.#projects.values()].map(project=>project.binding).filter(binding=>!expired(binding.expiresAt,now)).sort((a,b)=>utf8Compare(a.threadId,b.threadId)));
+ }
  async #drain():Promise<void>{for(const op of this.#accepted)op.stop.abort(new Error('Dispatcher connection retired'));await Promise.all([...this.#accepted].map(op=>op.done));}
  async #closeSession(session:Session):Promise<void>{
   if(session.closing!==null)return session.closing;
@@ -121,7 +129,7 @@ export class RemoteProjectDispatcher {
  async #upsert(binding:RemoteProjectBinding):Promise<Project>{
   if(this.#cleanupFailed())throw new DispatcherReplacementError(new Error(cleanupFailure));
   if(!this.#projects.has(binding.threadId)&&this.#projects.size>=MAX_PROJECTS)throw new RemoteWorkerCapacityError();
-  const pending:unknown=this.#open(binding);
+  const pending:unknown=call(this.#open,binding);
   if(!types.isPromise(pending)){let close:(()=>Promise<void>)|null=null;try{close=ownedPort<()=>Promise<void>>(pending,'close');}catch{}return this.#rejectTransfer(pending,new TypeError('Project factory must return a native Promise'),close);}
   const raw=await (pending as Promise<RemoteProjectBackend>);let backend:RemoteProjectBackend;
   // Capture the release path first; a malformed returned backend cannot leak it.
@@ -221,7 +229,7 @@ export class RemoteProjectDispatcher {
   const requestId=command.request_id;if(cancelled.aborted)return remoteCancelledResult(requestId);
   if(expired(command.deadline_at,this.#now()))return remoteExpiredResult(requestId);
   if(expired(project.binding.expiresAt,this.#now()))return remoteBindingError(requestId,'binding_expired');
-  const context:RemoteOperationContext=Object.freeze({binding:project.binding,session:session.identity,signal:cancelled,budget:RemoteRequestBudget.fromDeadline(command.deadline_at,this.#now(),this.#mono())});
+  const context:RemoteOperationContext=Object.freeze({binding:project.binding,session:session.identity,signal:cancelled,budget:RemoteRequestBudget.fromDeadline(command.deadline_at,this.#now(),call(this.#mono))});
   let invoked=false;
   try{
    let result:BridgeResult;
