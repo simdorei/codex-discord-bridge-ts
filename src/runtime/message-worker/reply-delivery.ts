@@ -17,12 +17,14 @@ export function messageReplyIdentity(sourceMessageId:bigint,kind:MessageReplyKin
 const policy=Object.freeze({retryDelaysMs:Object.freeze([]),chunkMarkers:true});
 /** Sequential durable chunk receipts. An unknown send outcome never auto-retries.
  * Await the whole operation, including receipt commit, before releasing custody. */
-export async function deliverMessageReplyText(database:string,client:DiscordChannelClient,channelId:bigint,sourceMessageId:bigint,kind:MessageReplyKind,text:string,signal?:AbortSignal):Promise<number>{
+export async function deliverMessageReplyText(database:string,client:DiscordChannelClient,channelId:bigint,sourceMessageId:bigint,kind:MessageReplyKind,text:string,signal?:AbortSignal,nativePendingConfirmation=false):Promise<number>{
+ if(typeof nativePendingConfirmation!=='boolean'||nativePendingConfirmation&&kind!=='PendingConfirmation')throw new TypeError('Expected pending-confirmation-only native receipt profile');
  signal?.throwIfAborted();
  requireDiscordText(database);requireDiscordText(text);id(channelId);const identity=messageReplyIdentity(sourceMessageId,kind);
  const chunks=kind==='SavedRequest'?splitExactDeliveryChunks(text,true):splitDeliveryChunks(text,true);
+ if(nativePendingConfirmation&&chunks.length!==1)throw new TypeError('Pending confirmation requires its sole original part');
  const transport=Object.freeze({sendValidated:(request:Parameters<DiscordChannelClient['sendValidated']>[0])=>DiscordChannelClient.prototype.sendValidated.call(client,request,signal)});
- try{return await deliverChunksIndexed(chunks,policy,(chunkIndex,content)=>sendReceiptChunk(database,transport,channelId,{...identity,chunkIndex,content},[],null,signal));}catch(error){if(signal?.aborted&&error instanceof DeliveryFailure&&error.source===signal.reason)throw error.source;throw error;}
+ try{return await deliverChunksIndexed(chunks,policy,(chunkIndex,content)=>sendReceiptChunk(database,transport,channelId,{...identity,chunkIndex,content},[],null,signal,nativePendingConfirmation));}catch(error){if(signal?.aborted&&error instanceof DeliveryFailure&&error.source===signal.reason)throw error.source;throw error;}
 }
 export async function sendMessageReplyOnce(database:string,client:DiscordChannelClient,channelId:bigint,sourceMessageId:bigint,kind:MessageReplyKind,text:string,components:readonly DiscordComponent[]=[],signal?:AbortSignal):Promise<void>{
  signal?.throwIfAborted();

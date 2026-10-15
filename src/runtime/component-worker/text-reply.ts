@@ -6,6 +6,7 @@ import {buildInputResponse} from '../../app-server/input-replies.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {parsePromptTextBinding, promptTextFingerprint} from '../server-prompt-text-binding.ts';
 import {verifyPromptAuthority} from '../server-prompt-authority.ts';
+import {capturePromptAuthorityReads, type PromptAuthorityReads} from '../server-prompt-authority-reads.ts';
 import {ComponentWorkerError} from './errors.ts';
 import {capturePendingRequests, isApprovalMethod} from './response.ts';
 const eligible = (r: PendingServerRequest): boolean => r.method === 'item/tool/requestUserInput' || isApprovalMethod(r.method, r.params);
@@ -31,12 +32,15 @@ function snapshot(thread: string, server: PortableResidentLifecycle): Readonly<{
 export function pendingTextReplyAvailable(thread: string, server: PortableResidentLifecycle): boolean {return snapshot(thread, server).requests.some(eligible);}
 /** Original actor/turn verification precedes answer parsing. Resident.respond owns
  * final occurrence/generation/turn checks and write uncertainty; never auto-retry. */
-export async function handlePendingTextReply(thread: string, answer: string, server: PortableResidentLifecycle, database: string, channel: bigint, user: bigint, signal?: AbortSignal): Promise<string | null> {
+export async function handlePendingTextReply(thread: string, answer: string, server: PortableResidentLifecycle, database: string, channel: bigint, user: bigint, signal?: AbortSignal, inputReads?: PromptAuthorityReads): Promise<string | null> {
   requireDiscordText(answer); requireDiscordText(database);
   for (const id of [channel, user]) if (typeof id !== 'bigint' || id < 0n || id >= 1n << 64n) throw new TypeError('Expected u64 original actor');
+  const reads = inputReads === undefined ? undefined : capturePromptAuthorityReads(database, inputReads);
+  // The original request, occurrence, generation and answer are captured before
+  // authority awaits. Parse that captured answer only after actor verification.
   signal?.throwIfAborted(); const {generation, requests} = snapshot(thread, server), selected = selectPendingTextReply(requests, answer, generation);
   if (selected === null) return null;
-  try {const authority = await verifyPromptAuthority(database, server, selected.request, generation); authority.requireActor(channel, user);}
+  try {const authority = await verifyPromptAuthority(database, server, selected.request, generation, reads); authority.requireActor(channel, user);}
   catch (error) {throw new ComponentWorkerError('Authority', error);}
   signal?.throwIfAborted(); let payload: unknown, confirmation: string;
   try {

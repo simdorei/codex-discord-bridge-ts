@@ -65,7 +65,7 @@ export function createMessageProcessor(context:MessageProcessorContext):(admitte
   try{signal?.throwIfAborted();parts=AdmittedMessage.prototype.intoProcessingParts.call(admitted,database);}catch(error){try{await AdmittedMessage.prototype.dispose.call(admitted);}finally{throw error;}}
   const {message,channelId,userId,custody,admissionPermit}=parts,key=`message:${message.id}`;
   const record=(outcome:unknown)=>operation('Store',()=>state.recordIngressResult(database,key,outcome,readCustodyTimestamp(now)));
-  const text=(kind:Parameters<typeof deliverMessageReplyText>[4],content:string)=>operation('Delivery',()=>deliverMessageReplyText(database,http,message.channel_id,message.id,kind,content,signal));
+  const text=(kind:Parameters<typeof deliverMessageReplyText>[4],content:string)=>operation('Delivery',()=>deliverMessageReplyText(database,http,message.channel_id,message.id,kind,content,signal,nativePromptReceipts&&kind==='PendingConfirmation'));
   try {
    if(!parts.frozenPlan.ok)throw new MessageWorkerError('Plan',parts.frozenPlan.error);
    let plan=parts.frozenPlan.value;if('Ignore'in plan)throw new TypeError('Ignored message cannot execute');
@@ -74,7 +74,7 @@ export function createMessageProcessor(context:MessageProcessorContext):(admitte
    await operation('Store',()=>MessageCustody.prototype.begin.call(custody,initialTarget));
    let handled=false;
    if(action!==null&&typeof action==='object'&&'Ask'in action&&!isProCommand(action.Ask.prompt)){
-    const thread=await selected(channelId),confirmation=await operation('Component',()=>handlePendingTextReply(thread,action.Ask.prompt,server,database,channelId,userId,signal));
+    const thread=await selected(channelId),confirmation=await operation('Component',()=>handlePendingTextReply(thread,action.Ask.prompt,server,database,channelId,userId,signal,promptAuthorityReads));
     if(confirmation!==null){await record({pending_reply:'handled',confirmation});await text('PendingConfirmation',confirmation);handled=true;}
    }
    if(handled){await operation('Store',()=>MessageCustody.prototype.finish.call(custody));return;}
