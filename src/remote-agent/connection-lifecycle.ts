@@ -5,7 +5,7 @@ import {RemoteAgentStatus} from './agent-state.ts';
 import {RemoteFrameError} from './frame-reader.ts';
 import {runRemoteCommandLoop} from './command-loop.ts';
 import type {RemoteCommandLoopPorts} from './command-loop.ts';
-import {decodeGatewayMessageOffThread,serializeBridgeMessageOffThread} from './native-decode.ts';
+import {RemoteNativeCodecOwner} from './native-decode.ts';
 export interface RemoteConnectionPorts {
  readonly beginConnection:(generation:bigint)=>Promise<void>;
  readonly retireSessions:()=>Promise<void>;
@@ -36,21 +36,21 @@ export async function serveRemoteConnection(deviceId:string,generation:bigint,st
  if(types.isProxy(shutdown)||!(shutdown instanceof AbortSignal))throw new TypeError('Expected owned shutdown signal');
  const begin=port<RemoteConnectionPorts['beginConnection']>(ports,'beginConnection'),retire=port<RemoteConnectionPorts['retireSessions']>(ports,'retireSessions'),receive=port<RemoteConnectionPorts['receive']>(ports,'receive'),send=port<RemoteConnectionPorts['send']>(ports,'send'),execute=port<RemoteConnectionPorts['execute']>(ports,'execute');
  if(shutdown.aborted){RemoteAgentStatus.prototype.setDisconnected.call(status);return;}
- let previous:unknown;
+ const codec=new RemoteNativeCodecOwner();let previous:unknown;
  try{
   try{await promise<void>(begin(generation));}catch(error){throw new RemoteBridgeLifecycleError('Generation','begin',error);}
   const hello=Object.freeze({type:'hello' as const,protocol_version:10n as const,device_id:deviceId});
-  const wire=await serializeBridgeMessageOffThread(hello,maxBytes,shutdown);await promise<void>(send(wire,shutdown));
+  const wire=await codec.serializeBridgeMessageOffThread(hello,maxBytes,shutdown);await promise<void>(send(wire,shutdown));
   const raw=await promise<string|null>(receive(true,shutdown));shutdown.throwIfAborted();
   if(raw===null)throw new RemoteFrameError('ClosedBeforeHello');
-  const ack=await decodeGatewayMessageOffThread(raw,maxBytes,shutdown);
+  const ack=await codec.decodeGatewayMessageOffThread(raw,maxBytes,shutdown);
   if(ack.type!=='hello_ack')throw new RemoteBridgeLifecycleError('MissingHelloAck');
   RemoteAgentStatus.prototype.setConnected.call(status,generation);
-  await runRemoteCommandLoop(generation,{receive:signal=>receive(false,signal),send,execute},shutdown,maxBytes);
+  await runRemoteCommandLoop(generation,{receive:signal=>receive(false,signal),send,execute},shutdown,maxBytes,codec);
  }catch(error){
   previous=error;if(!(shutdown.aborted&&error===shutdown.reason))throw error;
  }finally{
-  try{await promise<void>(retire());}
+  try{await codec.join();await promise<void>(retire());}
   catch(error){throw new RemoteBridgeLifecycleError('Generation','retire',error,previous);}
   finally{RemoteAgentStatus.prototype.setDisconnected.call(status);}
  }

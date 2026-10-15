@@ -15,7 +15,7 @@ import {RemoteMutationCache} from './mutation-cache.ts';
 import {RemoteRequestBudget} from './request-budget.ts';
 import {remoteFileErrorResult} from './file-error-result.ts';
 import {takeRemoteOperationFailure} from './operation-error-result.ts';
-import {requireImmutableRemoteDto,serializeBridgeMessageOffThread} from './native-decode.ts';
+import {requireImmutableRemoteDto,RemoteNativeCodecOwner} from './native-decode.ts';
 import {RemoteWorkerCapacityError} from './bounded-workers.ts';
 import {utf8Compare} from './request-input.ts';
 import {DispatcherLock} from './dispatcher-lock.ts';
@@ -56,7 +56,7 @@ function charge(command:GatewayCommand):number{
 export class RemoteProjectDispatcher {
  readonly #open:RemoteDispatcherConfiguration['openProject'];readonly #utc:RemoteDispatcherConfiguration['nowUtc'];readonly #mono:RemoteDispatcherConfiguration['nowMonotonic'];
  readonly #quarantine=new Set<Readonly<{resource:unknown;receipt:Promise<void>}>>();readonly #failedSessions=new Set<Session>();readonly #failedProjects=new Set<Project>();
- readonly #projects=new Map<string,Project>();readonly #connections=new WeakSet<object>();readonly #accepted=new Set<Accepted>();readonly #bindings=new DispatcherLock();readonly #codecs=new DispatcherLock();
+ readonly #projects=new Map<string,Project>();readonly #connections=new WeakSet<object>();readonly #accepted=new Set<Accepted>();readonly #bindings=new DispatcherLock();readonly #codecs=new DispatcherLock();readonly #codec=new RemoteNativeCodecOwner();
  #connection:RemoteDispatcherConnection|null=null;#highest:bigint|null=null;#transition:Promise<void>|null=null;#closed=false;#faulted=false;#bytes=0;#closeReceipt:Promise<void>|null=null;
  constructor(config:RemoteDispatcherConfiguration){this.#open=ownedPort(config,'openProject');this.#utc=ownedPort(config,'nowUtc');this.#mono=ownedPort(config,'nowMonotonic');}
  #cleanupFailed():boolean{return this.#failedSessions.size>0||this.#failedProjects.size>0||this.#quarantine.size>0;}
@@ -70,7 +70,7 @@ export class RemoteProjectDispatcher {
   if(this.#connection!==null||this.#transition!==null||this.#accepted.size!==0||this.#closed||this.#faulted||this.#cleanupFailed())throw new Error('Dispatcher bindings require successful retired ownership');
   const now=this.#now();return Object.freeze([...this.#projects.values()].map(project=>project.binding).filter(binding=>!expired(binding.expiresAt,now)).sort((a,b)=>utf8Compare(a.threadId,b.threadId)));
  }
- async #drain():Promise<void>{for(const op of this.#accepted)op.stop.abort(new Error('Dispatcher connection retired'));await Promise.all([...this.#accepted].map(op=>op.done));}
+ async #drain():Promise<void>{for(const op of this.#accepted)op.stop.abort(new Error('Dispatcher connection retired'));await Promise.all([...this.#accepted].map(op=>op.done));await this.#codec.join();}
  async #closeSession(session:Session):Promise<void>{
   if(session.closing!==null)return session.closing;
   session.stop.abort(new Error('Project session retired'));
@@ -137,7 +137,7 @@ export class RemoteProjectDispatcher {
   let close:()=>Promise<void>;try{close=ownedPort<()=>Promise<void>>(raw,'close');}catch(error){return this.#rejectTransfer(raw,error,null);}
   try{backend=captureProjectBackend(raw);}catch(error){return this.#rejectTransfer(raw,error,close);}
   if(this.#cleanupFailed())return this.#rejectTransfer(raw,new Error(cleanupFailure),close);
-  const project:Project={binding,backend,session:null,sessionLock:new DispatcherLock(),mutations:new DispatcherLock(),cache:new RemoteMutationCache(Math.floor(MAX_BYTES/(MAX_PROJECTS+MAX_COMMANDS))),uncertain:false,closing:null,active:0,idle:null,retiring:new Set()};
+  const project:Project={binding,backend,session:null,sessionLock:new DispatcherLock(),mutations:new DispatcherLock(),cache:new RemoteMutationCache(Math.floor(MAX_BYTES/(MAX_PROJECTS+MAX_COMMANDS)),256,1048576,this.#codec),uncertain:false,closing:null,active:0,idle:null,retiring:new Set()};
   const previous=this.#projects.get(binding.threadId);this.#projects.set(binding.threadId,project);
   if(previous)try{await this.#closeProject(previous);}catch(error){throw new DispatcherReplacementError(error);}
   return project;
@@ -255,7 +255,7 @@ export class RemoteProjectDispatcher {
     default:return capability(requestId);
    }
    requireImmutableRemoteDto(result,1048576+32768);
-   if(!remoteCommandIsMutation(command)){const release=await this.#codecs.acquire(cancelled);try{await serializeBridgeMessageOffThread(result,1048576,cancelled);}finally{release();}}
+   if(!remoteCommandIsMutation(command)){const release=await this.#codecs.acquire(cancelled);try{await this.#codec.serializeBridgeMessageOffThread(result,1048576,cancelled);}finally{release();}}
    return result;
   }catch(error){if(invoked&&remoteCommandIsMutation(command))project.uncertain=true;throw error;}
  }

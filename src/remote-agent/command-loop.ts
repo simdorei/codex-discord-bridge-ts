@@ -2,7 +2,7 @@ import {types} from 'node:util';
 import {gatewayOwnField as own} from '../discord/gateway/values.ts';
 import {RemoteConnectionWorkers} from './connection-workers.ts';
 import {RemoteWorkerCapacityError} from './bounded-workers.ts';
-import {decodeGatewayMessageOffThread,serializeBridgeMessageOffThread} from './native-decode.ts';
+import {RemoteNativeCodecOwner,requireRemoteNativeCodecOwner} from './native-decode.ts';
 import type {GatewayCommand} from './gateway-command.ts';
 import type {BridgeResult} from './bridge-inbound.ts';
 
@@ -25,7 +25,8 @@ function port<T>(input:unknown,key:string):T{const value=own(input,key);if(typeo
  * function connects actual native codecs to bounded workers and borrowed I/O,
  * but creates no socket, binding, credential or concrete project dispatcher.
  * Shutdown is a one-way AbortSignal adapter, not full Tokio watch semantics. */
-export async function runRemoteCommandLoop(generation:bigint,ports:RemoteCommandLoopPorts,shutdown:AbortSignal,maxBytes=12000000):Promise<void>{
+export async function runRemoteCommandLoop(generation:bigint,ports:RemoteCommandLoopPorts,shutdown:AbortSignal,maxBytes=12000000,codec=new RemoteNativeCodecOwner()):Promise<void>{
+ requireRemoteNativeCodecOwner(codec);
  if(typeof generation!=='bigint'||generation<0n||generation>18446744073709551615n)throw new RangeError('Invalid connection generation');
  if(!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>12000000)throw new RangeError('Invalid remote frame byte budget');
  if(types.isProxy(shutdown)||!(shutdown instanceof AbortSignal))throw new TypeError('Expected owned shutdown signal');
@@ -36,7 +37,7 @@ export async function runRemoteCommandLoop(generation:bigint,ports:RemoteCommand
  const stopped=new Promise<{kind:'stop'}>(resolve=>{resolveStop=()=>resolve({kind:'stop'});});
  shutdown.addEventListener('abort',resolveStop,{once:true});
  let reading:Promise<ReadEvent>|null=null,ready:Promise<ReadyEvent>|null=null,failed=false,failure:unknown;
- const write=async(result:BridgeResult)=>{const wire=await serializeBridgeMessageOffThread(result,maxBytes,io.signal);await promise<void>(send(wire,io.signal));};
+ const write=async(result:BridgeResult)=>{const wire=await codec.serializeBridgeMessageOffThread(result,maxBytes,io.signal);await promise<void>(send(wire,io.signal));};
  try{
   for(;;){
    if(shutdown.aborted)break;
@@ -52,7 +53,7 @@ export async function runRemoteCommandLoop(generation:bigint,ports:RemoteCommand
    reading=null;if(!selected.ok)throw selected.error;if(selected.raw===null)break;
    if(typeof selected.raw!=='string')throw new TypeError('Expected owned raw gateway text');
    // Decode only the selected input, never in the background receive Promise.
-   const message=await decodeGatewayMessageOffThread(selected.raw,maxBytes,io.signal);
+   const message=await codec.decodeGatewayMessageOffThread(selected.raw,maxBytes,io.signal);
    if(message.type==='hello_ack')throw new RemoteCommandLoopError('DuplicateHello');
    if(message.type==='project_ack')continue;
    const bytes=Buffer.byteLength(selected.raw);
@@ -71,7 +72,7 @@ export async function runRemoteCommandLoop(generation:bigint,ports:RemoteCommand
   const drained=failed?workers.close(failure):workers.close();io.abort(new Error('Remote command loop ended'));
   if(reading!==null)await reading;
   if(ready!==null)await ready;
-  const outcome=await drained;
+  const outcome=await drained;await codec.join();
   if(!failed&&!outcome.ok){failed=true;failure=new RemoteCommandLoopError('Worker',outcome.error);}
  }
  if(failed)throw failure;

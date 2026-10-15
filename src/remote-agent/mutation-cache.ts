@@ -2,7 +2,7 @@ import {types} from 'node:util';
 import {gatewayOwnField as own} from '../discord/gateway/values.ts';
 import {requireDiscordText} from '../discord/text.ts';
 import {remoteCommandMeta,remoteRequestConflict} from './dispatch-contract.ts';
-import {requireImmutableRemoteDto,fingerprintGatewayCommandOffThread,serializeBridgeMessageOffThread,decodeBridgeMessageOffThread} from './native-decode.ts';
+import {RemoteNativeCodecOwner,requireRemoteNativeCodecOwner,requireImmutableRemoteDto,fingerprintGatewayCommandOffThread,serializeBridgeMessageOffThread,decodeBridgeMessageOffThread} from './native-decode.ts';
 import type {GatewayCommand} from './gateway-command.ts';
 import type {BridgeResult} from './bridge-inbound.ts';
 
@@ -35,10 +35,13 @@ function key(command:GatewayCommand):Readonly<{key:string;requestId:string}>{
  * The text budget charges 3 bytes per UTF-16 unit plus 128 bytes per entry, an
  * upper bound for retained UTF-8/UTF-16 text, not a JavaScript heap/RSS limit.
  * Count/key/frame limits are explicit bounded TS profiles. */
+const compatibilityCodecs=Object.freeze({fingerprintGatewayCommandOffThread,serializeBridgeMessageOffThread,decodeBridgeMessageOffThread});
 export class RemoteMutationCache {
+ readonly #codec:Pick<RemoteNativeCodecOwner,keyof typeof compatibilityCodecs>;
  #entries=new Map<string,Entry>();#retained=0;#busy=false;
  readonly #maxBytes:number;readonly #maxEntries:number;readonly #frameBytes:number;
- constructor(maxRetainedBytes=4_194_304,maxEntries=256,maxFrameBytes=1_048_576){
+ constructor(maxRetainedBytes=4_194_304,maxEntries=256,maxFrameBytes=1_048_576,codec?:RemoteNativeCodecOwner){
+  if(codec!==undefined)requireRemoteNativeCodecOwner(codec);this.#codec=codec??compatibilityCodecs;
   if(!Number.isSafeInteger(maxRetainedBytes)||maxRetainedBytes<1||maxRetainedBytes>67_108_864)throw new RangeError('Invalid remote cache byte limit');
   if(!Number.isSafeInteger(maxEntries)||maxEntries<1||maxEntries>256)throw new RangeError('Invalid remote cache entry limit');
   if(!Number.isSafeInteger(maxFrameBytes)||maxFrameBytes<1||maxFrameBytes>12_000_000)throw new RangeError('Invalid remote cache frame limit');
@@ -53,9 +56,9 @@ export class RemoteMutationCache {
   signal?.throwIfAborted();this.#enter();
   try{
    requireImmutableRemoteDto(command,this.#frameBytes+32768);const identity=key(command),entry=this.#entries.get(identity.key);if(entry===undefined)return null;
-   const fingerprint=await fingerprintGatewayCommandOffThread(command,this.#frameBytes,signal);
+   const fingerprint=await this.#codec.fingerprintGatewayCommandOffThread(command,this.#frameBytes,signal);
    if(fingerprint!==entry.fingerprint)return remoteRequestConflict(identity.requestId);
-   const decoded=await decodeBridgeMessageOffThread(entry.wire,this.#frameBytes,signal);
+   const decoded=await this.#codec.decodeBridgeMessageOffThread(entry.wire,this.#frameBytes,signal);
    if(decoded.type==='hello'||decoded.type==='project_upsert'||decoded.request_id!==identity.requestId)throw new TypeError('Invalid retained remote result');
    // No recency mutation until validation and actual native completion succeed.
    this.#entries.delete(identity.key);this.#entries.set(identity.key,entry);return decoded;
@@ -68,8 +71,8 @@ export class RemoteMutationCache {
    if(resultType(result)==='operation_error')return 'SkippedError';
    requireImmutableRemoteDto(command,this.#frameBytes+32768);
    const identity=key(command);if(own(result,'request_id')!==identity.requestId)throw new TypeError('Remote cache result request differs');
-   const fingerprint=await fingerprintGatewayCommandOffThread(command,this.#frameBytes,signal);
-   const wire=await serializeBridgeMessageOffThread(result,this.#frameBytes,signal);
+   const fingerprint=await this.#codec.fingerprintGatewayCommandOffThread(command,this.#frameBytes,signal);
+   const wire=await this.#codec.serializeBridgeMessageOffThread(result,this.#frameBytes,signal);
    const charge=3*(identity.key.length+wire.length+fingerprint.length)+128;
    if(charge>this.#maxBytes)return 'NotRetainedBudget';
    const previous=this.#entries.get(identity.key);if(previous!==undefined){this.#retained-=previous.charge;this.#entries.delete(identity.key);}
