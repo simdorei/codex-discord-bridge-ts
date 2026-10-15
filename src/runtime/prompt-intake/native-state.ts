@@ -18,7 +18,7 @@ import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {intakeNumberWire,intakeFromWire} from './native-wire.ts';
 const LIMIT=16*1024*1024;
-type Operation='ArchiveUnfinished'|'Get'|'List'|'DurableOwner'|'Claim'|'Renew'|'RecordFailure'|'RemoveQueued'|'Admit'|'Canonicalize'|'ReleaseAll'|'AdmitBusy'|'AdmitWithIngress'|'MirrorTarget'|'FirstReplyFinish'|'IngressOrigin'|'IngressAdmit'|'IngressHold'|'IngressRead'|'IngressBegin'|'IngressCreation'|'IngressCreated';
+type Operation='CompletedForkTarget'|'ArchiveUnfinished'|'Get'|'List'|'DurableOwner'|'Claim'|'Renew'|'RecordFailure'|'RemoveQueued'|'Admit'|'Canonicalize'|'ReleaseAll'|'AdmitBusy'|'AdmitWithIngress'|'MirrorTarget'|'FirstReplyFinish'|'IngressOrigin'|'IngressAdmit'|'IngressHold'|'IngressRead'|'IngressBegin'|'IngressCreation'|'IngressCreated';
 export class NativePromptIntakeUnavailableError extends Error{
  readonly operation:Operation;
  constructor(operation:Operation,cause:unknown){super('Prompt intake result unavailable after actual native join; no partial result or automatic retry',{cause});this.name='NativePromptIntakeUnavailableError';this.operation=operation;}
@@ -27,7 +27,7 @@ function lease(now:number,expires:number):void{
  if(typeof now!=='number'||typeof expires!=='number')throw new TypeError('Expected lease timestamps');
  if(!Number.isFinite(now)||!Number.isFinite(expires)||expires<=now)throw new InvalidPromptIntakeLeaseError(now,expires);
 }
-/** Exactly twenty-two intake/mapping/first-reply/journal/archive-read operations; all other state functions retain their identities. Shared finite Control admission; no new pool, retry or detached I/O. */
+/** Exactly twenty-three intake/mapping/first-reply/journal/archive/fork-read operations; all other state functions retain their identities. Shared finite Control admission; no new pool, retry or detached I/O. */
 export function createNativePromptIntakeState(path:string,timeoutMs=5000):IStateAccessFacade{
  requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new TypeError('Invalid intake store path');
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid intake deadline');const fixed=pinNativeRuntimePath(path);
@@ -43,7 +43,10 @@ export function createNativePromptIntakeState(path:string,timeoutMs=5000):IState
   try{
    if(boundedSerdeByteCount(raw,LIMIT)===null||own(raw,'operation')!==operation)throw new TypeError('No complete bound intake acknowledgement');
    if(own(raw,'ok')===true)return decode(own(raw,'value'));
-   if((operation==='Admit'||operation==='Canonicalize'||operation==='AdmitBusy'||operation==='AdmitWithIngress')&&own(raw,'kind')==='DeadTargetHeld'){
+   if(operation==='CompletedForkTarget'&&own(raw,'ok')===false&&own(raw,'kind')==='DeadTargetHeld'){
+    if(own(raw,'id')!==own(fields,'id')||own(raw,'target')!==own(fields,'id'))throw new TypeError('Held source differs from completed-fork request');
+    refusal=new DeadGenerationTargetHeldError(identity(own(raw,'target')));
+   }else if((operation==='Admit'||operation==='Canonicalize'||operation==='AdmitBusy'||operation==='AdmitWithIngress')&&own(raw,'kind')==='DeadTargetHeld'){
     if(own(raw,'id')!==own(fields,'id'))throw new TypeError('Held target refusal differs from captured intake');
     const target=own(raw,'target');requireDiscordText(target);refusal=new DeadGenerationTargetHeldError(target);
    }else throw new TypeError('No complete bound intake acknowledgement');
@@ -56,6 +59,9 @@ export function createNativePromptIntakeState(path:string,timeoutMs=5000):IState
   return {intake,claimToken:current};
  }
  return Object.freeze({...StateAccessFacade,
+  async completedAppServerForkTargetForSource(given:string,source:string){
+   requirePath(given);identity(source);return run('CompletedForkTarget',{id:source},raw=>{if(own(raw,'id')!==source)throw new TypeError('Completed-fork reply differs from requested source');const target=own(raw,'target');if(target===null)return null;return identity(target);});
+  },
   async unfinishedArchiveRequest(given:string,target:string,ownRequest:string|null){
    requirePath(given);identity(target);if(ownRequest!==null)identity(ownRequest);
    return run('ArchiveUnfinished',{target,ownRequest},raw=>{if(own(raw,'target')!==target||own(raw,'ownRequest')!==ownRequest)throw new TypeError('Archive unfinished reply differs from original request');const found=own(raw,'request');return found===null?null:identity(found);});

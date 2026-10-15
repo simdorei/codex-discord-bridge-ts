@@ -75,3 +75,8 @@ test('target mapping requires genuine Promises and validates resolved text witho
 test('target mapping preserves synchronous and asynchronous failure identity rather than substituting selected fallback',async()=>{
  for(const synchronous of [false,true]){const failure=new Error('mapping unavailable'),services=mappingServices({completedAppServerForkTargetForSource:state.completedAppServerForkTargetForSource,mirroredThreadId:()=>{if(synchronous)throw failure;return Promise.reject(failure);}});await assert.rejects(services.currentMirrorTarget(1n,'fallback'),e=>e===failure);}
 });
+
+test('action target captures completed lookup and applies each successful bridge hop before the next fresh read',async()=>storeFixture(async path=>{
+ const bridge=new BridgeState(join(dirname(path),'bridge.json'));bridge.setSelectedThreadId('a');const order:string[]=[],failure=new Error('read b failed'),port={...state,completedAppServerForkTargetForSource:async(given:string,id:string)=>{assert.equal(given,path);order.push(id);if(id==='a')return 'b';assert.equal(bridge.selectedThreadId(),'b');throw failure;}};
+ const services=new ActionTargetServices(path,bridge,new QueueStartCoordinator(path,backend()),prompts,port);port.completedAppServerForkTargetForSource=async()=>assert.fail('replacement');await assert.rejects(services.canonicalizeCompletedTarget('a'),e=>e===failure);assert.deepEqual(order,['a','b']);assert.equal(bridge.selectedThreadId(),'b');
+}));

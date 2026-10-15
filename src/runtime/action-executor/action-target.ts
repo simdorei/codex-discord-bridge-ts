@@ -1,3 +1,4 @@
+import {captureCompletedForkRead} from '../completed-fork-read.ts';
 import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
 import {types} from 'node:util';
 import {gatewayOwnField} from '../../discord/gateway/values.ts';
@@ -14,12 +15,14 @@ const label=(source:string,forked:boolean)=>!forked||source.includes("app-server
 /** Connects actual queue/state ownership; preparation and verified busy controls remain explicit services. */
 export class ActionTargetServices implements PreparedTargetServices {
  readonly #nativeBridge:NativeBridgeStateOwner|undefined;
+ readonly #completed:(source:string)=>Promise<string|null>;
  readonly #mapped:(channel:bigint)=>Promise<string|null>;
-  readonly #path:string;readonly #bridge:BridgeState;readonly #queue:TargetQueue;readonly #state:TargetState;readonly #prompts:PromptServices;
+  readonly #path:string;readonly #bridge:BridgeState;readonly #queue:TargetQueue;readonly #prompts:PromptServices;
   constructor(path:string,bridge:BridgeState,queue:TargetQueue,prompts:PromptServices,state:TargetState=StateAccessFacade,nativeBridge?:NativeBridgeStateOwner){
     requireDiscordText(path);const mapped=gatewayOwnField(state,'mirroredThreadId');if(typeof mapped!=='function'||types.isProxy(mapped)||types.isGeneratorFunction(mapped))throw new TypeError('Expected passive target mapping read function');
     this.#mapped=channel=>{const pending=Reflect.apply(mapped,undefined,[path,channel]);if(!types.isPromise(pending))throw new TypeError('Expected target mapping read Promise');return pending as Promise<string|null>;};
-    this.#nativeBridge=nativeBridge;this.#path=path;this.#bridge=bridge;this.#queue=queue;this.#prompts=prompts;this.#state=state;
+    this.#completed=captureCompletedForkRead(path,state);
+    this.#nativeBridge=nativeBridge;this.#path=path;this.#bridge=bridge;this.#queue=queue;this.#prompts=prompts;
   }
   requiresAppServerFork():boolean{return this.#queue.requiresAppServerFork();}
   preparePrompt(raw:string,target:string,signal?:AbortSignal):Promise<string>{return this.#prompts.preparePrompt(raw,target,signal);}
@@ -27,7 +30,7 @@ export class ActionTargetServices implements PreparedTargetServices {
   async canonicalizeCompletedTarget(source:string):Promise<string>{
     if(!this.requiresAppServerFork())return source;
     let current=source;const seen=new Set<string>();
-    while(!seen.has(current)){seen.add(current);const target=await this.#state.completedAppServerForkTargetForSource(this.#path,current);
+    while(!seen.has(current)){seen.add(current);const target=await this.#completed(current);
       if(target===null)return current;if(this.#nativeBridge===undefined)this.#bridge.applyThreadFork(current,target);else await this.#nativeBridge.execute({kind:'Fork',source:current,target});current=target;}
     throw new InvalidActionRequestError(`app-server fork handoff cycle detected for ${source}`);
   }

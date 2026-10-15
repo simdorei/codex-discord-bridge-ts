@@ -1,3 +1,4 @@
+import {captureCompletedForkRead} from '../completed-fork-read.ts';
 import {ForkTransitionError} from "../../store/fork-transition-validation.ts";
 import {ForkHandoffConflictingIntentError} from "../../store/fork-definite-stage.ts";
 import {ForkHandoffConflictingIntentError as UnresolvedConflictError} from "../../store/fork-unresolved-stage.ts";
@@ -22,8 +23,9 @@ const visible=(error:string)=>error===""?"app-server fork handoff was interrupte
 const unchanged=(threadId:string):AppServerTarget=>({threadId,forkedFrom:null,quarantinedJobId:null});
 /** Durable observation divides source RPC ownership from ordered source/target finalization locks. */
 export class QueueForkCoordinator{
+  readonly #completed:(source:string)=>Promise<string|null>;
   readonly #path:string;readonly #backend:ForkBackend;readonly #state:ForkState;readonly #locks:TargetLocks;readonly #blocked:(target:string,error:unknown)=>void;
-  constructor(path:string,backend:ForkBackend,state:ForkState=StateAccessFacade,locks=new TargetLocks(),onRecoveryBlocked:(target:string,error:unknown)=>void=()=>{}){this.#path=path;this.#backend=backend;this.#state=state;this.#locks=locks;this.#blocked=onRecoveryBlocked;}
+  constructor(path:string,backend:ForkBackend,state:ForkState=StateAccessFacade,locks=new TargetLocks(),onRecoveryBlocked:(target:string,error:unknown)=>void=()=>{}){this.#completed=captureCompletedForkRead(path,state);this.#path=path;this.#backend=backend;this.#state=state;this.#locks=locks;this.#blocked=onRecoveryBlocked;}
   ensureTarget(source:string):Promise<AppServerTarget>{return this.#handoff(source,false,"app-server-only ownership fork");}
   forceTarget(source:string):Promise<AppServerTarget>{return this.#handoff(source,true,"app-server active-writer ownership fork");}
   async prepareUnmanagedTargets():Promise<void>{
@@ -52,7 +54,7 @@ export class QueueForkCoordinator{
   async #unheld(target:string):Promise<void>{if(await this.#state.deadTargetHeld(this.#path,target))throw new DeadGenerationTargetHeldError(target);}
   async #chain(source:string):Promise<string|null>{
     const seen=new Set([source]);let current=source;
-    while(true){const next=await this.#state.completedAppServerForkTargetForSource(this.#path,current);if(next===null)return current===source?null:current;
+    while(true){const next=await this.#completed(current);if(next===null)return current===source?null:current;
       await this.#unheld(next);if(seen.has(next))throw new ForkRuntimeError({kind:"ForkTargetCycle",sourceThreadId:source});seen.add(next);current=next;}
   }
   async #unresolved(source:string,h:AppServerForkHandoff):Promise<never>{

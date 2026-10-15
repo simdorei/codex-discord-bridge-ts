@@ -3,11 +3,12 @@ import {parentPort,workerData as q} from 'node:worker_threads';
 import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
 import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {intakeNumberFromWire,intakeToWire} from './native-wire.ts';
-import {DeadGenerationTargetHeldError} from '../../store/fork-completed-target.ts';
+import {completedAppServerForkTargetForSourceExisting,DeadGenerationTargetHeldError} from '../../store/fork-completed-target.ts';
 const port=parentPort;if(port===null)throw new Error('Intake state requires owned native worker');
 try{
  let value:unknown;
- if(q.operation==='ArchiveUnfinished')value={target:q.target,ownRequest:q.ownRequest,request:state.unfinishedArchiveRequestExisting(q.path,q.target,q.ownRequest)};
+ if(q.operation==='CompletedForkTarget')value={id:q.id,target:completedAppServerForkTargetForSourceExisting(q.path,q.id)};
+ else if(q.operation==='ArchiveUnfinished')value={target:q.target,ownRequest:q.ownRequest,request:state.unfinishedArchiveRequestExisting(q.path,q.target,q.ownRequest)};
  else if(q.operation==='IngressRead'){const record=state.getIngressExisting(q.path,q.id);value={id:q.id,record:record===null?null:storedIngressToWire(record)};}
  else if(q.operation==='IngressBegin')value={id:q.id,gen:q.gen,won:state.beginIngressThreadStartExisting(q.path,q.id,q.gen,intakeNumberFromWire(q.now))};
  else if(q.operation==='IngressCreation'){state.recordIngressNewCreationExisting(q.path,q.id,q.gen,q.cwd,q.channel,intakeNumberFromWire(q.now));value={id:q.id,gen:q.gen,cwd:q.cwd,channel:q.channel,recorded:true};}
@@ -34,7 +35,7 @@ try{
  const result={ok:true,operation:q.operation,value};if(boundedSerdeByteCount(result,16*1024*1024)===null)throw new Error('Intake output exceeds native wire boundary');port.postMessage(result);
 }catch(error){
  // Only this worker's exact nominal pre-commit refusal preserves manual-hold authority.
- if((q.operation==='Admit'||q.operation==='Canonicalize'||q.operation==='AdmitBusy'||q.operation==='AdmitWithIngress')&&error instanceof DeadGenerationTargetHeldError&&Object.getPrototypeOf(error)===DeadGenerationTargetHeldError.prototype){
+ if((q.operation==='CompletedForkTarget'||q.operation==='Admit'||q.operation==='Canonicalize'||q.operation==='AdmitBusy'||q.operation==='AdmitWithIngress')&&error instanceof DeadGenerationTargetHeldError&&Object.getPrototypeOf(error)===DeadGenerationTargetHeldError.prototype){
   const refusal={ok:false,operation:q.operation,kind:'DeadTargetHeld',id:q.id,target:error.targetThreadId};
   port.postMessage(boundedSerdeByteCount(refusal,16*1024*1024)===null?{ok:false}:refusal);
  }else port.postMessage({ok:false});

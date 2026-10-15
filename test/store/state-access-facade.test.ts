@@ -1,3 +1,4 @@
+import * as RunnerInspection from '../../src/store/runner-inspection.ts';
 import * as MirrorStartupIntent from '../../src/store/mirror-startup-intent.ts';
 import * as ArchiveDeletion from '../../src/store/archive-deletion.ts';
 import * as ArchivedCleanup from '../../src/store/archived-cleanup.ts';
@@ -456,6 +457,14 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
     assert.strictEqual(StateAccessFacade.diagnosticDatabaseCounts, DiagnosticRead.diagnosticDatabaseCounts);
     assert.strictEqual(StateAccessFacade.diagnosticIdleRelease, DiagnosticRead.diagnosticIdleRelease);
     assert.strictEqual(StateAccessFacade.runnerTargetCounts, RunnerCounts.runnerTargetCounts);
+    assert.strictEqual(StateAccessFacade.runnerInspectionDetailExisting, RunnerInspection.runnerInspectionDetailExisting);
+    assert.strictEqual(FacadeExports.runnerInspectionDetailExisting, RunnerInspection.runnerInspectionDetailExisting);
+    assert.strictEqual(StateAccessFacade.runnerInspectionSummaryExisting, RunnerInspection.runnerInspectionSummaryExisting);
+    assert.strictEqual(FacadeExports.runnerInspectionSummaryExisting, RunnerInspection.runnerInspectionSummaryExisting);
+    assert.strictEqual(StateAccessFacade.runnerInspectionTargetCountsExisting, RunnerInspection.runnerInspectionTargetCountsExisting);
+    assert.strictEqual(FacadeExports.runnerInspectionTargetCountsExisting, RunnerInspection.runnerInspectionTargetCountsExisting);
+    assert.strictEqual(StateAccessFacade.runnerInspectionGlobalExisting, RunnerInspection.runnerInspectionGlobalExisting);
+    assert.strictEqual(FacadeExports.runnerInspectionGlobalExisting, RunnerInspection.runnerInspectionGlobalExisting);
     assert.strictEqual(StateAccessFacade.claimIngressRecoverySnapshotIn, RecoveryCustody.claimIngressRecoverySnapshotIn);
     assert.strictEqual(FacadeExports.claimIngressRecoverySnapshotIn, RecoveryCustody.claimIngressRecoverySnapshotIn);
     assert.strictEqual(StateAccessFacade.claimIngressRecoverySnapshotExisting, RecoveryCustody.claimIngressRecoverySnapshotExisting);
@@ -877,6 +886,10 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
       "diagnosticDatabaseCounts",
       "diagnosticIdleRelease",
       "runnerTargetCounts",
+      "runnerInspectionDetailExisting",
+      "runnerInspectionSummaryExisting",
+      "runnerInspectionTargetCountsExisting",
+      "runnerInspectionGlobalExisting",
       "validateRecoveryEffectIn",
       "claimIngressRecoverySnapshotIn",
       "claimIngressRecoverySnapshotExisting",
@@ -1011,7 +1024,7 @@ assert.strictEqual(StateAccessFacade.renewPromptIntakeClaimExisting, PromptIntak
     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
 assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
 assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
-    assert.strictEqual(actual.length, 373);
+    assert.strictEqual(actual.length, 377);
   });
 
   it("does not expose unsupplied readPendingAuthority on the facade", () => {

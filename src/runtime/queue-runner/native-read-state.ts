@@ -1,3 +1,4 @@
+import {createNativePromptIntakeState} from '../prompt-intake/native-state.ts';
 import {types} from 'node:util';import {StateAccessFacade,type IStateAccessFacade} from '../../store/state-access-facade.ts';import {snapshotStoredQueueJob,type StoredQueueJob} from '../../store/queue-read.ts';import {OwnedWorkerSlot} from '../owned-worker-slot.ts';import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';import {requireDiscordText} from '../../discord/text.ts';import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 type Operation='List'|'Eligible'|'DeadTarget'|'AsyncDispatch';const LIMIT=16*1024*1024;
 export class NativeQueueReadUnavailableError extends Error{readonly operation:Operation;constructor(operation:Operation,cause:unknown){super('Queue read unavailable after actual native join; no partial state or fallback',{cause});this.name='NativeQueueReadUnavailableError';this.operation=operation;}}
@@ -5,7 +6,7 @@ function jobs(input:unknown):StoredQueueJob[]{
  if(types.isProxy(input)||!Array.isArray(input)||boundedSerdeByteCount(input,LIMIT)===null)throw new TypeError('Expected bounded queue data array');const result:StoredQueueJob[]=[];
  for(let i=0;i<input.length;i++)result.push(snapshotStoredQueueJob(own(input,String(i)) as StoredQueueJob));return result;
 }
-/** Override only four explicit serializable async reads. Other facade functions retain
+/** Override only five explicit serializable async reads. Other facade functions retain
  * their exact identities and original execution. Every invocation owns and joins
  * its own short native slot; no persistent worker or lifetime is detached. */
 export function createNativeQueueReadState(path:string,timeoutMs=5000):IStateAccessFacade{
@@ -19,7 +20,10 @@ export function createNativeQueueReadState(path:string,timeoutMs=5000):IStateAcc
   requireDiscordText(target);if(Buffer.byteLength(target)>65536)throw new RangeError('Queue target exceeds native boundary');
   const result=await run(operation,{target});if(typeof result!=='boolean')throw new NativeQueueReadUnavailableError(operation,new TypeError('Expected exact admission boolean'));return result;
  }
+ // Reuse the direct bound intake worker port. No worker calls another worker.
+ const completed=createNativePromptIntakeState(path,timeoutMs).completedAppServerForkTargetForSource;
  return Object.freeze({...StateAccessFacade,
+  completedAppServerForkTargetForSource:completed,
   async deadTargetHeld(given:string,target:string):Promise<boolean>{requirePath(given);return held('DeadTarget',target);},
   async asyncTargetDispatchHeld(given:string,target:string):Promise<boolean>{requirePath(given);return held('AsyncDispatch',target);},
   async listFiltered(given:string,target:string|null,generation:bigint|null):Promise<StoredQueueJob[]>{
