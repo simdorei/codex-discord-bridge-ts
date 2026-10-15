@@ -5,7 +5,7 @@ import type {ComponentId} from '../../discord/components.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {serdeValueEqual} from '../../core/serde-value-equal.ts';
 import {snapshotInboundInteractionWork, type InboundInteractionWork} from '../discord-dispatch/interaction-work.ts';
-import {snapshotComponentId} from '../discord-dispatch/delivery-identity.ts';
+import {snapshotComponentId, COMPONENT_CONFIRMATION_DOMAIN, BUSY_CONFIRMATION_DOMAIN} from '../discord-dispatch/delivery-identity.ts';
 import type {BusyQueueExecutor} from '../action-executor/busy-queue.ts';
 import type {ControlTurnVerifier} from '../action-executor/control-turn.ts';
 import {prepareStandardComponentAction} from './standard.ts';
@@ -23,16 +23,19 @@ const token = Symbol('PreparedOrdinaryComponentConfirmation'), owned = new WeakS
 /** Preparation executed the action already. Delivery can only retry its durable
  * confirmation/clear path; it retains no callback capable of executing the action. */
 export class PreparedOrdinaryComponentConfirmation {
-  readonly #database: string; readonly #channel: bigint; readonly #source: bigint | null; readonly #plan: ConfirmationPlan; readonly #http: DiscordChannelClient;
-  constructor(key: symbol, database: string, channel: bigint, source: bigint | null, plan: ConfirmationPlan, http: DiscordChannelClient) {
+  readonly #database: string; readonly #channel: bigint; readonly #source: bigint | null; readonly #plan: ConfirmationPlan; readonly #http: DiscordChannelClient; readonly #nativeReceipts: boolean;
+  constructor(key: symbol, database: string, channel: bigint, source: bigint | null, plan: ConfirmationPlan, http: DiscordChannelClient, nativeReceipts=false) {
     if (key !== token || !isConfirmationPlan(plan)) throw new TypeError('Expected prepared ordinary confirmation');
+    if (typeof nativeReceipts !== 'boolean') throw new TypeError('Expected native confirmation receipt profile');
+    // The installed profile migrates only these completed ordinary actions.
+    this.#nativeReceipts = nativeReceipts && (plan.domain === COMPONENT_CONFIRMATION_DOMAIN || plan.domain === BUSY_CONFIRMATION_DOMAIN);
     this.#database = database; this.#channel = channel; this.#source = source; this.#plan = plan; this.#http = http; owned.add(this); Object.freeze(this);
   }
   readonly deliver = async (): Promise<void> => {
     if (!owned.has(this)) throw new TypeError('Expected prepared ordinary confirmation');
     const abandonment=this.#plan.domain==='recovery-abandonment-confirmation-v1',budget=abandonment?new AbortController():null;
     const timer=budget===null?null:setTimeout(()=>budget.abort(new Error('notification timed out; its receipt must be reconciled')),10000);
-    try {await deliverConfirmationAndClear(this.#http,this.#database,this.#channel,this.#source,this.#plan,budget?.signal);}
+    try {await deliverConfirmationAndClear(this.#http,this.#database,this.#channel,this.#source,this.#plan,budget?.signal,this.#nativeReceipts);}
     catch(error){if(abandonment)throw new ComponentWorkerError('AbandonmentNotice',error);if(confirmationErrorInfo(error)!==null)throw new ComponentWorkerError('Confirmation',error);throw error;}
     finally{if(timer!==null)clearTimeout(timer);}
 
@@ -41,8 +44,9 @@ export class PreparedOrdinaryComponentConfirmation {
 /* Recovery variants are dispatched before ordinary approvals and confirmation-
  * only busy handling. Their dedicated sinks never substitute a native action. */
 export function createOrdinaryComponentHandler(database: string, server: PortableResidentLifecycle, http: DiscordChannelClient,
-  queue: BusyQueueExecutor, verifier: ControlTurnVerifier, notifyDeliveryReady: () => void, nativeSteer?: NativeBusySteerServices) {
+  queue: BusyQueueExecutor, verifier: ControlTurnVerifier, notifyDeliveryReady: () => void, nativeSteer?: NativeBusySteerServices, nativeReceipts=false) {
   requireDiscordText(database);
+  if (typeof nativeReceipts !== 'boolean') throw new TypeError('Expected native confirmation receipt profile');
   const steer = nativeSteer === undefined ? undefined : captureNativeBusySteerServices(nativeSteer, database);
   if (typeof notifyDeliveryReady !== 'function' || types.isProxy(notifyDeliveryReady) || types.isAsyncFunction(notifyDeliveryReady) || types.isGeneratorFunction(notifyDeliveryReady)) throw new TypeError('Expected synchronous delivery notifier');
   return async (inputWork: InboundInteractionWork, inputComponent: ComponentId): Promise<PreparedOrdinaryComponentConfirmation> => {
@@ -60,6 +64,6 @@ export function createOrdinaryComponentHandler(database: string, server: Portabl
         throw new ComponentWorkerError('Busy', new BusyComponentError('Store', error));
       }
     } else plan = await prepareStandardComponentAction(work, component, database, server);
-    return new PreparedOrdinaryComponentConfirmation(token, database, work.channelId, work.sourceMessageId, plan, http);
+    return new PreparedOrdinaryComponentConfirmation(token, database, work.channelId, work.sourceMessageId, plan, http, nativeReceipts);
   };
 }

@@ -150,7 +150,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   * completed-action receipt. This does not start gateway or worker loops. */
  interactionServices(http:DiscordChannelClient):InteractionBusinessServices{
   if(this.#server===null)throw new MissingActionAppServerError();
-  return Object.freeze({executeWithIngressContext:RuntimeCommandExecutor.prototype.executeWithIngressContext.bind(this),prepareComponent:createOrdinaryComponentHandler(this.#database,this.#server,http,this.#componentQueue,this.#control,RuntimeCommandExecutor.prototype.notifyDeliveryReady.bind(this),this.#busySteer)});
+  return Object.freeze({executeWithIngressContext:RuntimeCommandExecutor.prototype.executeWithIngressContext.bind(this),prepareComponent:createOrdinaryComponentHandler(this.#database,this.#server,http,this.#componentQueue,this.#control,RuntimeCommandExecutor.prototype.notifyDeliveryReady.bind(this),this.#busySteer,true)});
  }
  async executeWithIngressContext(input:CommandAction,inputActor:MessageActionContext,key:string,signal?:AbortSignal):Promise<ActionResult>{
   signal?.throwIfAborted();const action=snapshotRuntimeCommand(input),actor=snapshotActionContext(inputActor);requireDiscordText(key);if(actor.discordMessageId===null)throw new InvalidActionRequestError('admitted message/interaction event identity is required');let result:ActionResult;

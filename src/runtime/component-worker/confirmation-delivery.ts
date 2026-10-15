@@ -12,15 +12,17 @@ export async function sendThenClear(send: () => Promise<void>, clear: () => Prom
 }
 /** Caller owns completed action/custody. A confirmed receipt skips repeat POST,
  * then retries only clearing. Neither this function nor its plan reexecutes an
- * action or releases its persistent action claim. */
+ * action or releases its persistent action claim. Native receipts are explicit;
+ * direct helper callers retain their original initialized-store behavior. */
 export async function deliverConfirmationAndClear(http: DiscordChannelClient, database: string, channelId: bigint,
-  sourceMessageId: bigint | null, plan: ConfirmationPlan, signal?:AbortSignal): Promise<void> {
+  sourceMessageId: bigint | null, plan: ConfirmationPlan, signal?:AbortSignal, nativeReceipts=false): Promise<void> {
   signal?.throwIfAborted();
+  if (typeof nativeReceipts !== 'boolean') throw new TypeError('Expected native confirmation receipt profile');
   if (!isConfirmationPlan(plan)) throw new TypeError('Expected factory-created confirmation plan');
   for (const id of [channelId, ...(sourceMessageId === null ? [] : [sourceMessageId])]) if (typeof id !== 'bigint' || id <= 0n || id >= 1n << 64n) throw new TypeError('Expected Discord confirmation identity');
   const transport = Object.freeze({sendValidated: (request:Parameters<DiscordChannelClient['sendValidated']>[0])=>DiscordChannelClient.prototype.sendValidated.call(http,request,signal)});
   await sendThenClear(async () => {
-    try {await sendReceiptChunk(database, transport, channelId, {domain: plan.domain, logicalKey: plan.logicalKey, chunkIndex: 0, content: plan.content},[],null,signal);}
+    try {await sendReceiptChunk(database, transport, channelId, {domain: plan.domain, logicalKey: plan.logicalKey, chunkIndex: 0, content: plan.content},[],null,signal,nativeReceipts);}
     catch (error) {throw new ConfirmationError('Delivery', passiveErrorText(error, 'confirmation delivery failed'), error);}
   }, async () => {
     signal?.throwIfAborted();
