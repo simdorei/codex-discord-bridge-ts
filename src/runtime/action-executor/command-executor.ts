@@ -109,7 +109,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   this.#new=new NewThreadExecutor(paths.mirror,paths.state,queue,intake,bridge,server,backend,get('mirror'),get('reportNewAttempt'),undefined,intakeState.admitPromptIntakeWithIngress,intakeState.getNewFirstReplyFinish,intakeState,createNativeNewProjectLookup(paths.state),bridgeOwner);
   this.#prompts=new QueuePromptExecutor(paths.mirror,selection,targets,queue,intake,busy,intakeState);this.#retract=new RetractAction(paths.mirror,selection,undefined,new NativeRetractWriter(paths.mirror));
   const steerOrigin=new NativeSteerOriginWriter(paths.mirror);this.#busySteer=Object.freeze({writer:steerOrigin,selection,bridge:bridgeOwner});
-  this.#controls=new PromptControlActions(paths.mirror,selection,targets,control,server,undefined,steerOrigin,bridgeOwner);this.#open=new OpenThreadAction(selection,targets,bridge,server,timeout,bridgeOwner);
+  this.#controls=new PromptControlActions(paths.mirror,selection,targets,control,server,undefined,steerOrigin,bridgeOwner,this.#promptAuthorityReads);this.#open=new OpenThreadAction(selection,targets,bridge,server,timeout,bridgeOwner);
   this.#settingsResolver=new SettingsTargetResolver(paths.state,paths.mirror,bridge,createNativeSettingsBindingReads(paths.state,BridgeState.prototype.path.call(bridge),intakeState.mirroredThreadId),bridgeOwner);
   this.#settings=new AdmittedSettingsExecutor(paths.mirror,new SettingsAction(selection,this.#settingsResolver,bridge,server,control,timeout,bridgeOwner),intakeState);
   this.#stop=new AdmittedStopExecutor(paths.mirror,bridge,new StopActionExecutor(paths.mirror,server,bridge,locks,render,stopActionState,bridgeOwner,new NativeStopAcceptanceWriter(paths.mirror,bridgeOwner)),bridgeOwner,intakeState);
@@ -152,7 +152,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
  requireRuntimeResident(server:PortableResidentLifecycle):void{if(this.#server!==server)throw new TypeError('Action executor resident differs from runtime binding');}
  notifyDeliveryReady():void{invokeSynchronousVoid(QueueStartCoordinator.prototype.notifyDeliveryReady,this.#queue,[]);}
  /** Own-data functions match the processor's strict service capture contract. */
- messageRuntimeBinding(){return Object.freeze({services:RuntimeCommandExecutor.prototype.messageServices.call(this),resolver:this.#settingsResolver,controlVerifier:this.#control});}
+ messageRuntimeBinding(){return Object.freeze({promptAuthorityReads:this.#promptAuthorityReads,services:RuntimeCommandExecutor.prototype.messageServices.call(this),resolver:this.#settingsResolver,controlVerifier:this.#control});}
  messageServices():MessageBusinessServices{return Object.freeze({targetThreadId:RuntimeCommandExecutor.prototype.targetThreadId.bind(this),executeWithIngressContext:RuntimeCommandExecutor.prototype.executeWithIngressContext.bind(this),notifyDeliveryReady:RuntimeCommandExecutor.prototype.notifyDeliveryReady.bind(this)});}
  /** Slash commands and components use this same queue, target locks and native
   * owner. Preparation never sends confirmation before the processor commits its

@@ -1,3 +1,4 @@
+import {capturePromptAuthorityReadContext} from '../server-prompt-authority-reads.ts';
 import {types} from 'node:util';
 import {AdmissionGate,AdmissionPermit} from '../../admission/drain-gate.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
@@ -35,6 +36,7 @@ async function runDiscordHistory(options:DiscordHistoryGapOptions,channel:bigint
  const raw=own(options,'context'),context={} as Record<string,unknown>;
  for(const key of ['database','server','http','config','attachmentRoot','attachmentTransport','attachmentReport','controlVerifier','services'])context[key]=own(raw,key);
  context.nativePromptReceipts=captureNativePromptReceipts(raw);
+ context.promptAuthorityReads=capturePromptAuthorityReadContext(context.database as string,raw);
  const clock=Object.getOwnPropertyDescriptor(raw as object,'now');if(clock!==undefined&&!Object.hasOwn(clock,'value'))throw new TypeError('Expected clock data');context.now=clock?.value??systemNow;context.applicationId=own(options,'applicationId');
  const processor=createMessageProcessor(context as unknown as MessageProcessorContext),database=context.database as string,http=context.http as DiscordChannelClient,now=context.now as ()=>number;
  const gate=own(options,'gate') as AdmissionGate,basePolicy=own(options,'policy') as InteractionAccessPolicy,resolver=own(options,'resolver') as SettingsTargetResolver,bot=own(options,'botUserId') as bigint|null,report=own(options,'report') as MessageHandlerOptions['report'];

@@ -1,3 +1,4 @@
+import {capturePromptAuthorityReads,type PromptAuthorityReads} from '../server-prompt-authority-reads.ts';
 import {DiscordChannelClient} from '../../discord/channel-client.ts';
 import {gatewayOwnField} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
@@ -22,12 +23,13 @@ function capture(input: DeliveryWork): DeliveryWork {
  * server prompts before text; otherwise components or ordinary text. Caller has
  * already recorded the action result and retains its execution/admission owners. */
 export async function deliverActionResult(input: DeliveryWork, value: ActionResult, database: string,
-  server: PortableResidentLifecycle, http: DiscordChannelClient, nativePromptReceipts=false): Promise<void> {
+  server: PortableResidentLifecycle, http: DiscordChannelClient, nativePromptReceipts=false, inputReads?:PromptAuthorityReads): Promise<void> {
   if(typeof nativePromptReceipts!=='boolean')throw new TypeError('Expected native prompt receipt profile flag');
   const work = capture(input), result = snapshotActionResult(value);
+  const promptAuthorityReads=inputReads===undefined?undefined:capturePromptAuthorityReads(database,inputReads);
   if (await deliverNewReply(http, work, result, database)) return;
   if (result.ui?.kind === 'ServerPrompts') {
-    await deliverServerPrompts({database, server, http, channelId: work.channelId, userId: work.userId, commandKey: work.custodyIngressId, nativePromptReceipts}, result.ui.prompts);
+    await deliverServerPrompts({database, server, http, channelId: work.channelId, userId: work.userId, commandKey: work.custodyIngressId, nativePromptReceipts,promptAuthorityReads}, result.ui.prompts);
     await deliverInteractionTextIdempotent(http, work, result.text, INTERACTION_FOLLOWUP_DOMAIN); return;
   }
   const components = renderActionUi(result.ui);

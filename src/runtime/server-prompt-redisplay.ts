@@ -1,3 +1,4 @@
+import {capturePromptAuthorityReads,type PromptAuthorityReads} from './server-prompt-authority-reads.ts';
 import {PortableResidentLifecycle} from '../app-server/portable-resident-lifecycle.ts';
 import {clonePendingServerRequest, pendingServerRequestEqual, type PendingServerRequest} from '../app-server/server-request-state.ts';
 import {extractThreadId} from '../app-server/identity.ts';
@@ -27,11 +28,12 @@ function actor(channel: bigint, user: bigint): void {
 /** Rebuild an existing occurrence. Unavailable diagnostics contain only fixed
  * reasons, never question text/command contents or an unsupported method value. */
 export async function prepareOneServerPrompt(database: string, server: PortableResidentLifecycle, input: PendingServerRequest,
-  generation: bigint, channel: bigint, user: bigint): Promise<PreparedPrompt> {
+  generation: bigint, channel: bigint, user: bigint, inputReads?: PromptAuthorityReads): Promise<PreparedPrompt> {
   actor(channel, user); const request = clonePendingServerRequest(input); requirePromptReady(server, generation);
+  const reads = inputReads === undefined ? undefined : capturePromptAuthorityReads(database, inputReads);
   let prompt: ServerPrompt, unavailable = false;
   try {
-    const authority = await verifyPromptAuthority(database, server, request, generation); authority.requireActor(channel, user);
+    const authority = await verifyPromptAuthority(database, server, request, generation, reads); authority.requireActor(channel, user);
     prompt = buildServerPrompt(request, generation);
   } catch (error) {
     if (!(error instanceof PromptAuthorityError) && !(error instanceof ServerPromptError)) throw error;
@@ -43,11 +45,12 @@ export async function prepareOneServerPrompt(database: string, server: PortableR
   const prepared = Object.freeze({request, generation, prompt, unavailable}); owned.add(prepared); return prepared;
 }
 export async function prepareServerPrompts(database: string, server: PortableResidentLifecycle, thread: string,
-  channel: bigint, user: bigint): Promise<readonly PreparedPrompt[]> {
+  channel: bigint, user: bigint, inputReads?: PromptAuthorityReads): Promise<readonly PreparedPrompt[]> {
   requireDiscordText(thread); actor(channel, user);
   const generation = PortableResidentLifecycle.prototype.generation.call(server); requirePromptReady(server, generation);
+  const reads = inputReads === undefined ? undefined : capturePromptAuthorityReads(database, inputReads);
   const requests = PortableResidentLifecycle.prototype.pendingServerRequests.call(server, thread), prompts: PreparedPrompt[] = [];
-  for (const request of requests) prompts.push(await prepareOneServerPrompt(database, server, request, generation, channel, user));
+  for (const request of requests) prompts.push(await prepareOneServerPrompt(database, server, request, generation, channel, user, reads));
   requirePromptReady(server, generation);
   if (PortableResidentLifecycle.prototype.generation.call(server) !== generation) throw new PromptRedisplayChangedError();
   const current = PortableResidentLifecycle.prototype.pendingServerRequests.call(server, thread);

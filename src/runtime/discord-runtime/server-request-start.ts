@@ -1,3 +1,4 @@
+import {createNativePromptAuthorityReads} from '../server-prompt-authority-reads.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {DiscordChannelClient} from '../../discord/channel-client.ts';
@@ -21,7 +22,7 @@ export async function startServerRequestRuntimeWorker(startup:RuntimeServerReque
  if(typeof report!=='function'||types.isProxy(report)||types.isAsyncFunction(report)||types.isGeneratorFunction(report))throw new TypeError('Expected synchronous server request diagnostic');
  const owner=own(startup,'owner') as PortableResidentLifecycle,receiver=own(startup,'serverRequestReceiver') as BroadcastReceiver<ResidentServerRequestEvent>;
  PortableResidentLifecycle.prototype.lifecycleSnapshot.call(owner);Reflect.apply(requests,http,[]);
- const delivery=new ServerRequestDelivery(database,owner,Object.freeze({sendValidated:(request:Parameters<typeof send>[0])=>Reflect.apply(send,http,[request]) as Promise<bigint>}),true);
+ const delivery=new ServerRequestDelivery(database,owner,Object.freeze({sendValidated:(request:Parameters<typeof send>[0])=>Reflect.apply(send,http,[request]) as Promise<bigint>}),true,createNativePromptAuthorityReads(database));
  let announce!:()=>void;const entered=new Promise<void>(resolve=>announce=resolve);
  const worker=new RuntimeMonitoredWorker('server-request',notifier,async force=>{
   announce();try{await runServerRequestWorker(receiver,owner,delivery,AbortSignal.any([shutdown,force]),report);return {ok:true};}catch(error){if(force.aborted&&error===force.reason)throw error;return {ok:false,error};}

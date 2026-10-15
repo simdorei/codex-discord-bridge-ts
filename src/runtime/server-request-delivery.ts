@@ -1,3 +1,4 @@
+import {capturePromptAuthorityReads,type PromptAuthorityReads} from './server-prompt-authority-reads.ts';
 import {types} from 'node:util';
 import {PortableResidentLifecycle} from '../app-server/portable-resident-lifecycle.ts';
 import {clonePendingServerRequest,type PendingServerRequest} from '../app-server/server-request-state.ts';
@@ -17,21 +18,21 @@ export class ServerRequestSnapshotUnstable extends Error{readonly attempts=3;con
  * work; a late known acceptance is still committed by the receipt state machine.
  * Scheduler retries and runtime startup binding are separate. */
 export class ServerRequestDelivery{
- readonly #nativePromptReceipts:boolean;readonly #database:string;readonly #server:PortableResidentLifecycle;readonly #transport:DiscordReceiptTransport;readonly #sent=new SentServerPromptCache();#busy=false;#workerOwned=false;
- constructor(database:string,server:PortableResidentLifecycle,transport:DiscordReceiptTransport,nativePromptReceipts=false){
+ readonly #promptAuthorityReads:PromptAuthorityReads|undefined;readonly #nativePromptReceipts:boolean;readonly #database:string;readonly #server:PortableResidentLifecycle;readonly #transport:DiscordReceiptTransport;readonly #sent=new SentServerPromptCache();#busy=false;#workerOwned=false;
+ constructor(database:string,server:PortableResidentLifecycle,transport:DiscordReceiptTransport,nativePromptReceipts=false,promptAuthorityReads?:PromptAuthorityReads){
   if(typeof nativePromptReceipts!=='boolean')throw new TypeError('Expected native prompt receipt profile flag');this.#nativePromptReceipts=nativePromptReceipts;
   requireDiscordText(database);PortableResidentLifecycle.prototype.lifecycleSnapshot.call(server);const send=own(transport,'sendValidated');if(typeof send!=='function'||types.isProxy(send)||types.isGeneratorFunction(send))throw new TypeError('Expected owned server prompt transport');
-  this.#database=database;this.#server=server;this.#transport=Object.freeze({sendValidated:(request:Parameters<DiscordReceiptTransport['sendValidated']>[0])=>Reflect.apply(send,transport,[request])});
+  this.#promptAuthorityReads=promptAuthorityReads===undefined?undefined:capturePromptAuthorityReads(database,promptAuthorityReads);this.#database=database;this.#server=server;this.#transport=Object.freeze({sendValidated:(request:Parameters<DiscordReceiptTransport['sendValidated']>[0])=>Reflect.apply(send,transport,[request])});
  }
  #generation(expected:bigint){requirePromptGeneration(expected);const actual=PortableResidentLifecycle.prototype.generation.call(this.#server);if(actual!==expected)throw new ServerRequestGenerationMismatch(expected,actual);}
  async #process(generation:bigint,input:PendingServerRequest,signal?:AbortSignal):Promise<void>{
-  signal?.throwIfAborted();this.#generation(generation);const request=clonePendingServerRequest(input),authority=await verifyPromptAuthority(this.#database,this.#server,request,generation);signal?.throwIfAborted();
+  signal?.throwIfAborted();this.#generation(generation);const request=clonePendingServerRequest(input),authority=await verifyPromptAuthority(this.#database,this.#server,request,generation,this.#promptAuthorityReads);signal?.throwIfAborted();
   const local=localToolFormResponse(request);
   if(local!==null){this.#generation(generation);await PortableResidentLifecycle.prototype.respond.call(this.#server,request.id,request.occurrence,local.response,generation,signal);return;}
   const prompt=buildServerPrompt(request,generation),key=serverPromptIdentity(generation,request,prompt);if(this.#sent.contains(generation,key))return;
   const chunks=splitDeliveryChunks(prompt.text,true);
   for(let index=0;index<chunks.length;index++){
-   signal?.throwIfAborted();this.#generation(generation);const current=await verifyPromptAuthority(this.#database,this.#server,request,generation);if(current.channelId!==authority.channelId)throw new PromptAuthorityError('original delivery channel changed');signal?.throwIfAborted();
+   signal?.throwIfAborted();this.#generation(generation);const current=await verifyPromptAuthority(this.#database,this.#server,request,generation,this.#promptAuthorityReads);if(current.channelId!==authority.channelId)throw new PromptAuthorityError('original delivery channel changed');signal?.throwIfAborted();
    await sendReceiptChunk(this.#database,this.#transport,authority.channelId,{domain:SERVER_REQUEST_PROMPT_DOMAIN,logicalKey:key,chunkIndex:index,content:chunks[index]!},index+1===chunks.length?prompt.components:[],null,signal,this.#nativePromptReceipts);
   }
   this.#sent.remember(generation,key);

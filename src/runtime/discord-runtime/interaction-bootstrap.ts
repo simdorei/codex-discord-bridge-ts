@@ -1,3 +1,4 @@
+import {createNativePromptAuthorityReads} from '../server-prompt-authority-reads.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {invokeSynchronousVoid} from '../../core/synchronous-void.ts';
@@ -19,6 +20,6 @@ export async function startPreparedInteractionWorker(input:RuntimeInteractionSta
  const owner=own(input,'owner') as PortableResidentLifecycle,queue=own(input,'queue') as QueueStartCoordinator,executor=own(input,'executor') as RuntimeCommandExecutor;
  if(typeof report!=='function'||types.isProxy(report)||types.isAsyncFunction(report)||types.isGeneratorFunction(report))throw new TypeError('Expected synchronous interaction report');
  RuntimeCommandExecutor.prototype.requireRuntimeQueue.call(executor,queue);RuntimeCommandExecutor.prototype.requireRuntimeResident.call(executor,owner);PortableResidentLifecycle.prototype.lifecycleSnapshot.call(owner);Object.getOwnPropertyDescriptor(DiscordChannelClient.prototype,'activeRequests')!.get!.call(http);
- const database=Object.getOwnPropertyDescriptor(QueueStartCoordinator.prototype,'dbPath')!.get!.call(queue) as string,services=RuntimeCommandExecutor.prototype.interactionServices.call(executor,http),process=createInteractionProcessor(database,owner,http,services,true);
+ const database=Object.getOwnPropertyDescriptor(QueueStartCoordinator.prototype,'dbPath')!.get!.call(queue) as string,services=RuntimeCommandExecutor.prototype.interactionServices.call(executor,http),process=createInteractionProcessor(database,owner,http,services,true,createNativePromptAuthorityReads(database));
  return startInteractionRuntimeWorker(work,database,http,{process,notifyDeliveryReady:()=>RuntimeCommandExecutor.prototype.notifyDeliveryReady.call(executor),report:(...args)=>invokeSynchronousVoid(report,{},args)},notifier);
 }

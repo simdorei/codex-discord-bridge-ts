@@ -25,7 +25,17 @@ export function capturePromptAuthorityReads(path: string, input: PromptAuthority
     mirroredThreadId: (given, channel) => {check(given); return promise(Reflect.apply(mapping, undefined, [given, channel]));},
   });
 }
-/** Installed standard approval/input profile only. All three existing adapters
+/** Capture an optional own-data port while copying a delivery context. An absent
+ * port preserves direct-call compatibility; an installed port is immutable and
+ * remains bound to the original database before any asynchronous preparation. */
+export function capturePromptAuthorityReadContext(path: string, input: unknown): PromptAuthorityReads | undefined {
+  if (input === null || typeof input !== 'object' || types.isProxy(input)) throw new TypeError('Expected prompt authority context data');
+  const field = Object.getOwnPropertyDescriptor(input, 'promptAuthorityReads');
+  if (field === undefined) return undefined;
+  if (!Object.hasOwn(field, 'value')) throw new TypeError('Expected prompt authority reads data');
+  return field.value === undefined ? undefined : capturePromptAuthorityReads(path, field.value as PromptAuthorityReads);
+}
+/** Installed approval/input response and prompt preparation profile. All three existing adapters
  * use existing-only stores and bounded zero-queue Control admission, and join
  * actual native exit on errors, deadlines and cancellation. No combined SQL
  * snapshot, cached result, filtered queue substitute or compatibility fallback. */

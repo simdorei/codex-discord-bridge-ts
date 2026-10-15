@@ -1,3 +1,4 @@
+import {capturePromptAuthorityReadContext,type PromptAuthorityReads} from './server-prompt-authority-reads.ts';
 import {types} from 'node:util';
 import {PortableResidentLifecycle} from '../app-server/portable-resident-lifecycle.ts';
 import {pendingServerRequestEqual} from '../app-server/server-request-state.ts';
@@ -11,7 +12,7 @@ import {sendReceiptChunk} from './completion/receipt-sender.ts';
 import {prepareOneServerPrompt, preparedPromptEqual, isPreparedPrompt, PromptRedisplayChangedError, type PreparedPrompt} from './server-prompt-redisplay.ts';
 export interface PromptDeliveryContext {
   readonly database: string; readonly server: PortableResidentLifecycle; readonly http: DiscordChannelClient;
-  readonly channelId: bigint; readonly userId: bigint; readonly commandKey: string; readonly signal?:AbortSignal; readonly nativePromptReceipts?:boolean;
+  readonly channelId: bigint; readonly userId: bigint; readonly commandKey: string; readonly signal?:AbortSignal; readonly nativePromptReceipts?:boolean; readonly promptAuthorityReads?:PromptAuthorityReads|undefined;
 }
 /** Deliver existing prompts only, revalidating each chunk. Caller retains all
  * borrowed owners until this promise and any failed HTTP/receipt writes settle.
@@ -21,6 +22,7 @@ export async function deliverServerPrompts(context: PromptDeliveryContext, input
   const signalDescriptor=Object.getOwnPropertyDescriptor(context,'signal');if(signalDescriptor!==undefined&&!Object.hasOwn(signalDescriptor,'value'))throw new TypeError('Expected signal data');const signal=signalDescriptor?.value as AbortSignal|undefined;signal?.throwIfAborted();
   const database = gatewayOwnField(context, 'database'), commandKey = gatewayOwnField(context, 'commandKey');
   requireDiscordText(database); requireDiscordText(commandKey);
+  const reads = capturePromptAuthorityReadContext(database, context);
   const server = gatewayOwnField(context, 'server') as PortableResidentLifecycle, http = gatewayOwnField(context, 'http') as DiscordChannelClient;
   const channel = gatewayOwnField(context, 'channelId'), user = gatewayOwnField(context, 'userId');
   if (typeof channel !== 'bigint' || channel <= 0n || channel >= 1n << 64n || typeof user !== 'bigint' || user < 0n || user >= 1n << 64n) throw new TypeError('Expected prompt delivery actor');
@@ -36,7 +38,7 @@ export async function deliverServerPrompts(context: PromptDeliveryContext, input
     const chunks = splitDeliveryChunks(prepared.prompt.text, true);
     for (let index = 0; index < chunks.length; index++) {
       signal?.throwIfAborted();
-      const current = await prepareOneServerPrompt(database, server, prepared.request, prepared.generation, channel, user);
+      const current = await prepareOneServerPrompt(database, server, prepared.request, prepared.generation, channel, user, reads);
       if (!preparedPromptEqual(current, prepared)
         || !PortableResidentLifecycle.prototype.pendingServerRequests.call(server, null).some(request => pendingServerRequestEqual(request, prepared.request))) throw new PromptRedisplayChangedError();
       const components = index + 1 === chunks.length ? prepared.prompt.components : [];
