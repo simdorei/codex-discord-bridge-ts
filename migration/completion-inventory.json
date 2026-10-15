@@ -1,4 +1,9 @@
 {
+  "historicalSnapshot": true,
+  "currentStatusLedger": "../docs/MIGRATION_COMPLETION_GATES_20261015.md",
+  "currentStatusLedgerCheckpoint": 914,
+  "currentStatusLedgerCheckedUtc": "2026-10-15",
+  "historicalStatusNotice": "All pre-existing summary, group status, evidence, exclusions and update fields below are historical checkpoint data, preserved without promotion to current qualification. Use the currentStatusLedger for implementation, wiring and open original A-G acceptance gates through checkpoint 913. No completion percentage is derived.",
   "version": 1,
   "checkedUtc": "2026-10-06T10:05:24.4357552Z",
   "sourceManifestSha256": "95c817d445c384fe7abd96498940ef686a958c77da7ecdb6b2ecb4b0f52b57cb",

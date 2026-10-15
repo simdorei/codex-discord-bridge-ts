@@ -1,3 +1,5 @@
+> **Current reconciliation, 2026-10-15: [checkpoint 914 A–G completion ledger](../../docs/MIGRATION_COMPLETION_GATES_20261015.md).** Maintenance/local entry points and BridgeSync now exist; Recover has explicit-controller wiring; 909 adds native dead-generation capture; 912 installs only a synthetic remote profile. Windows/configured remote/host CLI profiles and unsupported commands remain gated; 893 is inactive and 913 remains uninstalled WIP with final independent review unverified. Earlier addenda and remaining-work lists below are historical, not current gate closure.
+
 ## 2026-10-14 12:24 UTC — checkpoint 864
 
 Prepared lifetime now binds and closes the actual native attachment HTTP client before releasing drain identity. A real loopback unfinished response was aborted and joined with zero remaining sockets. Strict compiled build and 9 affected lifecycle tests passed. Custom attachment transports remain caller-owned; full executable, singleton qualification and Windows are still incomplete. See checkpoint-864-attachment-shutdown.json.

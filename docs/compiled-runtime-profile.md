@@ -1,3 +1,5 @@
+> **Historical compiled-profile record; current status: [checkpoint 914 completion ledger](MIGRATION_COMPLETION_GATES_20261015.md).** Maintenance and experimental local CLI entry points now exist, with the ledger's explicit profile/platform limits. The older full-graph commands below are not authorization to execute the currently protected test. Current validation must use an explicitly permitted profile excluding `test/remote-agent/redaction.test.ts`; do not read, compile, run or reconstruct it. No full-suite or operational qualification follows from the historical results.
+
 # Compiled worker execution profile
 
 This bridge remains incomplete and is not approved for production or Windows deployment.
