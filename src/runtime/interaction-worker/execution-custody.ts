@@ -1,7 +1,6 @@
+import {captureInteractionJournalContext,captureInteractionJournalIdentity,beginOriginalInteractionJournal,OriginalInteractionJournal,type InteractionJournal,type InteractionJournalIdentity} from './journal.ts';
 import {recordCleanupNotificationFailure} from '../cleanup-notification-failure.ts';
-import {realpath} from 'node:fs/promises';
 import {types} from 'node:util';
-import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
 import {StoreIntegrityError} from '../../store/schema-assembly.ts';
 import {cleanupRefusalFromOutcome} from '../../store/async-resolution-cleanup-refusal.ts';
 import {getOwn} from '../../store/async-resolution-json-helpers.ts';
@@ -15,11 +14,11 @@ import {gatewayOwnField} from '../../discord/gateway/values.ts';
 import {now as systemNow} from '../../store/queue-attach-goal.ts';
 import {readCustodyTimestamp} from '../discord-dispatch/staged-custody.ts';
 import type {InboundInteractionWork} from '../discord-dispatch/interaction-work.ts';
-const beginExecution = state.beginIngressExecution, beginConfirmation = state.beginIngressConfirmation;
-const read = state.getIngress, record = state.recordIngressResult, confirm = state.confirmIngress, hold = state.holdIngress;
 const token = Symbol('ExecutionCustody');
 export interface ExecutionCustodyOptions {
   readonly now?: () => number;
+  readonly interactionJournal?:InteractionJournal|undefined;
+  readonly identity?:InteractionJournalIdentity|undefined;
   readonly report: (value: {readonly code: 'interaction_processing_cancel_hold_clock_failed' | 'interaction_processing_cancel_hold_failed'; readonly error: unknown}) => void;
 }
 /** Explicit async owner for source ExecutionCustody durable transitions. Caller
@@ -27,13 +26,13 @@ export interface ExecutionCustodyOptions {
  * until cleanup finishes. finishNotification preserves the known-refusal error
  * boundary; finishSuccess exposes the original store error. */
 export class ExecutionCustody {
-  readonly #database: string; readonly #id: string;
+  readonly #database: string; readonly #id: string;readonly #owner:OriginalInteractionJournal;
   readonly #now: () => number; readonly #report: ExecutionCustodyOptions['report'];
   #recorded = false; #knownRefusal = false; #armed = true; #closing = false;
   #pending: Promise<unknown> | null = null; #dispose: Promise<void> | null = null;
-  constructor(secret: symbol, database: string, id: string, now: () => number, report: ExecutionCustodyOptions['report']) {
+  constructor(secret: symbol, database: string, id: string, now: () => number, report: ExecutionCustodyOptions['report'],owner:OriginalInteractionJournal) {
     if (secret !== token) throw new TypeError('Expected begun execution custody');
-    this.#database = database; this.#id = id; this.#now = now; this.#report = report; Object.freeze(this);
+    this.#owner=owner;this.#database = database; this.#id = id; this.#now = now; this.#report = report; Object.freeze(this);
   }
   static async begin(workerDatabase: string, custodyDatabase: string, ingressId: string,
     mode: InboundInteractionWork['processingMode'], options: ExecutionCustodyOptions): Promise<ExecutionCustody> {
@@ -41,14 +40,11 @@ export class ExecutionCustody {
     if (mode !== 'Execute' && mode !== 'ConfirmationOnly') throw new TypeError('Expected interaction processing mode');
     const now = options.now ?? systemNow, report = options.report;
     for (const fn of [now, report]) if (typeof fn !== 'function' || types.isProxy(fn) || types.isAsyncFunction(fn) || types.isGeneratorFunction(fn)) throw new TypeError('Expected synchronous custody callbacks');
-    // Preserve two ordered canonicalizations; absent files never initialize here.
-    const database = await realpath(workerDatabase), other = await realpath(custodyDatabase);
-    if (database !== other) throw new StoreIntegrityError('interaction custody belongs to a different worker database');
-    const timestamp = readCustodyTimestamp(now);
-    const began = mode === 'Execute' ? await beginExecution(database, ingressId, 'processing', null, timestamp)
-      : await beginConfirmation(database, ingressId, timestamp);
-    if (!began) throw new StoreIntegrityError(`interaction custody cannot begin ${mode}: ${ingressId}`);
-    return new ExecutionCustody(token, database, ingressId, now, report);
+    const journal=captureInteractionJournalContext(workerDatabase,options),identity=options.identity===undefined?null:captureInteractionJournalIdentity(options.identity);
+    // The native journal derives its canonical target only from these two paths.
+    const {database,owner}=await beginOriginalInteractionJournal(workerDatabase,custodyDatabase,ingressId,identity,mode,()=>readCustodyTimestamp(now),journal);
+    if (owner===null) throw new StoreIntegrityError(`interaction custody cannot begin ${mode}: ${ingressId}`);
+    return new ExecutionCustody(token,database,ingressId,now,report,owner);
   }
   get knownCleanupRefusal(): boolean {return this.#knownRefusal;}
   #operation<T>(run: () => Promise<T>): Promise<T> {
@@ -61,7 +57,7 @@ export class ExecutionCustody {
     if (!isRoutedInteractionWork(routed)) throw new TypeError('Expected owned routed work');
     const expected = parseSerdeValue(serializeSerdeValue(routed));
     return this.#operation(async () => {
-      const row = await read(this.#database, this.#id);
+      const row = await OriginalInteractionJournal.prototype.read.call(this.#owner);
       if (row === null) throw new StoreIntegrityError('interaction admission record disappeared');
       const rejection = getOwn(row.payload, 'request_rejection');
       if (rejection === undefined || rejection === null) return null;
@@ -73,7 +69,7 @@ export class ExecutionCustody {
     });
   }
   async #record(outcome: unknown): Promise<void> {
-    await record(this.#database, this.#id, outcome, readCustodyTimestamp(this.#now));
+    await OriginalInteractionJournal.prototype.result.call(this.#owner,outcome,readCustodyTimestamp(this.#now));
     this.#recorded = true; this.#knownRefusal = cleanupRefusalFromOutcome(outcome) !== undefined;
   }
   recordResult(outcome: unknown): Promise<void> {
@@ -82,7 +78,7 @@ export class ExecutionCustody {
   }
   async #finish(outcome: unknown): Promise<void> {
     if (!this.#recorded) await this.#record(outcome);
-    await confirm(this.#database, this.#id, readCustodyTimestamp(this.#now)); this.#armed = false;
+    await OriginalInteractionJournal.prototype.confirm.call(this.#owner,readCustodyTimestamp(this.#now)); this.#armed = false;
   }
   finishSuccess(outcome: unknown): Promise<void> {
     const snapshot = parseSerdeValue(serializeSerdeValue(outcome));
@@ -94,13 +90,22 @@ export class ExecutionCustody {
       try {await this.#finish(snapshot);}
       catch (error) {
         if (!this.#knownRefusal) throw error;
-        throw await recordCleanupNotificationFailure(this.#database, this.#id, 'confirmation', error, this.#now);
+        throw await this.#notificationFailure('confirmation',error);
       }
     });
   }
+  #notificationFailure(kind:'delivery'|'confirmation',source:unknown){
+    return recordCleanupNotificationFailure(this.#database,this.#id,kind,source,this.#now,async(path,key,reason,notExecuted,now)=>{
+      if(path!==this.#database||key!==this.#id)throw new TypeError('Cleanup persistence differs from execution custody');
+      await OriginalInteractionJournal.prototype.hold.call(this.#owner,reason,notExecuted,now);
+    });
+  }
+  notificationFailure(source:unknown){
+    return this.#operation(async()=>{if(!this.#knownRefusal)throw new TypeError('Expected recorded cleanup refusal');return this.#notificationFailure('delivery',source);});
+  }
   holdFailed(): Promise<void> {
     return this.#operation(async () => {
-      if (!this.#recorded) await hold(this.#database, this.#id, 'interaction_processing_failed', false, readCustodyTimestamp(this.#now));
+      if (!this.#recorded) await OriginalInteractionJournal.prototype.hold.call(this.#owner,'interaction_processing_failed',false,readCustodyTimestamp(this.#now));
       this.#armed = false;
     });
   }
@@ -113,7 +118,7 @@ export class ExecutionCustody {
       let timestamp: number;
       try {timestamp = readCustodyTimestamp(this.#now);}
       catch (error) {invokeSynchronousVoid(this.#report, {}, [{code: 'interaction_processing_cancel_hold_clock_failed', error}]); return;}
-      try {await hold(this.#database, this.#id, 'interaction_processing_cancelled', false, timestamp);}
+      try {await OriginalInteractionJournal.prototype.hold.call(this.#owner,'interaction_processing_cancelled',false,timestamp);}
       catch (error) {invokeSynchronousVoid(this.#report, {}, [{code: 'interaction_processing_cancel_hold_failed', error}]);}
     })(); return this.#dispose;
   }

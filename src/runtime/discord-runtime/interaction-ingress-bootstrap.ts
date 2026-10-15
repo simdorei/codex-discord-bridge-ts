@@ -1,3 +1,4 @@
+import {createNativeInteractionJournal} from '../interaction-worker/journal.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {AdmissionGate} from '../../admission/drain-gate.ts';
@@ -22,5 +23,5 @@ export function createPreparedInteractionIngress(input:RuntimeMessageStartup,gat
  const owner=own(input,'owner') as PortableResidentLifecycle,queue=own(input,'queue') as QueueStartCoordinator,executor=own(input,'executor') as RuntimeCommandExecutor,policy=own(input,'policy') as InteractionAccessPolicy;
  RuntimeCommandExecutor.prototype.requireRuntimeQueue.call(executor,queue);RuntimeCommandExecutor.prototype.requireRuntimeResident.call(executor,owner);QueueStartCoordinator.prototype.requireAdmissionGate.call(queue,gate);PortableResidentLifecycle.prototype.lifecycleSnapshot.call(owner);InteractionAccessPolicy.prototype.withMirroredChannelIds.call(policy,[]);Object.getOwnPropertyDescriptor(DiscordChannelClient.prototype,'activeRequests')!.get!.call(http);
  const database=Object.getOwnPropertyDescriptor(QueueStartCoordinator.prototype,'dbPath')!.get!.call(queue) as string,binding=RuntimeCommandExecutor.prototype.messageRuntimeBinding.call(executor);
- return createOrdinaryInteractionHandler({client:http,policy,qaEnabled,queue:work,database,autocomplete,admission:gate,settingsResolver:binding.resolver,report});
+ return createOrdinaryInteractionHandler({interactionJournal:createNativeInteractionJournal(database),client:http,policy,qaEnabled,queue:work,database,autocomplete,admission:gate,settingsResolver:binding.resolver,report});
 }

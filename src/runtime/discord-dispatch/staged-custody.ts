@@ -1,5 +1,5 @@
+import {captureInteractionJournalContext,OriginalInteractionJournal,type InteractionJournal} from '../interaction-worker/journal.ts';
 import {types} from 'node:util';
-import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
 import {StoreIntegrityError} from '../../store/schema-assembly.ts';
 import {snapshotBusyChoice, busyChoiceDataField, type BusyChoice} from '../../store/busy-choice.ts';
 import type {IngressAdmission} from '../../store/ingress-admission.ts';
@@ -18,6 +18,7 @@ export interface CustodyCleanupReport {
 }
 export interface CustodyOptions {
   readonly now?: () => number;
+  readonly interactionJournal?: InteractionJournal|undefined;
   readonly report: (value: CustodyCleanupReport) => void;
 }
 export type InteractionCustodyStage =
@@ -26,7 +27,6 @@ export type InteractionCustodyStage =
   | {readonly kind: 'CanonicalRepeat'; readonly receipt: InteractionCustodyReceipt; readonly confirmationReady: boolean};
 
 const token = Symbol('StagedInteractionCustody');
-const acknowledge = state.acknowledgeIngress, hold = state.holdIngress;
 export function readCustodyTimestamp(now: () => number): number {
   const value = now();
   if (types.isPromise(value)) void Promise.prototype.then.call(value, undefined, () => undefined);
@@ -40,6 +40,7 @@ export function readCustodyTimestamp(now: () => number): number {
  * Explicit awaited dispose replaces Rust Drop; never abandon its promise. */
 export class StagedInteractionCustody {
   readonly #receipt: InteractionCustodyReceipt;
+  readonly #journal:InteractionJournal;readonly #owner:OriginalInteractionJournal|undefined;
   readonly #now: () => number;
   readonly #report: CustodyOptions['report'];
   #armed = true;
@@ -47,9 +48,9 @@ export class StagedInteractionCustody {
   #inFlight: Promise<void> | null = null;
   #dispose: Promise<void> | null = null;
 
-  constructor(secret: symbol, receipt: InteractionCustodyReceipt, options: CustodyOptions) {
+  constructor(secret: symbol, receipt: InteractionCustodyReceipt, options: CustodyOptions, owner?:OriginalInteractionJournal) {
     if (secret !== token) throw new TypeError('Expected admitted interaction custody');
-    this.#receipt = receipt;
+    this.#receipt = receipt;this.#journal=captureInteractionJournalContext(receipt.database,options);this.#owner=owner;if(owner!==undefined)OriginalInteractionJournal.prototype.require.call(owner,receipt.database,receipt.ingressId,this.#journal);
     this.#now = options.now ?? systemNow;
     this.#report = options.report;
     if (typeof this.#now !== 'function' || typeof this.#report !== 'function') throw new TypeError('Expected custody callbacks');
@@ -63,7 +64,7 @@ export class StagedInteractionCustody {
   }
   acknowledge(): Promise<void> {
     return this.#operation(async () => {
-      if (!await acknowledge(this.#receipt.database, this.#receipt.ingressId, readCustodyTimestamp(this.#now))) {
+      if (!await (this.#owner===undefined?this.#journal.acknowledge(this.#receipt.database,this.#receipt.ingressId,null,readCustodyTimestamp(this.#now)):OriginalInteractionJournal.prototype.acknowledge.call(this.#owner,readCustodyTimestamp(this.#now)))) {
         throw new StoreIntegrityError('interaction custody acknowledgement is no longer current');
       }
     });
@@ -71,10 +72,11 @@ export class StagedInteractionCustody {
   holdNotExecuted(reason: string): Promise<void> {
     requireDiscordText(reason);
     return this.#operation(async () => {
-      await hold(this.#receipt.database, this.#receipt.ingressId, reason, true, readCustodyTimestamp(this.#now));
+      await this.#hold(reason,readCustodyTimestamp(this.#now));
       this.#armed = false;
     });
   }
+  #hold(reason:string,now:number):Promise<void>{return this.#owner===undefined?this.#journal.hold(this.#receipt.database,this.#receipt.ingressId,null,reason,true,now):OriginalInteractionJournal.prototype.hold.call(this.#owner,reason,true,now);}
   intoReceipt(): InteractionCustodyReceipt {
     if (this.#closing || this.#inFlight !== null) throw new TypeError('Custody is closed or already borrowed');
     this.#closing = true;
@@ -98,7 +100,7 @@ export class StagedInteractionCustody {
         invokeSynchronousVoid(this.#report, {}, [Object.freeze({code: 'interaction_custody_cancel_hold_clock_failed', error})]);
         return;
       }
-      try {await hold(this.#receipt.database, this.#receipt.ingressId, 'interaction_dispatch_cancelled', true, now);}
+      try {await this.#hold('interaction_dispatch_cancelled',now);}
       catch (error) {
         invokeSynchronousVoid(this.#report, {}, [Object.freeze({code: 'interaction_custody_cancel_hold_failed', error})]);
       }
@@ -111,7 +113,7 @@ Object.freeze(StagedInteractionCustody.prototype);
 /** Mirrors custody::from_admission. It does not run custody::stage or fabricate
  * canonical authorization: its input must be the original store result. */
 export function interactionCustodyFromAdmission(
-  database: string, admission: IngressAdmission, busy: boolean, options: CustodyOptions,
+  database: string, admission: IngressAdmission, busy: boolean, options: CustodyOptions, owner?:OriginalInteractionJournal,
 ): InteractionCustodyStage {
   requireDiscordText(database);
   if (typeof busy !== 'boolean') throw new TypeError('Expected busy interaction flag');
@@ -139,5 +141,5 @@ export function interactionCustodyFromAdmission(
   if (busy !== (choice !== null)) throw new StoreIntegrityError('busy interaction custody has no frozen authorization snapshot');
   const ingressId = busyChoiceDataField(record, 'ingressId'); requireDiscordText(ingressId);
   const receipt = Object.freeze({database, ingressId, busyChoice: choice === null ? null : Object.freeze(snapshotBusyChoice(choice as BusyChoice))});
-  return Object.freeze({kind: 'Created', custody: new StagedInteractionCustody(token, receipt, options)});
+  return Object.freeze({kind: 'Created', custody: new StagedInteractionCustody(token, receipt, options,owner)});
 }

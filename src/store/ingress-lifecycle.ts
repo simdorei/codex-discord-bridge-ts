@@ -26,11 +26,23 @@ async function connection<T>(path:string,transaction:boolean,run:(db:DatabaseSyn
   finally{if(db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
 }
 function changed(db:DatabaseSync,sql:string,...values:SQLInputValue[]):boolean{return BigInt(db.prepare(sql).run(...values).changes)===1n;}
+function acknowledgeIngressBody(db:DatabaseSync,key:string,now:number):boolean{
+  return changed(db,"UPDATE discord_ingress_journal SET state='acknowledged',phase='acknowledged',updated_at=? WHERE ingress_id=? AND state='staged'",now,key);
+}
 export function acknowledgeIngress(path:string,key:string,now:number):Promise<boolean>{
-  text(key);time(now);return connection(path,false,db=>changed(db,"UPDATE discord_ingress_journal SET state='acknowledged',phase='acknowledged',updated_at=? WHERE ingress_id=? AND state='staged'",now,key));
+  text(key);time(now);return connection(path,false,db=>acknowledgeIngressBody(db,key,now));
+}
+export function acknowledgeIngressExisting(path:string,key:string,now:number):boolean{
+  text(key);time(now);return existingConnection(path,false,db=>acknowledgeIngressBody(db,key,now));
+}
+function beginIngressConfirmationBody(db:DatabaseSync,key:string,now:number):boolean{
+  return changed(db,"UPDATE discord_ingress_journal SET phase='confirmation_retry',updated_at=? WHERE ingress_id=? AND state='owned' AND phase='canonical_duplicate' AND owner_kind='prompt'",now,key);
 }
 export function beginIngressConfirmation(path:string,key:string,now:number):Promise<boolean>{
-  text(key);time(now);return connection(path,false,db=>changed(db,"UPDATE discord_ingress_journal SET phase='confirmation_retry',updated_at=? WHERE ingress_id=? AND state='owned' AND phase='canonical_duplicate' AND owner_kind='prompt'",now,key));
+  text(key);time(now);return connection(path,false,db=>beginIngressConfirmationBody(db,key,now));
+}
+export function beginIngressConfirmationExisting(path:string,key:string,now:number):boolean{
+  text(key);time(now);return existingConnection(path,false,db=>beginIngressConfirmationBody(db,key,now));
 }
 export function captureIngressExecution(key:string,phase:string,target:string|null,now:number){
   text(key);text(phase);if(target!==null)text(target);time(now);return {key,phase,target,now};

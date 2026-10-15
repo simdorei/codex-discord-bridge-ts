@@ -1,3 +1,4 @@
+import {captureInteractionJournalContext} from '../interaction-worker/journal.ts';
 import {OrdinaryInteractionDispatcher, type OrdinaryDispatcherOptions} from '../discord-dispatch/ordinary-dispatcher.ts';
 import {InteractionClaimCache} from '../discord-dispatch/claim-cache.ts';
 import {captureInteractionIngress, type InteractionLaneHandler} from './interaction-lane.ts';
@@ -10,7 +11,7 @@ import {refreshMirrorPolicy} from './mirror-policy.ts';
 export function createOrdinaryInteractionHandler(
   options: Omit<OrdinaryDispatcherOptions, 'claims'>,
 ): InteractionLaneHandler {
-  const captured = Object.freeze({...options});
+  const captured = Object.freeze({...options,interactionJournal:captureInteractionJournalContext(options.database,options)});
   const claims = new InteractionClaimCache(4096);
   return async (input, force) => {
     force.throwIfAborted();

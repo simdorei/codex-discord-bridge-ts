@@ -59,3 +59,11 @@ test('publication historical delivery routes after expiry without claiming fresh
  const result=await stage(path,req,{...options,cleanup:{...options.cleanup,now:()=>99}});assert.equal(result.kind,'Created');if(result.kind!=='Created')throw Error('fixture');
  try{assert.equal((await state.getIngress(path,'interaction:6'))!.targetThreadId,'t');assert.equal(db.prepare('SELECT count(*) n FROM cdr_recovery_publication_decisions').get()!.n,0);}finally{await result.custody.dispose();}
 }));
+
+for(const kind of ['abandonment','publication'] as const)test(`native ${kind} pre-ACK authorization preserves clocks and historical routing without cloning proposal authority`,()=>fixture(kind,async(db,path,req)=>{
+ const {createNativeInteractionJournal,NativeInteractionJournalUnavailableError}=await import('../../../src/runtime/interaction-worker/journal.ts'),journal=createNativeInteractionJournal(path),times=kind==='abandonment'?[12,13]:[99];
+ for(const change of [{userId:8n},{applicationId:8n},{channelId:8n},{sourceMessageId:8n}])await assert.rejects(stage(path,{...req,...change},{...options,interactionJournal:journal}),NativeInteractionJournalUnavailableError);
+ if(kind==='abandonment')await assert.rejects(stage(path,req,{...options,interactionJournal:journal,cleanup:{...options.cleanup,now:()=>21}}),NativeInteractionJournalUnavailableError);
+ const result=await stage(path,req,{...options,interactionJournal:journal,cleanup:{...options.cleanup,now:()=>times.shift()??100}});assert.equal(result.kind,'Created');if(result.kind!=='Created')throw Error('fixture');
+ try{const row=(await state.getIngress(path,'interaction:6'))!;assert.equal(row.targetThreadId,'t');assert.equal(row.createdAt,kind==='abandonment'?13:99);assert.equal(times.length,0);assert.equal(db.prepare('SELECT count(*) n FROM cdr_recovery_abandonment_decisions').get()!.n,0);assert.equal(db.prepare('SELECT count(*) n FROM cdr_recovery_publication_decisions').get()!.n,0);await result.custody.acknowledge();result.custody.intoReceipt();}finally{await result.custody.dispose();}
+}));

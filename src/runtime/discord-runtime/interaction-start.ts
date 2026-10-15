@@ -1,3 +1,4 @@
+import {captureInteractionJournal,type InteractionJournal} from '../interaction-worker/journal.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {invokeSynchronousVoid} from '../../core/synchronous-void.ts';
@@ -14,9 +15,10 @@ const consumed=new WeakSet<object>();
  * actual in-flight business operation/custody/HTTP before publishing worker exit.
  * Noncooperative operations require the outer hard deadline, never fake success.
  * Business processor composition remains explicit and is not supplied here. */
-export async function startInteractionRuntimeWorker(queue:InteractionWorkQueue,database:string,http:DiscordChannelClient,processor:InteractionProcessor,notifier:RuntimeWorkerExitChannel){
+export async function startInteractionRuntimeWorker(queue:InteractionWorkQueue,database:string,http:DiscordChannelClient,processor:InteractionProcessor,notifier:RuntimeWorkerExitChannel,interactionJournal?:InteractionJournal){
  if(!isInteractionWorkQueue(queue))throw new TypeError('Expected exact interaction work queue');requireDiscordText(database);
  Object.getOwnPropertyDescriptor(DiscordChannelClient.prototype,'activeRequests')!.get!.call(http);
+ const journal=captureInteractionJournal(database,interactionJournal);
  const process=own(processor,'process'),notify=own(processor,'notifyDeliveryReady'),report=own(processor,'report');
  for(const f of [process,notify,report])if(typeof f!=='function'||types.isProxy(f)||types.isGeneratorFunction(f))throw new TypeError('Expected owned interaction processor');
  if(types.isAsyncFunction(notify)||types.isAsyncFunction(report))throw new TypeError('Expected synchronous interaction notifications');
@@ -27,7 +29,7 @@ export async function startInteractionRuntimeWorker(queue:InteractionWorkQueue,d
   let forceError:unknown,forceFailed=false;
   const cancel=()=>{try{queue.receiver.dispose();}catch(error){forceFailed=true;forceError=error;}};
   force.addEventListener('abort',cancel,{once:true});entered();
-  try{await runInteractionWorker(queue,database,http,captured);if(forceFailed)return {ok:false,error:forceError};return {ok:true};}
+  try{await runInteractionWorker(queue,database,http,captured,journal);if(forceFailed)return {ok:false,error:forceError};return {ok:true};}
   catch(error){return {ok:false,error:forceFailed?new AggregateError([error,forceError],'Interaction operation and forced receiver cleanup failed'):error};}
   finally{force.removeEventListener('abort',cancel);}
  });}catch(error){consumed.delete(queue);throw error;}

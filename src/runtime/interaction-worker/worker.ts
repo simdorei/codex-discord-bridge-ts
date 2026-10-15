@@ -1,3 +1,4 @@
+import {captureInteractionJournal,type InteractionJournal} from './journal.ts';
 import {types} from 'node:util';
 import {DiscordChannelClient} from '../../discord/channel-client.ts';
 import {gatewayOwnField} from '../../discord/gateway/values.ts';
@@ -30,8 +31,9 @@ function failure(error: unknown, fallback: 'Action' | 'Custody'): InteractionWor
  * Every received item's processing, error report and custody disposal joins before
  * its admission permit is released. Forced uncooperative shutdown still needs the
  * outer worker deadline; this function never detaches an active operation. */
-export async function runInteractionWorker(queue: InteractionWorkQueue, database: string, http: DiscordChannelClient, processor: InteractionProcessor): Promise<void> {
+export async function runInteractionWorker(queue: InteractionWorkQueue, database: string, http: DiscordChannelClient, processor: InteractionProcessor,interactionJournal?:InteractionJournal): Promise<void> {
   if (!isInteractionWorkQueue(queue)) throw new TypeError('Expected owned interaction queue'); requireDiscordText(database);
+  const journal=captureInteractionJournal(database,interactionJournal);
   const process = gatewayOwnField(processor, 'process'), notify = gatewayOwnField(processor, 'notifyDeliveryReady'), reporter = gatewayOwnField(processor, 'report');
   for (const fn of [process, notify, reporter]) if (typeof fn !== 'function' || types.isProxy(fn) || types.isGeneratorFunction(fn)) throw new TypeError('Expected trusted worker function');
   if (types.isAsyncFunction(notify) || types.isAsyncFunction(reporter)) throw new TypeError('Expected synchronous worker notifications');
@@ -46,7 +48,7 @@ export async function runInteractionWorker(queue: InteractionWorkQueue, database
         const work = snapshotInboundInteractionWork(next.value), safe = (text: string) => work.interactionToken === '' ? text : text.split(work.interactionToken).join('[redacted]');
         const report = (code: InteractionWorkerReportCode, text: string) => invokeReport(code, safe(text));
         try {custody = await ExecutionCustody.begin(database, work.custodyDatabase, work.custodyIngressId, work.processingMode,
-          {report: value => report(value.code, passiveErrorText(value.error, 'custody cleanup failed'))});}
+          {interactionJournal:journal,identity:{ingressId:work.custodyIngressId,eventId:work.interactionId,applicationId:work.applicationId,channelId:work.channelId,ownerUserId:work.userId,sourceMessageId:work.sourceMessageId},report: value => report(value.code, passiveErrorText(value.error, 'custody cleanup failed'))});}
         catch (error) {await reportInteractionError(work, failure(error, 'Custody'), http, report); continue;}
         let waitsForFinal: boolean;
         try {

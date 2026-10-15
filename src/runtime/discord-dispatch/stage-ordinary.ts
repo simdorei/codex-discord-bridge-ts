@@ -1,5 +1,5 @@
+import {captureInteractionJournalContext,admitOriginalInteractionJournal,type InteractionJournal} from '../interaction-worker/journal.ts';
 import {types} from 'node:util';
-import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
 import {StoreIntegrityError} from '../../store/schema-assembly.ts';
 import {busyChoiceDataField, BusyChoiceUnavailableError} from '../../store/busy-choice.ts';
 import type {NewIngress} from '../../store/ingress-types.ts';
@@ -21,9 +21,9 @@ export interface OrdinaryInteractionStageRequest {
 export interface OrdinaryInteractionStageOptions {
   readonly settingsResolver: SlashSettingsTargetResolver | null;
   readonly cleanup: CustodyOptions;
+  readonly interactionJournal?:InteractionJournal|undefined;
 }
 export type OrdinaryInteractionStage = InteractionCustodyStage | {readonly kind: 'BusyChoiceUnavailable'};
-const admit = state.admitIngress, admitMapped = state.admitMappedSlashIngress, admitBusy = state.admitBusyInteraction;
 function u64(value: unknown): bigint {
   if (typeof value !== 'bigint' || value < 0n || value >= 1n << 64n) throw new TypeError('Expected u64 interaction identity');
   return value;
@@ -32,7 +32,7 @@ function i64(value: bigint, kind: string): bigint {
   if (value >= 1n << 63n) throw new StoreIntegrityError(`Discord ${kind} ID exceeds SQLite range`);
   return value;
 }
-function cleanupOptions(input: CustodyOptions): Required<CustodyOptions> {
+function cleanupOptions(input: CustodyOptions): CustodyOptions & {readonly now:()=>number} {
   const report = busyChoiceDataField(input, 'report');
   // Optional own-data clock; inherited/getter values never become callbacks.
   if (input === null || typeof input !== 'object' || types.isProxy(input)) throw new TypeError('Expected custody options');
@@ -56,6 +56,7 @@ export async function stageOrdinaryInteraction(
   database: string, input: OrdinaryInteractionStageRequest, options: OrdinaryInteractionStageOptions,
 ): Promise<OrdinaryInteractionStage> {
   requireDiscordText(database);
+  const journal=captureInteractionJournalContext(database,options);
   const field = (key: string): unknown => busyChoiceDataField(input, key);
   const application = u64(field('applicationId')), interaction = u64(field('interactionId'));
   const channel = u64(field('channelId')), user = u64(field('userId')), rawMessage = field('sourceMessageId');
@@ -79,18 +80,16 @@ export async function stageOrdinaryInteraction(
   if (component !== null && 'RecoveryAbandonDecision' in component) {
     if (sourceMessageId === null) throw new StoreIntegrityError('abandonment component has no source message');
     const value = component.RecoveryAbandonDecision;
-    recoveryTarget = state.authorizeAbandonmentDecision(database, {
+    recoveryTarget = await journal.abandonment(database, {
       proposal_id: value.proposal_id, revision: value.revision, decision: value.decision,
       interaction_id: interactionId, application_id: applicationId, channel_id: channelId,
       owner_user_id: userId, source_message_id: sourceMessageId, now: readCustodyTimestamp(cleanup.now),
-    }).proposal.thread_id;
+    });
   }
   if (component !== null && 'RecoveryPublicationDecision' in component) {
     const value = component.RecoveryPublicationDecision;
-    const binding = state.deliveredPublicationProposal(database, value.proposal_id, value.revision);
     if (sourceMessageId === null) throw new StoreIntegrityError('publication component has no source message');
-    binding.requireActor(applicationId, channelId, userId, sourceMessageId);
-    recoveryTarget = binding.proposal.thread_id;
+    recoveryTarget=await journal.publication(database,{interaction_id:interactionId,proposal_id:value.proposal_id,revision:value.revision,application_id:applicationId,channel_id:channelId,owner_user_id:userId,source_message_id:sourceMessageId});
   }
   const now = readCustodyTimestamp(cleanup.now);
   const request: NewIngress = {
@@ -99,16 +98,16 @@ export async function stageOrdinaryInteraction(
     targetThreadId: recoveryTarget ?? settings.binding?.target ?? null,
     canonicalOwner: busy === null ? ingressId : `busy-choice:${busy.choice_id}`, now,
   };
-  let admission;
+  let admitted;
   if (busy !== null) {
     const action = {Steer: 'steer', Queue: 'queue', Stop: 'stop', Ignore: 'ignore'}[busy.action];
-    try {admission = await admitBusy(database, request, busy.choice_id, action);}
+    try {admitted = await admitOriginalInteractionJournal(database,request,{kind:'Busy',choiceId:busy.choice_id,action},journal);}
     catch (error) {
       if (error instanceof BusyChoiceUnavailableError) return Object.freeze({kind: 'BusyChoiceUnavailable'});
       throw error;
     }
   } else if (slash !== null && (slash.name === 'ask' || slash.name === 'interview')) {
-    admission = await admitMapped(database, request);
-  } else admission = await admit(database, request);
-  return interactionCustodyFromAdmission(database, admission, busy !== null, cleanup);
+    admitted=await admitOriginalInteractionJournal(database,request,{kind:'Mapped'},journal);
+  } else admitted=await admitOriginalInteractionJournal(database,request,{kind:'Ordinary'},journal);
+  return interactionCustodyFromAdmission(database,admitted.admission,busy!==null,{...cleanup,interactionJournal:journal},admitted.owner??undefined);
 }

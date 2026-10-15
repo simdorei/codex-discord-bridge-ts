@@ -55,14 +55,25 @@ export async function admitIngress(path:string,input:NewIngress):Promise<Ingress
   finally{if(db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
 }
 
-/** Capture a supported slash prompt's actual mapping in the original admission transaction. */
-export async function admitMappedSlashIngress(path:string,input:NewIngress):Promise<IngressAdmission>{
+/** Pure original mapped-slash envelope check, before native submission. */
+export function captureMappedSlashIngress(input:NewIngress):NewIngress{
   const request=snapshotNewIngress(input);
   if(!isMappedSlashPrompt(request.kind,request.payload)||request.targetThreadId!==null)throw new StoreIntegrityError("unsupported mapped slash admission envelope");
-  const db=await openInitialized(path);try{
-    db.exec("BEGIN IMMEDIATE");request.targetThreadId=mirroredThreadIdIn(db,request.channelId);
-    const [admitted]=admitIngressRecordedIn(db,request);db.exec("COMMIT");return admitted;
+  return request;
+}
+function admitMappedSlashIngressBody(db:DatabaseSync,request:NewIngress):IngressAdmission{
+  request.targetThreadId=mirroredThreadIdIn(db,request.channelId);
+  const [admitted]=admitIngressRecordedIn(db,request);return admitted;
+}
+/** Capture a supported slash prompt's actual mapping in the original admission transaction. */
+export async function admitMappedSlashIngress(path:string,input:NewIngress):Promise<IngressAdmission>{
+  const request=captureMappedSlashIngress(input),db=await openInitialized(path);try{
+    db.exec("BEGIN IMMEDIATE");const admitted=admitMappedSlashIngressBody(db,request);db.exec("COMMIT");return admitted;
   }finally{if(db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
+}
+export function admitMappedSlashIngressExisting(path:string,input:NewIngress):IngressAdmission{
+  const request=captureMappedSlashIngress(input);
+  return usingExistingStore(path,db=>withStoreTransaction(db,'IMMEDIATE',()=>{verifyCurrentCatalogIn(db);return commitStore(admitMappedSlashIngressBody(db,request));}));
 }
 
 /** Existing current profile; the complete original admission transaction is shared. */

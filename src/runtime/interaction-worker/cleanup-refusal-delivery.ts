@@ -3,7 +3,6 @@ import {gatewayOwnField} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {cleanupRefusalFromOutcome, type CleanupRefusal} from '../../store/async-resolution-cleanup-refusal.ts';
 import type {InboundInteractionWork} from '../discord-dispatch/interaction-work.ts';
-import {recordCleanupNotificationFailure} from '../cleanup-notification-failure.ts';
 import {ExecutionCustody} from './execution-custody.ts';
 /** Source refusal notification only. Caller already began the matching custody
  * and holds the queue item's admission permit. This does not perform a deletion,
@@ -24,6 +23,6 @@ export async function deliverCleanupRefusal(work: InboundInteractionWork, custod
   // Persist before any HTTP operation, including transport/token validation.
   await ExecutionCustody.prototype.recordResult.call(custody, outcome);
   try {await DiscordChannelClient.prototype.updateInitialResponse.call(client, applicationId, token, content, signal);}
-  catch (error) {throw await recordCleanupNotificationFailure(database, ingressId, 'delivery', error);}
+  catch (error) {throw await ExecutionCustody.prototype.notificationFailure.call(custody,error);}
   return false;
 }

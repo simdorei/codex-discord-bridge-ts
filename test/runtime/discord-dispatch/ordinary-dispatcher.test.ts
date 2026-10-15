@@ -407,3 +407,30 @@ test('force during the Node DB-ack await joins the write then holds instead of q
     assert.equal(ctx.queue.snapshot().queued, 0); assert.equal(ctx.claims.snapshot().size, 0);
   });
 });
+
+for(const phase of ['Admit','Acknowledge'] as const)test(`native ${phase} exit cannot reset original received deadline or enqueue overdue work`,async t=>{
+ const {createNativeInteractionJournal}=await import('../../../src/runtime/interaction-worker/journal.ts'),{OwnedWorkerSlot}=await import('../../../src/runtime/owned-worker-slot.ts');
+ await fixture(async ctx=>{
+  (await openInitialized(ctx.path)).close();const method=phase==='Admit'?'run':'runControlCompletion',run=OwnedWorkerSlot.prototype[method];
+  t.mock.method(OwnedWorkerSlot.prototype,method,async function(this:InstanceType<typeof OwnedWorkerSlot>,...args:Parameters<typeof run>){const raw=await run.apply(this,args);if(String(args[0]).endsWith('/interaction-worker/native-journal-worker.ts')&&(args[1] as any).operation===phase)ctx.clock.advance(2500);return raw;});
+  const dispatcher=ctx.make({interactionJournal:createNativeInteractionJournal(ctx.path)});assert.equal(await ctx.dispatch(interaction(),'Normal',0,dispatcher),'DeadlineExceeded');assert.equal(ctx.requests.length,phase==='Admit'?0:1);assert.equal(ctx.queue.snapshot().queued,0);assert.equal(ctx.claims.snapshot().size,0);const row=(await state.getIngress(ctx.path,'interaction:3'))!;assert.equal(row.state,'held');assert.equal(row.holdReason,'discord_ack_deadline');
+ });
+});
+
+test('native full-queue hold is durable before status ACK and cannot queue a second request',async()=>{
+ const {createNativeInteractionJournal}=await import('../../../src/runtime/interaction-worker/journal.ts');
+ await fixture(async ctx=>{(await openInitialized(ctx.path)).close();const dispatcher=ctx.make({interactionJournal:createNativeInteractionJournal(ctx.path)});assert.equal(await ctx.dispatch(interaction(),'Normal',0,dispatcher),'Queued');assert.equal(await ctx.dispatch(interaction({id:'5'}),'Normal',0,dispatcher),'QueueFull');assert.equal(ctx.queue.snapshot().queued,1);assert.equal((await state.getIngress(ctx.path,'interaction:5'))!.holdReason,'interaction_queue_full');},
+ {capacity:1,handler:async(ctx,res)=>{if(ctx.requests.length===2){const row=(await state.getIngress(ctx.path,'interaction:5'))!;assert.equal(row.state,'held');assert.equal(row.holdReason,'interaction_queue_full');}res.statusCode=204;res.end();}});
+});
+
+test('arbitrary budget-looking errors without native unsubmitted proof remain custody failures',async()=>{
+ const {createNativeInteractionJournal}=await import('../../../src/runtime/interaction-worker/journal.ts'),{OwnedWorkerBudgetError}=await import('../../../src/runtime/owned-worker-slot.ts');
+ await fixture(async ctx=>{(await openInitialized(ctx.path)).close();for(const error of [new OwnedWorkerBudgetError(),Object.assign(Error('capacity is occupied'),{name:'NativeInteractionJournalCapacityError'})]){
+  const journal={...createNativeInteractionJournal(ctx.path),admit:async()=>{throw error;}},dispatcher=ctx.make({interactionJournal:journal});await assert.rejects(ctx.dispatch(interaction(),'Normal',0,dispatcher),e=>e instanceof InteractionDispatchError&&e.kind==='Custody');assert.equal(ctx.requests.length,0);assert.equal(ctx.queue.snapshot().queued,0);
+ }});
+});
+
+test('budget-shaped failure after admitted native stage remains unconfirmed custody and never ACKs',async t=>{
+ const {createNativeInteractionJournal}=await import('../../../src/runtime/interaction-worker/journal.ts'),{OwnedWorkerSlot,OwnedWorkerBudgetError}=await import('../../../src/runtime/owned-worker-slot.ts');
+ await fixture(async ctx=>{(await openInitialized(ctx.path)).close();const run=OwnedWorkerSlot.prototype.run;t.mock.method(OwnedWorkerSlot.prototype,'run',async function(this:InstanceType<typeof OwnedWorkerSlot>,...args:Parameters<typeof run>){const value=await run.apply(this,args);if(String(args[0]).endsWith('/interaction-worker/native-journal-worker.ts')&&(args[1] as any).operation==='Admit')throw new OwnedWorkerBudgetError();return value;});const dispatcher=ctx.make({interactionJournal:createNativeInteractionJournal(ctx.path)});await assert.rejects(ctx.dispatch(interaction(),'Normal',0,dispatcher),e=>e instanceof InteractionDispatchError&&e.kind==='Custody');assert.equal((await state.getIngress(ctx.path,'interaction:3'))!.state,'staged');assert.equal(ctx.requests.length,0);assert.equal(ctx.queue.snapshot().queued,0);});
+});

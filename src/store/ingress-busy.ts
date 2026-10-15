@@ -1,5 +1,6 @@
 import type {DatabaseSync} from "node:sqlite";
-import {openInitialized} from "./owned-driver.ts";
+import {usingExistingStore,withStoreTransaction,commitStore} from "./owned-scope.ts";
+import {openInitialized,verifyCurrentCatalogIn} from "./owned-driver.ts";
 import {admitIngressRecordedIn,type IngressAdmission} from "./ingress-admission.ts";
 import {verifyRecordedAdmissionIn} from "./ingress-admission-order.ts";
 import {snapshotNewIngress,type NewIngress} from "./ingress-types.ts";
@@ -17,12 +18,14 @@ function activeChoice(db:DatabaseSync,id:string,now:number):BusyChoice|null{
     targetThreadId:decodeTextField(r.target_thread_id,r.raw_target,"target_thread_id",true,decoder),prompt:decodeTextField(r.prompt,r.raw_prompt,"prompt",false,decoder)!,allowSteer:decodeI64(r.allow_steer,"allow_steer")!==0n,createdAt:decodeTimestamp(r.created_at,"created_at"),expiresAt:decodeTimestamp(r.expires_at,"expires_at")};
 }
 /** Freeze button identity before ACK; durable receipts outlive transient choices and jobs. */
-export async function admitBusyInteraction(path:string,input:NewIngress,choiceId:string,action:string):Promise<IngressAdmission>{
+export function captureBusyInteraction(input:NewIngress,choiceId:string,action:string){
   const request=snapshotNewIngress(input);
   for(const value of [choiceId,action])if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed text");
   const missing=()=>new BusyChoiceUnavailableError(choiceId);if(!["queue","steer","stop","ignore"].includes(action))throw missing();
-  const db=await openInitialized(path);try{
-    db.exec("BEGIN IMMEDIATE");const canonical=`busy-choice:${choiceId}`;
+  return {request,choiceId,action};
+}
+function admitBusyInteractionBody(db:DatabaseSync,request:NewIngress,choiceId:string,action:string):IngressAdmission{
+    const missing=()=>new BusyChoiceUnavailableError(choiceId);const canonical=`busy-choice:${choiceId}`;
     const receiptRow=db.prepare(`SELECT owner_id,payload_json,CAST(owner_id AS BLOB) AS raw_owner,CAST(payload_json AS BLOB) AS raw_payload,(SELECT encoding FROM pragma_encoding) AS encoding FROM discord_ingress_owner_receipts WHERE owner_key=?`).get(canonical);
     const receipt=receiptRow===undefined?null:{owner:decodeTextField(receiptRow.owner_id,receiptRow.raw_owner,"owner_id",false,textDecoderFor(receiptRow.encoding))!,payload:decodeTextField(receiptRow.payload_json,receiptRow.raw_payload,"payload_json",false,textDecoderFor(receiptRow.encoding))!};
     const parentRow=db.prepare(`SELECT ingress_id,CAST(ingress_id AS BLOB) AS raw,(SELECT encoding FROM pragma_encoding) AS encoding FROM discord_ingress_journal WHERE canonical_owner=?
@@ -40,6 +43,14 @@ export async function admitBusyInteraction(path:string,input:NewIngress,choiceId
       db.prepare("UPDATE discord_ingress_journal SET state='owned',phase='canonical_duplicate',owner_kind=?,owner_id=? WHERE ingress_id=?").run(receipt===null?"ingress":"prompt",receipt===null?parent:receipt.owner,request.ingressId);
       admission.created=false;admission.canonicalRepeatCreated=true;admission.record=getIngressIn(db,request.ingressId);
     }
-    admission.busyChoice=choice;if(proof!==null)verifyRecordedAdmissionIn(db,proof);db.exec("COMMIT");return admission;
+    admission.busyChoice=choice;if(proof!==null)verifyRecordedAdmissionIn(db,proof);return admission;
+}
+export async function admitBusyInteraction(path:string,input:NewIngress,choiceId:string,action:string):Promise<IngressAdmission>{
+  const q=captureBusyInteraction(input,choiceId,action),db=await openInitialized(path);try{
+    db.exec("BEGIN IMMEDIATE");const admission=admitBusyInteractionBody(db,q.request,q.choiceId,q.action);db.exec("COMMIT");return admission;
   }finally{if(db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
+}
+export function admitBusyInteractionExisting(path:string,input:NewIngress,choiceId:string,action:string):IngressAdmission{
+  const q=captureBusyInteraction(input,choiceId,action);
+  return usingExistingStore(path,db=>withStoreTransaction(db,'IMMEDIATE',()=>{verifyCurrentCatalogIn(db);return commitStore(admitBusyInteractionBody(db,q.request,q.choiceId,q.action));}));
 }

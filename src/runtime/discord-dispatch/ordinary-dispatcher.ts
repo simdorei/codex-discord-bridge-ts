@@ -1,3 +1,4 @@
+import {captureInteractionJournalContext,isInteractionJournalCapacityRefusal,type InteractionJournal} from '../interaction-worker/journal.ts';
 import {types} from 'node:util';
 import {AdmissionPermit, type AdmissionGate} from '../../admission/drain-gate.ts';
 import {invokeSynchronousVoid} from '../../core/synchronous-void.ts';
@@ -26,6 +27,7 @@ export type InteractionDispatchOutcome = 'Queued' | 'RespondedWithoutWork' | 'Du
 export type InteractionDispatchReport = CustodyCleanupReport
   | {readonly code: 'interaction_custody_hold_failed'; readonly phase: string; readonly error: unknown};
 export interface OrdinaryDispatcherOptions {
+  readonly interactionJournal?:InteractionJournal|undefined;
   readonly client: DiscordChannelClient;
   readonly policy: InteractionAccessPolicy;
   readonly qaEnabled: boolean;
@@ -73,7 +75,7 @@ export class OrdinaryInteractionDispatcher {
     this.#report = value => invokeSynchronousVoid(report, {}, [value]);
     this.#custodyNow = now;
     this.#ack = DiscordChannelClient.prototype.acknowledgeInteraction.bind(options.client);
-    this.#options = Object.freeze({...options});
+    this.#options = Object.freeze({...options,interactionJournal:captureInteractionJournalContext(options.database,options)});
     this.#sender = options.queue.sender.clone();
     Object.freeze(this);
   }
@@ -133,8 +135,8 @@ export class OrdinaryInteractionDispatcher {
         staged = await stageOrdinaryInteraction(this.#options.database, {
           applicationId: interaction.application_id, interactionId: routed.interactionId,
           channelId, userId, sourceMessageId: routed.sourceMessageId, work,
-        }, {settingsResolver: this.#options.settingsResolver, cleanup: {now: this.#custodyNow, report: this.#report}});
-      } catch (error) {throw new InteractionDispatchError('Custody', safeErrorText(error));}
+        }, {interactionJournal:this.#options.interactionJournal,settingsResolver: this.#options.settingsResolver, cleanup: {now: this.#custodyNow, report: this.#report}});
+      } catch (error) {throw new InteractionDispatchError(isInteractionJournalCapacityRefusal(error)?'Capacity':'Custody', safeErrorText(error));}
       if (staged.kind === 'Created') custody = staged.custody;
       force.throwIfAborted(); // DB stage is joined, never abandoned by cancellation.
       if (staged.kind === 'Duplicate') return 'Duplicate';
@@ -189,6 +191,7 @@ export class OrdinaryInteractionDispatcher {
       try {await custody!.acknowledge();}
       catch (error) {await holdOrLog('custody_acknowledge_failed'); throw new InteractionDispatchError('Custody', safeErrorText(error));}
       force.throwIfAborted(); // Conservative Node await boundary; retain durable hold.
+      if(this.#clock.now()>=deadline){await holdOrLog('discord_ack_deadline');return 'DeadlineExceeded';}
       try {commit();}
       catch (error) {await holdOrLog('interaction_claim_commit_failed'); throw error;}
       return enqueue(custody!.intoReceipt(), 'Execute');
