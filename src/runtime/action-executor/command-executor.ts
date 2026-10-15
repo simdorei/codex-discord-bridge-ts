@@ -20,6 +20,7 @@ import {DiscordChannelClient} from '../../discord/channel-client.ts';
 import type {InteractionBusinessServices} from '../interaction-worker/processor.ts';
 import {createOrdinaryComponentHandler} from '../component-worker/ordinary-handler.ts';
 import {NativeStandardClaimOwner} from '../component-worker/standard-claim-native.ts';
+import {createNativePromptAuthorityReads, type PromptAuthorityReads} from '../server-prompt-authority-reads.ts';
 import {NativeBusyClaimOwner} from '../component-worker/busy-claim-native.ts';
 import {BusyQueueExecutor} from './busy-queue.ts';
 import {ActionExecutionError} from './action-error.ts';
@@ -82,6 +83,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
  readonly #intake:PromptIntakeProcessor;readonly #settingsResolver:SettingsTargetResolver;
  readonly #server:PortableResidentLifecycle|null;readonly #componentQueue:BusyQueueExecutor;readonly #control:ControlTurnVerifier;
  readonly #standardClaims:NativeStandardClaimOwner;readonly #busyClaims:NativeBusyClaimOwner;
+ readonly #promptAuthorityReads:PromptAuthorityReads;
  readonly #codex:string;readonly #database:string;#inspection:MirrorInspector|null=null;#mirrorSync:MirrorSynchronizer|null=null;#mirrorConfiguring=false;
  readonly #basic:BasicActionDispatcher;readonly #queue:QueueStartCoordinator;readonly #new:NewThreadExecutor;readonly #prompts:QueuePromptExecutor;readonly #retract:RetractAction;readonly #controls:PromptControlActions;readonly #open:OpenThreadAction;readonly #settings:AdmittedSettingsExecutor;readonly #archive:AdmittedArchiveExecutor|null;readonly #resume:AdmittedResumeExecutor|null;readonly #stop:AdmittedStopExecutor;readonly #repair:AdmittedRepairExecutor|null;
  constructor(input:RuntimeExecutorDependencies){
@@ -92,6 +94,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   if(typeof prepare!=='function'||types.isProxy(prepare)||types.isGeneratorFunction(prepare))throw new TypeError('Expected prompt preparation function');
   this.#codex=paths.state;this.#database=paths.mirror;
   this.#standardClaims=new NativeStandardClaimOwner(paths.mirror);this.#busyClaims=new NativeBusyClaimOwner(paths.mirror);
+  this.#promptAuthorityReads=createNativePromptAuthorityReads(paths.mirror);
   const intakeState=createNativePromptIntakeState(paths.mirror),threadReads=createNativeActionThreadReads(paths.state,BridgeState.prototype.path.call(bridge));
   const controlReads=createNativeControlReads(paths.mirror,intakeState.mirroredThreadId),stopActionState=Object.freeze({acceptRunningStop:controlStore.acceptRunningStop,acceptUnresolvedStop:controlStore.acceptUnresolvedStop,...controlReads}),stopWorkerState=Object.freeze({pendingStopControlsAfter:controlStore.pendingStopControlsAfter,claimStopControl:controlStore.claimStopControl,recordStopControlError:controlStore.recordStopControlError,...controlReads});
   const bridgeOwner=new NativeBridgeStateOwner(BridgeState.prototype.path.call(bridge));this.#bridgeOwner=bridgeOwner;
@@ -154,7 +157,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   * completed-action receipt. This does not start gateway or worker loops. */
  interactionServices(http:DiscordChannelClient):InteractionBusinessServices{
   if(this.#server===null)throw new MissingActionAppServerError();
-  return Object.freeze({executeWithIngressContext:RuntimeCommandExecutor.prototype.executeWithIngressContext.bind(this),prepareComponent:createOrdinaryComponentHandler(this.#database,this.#server,http,this.#componentQueue,this.#control,RuntimeCommandExecutor.prototype.notifyDeliveryReady.bind(this),this.#busySteer,true,this.#standardClaims,this.#busyClaims)});
+  return Object.freeze({executeWithIngressContext:RuntimeCommandExecutor.prototype.executeWithIngressContext.bind(this),prepareComponent:createOrdinaryComponentHandler(this.#database,this.#server,http,this.#componentQueue,this.#control,RuntimeCommandExecutor.prototype.notifyDeliveryReady.bind(this),this.#busySteer,true,this.#standardClaims,this.#busyClaims,this.#promptAuthorityReads)});
  }
  async executeWithIngressContext(input:CommandAction,inputActor:MessageActionContext,key:string,signal?:AbortSignal):Promise<ActionResult>{
   signal?.throwIfAborted();const action=snapshotRuntimeCommand(input),actor=snapshotActionContext(inputActor);requireDiscordText(key);if(actor.discordMessageId===null)throw new InvalidActionRequestError('admitted message/interaction event identity is required');let result:ActionResult;

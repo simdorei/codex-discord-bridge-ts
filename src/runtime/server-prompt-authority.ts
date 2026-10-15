@@ -2,8 +2,7 @@ import {PortableResidentLifecycle} from '../app-server/portable-resident-lifecyc
 import {clonePendingServerRequest, pendingServerRequestEqual, type PendingServerRequest} from '../app-server/server-request-state.ts';
 import {extractThreadId} from '../app-server/identity.ts';
 import {serdeField, rustTrim} from '../app-server/value.ts';
-import {StateAccessFacade as state} from '../store/state-access-facade.ts';
-const completed = state.hasObservedCompletion, jobs = state.listQueueJobs, mapping = state.mirroredThreadId;
+import {capturePromptAuthorityReads, type PromptAuthorityReads} from './server-prompt-authority-reads.ts';
 const token = Symbol('PromptAuthority');
 export class PromptAuthorityError extends Error {
   constructor(reason: string) {super(`approval/input request authority is unavailable: ${reason}; no response was submitted`); this.name = 'PromptAuthorityError';}
@@ -25,8 +24,9 @@ export class PromptAuthority implements Scope {
  * grant or permission to respond later without current-request revalidation.
  * No request is created, answered, restarted or remapped by this function. */
 export async function verifyPromptAuthority(database: string, server: PortableResidentLifecycle,
-  input: PendingServerRequest, generation: bigint): Promise<PromptAuthority> {
+  input: PendingServerRequest, generation: bigint, inputReads?: PromptAuthorityReads): Promise<PromptAuthority> {
   if (typeof generation !== 'bigint' || generation < 0n || generation >= 1n << 64n) throw new TypeError('Expected u64 generation');
+  const reads = capturePromptAuthorityReads(database, inputReads);
   const request = clonePendingServerRequest(input), questions = serdeField(request.params, 'questions');
   if (request.method === 'item/tool/requestUserInput' && Array.isArray(questions) && questions.some(q => serdeField(q, 'isSecret') === true)) throw new PromptAuthorityError('secret input requires the Codex app');
   const thread = extractThreadId(request.params); if (thread === null) throw new PromptAuthorityError('missing original thread');
@@ -34,14 +34,14 @@ export async function verifyPromptAuthority(database: string, server: PortableRe
   if (typeof turn !== 'string' || turn === '' || rustTrim(turn) !== turn) throw new PromptAuthorityError('missing original turn');
   const snapshot = PortableResidentLifecycle.prototype.lifecycleSnapshot.call(server);
   if (snapshot.generation !== generation || !snapshot.healthy || snapshot.quarantined || snapshot.restartPending) throw new PromptAuthorityError('connection changed or is not ready');
-  if (PortableResidentLifecycle.prototype.activeTurnId.call(server, thread) !== turn || await completed(database, thread, turn)) throw new PromptAuthorityError('original turn is no longer active');
-  const matches = (await jobs(database)).filter(job => job.targetThreadId === thread && job.turnId === turn), job = matches[0];
+  if (PortableResidentLifecycle.prototype.activeTurnId.call(server, thread) !== turn || await reads.hasObservedCompletion(database, thread, turn)) throw new PromptAuthorityError('original turn is no longer active');
+  const matches = (await reads.listQueueJobs(database)).filter(job => job.targetThreadId === thread && job.turnId === turn), job = matches[0];
   if (job === undefined) throw new PromptAuthorityError('original Discord request owner is unknown');
   if (matches.length !== 1 || job.state !== 'Running' || job.goalWaiting || job.appServerGeneration !== generation) throw new PromptAuthorityError('original execution ownership is uncertain');
   const channel = job.channelId, user = job.ownerUserId;
   if (channel <= 0n) throw new PromptAuthorityError('invalid original channel');
   if (user === null || user <= 0n) throw new PromptAuthorityError('original Discord user is unknown');
-  const mapped = await mapping(database, channel);
+  const mapped = await reads.mirroredThreadId(database, channel);
   if (mapped !== null && mapped !== thread) throw new PromptAuthorityError('original channel mapping changed');
   if (PortableResidentLifecycle.prototype.generation.call(server) !== generation
     || !PortableResidentLifecycle.prototype.pendingServerRequests.call(server, thread).some(pending => pendingServerRequestEqual(pending, request))) throw new PromptAuthorityError('original request expired or changed');

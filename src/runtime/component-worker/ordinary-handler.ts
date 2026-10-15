@@ -10,6 +10,7 @@ import type {BusyQueueExecutor} from '../action-executor/busy-queue.ts';
 import type {ControlTurnVerifier} from '../action-executor/control-turn.ts';
 import {prepareStandardComponentAction} from './standard.ts';
 import {NativeStandardClaimOwner} from './standard-claim-native.ts';
+import {capturePromptAuthorityReads, type PromptAuthorityReads} from '../server-prompt-authority-reads.ts';
 import {NativeBusyClaimOwner} from './busy-claim-native.ts';
 import {prepareBusyConfirmationOnly} from './busy-preflight.ts';
 import {handleBusyComponent} from './busy.ts';
@@ -46,10 +47,11 @@ export class PreparedOrdinaryComponentConfirmation {
 /* Recovery variants are dispatched before ordinary approvals and confirmation-
  * only busy handling. Their dedicated sinks never substitute a native action. */
 export function createOrdinaryComponentHandler(database: string, server: PortableResidentLifecycle, http: DiscordChannelClient,
-  queue: BusyQueueExecutor, verifier: ControlTurnVerifier, notifyDeliveryReady: () => void, nativeSteer?: NativeBusySteerServices, nativeReceipts=false, nativeClaims?: NativeStandardClaimOwner, nativeBusyClaims?: NativeBusyClaimOwner) {
+  queue: BusyQueueExecutor, verifier: ControlTurnVerifier, notifyDeliveryReady: () => void, nativeSteer?: NativeBusySteerServices, nativeReceipts=false, nativeClaims?: NativeStandardClaimOwner, nativeBusyClaims?: NativeBusyClaimOwner, inputAuthorityReads?: PromptAuthorityReads) {
   requireDiscordText(database);
   if (nativeBusyClaims !== undefined) NativeBusyClaimOwner.prototype.requireDatabase.call(nativeBusyClaims, database);
   if (nativeClaims !== undefined) NativeStandardClaimOwner.prototype.requireDatabase.call(nativeClaims, database);
+  const authorityReads = inputAuthorityReads === undefined ? undefined : capturePromptAuthorityReads(database, inputAuthorityReads);
   if (typeof nativeReceipts !== 'boolean') throw new TypeError('Expected native confirmation receipt profile');
   const steer = nativeSteer === undefined ? undefined : captureNativeBusySteerServices(nativeSteer, database);
   if (typeof notifyDeliveryReady !== 'function' || types.isProxy(notifyDeliveryReady) || types.isAsyncFunction(notifyDeliveryReady) || types.isGeneratorFunction(notifyDeliveryReady)) throw new TypeError('Expected synchronous delivery notifier');
@@ -67,7 +69,7 @@ export function createOrdinaryComponentHandler(database: string, server: Portabl
         if (componentWorkerErrorInfo(error) !== null) throw error;
         throw new ComponentWorkerError('Busy', new BusyComponentError('Store', error));
       }
-    } else plan = await prepareStandardComponentAction(work, component, database, server, undefined, nativeClaims);
+    } else plan = await prepareStandardComponentAction(work, component, database, server, undefined, nativeClaims, authorityReads);
     return new PreparedOrdinaryComponentConfirmation(token, database, work.channelId, work.sourceMessageId, plan, http, nativeReceipts);
   };
 }
