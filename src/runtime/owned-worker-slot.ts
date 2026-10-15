@@ -26,6 +26,15 @@ export const OWNED_WORKER_LIMITS=Object.freeze({Background:3,Control:1,Observati
 const occupied={Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0};
 export function ownedWorkerUsage():Readonly<{Background:number;Control:number;Observation:number;Discovery:number;Maintenance:number}>{return Object.freeze({...occupied});}
 export class OwnedWorkerBudgetError extends OwnedWorkerBusyError{constructor(){super();this.name='OwnedWorkerBudgetError';this.message='Native worker class capacity is occupied; no additional worker submitted';}}
+// Proof belongs to one actual rejected submission, not an error class. Consume
+// once and bind to its owner/Promise so replayed or unrelated errors cannot claim
+// that this operation was refused before a worker existed.
+const admissionRefusals=new WeakMap<Promise<unknown>,{slot:OwnedWorkerSlot;error:unknown}>();
+export function takeOwnedWorkerAdmissionRefusal(slot:OwnedWorkerSlot,pending:Promise<unknown>|undefined,error:unknown):boolean{
+ if(pending===undefined)return false;const proof=admissionRefusals.get(pending);
+ if(proof===undefined||proof.slot!==slot||proof.error!==error)return false;
+ admissionRefusals.delete(pending);return true;
+}
 /** Only already-owned durable completions use this128 FIFO. Ordinary reads/begins keep zero queue; periodic Maintenance uses its separate2 FIFO. */
 export const OWNED_COMPLETION_QUEUE_LIMIT=128;
 /** Periodic read owners only: one active plus at most two queued globally. */
@@ -90,7 +99,7 @@ export class OwnedWorkerSlot {
    signal?.throwIfAborted();if(this.#worker!==null){if(registration!==undefined)releaseStoreWorker(registration,false);return Promise.reject(new OwnedWorkerBusyError());}
    if(!Number.isSafeInteger(timeoutMs)||timeoutMs<0||timeoutMs>2147483647)throw new TypeError('Expected bounded worker deadline');
    const executable=ownedWorkerModuleUrl(url,import.meta.url);registration??=registerStoreWorker(executable,workerData);
-   releaseBudget=completionRelease??acquire(this.#class);if(releaseBudget===null){releaseStoreWorker(registration,false);return Promise.reject(new OwnedWorkerBudgetError());}
+   releaseBudget=completionRelease??acquire(this.#class);if(releaseBudget===null){releaseStoreWorker(registration,false);const error=new OwnedWorkerBudgetError(),pending=Promise.reject(error);admissionRefusals.set(pending,{slot:this,error});return pending;}
    worker=constructStoreWorker(registration,()=>new Worker(executable,{workerData}));
   }catch(error){if(registration!==undefined)releaseStoreWorker(registration,false);releaseBudget?.();throw error;}
   const ownedRegistration=registration,ownedBudget=releaseBudget;this.#worker=worker;let release!:()=>void;this.#idle=new Promise<void>(r=>{release=r;});

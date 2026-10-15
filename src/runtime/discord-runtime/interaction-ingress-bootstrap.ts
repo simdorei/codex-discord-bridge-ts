@@ -1,3 +1,4 @@
+import {createNativeMirrorPolicyRefresh,type NativeMirrorPolicyLimits} from './native-mirror-policy.ts';
 import {createNativeInteractionJournal} from '../interaction-worker/journal.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
@@ -16,12 +17,12 @@ import type {RuntimeMessageStartup} from './message-bootstrap.ts';
  * policy, gate and interaction receiver. Autocomplete is an explicit previously
  * loaded model/list snapshot; no silent empty fallback or extra RPC here. Keeps
  * existing fresh policy, original custody, ACK deadline and queue reservation order.
- * Policy/store offload and complete gateway startup remain separate work. */
-export function createPreparedInteractionIngress(input:RuntimeMessageStartup,gate:AdmissionGate,work:InteractionWorkQueue,http:DiscordChannelClient,autocomplete:AutocompleteCatalog,qaEnabled:boolean,report:(value:InteractionDispatchReport)=>void){
+ * Live policy reads use the shared existing-only native owner before dispatch. */
+export function createPreparedInteractionIngress(input:RuntimeMessageStartup,gate:AdmissionGate,work:InteractionWorkQueue,http:DiscordChannelClient,autocomplete:AutocompleteCatalog,qaEnabled:boolean,report:(value:InteractionDispatchReport)=>void,policyLimits:NativeMirrorPolicyLimits){
  if(!isInteractionWorkQueue(work)||typeof qaEnabled!=='boolean'||types.isProxy(autocomplete)||!(autocomplete instanceof AutocompleteCatalog))throw new TypeError('Invalid interaction ingress owners');
  if(typeof report!=='function'||types.isProxy(report)||types.isAsyncFunction(report)||types.isGeneratorFunction(report))throw new TypeError('Expected synchronous interaction ingress report');
  const owner=own(input,'owner') as PortableResidentLifecycle,queue=own(input,'queue') as QueueStartCoordinator,executor=own(input,'executor') as RuntimeCommandExecutor,policy=own(input,'policy') as InteractionAccessPolicy;
  RuntimeCommandExecutor.prototype.requireRuntimeQueue.call(executor,queue);RuntimeCommandExecutor.prototype.requireRuntimeResident.call(executor,owner);QueueStartCoordinator.prototype.requireAdmissionGate.call(queue,gate);PortableResidentLifecycle.prototype.lifecycleSnapshot.call(owner);InteractionAccessPolicy.prototype.withMirroredChannelIds.call(policy,[]);Object.getOwnPropertyDescriptor(DiscordChannelClient.prototype,'activeRequests')!.get!.call(http);
  const database=Object.getOwnPropertyDescriptor(QueueStartCoordinator.prototype,'dbPath')!.get!.call(queue) as string,binding=RuntimeCommandExecutor.prototype.messageRuntimeBinding.call(executor);
- return createOrdinaryInteractionHandler({interactionJournal:createNativeInteractionJournal(database),client:http,policy,qaEnabled,queue:work,database,autocomplete,admission:gate,settingsResolver:binding.resolver,report});
+ return createOrdinaryInteractionHandler({refreshPolicy:createNativeMirrorPolicyRefresh(database,policyLimits),interactionJournal:createNativeInteractionJournal(database),client:http,policy,qaEnabled,queue:work,database,autocomplete,admission:gate,settingsResolver:binding.resolver,report});
 }

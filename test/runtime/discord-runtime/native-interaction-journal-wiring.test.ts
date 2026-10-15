@@ -35,7 +35,7 @@ function inspect(t:TestContext){
  t.mock.method(DiscordChannelClient.prototype,'updateInitialResponse',async function(this:DiscordChannelClient,...args:Parameters<typeof update>){order.push('HTTP');return update.apply(this,args);});return order;
 }
 async function runInstalled(f:ReturnType<typeof setupPromptRuntime>,http:DiscordChannelClient,report:(...args:unknown[])=>void,process?:InteractionProcessor['process']){
- const q=createInteractionWorkQueue(),exits=new RuntimeWorkerExitChannel(),handler=createPreparedInteractionIngress(f.startup,f.gate,q,http,new AutocompleteCatalog('{"data":[]}'),false,report),owner=process===undefined?await startPreparedInteractionWorker(f.startup,q,http,exits,report):await startInteractionRuntimeWorker(q,f.path,http,{process,notifyDeliveryReady:()=>{},report},exits,createNativeInteractionJournal(f.path));return {q,handler,owner,exits};
+ const q=createInteractionWorkQueue(),exits=new RuntimeWorkerExitChannel(),handler=createPreparedInteractionIngress(f.startup,f.gate,q,http,new AutocompleteCatalog('{"data":[]}'),false,report,{maxRows:100n,maxValueBytes:65536n,maxOutputIds:200,timeoutMs:5000}),owner=process===undefined?await startPreparedInteractionWorker(f.startup,q,http,exits,report):await startInteractionRuntimeWorker(q,f.path,http,{process,notifyDeliveryReady:()=>{},report},exits,createNativeInteractionJournal(f.path));return {q,handler,owner,exits};
 }
 test('installed ingress and worker use captured native journal with exact ACK, rejection read, result and HTTP order',async t=>promptFixture(async(path,server)=>{
  const f=setupPromptRuntime(path,server),order=inspect(t),{getIngress}=await import('../../../src/store/ingress-read.ts');await httpFixture(async(http,seen)=>{
