@@ -83,7 +83,8 @@ export function createMessageProcessor(context:MessageProcessorContext):(admitte
    if(handled){await finish();signal?.throwIfAborted();return;}
    if(parts.processingMode==='PendingReplyOnly')throw new MessageWorkerError('Restarting');
    if(action!==null&&typeof action==='object'&&'DiscardRequest'in action){
-    await proposeMessageAbandonment(message,action.DiscardRequest.job_id,admissionPermit,database,applicationId,http,verifier,now,signal,persistence);await finish();signal?.throwIfAborted();return;
+    const native=MessageCustody.prototype.nativeAbandonment.call(custody,message,action.DiscardRequest.job_id,applicationId,admissionPermit,http,verifier,signal);
+    if(native===null){await proposeMessageAbandonment(message,action.DiscardRequest.job_id,admissionPermit,database,applicationId,http,verifier,now,signal,persistence);await finish();}else await native;signal?.throwIfAborted();return;
    }
    if(action!==null&&typeof action==='object'&&'New'in action&&(message.attachments as readonly unknown[]).length>0){
     const prepared=await operation('Attachment',()=>enrichMessageAttachments(message,action.New.prompt,config,root,transport,true,report,signal));

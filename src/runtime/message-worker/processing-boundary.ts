@@ -1,3 +1,4 @@
+import {isNativeAbandonmentProposalFailure} from './abandonment-proposal-native.ts';
 import {types} from 'node:util';
 import {isDecodedGatewayMessage,type DecodedGatewayMessage} from '../../discord/gateway/decoded-message.ts';
 import {DiscordChannelClient} from '../../discord/channel-client.ts';
@@ -29,7 +30,7 @@ export async function reportMessageProcessingError(database:string,http:DiscordC
  signal?.throwIfAborted();
  requireTarget(target);if(typeof report!=='function'||types.isProxy(report)||types.isAsyncFunction(report)||types.isGeneratorFunction(report))throw new TypeError('Expected synchronous message reporter');
  const info=messageWorkerErrorInfo(error),detail=info?.text??passiveErrorText(error,'message processing failed');invokeSynchronousVoid(report,{},['on_message_error',detail]);
- if(info?.kind==='KnownOutcomeNotification')return;
+ if(info?.kind==='KnownOutcomeNotification'||isNativeAbandonmentProposalFailure(error))return;
  if(isMessageDatabaseMismatch(error)||info?.kind==='Admission'&&isMessageDatabaseMismatch(info.source))throw info?.kind==='Admission'?info.source:error;
  try{await sendMessageReplyOnce(database,http,target.channelId,target.messageId,'ErrorReport','ERROR: '+detail,[],signal);}
  catch(failure){if(signal?.aborted&&failure===signal.reason)throw failure;invokeSynchronousVoid(report,{},['on_message_error_report_failed',passiveErrorText(failure,'message error report failed')]);}

@@ -21,7 +21,7 @@ export function captureMessageJournalEffects(path:string,input:MessageJournalEff
 }
 export type MessageJournal=Pick<IStateAccessFacade,'admitIngress'|'recordIngressProcessingMode'|'beginIngressExecution'|'recordNewInput'|'recordIngressResult'|'confirmIngress'|'holdIngress'>;
 type Operation='Admit'|'Mode'|'Begin'|'NewInput'|'Result'|'Confirm'|'Hold';
-type NativeProfile={path:string;completion:(id:string)=>MessageJournal};
+type NativeProfile={path:string;fixed:string;completion:(id:string)=>MessageJournal};
 const profiles=new WeakMap<object,NativeProfile>();
 const capturedPorts=new WeakMap<object,{path:string;origin:object}>();
 const LIMIT=16*1024*1024;
@@ -57,6 +57,7 @@ export class OriginalMessageJournal {
  readonly #path:string;readonly #key:string;readonly #port:MessageJournal;readonly #source:MessageJournal;
  constructor(token:symbol,path:string,key:string,port:MessageJournal,source:MessageJournal=port){if(token!==original)throw new TypeError('Expected original message admission');this.#path=path;this.#key=key;this.#port=port;this.#source=source;Object.freeze(this);}
  require(path:string,key:string,port?:MessageJournal):void{if(path!==this.#path||key!==this.#key)throw new TypeError('Journal custody differs from original admission');if(port!==undefined)requireMessageJournalBinding(path,port,this.#source);}
+ nativePath(path:string,key:string):string|null{this.require(path,key);return profiles.get(this.#source)?.fixed??null;}
  mode(mode:string):Promise<void>{requireDiscordText(mode);return this.#port.recordIngressProcessingMode(this.#path,this.#key,mode);}
  begin(target:string|null,now:number):Promise<boolean>{return this.#port.beginIngressExecution(this.#path,this.#key,'processing',target,now);}
  newInput(raw:string,prompt:string,now:number):Promise<void>{const q=captureNewInput(this.#key,raw,prompt,now);return this.#port.recordNewInput(this.#path,q.key,q.raw,q.prompt,q.now);}
@@ -110,5 +111,5 @@ export function createNativeMessageJournal(path:string,timeoutMs=5000):MessageJo
    async holdIngress(given:string,key:string,reason:string,notExecuted:boolean,now:number){check(given,key);requireDiscordText(reason);if(typeof now!=='number'||typeof notExecuted!=='boolean')throw new TypeError('Expected hold fields');return run('Hold',key,{reason,notExecuted,now:intakeNumberWire(now)},done,owned!==null);},
   });
  }
- const result=port(null);profiles.set(result,{path,completion:key=>port(key)});return result;
+ const result=port(null);profiles.set(result,{path,fixed,completion:key=>port(key)});return result;
 }

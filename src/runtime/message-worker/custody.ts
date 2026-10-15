@@ -1,3 +1,8 @@
+import {NativeAbandonmentProposalOwner} from './abandonment-proposal-native.ts';
+import type {DecodedGatewayMessage} from '../../discord/gateway/decoded-message.ts';
+import {AdmissionPermit} from '../../admission/drain-gate.ts';
+import type {DiscordChannelClient} from '../../discord/channel-client.ts';
+import type {ControlTurnVerifier} from '../action-executor/control-turn.ts';
 import {types} from 'node:util';
 import {captureNewInput} from '../../store/ingress-new-input.ts';
 import {captureIngressResult} from '../../store/ingress-lifecycle.ts';
@@ -23,10 +28,19 @@ export function captureMessageCustodyOptions(database:string,options:MessageCust
  * required hold before its outer admission permit can be released. */
 export class MessageCustody {
  readonly #database:string;readonly #key:string;readonly #now:()=>number;readonly #report:MessageCustodyOptions['report'];readonly #journal:MessageJournal;readonly #owner:OriginalMessageJournal|undefined;
- #started=false;#finished=false;#closing=false;#pending:Promise<unknown>|null=null;#disposal:Promise<void>|null=null;
+ #abandonment:NativeAbandonmentProposalOwner|null=null;#started=false;#finished=false;#closing=false;#pending:Promise<unknown>|null=null;#disposal:Promise<void>|null=null;
  constructor(database:string,key:string,options:MessageCustodyOptions,owner?:OriginalMessageJournal){
   requireDiscordText(key);const captured=captureMessageCustodyOptions(database,options);if(owner!==undefined)OriginalMessageJournal.prototype.require.call(owner,database,key,captured.messageJournal!);
   this.#database=database;this.#key=key;this.#now=captured.now!;this.#report=captured.report;this.#journal=captured.messageJournal!;this.#owner=owner;Object.freeze(this);
+ }
+ /** A native proposal is minted only by this created-admission custody. The
+  * journal profile is private provenance, never a caller-supplied native flag. */
+ nativeAbandonment(message:DecodedGatewayMessage,job:string,application:bigint,permit:AdmissionPermit|null,http:DiscordChannelClient,verifier:ControlTurnVerifier,signal?:AbortSignal):Promise<void>|null{
+  if(this.#owner===undefined||OriginalMessageJournal.prototype.nativePath.call(this.#owner,this.#database,this.#key)===null)return null;
+  if(!this.#started||this.#closing||this.#pending!==null||this.#finished||this.#abandonment!==null)throw new TypeError('Original proposal custody is unavailable or already consumed');
+  const owner=new NativeAbandonmentProposalOwner(this.#owner,this.#database,message,job,application);
+  if(permit===null)throw new TypeError('Proposal requires live normal admission');const retained=AdmissionPermit.prototype.clone.call(permit);this.#abandonment=owner;
+  return this.#operation(async()=>{try{await owner.run(retained,http,verifier,this.#now,signal);this.#finished=true;}finally{AdmissionPermit.prototype.release.call(retained);}});
  }
  persistence():MessageJournalEffects{
   const check=(path:string,key:string)=>{if(path!==this.#database||key!==this.#key)throw new TypeError('Persistence differs from original message custody');};

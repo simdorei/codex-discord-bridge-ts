@@ -20,14 +20,14 @@ function audit(root:string,extension:'.ts'|'.js'){
  assert.deepEqual(native,['runtime/owned-worker-slot'+extension]);assert.deepEqual(writerFactories,['store/authority-connection'+extension]);assert.deepEqual(sideChannel,['runtime/store-worker-authority'+extension]);assert.deepEqual(lifetimeBypasses,[]);
  assert.deepEqual(backups.sort(),['runtime/archive-delete/backup-core','runtime/archive-delete/preparation-worker','store/cutover-backup-worker','store/owned-driver'].map(x=>x+extension).sort());
  const manifest=storeWorkerManifest(),mapped=manifest.map(x=>new URL(relative(fileURLToPath(new URL('../../src/',import.meta.url)),fileURLToPath(x.url)).replace(/\.(?:ts|js)$/,extension),pathToFileURL(root+'/')).href);
- assert.equal(urls.size,80);assert.deepEqual([...urls].sort(),mapped.sort());assert.equal(manifest.filter(x=>x.field!==null).length,47);
+ assert.equal(urls.size,82);assert.deepEqual([...urls].sort(),mapped.sort());assert.equal(manifest.filter(x=>x.field!==null).length,48);
  const actualWriters=manifest.filter(x=>x.field!==null).map(x=>[relative(fileURLToPath(new URL('../../src/',import.meta.url)),fileURLToPath(x.url)).replace(/\.js$/,'.ts'),x.field]);
  assert.deepEqual(actualWriters,expectedWriters);
  auditStoreAuthoritySyntax(root,all);
  for(const item of manifest)assert.notEqual(storeWorkerClassification(new URL(item.url)),undefined);
 }
 
-test('source and emitted graphs have a closed 80-module inventory and no writable/worker/lifecycle bypass',()=>{
+test('source and emitted graphs have a closed 82-module inventory and no writable/worker/lifecycle bypass',()=>{
  const root=repository();audit(join(root,'src'),'.ts');const current=fileURLToPath(new URL('../../src/',import.meta.url));if(import.meta.url.endsWith('.js'))audit(current,'.js');
 });
 
@@ -64,6 +64,7 @@ const expectedWriters=[
  ['runtime/mirror-sync/archived-native-worker.ts','mirror'],
  ['runtime/mirror-sync/source-scope-worker.ts','mirror'],
  ['runtime/mirror-sync/store-native-worker.ts','path'],
+ ['runtime/message-worker/abandonment-proposal-native-worker.ts','path'],
  ['runtime/message-worker/native-journal-worker.ts','path'],
  ['runtime/interaction-worker/native-journal-worker.ts','path'],
  ['runtime/native-custody-read-worker.ts','path'],
