@@ -1,4 +1,6 @@
 import {join} from 'node:path';
+import {StoreAuthorityDomain} from '../../store/store-authority-domain.ts';
+import {captureLocalStoreAuthorityProfile,requireLocalStoreAuthorityPaths,enrollLocalStoreAuthority,type LocalStoreAuthorityProfile} from './store-authority-profile.ts';
 import {SecretString,type RuntimeConfig} from '../../config/runtime.ts';
 import {SecretToken} from '../../config/remote.ts';
 import {RecommendedGateway} from '../../discord/gateway/recommended.ts';
@@ -39,9 +41,10 @@ function milliseconds(value:bigint):number{
  * Startup cleanup releases outer ownership only after confirmed native disposal;
  * a failed active lifetime retains its owners rather than guessing it has joined.
  */
-export async function runLocalRuntimeApplication(config:RuntimeConfig,environment:RuntimeEnvironment,root:string,version:string,mirrorProfile?:LocalSessionMirrorProfile):Promise<void>{
+export async function runLocalRuntimeApplication(config:RuntimeConfig,environment:RuntimeEnvironment,root:string,version:string,mirrorProfile?:LocalSessionMirrorProfile,authorityProfile?:LocalStoreAuthorityProfile):Promise<void>{
  if(process.platform==='win32'||config.remoteMcp!==null||config.hostCommands||(config.sessionMirror&&mirrorProfile===undefined))throw new LocalRuntimeUnsupportedError();
  if(typeof config.sessionMirror!=='boolean'||(!config.sessionMirror&&mirrorProfile!==undefined))throw new TypeError('Local mirror profile and sessionMirror configuration differ');
+ const capturedAuthority=authorityProfile===undefined?null:captureLocalStoreAuthorityProfile(authorityProfile);
  const capturedMirror=mirrorProfile===undefined?null:captureLocalSessionMirrorProfile(mirrorProfile);
  const env=snapshotRuntimeEnvironment(environment),resumeMs=milliseconds(config.appServerResumeTimeoutNs),historyMs=milliseconds(config.appServerHistoryReadTimeoutNs),historyPeriodMs=config.historyPollIntervalNs===null?null:milliseconds(config.historyPollIntervalNs);
  const access={allowedChannelIds:new Set(config.allowedChannelIds),allowedUserIds:new Set(config.allowedUserIds),allowAllChannels:config.allowAllChannels},mentions=new Set(config.plainAskMentionUserIds);
@@ -49,13 +52,16 @@ export async function runLocalRuntimeApplication(config:RuntimeConfig,environmen
  const attachmentConfig={attachmentsEnabled:config.attachmentsEnabled,attachmentMaxBytes:config.attachmentMaxBytes,attachmentTextInlineMaxBytes:config.attachmentTextInlineMaxBytes};
  const token=new SecretToken(SecretString.prototype.expose.call(config.botToken));
  const stop=RuntimeStopSignal.install();
- let instance:PosixRuntimeInstance|undefined,controller:RuntimeDrainController|undefined,context:Awaited<ReturnType<typeof prepareRuntimeProContext>>|undefined,gateway:RecommendedGateway|undefined,attachment:AttachmentHttpClient|undefined,workers:PreparedRuntimeWorkerOwner|undefined,outerClosed=false,retained=false;
+ let authority:StoreAuthorityDomain|undefined,instance:PosixRuntimeInstance|undefined,controller:RuntimeDrainController|undefined,context:Awaited<ReturnType<typeof prepareRuntimeProContext>>|undefined,gateway:RecommendedGateway|undefined,attachment:AttachmentHttpClient|undefined,workers:PreparedRuntimeWorkerOwner|undefined,outerClosed=false,retained=false;
  // Never echo arbitrary payloads, credentials or raw diagnostic causes.
  const report=()=>{process.stderr.write('runtime_diagnostic: inspect protected local evidence\n');},render=()=> 'runtime operation failed';
  try{
   const inputs=await discoverRuntimePathInputs(env,root);stop.signal.throwIfAborted();const paths=await resolveRuntimePaths(env,inputs);stop.signal.throwIfAborted();
   if(capturedMirror!==null)requireLocalSessionMirrorPaths(capturedMirror,paths);
-  instance=await PosixRuntimeInstance.acquire(paths.root);stop.signal.throwIfAborted();
+  if(capturedAuthority!==null)requireLocalStoreAuthorityPaths(paths);
+  instance=await PosixRuntimeInstance.acquire(paths.root);
+  if(capturedAuthority!==null)authority=enrollLocalStoreAuthority(instance,paths,capturedAuthority);
+  stop.signal.throwIfAborted();
   if(capturedMirror!==null)await requireLocalSessionMirrorDatabase(paths,stop.signal);
   const markers=new PosixDrainMarkerStore(paths.root);controller=await RuntimeDrainController.initialize(posixDrainMarkerPort(markers));stop.signal.throwIfAborted();
   let linker:NewThreadMirrorLink|undefined;
@@ -68,15 +74,16 @@ export async function runLocalRuntimeApplication(config:RuntimeConfig,environmen
   const catalog=await loadRuntimeAutocomplete(context.owner,stop.signal);attachment=new AttachmentHttpClient();
   workers=await startPreparedRuntimeWorkers(context,gateway.runtime,controller.admissionGate,gateway.http,catalog,stop.signal,{remoteEnabled:false,ingress:{config:attachmentConfig,attachmentRoot:paths.attachmentDir,attachmentTransport:attachment,attachmentReport:report,classification:{enableMessageContent:messageContent,plainAskMentionUserIds:mentions},report,allowedChannelIds:access.allowedChannelIds,startupChannelId:startupChannel,historyTargetLimits:{maxRows:4096,timeoutMs:10000},guildId:guild,qaCommands:qa,startupNotify:notify,historyPeriodMs,reportReady:report,reportDispatch:report,reportInteraction:report,reportReceiveError:report},completion:{commentaryEnabled:commentary,historyReadTimeoutMs:historyMs,render,report},interleaving:{heartbeat:{port:posixRuntimeHeartbeatPort(join(paths.root,RUNTIME_HEARTBEAT_NAME)),options:{report}},mirror:sessionMirror},reportInteraction:report});
   const result=await runPreparedRuntimeLifetime(workers,controller,stop.signal,{stopRequested:()=>markers.stopRequested(),reportControl:report,reportTransition:report,shutdown:{report}});
-  await closePreparedRuntimeOuter(result,gateway,controller);await instance.release();outerClosed=true;
+  await closePreparedRuntimeOuter(result,gateway,controller);authority?.closeAfterOwnersJoined();await instance.release();outerClosed=true;
   if(!result.finalized.decision.result.ok)throw result.finalized.decision.result.error;
  }catch(primary){
   if(outerClosed)throw primary;
-  const owners=Object.freeze({instance,controller,context,gateway,attachment,workers,stop});
+  authority?.seal();
+  const owners=Object.freeze({instance,controller,context,gateway,attachment,workers,stop,authority});
   // This error already retains a native child whose disposal failed before a
   // prepared context could be returned. Do not remove its exclusion identity.
   if(primary instanceof RuntimeResidentStartupCleanupError||workers!==undefined){retained=true;throw new LocalRuntimeOwnershipRetainedError(primary,new Error('Active ownership requires explicit reconciliation'),owners);}
-  try{await context?.disposeBeforeWorkers();await gateway?.close();await attachment?.close();await controller?.dispose();await instance?.release();}
+  try{await context?.disposeBeforeWorkers();await gateway?.close();await attachment?.close();await controller?.dispose();authority?.closeAfterOwnersJoined();await instance?.release();}
   catch(cleanup){retained=true;throw new LocalRuntimeOwnershipRetainedError(primary,cleanup,owners);}
   throw primary;
  }finally{if(!retained)stop.dispose();}

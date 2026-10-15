@@ -1,5 +1,6 @@
 import {performance} from 'node:perf_hooks';
 import {Worker,isMainThread} from 'node:worker_threads';
+import {registerStoreWorker,constructStoreWorker,releaseStoreWorker,type StoreWorkerRegistration} from './store-worker-authority.ts';
 export class OwnedWorkerBusyError extends Error {constructor(){super('context reader is still running; no extra reader started');this.name='OwnedWorkerBusyError';}}
 export class OwnedWorkerTimeoutError extends Error {constructor(){super('context read timed out; snapshot unavailable, OS read may still be finishing');this.name='OwnedWorkerTimeoutError';}}
 /** Resolve tsc's extension-rewritten graph without falling back to source TS.
@@ -76,22 +77,30 @@ export class OwnedWorkerSlot {
  #queuedCompletion(kind:CompletionClass,url:URL,workerData:unknown,timeoutMs:number,signal?:AbortSignal):Promise<unknown>{
   if(this.busy)return Promise.reject(new OwnedWorkerBusyError());
   if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>2147483647)throw new TypeError('Expected bounded completion deadline');signal?.throwIfAborted();
-  const began=performance.now();const task=(async()=>{let release:(()=>void)|undefined;try{
+  const executable=ownedWorkerModuleUrl(url,import.meta.url),registration=registerStoreWorker(executable,workerData);
+  const began=performance.now();const task=(async()=>{let release:(()=>void)|undefined,transferred=false;try{
    release=await waitCompletion(kind,timeoutMs,signal);signal?.throwIfAborted();const left=Math.ceil(timeoutMs-(performance.now()-began));if(left<=0)throw new OwnedWorkerTimeoutError();
-   try{return await this.#run(url,workerData,left,signal,false,release);}finally{await this.#idle;}
-  }finally{release?.();}})();
+   transferred=true;try{return await this.#run(executable,workerData,left,signal,false,release,registration);}finally{await this.#idle;}
+  }finally{if(!transferred)releaseStoreWorker(registration,false);release?.();}})();
   this.#completion=task;const clear=()=>{if(this.#completion===task)this.#completion=null;};void task.then(clear,clear);return task;
  }
- #run(url:URL,workerData:unknown,timeoutMs:number,signal:AbortSignal|undefined,terminateCpu:boolean,completionRelease?:()=>void):Promise<unknown>{
-  signal?.throwIfAborted();if(this.#worker!==null)return Promise.reject(new OwnedWorkerBusyError());if(!Number.isSafeInteger(timeoutMs)||timeoutMs<0||timeoutMs>2147483647)throw new TypeError('Expected bounded worker deadline');
-  const releaseBudget=completionRelease??acquire(this.#class);if(releaseBudget===null)return Promise.reject(new OwnedWorkerBudgetError());let worker:Worker;try{worker=new Worker(ownedWorkerModuleUrl(url,import.meta.url),{workerData});}catch(error){releaseBudget();throw error;}this.#worker=worker;let release!:()=>void;this.#idle=new Promise<void>(r=>{release=r;});
+ #run(url:URL,workerData:unknown,timeoutMs:number,signal:AbortSignal|undefined,terminateCpu:boolean,completionRelease?:()=>void,prepared?:StoreWorkerRegistration):Promise<unknown>{
+  let registration=prepared,releaseBudget:(()=>void)|null|undefined,worker:Worker;
+  try{
+   signal?.throwIfAborted();if(this.#worker!==null){if(registration!==undefined)releaseStoreWorker(registration,false);return Promise.reject(new OwnedWorkerBusyError());}
+   if(!Number.isSafeInteger(timeoutMs)||timeoutMs<0||timeoutMs>2147483647)throw new TypeError('Expected bounded worker deadline');
+   const executable=ownedWorkerModuleUrl(url,import.meta.url);registration??=registerStoreWorker(executable,workerData);
+   releaseBudget=completionRelease??acquire(this.#class);if(releaseBudget===null){releaseStoreWorker(registration,false);return Promise.reject(new OwnedWorkerBudgetError());}
+   worker=constructStoreWorker(registration,()=>new Worker(executable,{workerData}));
+  }catch(error){if(registration!==undefined)releaseStoreWorker(registration,false);releaseBudget?.();throw error;}
+  const ownedRegistration=registration,ownedBudget=releaseBudget;this.#worker=worker;let release!:()=>void;this.#idle=new Promise<void>(r=>{release=r;});
   return new Promise((resolve,reject)=>{
    let settled=false,count=0,value:unknown,failure:unknown;const settle=(error:unknown,result?:unknown)=>{if(settled)return;settled=true;clearTimeout(timer);signal?.removeEventListener('abort',abort);if(error!==undefined)reject(error);else resolve(result);};
    let terminationRequested=false;
    const cancel=(reason:unknown)=>{if(settled)return;settle(reason);if(terminateCpu&&!terminationRequested){terminationRequested=true;void worker.terminate().catch(error=>{failure??=error;});}};
    const abort=()=>cancel(signal!.reason),timer=setTimeout(()=>cancel(new OwnedWorkerTimeoutError()),timeoutMs);signal?.addEventListener('abort',abort,{once:true});
    worker.on('message',message=>{count++;if(count===1)value=message;else failure=new Error('context worker emitted multiple results');});worker.on('error',error=>{failure=error;});
-   worker.once('exit',code=>{this.#worker=null;releaseBudget();release();settle(failure??(code!==0?new Error(`context worker exited ${code}`):count!==1?new Error('context worker returned no result'):undefined),value);});
+   worker.once('exit',code=>{this.#worker=null;releaseStoreWorker(ownedRegistration,true);ownedBudget();release();settle(failure??(code!==0?new Error(`context worker exited ${code}`):count!==1?new Error('context worker returned no result'):undefined),value);});
    if(signal?.aborted)abort();
   });
  }

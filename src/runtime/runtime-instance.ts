@@ -1,9 +1,11 @@
 import {createServer, type Server} from 'node:net';
+import {StoreAuthorityDomain,authorityStorePath,requireStoreAuthorityPath} from '../store/store-authority-domain.ts';
 import {mkdir, open, realpath, unlink} from 'node:fs/promises';
 import {isAbsolute, join} from 'node:path';
 import {requireDiscordText} from '../discord/text.ts';
 import {writePosixAtomicMarker} from './atomic-marker.ts';
 
+const construction=Object.freeze({});
 export const RUNTIME_LOCK_NAME = '.codex_discord_rust.runtime.lock';
 export const RUNTIME_SOCKET_NAME = '.codex_discord_rust.runtime.socket';
 
@@ -14,11 +16,15 @@ export const RUNTIME_SOCKET_NAME = '.codex_discord_rust.runtime.socket';
  * Release only after all runtime workers, heartbeat and drain cleanup have joined.
  */
 export class PosixRuntimeInstance {
+  readonly #root:string;
+  #authority:StoreAuthorityDomain|undefined;
   #server: Server;
   #marker: string;
   #text: string;
   #release: Promise<void> | undefined;
-  private constructor(server: Server, marker: string, text: string) {
+  private constructor(token:object,server: Server, marker: string, text: string, root:string) {
+    if(token!==construction)throw new TypeError('Expected acquired runtime singleton');
+    this.#root=authorityStorePath(root);
     this.#server = server; this.#marker = marker; this.#text = text;
   }
   static async acquire(root: string): Promise<PosixRuntimeInstance> {
@@ -41,14 +47,22 @@ export class PosixRuntimeInstance {
     const text = `pid=${process.pid}\nstarted_at=${Math.floor(Date.now() / 1000)}\n`;
     try {
       await writePosixAtomicMarker(marker, text);
-      return new PosixRuntimeInstance(server, marker, text);
+      return new PosixRuntimeInstance(construction,server, marker, text, root);
     } catch (error) {
       try { await closeServer(server); }
       catch (cleanup) { throw new AggregateError([error, cleanup], 'Singleton acquisition cleanup failed'); }
       throw error;
     }
   }
+  requireHeldRoot(root:string):void{
+    if(authorityStorePath(root)!==this.#root||this.#release!==undefined||!this.#server.listening)throw new TypeError('Expected the currently held original runtime singleton');
+  }
+  retainStoreAuthority(root:string,domain:StoreAuthorityDomain):void{
+    this.requireHeldRoot(root);if(this.#authority!==undefined)throw new TypeError('Runtime singleton already has store accounting');
+    requireStoreAuthorityPath(domain,join(this.#root,'discord_mirror.sqlite'));this.#authority=domain;
+  }
   release(): Promise<void> {
+    if(this.#authority!==undefined&&!StoreAuthorityDomain.prototype.snapshot.call(this.#authority).closed)throw new Error('Store authority ownership must close before singleton release');
     return this.#release ??= this.#finish();
   }
   async #finish(): Promise<void> {

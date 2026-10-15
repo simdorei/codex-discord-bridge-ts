@@ -1,4 +1,5 @@
 import * as crypto from "node:crypto";
+import {openAuthorityConnection,requireAuthorityInitialization} from "./authority-connection.ts";
 import type * as fs from "node:fs";
 import { open as fsOpen, mkdir, stat, unlink } from "node:fs/promises";
 import { dirname, parse } from "node:path";
@@ -148,6 +149,7 @@ export async function initialize(
   db: DatabaseSync,
   path: string,
 ): Promise<string | null> {
+  requireAuthorityInitialization(db,path);
   const current = schemaVersion(db);
   if (current > LATEST_STORE_SCHEMA_VERSION) {
     throw new UnsupportedVersionError(current, LATEST_STORE_SCHEMA_VERSION);
@@ -188,7 +190,7 @@ export async function initialize(
  * closing it when done (`db.close()`).
  */
 export async function openInitialized(path: string): Promise<DatabaseSync> {
-  const db = new DatabaseSync(path, {
+  const db = openAuthorityConnection(path,path, {
     timeout: 5000,
     enableForeignKeyConstraints: false,
   });

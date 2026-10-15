@@ -1,4 +1,5 @@
-import { DatabaseSync } from 'node:sqlite';
+import type { DatabaseSync } from 'node:sqlite';
+import {openAuthorityConnection} from './authority-connection.ts';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {joinRuntimePath} from '../runtime/runtime-paths/path-text.ts';
@@ -18,7 +19,7 @@ export function openExisting(path: string, timeoutMs = 5000): DatabaseSync {
   const native=joinRuntimePath(process.cwd(),path,'posix');
   const url=process.platform==='win32'?pathToFileURL(resolve(path)).href+'?mode=rw':'file://'+native.split('/').map(encodeURIComponent).join('/')+'?mode=rw';
 
-  return new DatabaseSync(url, {
+  return openAuthorityConnection(path,url, {
     timeout: timeoutMs,
     enableForeignKeyConstraints: false,
   });
