@@ -4,7 +4,7 @@ import {rustTrim,serdeField} from '../../app-server/value.ts';
 import {cloneOwnedSerdeValue} from '../../core/owned-serde-value.ts';
 import {serdeValueEqual} from '../../core/serde-value-equal.ts';
 import {requireDiscordText} from '../../discord/text.ts';
-import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
+import {captureAdmissionReads,type AdmissionReads} from './admission-read-state.ts';
 import {planPrefix} from '../prefix-plan.ts';
 import {ActionIntegerRangeError,InvalidActionRequestError} from './errors.ts';
 export interface ArchiveActor {readonly channelId:bigint;readonly userId:bigint;readonly discordMessageId:bigint|null;}
@@ -30,11 +30,11 @@ function i64(value:bigint):bigint{if(value>=1n<<63n)throw new ActionIntegerRange
 const invalid=()=>new InvalidActionRequestError('archive cannot verify its original command/user/channel envelope; no archive was sent');
 /** Observation only: a returned ingress ID is not a durable reservation or a
  * transferable authorization. Archive coordinator must recheck under custody. */
-export async function archiveOwnRequest(path:string,input:ArchiveActor,reference:string|null,signal?:AbortSignal):Promise<string|null>{
+export async function archiveOwnRequest(path:string,input:ArchiveActor,reference:string|null,signal?:AbortSignal,reads?:AdmissionReads):Promise<string|null>{
  requireDiscordText(path);if(reference!==null)requireDiscordText(reference);const actor=cloneOwnedSerdeValue(input) as ArchiveActor;
  u64(actor.channelId);u64(actor.userId);if(actor.discordMessageId!==null)u64(actor.discordMessageId);signal?.throwIfAborted();
  if(actor.discordMessageId===null)return null;
- const event=i64(actor.discordMessageId),row=await state.ingressByOrigin(path,event);signal?.throwIfAborted();if(row===null)throw invalid();
+ const event=i64(actor.discordMessageId),row=await captureAdmissionReads(path,reads).ingressByOrigin(path,event);signal?.throwIfAborted();if(row===null)throw invalid();
  const content=serdeField(row.payload,'content'),trimmed=typeof content==='string'?rustTrim(content):'';let parsed:unknown;
  if(trimmed.startsWith('!')){try{parsed=planPrefix(trimmed.slice(1));}catch{parsed=undefined;}}
  const command={Archive:{reference}};

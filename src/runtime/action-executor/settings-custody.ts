@@ -1,4 +1,4 @@
-import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
+import {captureAdmissionReads,type AdmissionReads} from './admission-read-state.ts';
 import {stopOriginForIngress} from '../../store/stop-revision-read.ts';
 import {withStopOrigin} from '../../app-server/dispatch-origin.ts';
 import {serdeField,serdeObject} from '../../app-server/value.ts';
@@ -22,16 +22,16 @@ function command(input:BoundSettingsCommand):BoundSettingsCommand {
 /** Server-stored original admission only. Never refresh a missing legacy stop
  * revision, trust a caller-supplied binding or redirect to a replacement thread. */
 export class AdmittedSettingsExecutor {
- readonly #path:string;readonly #settings:SettingsAction;
- constructor(path:string,settings:SettingsAction){requireDiscordText(path);this.#path=path;this.#settings=settings;Object.freeze(this);}
+ readonly #path:string;readonly #settings:SettingsAction;readonly #reads:AdmissionReads;
+ constructor(path:string,settings:SettingsAction,reads?:AdmissionReads){this.#reads=captureAdmissionReads(path,reads);requireDiscordText(path);this.#path=path;this.#settings=settings;Object.freeze(this);}
  async execute(input:SettingsActor,actionInput:BoundSettingsCommand,key:string,signal?:AbortSignal):Promise<ActionResult>{
   const context=cloneOwnedSerdeValue(input) as SettingsActor;for(const id of [context.channelId,context.userId])if(typeof id!=='bigint'||id<0n||id>=1n<<64n)throw new TypeError('Expected u64 settings actor');
   requireDiscordText(key);const action=command(actionInput),settings=serdeField(action,'Settings') as SettingsChange|undefined;signal?.throwIfAborted();
   if(settings!==undefined&&settings.model===null&&settings.effort===null&&settings.speed===null)return this.#settings.settings(context.channelId,settings,null,signal);
-  const original=await state.getIngress(this.#path,key);signal?.throwIfAborted();if(original===null)throw new InvalidActionRequestError('original admission record is missing');
+  const original=await this.#reads.getIngress(this.#path,key);signal?.throwIfAborted();if(original===null)throw new InvalidActionRequestError('original admission record is missing');
   const frozen=stopOriginForIngress(original);
   return withStopOrigin(frozen??null,async()=>{
-   const record=await state.getIngress(this.#path,key);signal?.throwIfAborted();if(record===null)throw new InvalidActionRequestError('settings admission record is missing');
+   signal?.throwIfAborted();const record=await this.#reads.getIngress(this.#path,key);signal?.throwIfAborted();if(record===null)throw new InvalidActionRequestError('settings admission record is missing');
    if(record.channelId!==context.channelId||record.ownerUserId!==context.userId)throw new InvalidActionRequestError('settings admission owner or channel differs');
    let binding;try{binding=snapshotSettingsBinding(serdeField(record.payload,'settings_binding')??null);}catch{throw new InvalidActionRequestError('settings target was not frozen before admission; request will not be redirected');}
    if(record.targetThreadId!==binding.target)throw new InvalidActionRequestError('settings admission target identity differs');

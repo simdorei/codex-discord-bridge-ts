@@ -1,3 +1,4 @@
+import {captureAdmissionReads,type AdmissionReads} from './admission-read-state.ts';
 import {NativeArchiveWriter} from './archive-write-native.ts';
 import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
 import {PortableResidentLifecycle} from '../../app-server/portable-resident-lifecycle.ts';
@@ -23,20 +24,20 @@ import {snapshotActionResult,type ActionResult} from '../action-result.ts';
  * registry used by queue/other controls. Timeout cancels and joins this operation;
  * it never releases local leases by racing a still-running promise. */
 export class AdmittedArchiveExecutor {
- readonly #writer:NativeArchiveWriter|undefined;
+ readonly #admission:AdmissionReads;readonly #writer:NativeArchiveWriter|undefined;
  readonly #nativeBridge:NativeBridgeStateOwner|undefined;
  readonly #persistence:ArchiveScopeRead|undefined;readonly #path:string;readonly #codex:string;readonly #bridge:BridgeState;readonly #server:PortableResidentLifecycle;readonly #locks:TargetLocks;readonly #selection:ActionThreadSelection;readonly #verify:ArchiveTargetVerifier;readonly #timeout:number;
- constructor(path:string,codex:string,bridge:BridgeState,server:PortableResidentLifecycle,locks:TargetLocks,timeoutMs:number,mapped?:ActionMappingRead,reads?:ActionThreadReads,preflightReads?:ArchivePreflightReads,persistence?:ArchiveScopeRead,nativeBridge?:NativeBridgeStateOwner,writer?:NativeArchiveWriter){this.#nativeBridge=nativeBridge;this.#writer=writer;if(writer!==undefined)NativeArchiveWriter.prototype.assertPath.call(writer,path);
+ constructor(path:string,codex:string,bridge:BridgeState,server:PortableResidentLifecycle,locks:TargetLocks,timeoutMs:number,mapped?:ActionMappingRead,reads?:ActionThreadReads,preflightReads?:ArchivePreflightReads,persistence?:ArchiveScopeRead,nativeBridge?:NativeBridgeStateOwner,writer?:NativeArchiveWriter,admission?:AdmissionReads){this.#admission=captureAdmissionReads(path,admission);this.#nativeBridge=nativeBridge;this.#writer=writer;if(writer!==undefined)NativeArchiveWriter.prototype.assertPath.call(writer,path);
   this.#persistence=captureArchiveScopeRead(persistence);requireDiscordText(path);requireDiscordText(codex);resumeThreadWithTimeout('',timeoutMs);this.#path=path;this.#codex=codex;this.#bridge=bridge;this.#server=server;this.#locks=locks;this.#timeout=timeoutMs;this.#selection=new ActionThreadSelection(codex,path,bridge,mapped,reads,nativeBridge);this.#verify=new ArchiveTargetVerifier(path,codex,this.#selection,server,timeoutMs,preflightReads);Object.freeze(this);
  }
  async execute(input:ArchiveActor,reference:string|null,key:string,signal?:AbortSignal):Promise<ActionResult>{
   const actor=cloneOwnedSerdeValue(input) as ArchiveActor;requireDiscordText(key);if(reference!==null)requireDiscordText(reference);for(const id of [actor.channelId,actor.userId,actor.discordMessageId]){if(typeof id!=='bigint'||id<0n||id>=1n<<64n)throw new TypeError('Expected admitted u64 archive actor');if(id>=1n<<63n)throw new ActionIntegerRangeError();}signal?.throwIfAborted();
   const cancel=new AbortController(),timeoutReason=new Error('archive operation deadline'),onAbort=()=>cancel.abort(signal?.reason);signal?.addEventListener('abort',onAbort,{once:true});const timer=setTimeout(()=>cancel.abort(timeoutReason),this.#timeout);let attempted=false;
   try{
-   const record=await state.getIngress(this.#path,key);cancel.signal.throwIfAborted();if(record===null)throw new InvalidActionRequestError('lifecycle admission record is missing');
+   cancel.signal.throwIfAborted();const record=await this.#admission.getIngress(this.#path,key);cancel.signal.throwIfAborted();if(record===null)throw new InvalidActionRequestError('lifecycle admission record is missing');
    const binding=snapshotSettingsBinding(serdeField(record.payload,'lifecycle_binding')??null),command={Archive:{reference}};
    if(record.ingressId!==key||record.eventId!==actor.discordMessageId||record.targetThreadId!==binding.target||!serdeValueEqual(binding.command,command))throw new InvalidActionRequestError('lifecycle admitted command or target identity differs');
-   if(await archiveOwnRequest(this.#path,actor,reference,cancel.signal)!==key)throw new InvalidActionRequestError('archive original admission identity differs');
+   if(await archiveOwnRequest(this.#path,actor,reference,cancel.signal,this.#admission)!==key)throw new InvalidActionRequestError('archive original admission identity differs');
    return await withStopOrigin(stopOriginForIngress(record)??null,async()=>{
     await this.#binding(binding,actor.channelId,cancel.signal);
     requireThreadTargetKey(binding.target);
@@ -51,7 +52,7 @@ export class AdmittedArchiveExecutor {
        for(const child of children){leases.push(await this.#locks.acquire(child,cancel.signal));await this.#verify.preflight(0n,child,child,generation,key,cancel.signal);await this.#verify.loadIdle(child,generation,cancel.signal);}
        const observed=await archiveDescendants(this.#server,thread.id,generation,cancel.signal);if(!serdeValueEqual(children,observed))throw new InvalidActionRequestError('archive descendant scope changed; no archive was sent');
        for(const child of children)await this.#verify.preflight(0n,child,child,generation,key,cancel.signal);await this.#verify.preflight(actor.channelId,reference,thread.id,generation,key,cancel.signal);await this.#binding(binding,actor.channelId,cancel.signal);
-       if(await archiveOwnRequest(this.#path,actor,reference,cancel.signal)!==key)throw new InvalidActionRequestError('archive original admission changed');
+       if(await archiveOwnRequest(this.#path,actor,reference,cancel.signal,this.#admission)!==key)throw new InvalidActionRequestError('archive original admission changed');
        const scope=[...children,thread.id],reservation=this.#writer===undefined?await state.reserveArchiveScope(this.#path,scope,key):await NativeArchiveWriter.prototype.execute.call(this.#writer,{kind:'Reserve',scope,own:key},cancel.signal);if(reservation===null)throw new InvalidActionRequestError('archive reservation acknowledgement is missing');cancel.signal.throwIfAborted();attempted=true;
        try{await this.#server.execute(archiveThread(thread.id),generation,cancel.signal);}catch(error){throw await archiveDispatchFailure(this.#path,reservation,thread.id,error,this.#writer,cancel.signal);}
        await verifyArchivedScope(this.#codex,scope,cancel.signal,this.#persistence);cancel.signal.throwIfAborted();if(this.#writer===undefined)await state.markArchiveVerified(this.#path,reservation);else await NativeArchiveWriter.prototype.execute.call(this.#writer,{kind:'Verified',operation:reservation},cancel.signal);
@@ -64,6 +65,6 @@ export class AdmittedArchiveExecutor {
   }catch(error){if(cancel.signal.reason===timeoutReason)throw new InvalidActionRequestError(`archive operation timed out; ${attempted?'archive dispatch was attempted; delivery and outcome is unverified and some conversations may already be archived; do not automatically retry':'no archive was sent; any existing reservation remains protected; do not automatically retry'}`);throw error;}
   finally{clearTimeout(timer);signal?.removeEventListener('abort',onAbort);}
  }
- async #binding(binding:FrozenSettingsBinding,channel:bigint,signal:AbortSignal):Promise<void>{signal.throwIfAborted();await validateLifecycleSettingsSnapshot(this.#path,binding,channel,this.#bridge,undefined,this.#nativeBridge);signal.throwIfAborted();}
+ async #binding(binding:FrozenSettingsBinding,channel:bigint,signal:AbortSignal):Promise<void>{signal.throwIfAborted();await validateLifecycleSettingsSnapshot(this.#path,binding,channel,this.#bridge,this.#admission,this.#nativeBridge,signal);signal.throwIfAborted();}
 }
 Object.freeze(AdmittedArchiveExecutor.prototype);

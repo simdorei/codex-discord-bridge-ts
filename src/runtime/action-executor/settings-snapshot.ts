@@ -20,14 +20,16 @@ export function validateSelectedSettingsSnapshot(binding:FrozenSettingsBinding,b
   if(binding.route==="Selected"&&bridge.selectedThreadId()!==binding.target)throw new InvalidActionRequestError("selected target changed after admission; no replacement will be used");
 }
 /** Current route check only. Full Codex thread-reference resolution is separate. */
-export async function validateLifecycleSettingsSnapshot(path:string,binding:FrozenSettingsBinding,channel:bigint,bridge:Pick<BridgeState,"selectedThreadId">,state:Pick<IStateAccessFacade,"mirroredThreadId">=StateAccessFacade,nativeBridge?:NativeBridgeStateOwner):Promise<void>{
-  return validateRouteSnapshot(path,binding,channel,bridge,state,"lifecycle",nativeBridge);
+export async function validateLifecycleSettingsSnapshot(path:string,binding:FrozenSettingsBinding,channel:bigint,bridge:Pick<BridgeState,"selectedThreadId">,state:Pick<IStateAccessFacade,"mirroredThreadId">=StateAccessFacade,nativeBridge?:NativeBridgeStateOwner,signal?:AbortSignal):Promise<void>{
+  return validateRouteSnapshot(path,binding,channel,bridge,state,"lifecycle",nativeBridge,signal);
 }
 export async function validateSettingsSnapshot(path:string,binding:FrozenSettingsBinding,channel:bigint,bridge:Pick<BridgeState,"selectedThreadId">,state:Pick<IStateAccessFacade,"mirroredThreadId">=StateAccessFacade,nativeBridge?:NativeBridgeStateOwner):Promise<void>{
   return validateRouteSnapshot(path,binding,channel,bridge,state,"settings",nativeBridge);
 }
-async function validateRouteSnapshot(path:string,binding:FrozenSettingsBinding,channel:bigint,bridge:Pick<BridgeState,"selectedThreadId">,state:Pick<IStateAccessFacade,"mirroredThreadId">,label:"settings"|"lifecycle",nativeBridge?:NativeBridgeStateOwner):Promise<void>{
-  const valid=binding.route==="Explicit"?true:binding.route==="Mapped"?(await state.mirroredThreadId(path,channel))===binding.target:(await state.mirroredThreadId(path,channel))===null&&(nativeBridge===undefined?bridge.selectedThreadId():await nativeBridge.execute({kind:"Selected"}))===binding.target;
+async function validateRouteSnapshot(path:string,binding:FrozenSettingsBinding,channel:bigint,bridge:Pick<BridgeState,"selectedThreadId">,state:Pick<IStateAccessFacade,"mirroredThreadId">,label:"settings"|"lifecycle",nativeBridge?:NativeBridgeStateOwner,signal?:AbortSignal):Promise<void>{
+  signal?.throwIfAborted();
+  const mapped=binding.route==="Explicit"?null:await state.mirroredThreadId(path,channel);signal?.throwIfAborted();
+  const valid=binding.route==="Explicit"?true:binding.route==="Mapped"?mapped===binding.target:mapped===null&&(nativeBridge===undefined?bridge.selectedThreadId():await nativeBridge.execute({kind:"Selected"},signal))===binding.target;signal?.throwIfAborted();
   if(!valid)throw new InvalidActionRequestError(`${label} target changed after admission; no replacement target will be used`);
 }
 
