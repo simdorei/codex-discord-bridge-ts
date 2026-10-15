@@ -105,7 +105,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   this.#stop=new AdmittedStopExecutor(paths.mirror,bridge,new StopActionExecutor(paths.mirror,server,bridge,locks,render,stopActionState,bridgeOwner,new NativeStopAcceptanceWriter(paths.mirror,bridgeOwner)),bridgeOwner,intakeState);
   this.#archive=server===null?null:new AdmittedArchiveExecutor(paths.mirror,paths.state,bridge,server,locks,timeout,intakeState.mirroredThreadId,threadReads,{unfinishedArchiveRequest:intakeState.unfinishedArchiveRequest,listFiltered:createNativeQueueReadState(paths.mirror).listFiltered,listPromptIntakes:intakeState.listPromptIntakes,exact:threadReads.exact},readArchivedScopeOffThread,bridgeOwner,new NativeArchiveWriter(paths.mirror),intakeState);
   this.#resume=server===null?null:new AdmittedResumeExecutor(paths.mirror,paths.state,bridge,server,locks,timeout,intakeState.mirroredThreadId,threadReads,bridgeOwner,intakeState);
-  this.#repair=server===null?null:new AdmittedRepairExecutor(paths.mirror,bridge,server,locks,render,undefined,{listFiltered:createNativeQueueReadState(paths.mirror).listFiltered,listPromptIntakes:intakeState.listPromptIntakes},bridgeOwner);Object.freeze(this);
+  this.#repair=server===null?null:new AdmittedRepairExecutor(paths.mirror,bridge,server,locks,render,undefined,{listFiltered:createNativeQueueReadState(paths.mirror).listFiltered,listPromptIntakes:intakeState.listPromptIntakes},bridgeOwner,intakeState);Object.freeze(this);
  }
  /** Startup-only lease release/recovery; caller owns singleton and has not
   * started the live or periodic intake workers. No new recovery authority. */

@@ -1,5 +1,5 @@
 import {AdmittedRecoverExecutor} from '../../../src/runtime/action-executor/recover-action.ts';
-import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../../../src/runtime/owned-worker-slot.ts';
+import {OwnedWorkerSlot,OwnedWorkerBusyError,OwnedWorkerBudgetError} from '../../../src/runtime/owned-worker-slot.ts';
 import {it} from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {dirname,join} from 'node:path';
 import {storeFixture} from '../../helpers/store-fixture.ts';import {openInitialized} from '../../../src/store/owned-driver.ts';import {StateAccessFacade as state} from '../../../src/store/state-access-facade.ts';import {BridgeState} from '../../../src/runtime/bridge-state.ts';import {QueueStartCoordinator} from '../../../src/runtime/queue-runner/start-coordinator.ts';import {RuntimeCommandExecutor} from '../../../src/runtime/action-executor/command-executor.ts';import {PortableResidentLifecycle} from '../../../src/app-server/portable-resident-lifecycle.ts';import {AppServerTurnBackend} from '../../../src/runtime/app-server-turn-backend.ts';import {createMutationCustodyFence} from '../../../src/runtime/mutation-custody-fence.ts';import {INTERVIEW_HEADER} from '../../../src/runtime/action-executor/interview-header.ts';import {actionExecutionErrorInfo} from '../../../src/runtime/action-executor/action-error.ts';import {joinDiagnosticReaders} from '../../../src/runtime/diagnostic-report.ts';
 const actor={channelId:42n,userId:3n,discordMessageId:5n,autoQueueWhenBusy:false};
@@ -91,10 +91,11 @@ it('gateway cancellation after native creation dispatch preserves unknown attemp
  assert.equal(p.posts.length,0);assert.equal((await state.getIngress(f.path,'message:5'))?.state,'held');assert.deepEqual(await state.listQueueJobs(f.path),[]);await p.handle('!new raw');assert.equal((await f.seen()).filter(x=>x.method==='thread/start').length,1);
 })));
 
-it('concrete Repair installs native queue and intake preflight reads in that order',async t=>{
+it('concrete Repair installs native admission before queue and intake without synchronous fallback',async t=>{
+ t.mock.method(state,'getIngress',()=>{throw new Error('main-thread Repair admission forbidden');});
  const reads:string[]=[],original=OwnedWorkerSlot.prototype.run;
- t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof original>){const url=String(args[0]),operation=(args[1] as {operation?:unknown})?.operation;if(operation==='List'&&url.endsWith('/queue-runner/native-read-state-worker.ts'))reads.push('queue');if(operation==='List'&&url.endsWith('/prompt-intake/native-state-worker.ts'))reads.push('intake');return original.apply(this,args);});
- return fixture(true,async f=>{await admit(f.path,'Repair');await assert.rejects(f.executor.executeWithIngressContext({Repair:{reference:null}},actor,'message:5'),/unsupported fixture call/);assert.deepEqual(reads,['queue','intake']);assert.deepEqual((await f.seen()).map(v=>v.method),['thread/read','mcpServerStatus/list']);assert.equal(f.queue.locks.activeTargetCount,0);});
+ t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof original>){const url=String(args[0]),operation=(args[1] as {operation?:unknown})?.operation;if(operation==='IngressRead'&&url.endsWith('/prompt-intake/native-state-worker.ts'))reads.push('admission');if(operation==='List'&&url.endsWith('/queue-runner/native-read-state-worker.ts'))reads.push('queue');if(operation==='List'&&url.endsWith('/prompt-intake/native-state-worker.ts'))reads.push('intake');return original.apply(this,args);});
+ return fixture(true,async f=>{await admit(f.path,'Repair');await assert.rejects(f.executor.executeWithIngressContext({Repair:{reference:null}},actor,'message:5'),/unsupported fixture call/);assert.deepEqual(reads,['admission','queue','intake']);assert.deepEqual((await f.seen()).map(v=>v.method),['thread/read','mcpServerStatus/list']);assert.equal(f.queue.locks.activeTargetCount,0);});
 });
 
 it('concrete basic target lookup and action selection both dispatch native MirrorTarget',async t=>{const operations:string[]=[],original=OwnedWorkerSlot.prototype.run;t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof original>){const op=(args[1] as {operation?:unknown})?.operation;if(op==='MirrorTarget')operations.push(op);return original.apply(this,args);});return fixture(false,async f=>{assert.equal(await f.executor.targetThreadId(42n),'root');assert.deepEqual(operations,['MirrorTarget']);await assert.rejects(f.executor.executeWithIngressContext({Steer:{prompt:'x'}},actor,'message:5'),/app.server|AppServer|앱서버|server/i);assert.ok(operations.length>=2);assert.deepEqual(f.starts,[]);});});
@@ -278,10 +279,10 @@ it('actual factory shares a sticky uncertain-claim barrier across cursor cycles 
  }
 });
 
-import {NativePromptIntakeUnavailableError} from '../../../src/runtime/prompt-intake/native-state.ts';
+import {NativePromptIntakeUnavailableError,createNativePromptIntakeState} from '../../../src/runtime/prompt-intake/native-state.ts';
 import {ownedWorkerUsage} from '../../../src/runtime/owned-worker-slot.ts';
-type AdmissionKind='Settings'|'Stop'|'Resume'|'Archive';
-const admittedAction=(kind:AdmissionKind)=>kind==='Settings'?{Settings:{reference:null,model:'new',effort:null,speed:null}}:{[kind]:{reference:null}} as {Stop:{reference:null}}|{Resume:{reference:null}}|{Archive:{reference:null}};
+type AdmissionKind='Settings'|'Stop'|'Resume'|'Archive'|'Repair';
+const admittedAction=(kind:AdmissionKind)=>kind==='Settings'?{Settings:{reference:null,model:'new',effort:null,speed:null}}:{[kind]:{reference:null}} as {Stop:{reference:null}}|{Resume:{reference:null}}|{Archive:{reference:null}}|{Repair:{reference:null}};
 async function admitReadCommand(f:F,kind:AdmissionKind){
  if(kind!=='Settings'){await admit(f.path,kind);return;}
  const action=admittedAction(kind),binding=await f.executor.messageRuntimeBinding().resolver.bind(action,42n);assert.ok(binding);
@@ -298,14 +299,14 @@ for(const kind of ['Settings','Stop','Resume','Archive'] as const)it(`installed 
   const calls=(await f.seen()).map(row=>row.method);if(kind==='Stop')assert.deepEqual(calls,[]);if(kind==='Resume')assert.deepEqual(calls,['thread/read']);if(kind==='Archive')assert.equal(calls.filter(x=>x==='thread/archive').length,1);if(kind==='Settings')assert.equal(calls.filter(x=>x==='thread/settings/update').length,1);
  },20000,writeFlowCode);
 });
-for(const kind of ['Settings','Stop','Resume','Archive'] as const)it(`installed ${kind} propagates unavailable native admission without null, fallback or effect`,async t=>{
+for(const kind of ['Settings','Stop','Resume','Archive','Repair'] as const)it(`installed ${kind} propagates unavailable native admission without null, fallback or effect`,async t=>{
  let armed=false,reads=0;const run=OwnedWorkerSlot.prototype.run;
  t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){const task=run.apply(this,args);if(armed&&String(args[0]).endsWith('/prompt-intake/native-state-worker.ts')&&(args[1] as {operation:string}).operation==='IngressRead'){reads++;return task.then(()=>{throw new Error('lost native read after exit');});}return task;});
  await fixture(true,async f=>{await admitReadCommand(f,kind);const before=await state.getIngress(f.path,'message:5');armed=true;try{await assert.rejects(f.executor.executeWithIngressContext(admittedAction(kind),actor,'message:5'),e=>e instanceof NativePromptIntakeUnavailableError&&e.operation==='IngressRead');}finally{armed=false;}
   assert.equal(reads,1);assert.deepEqual(await f.seen(),[]);assert.deepEqual(await state.getIngress(f.path,'message:5'),before);assert.equal(ownedWorkerUsage().Control,0);assert.equal(f.queue.locks.activeTargetCount,0);assert.equal(await state.archiveTargetFenced(f.path,'root'),false);
  },20000,writeFlowCode);
 });
-for(const item of [{kind:'Settings',operation:'IngressRead',index:2,held:0},{kind:'Stop',operation:'MirrorTarget',index:1,held:0},{kind:'Resume',operation:'MirrorTarget',index:2,held:1},{kind:'Archive',operation:'IngressOrigin',index:2,held:1}] as const)it(`installed ${item.kind} cancellation joins blocked ${item.operation} before releasing custody or starting successor work`,async t=>{
+for(const item of [{kind:'Settings',operation:'IngressRead',index:2,held:0},{kind:'Stop',operation:'MirrorTarget',index:1,held:0},{kind:'Resume',operation:'MirrorTarget',index:2,held:1},{kind:'Archive',operation:'IngressOrigin',index:2,held:1},{kind:'Repair',operation:'IngressRead',index:1,held:0}] as const)it(`installed ${item.kind} cancellation joins blocked ${item.operation} before releasing custody or starting successor work`,async t=>{
  let armed=false,count=0,blocker:DatabaseSync|undefined,entered!:()=>void;const started=new Promise<void>(r=>{entered=r;}),operations:string[]=[],run=OwnedWorkerSlot.prototype.run;
  t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){if(armed){const url=String(args[0]),q=args[1] as {path:string;operation:string};operations.push(url+':'+String(q.operation));if(url.endsWith('/prompt-intake/native-state-worker.ts')&&q.operation===item.operation&&++count===item.index){blocker=new DatabaseSync(q.path);blocker.exec('PRAGMA journal_mode=DELETE;BEGIN EXCLUSIVE');const task=run.apply(this,args);entered();return task;}}return run.apply(this,args);});
  await fixture(true,async f=>{await admitReadCommand(f,item.kind);const before=await state.getIngress(f.path,'message:5'),cancel=new AbortController(),reason=new Error('cancel blocked admission read');let settled=false;armed=true;
@@ -335,3 +336,20 @@ it('installed Archive final native event-origin lookup must still own the same r
  let armed=false,origins=0;const run=OwnedWorkerSlot.prototype.run;t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){const q=args[1] as {path:string;operation:string};if(armed&&String(args[0]).endsWith('/prompt-intake/native-state-worker.ts')&&q.operation==='IngressOrigin'&&++origins===2){const db=new DatabaseSync(q.path);try{db.exec("UPDATE discord_ingress_journal SET ingress_id='changed-original' WHERE ingress_id='message:5'");}finally{db.close();}}return run.apply(this,args);});
  await fixture(true,async f=>{await admitReadCommand(f,'Archive');armed=true;try{await assert.rejects(f.executor.executeWithIngressContext(admittedAction('Archive'),actor,'message:5'),/archive original admission changed/);}finally{armed=false;}assert.equal(origins,2);assert.ok((await f.seen()).every(row=>row.method!=='thread/archive'));assert.equal(await state.archiveTargetFenced(f.path,'root'),false);assert.equal(f.queue.locks.activeTargetCount,0);},20000,writeFlowCode);
 });
+
+it('installed Repair cancellation holds its target lock and Control slot until the final native intake read exits',async t=>{
+ let armed=false,blocker:DatabaseSync|undefined,entered!:()=>void;const started=new Promise<void>(r=>{entered=r;}),operations:string[]=[],run=OwnedWorkerSlot.prototype.run;
+ t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){const url=String(args[0]),q=args[1] as {path:string;operation:string};if(armed){operations.push(url+':'+String(q.operation));if(url.endsWith('/prompt-intake/native-state-worker.ts')&&q.operation==='List'){blocker=new DatabaseSync(q.path);blocker.exec('PRAGMA journal_mode=DELETE;BEGIN EXCLUSIVE');const task=run.apply(this,args);entered();return task;}}return run.apply(this,args);});
+ await fixture(true,async f=>{await admit(f.path,'Repair');const cancel=new AbortController(),reason=new Error('cancel blocked Repair intake');let settled=false;armed=true;
+  const pending=f.executor.executeWithIngressContext({Repair:{reference:null}},actor,'message:5',cancel.signal),rejected=assert.rejects(pending,e=>e===reason);void pending.then(()=>{settled=true;},()=>{settled=true;});
+  try{await started;const atCancel=operations.length;cancel.abort(reason);await new Promise(r=>setTimeout(r,100));assert.equal(settled,false);assert.equal(ownedWorkerUsage().Control,1);assert.equal(f.queue.locks.tryAcquire('root'),undefined);assert.equal(f.queue.locks.activeTargetCount,1);assert.deepEqual(await f.seen(),[]);assert.equal(operations.length,atCancel);
+   blocker!.exec('ROLLBACK');await rejected;assert.equal(ownedWorkerUsage().Control,0);assert.equal(f.queue.locks.activeTargetCount,0);assert.equal(operations.length,atCancel);assert.deepEqual(await f.seen(),[]);assert.equal((await state.getIngress(f.path,'message:5'))!.phase,'recovery_claimed');
+  }finally{armed=false;cancel.abort(reason);if(blocker?.isTransaction)blocker.exec('ROLLBACK');await pending.catch(()=>{});blocker?.close();}
+ });
+});
+it('installed Repair refuses saturated Control admission before claim, target lock or RPC and preserves another target owner',async()=>fixture(true,async f=>{
+ await admit(f.path,'Repair');const before=await state.getIngress(f.path,'message:5'),lease=await f.queue.locks.acquire('root'),blocker=new DatabaseSync(f.path);blocker.exec('PRAGMA journal_mode=DELETE;BEGIN EXCLUSIVE');
+ const occupied=createNativePromptIntakeState(f.path).getIngress(f.path,'message:5');
+ try{assert.equal(ownedWorkerUsage().Control,1);await assert.rejects(f.executor.executeWithIngressContext({Repair:{reference:null}},actor,'message:5'),OwnedWorkerBudgetError);lease.requireTarget('root');assert.equal(f.queue.locks.activeTargetCount,1);assert.deepEqual(await f.seen(),[]);assert.equal(ownedWorkerUsage().Control,1);blocker.exec('ROLLBACK');await occupied;assert.deepEqual(await state.getIngress(f.path,'message:5'),before);}
+ finally{if(blocker.isTransaction)blocker.exec('ROLLBACK');await occupied.catch(()=>{});blocker.close();lease.release();}assert.equal(ownedWorkerUsage().Control,0);
+}));

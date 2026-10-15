@@ -1,3 +1,4 @@
+import type {AdmissionReads} from './admission-read-state.ts';
 import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
 import {withStopOrigin} from '../../app-server/dispatch-origin.ts';
 import {stopOriginForIngress} from '../../store/stop-revision-read.ts';
@@ -28,8 +29,8 @@ export class RecoveryGuard{
  }
 }
 Object.freeze(RecoveryGuard.prototype);
-export async function claimAdmittedRecovery(path:string,bridge:BridgeState,actor:LifecycleActor,kind:'Recover'|'Repair',reference:string|null,key:string,render:(error:unknown)=>string,signal?:AbortSignal,nativeBridge?:NativeBridgeStateOwner):Promise<RecoveryGuard>{
- const {record,binding}=await loadLifecycleAdmission(path,actor,kind,reference,key,signal);
+export async function claimAdmittedRecovery(path:string,bridge:BridgeState,actor:LifecycleActor,kind:'Recover'|'Repair',reference:string|null,key:string,render:(error:unknown)=>string,signal?:AbortSignal,nativeBridge?:NativeBridgeStateOwner,admission?:AdmissionReads):Promise<RecoveryGuard>{
+ const {record,binding}=await loadLifecycleAdmission(path,actor,kind,reference,key,signal,admission);
  const beforeCheck=nativeBridge===undefined?undefined:await captureSelectedSettingsCheck(binding,nativeBridge,signal);
  const before=new RecoveryGuard(TOKEN,path,binding,record.channelId,null,stopOriginForIngress(record)??null,bridge,render,beforeCheck);before.check();signal?.throwIfAborted();
  const claim=await state.claimIngressRecovery(path,record);
