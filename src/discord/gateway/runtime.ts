@@ -46,6 +46,7 @@ export class GatewayRuntime<I extends object>{
  waitForShardExit(signal?:AbortSignal):Promise<number|null>{return this.#exitReceiver.receive(signal);}
  subscribeIdentity(){return this.#ingress.subscribeIdentity();}
  subscribeIdentityConflict(){return this.#ingress.subscribeIdentityConflict();}
+ acceptedMessageView(){return this.#ingress.acceptedMessageView();}
  subscribeMessageGaps(){return this.#ingress.subscribeMessageGaps();}
  subscribeIngressDiagnostics(){return this.#ingress.subscribeDiagnostics();}
  publicationSnapshot(){return this.#publication.snapshot();}

@@ -1,3 +1,4 @@
+import {GatewayIngress} from '../../../src/discord/gateway/ingress.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {DatabaseSync} from 'node:sqlite';
@@ -136,6 +137,13 @@ import {createInteractionWorkQueue} from '../../../src/runtime/discord-dispatch/
 import {AutocompleteCatalog} from '../../../src/runtime/discord-dispatch/autocomplete.ts';
 test('prepared typed ingress independently captures and installs the history policy bounds',async t=>fixture(async c=>{
  const queue=createInteractionWorkQueue(),bounds={...limits,maxOutputIds:1},options={...c.f.options,allowedChannelIds:new Set([1n]),startupChannelId:null,historyTargetLimits:{maxRows:100,timeoutMs:5000},historyPolicyLimits:bounds,interactionPolicyLimits:limits,guildId:null,qaCommands:false,startupNotify:false,historyPeriodMs:null,reportReady:()=>{},reportDispatch:()=>{},reportInteraction:()=>{},reportReceiveError:()=>{}};
- try{const captured=capturePreparedTypedIngressOptions(c.f.startup,c.f.gate,c.http,queue,new AutocompleteCatalog(),options);bounds.maxOutputIds=200;options.historyPolicyLimits={...limits};for(const key of ['remainingDiscordIds','mirrorTargets'] as const)t.mock.method(state,key,()=>assert.fail(`legacy policy ${key}`));record(c);assert.deepEqual(await captured.history(c.gaps).recover(identity,signal()),{retryCapacity:false});assert.equal(c.f.reports.at(-1),'discord_message_gap_failed');assert.equal(c.seen.length,0);assert.equal(c.gaps.snapshot().length,1);
+ try{const captured=capturePreparedTypedIngressOptions(c.f.startup,c.f.gate,c.http,queue,new AutocompleteCatalog(),options);bounds.maxOutputIds=200;options.historyPolicyLimits={...limits};for(const key of ['remainingDiscordIds','mirrorTargets'] as const)t.mock.method(state,key,()=>assert.fail(`legacy policy ${key}`));record(c);assert.deepEqual(await captured.history(c.gaps,new GatewayIngress().acceptedMessageView()).recover(identity,signal()),{retryCapacity:false});assert.equal(c.f.reports.at(-1),'discord_message_gap_failed');assert.equal(c.seen.length,0);assert.equal(c.gaps.snapshot().length,1);
  }finally{queue.sender.dispose();queue.receiver.dispose();}
+}));
+
+import {decodeGatewayMessage} from '../../../src/discord/gateway/decoded-message.ts';
+test('prepared typed history captures the supplied exact accepted-original view before asynchronous polling',async()=>fixture(async c=>{
+ const queue=createInteractionWorkQueue(),owner=new GatewayIngress(),view=owner.acceptedMessageView(),history=new HistoryPollState(),options={...c.f.options,now:()=>1577836801000,allowedChannelIds:new Set([1n]),startupChannelId:null,historyTargetLimits:{maxRows:100,timeoutMs:5000},historyPolicyLimits:limits,interactionPolicyLimits:limits,guildId:null,qaCommands:false,startupNotify:false,historyPeriodMs:null,reportReady:()=>{},reportDispatch:()=>{},reportInteraction:()=>{},reportReceiveError:()=>{}};
+ try{const captured=capturePreparedTypedIngressOptions(c.f.startup,c.f.gate,c.http,queue,new AutocompleteCatalog(),options),installed=captured.history(c.gaps,view);owner.publish({kind:'Message',event:decodeGatewayMessage(JSON.stringify(message()))},1);await installed.poll(history,identity,signal());assert.equal(history.isPrimed(1n),false);assert.equal(await state.isProcessedMessage(c.f.path,messageId),false);assert.equal(await state.getIngress(c.f.path,`message:${messageId}`),null);assert.equal(c.f.reports.at(-1),'discord_history_poll_skipped');assert.equal(view.size,1);assert.notEqual(c.gaps.captureClearFence(1n),null);owner.receivers.messages.dispose();await installed.poll(history,identity,signal());assert.equal(history.isPrimed(1n),true);assert.equal(await state.isProcessedMessage(c.f.path,messageId),true);assert.equal(c.seen.filter(r=>r.method==='POST').length,0);
+ }finally{for(const receiver of Object.values(owner.receivers))receiver.dispose();owner.close();queue.sender.dispose();queue.receiver.dispose();}
 }));

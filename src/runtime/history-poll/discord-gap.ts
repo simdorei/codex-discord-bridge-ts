@@ -1,3 +1,4 @@
+import {captureAcceptedGatewayMessages,type GatewayAcceptedMessageView} from '../../discord/gateway/message-custody.ts';
 import {captureMessageJournalContext,type MessageJournal} from '../message-worker/journal.ts';
 import {capturePromptAuthorityReadContext} from '../server-prompt-authority-reads.ts';
 import {types} from 'node:util';
@@ -25,7 +26,7 @@ import type {MessageGapReceiver} from '../../discord/gateway/message-gaps.ts';
 import {DiscordHistoryDiscardFence} from './discard-fence.ts';
 import {runHistoryGapRecovery,runBegunHistoryPollCycle,type HistoryPollOutcome,type HistoryPollIo,type HistoryGapOutcome} from './runner.ts';
 export type HistoryPolicyRefresh=(policy:InteractionAccessPolicy,database:string,signal?:AbortSignal)=>Promise<InteractionAccessPolicy>;
-export interface DiscordHistoryGapOptions extends MessageHandlerOptions {readonly applicationId:bigint;readonly botUserId:bigint|null;readonly refreshPolicy?:HistoryPolicyRefresh}
+export interface DiscordHistoryGapOptions extends MessageHandlerOptions {readonly applicationId:bigint;readonly botUserId:bigint|null;readonly refreshPolicy?:HistoryPolicyRefresh;readonly acceptedMessages?:GatewayAcceptedMessageView}
 /** Capture only an own-data callback; compatibility callers keep the legacy port. */
 export function captureHistoryPolicyRefresh(options:unknown):HistoryPolicyRefresh{
  if(options===null||typeof options!=='object'||types.isProxy(options))throw new TypeError('Expected history options');
@@ -59,10 +60,10 @@ async function runDiscordHistory(options:DiscordHistoryGapOptions,channel:bigint
  if(resolver===null||types.isProxy(resolver)||!(resolver instanceof SettingsTargetResolver))throw new TypeError('Expected settings resolver');
  const rawConfig=own(options,'classification'),ids=own(rawConfig,'plainAskMentionUserIds');if(types.isProxy(ids))throw new TypeError('Expected mention set');const mentions=new Set<bigint>();Set.prototype.forEach.call(ids,(id:bigint)=>mentions.add(id));const config={enableMessageContent:own(rawConfig,'enableMessageContent') as boolean,plainAskMentionUserIds:mentions};
  const emit=(code:string,detail:string)=>invokeSynchronousVoid(report,{},[code,detail]);
- const refresh=captureHistoryPolicyRefresh(options);
+ const refresh=captureHistoryPolicyRefresh(options),accepted=captureAcceptedGatewayMessages(Object.hasOwn(options,'acceptedMessages')?own(options,'acceptedMessages'):undefined);
  const permit=AdmissionGate.prototype.tryEnter.call(gate),pending=new Set<AdmittedMessage>();
  try{
-  const discard=mode.kind==='Poll'?DiscordHistoryDiscardFence.capture(mode.gaps,channel):null;
+  const discard=mode.kind==='Poll'?DiscordHistoryDiscardFence.capture(mode.gaps,channel,accepted??undefined):null;
   if(mode.kind==='Poll'&&discard===null)return null;
   let observedAt=mode.kind==='Poll'?readCustodyTimestamp(now):0;
   const cycle=mode.kind==='Poll'?HistoryPollState.prototype.begin.call(mode.state,channel,BigInt(Math.floor(observedAt*1000))):null;

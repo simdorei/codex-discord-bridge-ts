@@ -36,7 +36,7 @@ it('second start cannot retake receivers or disturb the first seven owners',asyn
 });
 it('history factory receives exact consumer-owned receiver and it is disposed on shutdown',async()=>{
  const f=setup();let owned:import('../../../src/discord/gateway/message-gaps.ts').MessageGapReceiver|undefined;let entered!:()=>void;const ran=new Promise<void>(r=>entered=r);let workers:RuntimeMonitoredWorker[]=[];
- try{workers=await startTypedIngressWorkers(f.gateway,f.shutdown.signal,f.notifier,{...f.options,history:gaps=>{owned=gaps;return {async recover(){assert.deepEqual(gaps.snapshot(),[]);entered();},async poll(){assert.fail();}};}});f.port.push(ready());await ran;assert.ok(owned);assert.deepEqual(owned.snapshot(),[]);}finally{await f.close(workers);}assert.throws(()=>owned!.snapshot(),/disposed/);
+ try{workers=await startTypedIngressWorkers(f.gateway,f.shutdown.signal,f.notifier,{...f.options,history:(gaps,acceptedMessages)=>{assert.equal(acceptedMessages,f.gateway.acceptedMessageView());owned=gaps;return {async recover(){assert.deepEqual(gaps.snapshot(),[]);entered();},async poll(){assert.fail();}};}});f.port.push(ready());await ran;assert.ok(owned);assert.deepEqual(owned.snapshot(),[]);}finally{await f.close(workers);}assert.throws(()=>owned!.snapshot(),/disposed/);
 });
 it('invalid history factory result is rejected before receiver take and shard activation',async()=>{
  const f=setup();try{await assert.rejects(startTypedIngressWorkers(f.gateway,f.shutdown.signal,f.notifier,{...f.options,history:()=>({recover:1,poll:2}) as never}),TypeError);assert.equal(f.port.polls,0);for(const receiver of Object.values(f.gateway.takeIngressReceivers()))receiver.dispose();}finally{await f.close();}

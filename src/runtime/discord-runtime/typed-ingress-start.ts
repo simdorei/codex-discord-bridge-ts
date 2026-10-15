@@ -2,6 +2,7 @@ import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {GatewayRuntime} from '../../discord/gateway/runtime.ts';
 import type {DecodedGatewayInteraction} from '../../discord/gateway/decoded-interaction.ts';
+import type {GatewayAcceptedMessageView} from '../../discord/gateway/message-custody.ts';
 import type {MessageGapReceiver} from '../../discord/gateway/message-gaps.ts';
 import type {GatewayReceiveError,GatewayIngressReceivers} from '../../discord/gateway/ingress.ts';
 import {RuntimeMonitoredWorker,RuntimeWorkerExitChannel,type RuntimeWorkerResult} from './monitored-worker.ts';
@@ -13,7 +14,7 @@ import type {InteractionFailureReport} from './interaction-failure.ts';
 import {runReceiveErrorConsumer} from './receive-error-consumer.ts';
 export interface TypedIngressStartOptions{
  readonly ready:ReadySetupOptions;readonly message:GatewayMessageHandler;
- readonly history:(gaps:MessageGapReceiver)=>HistoryConsumerOperations;readonly historyPeriodMs:number|null;
+ readonly history:(gaps:MessageGapReceiver,acceptedMessages:GatewayAcceptedMessageView)=>HistoryConsumerOperations;readonly historyPeriodMs:number|null;
  readonly interaction:InteractionLaneHandler;readonly reportInteraction:(value:InteractionFailureReport)=>void;
  readonly reportReceiveError:(value:GatewayReceiveError)=>void;
 }
@@ -32,7 +33,7 @@ export async function startTypedIngressWorkers(gateway:GatewayRuntime<DecodedGat
  const spawn=(name:string,run:(force:AbortSignal)=>Promise<void|RuntimeWorkerResult>)=>{let announce!:()=>void;announced.push(new Promise<void>(r=>announce=r));workers.push(new RuntimeMonitoredWorker(name,notifier,async force=>{announce();try{const result=await run(force);return result===undefined?{ok:true}:result;}catch(error){if(force.aborted&&error===force.reason)throw error;return {ok:false,error};}}));};
  try{
   const readyPair=pair(),emergencyPair=pair(),messagePair=pair(),historyPair=pair(),gaps=GatewayRuntime.prototype.subscribeMessageGaps.call(gateway);subscriptions.push(gaps);
-  const history=historyFactory(gaps);for(const key of ['recover','poll']){const fn=own(history,key);if(typeof fn!=='function'||types.isProxy(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected owned history operation');}
+  const history=historyFactory(gaps,GatewayRuntime.prototype.acceptedMessageView.call(gateway));for(const key of ['recover','poll']){const fn=own(history,key);if(typeof fn!=='function'||types.isProxy(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected owned history operation');}
   receivers=GatewayRuntime.prototype.takeIngressReceivers.call(gateway);const lanes=receivers;
   const borrowed=async(p:ReturnType<typeof pair>,run:()=>Promise<void>)=>{try{await run();}finally{p.identity.dispose();p.conflict.dispose();}};
   spawn('ready',force=>borrowed(readyPair,()=>runReadySetup(readyPair.identity,readyPair.conflict,shutdown,force,ready)));

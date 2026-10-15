@@ -1,3 +1,4 @@
+import {isAcceptedGatewayMessageDeferral} from '../../discord/gateway/message-custody.ts';
 import {readHistoryTargetsOffThread,type NativeHistoryTargetLimits} from './native-history-targets.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
@@ -28,6 +29,7 @@ export async function runPeriodicDiscordHistory(history:HistoryPollState,gaps:Me
    if(drainGateErrorInfo(error)?.kind==='Sealed'){emit('discord_history_poll_skipped','restart_drain_sealed');return;}
    if(isDiscordHistoryPolicyError(error)){emit('discord_history_policy_failed',`channel=${target.channelId} source=${sourceLabels[target.source]} ${passiveErrorText(error,'policy failed')}`);continue;}
    if(error instanceof HistoryPollRunError){
+    if(error.stage==='Claim'&&isAcceptedGatewayMessageDeferral(error.source)){emit('discord_history_poll_skipped',`channel=${target.channelId} reason=accepted_gateway_message`);continue;}
     if(error.stage==='Claim'&&error.source instanceof MessageGapFenceError){if(error.source.kind==='Advanced'){emit('discord_history_poll_skipped',`channel=${target.channelId} reason=message_gap_advanced`);continue;}throw error;}
     if(error.stage==='Source'||error.stage==='Adaptation'||error.stage==='Claim'){emit(`discord_history_${error.stage.toLowerCase()}_failed`,`channel=${target.channelId} ${passiveErrorText(error,'history failed')}`);continue;}
    }

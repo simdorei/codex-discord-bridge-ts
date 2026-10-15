@@ -3,6 +3,7 @@ import {invokeSynchronousVoid} from '../../core/synchronous-void.ts';
 import {GatewayIdentityTracker,type GatewayIdentity,type GatewayStateReceiver} from './identity.ts';
 import {MessageGapTracker,MessageGapStateError,saturatingGatewayIncrement,type GatewayUnavailableReason} from './message-gaps.ts';
 import {GatewayIngressLane,type IngressLaneReceiver} from './lane.ts';
+import {createGatewayMessageCustody,type GatewayMessageIngressReceiver} from './message-custody.ts';
 import {gatewayOwnField,gatewayImmutableData} from './values.ts';
 import {isEmergencyMessage} from './routing.ts';
 import {isDecodedGatewayMessage,type DecodedGatewayMessage} from './decoded-message.ts';
@@ -15,7 +16,7 @@ export interface MessageIngress{readonly sequence:bigint;readonly event:DecodedG
 export interface GatewayReceiveError{readonly shard:number;readonly message:string}
 export type GatewayPublishOutcome={readonly kind:'Ignored'}|{readonly kind:'InteractionAccepted';readonly sequence:bigint;readonly tag:GatewayInteractionTag}|{readonly kind:'InteractionHardDropped';readonly reason:GatewayUnavailableReason}|{readonly kind:'MessageAccepted';readonly sequence:bigint}|{readonly kind:'MessageRecoverableGap';readonly reason:GatewayUnavailableReason;readonly tracking:{readonly ok:true}|{readonly ok:false;readonly error:MessageGapStateError}};
 export type ReceiveErrorOutcome={readonly kind:'Accepted'}|{readonly kind:'Dropped';readonly reason:'Full'|'Closed'};
-export interface GatewayIngressReceivers<I>{readonly normalInteractions:IngressLaneReceiver<InteractionIngress<I>>;readonly reservedInteractions:IngressLaneReceiver<InteractionIngress<I>>;readonly messages:IngressLaneReceiver<MessageIngress>;readonly emergencyMessages:IngressLaneReceiver<MessageIngress>;readonly receiveErrors:IngressLaneReceiver<GatewayReceiveError>}
+export interface GatewayIngressReceivers<I>{readonly normalInteractions:IngressLaneReceiver<InteractionIngress<I>>;readonly reservedInteractions:IngressLaneReceiver<InteractionIngress<I>>;readonly messages:GatewayMessageIngressReceiver;readonly emergencyMessages:GatewayMessageIngressReceiver;readonly receiveErrors:IngressLaneReceiver<GatewayReceiveError>}
 export interface GatewayIngressDiagnostics{readonly hardDroppedInteractions:bigint;readonly recoverableMessageGaps:bigint}
 export class GatewayIngressConfigError extends RangeError{readonly lane:string;constructor(lane:string){super(`Discord gateway ${lane} ingress capacity must be greater than zero`);this.name='GatewayIngressConfigError';this.lane=lane;}}
 const MAX=(1n<<64n)-1n;
@@ -29,16 +30,17 @@ const consumedEvents=new WeakSet<object>();
  * Every call routes into at most one bounded lane, never awaits or authorizes a command.
  * Supported custom capacities: positive safe integers <=2^20; clock profile is ms. */
 export class GatewayIngress<I extends object>{
- readonly #normal:GatewayIngressLane<InteractionIngress<I>>;readonly #reserved:GatewayIngressLane<InteractionIngress<I>>;readonly #messages:GatewayIngressLane<MessageIngress>;readonly #emergency=new GatewayIngressLane<MessageIngress>(4);readonly #errors:GatewayIngressLane<GatewayReceiveError>;
+ readonly #normal:GatewayIngressLane<InteractionIngress<I>>;readonly #reserved:GatewayIngressLane<InteractionIngress<I>>;readonly #messageCustody:ReturnType<typeof createGatewayMessageCustody>;readonly #messages:ReturnType<typeof createGatewayMessageCustody>['normal'];readonly #emergency:ReturnType<typeof createGatewayMessageCustody>['emergency'];readonly #errors:GatewayIngressLane<GatewayReceiveError>;
  readonly #identity=new GatewayIdentityTracker();readonly #gaps=new MessageGapTracker();readonly #hints=new BoundedBroadcast<void>(16);readonly receivers:GatewayIngressReceivers<I>;
  #accepting=true;#closed=false;#hard=0n;#recoverable=0n;
  constructor(config:GatewayIngressConfig=DEFAULT_GATEWAY_INGRESS_CONFIG){
   const values={} as Record<keyof GatewayIngressConfig,number>;
   for(const [key,lane] of [['interactionCapacity','NormalInteraction'],['reservedInteractionCapacity','ReservedInteraction'],['messageCapacity','Message'],['receiveErrorCapacity','ReceiveError']] as const){const value=gatewayOwnField(config,key);if(value===0)throw new GatewayIngressConfigError(lane);if(typeof value!=='number'||!Number.isSafeInteger(value)||value<1||value>1048576)throw new RangeError('Unsupported gateway ingress capacity');values[key]=value;}
-  this.#normal=new GatewayIngressLane(values.interactionCapacity);this.#reserved=new GatewayIngressLane(values.reservedInteractionCapacity);this.#messages=new GatewayIngressLane(values.messageCapacity);this.#errors=new GatewayIngressLane(values.receiveErrorCapacity);
-  this.receivers=Object.freeze({normalInteractions:this.#normal.receiver(),reservedInteractions:this.#reserved.receiver(),messages:this.#messages.receiver(),emergencyMessages:this.#emergency.receiver(),receiveErrors:this.#errors.receiver()});
+  this.#normal=new GatewayIngressLane(values.interactionCapacity);this.#reserved=new GatewayIngressLane(values.reservedInteractionCapacity);this.#messageCustody=createGatewayMessageCustody(values.messageCapacity);this.#messages=this.#messageCustody.normal;this.#emergency=this.#messageCustody.emergency;this.#errors=new GatewayIngressLane(values.receiveErrorCapacity);
+  this.receivers=Object.freeze({normalInteractions:this.#normal.receiver(),reservedInteractions:this.#reserved.receiver(),messages:this.#messages.receiver,emergencyMessages:this.#emergency.receiver,receiveErrors:this.#errors.receiver()});
  }
  stopAccepting():void{this.#accepting=false;}
+ acceptedMessageView(){return this.#messageCustody.view;}
  subscribeIdentity(){return this.#identity.subscribeIdentity();}
  subscribeIdentityConflict(){return this.#identity.subscribeConflict();}
  subscribeMessageGaps(){return this.#gaps.subscribe();}
