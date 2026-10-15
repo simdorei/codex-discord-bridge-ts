@@ -11,6 +11,7 @@ import type {ControlTurnVerifier} from '../action-executor/control-turn.ts';
 import {prepareStandardComponentAction} from './standard.ts';
 import {prepareBusyConfirmationOnly} from './busy-preflight.ts';
 import {handleBusyComponent} from './busy.ts';
+import {captureNativeBusySteerServices, type NativeBusySteerServices} from './busy-control.ts';
 import {handleAsyncChoice} from './async-choice.ts';
 import {handleRecoveryAbandonment} from './recovery-abandonment.ts';
 import {handleRecoveryPublication} from './recovery-publication.ts';
@@ -40,8 +41,9 @@ export class PreparedOrdinaryComponentConfirmation {
 /* Recovery variants are dispatched before ordinary approvals and confirmation-
  * only busy handling. Their dedicated sinks never substitute a native action. */
 export function createOrdinaryComponentHandler(database: string, server: PortableResidentLifecycle, http: DiscordChannelClient,
-  queue: BusyQueueExecutor, verifier: ControlTurnVerifier, notifyDeliveryReady: () => void) {
+  queue: BusyQueueExecutor, verifier: ControlTurnVerifier, notifyDeliveryReady: () => void, nativeSteer?: NativeBusySteerServices) {
   requireDiscordText(database);
+  const steer = nativeSteer === undefined ? undefined : captureNativeBusySteerServices(nativeSteer, database);
   if (typeof notifyDeliveryReady !== 'function' || types.isProxy(notifyDeliveryReady) || types.isAsyncFunction(notifyDeliveryReady) || types.isGeneratorFunction(notifyDeliveryReady)) throw new TypeError('Expected synchronous delivery notifier');
   return async (inputWork: InboundInteractionWork, inputComponent: ComponentId): Promise<PreparedOrdinaryComponentConfirmation> => {
     const work = snapshotInboundInteractionWork(inputWork), component = snapshotComponentId(inputComponent);
@@ -51,7 +53,7 @@ export function createOrdinaryComponentHandler(database: string, server: Portabl
     else if ('RecoveryPublicationDecision' in component) plan = await handleRecoveryPublication(work, component, database, verifier);
     else if ('AsyncChoice' in component) plan = await handleAsyncChoice(work, component.AsyncChoice.question_id, component.AsyncChoice.option, database, server, verifier, notifyDeliveryReady);
     else if (work.processingMode === 'ConfirmationOnly' || 'Busy' in component) {
-      try {plan = work.processingMode === 'ConfirmationOnly' ? await prepareBusyConfirmationOnly(work, component, database) : await handleBusyComponent(work, component, database, queue, server, verifier);}
+      try {plan = work.processingMode === 'ConfirmationOnly' ? await prepareBusyConfirmationOnly(work, component, database) : await handleBusyComponent(work, component, database, queue, server, verifier, undefined, steer);}
       catch (error) {
         if (busyComponentErrorInfo(error) !== null) throw new ComponentWorkerError('Busy', error);
         if (componentWorkerErrorInfo(error) !== null) throw error;
