@@ -14,6 +14,7 @@ import {RemoteSessionCleanupOwner} from './session-cleanup.ts';
 import {RemoteMutationCache} from './mutation-cache.ts';
 import {RemoteRequestBudget} from './request-budget.ts';
 import {remoteFileErrorResult} from './file-error-result.ts';
+import {takeRemoteOperationFailure} from './operation-error-result.ts';
 import {requireImmutableRemoteDto,serializeBridgeMessageOffThread} from './native-decode.ts';
 import {RemoteWorkerCapacityError} from './bounded-workers.ts';
 import {utf8Compare} from './request-input.ts';
@@ -237,13 +238,19 @@ export class RemoteProjectDispatcher {
     case 'project_info':result=Object.freeze({type:'project_info_result',request_id:requestId,output:Object.freeze({root:project.binding.root,thread_id:project.binding.threadId})});break;
     case 'list_files':{if(project.backend.listFiles===null)return capability(requestId);invoked=true;let output;try{output=await ownedPromise(project.backend.listFiles(command,context));}catch(error){return remoteFileErrorResult(requestId,error,cancelled);}result=Object.freeze({type:'list_files_result',request_id:requestId,output});break;}
     case 'read_file':{if(project.backend.readFile===null)return capability(requestId);invoked=true;let output;try{output=await ownedPromise(project.backend.readFile(command,context));}catch(error){return remoteFileErrorResult(requestId,error,cancelled);}result=Object.freeze({type:'read_file_result',request_id:requestId,output});break;}
-    case 'write_file':if(project.backend.writeFile===null)return capability(requestId);invoked=true;result=Object.freeze({type:'write_file_result',request_id:requestId,output:await ownedPromise(project.backend.writeFile(command,context))});break;
+    case 'write_file':{
+     if(project.backend.writeFile===null)return capability(requestId);invoked=true;
+     const output=await ownedPromise(project.backend.writeFile(command,context));
+     const failure=await takeRemoteOperationFailure(requestId,command,output,cancelled);
+     result=failure??Object.freeze({type:'write_file_result',request_id:requestId,output:output as Extract<BridgeResult,{type:'write_file_result'}>['output']});break;
+    }
     case 'project_operation':{
      const operation=command.operation;let output;
      if(operation.kind.startsWith('computer_')){if(session.ports.computer===null)return capability(requestId);invoked=true;output=await ownedPromise(session.ports.computer(operation as ComputerRequest,context));}
      else if(operation.kind.startsWith('terminal_')){const port=operation.kind==='terminal_exec'?session.ports.terminal:session.ports.terminalWindow;if(port===null)return capability(requestId);invoked=true;output=await ownedPromise(port(operation as TerminalRequest,context));}
      else{if(project.backend.core===null)return capability(requestId);invoked=true;output=await ownedPromise(project.backend.core(operation as CoreRequest,context));}
-     result=Object.freeze({type:'project_operation_result',request_id:requestId,output});break;
+     const failure=operation.kind.startsWith('computer_')?null:await takeRemoteOperationFailure(requestId,operation as CoreRequest|TerminalRequest,output,cancelled);
+     result=failure??Object.freeze({type:'project_operation_result',request_id:requestId,output:output as Extract<BridgeResult,{type:'project_operation_result'}>['output']});break;
     }
     default:return capability(requestId);
    }

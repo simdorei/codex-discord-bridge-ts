@@ -3,6 +3,9 @@ import {requireDiscordText} from '../../discord/text.ts';
 export type RemoteFileFailureKind='UnsafePath'|'UnsafePattern'|'Size'|'Encoding'|'Conflict'|'Limit'|'Io';
 export interface RemoteFileFailureDetails{readonly kind:RemoteFileFailureKind;readonly message:string;}
 const failures=new WeakMap<object,RemoteFileFailureDetails>();
+/** Exact typed provenance only; unlike the rendering fallback below this never
+ * classifies an arbitrary exception as an owned file failure. */
+export function registeredRemoteFileFailure(value:unknown):RemoteFileFailureDetails|null{return value!==null&&typeof value==='object'?failures.get(value)??null:null;}
 function bounded(value:unknown):asserts value is string{requireDiscordText(value);if(value.length>65536||Buffer.byteLength(value)>65536)throw new RangeError('Remote file diagnostic exceeds byte limit');}
 /** A captured diagnostic, not filesystem authority. Rendering must go through
  * the central redacting boundary. Mutable Error fields are never read there. */

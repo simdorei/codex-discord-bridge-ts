@@ -9,6 +9,7 @@ import type {RemoteRequestBudget} from './request-budget.ts';
 import type {RemoteUtcDateTime} from './datetime.ts';
 import type {RemoteSessionIdentity} from './session-decisions.ts';
 import {RemoteSessionCleanupOwner} from './session-cleanup.ts';
+import type {RemoteSettledOperationFailure} from './operation-error-result.ts';
 
 export interface RemoteProjectBinding {readonly threadId:string;readonly root:string;readonly expiresAt:RemoteUtcDateTime;}
 export interface RemoteOperationContext {readonly binding:RemoteProjectBinding;readonly session:RemoteSessionIdentity;readonly signal:AbortSignal;readonly budget:RemoteRequestBudget;}
@@ -19,20 +20,22 @@ export interface RemoteSessionBackend {
  readonly closeTerminalWindows:()=>Promise<void>;
  readonly closeTerminals:()=>Promise<void>;
  readonly computer:((request:ComputerRequest,context:RemoteOperationContext)=>Promise<RemoteProjectOutput>)|null;
- readonly terminal:((request:TerminalRequest,context:RemoteOperationContext)=>Promise<RemoteProjectOutput>)|null;
- readonly terminalWindow:((request:TerminalRequest,context:RemoteOperationContext)=>Promise<RemoteProjectOutput>)|null;
+ readonly terminal:((request:TerminalRequest,context:RemoteOperationContext)=>Promise<RemoteProjectOutput|RemoteSettledOperationFailure>)|null;
+ readonly terminalWindow:((request:TerminalRequest,context:RemoteOperationContext)=>Promise<RemoteProjectOutput|RemoteSettledOperationFailure>)|null;
 }
 /** Factories own partial initialization on failure. Returned resources transfer
  * exclusive custody to the dispatcher. Every operation settles only after its
  * actual native work ends; signal delivery alone is never a completion receipt.
- * These typed leaf ports are NOT native filesystem/terminal/UI implementations. */
+ * Explicit settled failure returns make the same completion assertion as success
+ * returns; they do not assert rollback/no effect. Exceptions never establish a
+ * definite outcome. These ports are NOT native backend implementations. */
 export interface RemoteProjectBackend {
  readonly close:()=>Promise<void>;
  readonly createSession:((identity:RemoteSessionIdentity)=>Promise<RemoteSessionBackend>)|null;
  readonly listFiles:((command:FileCommand<'list_files'>,context:RemoteOperationContext)=>Promise<FileOutput<'list_files_result'>>)|null;
  readonly readFile:((command:FileCommand<'read_file'>,context:RemoteOperationContext)=>Promise<FileOutput<'read_file_result'>>)|null;
- readonly writeFile:((command:FileCommand<'write_file'>,context:RemoteOperationContext)=>Promise<FileOutput<'write_file_result'>>)|null;
- readonly core:((request:CoreRequest,context:RemoteOperationContext)=>Promise<RemoteProjectOutput>)|null;
+ readonly writeFile:((command:FileCommand<'write_file'>,context:RemoteOperationContext)=>Promise<FileOutput<'write_file_result'>|RemoteSettledOperationFailure>)|null;
+ readonly core:((request:CoreRequest,context:RemoteOperationContext)=>Promise<RemoteProjectOutput|RemoteSettledOperationFailure>)|null;
 }
 export function ownedPort<T>(value:unknown,key:string,nullable=false):T{
  const fn=own(value,key);if(nullable&&fn===null)return fn as T;
