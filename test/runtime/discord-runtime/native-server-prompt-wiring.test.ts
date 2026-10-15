@@ -72,7 +72,7 @@ test('installed message approval keeps native profile through frozen gateway con
 });
 for(const mode of ['gap','poll'] as const)test(`installed ${mode} history approval preserves native profile through actual history context copies`,async t=>{
  const operations=inspect(t);await fixture(f=>promptHttpFixture(async(http,seen)=>{
-  const tracker=new MessageGapTracker(),gaps=tracker.subscribe(),history=createPreparedHistoryOperations(f.startup,f.gate,http,gaps,{...f.options,allowedChannelIds:new Set([1n]),startupChannelId:null,historyTargetLimits:{maxRows:128,timeoutMs:5000}});
+  const tracker=new MessageGapTracker(),gaps=tracker.subscribe(),history=createPreparedHistoryOperations(f.startup,f.gate,http,gaps,{...f.options,allowedChannelIds:new Set([1n]),startupChannelId:null,historyPolicyLimits:{maxRows:100n,maxValueBytes:65536n,maxOutputIds:200,timeoutMs:5000},historyTargetLimits:{maxRows:128,timeoutMs:5000}});
   try{if(mode==='gap'){tracker.record(1n,{timestampMicros:1577836800000000n,messageId:1n},'Full');await history.recover(identity,signal);assert.equal(gaps.snapshot().length,0);}else{const cursor=new HistoryPollState();await history.poll(cursor,identity,signal);assert.equal(cursor.isPrimed(1n),true);}
    assert.equal((await state.getIngress(f.path,'message:33'))!.confirmationDelivered,true);assert.deepEqual(seen.map(x=>x.method),['GET','POST']);assert.equal(record(f.path)[0]!.message_id,'902');assert.match(String(record(f.path)[0]!.receipt_key),/message:33/);verify(operations,'server-request/redisplay/v1');assert.equal(f.reports.length,1);assert.equal(f.reports[0],mode==='gap'?'discord_message_gap_recovered':'discord_history_poll');
   }finally{gaps.dispose();tracker.close();}

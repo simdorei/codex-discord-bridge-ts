@@ -34,15 +34,15 @@ function capturePath(path:string):string{
  * stale cache or hidden queue is created per handler. */
 export function createNativeMirrorPolicyRefresh(path:string,limits:NativeMirrorPolicyLimits){
  const fixed=capturePath(path),captured=captureNativeMirrorPolicyLimits(limits);
- return (policy:InteractionAccessPolicy,given:string,signal:AbortSignal):Promise<InteractionAccessPolicy>=>{
+ return (policy:InteractionAccessPolicy,given:string,signal?:AbortSignal):Promise<InteractionAccessPolicy>=>{
   if(given!==path)throw new TypeError('Mirror policy belongs to another database');
   return refreshMirrorPolicyOffThread(policy,fixed,captured,signal);
  };
 }
 /** Explicit existing-only profile. Native DB reads, decoding, deduplication and
  * sorting run in a fixed worker. No new policy or stale fallback escapes failure.
- * Installed ordinary interaction ingress uses this profile; legacy message and
- * history policy callers remain separate. One slot, no queue, shared native capacity; caller
+ * Installed ordinary interaction and history ingress use this profile; legacy
+ * direct callers and Gateway message policy remain separate. One slot, no queue, shared native capacity; caller
  * cancellation retains ownership and awaits real exit before returning. */
 export function refreshMirrorPolicyOffThread(policy:InteractionAccessPolicy,path:string,limits:NativeMirrorPolicyLimits,signal?:AbortSignal):Promise<InteractionAccessPolicy>{
  const origin={};

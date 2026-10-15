@@ -16,7 +16,7 @@ Ordinary installed Normal and Reserved interaction ingress now refreshes its com
 
 Prepared interaction ingress requires explicit native limits. Prepared typed ingress captures its interactionPolicyLimits separately from historyTargetLimits; the local application supplies the existing startup-equivalent policy bounds (4096 rows, 4194304 value bytes, 8192 output IDs, 10000 ms) without changing startup bounds.
 
-Gateway message and history policy refresh remain unchanged. Message pre-admission loss and period-null history retry behavior require separate designs. This change does not activate stage 893 or alter final store authority, production readiness or Windows qualification.
+Checkpoint 902 left Gateway message and history policy refresh unchanged. Installed history and its period-null capacity retry are now covered by [the separate history profile](live-history-policy-native.md); Gateway message pre-admission loss still requires a separate design. This change does not activate stage 893 or alter final store authority, production readiness or Windows qualification.
 
 ## Verification
 
@@ -35,4 +35,4 @@ Final emitted profile: `.runtime/compiled-tests-zUh23k`, Node 24.21.0, baseline 
 - Independent final-profile validation: 68/68 passed across seven selected policy/handler/shared-slot suites. These overlap the writer suites and are not additional unique coverage.
 - All final runs had zero failures, cancellations or skipped tests. Earlier profiles and the initially reproduced stale-capacity-error replay finding are not counted as final passes. The replay regression is now covered for unsubmitted, admitted and custom-refresh errors, including an unconsumed genuine prior refusal.
 
-This is bounded validation, not a full-suite, long-running production, live-service or Windows qualification. Gateway-message and history refresh remain deferred as described above.
+This is bounded validation, not a full-suite, long-running production, live-service or Windows qualification. Gateway-message refresh remains deferred; subsequent installed history work is documented separately above.

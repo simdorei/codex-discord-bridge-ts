@@ -35,7 +35,7 @@ for(const route of ['gateway','drain','gap','poll'] as const)test(`installed ${r
    if(route==='drain')f.gate.seal(DrainFenceKey.create('journal','1|2','worker'));
    await handler(message,identity,signal);
   }else{
-   const tracker=new MessageGapTracker(),gaps=tracker.subscribe(),history=createPreparedHistoryOperations(f.startup,f.gate,http,gaps,{...f.options,allowedChannelIds:new Set([1n]),startupChannelId:null,historyTargetLimits:{maxRows:128,timeoutMs:5000}});
+   const tracker=new MessageGapTracker(),gaps=tracker.subscribe(),history=createPreparedHistoryOperations(f.startup,f.gate,http,gaps,{...f.options,allowedChannelIds:new Set([1n]),startupChannelId:null,historyPolicyLimits:{maxRows:100n,maxValueBytes:65536n,maxOutputIds:200,timeoutMs:5000},historyTargetLimits:{maxRows:128,timeoutMs:5000}});
    try{if(route==='gap'){tracker.record(1n,{timestampMicros:1577836800000000n,messageId:1n},'Full');await history.recover(identity,signal);}else await history.poll(new HistoryPollState(),identity,signal);}finally{gaps.dispose();tracker.close();}
   }
   assert.deepEqual(order,['Admit',...(route==='drain'?['Mode']:[]),'Begin','Responded','Result','ReceiptBegin','ReceiptConfirm','Confirm']);
