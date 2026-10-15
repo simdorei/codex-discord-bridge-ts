@@ -52,3 +52,26 @@ test("saved replay remains presentation-only, validates IDs and never creates a 
     await assert.rejects(()=>queue.replaySubmissionForMessage(-1n),/does not fit/);await assert.rejects(()=>queue.replaySubmissionForJob("\uD800"),TypeError);assert.equal(calls,0);
   });
 });
+
+type TargetState=ConstructorParameters<typeof ActionTargetServices>[4];
+const mappingServices=(input:TargetState)=>new ActionTargetServices('original-database',null as unknown as BridgeState,null as unknown as QueueStartCoordinator,prompts,input);
+test('target mapping captures passive own data once, fixes its path and reads fresh mappings for each call',async()=>{
+ const calls:unknown[][]=[];let mapping:string|null='first';const source={completedAppServerForkTargetForSource:state.completedAppServerForkTargetForSource,mirroredThreadId:async(path:string,channel:bigint|null)=>{calls.push([path,channel]);return mapping;}};
+ const services=mappingServices(source);source.mirroredThreadId=async()=>assert.fail('replacement mapping function');
+ assert.deepEqual(await services.currentMirrorTarget(9007199254740993n,'fallback'),['first','mirror']);mapping='second';assert.deepEqual(await services.currentMirrorTarget(9007199254740993n,'fallback'),['second','mirror']);mapping=null;assert.deepEqual(await services.currentMirrorTarget(9007199254740993n,'fallback'),['fallback','selected']);
+ assert.deepEqual(calls,Array.from({length:3},()=>['original-database',9007199254740993n]));
+});
+test('target mapping rejects proxy, inherited, accessor and generator ports without invoking hooks',()=>{
+ let hooks=0;const canonical=state.completedAppServerForkTargetForSource;
+ for(const source of [new Proxy({completedAppServerForkTargetForSource:canonical,mirroredThreadId:async()=>null},{getOwnPropertyDescriptor(){hooks++;return undefined;}}),Object.create({mirroredThreadId:async()=>null}),Object.defineProperty({completedAppServerForkTargetForSource:canonical},'mirroredThreadId',{get(){hooks++;return async()=>null;}})])assert.throws(()=>mappingServices(source),TypeError);
+ for(const fn of [null,function*(){hooks++;},async function*(){hooks++;},new Proxy(async()=>null,{apply(){hooks++;return Promise.resolve(null);}})])assert.throws(()=>mappingServices({completedAppServerForkTargetForSource:canonical,mirroredThreadId:fn} as TargetState),TypeError);assert.equal(hooks,0);
+});
+test('target mapping requires genuine Promises and validates resolved text without assimilating thenables',async()=>{
+ let hooks=0;const thenable={get then(){hooks++;return ()=>{hooks++;};}};
+ for(const result of [null,undefined,thenable,new Proxy(Promise.resolve(null),{})]){const services=mappingServices({completedAppServerForkTargetForSource:state.completedAppServerForkTargetForSource,mirroredThreadId:()=>result} as TargetState);await assert.rejects(services.currentMirrorTarget(1n,'fallback'),/Promise/);}
+ for(const result of [undefined,0,false,{},'\uD800']){const services=mappingServices({completedAppServerForkTargetForSource:state.completedAppServerForkTargetForSource,mirroredThreadId:async()=>result} as unknown as TargetState);await assert.rejects(services.currentMirrorTarget(1n,'fallback'),TypeError);}
+ assert.equal(hooks,0);
+});
+test('target mapping preserves synchronous and asynchronous failure identity rather than substituting selected fallback',async()=>{
+ for(const synchronous of [false,true]){const failure=new Error('mapping unavailable'),services=mappingServices({completedAppServerForkTargetForSource:state.completedAppServerForkTargetForSource,mirroredThreadId:()=>{if(synchronous)throw failure;return Promise.reject(failure);}});await assert.rejects(services.currentMirrorTarget(1n,'fallback'),e=>e===failure);}
+});

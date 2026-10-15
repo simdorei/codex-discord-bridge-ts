@@ -1,4 +1,4 @@
-import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
+import {captureAdmissionReads,type AdmissionReads} from './admission-read-state.ts';
 import {frozenSlashTarget} from '../../store/ingress-new-input.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {snapshotActionResult, type ActionResult} from '../action-result.ts';
@@ -15,12 +15,13 @@ function i64(value:bigint):bigint {if(value>=(1n<<63n))throw new ActionIntegerRa
 /** Source queue_prompt ordering: original route fence, saved replay, canonical
  * target, optional busy choice, then durable intake. No New/thread-start path. */
 export class QueuePromptExecutor {
+ readonly #admission:AdmissionReads;
  readonly #database:string;readonly #selection:ActionThreadSelection;readonly #targets:ActionTargetServices;readonly #queue:QueueStartCoordinator;readonly #intake:PromptIntakeProcessor;readonly #busy:BusyResultProducer;
- constructor(database:string,selection:ActionThreadSelection,targets:ActionTargetServices,queue:QueueStartCoordinator,intake:PromptIntakeProcessor,busy:BusyResultProducer){requireDiscordText(database);this.#database=database;this.#selection=selection;this.#targets=targets;this.#queue=queue;this.#intake=intake;this.#busy=busy;Object.freeze(this);}
+ constructor(database:string,selection:ActionThreadSelection,targets:ActionTargetServices,queue:QueueStartCoordinator,intake:PromptIntakeProcessor,busy:BusyResultProducer,admission?:AdmissionReads){this.#admission=captureAdmissionReads(database,admission);requireDiscordText(database);this.#database=database;this.#selection=selection;this.#targets=targets;this.#queue=queue;this.#intake=intake;this.#busy=busy;Object.freeze(this);}
  async queuePrompt(channel:bigint,user:bigint,event:bigint|null,autoQueueWhenBusy:boolean,prompt:string,signal?:AbortSignal):Promise<ActionResult>{
   u64(channel);u64(user);if(event!==null)u64(event);requireDiscordText(prompt);if(typeof autoQueueWhenBusy!=='boolean')throw new TypeError('Expected queue policy');signal?.throwIfAborted();
   const [thread,source]=await this.#selection.target(channel);signal?.throwIfAborted();
-  if(event!==null){const ingress=await state.ingressByOrigin(this.#database,i64(event));signal?.throwIfAborted();
+  if(event!==null){const ingress=await this.#admission.ingressByOrigin(this.#database,i64(event));signal?.throwIfAborted();
    if(ingress!==null){const original=frozenSlashTarget(ingress);if(original!==null&&(original!==thread||source!=='mirror'||ingress.channelId!==i64(channel)||ingress.ownerUserId!==i64(user)))throw new InvalidActionRequestError('original slash prompt target changed; no request or busy choice was created');}
    const replay=await this.#queue.replaySubmissionForMessage(event);signal?.throwIfAborted();if(replay!==null)return snapshotActionResult(submissionResult(thread,source,replay,prompt));
   }

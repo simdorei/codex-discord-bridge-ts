@@ -1,4 +1,7 @@
 import {NativeBridgeStateOwner} from '../bridge-state-native.ts';
+import {types} from 'node:util';
+import {gatewayOwnField} from '../../discord/gateway/values.ts';
+import {requireDiscordText} from '../../discord/text.ts';
 import type {BridgeState} from "../bridge-state.ts";
 import type {QueueStartCoordinator} from "../queue-runner/start-coordinator.ts";
 import type {Submission} from "../queue-runner/saved-submission.ts";
@@ -11,8 +14,13 @@ const label=(source:string,forked:boolean)=>!forked||source.includes("app-server
 /** Connects actual queue/state ownership; preparation and verified busy controls remain explicit services. */
 export class ActionTargetServices implements PreparedTargetServices {
  readonly #nativeBridge:NativeBridgeStateOwner|undefined;
+ readonly #mapped:(channel:bigint)=>Promise<string|null>;
   readonly #path:string;readonly #bridge:BridgeState;readonly #queue:TargetQueue;readonly #state:TargetState;readonly #prompts:PromptServices;
-  constructor(path:string,bridge:BridgeState,queue:TargetQueue,prompts:PromptServices,state:TargetState=StateAccessFacade,nativeBridge?:NativeBridgeStateOwner){this.#nativeBridge=nativeBridge;this.#path=path;this.#bridge=bridge;this.#queue=queue;this.#prompts=prompts;this.#state=state;}
+  constructor(path:string,bridge:BridgeState,queue:TargetQueue,prompts:PromptServices,state:TargetState=StateAccessFacade,nativeBridge?:NativeBridgeStateOwner){
+    requireDiscordText(path);const mapped=gatewayOwnField(state,'mirroredThreadId');if(typeof mapped!=='function'||types.isProxy(mapped)||types.isGeneratorFunction(mapped))throw new TypeError('Expected passive target mapping read function');
+    this.#mapped=channel=>{const pending=Reflect.apply(mapped,undefined,[path,channel]);if(!types.isPromise(pending))throw new TypeError('Expected target mapping read Promise');return pending as Promise<string|null>;};
+    this.#nativeBridge=nativeBridge;this.#path=path;this.#bridge=bridge;this.#queue=queue;this.#prompts=prompts;this.#state=state;
+  }
   requiresAppServerFork():boolean{return this.#queue.requiresAppServerFork();}
   preparePrompt(raw:string,target:string,signal?:AbortSignal):Promise<string>{return this.#prompts.preparePrompt(raw,target,signal);}
   busyResult(...args:Parameters<PromptServices["busyResult"]>):ReturnType<PromptServices["busyResult"]>{return this.#prompts.busyResult(...args);}
@@ -29,7 +37,7 @@ export class ActionTargetServices implements PreparedTargetServices {
     return {threadId:target.threadId,sourceLabel:label(source,canonical!==sourceThread||target.forkedFrom!==null),mirrorMapping:source==="mirror"};
   }
   async currentMirrorTarget(channel:bigint,fallback:string):Promise<readonly [string,string]>{
-    const target=await this.#state.mirroredThreadId(this.#path,channel);return target===null?[fallback,"selected"]:[target,"mirror"];
+    const target=await this.#mapped(channel);if(target!==null)requireDiscordText(target);return target===null?[fallback,"selected"]:[target,"mirror"];
   }
   async recoverActiveWriterSubmission(target:ActionTarget,submission:Submission):Promise<readonly [ActionTarget,Submission]>{
     if(!this.requiresAppServerFork()||submission.warning?.kind!=="ActiveWriter")return [target,submission];
