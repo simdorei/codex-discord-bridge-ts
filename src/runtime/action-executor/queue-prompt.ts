@@ -18,17 +18,17 @@ export class QueuePromptExecutor {
  readonly #admission:AdmissionReads;
  readonly #database:string;readonly #selection:ActionThreadSelection;readonly #targets:ActionTargetServices;readonly #queue:QueueStartCoordinator;readonly #intake:PromptIntakeProcessor;readonly #busy:BusyResultProducer;
  constructor(database:string,selection:ActionThreadSelection,targets:ActionTargetServices,queue:QueueStartCoordinator,intake:PromptIntakeProcessor,busy:BusyResultProducer,admission?:AdmissionReads){this.#admission=captureAdmissionReads(database,admission);requireDiscordText(database);this.#database=database;this.#selection=selection;this.#targets=targets;this.#queue=queue;this.#intake=intake;this.#busy=busy;Object.freeze(this);}
- async queuePrompt(channel:bigint,user:bigint,event:bigint|null,autoQueueWhenBusy:boolean,prompt:string,signal?:AbortSignal):Promise<ActionResult>{
-  u64(channel);u64(user);if(event!==null)u64(event);requireDiscordText(prompt);if(typeof autoQueueWhenBusy!=='boolean')throw new TypeError('Expected queue policy');signal?.throwIfAborted();
+ async queuePrompt(channel:bigint,user:bigint,event:bigint|null,autoQueueWhenBusy:boolean,prompt:string,signal?:AbortSignal,ingressKey?:string):Promise<ActionResult>{
+  u64(channel);u64(user);if(event!==null)u64(event);requireDiscordText(prompt);if(ingressKey!==undefined)requireDiscordText(ingressKey);if(typeof autoQueueWhenBusy!=='boolean')throw new TypeError('Expected queue policy');signal?.throwIfAborted();
   const [thread,source]=await this.#selection.target(channel);signal?.throwIfAborted();
   if(event!==null){const ingress=await this.#admission.ingressByOrigin(this.#database,i64(event));signal?.throwIfAborted();
    if(ingress!==null){const original=frozenSlashTarget(ingress);if(original!==null&&(original!==thread||source!=='mirror'||ingress.channelId!==i64(channel)||ingress.ownerUserId!==i64(user)))throw new InvalidActionRequestError('original slash prompt target changed; no request or busy choice was created');}
    const replay=await this.#queue.replaySubmissionForMessage(event);signal?.throwIfAborted();if(replay!==null)return snapshotActionResult(submissionResult(thread,source,replay,prompt));
   }
   const canonical=await this.#targets.canonicalizeCompletedTarget(thread);signal?.throwIfAborted();
-  if(!autoQueueWhenBusy){const status=await this.#queue.reads.busyStatus(canonical,signal);signal?.throwIfAborted();if(status.busy)return this.#busy.busyResult(canonical,channel,user,prompt,status.allowSteer,source==='mirror',signal);}
+  if(!autoQueueWhenBusy){const status=await this.#queue.reads.busyStatus(canonical,signal);signal?.throwIfAborted();if(status.busy)return this.#busy.busyResult(canonical,channel,user,prompt,status.allowSteer,source==='mirror',signal,ingressKey===undefined||event===null?undefined:{ingressKey,eventId:i64(event)});}
   return snapshotActionResult(await this.#intake.admitPrompt({targetThreadId:canonical,source,channelId:channel,userId:user,discordMessageId:event,autoQueueWhenBusy,rawPrompt:prompt},signal));
  }
- interview(channel:bigint,user:bigint,event:bigint|null,autoQueueWhenBusy:boolean,prompt:string,signal?:AbortSignal):Promise<ActionResult>{requireDiscordText(prompt);return this.queuePrompt(channel,user,event,autoQueueWhenBusy,INTERVIEW_HEADER+prompt,signal);}
+ interview(channel:bigint,user:bigint,event:bigint|null,autoQueueWhenBusy:boolean,prompt:string,signal?:AbortSignal,ingressKey?:string):Promise<ActionResult>{requireDiscordText(prompt);return this.queuePrompt(channel,user,event,autoQueueWhenBusy,INTERVIEW_HEADER+prompt,signal,ingressKey);}
 }
 Object.freeze(QueuePromptExecutor.prototype);

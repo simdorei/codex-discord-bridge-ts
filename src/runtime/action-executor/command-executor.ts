@@ -1,3 +1,4 @@
+import {NativeBusyCreateWriter} from './busy-create-native.ts';
 import {NativeSteerOriginWriter} from './steer-origin-native.ts';
 import type {NativeBusySteerServices} from '../component-worker/busy-control.ts';
 import {NativeStopDispatchWriter} from './stop-dispatch-native.ts';
@@ -90,7 +91,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
   const intakeState=createNativePromptIntakeState(paths.mirror),threadReads=createNativeActionThreadReads(paths.state,BridgeState.prototype.path.call(bridge));
   const controlReads=createNativeControlReads(paths.mirror,intakeState.mirroredThreadId),stopActionState=Object.freeze({acceptRunningStop:controlStore.acceptRunningStop,acceptUnresolvedStop:controlStore.acceptUnresolvedStop,...controlReads}),stopWorkerState=Object.freeze({pendingStopControlsAfter:controlStore.pendingStopControlsAfter,claimStopControl:controlStore.claimStopControl,recordStopControlError:controlStore.recordStopControlError,...controlReads});
   const bridgeOwner=new NativeBridgeStateOwner(BridgeState.prototype.path.call(bridge));this.#bridgeOwner=bridgeOwner;
-  const locks=queue.locks,selection=new ActionThreadSelection(paths.state,paths.mirror,bridge,intakeState.mirroredThreadId,threadReads,bridgeOwner),control=new ControlTurnVerifier(paths.mirror,server,bridge,locks,controlReads,bridgeOwner),busy=new BusyResultProducer(paths.mirror,control,queue.reads);
+  const locks=queue.locks,selection=new ActionThreadSelection(paths.state,paths.mirror,bridge,intakeState.mirroredThreadId,threadReads,bridgeOwner),control=new ControlTurnVerifier(paths.mirror,server,bridge,locks,controlReads,bridgeOwner),busy=new BusyResultProducer(paths.mirror,control,queue.reads,undefined,new NativeBusyCreateWriter(paths.mirror));
   const targets=new ActionTargetServices(paths.mirror,bridge,queue,{preparePrompt:prepare,busyResult:BusyResultProducer.prototype.busyResult.bind(busy)},intakeState,bridgeOwner),intake=new PromptIntakeProcessor(paths.mirror,queue,targets,{state:intakeState});
   const pendingStopReader=new NativeStopPendingReader(paths.mirror),stopDispatchWriter=new NativeStopDispatchWriter(paths.mirror,bridgeOwner);
   this.#stopWorkerFactory=report=>new StopControlWorker(paths.mirror,server,bridge,locks,render,report,stopWorkerState,bridgeOwner,pendingStopReader,server===null?undefined:{queue,server},stopDispatchWriter);
@@ -157,8 +158,8 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
    if('BridgeSync'in action)result=await this.#syncMirror(actor.channelId,action.BridgeSync.limit,signal);
    else if('MirrorInspect'in action)result=await this.#inspect(actor.channelId,action.MirrorInspect.limit,action.MirrorInspect.list,signal);
    else if('New'in action)result=await this.#new.execute(actor,action.New.prompt,signal);
-   else if('Ask'in action)result=await this.#prompts.queuePrompt(actor.channelId,actor.userId,actor.discordMessageId,actor.autoQueueWhenBusy,action.Ask.prompt,signal);
-   else if('Interview'in action)result=await this.#prompts.interview(actor.channelId,actor.userId,actor.discordMessageId,actor.autoQueueWhenBusy,action.Interview.prompt,signal);
+   else if('Ask'in action)result=await this.#prompts.queuePrompt(actor.channelId,actor.userId,actor.discordMessageId,actor.autoQueueWhenBusy,action.Ask.prompt,signal,key);
+   else if('Interview'in action)result=await this.#prompts.interview(actor.channelId,actor.userId,actor.discordMessageId,actor.autoQueueWhenBusy,action.Interview.prompt,signal,key);
    else if('Settings'in action||'AutoReserve'in action)result=await this.#settings.execute(actor,action,key,signal);
    else if('Archive'in action){if(this.#archive===null)throw new MissingActionAppServerError();result=await this.#archive.execute(actor,action.Archive.reference,key,signal);}
    else if('Resume'in action){if(this.#resume===null)throw new MissingActionAppServerError();result=await this.#resume.execute(actor,action.Resume.reference,key,signal);}

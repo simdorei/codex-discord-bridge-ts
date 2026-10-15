@@ -1,29 +1,52 @@
 import {randomUUID} from "node:crypto";
 import type {DatabaseSync} from "node:sqlite";
-import {withPromptIntakeWriter} from "./prompt-intake.ts";
+import {withPromptIntakeWriter,withPromptIntakeWriterExisting} from "./prompt-intake.ts";
 import {openInitialized} from "./owned-driver.ts";
 import {snapshotBusyChoice,busyChoiceDataField,mirroredThreadIdIn,verifyBusyChoiceRouteIn,type BusyChoice} from "./busy-choice.ts";
 import {decodeI64,decodeTimestamp,decodeTextField,textDecoderFor} from "./sqlite-values.ts";
 export interface NewBusyChoice {ownerUserId:bigint;channelId:bigint;targetThreadId:string|null;prompt:string;allowSteer:boolean;now:number;timeToLive:number}
 function text(value:unknown):asserts value is string{if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed text");}
 function timestamp(value:unknown):asserts value is number{if(typeof value!=="number")throw new TypeError("Expected numeric timestamp");}
-/** null route means infer the original mapping, not an unknown stored legacy route. */
-export async function createBusyChoice(path:string,input:NewBusyChoice,expected:boolean|null=null):Promise<string>{
+function captureNewBusyChoice(input:NewBusyChoice):BusyChoice{
   // NewBusyChoice is snapshotted through the same stable choice validator.
   const value=(key:string)=>busyChoiceDataField(input,key);
   const choice=snapshotBusyChoice({choiceId:"",ownerUserId:value("ownerUserId"),channelId:value("channelId"),targetThreadId:value("targetThreadId"),
     prompt:value("prompt"),allowSteer:value("allowSteer"),createdAt:value("now"),expiresAt:value("timeToLive")} as BusyChoice);
-  if(expected!==null&&typeof expected!=="boolean")throw new TypeError("Expected optional route mode");
-  return withPromptIntakeWriter(path,db=>{
+  return choice;
+}
+function insertBusyChoiceIn(db:DatabaseSync,choice:BusyChoice,expected:boolean|null,originalId:string|null):string{
     const current=mirroredThreadIdIn(db,choice.channelId),mapped=expected??(current!==null);
     verifyBusyChoiceRouteIn(db,choice.channelId,choice.targetThreadId,mapped);
     db.prepare("DELETE FROM busy_choices WHERE expires_at<=?").run(choice.createdAt);
-    const id=randomUUID().replaceAll("-","").slice(0,24);
+    const id=originalId??randomUUID().replaceAll("-","").slice(0,24);
     db.prepare(`INSERT INTO busy_choices(choice_id,owner_user_id,channel_id,target_thread_id,prompt,allow_steer,created_at,expires_at,claimed_at,require_current_mirror)
       VALUES (?,?,?,?,?,?,?,?,NULL,?)`).run(id,choice.ownerUserId,choice.channelId,choice.targetThreadId,choice.prompt,Number(choice.allowSteer),choice.createdAt,choice.createdAt+choice.expiresAt,Number(mapped));
-    return {value:id,commit:true};
-  },false);
+    return id;
 }
+/** null route means infer the original mapping, not an unknown stored legacy route. */
+export async function createBusyChoice(path:string,input:NewBusyChoice,expected:boolean|null=null):Promise<string>{
+  const choice=captureNewBusyChoice(input);
+  if(expected!==null&&typeof expected!=="boolean")throw new TypeError("Expected optional route mode");
+  return withPromptIntakeWriter(path,db=>({value:insertBusyChoiceIn(db,choice,expected,null),commit:true}),false);
+}
+/** Existing runtime only; caller owns this original ID for uncertain-commit
+ * reconciliation. Keep expiry cleanup and insertion in their original transaction. */
+export function createBusyChoiceExisting(path:string,input:NewBusyChoice,expected:boolean,id:string):string{
+  const choice=captureNewBusyChoice(input);if(typeof expected!=="boolean"||typeof id!=="string"||!/^[a-f0-9]{24}$/.test(id))throw new TypeError("Expected original busy choice identity");
+  return withPromptIntakeWriterExisting(path,db=>{
+    insertBusyChoiceIn(db,choice,expected,id);
+    verifyCreatedBusyChoiceIn(db,id,input,expected);
+    return {value:id,commit:true};
+  });
+}
+
+/** Same transaction readback for the native owner, including binding triggers. */
+export function verifyCreatedBusyChoiceIn(db:DatabaseSync,id:string,input:NewBusyChoice,expected:boolean):void{
+    const choice=captureNewBusyChoice(input);
+    const saved=readBusyChoiceRow(db,id),route=db.prepare("SELECT require_current_mirror,allow_steer FROM busy_choices WHERE choice_id=?").get(id);
+    if(saved===null||saved.claimed||saved.choice.ownerUserId!==choice.ownerUserId||saved.choice.channelId!==choice.channelId||saved.choice.targetThreadId!==choice.targetThreadId||saved.choice.prompt!==choice.prompt||saved.choice.allowSteer!==choice.allowSteer||saved.choice.createdAt!==choice.createdAt||saved.choice.expiresAt!==choice.createdAt+choice.expiresAt||route?.require_current_mirror!==Number(expected)||route.allow_steer!==Number(choice.allowSteer))throw new TypeError("Original busy choice insertion was not preserved");
+}
+
 export interface BusyChoiceState {readonly choice:BusyChoice;readonly claimed:boolean}
 function readBusyChoiceRow(db:DatabaseSync,id:string):BusyChoiceState|null{
   const query=db.prepare(`SELECT owner_user_id,channel_id,target_thread_id,prompt,allow_steer,created_at,expires_at,claimed_at,
