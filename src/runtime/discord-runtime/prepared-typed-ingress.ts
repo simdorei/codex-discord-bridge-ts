@@ -19,7 +19,7 @@ import {readyHttpPort} from './ready-http-port.ts';
 import type {ReadySetupOptions} from './ready-setup.ts';
 import {startTypedIngressWorkers,type TypedIngressStartOptions} from './typed-ingress-start.ts';
 export interface PreparedTypedIngressOptions extends RuntimeHistoryStartupOptions{
- readonly interactionPolicyLimits:NativeMirrorPolicyLimits;
+ readonly interactionPolicyLimits:NativeMirrorPolicyLimits;readonly messagePolicyLimits:NativeMirrorPolicyLimits;
  readonly guildId:bigint|null;readonly qaCommands:boolean;readonly startupNotify:boolean;readonly historyPeriodMs:number|null;
  readonly reportReady:ReadySetupOptions['report'];readonly reportDispatch:(value:InteractionDispatchReport)=>void;
  readonly reportInteraction:TypedIngressStartOptions['reportInteraction'];readonly reportReceiveError:TypedIngressStartOptions['reportReceiveError'];
@@ -35,7 +35,7 @@ export function capturePreparedTypedIngressOptions(input:RuntimeMessageStartup,g
  const callback=<T>(key:string)=>{const fn=own(options,key);if(typeof fn!=='function'||types.isProxy(fn)||types.isAsyncFunction(fn)||types.isGeneratorFunction(fn))throw new TypeError('Expected synchronous startup reporter');return fn as T;};
  const reportReady=callback<ReadySetupOptions['report']>('reportReady'),reportDispatch=callback<PreparedTypedIngressOptions['reportDispatch']>('reportDispatch'),reportInteraction=callback<TypedIngressStartOptions['reportInteraction']>('reportInteraction'),reportReceiveError=callback<TypedIngressStartOptions['reportReceiveError']>('reportReceiveError');
  const raw=own(options,'allowedChannelIds');if(raw===null||typeof raw!=='object'||types.isProxy(raw))throw new TypeError('Expected native allowed channel set');const allowedChannelIds=new Set<bigint>();Set.prototype.forEach.call(raw,(id:unknown)=>allowedChannelIds.add(gatewayId(id)));
- const message=createGatewayMessageHandler(captured),interaction=createPreparedInteractionIngress(input,gate,work,http,catalog,qa,reportDispatch,captureNativeMirrorPolicyLimits(own(options,'interactionPolicyLimits') as NativeMirrorPolicyLimits)),historyOptions=Object.freeze({...captured,refreshPolicy:createNativeMirrorPolicyRefresh(captured.context.database,own(options,'historyPolicyLimits') as NativeMirrorPolicyLimits),allowedChannelIds,startupChannelId,nativeTargetLimits:captureNativeHistoryTargetLimits(own(options,'historyTargetLimits') as NativeHistoryTargetLimits)});
+ const message=createGatewayMessageHandler({...captured,refreshPolicy:createNativeMirrorPolicyRefresh(captured.context.database,own(options,'messagePolicyLimits') as NativeMirrorPolicyLimits)}),interaction=createPreparedInteractionIngress(input,gate,work,http,catalog,qa,reportDispatch,captureNativeMirrorPolicyLimits(own(options,'interactionPolicyLimits') as NativeMirrorPolicyLimits)),historyOptions=Object.freeze({...captured,refreshPolicy:createNativeMirrorPolicyRefresh(captured.context.database,own(options,'historyPolicyLimits') as NativeMirrorPolicyLimits),allowedChannelIds,startupChannelId,nativeTargetLimits:captureNativeHistoryTargetLimits(own(options,'historyTargetLimits') as NativeHistoryTargetLimits)});
  return Object.freeze<TypedIngressStartOptions>({ready:Object.freeze({port:readyHttpPort(http),guildId,qaCommands:qa,startupNotify,startupChannelId,report:reportReady}),message,history:(gaps,acceptedMessages)=>createDiscordHistoryOperations(gaps,{...historyOptions,acceptedMessages}),historyPeriodMs:own(options,'historyPeriodMs') as number|null,interaction,reportInteraction,reportReceiveError});
 }
 

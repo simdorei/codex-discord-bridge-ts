@@ -41,8 +41,8 @@ export function createNativeMirrorPolicyRefresh(path:string,limits:NativeMirrorP
 }
 /** Explicit existing-only profile. Native DB reads, decoding, deduplication and
  * sorting run in a fixed worker. No new policy or stale fallback escapes failure.
- * Installed ordinary interaction and history ingress use this profile; legacy
- * direct callers and Gateway message policy remain separate. One slot, no queue, shared native capacity; caller
+ * Installed ordinary interaction, Gateway message and history ingress use this
+ * profile; direct callers retain their separate compatibility defaults. One slot, no queue, shared native capacity; caller
  * cancellation retains ownership and awaits real exit before returning. */
 export function refreshMirrorPolicyOffThread(policy:InteractionAccessPolicy,path:string,limits:NativeMirrorPolicyLimits,signal?:AbortSignal):Promise<InteractionAccessPolicy>{
  const origin={};

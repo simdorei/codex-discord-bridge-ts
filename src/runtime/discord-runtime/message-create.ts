@@ -11,6 +11,7 @@ import {messageErrorReportTarget,processMessageWithErrorReport,type MessageError
 import {MessageWorkerError} from '../message-worker/errors.ts';
 import {SettingsTargetResolver} from '../settings-binding.ts';
 import {refreshMirrorPolicy} from './mirror-policy.ts';
+import {takeMirrorPolicyCapacityRefusal} from './native-mirror-policy.ts';
 type Kind='Ignore'|'Duplicate'|'Unavailable'|'Admitted';
 const token=Symbol('PreparedGatewayMessage');
 /** Owns the gate permit from preparation through processing AND error reporting.
@@ -37,21 +38,44 @@ export class PreparedGatewayMessage {
  dispose():Promise<void>{if(this.#pending!==null)return this.#pending.then(()=>undefined,()=>undefined);this.#consumed=true;return this.#cleanup();}
 }
 Object.freeze(PreparedGatewayMessage.prototype);
+export type MessagePolicyRefresh=(policy:InteractionAccessPolicy,database:string,signal?:AbortSignal)=>Promise<InteractionAccessPolicy>;
+/** A captured own-data port; direct callers retain the compatibility refresh. */
+export function captureMessagePolicyRefresh(options:unknown):MessagePolicyRefresh{
+ if(options===null||typeof options!=='object'||types.isProxy(options))throw new TypeError('Expected message options');
+ const field=Object.getOwnPropertyDescriptor(options,'refreshPolicy');if(field!==undefined&&!Object.hasOwn(field,'value'))throw new TypeError('Expected message policy callback data');
+ const refresh=field?.value===undefined?refreshMirrorPolicy:field.value;
+ if(typeof refresh!=='function'||types.isProxy(refresh)||types.isGeneratorFunction(refresh))throw new TypeError('Expected message policy refresh function');return refresh as MessagePolicyRefresh;
+}
+const capacityOrigins=new WeakMap<object,object>(),capacityRefusals=new WeakMap<Promise<PreparedGatewayMessage>,unknown>();
+class GatewayMessagePolicyCapacityError extends Error{constructor(source:unknown,origin:object){super('Gateway message policy capacity is occupied; no refresh submitted',{cause:source});this.name='GatewayMessagePolicyCapacityError';capacityOrigins.set(this,origin);}}
+/** Only this exact preparation Promise can consume its single-use retry proof. */
+export function takeGatewayMessagePolicyCapacityRefusal(pending:Promise<PreparedGatewayMessage>|undefined,error:unknown):boolean{
+ if(pending===undefined||!capacityRefusals.has(pending)||capacityRefusals.get(pending)!==error)return false;capacityRefusals.delete(pending);return true;
+}
 export interface MessageCreateOptions {
  readonly database:string;readonly config:Pick<RuntimeConfig,'enableMessageContent'|'plainAskMentionUserIds'>;
  readonly basePolicy:InteractionAccessPolicy;readonly gate:AdmissionGate;readonly allowDrainControl:boolean;
- readonly resolver:SettingsTargetResolver|null;readonly observedAt:number;readonly custody:MessageCustodyOptions;
+ readonly resolver:SettingsTargetResolver|null;readonly observedAt:number;readonly custody:MessageCustodyOptions;readonly refreshPolicy?:MessagePolicyRefresh;
 }
 /** Mandatory fresh mirror policy precedes classification/settings binding,
  * gate entry and durable deduplication. Caller determines allowDrainControl by
  * probing the actual current pending native request; this function does not guess.
  * The outer normal/emergency consumer and cancellation wiring remain separate. */
-export async function prepareGatewayMessage(message:DecodedGatewayMessage,botUserId:bigint|null,options:MessageCreateOptions,signal?:AbortSignal):Promise<PreparedGatewayMessage>{
+export function prepareGatewayMessage(message:DecodedGatewayMessage,botUserId:bigint|null,options:MessageCreateOptions,signal?:AbortSignal):Promise<PreparedGatewayMessage>{
+ const origin={};
+ const pending=prepare(message,botUserId,options,signal,origin).catch((error:unknown)=>{if(error!==null&&typeof error==='object'&&capacityOrigins.get(error)===origin)capacityRefusals.set(pending,error);throw error;});
+ return pending;
+}
+async function prepare(message:DecodedGatewayMessage,botUserId:bigint|null,options:MessageCreateOptions,signal:AbortSignal|undefined,origin:object):Promise<PreparedGatewayMessage>{
  signal?.throwIfAborted();
  const target=messageErrorReportTarget(message),{database,config,basePolicy,gate,allowDrainControl,resolver,observedAt}=options;
  const custody=captureMessageCustodyOptions(database,options.custody);
  if(typeof allowDrainControl!=='boolean')throw new TypeError('Expected drain control availability');
- const result=await classifyGatewayMessage(message,database,config,await refreshMirrorPolicy(basePolicy,database),botUserId);
+ const refresh=captureMessagePolicyRefresh(options);let policy:InteractionAccessPolicy,refreshPending:Promise<InteractionAccessPolicy>|undefined;
+ try{refreshPending=refresh(basePolicy,database,signal);if(!types.isPromise(refreshPending))throw new TypeError('Expected message policy refresh Promise');policy=await refreshPending;}
+ catch(error){if(signal?.aborted&&error===signal.reason)throw error;if(takeMirrorPolicyCapacityRefusal(refreshPending,error))throw new GatewayMessagePolicyCapacityError(error,origin);throw error;}
+ signal?.throwIfAborted();
+ const result=await classifyGatewayMessage(message,database,config,policy,botUserId);
  const simple=(kind:Kind,ignored:PreparedGatewayMessage['ignored']=null)=>new PreparedGatewayMessage(token,kind,target,null,null,ignored);
  if(result.kind==='Ignore')return simple('Ignore',Object.freeze({reason:result.reason,channelId:result.channelId,userId:result.userId}));
  signal?.throwIfAborted();const candidate=result.candidate;if(resolver!==null)await MessageCandidate.prototype.bindSettings.call(candidate,resolver);

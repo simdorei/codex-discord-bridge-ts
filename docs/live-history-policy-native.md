@@ -24,7 +24,7 @@ Periodic history still fixes its initial Prime boundary before refreshing policy
 
 ## Scope and verification
 
-Gateway-message policy refresh and history/message classification are unchanged. In particular, classification still uses legacy synchronous store reads and preserves same-page `!new` visibility. This is not an all-history-SQL-off-thread claim. Final resident authority, store schema, stage 893 activation, deployment status and Windows qualification are unchanged.
+Checkpoint 904 left Gateway-message policy refresh unchanged; subsequent installation is documented in [the Gateway-message profile](live-gateway-message-policy-native.md). History/message classification remains unchanged. In particular, classification still uses legacy synchronous store reads and preserves same-page `!new` visibility. This is not an all-history-SQL-off-thread claim. Final resident authority, store schema, stage 893 activation, deployment status and Windows qualification are unchanged.
 
 Validation uses pinned Node 24.21.0, `tools/build-test-profile.mjs`, and emitted JavaScript with `NODE_OPTIONS=--no-strip-types`. Focused tests cover genuine singleton/shared Background refusals with no subsequent message, fair notice traversal, capped serial retry timing, cancellation and actual-exit joining, exact one-use/replayed proof, ordinary failures, fresh revisions/source floors, incomplete coverage, initial Prime boundary, path/callback/limit capture, exact bigint IDs, raw plans, deduplication and installed poisoned compatibility policy reads. Bounded affected checks also exercise existing history, prepared ingress, journal, receipt and prompt paths.
 

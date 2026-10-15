@@ -22,7 +22,7 @@ The shared final Discard guard also protects the Reprime branch. Current `Histor
 
 ## Boundaries and verification
 
-This is in-process anti-discard custody, not a durable queue. It does not survive process loss, retain deliberately disposed queued messages, or promise recovery of every original after an unrelated handler failure. Native Gateway policy and exact pre-submission capacity retries remain a separate next checkpoint. Existing native interaction/history policy, legacy same-page classification, final resident authority, store schema and inactive stage 893 remain unchanged.
+This is in-process anti-discard custody, not a durable queue. It does not survive process loss, retain deliberately disposed queued messages, or promise recovery of every original after an unrelated handler failure. Native Gateway policy and exact pre-submission capacity retries were deferred at checkpoint 905; their subsequent installation is documented in [checkpoint 906](live-gateway-message-policy-native.md). Existing native interaction/history policy, legacy same-page classification, final resident authority, store schema and inactive stage 893 remain unchanged.
 
 Validation uses pinned Node 24.21.0, `tools/build-test-profile.mjs` and emitted JavaScript with `NODE_OPTIONS=--no-strip-types`. Focused tests cover large exact IDs, envelope/source identity, duplicate originals, queue bounds, both lanes, queued disposal, all shutdown/force/conflict receive and active-join races, final INSERT races before and after database opening, no poisoned gap state, no premature processed-only duplicate or cursor commit, retained Prime boundary, canonical History Process deduplication, original journal IDs/time/receipt order, and exact installed-root view wiring.
 

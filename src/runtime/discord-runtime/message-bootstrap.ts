@@ -1,3 +1,4 @@
+import {createNativeMirrorPolicyRefresh,type NativeMirrorPolicyLimits} from './native-mirror-policy.ts';
 import {createNativeMessageJournal} from '../message-worker/journal.ts';
 import {AttachmentHttpClient} from '../attachment-client.ts';
 import {types} from 'node:util';
@@ -12,11 +13,11 @@ import type {MessageProcessorContext} from '../message-worker/processor.ts';
 import {createGatewayMessageHandler,type MessageHandlerOptions} from './message-handler.ts';
 import type {RuntimeInteractionStartup} from './interaction-bootstrap.ts';
 export interface RuntimeMessageStartup extends RuntimeInteractionStartup{readonly policy:InteractionAccessPolicy;}
-export interface RuntimeMessageStartupOptions extends Pick<MessageProcessorContext,'config'|'attachmentRoot'|'attachmentTransport'|'attachmentReport'|'now'>{readonly classification:MessageHandlerOptions['classification'];readonly report:MessageHandlerOptions['report'];}
+export interface RuntimeMessageStartupOptions extends Pick<MessageProcessorContext,'config'|'attachmentRoot'|'attachmentTransport'|'attachmentReport'|'now'>{readonly policyRetryClock?:NonNullable<MessageHandlerOptions['policyRetryClock']>;readonly classification:MessageHandlerOptions['classification'];readonly report:MessageHandlerOptions['report'];}
 /** Builds normal/emergency message handling from the same private executor and
  * its original settings resolver/control verifier. Attachment transport remains
  * explicit. Existing per-message fresh mirror policy and durable admission are
- * retained; this does not claim their synchronous store reads are offloaded. */
+ * retained; classification continues to use its legacy synchronous store reads. */
 export function capturePreparedMessageOptions(input:RuntimeMessageStartup,gate:AdmissionGate,http:DiscordChannelClient,options:RuntimeMessageStartupOptions):MessageHandlerOptions{
  const owner=own(input,'owner') as PortableResidentLifecycle,queue=own(input,'queue') as QueueStartCoordinator,executor=own(input,'executor') as RuntimeCommandExecutor,policy=own(input,'policy') as InteractionAccessPolicy;
  RuntimeCommandExecutor.prototype.requireRuntimeQueue.call(executor,queue);RuntimeCommandExecutor.prototype.requireRuntimeResident.call(executor,owner);QueueStartCoordinator.prototype.requireAdmissionGate.call(queue,gate);PortableResidentLifecycle.prototype.lifecycleSnapshot.call(owner);InteractionAccessPolicy.prototype.withMirroredChannelIds.call(policy,[]);Object.getOwnPropertyDescriptor(DiscordChannelClient.prototype,'activeRequests')!.get!.call(http);
@@ -28,7 +29,8 @@ export function capturePreparedMessageOptions(input:RuntimeMessageStartup,gate:A
  if(typeof get!=='function'||types.isProxy(get)||types.isGeneratorFunction(get))throw new TypeError('Expected owned attachment transport');
  const classification=own(options,'classification'),rawMentions=own(classification,'plainAskMentionUserIds');if(rawMentions===null||typeof rawMentions!=='object'||types.isProxy(rawMentions))throw new TypeError('Expected native mention set');const mentions=new Set<bigint>();Set.prototype.forEach.call(rawMentions,(id:bigint)=>mentions.add(id));
  const context={messageJournal:createNativeMessageJournal(database),nativePromptReceipts:true,promptAuthorityReads:binding.promptAuthorityReads,database,server:owner,http,config:Object.freeze({attachmentsEnabled:own(config,'attachmentsEnabled') as boolean,attachmentMaxBytes:own(config,'attachmentMaxBytes') as bigint,attachmentTextInlineMaxBytes:own(config,'attachmentTextInlineMaxBytes') as bigint}),attachmentRoot:own(options,'attachmentRoot') as string,attachmentTransport:Object.freeze({get:(url:string,signal?:AbortSignal)=>Reflect.apply(get,transport,[url,signal]) as ReturnType<MessageProcessorContext['attachmentTransport']['get']>}),attachmentReport:own(options,'attachmentReport') as MessageProcessorContext['attachmentReport'],controlVerifier:binding.controlVerifier,services:binding.services,...(Object.hasOwn(options,'now')?{now:own(options,'now') as ()=>number}:{})};
- return Object.freeze({context:Object.freeze(context),gate,policy,resolver:binding.resolver,classification:Object.freeze({enableMessageContent:own(classification,'enableMessageContent') as boolean,plainAskMentionUserIds:mentions}),report:own(options,'report') as MessageHandlerOptions['report']});
+ return Object.freeze({...(Object.hasOwn(options,'policyRetryClock')?{policyRetryClock:own(options,'policyRetryClock') as NonNullable<MessageHandlerOptions['policyRetryClock']>}:{}),context:Object.freeze(context),gate,policy,resolver:binding.resolver,classification:Object.freeze({enableMessageContent:own(classification,'enableMessageContent') as boolean,plainAskMentionUserIds:mentions}),report:own(options,'report') as MessageHandlerOptions['report']});
 }
 
-export function createPreparedMessageHandler(input:RuntimeMessageStartup,gate:AdmissionGate,http:DiscordChannelClient,options:RuntimeMessageStartupOptions){return createGatewayMessageHandler(capturePreparedMessageOptions(input,gate,http,options));}
+export interface PreparedMessageStartupOptions extends RuntimeMessageStartupOptions{readonly messagePolicyLimits:NativeMirrorPolicyLimits;}
+export function createPreparedMessageHandler(input:RuntimeMessageStartup,gate:AdmissionGate,http:DiscordChannelClient,options:PreparedMessageStartupOptions){const captured=capturePreparedMessageOptions(input,gate,http,options);return createGatewayMessageHandler({...captured,refreshPolicy:createNativeMirrorPolicyRefresh(captured.context.database,own(options,'messagePolicyLimits') as NativeMirrorPolicyLimits)});}
