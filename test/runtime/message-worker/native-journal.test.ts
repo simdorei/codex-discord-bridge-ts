@@ -13,7 +13,7 @@ import {instrumentStoreWorker,waitTrace,releaseTrace} from '../../helpers/store-
 const id=9007199254740993n,key=`message:${id}`;
 const input=(event=id)=>({ingressId:`message:${event}`,kind:'message' as const,eventId:event,applicationId:null,channelId:1n,ownerUserId:2n,sourceMessageId:event,payload:{version:1n,content:'hello',plan:{Execute:{Ask:{prompt:'hello'}}},processing_mode:'normal'},targetThreadId:null,canonicalOwner:null,now:1});
 async function init(path:string){(await openInitialized(path)).close();}
-function poison(t:TestContext){for(const name of ['admitIngress','recordIngressProcessingMode','beginIngressExecution','recordIngressResult','confirmIngress','holdIngress'] as const)t.mock.method(state,name,()=>assert.fail(`compatibility ${name}`));}
+function poison(t:TestContext){for(const name of ['admitIngress','recordIngressProcessingMode','beginIngressExecution','recordNewInput','recordIngressResult','confirmIngress','holdIngress'] as const)t.mock.method(state,name,()=>assert.fail(`compatibility ${name}`));}
 async function custody(path:string){const port=createNativeMessageJournal(path),{owner,admission}=await admitOriginalMessageJournal(path,input(),port);assert.equal(admission.created,true);assert.ok(owner);return new MessageCustody(path,key,{messageJournal:port,now:()=>5,report:()=>assert.fail('hold failed')},owner);}
 function edit(path:string,sql:string){const db=new DatabaseSync(path);try{db.exec(sql);}finally{db.close();}}
 test('native journal retains exact large identity, frozen inputs, mode/result/confirm and processed-only dedup',async t=>storeFixture(async path=>{

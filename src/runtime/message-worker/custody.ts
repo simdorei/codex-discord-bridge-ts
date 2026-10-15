@@ -1,4 +1,5 @@
 import {types} from 'node:util';
+import {captureNewInput} from '../../store/ingress-new-input.ts';
 import {captureIngressResult} from '../../store/ingress-lifecycle.ts';
 import {captureMessageJournal,captureMessageJournalContext,requireMessageJournalBinding,OriginalMessageJournal,type MessageJournal,type MessageJournalEffects} from './journal.ts';
 import {StoreIntegrityError} from '../../store/schema-assembly.ts';
@@ -48,6 +49,9 @@ export class MessageCustody {
    const won=await (this.#owner===undefined?this.#journal.beginIngressExecution(this.#database,this.#key,'processing',target,now):OriginalMessageJournal.prototype.begin.call(this.#owner,target,now));
    if(!won)throw new StoreIntegrityError('message custody is no longer executable');this.#started=true;
   });
+ }
+ newInput(raw:string,prompt:string,now:number):Promise<void>{
+  const q=captureNewInput(this.#key,raw,prompt,now);return this.#operation(()=>this.#owner===undefined?this.#journal.recordNewInput(this.#database,this.#key,q.raw,q.prompt,q.now):OriginalMessageJournal.prototype.newInput.call(this.#owner,q.raw,q.prompt,q.now));
  }
  record(input:unknown,now:number):Promise<void>{
   const q=captureIngressResult(this.#key,input,now);return this.#operation(()=>this.#owner===undefined?this.#journal.recordIngressResult(this.#database,this.#key,q.outcome,q.now):OriginalMessageJournal.prototype.result.call(this.#owner,q.outcome,q.now));

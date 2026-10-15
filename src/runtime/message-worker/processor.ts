@@ -6,7 +6,6 @@ import {gatewayOwnField} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {DiscordChannelClient} from '../../discord/channel-client.ts';
 import {PortableResidentLifecycle} from '../../app-server/portable-resident-lifecycle.ts';
-import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
 import {invokeSynchronousVoid} from '../../core/synchronous-void.ts';
 import {isProCommand} from '../../pro/prompt.ts';
 import {ControlTurnVerifier} from '../action-executor/control-turn.ts';
@@ -88,7 +87,7 @@ export function createMessageProcessor(context:MessageProcessorContext):(admitte
    }
    if(action!==null&&typeof action==='object'&&'New'in action&&(message.attachments as readonly unknown[]).length>0){
     const prepared=await operation('Attachment',()=>enrichMessageAttachments(message,action.New.prompt,config,root,transport,true,report,signal));
-    await operation('Store',()=>state.recordNewInput(database,key,action.New.prompt,prepared,readCustodyTimestamp(now)));
+    await operation('Store',()=>MessageCustody.prototype.newInput.call(custody,action.New.prompt,prepared,readCustodyTimestamp(now)));
    }else if(action!==null&&typeof action==='object'&&'Ask'in action){
     const prompt=await operation('Attachment',()=>enrichMessageAttachments(message,action.Ask.prompt,config,root,transport,false,report,signal));plan=Object.freeze({Execute:Object.freeze({Ask:Object.freeze({prompt})})});
    }

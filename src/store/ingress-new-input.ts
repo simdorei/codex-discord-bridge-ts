@@ -1,7 +1,9 @@
 import {createHash} from "node:crypto";
 import type {StoredIngress} from "./ingress-read.ts";
 import {getIngressIn} from "./ingress-read.ts";
-import {openInitialized} from "./owned-driver.ts";
+import type {DatabaseSync} from "node:sqlite";
+import {openInitialized,verifyCurrentCatalogIn} from "./owned-driver.ts";
+import {usingExistingStore,withStoreTransaction,commitStore,rollbackStore} from "./owned-scope.ts";
 import {StoreIntegrityError} from "./schema-assembly.ts";
 import {getOwn,asU64} from "./async-resolution-json-helpers.ts";
 import {trimUnicodeWhitespace as trim} from "./queue-preflight-failure.ts";
@@ -45,18 +47,35 @@ export function newExecutionPrompt(record:StoredIngress):string|null{
     throw new StoreIntegrityError("new prepared input or original envelope changed");
   return prompt;
 }
-export async function recordNewInput(path:string,key:string,raw:string,prompt:string,now:number):Promise<void>{
-  for(const value of [path,key,raw,prompt])if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed text");
+function text(value:unknown):void{if(typeof value!=="string"||/[\uD800-\uDFFF]/u.test(value))throw new TypeError("Expected well-formed text");}
+export function captureNewInput(key:string,raw:string,prompt:string,now:number){
+  for(const value of [key,raw,prompt])text(value);
   if(!Number.isFinite(now)||trim(prompt)==="")throw new StoreIntegrityError("invalid new input preparation");
-  const db=await openInitialized(path);let committed=false;
+  return {key,raw,prompt,now};
+}
+/** The original transaction body returns false for an equal, immutable replay:
+ * that branch rolls back its read transaction without touching updated_at. */
+function recordNewInputBody(db:DatabaseSync,key:string,raw:string,prompt:string,now:number):boolean{
+  const record=getIngressIn(db,key);if(record===null)throw new StoreIntegrityError("new input owner is missing");
+  if(newCommandPrompt(record)!==raw||!attachments(record))throw new StoreIntegrityError("new input preparation does not own the original prompt and attachments");
+  const prepared={version:1n,source_sha256:envelopeDigest(record),prompt_sha256:digest(prompt),prompt};
+  const existing=getOwn(record.outcome,"new_input");
+  if(existing!==undefined){if(!serdeValueEqual(existing,prepared))throw new StoreIntegrityError("new prepared input is immutable");return false;}
+  if(record.state!=="executing"||record.phase!=="processing")throw new StoreIntegrityError("new attachment input must be frozen before thread/start");
+  db.prepare("UPDATE discord_ingress_journal SET outcome_json=json_set(COALESCE(outcome_json,'{}'),'$.new_input',json(?)),updated_at=? WHERE ingress_id=?")
+    .run(serializeSerdeValue(prepared),now,key);return true;
+}
+export async function recordNewInput(path:string,key:string,raw:string,prompt:string,now:number):Promise<void>{
+  text(path);const q=captureNewInput(key,raw,prompt,now),db=await openInitialized(path);let committed=false;
   try{
-    db.exec("BEGIN IMMEDIATE");const record=getIngressIn(db,key);if(record===null)throw new StoreIntegrityError("new input owner is missing");
-    if(newCommandPrompt(record)!==raw||!attachments(record))throw new StoreIntegrityError("new input preparation does not own the original prompt and attachments");
-    const prepared={version:1n,source_sha256:envelopeDigest(record),prompt_sha256:digest(prompt),prompt};
-    const existing=getOwn(record.outcome,"new_input");
-    if(existing!==undefined){if(!serdeValueEqual(existing,prepared))throw new StoreIntegrityError("new prepared input is immutable");return;}
-    if(record.state!=="executing"||record.phase!=="processing")throw new StoreIntegrityError("new attachment input must be frozen before thread/start");
-    db.prepare("UPDATE discord_ingress_journal SET outcome_json=json_set(COALESCE(outcome_json,'{}'),'$.new_input',json(?)),updated_at=? WHERE ingress_id=?")
-      .run(serializeSerdeValue(prepared),now,key);db.exec("COMMIT");committed=true;
+    db.exec("BEGIN IMMEDIATE");if(!recordNewInputBody(db,q.key,q.raw,q.prompt,q.now))return;
+    db.exec("COMMIT");committed=true;
   }finally{if(!committed&&db.isTransaction){try{db.exec("ROLLBACK");}catch{/* close rolls back */}}db.close();}
+}
+/** Existing current store only; no creation, schema migration or repair. */
+export function recordNewInputExisting(path:string,key:string,raw:string,prompt:string,now:number):void{
+  text(path);const q=captureNewInput(key,raw,prompt,now);
+  return usingExistingStore(path,db=>withStoreTransaction(db,"IMMEDIATE",()=>{
+    verifyCurrentCatalogIn(db);return recordNewInputBody(db,q.key,q.raw,q.prompt,q.now)?commitStore(undefined):rollbackStore(undefined);
+  }));
 }
