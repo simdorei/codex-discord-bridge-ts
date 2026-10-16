@@ -32,3 +32,7 @@ Emitted production leaf SHA-256 in both builds and runs: `509588d0134414e60d75ba
 Emitted test SHA-256 in both runs: `1d2648113bc9ca62bfe30722f19196928744dbd2b04343d0f689ef3ef085400e`.
 
 This is dual pure parser/diagnostic-bookkeeping qualification only. It is not full component, process cleanup, root release, native fixture, Windows, performance or migration acceptance.
+
+## Dated qualification addendum: 2026-10-16
+
+The later [integration compile-only qualification](persistent-resident-integration-compile-20261016.md) covers the checkpoint 955 snapshot with independent selected and production-only builds and identical emitted production bytes. The earlier NOT COMPILED statements above remain historical records of their original slices; current compile status is qualified only for that exact later graph. No application or native component scenario was executed in that qualification. Earlier runtime WIP, the v4 descendant UNKNOWN state and the native execution hold remain unchanged.

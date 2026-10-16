@@ -82,3 +82,7 @@ unrelated process listing proves former responder/descendant closure.
 No lower-level child ownership, production DB authority, final synchronous
 validation-to-write order, service protocol, mutation outcome, public DI, root
 qualification, Windows qualification, or migration-completion claim changes.
+
+## Dated qualification addendum: 2026-10-16
+
+The later [integration compile-only qualification](persistent-resident-integration-compile-20261016.md) covers the checkpoint 955 snapshot with independent selected and production-only builds and identical emitted production bytes. The earlier NOT COMPILED statements above remain historical records of their original slices; current compile status is qualified only for that exact later graph. No application or native component scenario was executed in that qualification. Earlier runtime WIP, the v4 descendant UNKNOWN state and the native execution hold remain unchanged.

@@ -27,3 +27,7 @@ Static comparison is against local checkpoint 952 (`383f25500341966a0abecacf2577
 No compiler, tests, native fixture, process-control operation or runtime validation was run for this slice. The prior v4 descendant-containment uncertainty remains unresolved; source review does not establish process exit or cleanup. Protected paths and the blocked checkpoint 936 review are outside scope.
 
 After independently resolving the physical-containment blocker, validation still requires an exact guarded dependency graph, compilation, production emitted-byte comparison accounting for the moved module, and component scenarios covering role/path binding, startup failures and cleanup retention. Those are future requirements, not successful results.
+
+## Dated qualification addendum: 2026-10-16
+
+The later [integration compile-only qualification](persistent-resident-integration-compile-20261016.md) covers the checkpoint 955 snapshot with independent selected and production-only builds and identical emitted production bytes. The earlier NOT COMPILED statements above remain historical records of their original slices; current compile status is qualified only for that exact later graph. No application or native component scenario was executed in that qualification. Earlier runtime WIP, the v4 descendant UNKNOWN state and the native execution hold remain unchanged.
