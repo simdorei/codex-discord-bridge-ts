@@ -1,7 +1,8 @@
 import {getEnvironmentData,setEnvironmentData,isMainThread} from 'node:worker_threads';
 import {pathToFileURL} from 'node:url';
 import {anyStoreAuthorityEnrolled,authorityStorePath,beginAuthorityNativeOwner,registerStoreWriter,markStoreWorkerSubmitted,releaseStoreWriter,type StoreWriterTicket} from '../store/store-authority-domain.ts';
-import {storeWorkerClassification,storeWorkerPath} from './store-worker-manifest.ts';
+import {storeWorkerClassification,storeWorkerPath,requiredStoreWorkerRole} from './store-worker-manifest.ts';
+import {requirePersistentResidentRole,requirePersistentResidentStoreOpen} from './persistent-resident-bootstrap.ts';
 
 // A bounded transport descriptor, never a transferable authority capability.
 // Only this module may touch this environment-data entry in production.
@@ -47,7 +48,8 @@ function workerDescriptor():Descriptor|null{
 /** Enrolled workers cannot open a foreign path or use an explicitly read-only
  * module as a writable bridge-store path. This does not confer SQL permission. */
 export function requireWorkerStoreOpen(path:string):boolean{
+ if(!isMainThread&&process.argv[1]!==undefined&&requiredStoreWorkerRole(pathToFileURL(process.argv[1]))!==undefined){requirePersistentResidentStoreOpen(path);return true;}
  const entry=workerDescriptor();if(entry===null)return false;
  if(entry.path===null||entry.path!==authorityStorePath(path)||Atomics.load(new Int32Array(entry.live),0)!==1)throw new TypeError('Native writable store lacks its live original registration');return true;
 }
-export function workerStoreAccountingActive():boolean{return workerDescriptor()!==null;}
+export function workerStoreAccountingActive():boolean{if(!isMainThread&&process.argv[1]!==undefined&&requiredStoreWorkerRole(pathToFileURL(process.argv[1]))!==undefined){requirePersistentResidentRole();return true;}return workerDescriptor()!==null;}

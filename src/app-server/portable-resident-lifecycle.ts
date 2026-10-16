@@ -320,7 +320,7 @@ export class PortableResidentLifecycle{
   }
   async #requestInner(method:string,params:unknown,waitMs:number,expectedGeneration:bigint|null,isolate:boolean,context:DispatchContext,signal:AbortSignal|undefined):Promise<unknown>{
     signal?.throwIfAborted();const options=this.#maintenance!,check=context.check??(()=>{});invokeSynchronousVoid(check,{},[]);
-    const admission=this.#state.admitRequest(expectedGeneration);let target:TargetMutationPermit|null=null,written:WrittenRequestGuard|undefined;
+    const admission=this.#state.admitRequest(expectedGeneration);let target:TargetMutationPermit|null=null,written:WrittenRequestGuard|undefined,ownedAttempt:OwnedDispatchAttempt|undefined;
     try{
       if(context.clientPin!==null&&context.clientPin.identity!==admission.client.identity)throw new ResidentStateError({kind:"MutationHeld",message:"recovery observation admission changed client identity"});
       const prepared=await awaitPrepared(this.prepareTargetMutation(method,params,admission.generation,currentStopOrigin(),check),signal);
@@ -330,6 +330,7 @@ export class PortableResidentLifecycle{
       const input={ownerId:this.instanceId,generation:admission.generation,method,params,repair:isolate,queueClaim:context.queueClaim,stopClaim:context.stopClaim,origin:currentStopOrigin()};
       const native=observational?undefined:options.nativeDispatch;
       const attempt=native===undefined?new DispatchAttempt(input,options.fence,options.renderError):new OwnedDispatchAttempt(input,native,options.renderError);
+      if(attempt instanceof OwnedDispatchAttempt)ownedAttempt=attempt;
       let result:DispatchResult;
       try{
         const started=()=>{if(Object.hasOwn(context,"writeWatermark"))context.writeWatermark!(this.#session(admission.client).notificationRevision);attempt.writeStarted();guard.confirmWriteStarted();};
@@ -359,7 +360,7 @@ export class PortableResidentLifecycle{
         guard.finish("Success");result={ok:true,value};
       }catch(error){
         // Future-drop equivalent: no completion write on caller cancellation.
-        if(signal?.aborted&&error===signal.reason)throw error;
+        if(signal?.aborted&&error===signal.reason){ownedAttempt?.markOutcomeUnknown();throw error;}
         const failure=ownedRequestFailure(error);
         if(failure?.kind==="Timeout"&&!observational&&attempt.wasStarted()&&!guard.isIsolated())this.#state.markTimeout(admission.generation);
         if(failure!==null)guard.finish(failure.kind==="Remote"?"OtherError":failure.kind);
@@ -367,7 +368,7 @@ export class PortableResidentLifecycle{
       }
       const outcome=attempt instanceof OwnedDispatchAttempt?await attempt.finish(result):attempt.finish(result);
       if(!outcome.ok){if(isOwnedMutationOutcomeUnknown(outcome.error)&&attempt.wasStarted()&&!guard.isIsolated())this.#state.markTimeout(admission.generation);throw outcome.error;}return outcome.value;
-    }finally{try{written?.dispose();}finally{try{target?.release();}finally{admission.release();}}}
+    }finally{ownedAttempt?.markOutcomeUnknown();try{written?.dispose();}finally{try{target?.release();}finally{admission.release();}}}
   }
   checkActualTargetMutation(permit:TargetMutationPermit|null,generation:bigint,method:string,input:unknown):void{
     if(typeof generation!=="bigint"||generation<0n||generation>=(1n<<64n)||typeof method!=="string"||/[\uD800-\uDFFF]/u.test(method))throw new TypeError("Expected actual target mutation identity");

@@ -1,4 +1,5 @@
 import {cloneIdleReleaseToken,type IdleReleaseToken} from './idle-release-journal.ts';
+import {invokeSynchronousVoid} from '../core/synchronous-void.ts';
 import {randomUUID} from 'node:crypto';
 import {types} from 'node:util';
 import {cloneOwnedSerdeValue} from '../core/owned-serde-value.ts';
@@ -17,12 +18,15 @@ export interface OwnedDispatchMutationFence {
  beginQueueMutation(claim:QueueMutationClaim):Promise<object>;
  beginStopMutation(claim:StopMutationClaim):Promise<object>;
  finishMutation(receipt:object,outcome:MaintenanceCompletion['outcome']):Promise<void>;
+ markOutcomeUnknown?(receipt:object|null):void;
  wasNotSubmitted?(error:unknown,attemptId:string,wire:RequestId,method:string):boolean;
 }
 export function pinOwnedDispatchMutationFence(input:OwnedDispatchMutationFence):OwnedDispatchMutationFence{
  if(input===null||typeof input!=='object'||types.isProxy(input))throw new TypeError('Expected owned native dispatch fence');
  const get=(key:string)=>{const d=Object.getOwnPropertyDescriptor(input,key);if(!d||!Object.hasOwn(d,'value')||typeof d.value!=='function'||types.isProxy(d.value)||types.isGeneratorFunction(d.value))throw new TypeError('Expected own native dispatch callback');return d.value as Function;};
  const begin=get('beginMutationWithOrigin'),queue=get('beginQueueMutation'),stop=get('beginStopMutation'),finish=get('finishMutation');
+ const unknownDescriptor=Object.getOwnPropertyDescriptor(input,'markOutcomeUnknown');let unknownHook:Function|null=null;
+ if(unknownDescriptor!==undefined){unknownHook=get('markOutcomeUnknown');if(types.isAsyncFunction(unknownHook))throw new TypeError('Expected synchronous native unknown hook');}
  const descriptor=Object.getOwnPropertyDescriptor(input,'wasNotSubmitted');let proof:Function|null=null;
  if(descriptor!==undefined){if(!Object.hasOwn(descriptor,'value')||typeof descriptor.value!=='function'||types.isProxy(descriptor.value)||types.isAsyncFunction(descriptor.value)||types.isGeneratorFunction(descriptor.value))throw new TypeError('Expected synchronous own native admission proof');proof=descriptor.value;}
  const wasNotSubmitted=(error:unknown,attemptId:string,wire:RequestId,method:string):boolean=>{
@@ -33,7 +37,7 @@ export function pinOwnedDispatchMutationFence(input:OwnedDispatchMutationFence):
 
  const invoke=async(fn:Function,args:unknown[]):Promise<unknown>=>{const p=Reflect.apply(fn,input,args);if(!types.isPromise(p))throw new TypeError('Native dispatch callback must return a Promise');return await p;};
  const receipt=async(fn:Function,c:unknown):Promise<object>=>{const r=await invoke(fn,[c]);if(r===null||typeof r!=='object'||types.isProxy(r)||!Object.isFrozen(r))throw new TypeError('Expected immutable native dispatch receipt');return r;};
- return Object.freeze({wasNotSubmitted,beginMutationWithOrigin:(c:MaintenanceClaim)=>receipt(begin,c),beginQueueMutation:(c:QueueMutationClaim)=>receipt(queue,c),beginStopMutation:(c:StopMutationClaim)=>receipt(stop,c),finishMutation:async(r:object,o:MaintenanceCompletion['outcome'])=>{if(await invoke(finish,[r,o])!==undefined)throw new TypeError('Native completion must resolve void');}});
+ return Object.freeze({...(unknownHook===null?{}:{markOutcomeUnknown:(r:object|null)=>invokeSynchronousVoid(unknownHook!,input,[r])}),wasNotSubmitted,beginMutationWithOrigin:(c:MaintenanceClaim)=>receipt(begin,c),beginQueueMutation:(c:QueueMutationClaim)=>receipt(queue,c),beginStopMutation:(c:StopMutationClaim)=>receipt(stop,c),finishMutation:async(r:object,o:MaintenanceCompletion['outcome'])=>{if(await invoke(finish,[r,o])!==undefined)throw new TypeError('Native completion must resolve void');}});
 }
 const maintenanceScope=Symbol('owned maintenance scope');
 /** Source maintenance always records scoped=true; never infer it from params. */
@@ -47,6 +51,7 @@ export function createOwnedMaintenanceAttempt(token:IdleReleaseToken,method:stri
  * can finish it, and caller cancellation after writing has no synthetic result. */
 export class OwnedDispatchAttempt {
  readonly #input:DispatchAttemptInput;readonly #scoped:boolean;readonly #fence:OwnedDispatchMutationFence;readonly #render:(error:unknown)=>string;readonly #id=randomUUID();
+ #mutationBegun=false;#conclusivelySettled=false;#unknownMarked=false;
  #refusal:unknown;#beginRefused=false;#begun=false;#beginInFlight=false;#started=false;#resultHandled=false;#receipt:object|null=null;#settlement:Promise<void>|null=null;#failure:MutationOutcomeUnknownError|null=null;
  constructor(input:DispatchAttemptInput,fence:OwnedDispatchMutationFence,render:(error:unknown)=>string,scope?:typeof maintenanceScope){
   const captured=captureDispatchAttemptInput(input);this.#input=captured.input;this.#scoped=scope===maintenanceScope?true:captured.scoped;this.#fence=pinOwnedDispatchMutationFence(fence);
@@ -55,7 +60,7 @@ export class OwnedDispatchAttempt {
  async begin(wire:RequestId):Promise<object|null>{
   if(this.#begun||this.#resultHandled)throw new TypeError('Owned dispatch already begun or finished');wire=validateRequestId(wire);this.#begun=true;
   const i=this.#input;if(isObservationalRequest(i.method)||(i.method==='turn/interrupt'&&i.stopClaim===null))return null;
-  this.#beginInFlight=true;
+  this.#mutationBegun=true;this.#beginInFlight=true;
   const identity={ownerId:i.ownerId,generation:i.generation,attemptId:this.#id,wire};
   try{
    const r=i.stopClaim!==null?await this.#fence.beginStopMutation({...identity,params:i.params,claim:i.stopClaim}):i.queueClaim!==null?await this.#fence.beginQueueMutation({...identity,method:i.method,params:i.params,claim:i.queueClaim}):await this.#fence.beginMutationWithOrigin({...identity,method:i.method,params:i.params,scoped:this.#scoped,origin:i.origin});
@@ -72,8 +77,15 @@ export class OwnedDispatchAttempt {
  async dispose(receipt:object|null):Promise<void>{
   if(this.#beginInFlight)throw new TypeError('Native begin is still owned and running');
   if(receipt!==this.#receipt)throw new TypeError('Foreign native dispatch receipt');
-  if(receipt===null||this.#started)return;
+  if(this.#started){this.markOutcomeUnknown();return;}
+  if(receipt===null)return;
   await this.#settle('not_sent');
+ }
+ /** Original same-isolate exit guard; never infers settlement from error labels. */
+ markOutcomeUnknown():void{
+  if(!this.#mutationBegun||this.#beginRefused||this.#conclusivelySettled||this.#unknownMarked)return;
+  this.#unknownMarked=true;
+  try{this.#fence.markOutcomeUnknown?.(this.#receipt);}catch{/* Preserve the original exception; the v2 hook quarantines before notification. */}
  }
  async finish(input:DispatchResult):Promise<DispatchResult>{
   if(this.#beginInFlight)throw new TypeError('Native begin is still owned and running');
@@ -91,9 +103,10 @@ export class OwnedDispatchAttempt {
  #settle(outcome:MaintenanceCompletion['outcome']):Promise<void>{
   if(this.#settlement!==null)return this.#settlement;
   if(this.#receipt===null)throw new TypeError('No committed receipt to complete');
-  const r=this.#receipt;this.#settlement=Promise.resolve().then(async()=>{try{await this.#fence.finishMutation(r,outcome);}catch(error){this.#failure=this.#unknown('native completion result unavailable',error);throw this.#failure;}});return this.#settlement;
+  const r=this.#receipt;this.#settlement=Promise.resolve().then(async()=>{try{await this.#fence.finishMutation(r,outcome);this.#conclusivelySettled=true;}catch(error){this.#failure=this.#unknown('native completion result unavailable',error);throw this.#failure;}});return this.#settlement;
  }
  #unknown(reason:string,error:unknown):MutationOutcomeUnknownError{
+  this.markOutcomeUnknown();
   let safe='diagnostic unavailable';try{const v=this.#render(error);if(types.isPromise(v))void Promise.prototype.then.call(v,undefined,()=>undefined);if(typeof v==='string'&&!/[\uD800-\uDFFF]/u.test(v))safe=Array.from(v).slice(0,2048).join('');}catch{/* No raw fallback. */}
   return new MutationOutcomeUnknownError(this.#input.method,`${reason}: ${safe}; original attempt ${this.#id} retained for reconciliation; no automatic replay`);
  }

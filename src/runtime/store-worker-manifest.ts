@@ -1,3 +1,4 @@
+import {persistentResidentEntryUrl} from './persistent-resident-bootstrap.ts';
 import {types} from 'node:util';
 import {authorityStorePath} from '../store/store-authority-domain.ts';
 /** Closed module capability inventory, independent of scheduling lanes and
@@ -97,3 +98,6 @@ export function storeWorkerPath(data:unknown,field:'path'|'mirror'|'mirrorDb'):s
  if(data===null||typeof data!=='object'||types.isProxy(data))throw new TypeError('Expected passive native store input');
  const value=Object.getOwnPropertyDescriptor(data,field);if(value===undefined||!Object.hasOwn(value,'value')||typeof value.value!=='string')throw new TypeError('Expected own native store path');return authorityStorePath(value.value);
 }
+
+/** Required roles are independent of the optional legacy native path inventory. */
+export function requiredStoreWorkerRole(url:URL):'persistent-resident-v1'|undefined{return url.href===persistentResidentEntryUrl().href?'persistent-resident-v1':undefined;}
