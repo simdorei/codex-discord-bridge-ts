@@ -11,33 +11,20 @@ import {measurePassiveValue,SERVICE_PROFILES,validateServiceRequest} from './per
 import type {PersistentResidentScenario,PersistentResidentFixtureFailureStep} from './persistent-resident-bootstrap.ts';
 import type {PendingServerRequest} from '../app-server/server-request-state.ts';
 import {requirePersistentResidentRole} from './persistent-resident-bootstrap.ts';
-import {createMutationCustodyFence} from './mutation-custody-fence.ts';
-import {createRuntimeFenceErrors} from './fence-errors.ts';
 import {ResidentLocalMutationOwner} from './resident-local-mutation-owner.ts';
 import type {SequentialMutationClient} from './sequential-mutation-broker-client.ts';
 import type {createPersistentResidentServicesClient} from './persistent-resident-services-client.ts';
 import {installRuntimeIdleJournalNative} from './idle-release-journal.ts';
 import {PortableResidentLifecycle} from '../app-server/portable-resident-lifecycle.ts';
-import {cloneDeadGenerationWork,serializeDeadGenerationWork,type DeadGenerationWork} from '../app-server/dead-generation-work.ts';
-import {extractThreadId} from '../app-server/identity.ts';
-import {StateAccessFacade as state} from '../store/state-access-facade.ts';
-import {I64_MAX,ServerRequestOccurrence} from '../protocol/ids.ts';
+import {ServerRequestOccurrence} from '../protocol/ids.ts';
+import {preparePersistentResidentLocalCustody} from './persistent-resident-local-custody.ts';
 
 const render=()=> 'Disposable resident operation unavailable';
 type Services=ReturnType<typeof createPersistentResidentServicesClient>;
 /** Fixed disposable worker composition. It is deliberately absent from production
  * startup and proves no singleton, physical path ownership, or external ingress. */
 export function preparePersistentResidentComposition(runtime:string){
- const descriptor=requirePersistentResidentRole(),path=descriptor.path;
- const errors=createRuntimeFenceErrors(render),mapped=<T>(operation:()=>T):T=>errors.run('DeadGenerationFence',operation);
- // These exact local hooks exist before custody activation and before child spawn.
- const fence=mapped(()=>createMutationCustodyFence(path,runtime,render));
- const capture=state.captureDeadGenerationExisting;
- const persistDeadWork=(_instanceId:string,input:DeadGenerationWork):void=>mapped(()=>{
-  const work=cloneDeadGenerationWork(input);if(work.generation>I64_MAX)throw new RangeError('Generation exceeds signed i64');
-  const scoped=work.serverRequests.map(r=>extractThreadId(r.params));
-  capture(path,{runtimeId:runtime,generation:work.generation,snapshotJson:serializeDeadGenerationWork(work),affectedTargets:[...work.activeTurns.map(t=>t.threadId),...scoped.filter((t):t is string=>t!==null)],startupChannelId:null,hasUnscopedRequests:scoped.some(t=>t===null),now:Date.now()/1000});
- });
+ const {path,fence,persistDeadWork}=preparePersistentResidentLocalCustody(runtime);
  let started=false;
  return Object.freeze({async start(services:Services,mutationClient:SequentialMutationClient,responsePort:MessagePort):Promise<PortableResidentLifecycle>{
   if(started)throw new TypeError('Fixed component already started');started=true;requirePersistentResidentRole();

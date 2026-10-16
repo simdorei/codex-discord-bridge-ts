@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Worker} from 'node:worker_threads';
 import {spawn} from 'node:child_process';
+import {randomBytes} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {mkdtempSync,realpathSync,rmSync,lstatSync} from 'node:fs';
 import {tmpdir} from 'node:os';
@@ -27,6 +28,46 @@ const PROTOCOL_MODES=Object.freeze(['duplicate-bootstrap','duplicate-initialized
 type ProtocolMode=typeof PROTOCOL_MODES[number];
 const protocolMode=process.env.CDR_NORMAL_COMPONENT_PROTOCOL_NEGATIVE;
 if(protocolMode!==undefined&&!PROTOCOL_MODES.includes(protocolMode as ProtocolMode))throw new TypeError('Unknown fixed protocol-negative fixture');
+const protocolRunNonce=process.env.CDR_NORMAL_COMPONENT_PROTOCOL_NONCE;
+if(protocolMode===undefined){
+ if(protocolRunNonce!==undefined)throw new TypeError('Protocol nonce requires a fixed negative mode');
+}else if(protocolRunNonce===undefined||!/^[0-9a-f]{32}$/.test(protocolRunNonce))throw new TypeError('Protocol fixture requires a parent-generated nonce');
+
+const PROTOCOL_WITNESS_MARKER='CDR_PROTOCOL_WITNESS_V1 ';
+function protocolWitness(mode:ProtocolMode,runNonce:string,servicesClosed:boolean,mutationJoined:boolean){
+ return Object.freeze({
+  version:1,mode,runNonce,scope:'protocol-invariants-only',protocolAssertions:'passed',
+  injectionCount:1,requesterExited:true,requesterExitCode:1,componentJoin:'fulfilled',
+  state:'quarantined',registrationLive:false,rootDebt:true,servicesClosed,mutationJoined,
+  temporaryRoot:'retained',temporaryRootIdentity:'verified',responderClosure:'unconfirmed',
+  cleanupQualified:false,componentQualified:false,
+ } as const);
+}
+type ProtocolWitness=ReturnType<typeof protocolWitness>;
+function readProtocolWitness(stdout:string,stderr:string,mode:ProtocolMode,nonce:string):ProtocolWitness{
+ const output=stdout+stderr;
+ assert.equal(output.split('CDR_PROTOCOL_WITNESS_V1').length-1,1,'Expected exactly one protocol witness marker');
+ assert.equal(stderr.includes('CDR_PROTOCOL_WITNESS_V1'),false,'Protocol witness cannot arrive on stderr');
+ const lines=stdout.split(/\r?\n/),witnessLines=lines.filter(line=>line.includes('CDR_PROTOCOL_WITNESS_V1'));
+ assert.equal(witnessLines.length,1,'Expected one complete protocol witness diagnostic');
+ const line=witnessLines[0]!;
+ // Only node:test TAP diagnostic framing is accepted. Actual emitted framing
+ // remains unverified until the held exact-argv qualification can run.
+ assert.ok(line.startsWith(`# ${PROTOCOL_WITNESS_MARKER}`),'Invalid TAP witness framing');
+ const payload=line.slice(2+PROTOCOL_WITNESS_MARKER.length);
+ assert.ok(payload.length<=2048&&/^[\x20-\x7e]+$/.test(payload),'Witness exceeds the fixed ASCII profile');
+ const parsed:unknown=JSON.parse(payload);
+ assert.ok(parsed!==null&&typeof parsed==='object'&&!Array.isArray(parsed),'Witness must be an exact record');
+ const fields=parsed as Record<string,unknown>;
+ assert.equal(typeof fields.servicesClosed,'boolean','Invalid service closure observation');
+ assert.equal(typeof fields.mutationJoined,'boolean','Invalid mutation join observation');
+ const expected=protocolWitness(mode,nonce,fields.servicesClosed as boolean,fields.mutationJoined as boolean);
+ // Exact canonical bytes also reject duplicate JSON keys, extra keys, altered
+ // types/constants, a different launch nonce and contradictory qualification.
+ assert.equal(payload,JSON.stringify(expected),'Noncanonical or contradictory protocol witness');
+ return expected;
+}
+
 
 if(protocolMode===undefined){
 test('response release pins the original callback and receiver',()=>{
@@ -137,12 +178,14 @@ for(const scenario of PERSISTENT_RESIDENT_SCENARIOS)test(`actual disposable norm
 });
 
 
-// Separate normal processes isolate deliberate retained root debt. This is a
-// protocol-negative fixture, not hostile-isolate identity authentication.
-for(const mode of PROTOCOL_MODES)test(`isolated fixed protocol-negative fixture: ${mode}`,{concurrency:false,timeout:10000},async()=>{
+// Separate normal processes isolate deliberate retained root debt. Protocol
+// assertions may be observed without granting physical cleanup qualification.
+const protocolWitnesses=new Map<ProtocolMode,ProtocolWitness>();
+for(const mode of PROTOCOL_MODES)test(`isolated protocol-only invariants: ${mode}`,{concurrency:false,timeout:10000},async()=>{
  assert.ok(PROTOCOL_MODES.includes(mode));
+ const nonce=randomBytes(16).toString('hex');
  const file=fileURLToPath(import.meta.url),argv=['--test','--test-reporter=tap','--test-concurrency=1',file];assert.ok(argv.length>0&&file.length>0);
- const childEnv:NodeJS.ProcessEnv={...process.env,CDR_NORMAL_COMPONENT_PROTOCOL_NEGATIVE:mode};
+ const childEnv:NodeJS.ProcessEnv={...process.env,CDR_NORMAL_COMPONENT_PROTOCOL_NEGATIVE:mode,CDR_NORMAL_COMPONENT_PROTOCOL_NONCE:nonce};
  // The isolated child must establish its own node:test runner context. The
  // inherited internal context can otherwise suppress this file's actual tests.
  delete childEnv.NODE_TEST_CONTEXT;
@@ -151,19 +194,38 @@ for(const mode of PROTOCOL_MODES)test(`isolated fixed protocol-negative fixture:
  const retain=(chunk:Buffer,isStdout:boolean)=>{bytes+=chunk.length;if(bytes>128*1024){overflow=true;return;}if(isStdout)stdout+=chunk.toString('utf8');else stderr+=chunk.toString('utf8');};
  child.stdout.on('data',(chunk:Buffer)=>retain(chunk,true));child.stderr.on('data',(chunk:Buffer)=>retain(chunk,false));
  const result=await new Promise<{code:number|null;signal:NodeJS.Signals|null}>((resolve,reject)=>{child.once('error',reject);child.once('exit',()=>{processExited=true;});child.once('close',(code,signal)=>resolve({code,signal}));});
- const output=stdout+stderr;
- assert.equal(overflow,false,'Protocol fixture diagnostics exceeded fixed bound');assert.equal(processExited,true,output);assert.equal(result.signal,null,output);assert.equal(result.code,0,output);
- assert.ok(stdout.split(/\r?\n/).includes(`ok 1 - fixed protocol-negative child: ${mode}`),output);
- assert.match(stdout,/^# tests 1\r?$/m);assert.match(stdout,/^# pass 1\r?$/m);assert.match(stdout,/^# fail 0\r?$/m);
+ assert.equal(overflow,false,'Protocol fixture diagnostics exceeded fixed bound');
+ assert.equal(processExited,true,'Protocol child exit event missing');assert.equal(result.signal,null,'Protocol child ended by signal');assert.equal(result.code,0,'Protocol-only child assertions failed');
+ const lines=stdout.split(/\r?\n/);
+ assert.deepEqual(lines.filter(line=>/^\s*(?:ok|not ok)\b/.test(line)),[`ok 1 - fixed protocol-only child: ${mode}`],'Expected exactly one named TAP result');
+ assert.deepEqual(lines.filter(line=>/^\s*\d+\.\.\d+/.test(line)),['1..1'],'Expected exactly one TAP test plan');
+ for(const [name,value] of [['tests',1],['pass',1],['fail',0],['cancelled',0],['skipped',0],['todo',0]] as const){
+  assert.deepEqual(lines.filter(line=>line.startsWith(`# ${name} `)),[`# ${name} ${value}`],`Invalid TAP ${name} total`);
+ }
+ const witness=readProtocolWitness(stdout,stderr,mode,nonce);
+ assert.equal(protocolWitnesses.has(mode),false,'Duplicate mode result');protocolWitnesses.set(mode,witness);
+});
+
+// This acceptance gate is mandatory in the same exact test entry. A protocol
+// success with retained debt must keep the complete test argv nonzero; neither
+// a missing case nor successful isolated assertions can imply component PASS.
+test('mandatory protocol-negative cleanup and component qualification',{concurrency:false},()=>{
+ assert.deepEqual([...protocolWitnesses.keys()].sort(),[...PROTOCOL_MODES].sort(),'Missing protocol-negative qualification coverage');
+ for(const mode of PROTOCOL_MODES){
+  const witness=protocolWitnesses.get(mode)!;
+  assert.equal(witness.cleanupQualified,true,`${mode}: retained cleanup debt remains unqualified`);
+  assert.equal(witness.componentQualified,true,`${mode}: protocol-only evidence is not component qualification`);
+ }
 });
 }else{
- test(`fixed protocol-negative child: ${protocolMode}`,{concurrency:false,timeout:10000},async()=>{
+ test(`fixed protocol-only child: ${protocolMode}`,{concurrency:false,timeout:10000},async(t)=>{
   const parent=realpathSync(tmpdir()),root=mkdtempSync(join(parent,'cdr-normal-protocol-negative-'));
   const initial=realpathSync(root),identity=lstatSync(root),path=join(root,'store.sqlite');
   const originalPost=Worker.prototype.postMessage;
   let component:import('../../src/runtime/persistent-resident-store-role.ts').PersistentResidentNormalComponent|null=null;
   let hasPrimary=false,primary:unknown,joinFulfilled=false;
   let requester:Worker|null=null,injectionCount=0,actualExit=false,exitCode:number|undefined;
+  let retainedWitness:ProtocolWitness|undefined;
   const observe=(worker:Worker)=>{if(requester!==null)return;requester=worker;worker.once('exit',code=>{actualExit=true;exitCode=code;});};
   try{
    (await openInitialized(path)).close();
@@ -193,8 +255,8 @@ for(const mode of PROTOCOL_MODES)test(`isolated fixed protocol-negative fixture:
    const snapshot=component.snapshot();assert.equal(snapshot.state,'quarantined');assert.equal(snapshot.exited,true);assert.equal(snapshot.registrationLive,false);assert.equal(snapshot.rootDebt,true);
    await assert.rejects(component.closeComponent());assert.throws(()=>createPersistentResidentRegistration(path),/debt/);
   }catch(error){hasPrimary=true;primary=error;throw error;}finally{
-   Worker.prototype.postMessage=originalPost;
    const cleanupErrors:unknown[]=[];
+   try{Worker.prototype.postMessage=originalPost;}catch(error){cleanupErrors.push(error);}
    // A returned handle retains its one original join even when the test's
    // primary assertion failed. No synthetic close, scenario, or terminate.
    if(component!==null){try{await component.join();joinFulfilled=true;}catch(error){cleanupErrors.push(error);}}
@@ -206,9 +268,23 @@ for(const mode of PROTOCOL_MODES)test(`isolated fixed protocol-negative fixture:
      assert.equal(current.dev,identity.dev);assert.equal(current.ino,identity.ino);
      rmSync(root,{recursive:true});
     }catch(error){cleanupErrors.push(error);}
+   }else if(!hasPrimary&&cleanupErrors.length===0&&joinFulfilled&&actualExit&&exitCode===1&&injectionCount===1&&settled?.state==='quarantined'&&settled.exited===true&&settled.registrationLive===false&&settled.rootDebt===true){
+    // Expected quarantine is an explicit retained outcome, never permission to
+    // delete a root or infer responder/native closure from requester exit.
+    try{
+     assert.equal(realpathSync(root),initial);assert.equal(dirname(initial),parent);
+     const current=lstatSync(root);assert.equal(current.isSymbolicLink(),false);
+     assert.equal(current.dev,identity.dev);assert.equal(current.ino,identity.ino);
+     assert.equal(typeof settled.servicesClosed,'boolean');assert.equal(typeof settled.mutationJoined,'boolean');
+     retainedWitness=protocolWitness(protocolMode as ProtocolMode,protocolRunNonce!,settled.servicesClosed,settled.mutationJoined);
+    }catch(error){cleanupErrors.push(error);}
    }else cleanupErrors.push(new Error(`Disposable protocol fixture retained without confirmed debt-free normal closure: ${root}`));
    if(cleanupErrors.length!==0)throw new AggregateError(hasPrimary?[primary,...cleanupErrors]:cleanupErrors,'Protocol-negative fixture cleanup remains unconfirmed',hasPrimary?{cause:primary}:undefined);
   }
+  assert.notEqual(retainedWitness,undefined,'Expected retained-quarantine witness is missing');
+  // Only fixed scalars leave this child: no filesystem paths, raw errors or
+  // fabricated physical cleanup success. The aggregate gate remains unmet.
+  t.diagnostic(PROTOCOL_WITNESS_MARKER+JSON.stringify(retainedWitness));
  });
 }
 
