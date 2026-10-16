@@ -279,7 +279,13 @@ export class PortableResidentLifecycle{
   respondError(id:RequestId,occurrence:ServerRequestOccurrence,error:RpcErrorPayload,generation:bigint,signal?:AbortSignal):Promise<void>{
     const payload=errorValue(id,error);return this.#respond(payload.id,occurrence,payload,true,generation,signal);
   }
-  async #respond(id:RequestId,occurrence:ServerRequestOccurrence,input:unknown,isError:boolean,generation:bigint,signal:AbortSignal|undefined):Promise<void>{
+  #respond(id:RequestId,occurrence:ServerRequestOccurrence,input:unknown,isError:boolean,generation:bigint,signal:AbortSignal|undefined):Promise<void>{
+    const task=this.#respondInner(id,occurrence,input,isError,generation,signal);
+    // Retain the entire original response workflow through native completion exit,
+    // including cancellation after flushed bytes. No completion runs from dispose.
+    if(this.#maintenance?.nativeResponseCompletion!==undefined){this.#managedDispatch.add(task);void task.then(()=>this.#managedDispatch.delete(task),()=>this.#managedDispatch.delete(task));}return task;
+  }
+  async #respondInner(id:RequestId,occurrence:ServerRequestOccurrence,input:unknown,isError:boolean,generation:bigint,signal:AbortSignal|undefined):Promise<void>{
     signal?.throwIfAborted();const options=this.#maintenance;if(options===null)throw new ResidentStateError({kind:"MutationHeld",message:"resident response adapter is not installed"});
     const payload=cloneOwnedSerdeValue(input),ownedOccurrence=ServerRequestOccurrence.fromBytes(ServerRequestOccurrence.prototype.asBytes.call(occurrence));
     const admission=this.#state.admitResponse(generation);let target:TargetMutationPermit|null=null,written:WrittenRequestGuard|undefined;
@@ -288,7 +294,7 @@ export class PortableResidentLifecycle{
       const authority=options.fence?.responseAuthority?.(Object.freeze({ownerId:this.instanceId,generation:admission.generation,request:original}))??null;
       const prepared=await awaitPrepared(this.prepareTargetMutation("server/response",original.params,admission.generation),signal);
       if(prepared.kind!=="Ready")throw new IdleObservationError("unexpected response admission");target=prepared.permit;signal?.throwIfAborted();
-      const attempt=new ResponseAttempt(this.instanceId,admission.generation,original,authority,payload,options.fence,()=>this.checkActualTargetMutation(target,admission.generation,"server/response",original.params),options.renderError);
+      const attempt=new ResponseAttempt(this.instanceId,admission.generation,original,authority,payload,options.fence,()=>this.checkActualTargetMutation(target,admission.generation,"server/response",original.params),options.renderError,options.nativeResponseCompletion);
       written=new WrittenRequestGuard(this.#state,admission.generation);const guard=written;let result:ResponseResult;
       try{
         const hooks={preflight:()=>attempt.begin(),writeStarted:()=>{attempt.writeStarted();guard.confirmWriteStarted();}};
@@ -296,7 +302,7 @@ export class PortableResidentLifecycle{
         else await admission.client.respondAdmitted(admission.permit,id,ownedOccurrence,serdeField(payload,"result"),hooks,signal);
         guard.finish("Success");result={ok:true};
       }catch(error){if(signal?.aborted&&error===signal.reason)throw error;const failure=ownedRequestFailure(error);if(failure!==null)guard.finish(failure.kind==="Remote"?"OtherError":failure.kind);result={ok:false,error};}
-      const finished=attempt.finish(result);if(!finished.ok)throw finished.error;
+      const finished=options.nativeResponseCompletion===undefined?attempt.finish(result):await attempt.finishOwned(result,signal);if(!finished.ok)throw finished.error;
     }finally{try{written?.dispose();}finally{try{target?.release();}finally{admission.release();}}}
   }
   #requestScoped(method:string,input:unknown,waitMs:number,expectedGeneration:bigint|null,isolate:boolean,context:DispatchContext,signal?:AbortSignal):Promise<unknown>{
@@ -500,6 +506,7 @@ export class PortableResidentLifecycle{
       let nativeClosed=true;try{await this.#joinGaps();}catch(error){nativeClosed=false;errors.push(error);}
       try{await this.#nativeDeadGeneration?.close();}catch(error){nativeClosed=false;errors.push(error);}
       try{await this.#maintenance?.nativeDispatch?.close();}catch(error){nativeClosed=false;errors.push(error);}
+      try{await this.#maintenance?.nativeResponseCompletion?.close();}catch(error){nativeClosed=false;errors.push(error);}
       try{await this.#maintenance?.nativeIdle?.close();}catch(error){nativeClosed=false;errors.push(error);}
       try{await this.#maintenance?.nativeObservation?.close();}catch(error){nativeClosed=false;errors.push(error);}
       if(nativeClosed)try{this.#journalExit(session,generation);journaled=true;}catch(error){errors.push(error);}

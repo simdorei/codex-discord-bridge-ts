@@ -11,6 +11,14 @@ function own(value:unknown,key:string):unknown{
   const d=Object.getOwnPropertyDescriptor(value,key);if(!d||!Object.hasOwn(d,"value"))throw new TypeError("Expected own response metadata field");return d.value;
 }
 function text(value:unknown):value is string{return typeof value==="string"&&!/[\uD800-\uDFFF]/u.test(value);}
+/** Exact original scope encoding shared by sync admission and native completion.
+ * This transforms owned metadata only; it never captures new store authority. */
+export function responseCustodyScope(runtime:string,input:ResponseOwner):ResponseCustodyScope{
+  const resident=own(input,"ownerId"),generation=own(input,"generation"),request=clonePendingServerRequest(own(input,"request") as ResponseOwner["request"]);
+  if(!text(runtime)||runtime===""||!text(resident)||typeof generation!=="bigint"||generation<0n||generation>I64_MAX)throw new TypeError("Response generation does not fit signed i64");
+  const occurrence=Array.from(ServerRequestOccurrence.prototype.asBytes.call(request.occurrence),byte=>BigInt(byte));
+  return {runtime,resident,generation,request:{id:request.id,occurrence,method:request.method,params:request.params}};
+}
 /** Concrete response-only slice of Rust RuntimeDeadGenerationFence. Opens the existing
  * store for each synchronous capture/admission/completion, never creates/activates it.
  * Caller must separately install original mutation/stop/persistence fences. */
@@ -18,14 +26,7 @@ export function createResponseCustodyFence(path:string,runtime:string,renderErro
   if(!text(path)||!text(runtime)||runtime==="")throw new TypeError("Expected response store path and runtime identity");
   const errors=createRuntimeFenceErrors(renderError);
   const capture=StateAccessFacade.captureResponseCustody,begin=StateAccessFacade.beginResponseCustody,finish=StateAccessFacade.finishResponseCustody;
-  const scope=(input:ResponseOwner):ResponseCustodyScope=>{
-    const resident=own(input,"ownerId"),generation=own(input,"generation"),request=clonePendingServerRequest(own(input,"request") as ResponseOwner["request"]);
-    if(!text(resident)||typeof generation!=="bigint"||generation<0n||generation>I64_MAX)throw new TypeError("Response generation does not fit signed i64");
-    // Rust's transparent [u8;16] newtype serializes as JSON integers, not JS floats,
-    // UUID text, a private class, or an object whose enumerable properties are empty.
-    const occurrence=Array.from(ServerRequestOccurrence.prototype.asBytes.call(request.occurrence),byte=>BigInt(byte));
-    return {runtime,resident,generation,request:{id:request.id,occurrence,method:request.method,params:request.params}};
-  };
+  const scope=(input:ResponseOwner):ResponseCustodyScope=>responseCustodyScope(runtime,input);
   const mapped=<T>(operation:()=>T):T=>errors.run("MutationHeld",operation);
   return Object.freeze({
     responseAuthority:(request:ResponseOwner)=>mapped(()=>Object.freeze({value:capture(path,scope(request))})),

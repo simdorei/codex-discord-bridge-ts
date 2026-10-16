@@ -3,6 +3,7 @@ import {NativeObservationLedgerOwner} from '../native-observation-ledger.ts';
 import type {IdleReleaseToken} from '../../app-server/idle-release-journal.ts';
 import {NativeIdleBeforeOwner} from '../native-idle-before.ts';
 import {NativeMutationOwner,type NativeMutationReceipt} from '../native-mutation-owner.ts';
+import {NativeResponseCompletionOwner} from '../native-response-completion-owner.ts';
 import type {ResidentNativeDispatch} from '../../app-server/resident-native-dispatch.ts';
 import {PortableResidentLifecycle} from '../../app-server/portable-resident-lifecycle.ts';
 import type {PortableSessionConfig} from '../../app-server/portable-session.ts';
@@ -31,6 +32,8 @@ export async function startRuntimeResident(config:PortableSessionConfig,path:str
  signal?.throwIfAborted();
  const dead=new NativeDeadGenerationOwner(path,runtimeId,startupChannel,render);
  const native=new NativeMutationOwner(path,runtimeId,render),idle=new NativeIdleBeforeOwner(path,render);
+ const responses=new NativeResponseCompletionOwner(path,runtimeId);
+ const nativeResponseCompletion=Object.freeze({captureResponse:responses.captureResponse.bind(responses),finishResponse:responses.finishResponse.bind(responses),close:()=>responses.close()});
  const observation=new NativeObservationLedgerOwner(path),gaps=new NativeObservationLedgerOwner(path);
  const nativeObservation=Object.freeze({verified:(owner:string,generation:bigint,through:bigint)=>observation.verified({ownerId:owner,generation},through),discoverGap:(owner:string,generation:bigint,upper:bigint)=>gaps.discoverGap({ownerId:owner,generation},upper),recordGap:(owner:string,generation:bigint)=>gaps.markUnknownGap({ownerId:owner,generation},'original observation stream gap'),close:async()=>{await Promise.all([observation.close(),gaps.close()]);}});
  const nativeIdle=Object.freeze({before:(owner:string,generation:bigint,thread:string)=>idle.before(owner,generation,thread),transition:(token:IdleReleaseToken,state:string,detail:string)=>idle.transition(token,state,detail),close:()=>idle.close()});
@@ -46,8 +49,8 @@ export async function startRuntimeResident(config:PortableSessionConfig,path:str
   // Dead-generation fencing has no separate exit side effect in Rust.
   // The installed idle journal owns exact owner/generation exit settlement.
   oldChildExited(){},
- },signal,{fence:custody.fence,renderError:render,nativeDispatch,nativeIdle,nativeObservation},{capture:(id,work,signal)=>dead.capture(id,work,signal),close:()=>dead.close()});}
- catch(primary){await dead.close();await native.close();await idle.close();await observation.close();await gaps.close();throw primary;}
+ },signal,{fence:custody.fence,renderError:render,nativeDispatch,nativeIdle,nativeObservation,nativeResponseCompletion},{capture:(id,work,signal)=>dead.capture(id,work,signal),close:()=>dead.close()});}
+ catch(primary){await dead.close();await native.close();await responses.close();await idle.close();await observation.close();await gaps.close();throw primary;}
  try{
   signal?.throwIfAborted();
   installRuntimeIdleJournal(owner,path,render);

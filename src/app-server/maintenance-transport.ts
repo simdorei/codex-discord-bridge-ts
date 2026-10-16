@@ -1,4 +1,5 @@
 import {pinResidentNativeObservation,type ResidentNativeObservation} from './resident-native-observation.ts';
+import {pinResidentNativeResponseCompletion,type ResidentNativeResponseCompletion} from './resident-native-response-completion.ts';
 import {OwnedDispatchAttempt,createOwnedMaintenanceAttempt} from './owned-dispatch-attempt.ts';
 import {isObservationalRequest} from './requests.ts';
 import {pinResidentNativeIdle,type ResidentNativeIdle} from './resident-native-idle.ts';
@@ -93,6 +94,7 @@ export interface ResidentMaintenanceFence extends MaintenanceTransportFence,Disp
   requestOrigin(method:string,params:unknown):unknown|null;
 }
 export interface ResidentMaintenanceOptions{
+  readonly nativeResponseCompletion?:ResidentNativeResponseCompletion;
   readonly nativeObservation?:ResidentNativeObservation;
   readonly nativeIdle?:ResidentNativeIdle;
   readonly nativeDispatch?:ResidentNativeDispatch;
@@ -114,8 +116,11 @@ export function pinResidentMaintenanceOptions(input:ResidentMaintenanceOptions):
   const nativeDescriptor=Object.getOwnPropertyDescriptor(input,"nativeDispatch");
   if(nativeDescriptor&&!Object.hasOwn(nativeDescriptor,"value"))throw new TypeError("Expected own native dispatch option");
   const nativeDispatch=nativeDescriptor===undefined?undefined:pinResidentNativeDispatch(nativeDescriptor.value);
-  if(source===null){if(nativeDispatch!==undefined||nativeIdle!==undefined)throw new TypeError("Native dispatch requires original authority fence");return Object.freeze({fence:null,renderError,...(nativeObservation===undefined?{}:{nativeObservation})});}
+  const responseDescriptor=Object.getOwnPropertyDescriptor(input,'nativeResponseCompletion');
+  if(responseDescriptor&&!Object.hasOwn(responseDescriptor,'value'))throw new TypeError('Expected own native response completion option');
+  const nativeResponseCompletion=responseDescriptor===undefined?undefined:pinResidentNativeResponseCompletion(responseDescriptor.value);
+  if(source===null){if(nativeDispatch!==undefined||nativeIdle!==undefined||nativeResponseCompletion!==undefined)throw new TypeError("Native dispatch requires original authority fence");return Object.freeze({fence:null,renderError,...(nativeObservation===undefined?{}:{nativeObservation})});}
   if(typeof source!=="object"||types.isProxy(source))throw new TypeError("Expected resident maintenance fence");
   const origin=own(source,"requestOrigin");fn(origin);const base=pinFence(source as ResidentMaintenanceFence)!,dispatch=pinDispatchMutationFence(source as ResidentMaintenanceFence),responses=pinResponseFence(source as ResidentMaintenanceFence);
-  return Object.freeze({renderError,...(nativeObservation===undefined?{}:{nativeObservation}),...(nativeIdle===undefined?{}:{nativeIdle}),...(nativeDispatch===undefined?{}:{nativeDispatch}),fence:Object.freeze({...base,...dispatch,...responses,requestOrigin:(method:string,params:unknown)=>{const result=Reflect.apply(origin,source,[method,cloneOwnedSerdeValue(params)]);if(types.isPromise(result))void Promise.prototype.then.call(result,undefined,()=>undefined);return result===null?null:cloneOwnedSerdeValue(result);}})});
+  return Object.freeze({renderError,...(nativeResponseCompletion===undefined?{}:{nativeResponseCompletion}),...(nativeObservation===undefined?{}:{nativeObservation}),...(nativeIdle===undefined?{}:{nativeIdle}),...(nativeDispatch===undefined?{}:{nativeDispatch}),fence:Object.freeze({...base,...dispatch,...responses,requestOrigin:(method:string,params:unknown)=>{const result=Reflect.apply(origin,source,[method,cloneOwnedSerdeValue(params)]);if(types.isPromise(result))void Promise.prototype.then.call(result,undefined,()=>undefined);return result===null?null:cloneOwnedSerdeValue(result);}})});
 }
