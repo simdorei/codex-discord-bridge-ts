@@ -36,7 +36,7 @@ export async function startRuntimeResident(config:PortableSessionConfig,path:str
  const nativeResponseCompletion=Object.freeze({captureResponse:responses.captureResponse.bind(responses),finishResponse:responses.finishResponse.bind(responses),close:()=>responses.close()});
  const observation=new NativeObservationLedgerOwner(path),gaps=new NativeObservationLedgerOwner(path);
  const nativeObservation=Object.freeze({verified:(owner:string,generation:bigint,through:bigint)=>observation.verified({ownerId:owner,generation},through),discoverGap:(owner:string,generation:bigint,upper:bigint)=>gaps.discoverGap({ownerId:owner,generation},upper),recordGap:(owner:string,generation:bigint)=>gaps.markUnknownGap({ownerId:owner,generation},'original observation stream gap'),close:async()=>{await Promise.all([observation.close(),gaps.close()]);}});
- const nativeIdle=Object.freeze({before:(owner:string,generation:bigint,thread:string)=>idle.before(owner,generation,thread),transition:(token:IdleReleaseToken,state:string,detail:string)=>idle.transition(token,state,detail),close:()=>idle.close()});
+ const nativeIdle=Object.freeze({before:(owner:string,generation:bigint,thread:string)=>idle.before(owner,generation,thread),transition:(token:IdleReleaseToken,state:string,detail:string)=>idle.transition(token,state,detail),settleExitedOwner:(owner:string,generation:bigint)=>idle.settleExitedOwner(owner,generation),close:()=>idle.close()});
  const nativeDispatch=Object.freeze<ResidentNativeDispatch>({
   beginMutationWithOrigin:c=>native.begin(c),beginQueueMutation:c=>native.beginQueue(c),beginStopMutation:c=>native.beginStop(c),
   finishMutation:(receipt,outcome)=>native.finish(receipt as NativeMutationReceipt,outcome),
@@ -47,7 +47,7 @@ export async function startRuntimeResident(config:PortableSessionConfig,path:str
  try{owner=await PortableResidentLifecycle.start(pinned,(_stage,error)=>render(error),{
   persistDeadWork:custody.persistDeadWork,
   // Dead-generation fencing has no separate exit side effect in Rust.
-  // The installed idle journal owns exact owner/generation exit settlement.
+  // The explicit native idle capability owns exact owner/generation exit settlement.
   oldChildExited(){},
  },signal,{fence:custody.fence,renderError:render,nativeDispatch,nativeIdle,nativeObservation,nativeResponseCompletion},{capture:(id,work,signal)=>dead.capture(id,work,signal),close:()=>dead.close()});}
  catch(primary){await dead.close();await native.close();await responses.close();await idle.close();await observation.close();await gaps.close();throw primary;}
