@@ -1,5 +1,3 @@
-import type {NativeIdleBeforeOwner} from './native-idle-before.ts';
-import type {NativeObservationLedgerOwner} from './native-observation-ledger.ts';
 import {pinNativeRuntimePath} from './runtime-paths/path-text.ts';
 import {IdleObservationError} from '../app-server/notification-state.ts';
 import {I64_MAX} from "../protocol/ids.ts";
@@ -40,10 +38,17 @@ export function installRuntimeIdleJournal(server:PortableResidentLifecycle,path:
   server.installIdleReleaseJournal(journal);
 }
 
+/** Operation shapes only; the caller retains the original resident-owned objects. */
+export interface NativeIdleInstallation {
+ readonly validateInstallation:(signal?:AbortSignal)=>Promise<void>;
+}
+export interface NativeObservationActivation {
+ readonly activate:(scope:{readonly ownerId:string;readonly generation:bigint},signal?:AbortSignal)=>Promise<void>;
+}
 /** Post-spawn installation only: caller retains singleton custody and supplies the
  * same native owners attached to this resident. Activation may commit on failure;
  * no rollback, replay, or replacement admission is inferred from a returned ACK. */
-export async function installRuntimeIdleJournalNative(server:PortableResidentLifecycle,path:string,render:(error:unknown)=>string,idle:NativeIdleBeforeOwner,observation:NativeObservationLedgerOwner,signal?:AbortSignal):Promise<void>{
+export async function installRuntimeIdleJournalNative(server:PortableResidentLifecycle,path:string,render:(error:unknown)=>string,idle:NativeIdleInstallation,observation:NativeObservationActivation,signal?:AbortSignal):Promise<void>{
   signal?.throwIfAborted();
   const pinned=pinNativeRuntimePath(path),journal=createRuntimeIdleJournal(pinned,render),instance=server.instanceId,generation=integer(server.generation()),original=server.admitResponse(generation);
   const current=()=>{const snapshot=server.lifecycleSnapshot();if(server.instanceId!==instance||snapshot.generation!==generation||!snapshot.healthy||snapshot.quarantined||snapshot.restartPending)throw new IdleObservationError('Original idle installation resident is no longer current and healthy');original.client.requireOwnedAdmission(original.permit);};
