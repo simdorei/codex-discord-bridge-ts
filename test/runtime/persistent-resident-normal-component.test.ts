@@ -10,7 +10,7 @@ import {join,dirname} from 'node:path';
 import {ResponseAttempt,type DurableResponseClaim} from '../../src/app-server/response-attempt.ts';
 import {pinResidentNativeResponseCompletion,type ResidentNativeResponseCompletion} from '../../src/app-server/resident-native-response-completion.ts';
 import {ServerRequestOccurrence} from '../../src/protocol/ids.ts';
-import {PERSISTENT_RESIDENT_SCENARIOS,capturePersistentResidentFixtureCommand} from '../../src/runtime/persistent-resident-bootstrap.ts';
+import {PERSISTENT_RESIDENT_CHILD_CLOSURES,PERSISTENT_RESIDENT_SCENARIOS,capturePersistentResidentFixtureCommand} from '../../src/runtime/persistent-resident-bootstrap.ts';
 import {SERVICE_PROFILES,SERVICE_RESERVATION,SERVICE_LIMITS,captureServicePayload,measurePassiveValue,checkExchangeHeadroom} from '../../src/runtime/persistent-resident-services-protocol.ts';
 import {openInitialized} from '../../src/store/owned-driver.ts';
 import {anyStoreAuthorityEnrolled} from '../../src/store/store-authority-domain.ts';
@@ -111,6 +111,9 @@ test('legacy response owner without release callback remains accepted',()=>{
  attempt.dispose();attempt.dispose();assert.throws(()=>attempt.begin(),TypeError);
 });
 
+test('direct-child closure diagnostic has exactly three passive labels',()=>{
+ assert.deepEqual(PERSISTENT_RESIDENT_CHILD_CLOSURES,['not-started','confirmed','unknown']);assert.equal(Object.isFrozen(PERSISTENT_RESIDENT_CHILD_CLOSURES),true);
+});
 test('fixed fixture dispatcher rejects dynamic input and nonpassive records before access',()=>{
  assert.deepEqual(capturePersistentResidentFixtureCommand({kind:'run-fixture',scenario:'normal-start-close'}),{kind:'run-fixture',scenario:'normal-start-close'});
  assert.deepEqual(capturePersistentResidentFixtureCommand({kind:'close-component'}),{kind:'close-component'});
@@ -144,14 +147,14 @@ for(const scenario of PERSISTENT_RESIDENT_SCENARIOS)test(`actual disposable norm
   assert.equal(anyStoreAuthorityEnrolled(),false);(await openInitialized(path)).close();
   const {createPersistentResidentRegistration,createPersistentResidentNormalComponent}=await import('../../src/runtime/persistent-resident-store-role.ts');
   component=createPersistentResidentNormalComponent(createPersistentResidentRegistration(path),'fixture-runtime');
-  assert.equal(component.snapshot().registrationLive,true);assert.equal(component.snapshot().rootDebt,true);
+  assert.equal(component.snapshot().registrationLive,true);assert.equal(component.snapshot().rootDebt,true);assert.equal(component.snapshot().directChildClosure,'unknown');
   await component.ready();assert.equal(component.snapshot().state,'ready');assert.equal(component.snapshot().runtimeStarted,true);assert.equal(anyStoreAuthorityEnrolled(),false);
   const result=await component.runFixture(scenario);assert.deepEqual(result,{scenario,passed:true});
   assert.equal(component.snapshot().state,'fixture-done');assert.equal(component.snapshot().registrationLive,true);
   await assert.rejects(component.runFixture(scenario),TypeError);assert.equal(component.snapshot().state,'fixture-done');
   const closing=component.closeComponent();assert.equal(component.snapshot().registrationLive,true);assert.equal(component.snapshot().rootDebt,true);
   await closing;await component.join();
-  assert.deepEqual(component.snapshot(),{state:'joined',submitted:true,exited:true,registrationLive:false,rootDebt:false,runtimeStarted:true,servicesClosed:true,mutationJoined:true});
+  assert.deepEqual(component.snapshot(),{state:'joined',submitted:true,exited:true,registrationLive:false,rootDebt:false,runtimeStarted:true,servicesClosed:true,mutationJoined:true,directChildClosure:scenario==='normal-replacement'?'unknown':'confirmed'});
   await component.closeComponent();await component.join();assert.equal(anyStoreAuthorityEnrolled(),false);
  }catch(error){hasPrimary=true;primary=error;throw error;}finally{
   const cleanupErrors:unknown[]=[],state=component?.snapshot().state;
@@ -253,6 +256,11 @@ test('mandatory protocol-negative cleanup and component qualification',{concurre
    }else await assert.rejects(component.ready());
    await component.join();joinFulfilled=true;assert.equal(injectionCount,1);assert.equal(actualExit,true);assert.equal(exitCode,1);
    const snapshot=component.snapshot();assert.equal(snapshot.state,'quarantined');assert.equal(snapshot.exited,true);assert.equal(snapshot.registrationLive,false);assert.equal(snapshot.rootDebt,true);
+   assert.ok(PERSISTENT_RESIDENT_CHILD_CLOSURES.includes(snapshot.directChildClosure));
+   // Even an accepted initial direct-child closure report never clears failed
+   // component ownership, authorizes deletion, or resolves close successfully.
+   if(protocolMode==='duplicate-bootstrap')assert.equal(snapshot.directChildClosure,'not-started');
+   assert.equal(snapshot.rootDebt,true);assert.equal(snapshot.state,'quarantined');
    await assert.rejects(component.closeComponent());assert.throws(()=>createPersistentResidentRegistration(path),/debt/);
   }catch(error){hasPrimary=true;primary=error;throw error;}finally{
    const cleanupErrors:unknown[]=[];

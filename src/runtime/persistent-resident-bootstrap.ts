@@ -53,3 +53,7 @@ export type PersistentResidentComponentPhase=typeof PERSISTENT_RESIDENT_COMPONEN
 
 export const PERSISTENT_RESIDENT_FIXTURE_FAILURE_STEPS=Object.freeze(['none','seed','request','respond','child-ack','durable-assert','release-assert'] as const);
 export type PersistentResidentFixtureFailureStep=typeof PERSISTENT_RESIDENT_FIXTURE_FAILURE_STEPS[number];
+
+/** Diagnostic from the fixed worker, never main-side process-tree authority. */
+export const PERSISTENT_RESIDENT_CHILD_CLOSURES=Object.freeze(['not-started','confirmed','unknown'] as const);
+export type PersistentResidentChildClosure=typeof PERSISTENT_RESIDENT_CHILD_CLOSURES[number];

@@ -3,7 +3,7 @@ import {types} from 'node:util';
 import {capturePersistentResidentBootstrapData,requirePersistentResidentRole,persistentResidentFrame,capturePersistentResidentFixtureCommand,PERSISTENT_RESIDENT_HANDSHAKE_MS} from './persistent-resident-bootstrap.ts';
 import type {createPersistentResidentServicesClient} from './persistent-resident-services-client.ts';
 import type {SequentialMutationClient} from './sequential-mutation-broker-client.ts';
-import type {PersistentResidentComponentPhase,PersistentResidentFixtureFailureStep} from './persistent-resident-bootstrap.ts';
+import type {PersistentResidentComponentPhase,PersistentResidentFixtureFailureStep,PersistentResidentChildClosure} from './persistent-resident-bootstrap.ts';
 import type {ServiceEndpointDescriptor} from './persistent-resident-services-protocol.ts';
 import type {PortableResidentLifecycle} from '../app-server/portable-resident-lifecycle.ts';
 
@@ -27,6 +27,26 @@ if(data.kind==='persistent-resident-bootstrap'){
  let phase:Phase='loading',services:Services|null=null,mutation:SequentialMutationClient|null=null,resident:PortableResidentLifecycle|null=null;
  const currentPhase=():Phase=>phase;
  let fixtureStep:PersistentResidentFixtureFailureStep='none';
+ let startEntered=false,replacementMayHaveStarted=false;
+ let startAttempt:Promise<PortableResidentLifecycle>|null=null,disposal:Promise<void>|null=null;
+ let disposalOutcome:{kind:'pending'}|{kind:'fulfilled'}|{kind:'rejected';error:unknown}={kind:'pending'};
+ // The shared promise is assigned before disposal can invoke any original owner.
+ // A rejected disposal, including thrown undefined, is never retried.
+ function disposeOriginal():Promise<void>{
+  if(disposal!==null)return disposal;
+  disposal=Promise.resolve().then(async()=>{
+   if(startAttempt!==null)resident=await startAttempt;
+   if(resident!==null)await resident.dispose();
+  });
+  void disposal.then(()=>{disposalOutcome={kind:'fulfilled'};},error=>{disposalOutcome={kind:'rejected',error};});
+  return disposal;
+ }
+ function childClosure():PersistentResidentChildClosure{
+  if(!startEntered&&phase==='failed')return 'not-started';
+  // Valid only for this frozen composition: no automatic restart supervisor.
+  // Any additional replacement route must disable this positive eligibility.
+  return resident!==null&&!replacementMayHaveStarted&&disposalOutcome.kind==='fulfilled'?'confirmed':'unknown';
+ }
  let timer:ReturnType<typeof setTimeout>|undefined;
  let acceptServices!:(value:unknown)=>void,acceptInitialized!:()=>void;
  const serviceFrame=new Promise<unknown>(resolve=>{acceptServices=resolve;}),initialized=new Promise<void>(resolve=>{acceptInitialized=resolve;});
@@ -40,9 +60,10 @@ if(data.kind==='persistent-resident-bootstrap'){
  function failProtocol():void{fail(true);}
  function failLifecycle():void{fail(false);}
  function fail(protocolCorruption:boolean):void{
-  if(phase==='failed'||phase==='closed')return;const failedPhase=phase;setPhase('failed');if(protocolCorruption){services?.quarantine();mutation?.quarantine(null);}process.exitCode=1;
+  if(phase==='failed'){if(protocolCorruption){services?.quarantine();mutation?.quarantine(null);}return;}
+  if(phase==='closed')return;const failedPhase=phase,failedStep=fixtureStep;setPhase('failed');if(protocolCorruption){services?.quarantine();mutation?.quarantine(null);}process.exitCode=1;
   // Disposal still attempts the original child cleanup. Failure never reports clean.
-  void (async()=>{try{await resident?.dispose();}catch{/* Original owner debt remains on main. */}finally{services?.quarantine();mutation?.quarantine(null);}try{port.postMessage({version:1,kind:'component-failed',phase:failedPhase,category:protocolCorruption?'protocol':'lifecycle',fixtureStep});}finally{port.close();}})();
+  void (async()=>{try{await disposeOriginal();}catch{/* Rejected outcome is retained by the one original disposal observer. */}finally{services?.quarantine();mutation?.quarantine(null);}try{port.postMessage({version:1,kind:'component-failed',phase:failedPhase,category:protocolCorruption?'protocol':'lifecycle',fixtureStep:failedStep,childClosure:childClosure()});}finally{port.close();}})().catch(()=>{process.exitCode=1;port.close();});
  }
  // Installed before either bootstrap client; this fixed dispatcher owns all parent
  // traffic, including duplicate bootstraps after the 948 listener transfers ownership.
@@ -60,12 +81,12 @@ if(data.kind==='persistent-resident-bootstrap'){
     const frame=plain(value,['version','kind']);if(frame.version!==1||frame.kind!=='services-initialized')throw new TypeError('Expected initialized native owners');setPhase('starting');acceptInitialized();return;
    }
    if(phase==='ready'){
-    const command=capturePersistentResidentFixtureCommand(value);if(command.kind!=='run-fixture')throw new TypeError('Run the fixed fixture once before close');setPhase('running');
+    const command=capturePersistentResidentFixtureCommand(value);if(command.kind!=='run-fixture')throw new TypeError('Run the fixed fixture once before close');setPhase('running');if(command.scenario==='normal-replacement')replacementMayHaveStarted=true;
     void (async()=>{const {runPersistentResidentFixture,getPersistentResidentFixtureFailureStep}=await import('./persistent-resident-composition.ts');try{await runPersistentResidentFixture(resident!,command.scenario);}catch(error){fixtureStep=getPersistentResidentFixtureFailureStep(resident!);throw error;}if(currentPhase()!=='running')return;setPhase('ran');port.postMessage({version:1,kind:'fixture-result',scenario:command.scenario,passed:true});})().catch(failLifecycle);return;
    }
    if(phase==='ran'){
     const command=capturePersistentResidentFixtureCommand(value);if(command.kind!=='close-component')throw new TypeError('Expected final component close');setPhase('closing');
-    void (async()=>{await resident!.dispose();if(currentPhase()!=='closing')return;setPhase('closed');report('component-disposed');port.close();})().catch(failLifecycle);return;
+    void (async()=>{await disposeOriginal();if(currentPhase()!=='closing')return;setPhase('closed');port.postMessage({version:1,kind:'component-disposed',childClosure:childClosure()});port.close();})().catch(failLifecycle);return;
    }
    throw new TypeError('Unexpected fixed component phase frame');
   }catch{failProtocol();}
@@ -86,7 +107,8 @@ if(data.kind==='persistent-resident-bootstrap'){
   const {receivePersistentResidentMutationClient}=await import('./sequential-mutation-broker-client.ts');
   if(currentPhase()==='failed')return;setPhase('mutation');const pendingMutation=receivePersistentResidentMutationClient();report('custody-ready');
   mutation=await pendingMutation;if(currentPhase()==='failed'){mutation.quarantine(null);return;}setPhase('initialized');report('mutation-ready');
-  await initialized;if(currentPhase()==='failed')return;resident=await prepared.start(services,mutation,responsePort);
-  if(currentPhase()==='failed'){await resident.dispose();return;}setPhase('ready');report('component-ready');
+  await initialized;if(currentPhase()==='failed')return;startEntered=true;
+  startAttempt=prepared.start(services,mutation,responsePort);resident=await startAttempt;
+  if(currentPhase()==='failed'){await disposeOriginal();return;}setPhase('ready');report('component-ready');
  })().catch(failLifecycle);
 }
