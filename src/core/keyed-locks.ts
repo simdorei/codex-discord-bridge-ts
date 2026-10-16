@@ -10,6 +10,13 @@ export class TargetLeaseMismatchError extends Error {
   constructor() { super("queue target lease mismatch"); this.name = "TargetLeaseMismatchError"; }
 }
 
+/** Numeric observations only; never an admission or lease capability. */
+export interface TargetLocksRetainedWorkSnapshot {
+  readonly activeTargetCount: number;
+  readonly queuedWaiterCount: number;
+  readonly heldLeaseReferenceCount: number;
+}
+
 interface Entry { held: boolean; waiters: Waiter[]; }
 interface Waiter { grant(): void; }
 
@@ -31,6 +38,15 @@ export function requireThreadTargetKey(target:string):void{
 export class TargetLocks {
   readonly #entries = new Map<string, Entry>();
   readonly #leases = new WeakMap<TargetLease,{active():boolean;pin():TargetLease}>();
+
+  #queuedWaiterCount = 0;
+  #heldLeaseReferenceCount = 0;
+
+  snapshotRetainedWork(): TargetLocksRetainedWorkSnapshot {
+    return Object.freeze({activeTargetCount: this.#entries.size,
+      queuedWaiterCount: this.#queuedWaiterCount,
+      heldLeaseReferenceCount: this.#heldLeaseReferenceCount});
+  }
 
   get activeTargetCount(): number { return this.#entries.size; }
 
@@ -60,7 +76,7 @@ export class TargetLocks {
         if (settled) return;
         settled = true;
         const index = entry.waiters.indexOf(waiter);
-        if (index !== -1) entry.waiters.splice(index, 1);
+        if (index !== -1) { entry.waiters.splice(index, 1); this.#queuedWaiterCount--; }
         signal?.removeEventListener("abort", abort);
         reject(signal?.reason);
       };
@@ -71,6 +87,7 @@ export class TargetLocks {
         resolve(this.#lease(target, entry));
       }};
       entry.waiters.push(waiter);
+      this.#queuedWaiterCount++;
       signal?.addEventListener("abort", abort, {once: true});
     });
   }
@@ -102,7 +119,7 @@ export class TargetLocks {
   }
 
   #lease(target: string, entry: Entry, group={references:0}): TargetLease {
-    group.references++;let released = false;
+    group.references++;this.#heldLeaseReferenceCount++;let released = false;
     const lease=Object.freeze({
       target,
       requireTarget(expected: string): void {
@@ -111,9 +128,10 @@ export class TargetLocks {
       release: (): void => {
         if (released) return;
         released = true;
+        this.#heldLeaseReferenceCount--;
         if(--group.references!==0)return;
         const next = entry.waiters.shift();
-        if (next !== undefined) next.grant();
+        if (next !== undefined) { this.#queuedWaiterCount--; next.grant(); }
         else {
           entry.held = false;
           if (this.#entries.get(target) === entry) this.#entries.delete(target);

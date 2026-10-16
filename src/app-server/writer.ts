@@ -1,5 +1,5 @@
 import {types} from "node:util";
-import {TargetLocks} from "../core/keyed-locks.ts";
+import {TargetLocks,type TargetLocksRetainedWorkSnapshot} from "../core/keyed-locks.ts";
 import {serializeSerdeValue} from "../core/serde-json.ts";
 import {AppServerClosedError} from "./client-errors.ts";
 import type {ClientCloseCoordinator} from "./close-coordinator.ts";
@@ -37,10 +37,23 @@ function sync<T>(callback:()=>T):T{
   if(typeof callback!=="function"||types.isProxy(callback)||types.isAsyncFunction(callback)||types.isGeneratorFunction(callback))throw new TypeError("Writer hook must be synchronous");
   const result=callback();if(types.isPromise(result)){void Promise.prototype.then.call(result,undefined,()=>undefined);throw new TypeError("Writer hook must not return a Promise");}return result;
 }
+/** Writer-owned encoded bytes, not retained heap, pooled storage or adapter copies. */
+export interface AppServerWriterRetainedWorkSnapshot {
+  readonly retainedWriteOperationCount:number;
+  readonly retainedEncodedBufferBytes:number;
+  readonly stdinLock:TargetLocksRetainedWorkSnapshot;
+}
 /** Serialized source write ordering with explicit AbortSignal/owned join rather than
  * automatic future Drop. Merely abandoning its Promise does NOT cancel a write. */
 export class AppServerWriter{
   readonly #locks=new TargetLocks(); #input:OwnedAppServerInput|null;readonly #close:Pick<ClientCloseCoordinator,"closed"|"markClosed">;
+  #retainedWriteOperationCount=0;
+  #retainedEncodedBufferBytes=0;
+  snapshotRetainedWork():AppServerWriterRetainedWorkSnapshot{
+    return Object.freeze({retainedWriteOperationCount:this.#retainedWriteOperationCount,
+      retainedEncodedBufferBytes:this.#retainedEncodedBufferBytes,
+      stdinLock:this.#locks.snapshotRetainedWork()});
+  }
   constructor(input:OwnedAppServerInput|null,close:Pick<ClientCloseCoordinator,"closed"|"markClosed">){this.#input=input;this.#close=close;}
   /** Take stdin exactly once under the SAME writer lock. The owner callback must
    * shutdown and dispose the taken pipe even if shutdown fails. No future writes
@@ -59,7 +72,10 @@ export class AppServerWriter{
   }
   async #write<T>(value:unknown,preflight:WritePreflight<T>|null,owned:OwnedAsyncWritePreflight<T>|null,writeStarted:()=>void,signal?:AbortSignal):Promise<T>{
     if(this.#close.closed)throw new AppServerClosedError();signal?.throwIfAborted();
-    const encoded=Buffer.from(serializeSerdeValue(value)+"\n","utf8");
+    let encoded:Buffer|undefined=Buffer.from(serializeSerdeValue(value)+"\n","utf8");
+    const encodedBytes=encoded.byteLength;
+    this.#retainedWriteOperationCount++;this.#retainedEncodedBufferBytes+=encodedBytes;
+    try{
     const lease=await this.#locks.acquire("stdin",signal);
     let admitted:T|undefined,hasAdmitted=false,attempted=false,complete=false,closeTask:Promise<void>|undefined;
     let failed=false,primary:unknown;
@@ -88,6 +104,10 @@ export class AppServerWriter{
       try{if(hasAdmitted&&!complete){if(owned!==null)await owned.dispose(admitted as T);else{const result=sync(()=>preflight!.dispose(admitted as T));if(result!==undefined)throw new TypeError("Preflight disposer must return void");}}}catch(error){cleanupErrors.push(error);}
       finally{lease.release();}
       if(cleanupErrors.length!==0)throw new AggregateError(failed?[primary,...cleanupErrors]:cleanupErrors,"App-server write cleanup failed");
+    }
+    }finally{
+      encoded=undefined;
+      this.#retainedWriteOperationCount--;this.#retainedEncodedBufferBytes-=encodedBytes;
     }
   }
 }
