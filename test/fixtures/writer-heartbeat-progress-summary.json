@@ -1,0 +1,75 @@
+{
+  "checkpoint": 940,
+  "scope": "component-only writer and actual POSIX heartbeat",
+  "status": "passed-author-and-independent-reviewer",
+  "observationWindowMs": 90000,
+  "cleanupBoundMs": 15000,
+  "defaultHeartbeatPeriodMs": 10000,
+  "observerPollMs": 25,
+  "expectedQueued": {
+    "operations": 3,
+    "encodedBytes": 14,
+    "waiters": 2,
+    "leases": 1
+  },
+  "expectedAfterCancellation": {
+    "operations": 2,
+    "encodedBytes": 9,
+    "waiters": 1,
+    "leases": 1
+  },
+  "expectedFinal": {
+    "operations": 0,
+    "encodedBytes": 0,
+    "waiters": 0,
+    "leases": 0
+  },
+  "requiredDiagnosticCount": 0,
+  "observedDistinctContentsMinimum": 4,
+  "qualification": "No installed resident, singleton, native backpressure, Windows or full G2/G4 claim",
+  "nodeVersion": "24.21.0",
+  "typescriptVersion": "7.0.2",
+  "productionModuleByteParityCount": 739,
+  "explicitCompilerSourceCount": 741,
+  "runs": [
+    {
+      "role": "author",
+      "passedTests": 2,
+      "failedTests": 0,
+      "successfulPublications": 4,
+      "observerDistinctContentLowerBound": 4,
+      "observerReadCount": 1173,
+      "diagnosticCount": 0,
+      "allOwnedWorkJoined": true,
+      "primaryFailure": null,
+      "cleanupFailure": null
+    },
+    {
+      "role": "reviewer",
+      "passedTests": 2,
+      "failedTests": 0,
+      "successfulPublications": 4,
+      "observerDistinctContentLowerBound": 4,
+      "observerReadCount": 1175,
+      "diagnosticCount": 0,
+      "allOwnedWorkJoined": true,
+      "primaryFailure": null,
+      "cleanupFailure": null
+    }
+  ],
+  "measurementInterpretation": "Observer read counts differ with scheduler timing; distinct content count is a lower bound, not a publication census.",
+  "preflightFailures": {
+    "qualificationFailures": 0,
+    "nonQualificationChecks": [
+      {
+        "exitCode": 1,
+        "reason": "Alternate version-suffixed binary filename absent; actual pinned binary path verified."
+      },
+      {
+        "exitCode": 1,
+        "reason": "Overbroad self-guard stopped before opening allowed queue-runner source; scope corrected and independently reviewed before continuation."
+      }
+    ]
+  },
+  "reportingArtifact": "Results-only update after both executed freezes; test/helper source remained identical."
+}
