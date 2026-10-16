@@ -1,8 +1,8 @@
-import {types} from 'node:util';
+import {capturePersistentResidentComponentReport,createPersistentResidentReportEvidence,corruptPersistentResidentReportEvidence,acceptPersistentResidentTerminalReport,type PersistentResidentChildClosure} from './persistent-resident-component-report.ts';
 import {PersistentResidentServicesOwner} from './persistent-resident-services-owner.ts';
 import {createMainSequentialMutationBroker,type MainSequentialMutationBroker} from './sequential-mutation-broker-owner.ts';
 import type {SequentialMutationBrokerLimits} from './sequential-mutation-broker-protocol.ts';
-import {PERSISTENT_RESIDENT_CHILD_CLOSURES,type PersistentResidentChildClosure,PERSISTENT_RESIDENT_SCENARIOS,PERSISTENT_RESIDENT_COMPONENT_PHASES,PERSISTENT_RESIDENT_FIXTURE_FAILURE_STEPS,type PersistentResidentScenario} from './persistent-resident-bootstrap.ts';
+import {PERSISTENT_RESIDENT_SCENARIOS,type PersistentResidentScenario} from './persistent-resident-bootstrap.ts';
 import {Worker,isMainThread,getEnvironmentData,setEnvironmentData} from 'node:worker_threads';
 import {registerStoreWriter,markStoreWorkerSubmitted,releaseStoreWriter,beginAuthorityNativeOwner,type StoreWriterTicket} from '../store/store-authority-domain.ts';
 import {ownedWorkerModuleUrl} from './owned-worker-slot.ts';
@@ -85,20 +85,6 @@ export interface PersistentResidentNormalComponent {
  join():Promise<void>;
  snapshot():Readonly<{state:ComponentState;submitted:boolean;exited:boolean;registrationLive:boolean;rootDebt:boolean;runtimeStarted:boolean;servicesClosed:boolean;mutationJoined:boolean;directChildClosure:PersistentResidentChildClosure}>;
 }
-function componentReport(value:unknown):Record<string,unknown>{
- if(value===null||typeof value!=='object'||types.isProxy(value)||Array.isArray(value))throw new TypeError('Invalid fixed resident component report');
- const proto=Object.getPrototypeOf(value);if(proto!==Object.prototype&&proto!==null)throw new TypeError('Invalid fixed resident component report');
- const kindDescriptor=Object.getOwnPropertyDescriptor(value,'kind');
- if(!kindDescriptor||!Object.hasOwn(kindDescriptor,'value')||typeof kindDescriptor.value!=='string')throw new TypeError('Invalid fixed resident component report');
- const keys=kindDescriptor.value==='fixture-result'?['version','kind','scenario','passed']:kindDescriptor.value==='component-failed'?['version','kind','phase','category','fixtureStep','childClosure']:kindDescriptor.value==='component-disposed'?['version','kind','childClosure']:['version','kind'];
- const actual=Reflect.ownKeys(value);if(actual.length!==keys.length||actual.some(k=>typeof k!=='string'||!keys.includes(k)))throw new TypeError('Invalid fixed resident component report');
- const result:Record<string,unknown>=Object.create(null);
- for(const key of keys){const d=Object.getOwnPropertyDescriptor(value,key);if(!d||!d.enumerable||!Object.hasOwn(d,'value'))throw new TypeError('Invalid fixed resident component report');result[key]=d.value;}
- if(result.version!==1)throw new TypeError('Invalid fixed resident component report');
- if(result.kind==='component-failed'&&(typeof result.phase!=='string'||!PERSISTENT_RESIDENT_COMPONENT_PHASES.some(phase=>phase===result.phase)||(result.category!=='protocol'&&result.category!=='lifecycle')||typeof result.fixtureStep!=='string'||!PERSISTENT_RESIDENT_FIXTURE_FAILURE_STEPS.some(step=>step===result.fixtureStep)))throw new TypeError('Invalid fixed resident component failure');
- if((result.kind==='component-failed'||result.kind==='component-disposed')&&!PERSISTENT_RESIDENT_CHILD_CLOSURES.some(value=>value===result.childClosure))throw new TypeError('Invalid direct child closure diagnostic');
- return result;
-}
 /** Disposable normal lifecycle component only, never called by main startup.
  * No singleton guard is minted here. Original child-exit proof remains in the
  * fixed worker lifecycle. Actual requester exit clears liveness, not root debt. */
@@ -109,8 +95,7 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
  activeComponentPaths.set(entry.descriptor.path,entry);
  let worker:Worker,services:PersistentResidentServicesOwner,mutation:MainSequentialMutationBroker|null=null;
  let state:ComponentState='bootstrapping',exited=false,normalReport=false,runtimeStarted=false,lifecycleMayExist=false,scenario:PersistentResidentScenario|null=null;
- let reportCorrupt=false,terminalKind:'none'|'failed'|'disposed'='none';
- let directChildClosure:PersistentResidentChildClosure='unknown';
+ let reportEvidence=createPersistentResidentReportEvidence();
  let readyResolve!:()=>void,readyReject!:(error:unknown)=>void,closeResolve!:()=>void,closeReject!:(error:unknown)=>void,joinResolve!:()=>void,joinReject!:(error:unknown)=>void;
  let runResolve:((result:PersistentResidentFixtureResult)=>void)|null=null,runReject:((error:unknown)=>void)|null=null;
  const ready=new Promise<void>((resolve,reject)=>{readyResolve=resolve;readyReject=reject;});
@@ -144,7 +129,7 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
  };
  // Sticky independently of fail() idempotence, including after quarantine.
  // A genuinely late callback cannot undo an already completed release.
- const corruptReport=()=>{reportCorrupt=true;directChildClosure='unknown';fail();};
+ const corruptReport=()=>{reportEvidence=corruptPersistentResidentReportEvidence(reportEvidence);fail();};
  const deadline=()=>{clearTimer();timer=setTimeout(fail,PERSISTENT_RESIDENT_HANDSHAKE_MS);};
  const post=(message:object)=>{try{worker.postMessage(message);}catch{fail();throw fixedError();}};
  const prior=getEnvironmentData(PERSISTENT_RESIDENT_ROLE_KEY);
@@ -162,12 +147,12 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
    // The worker can no longer open through this descriptor, but its registration
    // and native-owner accounting survive until all independent normal proofs.
    Atomics.store(new Int32Array(entry.descriptor.live),0,0);
-   if(code!==0||reportCorrupt||terminalKind!=='disposed'||!normalReport||state!=='disposed')fail();
+   if(code!==0||reportEvidence.reportCorrupt||reportEvidence.terminalKind!=='disposed'||!normalReport||state!=='disposed')fail();
    void (async()=>{
     try{
      if(cleanup!==null)await cleanup;
      await services.join();if(mutation!==null)await mutation.join();
-     if(state!=='quarantined'&&code===0&&!reportCorrupt&&terminalKind==='disposed'&&normalReport&&services.releasable&&mutation?.snapshot().state==='J'){
+     if(state!=='quarantined'&&code===0&&!reportEvidence.reportCorrupt&&reportEvidence.terminalKind==='disposed'&&normalReport&&services.releasable&&mutation?.snapshot().state==='J'){
       release(entry);state='joined';closeResolve();
      }else{fail();}
      joinResolve();
@@ -176,8 +161,8 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
   });
   worker.on('message',(raw:unknown)=>{
    try{
-    const report=componentReport(raw),kind=report.kind;
-    if(exited||reportCorrupt||terminalKind!=='none')throw fixedError();
+    const report=capturePersistentResidentComponentReport(raw),kind=report.kind;
+    if(exited||reportEvidence.reportCorrupt||reportEvidence.terminalKind!=='none')throw fixedError();
     if(kind==='component-failed'||kind==='component-disposed'){
      const closure=report.childClosure;
      if(closure==='confirmed'&&(!lifecycleMayExist||scenario==='normal-replacement'||(kind==='component-failed'&&!['starting','ready','running','ran','closing'].includes(report.phase as string))))throw fixedError();
@@ -186,7 +171,7 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
     if(kind==='component-failed'){
      if(typeof report.phase!=='string'||typeof report.fixtureStep!=='string'||(report.category!=='protocol'&&report.category!=='lifecycle'))throw fixedError();
      if(report.phase==='failed'||report.phase==='closed'||state==='joined'||state==='disposed')throw fixedError();
-     terminalKind='failed';directChildClosure=report.childClosure as PersistentResidentChildClosure;
+     reportEvidence=acceptPersistentResidentTerminalReport(reportEvidence,'failed',report.childClosure as PersistentResidentChildClosure);
      workerFailurePhase=report.phase;workerFailureCategory=report.category;workerFixtureStep=report.fixtureStep;fail();return;
     }
     if(state==='bootstrapping'&&kind==='role-ready'){state='role-ready';deadline();return;}
@@ -215,7 +200,7 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
     }
     if(state==='closing'&&kind==='component-disposed'){
      if(!services.servicesClosed||mutation?.snapshot().state!=='C')throw fixedError();
-     services.notifyNormalResidentDisposed();terminalKind='disposed';directChildClosure=report.childClosure as PersistentResidentChildClosure;normalReport=true;state='disposed';deadline();return;
+     services.notifyNormalResidentDisposed();reportEvidence=acceptPersistentResidentTerminalReport(reportEvidence,'disposed',report.childClosure as PersistentResidentChildClosure);normalReport=true;state='disposed';deadline();return;
     }
     throw fixedError();
    }catch{corruptReport();}
@@ -244,6 +229,6 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
    state='closing';deadline();try{post({kind:'close-component'});}catch{/* Fixed close promise owns failure. */}return closed;
   },
   join:()=>joined,
-  snapshot:()=>Object.freeze({state,submitted:entry.submitted,exited,registrationLive:Atomics.load(new Int32Array(entry.descriptor.live),0)===1,rootDebt:!entry.released,runtimeStarted,servicesClosed:services.servicesClosed,mutationJoined:mutation?.snapshot().state==='J',directChildClosure}),
+  snapshot:()=>Object.freeze({state,submitted:entry.submitted,exited,registrationLive:Atomics.load(new Int32Array(entry.descriptor.live),0)===1,rootDebt:!entry.released,runtimeStarted,servicesClosed:services.servicesClosed,mutationJoined:mutation?.snapshot().state==='J',directChildClosure:reportEvidence.directChildClosure}),
  });
 }

@@ -48,12 +48,4 @@ export function capturePersistentResidentFixtureCommand(value:unknown):Readonly<
  return Object.freeze({kind:'run-fixture',scenario:data.scenario as PersistentResidentScenario});
 }
 
-export const PERSISTENT_RESIDENT_COMPONENT_PHASES=Object.freeze(['loading','services','activating','mutation','mutation-handshake','initialized','starting','ready','running','ran','closing','closed','failed'] as const);
-export type PersistentResidentComponentPhase=typeof PERSISTENT_RESIDENT_COMPONENT_PHASES[number];
-
-export const PERSISTENT_RESIDENT_FIXTURE_FAILURE_STEPS=Object.freeze(['none','seed','request','respond','child-ack','durable-assert','release-assert'] as const);
-export type PersistentResidentFixtureFailureStep=typeof PERSISTENT_RESIDENT_FIXTURE_FAILURE_STEPS[number];
-
-/** Diagnostic from the fixed worker, never main-side process-tree authority. */
-export const PERSISTENT_RESIDENT_CHILD_CLOSURES=Object.freeze(['not-started','confirmed','unknown'] as const);
-export type PersistentResidentChildClosure=typeof PERSISTENT_RESIDENT_CHILD_CLOSURES[number];
+export {PERSISTENT_RESIDENT_COMPONENT_PHASES,type PersistentResidentComponentPhase,PERSISTENT_RESIDENT_FIXTURE_FAILURE_STEPS,type PersistentResidentFixtureFailureStep,PERSISTENT_RESIDENT_CHILD_CLOSURES,type PersistentResidentChildClosure} from './persistent-resident-component-report.ts';
