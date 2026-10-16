@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync} from 'node:fs';
 import {performance} from 'node:perf_hooks';
+import type {Worker} from 'node:worker_threads';
 import {NativeMutationOwner} from '../../src/runtime/native-mutation-owner.ts';
 import {isOwnedMutationOutcomeUnknown,type MaintenanceClaim} from '../../src/app-server/maintenance-attempt.ts';
 import {OwnedWorkerBusyError,ownedWorkerUsage} from '../../src/runtime/owned-worker-slot.ts';
@@ -92,4 +93,51 @@ test('global Control saturation rejects before native admission without inventin
 test('completion cannot borrow a changed runtime and cancellation never synthesizes its outcome',async()=>fixture(async(_p,db,owner,c)=>{
  const receipt=await owner.begin(c);db.exec("UPDATE codex_mutation_runtime SET runtime_id='new-runtime'");
  await assert.rejects(owner.finish(receipt,'reply_ok'),unknown);assert.equal(state(db),'prepared');
+}));
+
+test('unsubmitted refusal binds this owner and exact attempt, wire and method only',async()=>fixture(async(path,_db,owner,c)=>{
+ const other=new NativeMutationOwner(path,'runtime',render),active=owner.begin(c);
+ try{
+  let local:unknown;try{owner.begin(c);}catch(error){local=error;}
+  assert.ok(local instanceof OwnedWorkerBusyError);
+  assert.equal(owner.ownsUnsubmittedFailure(local,c.attemptId,c.wire,c.method),true);
+  assert.equal(owner.ownsUnsubmittedFailure(local,'other',c.wire,c.method),false);
+  assert.equal(owner.ownsUnsubmittedFailure(local,c.attemptId,13n,c.method),false);
+  assert.equal(owner.ownsUnsubmittedFailure(local,c.attemptId,c.wire,'turn/start'),false);
+  assert.equal(other.ownsUnsubmittedFailure(local,c.attemptId,c.wire,c.method),false);
+  assert.equal(owner.ownsUnsubmittedFailure(new OwnedWorkerBusyError(),c.attemptId,c.wire,c.method),false);
+  let global:unknown;try{await other.begin({...c,attemptId:'second'});}catch(error){global=error;}
+  assert.ok(global instanceof OwnedWorkerBusyError);
+  assert.equal(other.ownsUnsubmittedFailure(global,'second',c.wire,c.method),true);
+  assert.equal(owner.ownsUnsubmittedFailure(global,'second',c.wire,c.method),false);
+  await active;
+ }finally{await Promise.allSettled([active,other.close()]);}
+}));
+
+test('renderer reentrancy retains classified owner busy and close waits without deadlock',async()=>fixture(async(path,_db,_owner,c)=>{
+ let entered=0,closing:Promise<void>|undefined;
+ const owner=new NativeMutationOwner(path,'foreign',text=>{
+  entered++;assert.equal(owner.busy,true);
+  assert.throws(()=>owner.begin(c),OwnedWorkerBusyError);
+  closing=owner.close();return 'safe: '+text;
+ });
+ try{await assert.rejects(owner.begin(c),unknown);assert.equal(entered,1);assert.ok(closing);await closing;assert.equal(owner.busy,false);assert.equal(ownedWorkerUsage().Control,0);}
+ finally{await owner.close();}
+}));
+
+for(const action of ['abort','close'] as const)test(`joined raw-result boundary still observes owner ${action}`,async()=>fixture(async(_path,db,owner,c)=>{
+ const controller=new AbortController(),reason=new Error('cancel after transport result');let reached=false,closing:Promise<void>|undefined;
+ // The slot exit settles its result. Its awaiting transport first joins the
+ // already-resolved idle promise, then resolves raw data. Two queued microtasks
+ // intervene after that raw resolution but before owner classification.
+ const observe=(worker:Worker)=>worker.once('exit',()=>queueMicrotask(()=>queueMicrotask(()=>{
+  reached=true;assert.equal(owner.busy,true);
+  if(action==='abort')controller.abort(reason);else closing=owner.close(reason);
+ })));
+ process.on('worker',observe);
+ try{
+  await assert.rejects(owner.begin(c,controller.signal),unknown);
+  assert.equal(reached,true);await closing;assert.equal(owner.busy,false);
+  assert.equal(ownedWorkerUsage().Control,0);assert.equal(state(db),'prepared');
+ }finally{process.off('worker',observe);await owner.close();}
 }));

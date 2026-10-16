@@ -9,11 +9,12 @@ import {cloneOwnedSerdeValue} from '../core/owned-serde-value.ts';
 import {validateRequestId,type RequestId} from '../protocol/ids.ts';
 import {MutationOutcomeUnknownError,type MaintenanceClaim,type MaintenanceCompletion} from '../app-server/maintenance-attempt.ts';
 import type {QueueMutationClaim,StopMutationClaim} from '../app-server/dispatch-attempt.ts';
-import {OwnedWorkerSlot,OwnedWorkerBusyError} from './owned-worker-slot.ts';
+import {OwnedWorkerBusyError} from './owned-worker-slot.ts';
+import {NativeMutationTransport,type NativeMutationOperation} from './native-mutation-transport.ts';
 
 export interface NativeMutationReceipt {readonly attemptId:string;readonly method:string}
 type BeginOperation='beginMutationWithOrigin'|'beginQueueMutation'|'beginStopMutation';
-type Operation=BeginOperation|'finishMutation'|'finishStopMutation';
+type Operation=NativeMutationOperation;
 interface ReceiptData {readonly input:MaintenanceClaim|QueueMutationClaim|StopMutationClaim;readonly stop:boolean;readonly operation:BeginOperation;used:boolean}
 function text(value:unknown,limit=4096):string {
  requireDiscordText(value);
@@ -28,15 +29,17 @@ function text(value:unknown,limit=4096):string {
 export class NativeMutationOwner {
  readonly #unsubmitted=new WeakMap<object,{attemptId:string;wire:RequestId;method:string}>();
  readonly #validate:ReturnType<typeof createNativeMutationRevalidator>;
- readonly #path:string;readonly #runtime:string;readonly #render:(text:string)=>string;readonly #timeout:number;
+ readonly #path:string;readonly #runtime:string;readonly #render:(text:string)=>string;
+ readonly #transport:NativeMutationTransport;
  readonly #receipts=new WeakMap<object,ReceiptData>();
- readonly #tasks=new Set<Promise<unknown>>();readonly #controllers=new Set<AbortController>();#closed=false;
+ // Classification/rendering remains part of the public owner lifetime.
+ readonly #tasks=new Set<Promise<unknown>>();#closed=false;
  constructor(path:string,runtime:string,render:(text:string)=>string,timeoutMs=5000){
   this.#path=pinNativeRuntimePath(text(path,32768));this.#runtime=text(runtime);
   if(runtime==='')throw new TypeError('Expected runtime identity');
   if(typeof render!=='function'||types.isProxy(render)||types.isAsyncFunction(render)||types.isGeneratorFunction(render))throw new TypeError('Expected synchronous public-safe renderer');
   if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid native mutation deadline');
-  this.#render=render;this.#timeout=timeoutMs;
+  this.#render=render;this.#transport=new NativeMutationTransport(this.#path,this.#runtime,timeoutMs);
   this.#validate=createNativeMutationRevalidator(this.#path,this.#runtime,error=>this.#render(passiveErrorText(error,'Original mutation authority unavailable')));
  }
  get busy():boolean{return this.#tasks.size>0;}
@@ -50,8 +53,8 @@ export class NativeMutationOwner {
  }
 
  async close(reason:unknown=new Error('Native mutation owner closed')):Promise<void>{
-  this.#closed=true;for(const controller of this.#controllers)controller.abort(reason);
-  await Promise.allSettled([...this.#tasks]);
+  this.#closed=true;const joined=this.#transport.close(reason);
+  await Promise.allSettled([...this.#tasks,joined]);
  }
  /** Immediate final read of this owner's exact unused receipt. Caller still
   * revalidates original in-memory admission before starting the wire. */
@@ -94,16 +97,12 @@ export class NativeMutationOwner {
   });
  }
  #run(operation:Operation,input:unknown,method:string,attemptId:string,signal?:AbortSignal):Promise<void>{
-  const controller=new AbortController(),slot=new OwnedWorkerSlot('Control');this.#controllers.add(controller);
-  const abort=()=>controller.abort(signal!.reason);signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();
+  const pending=this.#transport.submit(operation,input,signal);
   const task=(async()=>{
-   let admitted=false;let diagnostic='Native mutation result unavailable';
+   let diagnostic='Native mutation result unavailable';
    try{
-    const complete=operation==='finishMutation'||operation==='finishStopMutation';
-    const pending=complete?slot.runControlCompletion(new URL('./native-mutation-worker.ts',import.meta.url),{path:this.#path,runtime:this.#runtime,operation,input},this.#timeout,controller.signal):slot.run(new URL('./native-mutation-worker.ts',import.meta.url),{path:this.#path,runtime:this.#runtime,operation,input},this.#timeout,controller.signal);
-    admitted=slot.busy;
-    let raw:unknown;try{raw=await pending;}finally{await slot.join();}
-    controller.signal.throwIfAborted();
+    const raw=await pending;
+    signal?.throwIfAborted();if(this.#closed)throw new Error('Native mutation owner is closed');
     if(boundedSerdeByteCount(raw,16384)===null||own(raw,'ok')!==true){
      const detail=own(raw,'detail');let safe='Native mutation result unavailable';
      if(typeof detail==='string'){
@@ -112,16 +111,16 @@ export class NativeMutationOwner {
      diagnostic=safe;throw new Error(safe);
     }
    }catch(error){
-    if(!admitted){
+    if(!this.#transport.wasAdmitted(pending)){
      if((operation==='beginMutationWithOrigin'||operation==='beginQueueMutation'||operation==='beginStopMutation')&&error instanceof OwnedWorkerBusyError)throw this.#refusedBeforeSubmission(attemptId,validateRequestId(own(input,'wire')),method);
      throw error;
     }
     // Even a joined failed worker may have committed before its response was lost.
     // Do not infer not_sent from cancellation, timeout, or an exception message.
     throw new MutationOutcomeUnknownError(method,`native ${operation} result not confirmed; original attempt ${attemptId} requires reconciliation; ${diagnostic}; no automatic replay`);
-   }finally{signal?.removeEventListener('abort',abort);}
+   }
   })();
-  this.#tasks.add(task);const clear=()=>{this.#tasks.delete(task);this.#controllers.delete(controller);};void task.then(clear,clear);return task;
+  this.#tasks.add(task);const clear=()=>{this.#tasks.delete(task);};void task.then(clear,clear);return task;
  }
 }
 Object.freeze(NativeMutationOwner.prototype);
