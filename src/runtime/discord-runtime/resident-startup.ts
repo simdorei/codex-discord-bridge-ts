@@ -1,4 +1,4 @@
-import {NativeDeadGenerationOwner} from '../native-dead-generation.ts';
+import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {NativeObservationLedgerOwner} from '../native-observation-ledger.ts';
 import type {IdleReleaseToken} from '../../app-server/idle-release-journal.ts';
 import {NativeIdleBeforeOwner} from '../native-idle-before.ts';
@@ -21,20 +21,25 @@ export class RuntimeResidentStartupCleanupError extends AggregateError {
 }
 /** Source start_app_server ordering: durable custody, native resident, idle journal.
  * The caller supplies resolved process/client configuration and must already own
- * the single-instance guard. No gateway/queue intake is started here.
+ * the single-instance guard throughout activation, spawn and handshake. Direct
+ * callers promise that exclusivity; accounting is not a substitute. initialize /
+ * initialized have no later DB mutation guard. No gateway/queue intake starts here.
  * Mutation begin/finish use one owned native persistence adapter. Other store
  * hooks and final validation still read synchronously; not complete DB isolation
  * or native Windows startup qualification. */
 export async function startRuntimeResident(config:PortableSessionConfig,path:string,runtimeId:string,startupChannel:bigint|null,render:(error:unknown)=>string,signal?:AbortSignal):Promise<PortableResidentLifecycle>{
  signal?.throwIfAborted();
- const pinned=cloneOwnedSerdeValue(config) as PortableSessionConfig;
- const custody=await initializeRuntimeCustody(path,runtimeId,startupChannel,render);
+ const pinned=cloneOwnedSerdeValue(config) as PortableSessionConfig;path=pinNativeRuntimePath(path);
+ const custody=await initializeRuntimeCustody(path,runtimeId,startupChannel,render,signal),dead=custody.nativeDeadGeneration;
+ const cleanup:Array<()=>Promise<void>>=[()=>dead.close()];let owner:PortableResidentLifecycle;
+ try{
  signal?.throwIfAborted();
- const dead=new NativeDeadGenerationOwner(path,runtimeId,startupChannel,render);
- const native=new NativeMutationOwner(path,runtimeId,render),idle=new NativeIdleBeforeOwner(path,render);
- const responses=new NativeResponseCompletionOwner(path,runtimeId);
+ const native=new NativeMutationOwner(path,runtimeId,render);cleanup.push(()=>native.close());
+ const idle=new NativeIdleBeforeOwner(path,render);cleanup.push(()=>idle.close());
+ const responses=new NativeResponseCompletionOwner(path,runtimeId);cleanup.splice(2,0,()=>responses.close());
  const nativeResponseCompletion=Object.freeze({captureResponse:responses.captureResponse.bind(responses),finishResponse:responses.finishResponse.bind(responses),close:()=>responses.close()});
- const observation=new NativeObservationLedgerOwner(path),gaps=new NativeObservationLedgerOwner(path);
+ const observation=new NativeObservationLedgerOwner(path);cleanup.push(()=>observation.close());
+ const gaps=new NativeObservationLedgerOwner(path);cleanup.push(()=>gaps.close());
  const nativeObservation=Object.freeze({verified:(owner:string,generation:bigint,through:bigint)=>observation.verified({ownerId:owner,generation},through),discoverGap:(owner:string,generation:bigint,upper:bigint)=>gaps.discoverGap({ownerId:owner,generation},upper),recordGap:(owner:string,generation:bigint)=>gaps.markUnknownGap({ownerId:owner,generation},'original observation stream gap'),close:async()=>{await Promise.all([observation.close(),gaps.close()]);}});
  const nativeIdle=Object.freeze({before:(owner:string,generation:bigint,thread:string)=>idle.before(owner,generation,thread),transition:(token:IdleReleaseToken,state:string,detail:string)=>idle.transition(token,state,detail),settleExitedOwner:(owner:string,generation:bigint)=>idle.settleExitedOwner(owner,generation),close:()=>idle.close()});
  const nativeDispatch=Object.freeze<ResidentNativeDispatch>({
@@ -43,14 +48,13 @@ export async function startRuntimeResident(config:PortableSessionConfig,path:str
   wasNotSubmitted:(error,attempt,wire,method)=>native.ownsUnsubmittedFailure(error,attempt,wire,method),
   validate:receipt=>native.validateForDispatch(receipt as NativeMutationReceipt),close:()=>native.close(),
  });
- let owner:PortableResidentLifecycle;
- try{owner=await PortableResidentLifecycle.start(pinned,(_stage,error)=>render(error),{
+ owner=await PortableResidentLifecycle.start(pinned,(_stage,error)=>render(error),{
   persistDeadWork:custody.persistDeadWork,
   // Dead-generation fencing has no separate exit side effect in Rust.
   // The explicit native idle capability owns exact owner/generation exit settlement.
   oldChildExited(){},
  },signal,{fence:custody.fence,renderError:render,nativeDispatch,nativeIdle,nativeObservation,nativeResponseCompletion},{capture:(id,work,signal)=>dead.capture(id,work,signal),close:()=>dead.close()});}
- catch(primary){await dead.close();await native.close();await responses.close();await idle.close();await observation.close();await gaps.close();throw primary;}
+ catch(primary){for(const close of cleanup)await close();throw primary;}
  try{
   signal?.throwIfAborted();
   installRuntimeIdleJournal(owner,path,render);

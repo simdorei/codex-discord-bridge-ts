@@ -11,6 +11,7 @@ import {parseSerdeValue} from "../../src/core/serde-json-parse.ts";
 import {serializeDeadGenerationWork,type DeadGenerationWork} from "../../src/app-server/dead-generation-work.ts";
 import {ServerRequestOccurrence} from "../../src/protocol/ids.ts";
 import {ResidentStateError} from "../../src/app-server/resident-state.ts";
+import {StateAccessFacade as state} from "../../src/store/state-access-facade.ts";
 import {createRuntimeFenceErrors} from "../../src/runtime/fence-errors.ts";
 const render=(e:unknown)=>e instanceof Error?e.message:"diagnostic";
 const code=`import readline from 'node:readline';const emit=x=>process.stdout.write(JSON.stringify(x)+'\\n');readline.createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line);if(m.method==='initialized')return;if(m.method==='seed'){emit({method:'turn/started',params:{threadId:'t',turnId:'v'}});emit({id:'scoped',method:'approval',params:{threadId:'p',turnId:'vp'}});emit({id:'unscoped',method:'approval',params:{}});}if(m.method==='die'){process.exit(0);return;}if(m.id!==undefined)emit({id:m.id,result:{ok:true}});});`;
@@ -42,8 +43,11 @@ test("failed capture refuses replacement, leaves no partial hold/notice, and ret
 }));
 test("runtime startup publishes both identities and keeps old incidents/attempts rather than authorizing replay",async()=>storeFixture(async path=>{
   await initializeRuntimeCustody(path,"first",null,render);const db=await openInitialized(path);try{
-    db.exec("INSERT INTO codex_dead_generation_incidents VALUES('first',1,'{}','[]',0)");await initializeRuntimeCustody(path,"second",0n,render);
+    db.exec("INSERT INTO codex_dead_generation_incidents VALUES('first',1,'{}','[]',0)");
+    state.beginChecked(path,{runtimeId:"first",ownerId:"old-owner",generation:1n,attemptId:"old-attempt",wireId:"1",method:"thread/settings/update",targetThreadId:"old-target",scoped:true,payload:{}},()=>undefined);
+    await initializeRuntimeCustody(path,"second",0n,render);
     assert.equal(db.prepare("SELECT runtime_id FROM codex_app_server_runtime").get()!.runtime_id,"second");assert.equal(db.prepare("SELECT runtime_id FROM codex_mutation_runtime").get()!.runtime_id,"second");assert.equal(db.prepare("SELECT count(*) AS n FROM codex_dead_generation_incidents").get()!.n,1);
+    assert.deepEqual({...db.prepare("SELECT runtime_id,owner_id,state FROM codex_mutation_attempts").get()!},{runtime_id:"first",owner_id:"old-owner",state:"prepared"});
   }finally{db.close();}
 }));
 test("startup rejects overflowing channel before creating database and recorder refuses removed schema",async()=>storeFixture(async path=>{
@@ -68,3 +72,24 @@ test("central fence error mapping delegates diagnostics without inspecting error
   assert.equal(seen,opaque);assert.equal(touched,0);assert.equal(mapper.run("MutationHeld",()=>42),42);assert.equal(Object.isFrozen(mapper),true);
   assert.throws(()=>createRuntimeFenceErrors((async()=>"bad") as unknown as (e:unknown)=>string),/synchronous/);
 });
+
+test("startup activations preserve order and first-step refusal never executes the second",async()=>storeFixture(async path=>{
+ const first=await initializeRuntimeCustody(path,"first",null,render);await first.nativeDeadGeneration.close();const db=await openInitialized(path);
+ try{
+  db.exec("CREATE TABLE activation_order(sequence INTEGER PRIMARY KEY, kind TEXT); CREATE TRIGGER record_dead AFTER UPDATE ON codex_app_server_runtime BEGIN INSERT INTO activation_order(kind) VALUES('dead'); END; CREATE TRIGGER record_mutation BEFORE UPDATE ON codex_mutation_runtime BEGIN SELECT CASE WHEN (SELECT runtime_id FROM codex_app_server_runtime)!=NEW.runtime_id THEN RAISE(ABORT,'dead activation not committed') END; INSERT INTO activation_order(kind) VALUES('mutation'); END;");
+  const second=await initializeRuntimeCustody(path,"second",null,render);await second.nativeDeadGeneration.close();assert.deepEqual(db.prepare("SELECT kind FROM activation_order ORDER BY sequence").all().map(row=>row.kind),["dead","mutation"]);
+  db.exec("CREATE TRIGGER reject_dead BEFORE UPDATE ON codex_app_server_runtime BEGIN SELECT RAISE(ABORT,'first activation denied'); END;");
+  await assert.rejects(initializeRuntimeCustody(path,"third",null,render),e=>e instanceof ResidentStateError&&e.detail.kind==="DeadGenerationFence"&&e.message.includes("first activation denied"));
+  assert.equal(db.prepare("SELECT runtime_id FROM codex_app_server_runtime").get()!.runtime_id,"second");assert.equal(db.prepare("SELECT runtime_id FROM codex_mutation_runtime").get()!.runtime_id,"second");assert.equal(db.prepare("SELECT count(*) AS n FROM activation_order").get()!.n,2);
+ }finally{db.close();}
+}));
+test("native startup does not invoke main-thread activation helpers and keeps compatibility persistence synchronous",async t=>storeFixture(async path=>{
+ let calls=0;t.mock.method(state,"activateDeadGenerationRuntime",()=>{calls++;throw new Error("main activation forbidden");});t.mock.method(state,"activate",()=>{calls++;throw new Error("main activation forbidden");});
+ const custody=await initializeRuntimeCustody(path,"runtime",null,render),db=await openInitialized(path);
+ try{assert.equal(calls,0);assert.equal(custody.persistDeadWork("resident",{generation:1n,closedReason:"EOF",activeTurns:[],serverRequests:[]}),undefined);assert.equal(db.prepare("SELECT count(*) AS n FROM codex_dead_generation_incidents").get()!.n,1);}
+ finally{await custody.nativeDeadGeneration.close();db.close();}
+}));
+
+test("empty runtime activation remains a centrally mapped failure without a store",async()=>storeFixture(async path=>{
+ await assert.rejects(initializeRuntimeCustody(path,"",null,render),e=>e instanceof ResidentStateError&&e.detail.kind==="DeadGenerationFence");assert.equal(existsSync(path),false);
+}));

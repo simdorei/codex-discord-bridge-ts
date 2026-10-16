@@ -39,3 +39,52 @@ test('locked SQLite capture allows timers and abort retains Control until late n
 test('native capture decodes corrupt unrelated queue rows before generation filtering',async()=>storeFixture(async path=>{
  const db=await seed(path),n=new NativeDeadGenerationOwner(path,'runtime',99n,render);try{db.exec("INSERT INTO codex_turn_queue(job_id,target_thread_id,channel_id,app_server_generation,prompt,queued,ack_sent,state,attempt_count,baseline_turn_ids,created_at,updated_at) VALUES('unrelated','U',55,99,'prompt',1,0,'pending',0,'{',1,1)");await assert.rejects(n.capture('resident',work()),failed);for(const table of ['codex_dead_generation_incidents','codex_dead_generation_holds','codex_delivery_outbox'])assert.equal(db.prepare(`SELECT count(*) AS n FROM ${table}`).get()!.n,0);}finally{await n.close();db.close();}
 }));
+
+test('startup activation returns the same existing-only capture owner and never exposes reactivation',async()=>storeFixture(async path=>{
+ const n=await NativeDeadGenerationOwner.startWithCustodyActivation(path,'runtime',99n,render),db=new DatabaseSync(path);
+ try{
+  assert.equal(db.prepare('SELECT runtime_id FROM codex_app_server_runtime').get()!.runtime_id,'runtime');
+  assert.equal(db.prepare('SELECT runtime_id FROM codex_mutation_runtime').get()!.runtime_id,'runtime');
+  assert.equal('activateCustody' in n,false);assert.equal(n.busy,false);
+  await n.capture('resident',work());assert.equal(db.prepare('SELECT runtime_id FROM codex_dead_generation_incidents').get()!.runtime_id,'runtime');
+  db.exec('DROP TABLE codex_app_server_runtime');await assert.rejects(n.capture('resident',work()),failed);
+  assert.equal(db.prepare("SELECT count(*) AS n FROM sqlite_schema WHERE name='codex_app_server_runtime'").get()!.n,0);
+ }finally{await n.close();db.close();}
+ assert.throws(()=>n.capture('resident',work()),/closed/);
+}));
+for(const mode of ['success','drop','duplicate','operation','path','runtime','binding','kind','shape','input','crash','abort','timeout'] as const)test(`startup commit then ${mode} keeps Control until actual exit`,{timeout:15000},async()=>storeFixture(async path=>{
+ (await openInitialized(path)).close();const domain=StoreAuthorityDomain.enroll(path),db=new DatabaseSync(path,{readOnly:true}),trace=new SharedArrayBuffer(8),c=new AbortController();
+ const crossed=['operation','path','runtime','binding','kind'].includes(mode);
+ const restore=instrumentStoreWorker({match,trace,...(mode==='drop'||mode==='duplicate'?{ack:mode}:{}),
+  ...(crossed?{before:`parentPort.postMessage=value=>post({...value,${mode}:'wrong'});`}:{}),
+  ...(mode==='shape'?{before:"parentPort.postMessage=value=>post({...value,extra:true});"}:{}),
+  ...(mode==='input'?{before:"const {workerData:input}=await import('node:worker_threads');input.startupChannel=100n;"}:{}),
+  ...(mode==='crash'?{after:"Atomics.wait(trace,1,0,15000);throw new Error('activation commit crash');"}:{})});
+ let done=false,n:NativeDeadGenerationOwner|undefined;const pending=NativeDeadGenerationOwner.startWithCustodyActivation(path,'runtime',99n,render,c.signal,mode==='timeout'?300:5000);
+ const observed=pending.then(value=>{done=true;n=value;return null;},error=>{done=true;return error;});
+ try{
+  await waitTrace(trace);assert.equal(db.prepare('SELECT runtime_id FROM codex_app_server_runtime').get()!.runtime_id,'runtime');assert.equal(db.prepare('SELECT runtime_id FROM codex_mutation_runtime').get()!.runtime_id,'runtime');
+  assert.equal(domain.snapshot().writers,1);assert.equal(ownedWorkerUsage().Control,1);if(mode==='abort')c.abort(new Error('cancel startup'));
+  await new Promise(r=>setTimeout(r,mode==='timeout'?350:30));assert.equal(done,false);assert.equal(domain.snapshot().writers,1);assert.equal(ownedWorkerUsage().Control,1);
+ }finally{releaseTrace(trace);restore();}
+ const outcome=await observed;try{assert.equal(domain.snapshot().writers,0);assert.equal(ownedWorkerUsage().Control,0);if(mode==='success'){assert.equal(outcome,null);await n!.capture('resident',work());}else assert.ok(failed(outcome));}
+ finally{await n?.close();domain.closeAfterOwnersJoined();db.close();}
+}));
+test('startup Control saturation refuses without creating another store or writer',async()=>storeFixture(async path=>{
+ (await seed(path)).close();const domain=StoreAuthorityDomain.enroll(path),trace=new SharedArrayBuffer(8),restore=instrumentStoreWorker({match,trace}),n=new NativeDeadGenerationOwner(path,'runtime',99n,render);
+ const pending=n.capture('resident',work());void pending.catch(()=>{});
+ try{await waitTrace(trace);await assert.rejects(NativeDeadGenerationOwner.startWithCustodyActivation(path+'.other','runtime',null,render),failed);assert.equal(existsSync(path+'.other'),false);assert.equal(domain.snapshot().writers,1);assert.equal(ownedWorkerUsage().Control,1);}
+ finally{releaseTrace(trace);restore();await pending;await n.close();domain.closeAfterOwnersJoined();}
+}));
+test('real SQLite startup lock wait leaves main-loop timers responsive and joins after cancellation',async()=>storeFixture(async path=>{
+ const db=await openInitialized(path),trace=new SharedArrayBuffer(8),c=new AbortController();
+ const facade=new URL('../../src/store/state-access-facade'+(import.meta.url.endsWith('.js')?'.js':'.ts'),import.meta.url).href;
+ const restore=instrumentStoreWorker({match,trace,before:`const {StateAccessFacade:state}=await import(${JSON.stringify(facade)});const activate=state.activateDeadGenerationRuntime;state.activateDeadGenerationRuntime=(...args)=>{Atomics.store(trace,0,1);return activate(...args);};`,after:''});
+ let done=false;db.exec('BEGIN IMMEDIATE');const pending=NativeDeadGenerationOwner.startWithCustodyActivation(path,'runtime',null,render,c.signal),observed=pending.then(n=>{done=true;return n;},e=>{done=true;return e;});
+ try{
+  await waitTrace(trace);let ticks=0;const timer=setInterval(()=>ticks++,5);await new Promise(r=>setTimeout(r,50));clearInterval(timer);
+  assert.ok(ticks>=2);assert.equal(done,false);assert.equal(db.isTransaction,true);assert.equal(ownedWorkerUsage().Control,1);c.abort(new Error('cancel blocked activation'));
+  await new Promise(r=>setTimeout(r,30));assert.equal(done,false);db.exec('ROLLBACK');assert.ok(failed(await observed));
+  assert.equal(db.prepare('SELECT runtime_id FROM codex_app_server_runtime').get()!.runtime_id,'runtime');assert.equal(db.prepare('SELECT runtime_id FROM codex_mutation_runtime').get()!.runtime_id,'runtime');assert.equal(ownedWorkerUsage().Control,0);
+ }finally{if(db.isTransaction)db.exec('ROLLBACK');releaseTrace(trace);restore();await observed;db.close();}
+}));
