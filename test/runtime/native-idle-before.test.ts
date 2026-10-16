@@ -1,3 +1,4 @@
+import {instrumentStoreWorker,waitTrace,releaseTrace} from '../helpers/store-authority-worker-fixture.ts';
 import test from 'node:test';import assert from 'node:assert/strict';import {existsSync} from 'node:fs';import type {DatabaseSync} from 'node:sqlite';
 import {NativeIdleBeforeOwner} from '../../src/runtime/native-idle-before.ts';import {OwnedWorkerBusyError,ownedWorkerUsage} from '../../src/runtime/owned-worker-slot.ts';import {IdleObservationError} from '../../src/app-server/notification-state.ts';import {storeFixture} from '../helpers/store-fixture.ts';import {openInitialized} from '../../src/store/owned-driver.ts';import {selectIdleIntentIn} from '../../src/store/idle-release-row.ts';
 function insert(db:DatabaseSync,state:string,thread='T',owner='owner',generation=7n){db.prepare("INSERT INTO cdr_idle_release VALUES(?,?,?,?,'V','job',1,?,'prior detail')").run('i-'+thread,owner,generation,thread,state);}
@@ -11,3 +12,15 @@ test('accepted timeout cannot release owner before native write finishes',async(
 test('terminal close waits exact worker then rejects further calls',async()=>fixture(async(_p,db,o)=>{db.exec('BEGIN IMMEDIATE');const p=o.before('owner',7n,'T'),rejected=assert.rejects(p,IdleObservationError);let closed=false;const closing=o.close();void closing.then(()=>{closed=true;});await new Promise(resolve=>setTimeout(resolve,60));assert.equal(closed,false);db.exec('ROLLBACK');await rejected;await closing;assert.equal(ownedWorkerUsage().Control,0);assert.throws(()=>o.before('owner',7n,'T'),/closed/);await o.close();}));
 test('pre-cancelled invalid and oversize claims submit no native work',async()=>fixture(async(_p,_db,o)=>{const c=new AbortController(),reason={cancel:true};c.abort(reason);assert.throws(()=>o.before('owner',7n,'T',c.signal),e=>e===reason);for(const thread of ['\ud800','x'.repeat(4097),'nul\0'])assert.throws(()=>o.before('owner',7n,thread));for(const g of [-1n,1n<<63n])assert.throws(()=>o.before('owner',g,'T'),RangeError);assert.equal(o.busy,false);assert.equal(ownedWorkerUsage().Control,0);}));
 test('missing existing database is not created and renderer cannot leak raw rejection',async()=>storeFixture(async path=>{const owner=new NativeIdleBeforeOwner(path,()=> 'safe');try{await assert.rejects(owner.before('owner',7n,'T'),e=>e instanceof IdleObservationError&&e.message.includes('safe')&&!e.message.includes(path));assert.equal(existsSync(path),false);}finally{await owner.close();}}));
+
+test('installation validates bounded old rows without changing them and never initializes missing stores',async()=>fixture(async(path,db,o)=>{
+ insert(db,'Unknown','old','old-owner');const old=selectIdleIntentIn(db,'old');await o.validateInstallation();assert.deepEqual(selectIdleIntentIn(db,'old'),old);assert.equal(ownedWorkerUsage().Control,0);
+ db.exec("UPDATE cdr_idle_release SET revision='malformed'");await assert.rejects(o.validateInstallation(),IdleObservationError);
+}));
+test('installation validation missing store stays missing',async()=>storeFixture(async path=>{const o=new NativeIdleBeforeOwner(path,x=>x);try{await assert.rejects(o.validateInstallation(),IdleObservationError);assert.equal(existsSync(path),false);}finally{await o.close();}}));
+
+for(const field of ['operation','path','nonce','extra','drop','duplicate'] as const)test(`installation rejects ${field} ACK and retains actual exit ownership`,async()=>fixture(async(_path,_db,o)=>{
+ const trace=new SharedArrayBuffer(8),restore=instrumentStoreWorker({match:'native-idle-before-worker'+(import.meta.url.endsWith('.js')?'.js':'.ts'),trace,...(field==='drop'||field==='duplicate'?{ack:field}:{before:`parentPort.postMessage=value=>post({...value,value:{...value.value,${field}:'wrong'}});`})});
+ const pending=o.validateInstallation(),rejected=assert.rejects(pending,IdleObservationError);let done=false;void pending.then(()=>{done=true;},()=>{done=true;});
+ try{await waitTrace(trace);await new Promise(r=>setTimeout(r,20));assert.equal(done,false);assert.equal(o.busy,true);}finally{releaseTrace(trace);restore();}await rejected;assert.equal(o.busy,false);assert.equal(ownedWorkerUsage().Control,0);
+}));

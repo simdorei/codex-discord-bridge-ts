@@ -21,6 +21,15 @@ export class NativeIdleBeforeOwner {
  #ready(signal:AbortSignal|undefined,allowOwned=false):void{
   if(signal!==undefined&&(types.isProxy(signal)||!(signal instanceof AbortSignal)))throw new TypeError('Expected AbortSignal');signal?.throwIfAborted();if(this.#closed)throw new Error('Native idle owner is closed');if(!allowOwned&&this.busy)throw new OwnedWorkerBusyError();
  }
+ /** Validate the source's bounded old pending inventory without returning rows or
+  * changing their authority. Exact invocation acknowledgement is joined first. */
+ validateInstallation(signal?:AbortSignal):Promise<void>{
+  this.#ready(signal);const nonce=randomUUID();
+  return this.#run('validateInstallation',{nonce},false,value=>{
+   const ack=cloneOwnedSerdeValue(value),keys=['operation','path','nonce'];
+   if(ack===null||typeof ack!=='object'||Array.isArray(ack)||Object.keys(ack).length!==keys.length||keys.some(key=>!Object.hasOwn(ack,key))||own(ack,'operation')!=='validateInstallation'||own(ack,'path')!==this.#path||own(ack,'nonce')!==nonce)throw new TypeError('Native idle installation acknowledgement changed original invocation');
+  },signal);
+ }
  before(owner:string,generation:bigint,thread:string,signal?:AbortSignal):Promise<IdleReleaseToken|null>{
   this.#ready(signal);owner=text(owner);thread=text(thread);if(typeof generation!=='bigint'||generation<0n||generation>=(1n<<63n))throw new RangeError('Idle generation must fit signed i64');
   return this.#run('before',{owner,generation,thread},false,value=>{
@@ -49,13 +58,13 @@ export class NativeIdleBeforeOwner {
    if(ack===null||typeof ack!=='object'||Array.isArray(ack)||Object.keys(ack).length!==keys.length||keys.some(key=>!Object.hasOwn(ack,key))||own(ack,'operation')!=='settleExitedOwner'||own(ack,'path')!==this.#path||own(ack,'owner')!==owner||own(ack,'generation')!==generation||own(ack,'nonce')!==nonce)throw new TypeError('Native idle exit acknowledgement changed original invocation');
   },signal);
  }
- #run<T>(operation:'before'|'transition'|'settleExitedOwner',input:object,completion:boolean,decode:(value:unknown)=>T,signal?:AbortSignal):Promise<T>{
+ #run<T>(operation:'before'|'transition'|'settleExitedOwner'|'validateInstallation',input:object,completion:boolean,decode:(value:unknown)=>T,signal?:AbortSignal):Promise<T>{
   const controller=new AbortController(),slot=new OwnedWorkerSlot('Control');this.#controllers.add(controller);const abort=()=>controller.abort(signal!.reason);signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();
   const task=(async()=>{let admitted=false;try{
    const url=new URL('./native-idle-before-worker.ts',import.meta.url),data={path:this.#path,operation,...input};
    const pending=completion?slot.runControlCompletion(url,data,this.#timeout,controller.signal):slot.run(url,data,this.#timeout,controller.signal);admitted=slot.busy;
    let raw:unknown;try{raw=await pending;}finally{await slot.join();}controller.signal.throwIfAborted();
-   if(boundedSerdeByteCount(raw,65536)===null||own(raw,'ok')!==true||(operation==='settleExitedOwner'&&(raw===null||typeof raw!=='object'||Array.isArray(raw)||Object.keys(raw).length!==2||!Object.hasOwn(raw,'value'))))throw new Error('Native idle operation did not return confirmed result');return decode(own(raw,'value'));
+   if(boundedSerdeByteCount(raw,65536)===null||own(raw,'ok')!==true||((operation==='settleExitedOwner'||operation==='validateInstallation')&&(raw===null||typeof raw!=='object'||Array.isArray(raw)||Object.keys(raw).length!==2||!Object.hasOwn(raw,'value'))))throw new Error('Native idle operation did not return confirmed result');return decode(own(raw,'value'));
   }catch(error){if(!admitted)throw error;let safe='native idle operation result unavailable';try{const rendered=this.#render(safe);if(types.isPromise(rendered))void Promise.prototype.then.call(rendered,undefined,()=>undefined);safe=text(rendered,12000);}catch{/* No raw error or claim fallback. */}throw new IdleObservationError(`${safe}; original target requires reconciliation; no automatic retry`);}
   finally{signal?.removeEventListener('abort',abort);}})();
   this.#tasks.add(task);const clear=()=>{this.#tasks.delete(task);this.#controllers.delete(controller);};void task.then(clear,clear);return task;

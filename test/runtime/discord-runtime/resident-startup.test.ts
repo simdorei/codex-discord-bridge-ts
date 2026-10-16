@@ -29,7 +29,7 @@ test('native startup activates custody and idle tracking before publishing the r
 }));
 test('failed idle installation reaps the actual child before surfacing its primary error',async()=>storeFixture(async path=>{
  const db=await openInitialized(path);try{db.exec("CREATE TRIGGER reject_stream BEFORE INSERT ON cdr_observation_streams BEGIN SELECT RAISE(ABORT,'fixture activation denied'); END");}finally{db.close();}
- await assert.rejects(startRuntimeResident(config(path),path,'runtime',null,render),e=>e instanceof IdleObservationError&&e.message.includes('fixture activation denied'));
+ await assert.rejects(startRuntimeResident(config(path),path,'runtime',null,render),e=>e instanceof IdleObservationError&&e.message.includes('Native observation result unconfirmed')&&!e.message.includes('fixture activation denied'));
  const pid=Number(readFileSync(join(dirname(path),'child.pid'),'utf8'));
  assert.throws(()=>process.kill(pid,0),(e:any)=>e.code==='ESRCH');
 }));
@@ -83,4 +83,15 @@ test('late runtime marker change after native mutation begin still fails the fin
  const pending=owner.request('thread/settings/update',{threadId:'T'},5000),rejected=assert.rejects(pending);let released=false;
  try{await waitTrace(trace);assert.equal(db.prepare('SELECT state FROM codex_mutation_attempts').get()!.state,'prepared');db.exec("UPDATE codex_mutation_runtime SET runtime_id='late-writer'");assert.equal(existsSync(wire),false);releaseTrace(trace);restore();released=true;await rejected;assert.equal(existsSync(wire),false);assert.equal(db.prepare('SELECT state FROM codex_mutation_attempts').get()!.state,'prepared');}
  finally{if(!released){releaseTrace(trace);restore();}await Promise.allSettled([pending]);await owner.dispose();db.close();}
+}));
+
+for(const phase of ['native-idle-before-worker','native-observation-ledger-worker'] as const)for(const mode of ['success','malformed','abort'] as const)test(`post-spawn installation waits exact ${phase} join: ${mode}`,{timeout:15000},async()=>storeFixture(async path=>{
+ const trace=new SharedArrayBuffer(8),controller=new AbortController(),restore=instrumentStoreWorker({match:phase+(import.meta.url.endsWith('.js')?'.js':'.ts'),trace,...(mode==='malformed'?{before:"parentPort.postMessage=value=>post({...value,value:{...value.value,nonce:'wrong'}});"}:{})});
+ let done=false,owner:Awaited<ReturnType<typeof startRuntimeResident>>|undefined;const pending=startRuntimeResident(config(path),path,'runtime',null,render,controller.signal),observed=pending.then(value=>{done=true;owner=value;return null;},error=>{done=true;return error;});
+ try{
+  await waitTrace(trace);assert.equal(existsSync(join(dirname(path),'child.pid')),true);assert.equal(done,false);
+  const db=new DatabaseSync(path,{readOnly:true});try{assert.equal(db.prepare('SELECT count(*) AS n FROM cdr_observation_streams').get()!.n,phase==='native-idle-before-worker'?0:1);}finally{db.close();}
+  if(mode==='abort')controller.abort(new Error('cancel installation'));let ticks=0;await new Promise(r=>setTimeout(()=>{ticks++;r(null);},40));assert.equal(ticks,1);assert.equal(done,false);
+ }finally{releaseTrace(trace);restore();}
+ const result=await observed;try{if(mode==='success'){assert.equal(result,null);assert.equal(owner!.observationTrackingEnabled(),true);}else{assert.ok(result instanceof IdleObservationError);const pid=Number(readFileSync(join(dirname(path),'child.pid'),'utf8'));assert.throws(()=>process.kill(pid,0),(e:any)=>e.code==='ESRCH');}assert.equal(ownedWorkerUsage().Control,0);assert.equal(ownedWorkerUsage().Observation,0);}finally{await owner?.dispose();}
 }));

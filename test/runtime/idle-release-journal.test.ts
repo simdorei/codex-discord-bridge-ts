@@ -1,10 +1,14 @@
+import {instrumentStoreWorker,waitTrace,releaseTrace} from '../helpers/store-authority-worker-fixture.ts';
+import {dirname,relative} from 'node:path';
+import {NativeIdleBeforeOwner} from '../../src/runtime/native-idle-before.ts';
+import {NativeObservationLedgerOwner} from '../../src/runtime/native-observation-ledger.ts';
 import assert from "node:assert/strict";
 import {test,type TestContext} from "node:test";
 import type {DatabaseSync} from "node:sqlite";
 import {existsSync} from "node:fs";
 import {PortableResidentLifecycle} from "../../src/app-server/portable-resident-lifecycle.ts";
 import {IdleObservationError} from "../../src/app-server/notification-state.ts";
-import {createRuntimeIdleJournal,installRuntimeIdleJournal} from "../../src/runtime/idle-release-journal.ts";
+import {createRuntimeIdleJournal,installRuntimeIdleJournal,installRuntimeIdleJournalNative} from "../../src/runtime/idle-release-journal.ts";
 import {initializeRuntimeCustody} from "../../src/runtime/runtime-custody.ts";
 import {StateAccessFacade as state} from "../../src/store/state-access-facade.ts";
 import {openInitialized} from "../../src/store/owned-driver.ts";
@@ -66,3 +70,40 @@ test("cold scope activation retains prior unresolved idle rows and unknown tails
     state.pendingIdleIntentsExisting(path);state.activateObservationExisting(path,{ownerId:"new",generation:1n});const j=createRuntimeIdleJournal(path,render);assert.equal(j.observationScopeVerified("new",1n,0n),false);assert.equal(selectIdleIntentIn(db,"T")!.detail,"preserve");assert.throws(()=>j.beforeMutation("new",1n,"T"),/requires review/);
   }finally{db.close();}
 }));
+
+// Explicit trusted-port tests isolate the synchronous publication boundary without
+// adding a production lifecycle API or permitting replacement client authority.
+
+for(const mutation of ['none','generation','client','closed','quarantined','restart','abort','validation','activation','final-admission'] as const)test(`native installation retains original scope and releases admissions: ${mutation}`,async()=>{
+ const events:string[]=[],controller=new AbortController();let releases=0,installed=false,generation=1n,healthy=true,quarantined=false,restartPending=false;
+ const client={identity:{},requireOwnedAdmission(){events.push('permit');}},other={identity:{},requireOwnedAdmission(){}};let live=client;let admissions=0;
+ const server={instanceId:'original',generation:()=>generation,lifecycleSnapshot:()=>({generation,healthy,quarantined,restartPending}),admitResponse:(expected:bigint)=>{assert.equal(expected,generation);if(++admissions===2&&mutation==='final-admission')throw new Error('sealed');return {client:live,permit:{},release(){releases++;}};},installIdleReleaseJournal:()=>{events.push('install');installed=true;}};
+ const idle={async validateInstallation(){events.push('validate');if(mutation==='validation')throw new Error('validation');}};
+ const observation={async activate(scope:unknown){events.push('activate');assert.deepEqual(scope,{ownerId:'original',generation:1n});if(mutation==='activation')throw new Error('activation');if(mutation==='generation')generation=2n;if(mutation==='client')live=other;if(mutation==='closed')healthy=false;if(mutation==='quarantined')quarantined=true;if(mutation==='restart')restartPending=true;if(mutation==='abort')controller.abort(new Error('cancel'));}};
+ const pending=installRuntimeIdleJournalNative(server as any,'/tmp/installation-captured.db',render,idle as any,observation as any,controller.signal);
+ if(mutation==='none'){await pending;assert.equal(installed,true);assert.equal(releases,2);}else{await assert.rejects(pending);assert.equal(installed,false);assert.equal(releases,mutation==='client'?2:1);}
+ assert.equal(events.indexOf('validate')<events.indexOf('activate')||mutation==='validation',true);if(mutation==='validation')assert.equal(events.includes('activate'),false);
+});
+
+for(const phase of ['validation','activation'] as const)test(`native installation real SQLite ${phase} lock permits timer progress after leaf entry`,async()=>storeFixture(async path=>{
+ const db=await openInitialized(path),idle=new NativeIdleBeforeOwner(path,x=>x),observation=new NativeObservationLedgerOwner(path),trace=new SharedArrayBuffer(12),facade=new URL('../../src/store/state-access-facade.ts',import.meta.url);
+ if(import.meta.url.endsWith('.js'))facade.pathname=facade.pathname.slice(0,-3)+'.js';
+ const leaf=phase==='validation'?'pendingIdleIntentsExisting':'activateObservationExisting',worker=phase==='validation'?'native-idle-before-worker':'native-observation-ledger-worker';
+ const restore=instrumentStoreWorker({match:worker+(import.meta.url.endsWith('.js')?'.js':'.ts'),trace,before:`const {StateAccessFacade:state}=await import(${JSON.stringify(facade.href)});const original=state.${leaf};state.${leaf}=(...args)=>{Atomics.store(trace,2,1);return Reflect.apply(original,state,args);};`});
+ let pending:Promise<void>|undefined;
+ try{
+  db.exec('PRAGMA journal_mode=DELETE');db.exec(phase==='validation'?'BEGIN EXCLUSIVE':'BEGIN IMMEDIATE');
+  pending=phase==='validation'?idle.validateInstallation():observation.activate({ownerId:'owner',generation:1n});let done=false;void pending.then(()=>{done=true;},()=>{done=true;});
+  await waitTrace(trace,2);await new Promise(r=>setTimeout(r,80));assert.equal(Atomics.load(new Int32Array(trace),0),0);assert.equal(done,false);assert.equal(phase==='validation'?idle.busy:observation.busy,true);assert.equal(db.isTransaction,true);
+  db.exec('ROLLBACK');await waitTrace(trace);assert.equal(done,false);releaseTrace(trace);restore();await pending;
+ }finally{if(db.isTransaction)db.exec('ROLLBACK');releaseTrace(trace);restore();if(pending)await Promise.allSettled([pending]);await idle.close();await observation.close();db.close();}
+}));
+
+test('native installation captures relative journal path before the first await and retains old-owner rows',async()=>storeFixture(async path=>storeFixture(async other=>{
+ const db=await openInitialized(path),originalCwd=process.cwd();let installed:ReturnType<typeof createRuntimeIdleJournal>|undefined,release!:()=>void;
+ db.exec("INSERT INTO cdr_idle_release VALUES('old','old-owner',1,'T','V','job',1,'Unknown','keep')");
+ const client={identity:{},requireOwnedAdmission(){}},server={instanceId:'original',generation:()=>1n,lifecycleSnapshot:()=>({generation:1n,healthy:true,quarantined:false,restartPending:false}),admitResponse:()=>({client,permit:{},release(){}}),installIdleReleaseJournal:(journal:ReturnType<typeof createRuntimeIdleJournal>)=>{installed=journal;}};
+ const idle={validateInstallation:()=>new Promise<void>(resolve=>{release=resolve;})},observation={async activate(scope:unknown){assert.deepEqual(scope,{ownerId:'original',generation:1n});}};
+ const pending=installRuntimeIdleJournalNative(server as any,relative(originalCwd,path),render,idle as any,observation as any);
+ try{process.chdir(dirname(other));release();await pending;assert.ok(installed);assert.throws(()=>installed!.checkMutation('T'),/requires review/);assert.equal(selectIdleIntentIn(db,'T')!.detail,'keep');assert.equal(existsSync(other),false);}finally{process.chdir(originalCwd);release();await Promise.allSettled([pending]);db.close();}
+})));

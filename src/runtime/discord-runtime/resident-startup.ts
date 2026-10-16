@@ -9,7 +9,7 @@ import {PortableResidentLifecycle} from '../../app-server/portable-resident-life
 import type {PortableSessionConfig} from '../../app-server/portable-session.ts';
 import {cloneOwnedSerdeValue} from '../../core/owned-serde-value.ts';
 import {initializeRuntimeCustody} from '../runtime-custody.ts';
-import {installRuntimeIdleJournal} from '../idle-release-journal.ts';
+import {installRuntimeIdleJournalNative} from '../idle-release-journal.ts';
 /** Retains the exact owned resident when failed startup cleanup needs retry.
  * Never authorizes starting a replacement while the retained owner is unresolved. */
 export class RuntimeResidentStartupCleanupError extends AggregateError {
@@ -31,14 +31,14 @@ export async function startRuntimeResident(config:PortableSessionConfig,path:str
  signal?.throwIfAborted();
  const pinned=cloneOwnedSerdeValue(config) as PortableSessionConfig;path=pinNativeRuntimePath(path);
  const custody=await initializeRuntimeCustody(path,runtimeId,startupChannel,render,signal),dead=custody.nativeDeadGeneration;
- const cleanup:Array<()=>Promise<void>>=[()=>dead.close()];let owner:PortableResidentLifecycle;
+ const cleanup:Array<()=>Promise<void>>=[()=>dead.close()];let owner:PortableResidentLifecycle;let idle:NativeIdleBeforeOwner,observation:NativeObservationLedgerOwner;
  try{
  signal?.throwIfAborted();
  const native=new NativeMutationOwner(path,runtimeId,render);cleanup.push(()=>native.close());
- const idle=new NativeIdleBeforeOwner(path,render);cleanup.push(()=>idle.close());
+ idle=new NativeIdleBeforeOwner(path,render);cleanup.push(()=>idle.close());
  const responses=new NativeResponseCompletionOwner(path,runtimeId);cleanup.splice(2,0,()=>responses.close());
  const nativeResponseCompletion=Object.freeze({captureResponse:responses.captureResponse.bind(responses),finishResponse:responses.finishResponse.bind(responses),close:()=>responses.close()});
- const observation=new NativeObservationLedgerOwner(path);cleanup.push(()=>observation.close());
+ observation=new NativeObservationLedgerOwner(path);cleanup.push(()=>observation.close());
  const gaps=new NativeObservationLedgerOwner(path);cleanup.push(()=>gaps.close());
  const nativeObservation=Object.freeze({verified:(owner:string,generation:bigint,through:bigint)=>observation.verified({ownerId:owner,generation},through),discoverGap:(owner:string,generation:bigint,upper:bigint)=>gaps.discoverGap({ownerId:owner,generation},upper),recordGap:(owner:string,generation:bigint)=>gaps.markUnknownGap({ownerId:owner,generation},'original observation stream gap'),close:async()=>{await Promise.all([observation.close(),gaps.close()]);}});
  const nativeIdle=Object.freeze({before:(owner:string,generation:bigint,thread:string)=>idle.before(owner,generation,thread),transition:(token:IdleReleaseToken,state:string,detail:string)=>idle.transition(token,state,detail),settleExitedOwner:(owner:string,generation:bigint)=>idle.settleExitedOwner(owner,generation),close:()=>idle.close()});
@@ -57,7 +57,7 @@ export async function startRuntimeResident(config:PortableSessionConfig,path:str
  catch(primary){for(const close of cleanup)await close();throw primary;}
  try{
   signal?.throwIfAborted();
-  installRuntimeIdleJournal(owner,path,render);
+  await installRuntimeIdleJournalNative(owner,path,render,idle,observation,signal);
   signal?.throwIfAborted();
   return owner;
  }catch(primary){
