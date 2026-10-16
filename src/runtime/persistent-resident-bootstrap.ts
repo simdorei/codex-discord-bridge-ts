@@ -6,7 +6,7 @@ import {pinNativeRuntimePath} from './runtime-paths/path-text.ts';
 export const PERSISTENT_RESIDENT_ROLE_KEY='codex-discord-bridge:persistent-resident-role:v1';
 export const PERSISTENT_RESIDENT_HANDSHAKE_MS=5000;
 export type PersistentResidentDescriptor=Readonly<{version:1;role:'persistent-resident-v1';module:string;path:string;live:SharedArrayBuffer}>;
-export type PersistentResidentBootstrapData=Readonly<{version:1;kind:'persistent-resident-bootstrap';runtimeId:string}>;
+export type PersistentResidentBootstrapData=Readonly<{version:1;kind:'persistent-resident-bootstrap'|'persistent-resident-component';runtimeId:string}>;
 /** Pure bootstrap inventory: deliberately imports no store-using graph. */
 export function persistentResidentEntryUrl():URL{return new URL(import.meta.url.endsWith('.js')?'./persistent-resident-worker.js':'./persistent-resident-worker.ts',import.meta.url);}
 export function isPersistentResidentEntry(filename:string|undefined):boolean{return filename!==undefined&&pathToFileURL(filename).href===persistentResidentEntryUrl().href;}
@@ -21,7 +21,7 @@ function text(value:unknown,max:number):string{
 }
 export function capturePersistentResidentPath(value:unknown):string{const path=text(value,32768);if(pinNativeRuntimePath(path)!==path)throw new TypeError('Expected exact pinned persistent store path');return path;}
 export function capturePersistentResidentBootstrapData(value:unknown):PersistentResidentBootstrapData{
- const data=exact(value,['version','kind','runtimeId']);if(data.version!==1||data.kind!=='persistent-resident-bootstrap')throw new TypeError('Invalid persistent bootstrap data');return Object.freeze({version:1,kind:'persistent-resident-bootstrap',runtimeId:text(data.runtimeId,4096)});
+ const data=exact(value,['version','kind','runtimeId']);if(data.version!==1||(data.kind!=='persistent-resident-bootstrap'&&data.kind!=='persistent-resident-component'))throw new TypeError('Invalid persistent bootstrap data');return Object.freeze({version:1,kind:data.kind as PersistentResidentBootstrapData['kind'],runtimeId:text(data.runtimeId,4096)});
 }
 export function capturePersistentResidentDescriptor(value:unknown):PersistentResidentDescriptor{
  const data=exact(value,['version','role','module','path','live']);
@@ -39,3 +39,17 @@ export function requirePersistentResidentStoreOpen(path:string):void{
 export function persistentResidentFrame(value:unknown,kind:'role-ready'|'close-unstarted'|'unstarted-closed'):boolean{
  try{const data=exact(value,['version','kind']);return data.version===1&&data.kind===kind;}catch{return false;}
 }
+
+export const PERSISTENT_RESIDENT_SCENARIOS=Object.freeze(['normal-start-close','ordinary-queue-stop','response-large','response-concurrent','response-cancel-before','response-cancel-after','response-begin-refused','response-unknown','observation-gap','idle-transition','normal-replacement','final-row-changed'] as const);
+export type PersistentResidentScenario=typeof PERSISTENT_RESIDENT_SCENARIOS[number];
+export function capturePersistentResidentFixtureCommand(value:unknown):Readonly<{kind:'run-fixture';scenario:PersistentResidentScenario}>|Readonly<{kind:'close-component'}>{
+ if(value!==null&&typeof value==='object'&&!types.isProxy(value)){const d=Object.getOwnPropertyDescriptor(value,'kind');if(d&&Object.hasOwn(d,'value')&&d.value==='close-component'){exact(value,['kind']);return Object.freeze({kind:'close-component'});}}
+ const data=exact(value,['kind','scenario']);if(data.kind!=='run-fixture'||typeof data.scenario!=='string'||!PERSISTENT_RESIDENT_SCENARIOS.includes(data.scenario as PersistentResidentScenario))throw new TypeError('Invalid fixed fixture command');
+ return Object.freeze({kind:'run-fixture',scenario:data.scenario as PersistentResidentScenario});
+}
+
+export const PERSISTENT_RESIDENT_COMPONENT_PHASES=Object.freeze(['loading','services','activating','mutation','mutation-handshake','initialized','starting','ready','running','ran','closing','closed','failed'] as const);
+export type PersistentResidentComponentPhase=typeof PERSISTENT_RESIDENT_COMPONENT_PHASES[number];
+
+export const PERSISTENT_RESIDENT_FIXTURE_FAILURE_STEPS=Object.freeze(['none','seed','request','respond','child-ack','durable-assert','release-assert'] as const);
+export type PersistentResidentFixtureFailureStep=typeof PERSISTENT_RESIDENT_FIXTURE_FAILURE_STEPS[number];

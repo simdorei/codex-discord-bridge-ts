@@ -86,6 +86,7 @@ function throwErrors(errors:unknown[],message:string):void{if(errors.length===1)
  * Supervisor is explicit owner-started/joined; no 45s startup envelope or descendant-pipe cleanup. */
 export class PortableResidentLifecycle{
   #acceptGapWrites=true;
+  #responseCleanupDebt:{error:unknown}|null=null;
   readonly #settledIdleExits=new WeakMap<PortableAppServerSession,{owner:string;generation:bigint}>();
   #unconfirmedIdleExit:{session:PortableAppServerSession;owner:string;generation:bigint}|null=null;
   #gapPending:{generation:bigint;upper:bigint|null;unknown:boolean;report:(error:unknown)=>void}|null=null;
@@ -290,22 +291,22 @@ export class PortableResidentLifecycle{
   async #respondInner(id:RequestId,occurrence:ServerRequestOccurrence,input:unknown,isError:boolean,generation:bigint,signal:AbortSignal|undefined):Promise<void>{
     signal?.throwIfAborted();const options=this.#maintenance;if(options===null)throw new ResidentStateError({kind:"MutationHeld",message:"resident response adapter is not installed"});
     const payload=cloneOwnedSerdeValue(input),ownedOccurrence=ServerRequestOccurrence.fromBytes(ServerRequestOccurrence.prototype.asBytes.call(occurrence));
-    const admission=this.#state.admitResponse(generation);let target:TargetMutationPermit|null=null,written:WrittenRequestGuard|undefined;
+    const admission=this.#state.admitResponse(generation);let target:TargetMutationPermit|null=null,written:WrittenRequestGuard|undefined,attempt:ResponseAttempt|undefined;
     try{
       const original=admission.client.serverResponseCandidate(id,ownedOccurrence);
       const authority=options.fence?.responseAuthority?.(Object.freeze({ownerId:this.instanceId,generation:admission.generation,request:original}))??null;
       const prepared=await awaitPrepared(this.prepareTargetMutation("server/response",original.params,admission.generation),signal);
       if(prepared.kind!=="Ready")throw new IdleObservationError("unexpected response admission");target=prepared.permit;signal?.throwIfAborted();
-      const attempt=new ResponseAttempt(this.instanceId,admission.generation,original,authority,payload,options.fence,()=>this.checkActualTargetMutation(target,admission.generation,"server/response",original.params),options.renderError,options.nativeResponseCompletion);
+      attempt=new ResponseAttempt(this.instanceId,admission.generation,original,authority,payload,options.fence,()=>this.checkActualTargetMutation(target,admission.generation,"server/response",original.params),options.renderError,options.nativeResponseCompletion);
       written=new WrittenRequestGuard(this.#state,admission.generation);const guard=written;let result:ResponseResult;
       try{
-        const hooks={preflight:()=>attempt.begin(),writeStarted:()=>{attempt.writeStarted();guard.confirmWriteStarted();}};
+        const ownedAttempt=attempt;const hooks={preflight:()=>ownedAttempt.begin(),writeStarted:()=>{ownedAttempt.writeStarted();guard.confirmWriteStarted();}};
         if(isError)await admission.client.respondErrorAdmitted(admission.permit,id,ownedOccurrence,serdeField(payload,"error") as RpcErrorPayload,hooks,signal);
         else await admission.client.respondAdmitted(admission.permit,id,ownedOccurrence,serdeField(payload,"result"),hooks,signal);
         guard.finish("Success");result={ok:true};
       }catch(error){if(signal?.aborted&&error===signal.reason)throw error;const failure=ownedRequestFailure(error);if(failure!==null)guard.finish(failure.kind==="Remote"?"OtherError":failure.kind);result={ok:false,error};}
       const finished=options.nativeResponseCompletion===undefined?attempt.finish(result):await attempt.finishOwned(result,signal);if(!finished.ok)throw finished.error;
-    }finally{try{written?.dispose();}finally{try{target?.release();}finally{admission.release();}}}
+    }finally{try{try{attempt?.dispose();}catch(error){this.#responseCleanupDebt??={error};}}finally{try{written?.dispose();}finally{try{target?.release();}finally{admission.release();}}}}
   }
   #requestScoped(method:string,input:unknown,waitMs:number,expectedGeneration:bigint|null,isolate:boolean,context:DispatchContext,signal?:AbortSignal):Promise<unknown>{
     signal?.throwIfAborted();
@@ -528,6 +529,7 @@ export class PortableResidentLifecycle{
       if(journaled)try{await this.#maintenance?.nativeIdle?.close();}catch(error){nativeClosed=false;errors.push(error);}
       if(cleaned&&journaled&&nativeClosed)try{this.#state.finishCurrentClose(plan.current);this.#sessions.delete(plan.current);}catch(error){errors.push(error);}
     }
+    if(this.#responseCleanupDebt!==null)errors.push(this.#responseCleanupDebt.error);
     throwErrors(errors,"Resident terminal close failed");
   });}
   async dispose():Promise<void>{await this.close();if(!this.#disposed){this.#state.closeLifecycleChanges();this.#disposed=true;this.#notifications.close();this.#requests.close();this.#generation.close();}}

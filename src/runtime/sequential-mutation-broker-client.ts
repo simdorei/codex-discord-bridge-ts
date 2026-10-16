@@ -1,3 +1,4 @@
+import {requirePersistentResidentRole} from './persistent-resident-bootstrap.ts';
 import {performance} from 'node:perf_hooks';
 import {types} from 'node:util';
 import {isMainThread,MessagePort,parentPort} from 'node:worker_threads';
@@ -205,7 +206,13 @@ function createPrivateClient(bootstrap:Bootstrap,ready:(client:SequentialMutatio
 }
 let receiving:Promise<SequentialMutationClient>|null=null;
 /** Fixed parent bootstrap only. No caller-selected port, callback or transport. */
-export function receiveSequentialMutationClient():Promise<SequentialMutationClient> {
+export function receiveSequentialMutationClient():Promise<SequentialMutationClient> {return receiveClient(false);}
+/** Fixed persistent entry owns its exhaustive parent frame dispatcher. The ordinary
+ * standalone client keeps its original duplicate-bootstrap listener unchanged. */
+export function receivePersistentResidentMutationClient():Promise<SequentialMutationClient> {
+ requirePersistentResidentRole();return receiveClient(true);
+}
+function receiveClient(fixedPersistentDispatcher:boolean):Promise<SequentialMutationClient> {
  if(receiving!==null)return receiving;
  if(isMainThread||parentPort===null){receiving=Promise.reject(new ClosedBeforePost());return receiving;}
  const parent=parentPort;
@@ -217,6 +224,7 @@ export function receiveSequentialMutationClient():Promise<SequentialMutationClie
    if(consumed){closeTransferredPort(value);onFailure();return;}
    consumed=true;const bootstrap=readBootstrap(value);
    if(bootstrap===null){closeTransferredPort(value);onFailure();return;}
+   if(fixedPersistentDispatcher)parent.off('message',onBootstrap);
    control=createPrivateClient(bootstrap,resolve,reject,cleanup);
   };
   parent.on('message',onBootstrap);parent.on('messageerror',onFailure);parent.on('close',onFailure);
