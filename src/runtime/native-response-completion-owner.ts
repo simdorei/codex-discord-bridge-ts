@@ -9,20 +9,20 @@ import type {DurableResponseClaim,DurableResponseCompletion} from '../app-server
 import type {ResponseCustodyScope} from '../store/response-custody.ts';
 import {responseCustodyScope} from './response-custody-fence.ts';
 import {pinNativeRuntimePath} from './runtime-paths/path-text.ts';
-import {OwnedWorkerSlot} from './owned-worker-slot.ts';
+import {NativeResponseCompletionTransport} from './native-response-completion-transport.ts';
 interface Original {readonly scope:ResponseCustodyScope;readonly authority:unknown;readonly payload:unknown}
 interface Receipt {readonly original:Original;used:boolean}
 /** Only post-effect persistence. Receipts are private one-use original metadata,
  * never execution authority. Legacy synchronous begin/final wire checks remain.
  * Cancellation, failed submission, or missing ACK cannot authorize any replay. */
 export class NativeResponseCompletionOwner {
- readonly #path:string;readonly #runtime:string;readonly #timeout:number;
+ readonly #runtime:string;readonly #transport:NativeResponseCompletionTransport;
  readonly #receipts=new WeakMap<object,Receipt>();readonly #tasks=new Set<Promise<void>>();readonly #controllers=new Set<AbortController>();#closed=false;
  constructor(path:string,runtime:string,timeoutMs=5000){
   requireDiscordText(path);requireDiscordText(runtime);
   if(path.includes('\0')||runtime.includes('\0')||runtime===''||Buffer.byteLength(path)>32768||Buffer.byteLength(runtime)>4096)throw new TypeError('Expected response completion path and runtime');
   if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid native response completion deadline');
-  this.#path=pinNativeRuntimePath(path);this.#runtime=runtime;this.#timeout=timeoutMs;
+  const pinnedPath=pinNativeRuntimePath(path);this.#runtime=runtime;this.#transport=new NativeResponseCompletionTransport(pinnedPath,timeoutMs);
  }
  get busy():boolean{return this.#tasks.size>0;}
  captureResponse(claim:DurableResponseClaim):object{
@@ -37,14 +37,13 @@ export class NativeResponseCompletionOwner {
   if(outcome!=='flushed'&&outcome!=='not_sent')throw new TypeError('Expected explicit observed response outcome');
   if(signal!==undefined&&(types.isProxy(signal)||!(signal instanceof AbortSignal)))throw new TypeError('Expected owned AbortSignal');
   data.used=true;
-  const controller=new AbortController(),slot=new OwnedWorkerSlot('Control'),requestId=randomUUID();
+  const controller=new AbortController(),handle=this.#transport.prepare(),requestId=randomUUID();
   const abort=()=>controller.abort(signal!.reason);signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();
   this.#controllers.add(controller);
   const task=(async()=>{
    try{
     if(this.#closed)throw new Error('Native response completion owner is closed');controller.signal.throwIfAborted();
-    const pending=slot.runControlCompletion(new URL('./native-response-completion-worker.ts',import.meta.url),{path:this.#path,requestId,...data.original,outcome},this.#timeout,controller.signal);
-    let raw:unknown;try{raw=await pending;}finally{await slot.join();}
+    const raw=await this.#transport.submit(handle,{requestId,...data.original,outcome},controller.signal);
     controller.signal.throwIfAborted();
     if(boundedSerdeByteCount(raw,16384)===null||own(raw,'ok')!==true||own(raw,'requestId')!==requestId)throw new Error('Original response completion ACK unavailable');
    }catch{
@@ -54,6 +53,6 @@ export class NativeResponseCompletionOwner {
   })();
   this.#tasks.add(task);const clear=()=>{this.#tasks.delete(task);this.#controllers.delete(controller);};void task.then(clear,clear);return task;
  }
- async close(reason:unknown=new Error('Native response completion owner closed')):Promise<void>{this.#closed=true;for(const controller of this.#controllers)controller.abort(reason);await Promise.allSettled([...this.#tasks]);}
+ async close(reason:unknown=new Error('Native response completion owner closed')):Promise<void>{this.#closed=true;for(const controller of this.#controllers)controller.abort(reason);await Promise.allSettled([this.#transport.close(),...this.#tasks]);}
 }
 Object.freeze(NativeResponseCompletionOwner.prototype);

@@ -3,6 +3,7 @@ import test from 'node:test';
 import {existsSync} from 'node:fs';
 import {performance} from 'node:perf_hooks';
 import type {DatabaseSync} from 'node:sqlite';
+import {NativeResponseCompletionTransport} from '../../src/runtime/native-response-completion-transport.ts';
 import {NativeResponseCompletionOwner} from '../../src/runtime/native-response-completion-owner.ts';
 import {createResponseCustodyFence} from '../../src/runtime/response-custody-fence.ts';
 import {ownedWorkerUsage} from '../../src/runtime/owned-worker-slot.ts';
@@ -202,4 +203,24 @@ test('queued completion cancellation uses the existing Control FIFO and submits 
   await rejected;assert.equal(watch.count,1);assert.equal(watch.exited,0);assert.equal(ownedWorkerUsage().Control,1);assert.equal(f.owner.busy,true);assert.throws(()=>f.owner.finishResponse(second,'flushed'),/unused receipt/);
   watch.release();await first;assert.equal(phase(f.db),'flushed');assert.equal(ownedWorkerUsage().Control,0);
  }finally{watch.release();await Promise.allSettled([first,...(next?[next]:[])]);await watch.join();watch.restore();}
+}));
+
+for(const stop of ['close','caller-abort'] as const)test(`completion ${stop} between transport settlement and owner classification remains unknown`,{timeout:15000},async()=>fixture(async f=>{
+ const original=NativeResponseCompletionTransport.prototype.submit,controller=new AbortController();
+ let reached=false,closing:Promise<void>|undefined,closed=false;
+ NativeResponseCompletionTransport.prototype.submit=function(handle,job,signal){
+  return Reflect.apply(original,this,[handle,job,signal]).then(raw=>{
+   // The real worker has completed and joined. Stop in the precise additional
+   // continuation before the owner receives raw data; do not forge an ACK.
+   reached=true;assert.equal(ownedWorkerUsage().Control,0);assert.equal(phase(f.db),'flushed');assert.equal(f.owner.busy,true);
+   if(stop==='close'){closing=f.owner.close();void closing.then(()=>{closed=true;});assert.equal(closed,false);}
+   else controller.abort(Error('caller abort before owner classification'));
+   assert.equal(f.owner.busy,true);return raw;
+  });
+ };
+ try{
+  const receipt=f.admit();await assert.rejects(f.owner.finishResponse(receipt,'flushed',controller.signal),unknown);
+  assert.equal(reached,true);await closing;assert.equal(f.owner.busy,false);assert.equal(phase(f.db),'flushed');
+  assert.throws(()=>f.owner.finishResponse(receipt,'not_sent'),/unused receipt/);
+ }finally{NativeResponseCompletionTransport.prototype.submit=original;await closing;}
 }));
