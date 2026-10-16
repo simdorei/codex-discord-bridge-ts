@@ -1,3 +1,5 @@
+Current status: see the [checkpoint 930 ledger through checkpoint 929](MIGRATION_COMPLETION_GATES_20261016.md). The checkpoint 914 body below is preserved as historical evidence.
+
 # Migration completion gates — checkpoint 914
 
 Documentation reconciliation, 2026-10-15 UTC. **The migration is substantially implemented in scoped paths, but remains incomplete and unqualified as a complete runtime.** This ledger replaces stale present-tense inventory claims; it does not promote a candidate, rerun verification, approve deployment, or assign a completion percentage.
