@@ -4,6 +4,7 @@ import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
 import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {intakeNumberFromWire,intakeToWire} from './native-wire.ts';
 import {completedAppServerForkTargetForSourceExisting,DeadGenerationTargetHeldError} from '../../store/fork-completed-target.ts';
+import {projectNativeStoreReadDiagnostic} from '../native-store-read-diagnostic.ts';
 const port=parentPort;if(port===null)throw new Error('Intake state requires owned native worker');
 try{
  let value:unknown;
@@ -38,5 +39,5 @@ try{
  if((q.operation==='CompletedForkTarget'||q.operation==='Admit'||q.operation==='Canonicalize'||q.operation==='AdmitBusy'||q.operation==='AdmitWithIngress')&&error instanceof DeadGenerationTargetHeldError&&Object.getPrototypeOf(error)===DeadGenerationTargetHeldError.prototype){
   const refusal={ok:false,operation:q.operation,kind:'DeadTargetHeld',id:q.id,target:error.targetThreadId};
   port.postMessage(boundedSerdeByteCount(refusal,16*1024*1024)===null?{ok:false}:refusal);
- }else port.postMessage({ok:false});
+ }else {const storeDiagnostic=q.operation==='MirrorTarget'?projectNativeStoreReadDiagnostic(error):null;port.postMessage(storeDiagnostic===null?{ok:false}:{ok:false,operation:'MirrorTarget',channel:q.channel,storeDiagnostic});}
 }finally{port.close();}

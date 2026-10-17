@@ -5,6 +5,9 @@ import {StateAccessFacade, type IStateAccessFacade} from '../store/state-access-
 import {createNativeControlReads} from './action-executor/control-evidence-state.ts';
 import {createNativePromptIntakeState} from './prompt-intake/native-state.ts';
 import {createNativeQueueReadState} from './queue-runner/native-read-state.ts';
+import {joinedControlEvidenceStoreCause} from './action-executor/control-evidence-native.ts';
+import {joinedQueueReadStoreCause} from './queue-runner/native-read-state.ts';
+import {joinedPromptIntakeStoreCause} from './prompt-intake/native-state.ts';
 export type PromptAuthorityReads = Pick<IStateAccessFacade, 'hasObservedCompletion' | 'listQueueJobs' | 'mirroredThreadId'>;
 /** Passive own-data functions, captured before the caller's first await. Every
  * invocation is a fresh, separately joined observation of the original path.
@@ -43,5 +46,9 @@ export function createNativePromptAuthorityReads(path: string): PromptAuthorityR
   const mapping = createNativePromptIntakeState(path).mirroredThreadId;
   const control = createNativeControlReads(path, mapping), list = createNativeQueueReadState(path).listFiltered;
   // Null filters run the same allJobs SQL/decoder as source listQueueJobs.
-  return capturePromptAuthorityReads(path, {...control, listQueueJobs: given => list(given, null, null)});
+  return capturePromptAuthorityReads(path, {
+    async hasObservedCompletion(given,thread,turn){try{return await control.hasObservedCompletion(given,thread,turn);}catch(error){throw joinedControlEvidenceStoreCause(error)??error;}},
+    async listQueueJobs(given){try{return await list(given,null,null);}catch(error){throw joinedQueueReadStoreCause(error)??error;}},
+    async mirroredThreadId(given,channel){try{return await mapping(given,channel);}catch(error){throw joinedPromptIntakeStoreCause(error)??error;}},
+  });
 }

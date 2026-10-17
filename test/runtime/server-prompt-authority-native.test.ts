@@ -5,9 +5,7 @@ import {existsSync} from 'node:fs';
 import {capturePromptAuthorityReads, createNativePromptAuthorityReads, type PromptAuthorityReads} from '../../src/runtime/server-prompt-authority-reads.ts';
 import {verifyPromptAuthority, PromptAuthorityError} from '../../src/runtime/server-prompt-authority.ts';
 import {OwnedWorkerSlot, OwnedWorkerBudgetError, ownedWorkerUsage} from '../../src/runtime/owned-worker-slot.ts';
-import {NativeControlEvidenceUnavailable} from '../../src/runtime/action-executor/control-evidence-native.ts';
-import {NativeQueueReadUnavailableError} from '../../src/runtime/queue-runner/native-read-state.ts';
-import {NativePromptIntakeUnavailableError} from '../../src/runtime/prompt-intake/native-state.ts';
+import {NativeStoreReadError} from '../../src/runtime/native-store-read-diagnostic.ts';
 import {StateAccessFacade as state} from '../../src/store/state-access-facade.ts';
 import {queueJob} from '../helpers/queue-job.ts';
 import {storeFixture} from '../helpers/store-fixture.ts';
@@ -47,15 +45,15 @@ test('native prompt authority uses three fresh sequential existing adapters and 
 test('native unfiltered authority keeps malformed unrelated rows as native errors rather than an empty owner', async () => promptFixture(async (path, server, request) => {
   await state.enqueue(path, queueJob({jobId: 'unrelated', targetThreadId: 'unrelated'}));
   await editPromptFixture(path, "UPDATE codex_turn_queue SET channel_id=1.5 WHERE job_id='unrelated'");
-  await assert.rejects(verifyPromptAuthority(path, server, request, 1n, createNativePromptAuthorityReads(path)), e => e instanceof NativeQueueReadUnavailableError && !(e instanceof PromptAuthorityError));
+  await assert.rejects(verifyPromptAuthority(path, server, request, 1n, createNativePromptAuthorityReads(path)), e => e instanceof NativeStoreReadError && e.diagnostic.kind==='Integrity' && !(e instanceof PromptAuthorityError));
 }));
 test('native missing databases and catalogs are not created, initialized, repaired or interpreted as empty authority', async () => storeFixture(async path => {
   const reads = createNativePromptAuthorityReads(path);
   for (const exists of [false, true]) {
     if (exists) new DatabaseSync(path).close();
-    await assert.rejects(reads.hasObservedCompletion(path, 't', 'v'), NativeControlEvidenceUnavailable);
-    await assert.rejects(reads.listQueueJobs(path), NativeQueueReadUnavailableError);
-    await assert.rejects(reads.mirroredThreadId(path, 1n), NativePromptIntakeUnavailableError);
+    await assert.rejects(reads.hasObservedCompletion(path, 't', 'v'), NativeStoreReadError);
+    await assert.rejects(reads.listQueueJobs(path), NativeStoreReadError);
+    await assert.rejects(reads.mirroredThreadId(path, 1n), NativeStoreReadError);
     assert.equal(existsSync(path), exists);
     if (exists) {const db = new DatabaseSync(path); try {assert.deepEqual(db.prepare('SELECT name FROM sqlite_master').all(), []);} finally {db.close();}}
   }

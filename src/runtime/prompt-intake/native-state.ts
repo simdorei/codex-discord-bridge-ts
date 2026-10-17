@@ -17,12 +17,15 @@ import {requireDiscordText} from '../../discord/text.ts';
 import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {intakeNumberWire,intakeFromWire} from './native-wire.ts';
+import {captureNativeStoreReadFailure,NativeStoreReadError} from '../native-store-read-diagnostic.ts';
 const LIMIT=16*1024*1024;
 type Operation='CompletedForkTarget'|'ArchiveUnfinished'|'Get'|'List'|'DurableOwner'|'Claim'|'Renew'|'RecordFailure'|'RemoveQueued'|'Admit'|'Canonicalize'|'ReleaseAll'|'AdmitBusy'|'AdmitWithIngress'|'MirrorTarget'|'FirstReplyFinish'|'IngressOrigin'|'IngressAdmit'|'IngressHold'|'IngressRead'|'IngressBegin'|'IngressCreation'|'IngressCreated';
 export class NativePromptIntakeUnavailableError extends Error{
  readonly operation:Operation;
  constructor(operation:Operation,cause:unknown){super('Prompt intake result unavailable after actual native join; no partial result or automatic retry',{cause});this.name='NativePromptIntakeUnavailableError';this.operation=operation;}
 }
+const joinedStoreCauses=new WeakMap<object,NativeStoreReadError>();
+export function joinedPromptIntakeStoreCause(error:unknown):NativeStoreReadError|undefined{return error!==null&&typeof error==='object'?joinedStoreCauses.get(error):undefined;}
 function lease(now:number,expires:number):void{
  if(typeof now!=='number'||typeof expires!=='number')throw new TypeError('Expected lease timestamps');
  if(!Number.isFinite(now)||!Number.isFinite(expires)||expires<=now)throw new InvalidPromptIntakeLeaseError(now,expires);
@@ -39,6 +42,11 @@ export function createNativePromptIntakeState(path:string,timeoutMs=5000):IState
   try{const pending=slot.run(new URL('./native-state-worker.ts',import.meta.url),data,timeoutMs);admitted=slot.busy;
    try{raw=await pending;}finally{await slot.join();}
   }catch(error){if(admitted)throw new NativePromptIntakeUnavailableError(operation,error);throw error;}
+  let storeFailure:boolean;try{storeFailure=operation==='MirrorTarget'&&own(raw,'ok')===false;}catch(error){throw new NativePromptIntakeUnavailableError(operation,error);}
+  if(storeFailure){
+   let cause:NativeStoreReadError;try{if(!admitted||boundedSerdeByteCount(raw,LIMIT)===null)throw new TypeError('Intake diagnostic lacks bounded original submission');cause=new NativeStoreReadError(captureNativeStoreReadFailure(raw,{operation:'MirrorTarget',channel:own(fields,'channel') as bigint|null}));}catch(error){throw new NativePromptIntakeUnavailableError(operation,error);}
+   const error=new NativePromptIntakeUnavailableError(operation,cause);joinedStoreCauses.set(error,cause);throw error;
+  }
   let refusal:DeadGenerationTargetHeldError|undefined;
   try{
    if(boundedSerdeByteCount(raw,LIMIT)===null||own(raw,'operation')!==operation)throw new TypeError('No complete bound intake acknowledgement');
