@@ -8,10 +8,11 @@ const closureError='Invalid direct child closure diagnostic';
 const failed=()=>({version:1,kind:'component-failed',phase:'running',category:'lifecycle',fixtureStep:'respond',childClosure:'confirmed'});
 const disposed=()=>({version:1,kind:'component-disposed',childClosure:'confirmed'});
 const fixture=()=>({version:1,kind:'fixture-result',scenario:'normal-start-close',passed:true});
+const negative=()=>({version:1,kind:'fixture-negative-result',scenario:'mutation-cancel-after-write',assertionsPassed:true,cleanupQualified:false,componentQualified:false});
 function rejects(value:unknown,message=structural):void{assert.throws(()=>capture(value),{name:'TypeError',message});}
 
 test('captures every schema on ordinary and null prototypes without freezing the shallow copy',()=>{
- const records=[{version:1,kind:'role-ready'},{version:1,kind:'local-fence-ready'},{version:1,kind:'custody-ready'},{version:1,kind:'mutation-ready'},{version:1,kind:'component-ready'},fixture(),failed(),disposed()];
+ const records=[{version:1,kind:'role-ready'},{version:1,kind:'local-fence-ready'},{version:1,kind:'custody-ready'},{version:1,kind:'mutation-ready'},{version:1,kind:'component-ready'},fixture(),negative(),failed(),disposed()];
  for(const record of records)for(const proto of [Object.prototype,null]){
   const source=Object.assign(Object.create(proto),record),result=capture(source);
   assert.equal(Object.getPrototypeOf(result),null);assert.notEqual(result,source);assert.equal(Object.isFrozen(result),false);
@@ -31,7 +32,7 @@ test('rejects proxies including revoked proxies before any trap',()=>{
 });
 test('never invokes getters, and rejects symbols, nonenumerable, extra or missing fields',()=>{
  let reads=0;
- for(const record of [{version:1,kind:'role-ready'},fixture(),failed(),disposed()]){
+ for(const record of [{version:1,kind:'role-ready'},fixture(),negative(),failed(),disposed()]){
   for(const key of Object.keys(record)){
    const accessor={...record};Object.defineProperty(accessor,key,{get(){reads++;return (record as Record<string,unknown>)[key];},enumerable:true});rejects(accessor);
    const hidden={...record};Object.defineProperty(hidden,key,{value:(record as Record<string,unknown>)[key],enumerable:false});rejects(hidden);
@@ -46,6 +47,14 @@ test('strict version and kind, and schema-dependent exact fields',()=>{
  for(const kind of [undefined,null,1,1n,true,{},[],Symbol('kind')])rejects({version:1,kind});
  rejects({...failed(),kind:'component-disposed'});rejects({...disposed(),kind:'fixture-result'});
  rejects({...fixture(),kind:'role-ready'});
+});
+test('negative fixture requires its exact scenario and false cleanup qualification',()=>{
+ const semantic='Invalid negative fixture qualification report';
+ for(const scenario of [undefined,null,'','normal-start-close','mutation-cancel-after-write ',0,1n,true,{},[],Symbol('scenario')])rejects({...negative(),scenario},semantic);
+ for(const assertionsPassed of [undefined,null,false,0,1,'true',{},[]])rejects({...negative(),assertionsPassed},semantic);
+ for(const field of ['cleanupQualified','componentQualified'])for(const value of [undefined,null,true,0,1,'false',{},[]])rejects({...negative(),[field]:value},semantic);
+ rejects({...negative(),kind:'fixture-result'});rejects({...fixture(),kind:'fixture-negative-result'});
+ rejects({...negative(),passed:true});rejects({...negative(),version:2});
 });
 test('all phase, step, category and child closure labels retain exact parser behavior',()=>{
  for(const phase of phases)for(const fixtureStep of steps)for(const childClosure of closures)for(const category of ['protocol','lifecycle'])assert.deepEqual({...capture({...failed(),phase,fixtureStep,childClosure,category})},{...failed(),phase,fixtureStep,childClosure,category});
