@@ -8,7 +8,7 @@ import { openInitialized } from "../../src/store/owned-driver.ts";
 import {
   selectJob,
   allJobs,
-  StoreIntegrityError,
+  StoreJsonError,
   type StoredQueueJob,
 } from "../../src/store/queue-read.ts";
 import {
@@ -1022,7 +1022,7 @@ test("Native IGNORE changes 0 -> QueueJobNotFoundError (NOT null); ABORT native 
     await assert.rejects(
       () => recordStartFailure(path, "job-corrupt-after", 1n, "err", true),
       (err: unknown) => {
-        assert.ok(err instanceof StoreIntegrityError);
+        assert.ok(err instanceof StoreJsonError);
         assert.match(
           err.message,
           /Failed to parse baseline_turn_ids JSON/,

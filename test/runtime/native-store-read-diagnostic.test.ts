@@ -3,7 +3,7 @@ import test from 'node:test';
 import {existsSync} from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
 import {StoreIntegrityError,UnsupportedVersionError} from '../../src/store/schema-assembly.ts';
-import {InvalidQueueStateError} from '../../src/store/queue-read.ts';
+import {InvalidQueueStateError,StoreJsonError} from '../../src/store/queue-read.ts';
 import {openInitialized} from '../../src/store/owned-driver.ts';
 import {captureNativeStoreReadDiagnostic,captureNativeStoreReadFailure,projectNativeStoreReadDiagnostic,NativeStoreReadError,NATIVE_STORE_READ_DIAGNOSTIC_BYTES} from '../../src/runtime/native-store-read-diagnostic.ts';
 import {NativeControlEvidenceReader,NativeControlEvidenceUnavailable,joinedControlEvidenceStoreCause} from '../../src/runtime/action-executor/control-evidence-native.ts';
@@ -12,6 +12,8 @@ import {createNativePromptIntakeState,NativePromptIntakeUnavailableError,joinedP
 import {capturePromptAuthorityReads,createNativePromptAuthorityReads} from '../../src/runtime/server-prompt-authority-reads.ts';
 import {verifyPromptAuthority,PromptAuthorityError} from '../../src/runtime/server-prompt-authority.ts';
 import {prepareOneServerPrompt} from '../../src/runtime/server-prompt-redisplay.ts';
+import {ServerRequestDelivery} from '../../src/runtime/server-request-delivery.ts';
+import {pendingServerRequestEqual} from '../../src/app-server/server-request-state.ts';
 import {startRuntimeResident} from '../../src/runtime/discord-runtime/resident-startup.ts';
 import {OwnedWorkerBudgetError,ownedWorkerUsage} from '../../src/runtime/owned-worker-slot.ts';
 import {boundedSerdeByteCount} from '../../src/core/serde-byte-count.ts';
@@ -24,10 +26,13 @@ function storeKind(error:unknown,kind:string):boolean{return error instanceof Na
 function idle(){assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0});}
 
 test('passive projection keeps known classifications and never reads sensitive diagnostic fields',()=>{
- const integrity=new StoreIntegrityError(secret),invalid=new InvalidQueueStateError(secret),db=sqlite(5);
- for(const value of [integrity,invalid,db])for(const key of ['message','stack','result','errstr'])Object.defineProperty(value,key,{get(){assert.fail(`sensitive field ${key}`);},configurable:true});
+ const integrity=new StoreIntegrityError(secret),invalid=new InvalidQueueStateError(secret),json=new StoreJsonError(),db=sqlite(5);
+ for(const value of [integrity,invalid,json,db])for(const key of ['message','stack','result','errstr','cause'])Object.defineProperty(value,key,{get(){assert.fail(`sensitive field ${key}`);},configurable:true});
  assert.deepEqual(projectNativeStoreReadDiagnostic(integrity),{kind:'Integrity'});
  assert.deepEqual(projectNativeStoreReadDiagnostic(invalid),{kind:'InvalidQueueState'});
+ assert.deepEqual(projectNativeStoreReadDiagnostic(json),{kind:'Json'});
+ assert.equal(projectNativeStoreReadDiagnostic(new SyntaxError(secret)),null,'only the store source category enters this diagnostic');
+ assert.equal(projectNativeStoreReadDiagnostic(new RangeError(secret)),null);
  assert.deepEqual(projectNativeStoreReadDiagnostic(db),{kind:'Database',errcode:5});
  assert.deepEqual(projectNativeStoreReadDiagnostic(sqlite()),{kind:'Database',errcode:null});
  assert.deepEqual(projectNativeStoreReadDiagnostic(new UnsupportedVersionError(-1n,2n)),{kind:'UnsupportedVersion',found:-1n,supported:2n});
@@ -39,6 +44,7 @@ test('passive projection keeps known classifications and never reads sensitive d
 test('passive aggregate projection preserves primary-close order and rejects every unknown/nested child',()=>{
  const first=new InvalidQueueStateError(secret),last=sqlite(5);
  assert.deepEqual(projectNativeStoreReadDiagnostic(new AggregateError([first,last],secret)),{kind:'ScopeCleanup',errors:[{kind:'InvalidQueueState'},{kind:'Database',errcode:5}]});
+ assert.deepEqual(projectNativeStoreReadDiagnostic(new AggregateError([new StoreJsonError(),last],secret)),{kind:'ScopeCleanup',errors:[{kind:'Json'},{kind:'Database',errcode:5}]});
  for(const errors of [[first],[first,new Error(secret)],[first,last,last],[new AggregateError([first]),last]])assert.equal(projectNativeStoreReadDiagnostic(new AggregateError(errors)),null);
  const sparse=new AggregateError([]);Object.defineProperty(sparse,'errors',{value:Array(1)});assert.equal(projectNativeStoreReadDiagnostic(sparse),null);
  const active=new AggregateError([]);Object.defineProperty(active,'errors',{get(){assert.fail('aggregate accessor');}});assert.equal(projectNativeStoreReadDiagnostic(active),null);
@@ -46,7 +52,9 @@ test('passive aggregate projection preserves primary-close order and rejects eve
 test('passive decoder is closed, shallow, bounded, frozen and grants no joined provenance',()=>{
  const largest=captureNativeStoreReadDiagnostic({kind:'ScopeCleanup',errors:[{kind:'UnsupportedVersion',found:-(1n<<63n),supported:(1n<<63n)-1n},{kind:'UnsupportedVersion',found:-(1n<<63n),supported:(1n<<63n)-1n}]});
  assert.notEqual(boundedSerdeByteCount(largest,NATIVE_STORE_READ_DIAGNOSTIC_BYTES),null);assert.ok(Object.isFrozen(largest));
- for(const bad of [{kind:'Integrity',message:secret},{kind:'Database',errcode:-0},{kind:'Database',errcode:Infinity},{kind:'UnsupportedVersion',found:1n<<63n,supported:2n},{kind:'ScopeCleanup',errors:[{kind:'ScopeCleanup',errors:[{kind:'Integrity'}]}]},{kind:'ScopeCleanup',errors:Array(3).fill({kind:'Integrity'})},{kind:'Unknown'},new Proxy({kind:'Integrity'},{get(){assert.fail('proxy');}})])assert.throws(()=>captureNativeStoreReadDiagnostic(bad),TypeError);
+ assert.deepEqual(captureNativeStoreReadDiagnostic({kind:'Json'}),{kind:'Json'});
+ assert.equal(new NativeStoreReadError({kind:'Json'}).message,'stored JSON decoding failed');
+ for(const bad of [{kind:'Integrity',message:secret},{kind:'Json',message:secret},{kind:'Json',cause:secret},{kind:'Database',errcode:-0},{kind:'Database',errcode:Infinity},{kind:'UnsupportedVersion',found:1n<<63n,supported:2n},{kind:'ScopeCleanup',errors:[{kind:'ScopeCleanup',errors:[{kind:'Integrity'}]}]},{kind:'ScopeCleanup',errors:Array(3).fill({kind:'Integrity'})},{kind:'Unknown'},new Proxy({kind:'Integrity'},{get(){assert.fail('proxy');}})])assert.throws(()=>captureNativeStoreReadDiagnostic(bad),TypeError);
  const active={};Object.defineProperty(active,'kind',{get(){assert.fail('accessor');},enumerable:true});assert.throws(()=>captureNativeStoreReadDiagnostic(active),TypeError);
  const fake=new NativeStoreReadError({kind:'Integrity'});
  assert.equal(joinedControlEvidenceStoreCause(new NativeControlEvidenceUnavailable(fake)),undefined);
@@ -56,6 +64,7 @@ test('passive decoder is closed, shallow, bounded, frozen and grants no joined p
 test('negative diagnostic envelopes bind every captured field without creating provenance',()=>{
  const binding={operation:'List',target:null,generation:null},reply={...binding,ok:false,storeDiagnostic:{kind:'Integrity'}};
  assert.deepEqual(captureNativeStoreReadFailure(reply,binding),{kind:'Integrity'});
+ assert.deepEqual(captureNativeStoreReadFailure({...reply,storeDiagnostic:{kind:'Json'}},binding),{kind:'Json'});
  for(const bad of [{...reply,target:'other'},{...reply,operation:'Eligible'},{...reply,ok:true},{...reply,extra:secret},{...reply,storeDiagnostic:{kind:'Integrity',payload:secret}}])assert.throws(()=>captureNativeStoreReadFailure(bad,binding),TypeError);
 });
 test('direct passive prompt port preserves exact original failure identity',async()=>{
@@ -71,14 +80,15 @@ test('real missing SQLite failures keep shared outer classes and prompt-only Sto
  for(const p of [()=>prompt.hasObservedCompletion(path,'T','V'),()=>prompt.listQueueJobs(path),()=>prompt.mirroredThreadId(path,42n)]){assert.ok(storeKind(await rejected(p()),'Database'));idle();}
  assert.equal(existsSync(path),false);
 }));
-test('real List failures retain invalid-state and integrity classifications with no raw row disclosure',{timeout:20000},()=>storeFixture(async path=>{
+test('real List failures retain distinct invalid-state and JSON classifications with no raw row disclosure',{timeout:20000},()=>storeFixture(async path=>{
  const db=await openInitialized(path);try{
   db.exec("INSERT INTO codex_turn_queue(job_id,target_thread_id,channel_id,owner_user_id,app_server_generation,prompt,queued,ack_sent,state,attempt_count,turn_id,baseline_turn_ids,created_at,updated_at) VALUES('job','T',42,3,1,'input',0,1,'running',1,'V','[]',1,1)");
   const port=createNativePromptAuthorityReads(path),shared=createNativeQueueReadState(path);
   db.exec('PRAGMA ignore_check_constraints=ON');db.prepare('UPDATE codex_turn_queue SET state=?').run(secret);
   const outer=await rejected(shared.listFiltered(path,null,null));assert.ok(outer instanceof NativeQueueReadUnavailableError);assert.ok(storeKind(joinedQueueReadStoreCause(outer),'InvalidQueueState'));assert.ok(storeKind(await rejected(port.listQueueJobs(path)),'InvalidQueueState'));
   db.prepare("UPDATE codex_turn_queue SET state='running',baseline_turn_ids=?").run(secret);
-  assert.ok(storeKind(await rejected(port.listQueueJobs(path)),'Integrity'),'existing baseline JSON classification remains Integrity');
+  const jsonOuter=await rejected(shared.listFiltered(path,null,null));assert.ok(jsonOuter instanceof NativeQueueReadUnavailableError);assert.ok(storeKind(joinedQueueReadStoreCause(jsonOuter),'Json'));assert.equal((jsonOuter as Error).cause,joinedQueueReadStoreCause(jsonOuter));
+  assert.ok(storeKind(await rejected(port.listQueueJobs(path)),'Json'),'baseline parser failure keeps the Rust StoreError::Json category');
   db.exec("UPDATE codex_turn_queue SET baseline_turn_ids='[]'");assert.equal((await port.listQueueJobs(path)).length,1);idle();
  }finally{db.close();}
 }));
@@ -105,7 +115,7 @@ test('all three real read deadlines retain joins and reject late store provenanc
   }finally{clearTimeout(unlock);if(db.isTransaction)db.exec('ROLLBACK');db.close();}
  });
 });
-test('original resident authority and redisplay propagate Store failures without response or synthetic completion',{timeout:30000},async t=>storeFixture(async path=>{
+test('original resident delivery retains JSON-failed requests and recovers native receipts through a passive transport',{timeout:30000},async t=>storeFixture(async path=>{
  const child="import readline from 'node:readline';const answers=[],emit=v=>process.stdout.write(JSON.stringify(v)+'\\n');readline.createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line);if(m.method===undefined&&m.id==='approval'){answers.push(m);return;}if(m.method==='ask'){emit({method:'turn/started',params:{threadId:'T',turnId:'V'}});emit({id:'approval',method:'item/commandExecution/requestApproval',params:{threadId:'T',turnId:'V'}});}if(m.id!==undefined)emit({id:m.id,result:m.method==='answers'?answers:{}});});";
  const owner=await startRuntimeResident({process:{executable:process.execPath,arguments:['--no-strip-types','--input-type=module','-e',child],environment:{}},clientInfo:{name:'store-diagnostic-fixture',title:'Fixture',version:'968'}},path,'runtime',null,()=> 'safe fixture',t.signal);
  let db:DatabaseSync|undefined;const receiver=owner.subscribeServerRequests();
@@ -120,5 +130,22 @@ test('original resident authority and redisplay propagate Store failures without
   assert.ok(storeKind(await rejected(prepareOneServerPrompt(path,owner,event.request,1n,42n,3n,port)),'Integrity'),'Store failure is not converted to unavailable UI');
   assert.deepEqual(await call('answers'),[]);assert.equal(db.prepare('SELECT count(*) AS n FROM cdr_server_responses').get()!.n,0);assert.equal(owner.pendingServerRequests('T').length,1);
   db.exec('UPDATE codex_turn_queue SET channel_id=42');
+  // Original resident, SQLite/native readers and receipts are genuine. This
+  // callback is a passive branch witness, not HTTP or remote acceptance proof.
+  let sends=0;const delivery=new ServerRequestDelivery(path,owner,{async sendValidated(){sends++;return 97n;}},true,port);
+  const pendingUnchanged=()=>{const requests=owner.pendingServerRequests('T');assert.equal(requests.length,1);assert.equal(pendingServerRequestEqual(requests[0]!,event.request),true);};
+  for(const baseline of ['{','[1e999]']){
+   db.prepare('UPDATE codex_turn_queue SET baseline_turn_ids=?').run(baseline);
+   assert.ok(storeKind(await rejected(verifyPromptAuthority(path,owner,event.request,1n,port)),'Json'));
+   assert.ok(storeKind(await rejected(prepareOneServerPrompt(path,owner,event.request,1n,42n,3n,port)),'Json'),'Json is not unavailable-authority UI');
+   assert.ok(storeKind(await rejected(delivery.process(1n,event.request,t.signal)),'Json'));
+   assert.ok(storeKind(await rejected(delivery.recover(t.signal)),'Json'));
+   assert.equal(sends,0);assert.equal(db.prepare('SELECT count(*) AS n FROM codex_delivery_receipts').get()!.n,0);assert.equal(db.prepare('SELECT count(*) AS n FROM cdr_server_responses').get()!.n,0);
+   assert.deepEqual(await call('answers'),[]);pendingUnchanged();idle();
+  }
+  db.exec("UPDATE codex_turn_queue SET baseline_turn_ids='[]'");
+  await delivery.recover(t.signal);assert.equal(sends,1);assert.equal(db.prepare('SELECT message_id FROM codex_delivery_receipts').get()!.message_id,'97');
+  await delivery.recover(t.signal);assert.equal(sends,1,'same original request reuses its confirmed receipt/cache');
+  assert.deepEqual(await call('answers'),[]);assert.equal(db.prepare('SELECT count(*) AS n FROM cdr_server_responses').get()!.n,0);pendingUnchanged();idle();
  }finally{receiver.dispose();try{await owner.dispose();}finally{db?.close();}assert.equal(owner.lifecycleSnapshot().processId,null);idle();}
 }));

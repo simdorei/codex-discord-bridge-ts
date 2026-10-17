@@ -52,6 +52,18 @@ export class InvalidQueueStateError extends Error {
   }
 }
 
+/** Rust StoreError::Json category for the existing baseline Value decoder.
+ * Keep stored input and parser diagnostics out of the public error message. */
+export class StoreJsonError extends Error {
+  readonly kind = "Json" as const;
+
+  constructor() {
+    super("Failed to parse baseline_turn_ids JSON");
+    this.name = "StoreJsonError";
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
 export { StoreIntegrityError };
 
 export const QUARANTINED_TURN_PREFIX = "cdr-quarantined:";
@@ -129,10 +141,8 @@ function decodeBaselineTurnIds(rawJson: string): string[] {
   let parsed: unknown;
   try {
     parsed = parseSerdeValue<unknown>(rawJson);
-  } catch (err) {
-    throw new StoreIntegrityError(
-      `Failed to parse baseline_turn_ids JSON: ${err instanceof Error ? err.message : String(err)}`,
-    );
+  } catch {
+    throw new StoreJsonError();
   }
   if (!Array.isArray(parsed)) {
     return [];
