@@ -17,10 +17,11 @@ const transportScenarios=new Set(['receiver-approval-prompt','receiver-input-pro
 const fixedFailure=()=>new Error('Persistent receiver service unavailable; original work and component debt retained');
 
 /** Fixed disposable transport, deliberately not an installed HTTP adapter. No
- * callback, request body, URL or credential can configure it. Its four shared
- * integers observe fixture progress only; none is join or release evidence. */
+ * callback, request body, URL or credential can configure it. The first four
+ * shared integers are main-only transport observations. The fifth is a worker-
+ * only direct client-result observation; none is join or release evidence. */
 class ReceiverFixtureTransport implements DiscordReceiptTransport{
- readonly observation=new SharedArrayBuffer(16);readonly #words=new Int32Array(this.observation);
+ readonly observation=new SharedArrayBuffer(20);readonly #words=new Int32Array(this.observation);
  readonly #data:MessagePort;
  #scenario:string|null=null;#calls=0;#hash:string|null=null;
  #chunk:Extract<ReceiverOperation,{op:'server-prompt-chunk'}>|null=null;#components:readonly DiscordComponent[]|null=null;
@@ -52,7 +53,7 @@ class ReceiverFixtureTransport implements DiscordReceiptTransport{
   // A validated provider acceptance remains known after original cancellation.
   Atomics.store(this.#words,2,this.#calls);Atomics.notify(this.#words,2);return 100n+BigInt(this.#calls);
  }
- snapshot(){return Object.freeze({calls:this.#calls,lastRequestHash:this.#hash});}
+ snapshot(){return Object.freeze({calls:this.#calls,lastRequestHash:this.#hash,clientResultObserved:Atomics.load(this.#words,4)===1});}
 }
 
 /** Main-only, fixed service owner for the disposable original serial receiver.

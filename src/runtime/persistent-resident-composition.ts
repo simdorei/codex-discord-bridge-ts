@@ -45,7 +45,8 @@ export function preparePersistentResidentComposition(runtime:string){
  return Object.freeze({async start(services:Services,mutationClient:SequentialMutationClient,responsePort:MessagePort,receiverServices:PersistentReceiverServicesClient,fixtureObservation:SharedArrayBuffer):Promise<PortableResidentLifecycle>{
   if(started)throw new TypeError('Fixed component already started');started=true;requirePersistentResidentRole();
   const mutation=new ResidentLocalMutationOwner(path,runtime,render,mutationClient);
-  const fixture:FixtureBinding={path,runtime,ran:false,ledger:new FixtureWorkflowLedger(),scenario:null,responseAbort:null,captures:0,releases:0,finalRowChanged:false,responseFingerprint:null,cancelAfterPosts:0,failureStep:'none',receiverServices,fixtureObservation:new Int32Array(fixtureObservation),receiver:null,receiverLoop:null,receiverStop:new AbortController(),receiverLoopState:'not-started',receiverReports:0,receiverReadJson:false,receiverResponse:null};
+  const fixture:FixtureBinding={path,runtime,ran:false,ledger:new FixtureWorkflowLedger(),scenario:null,responseAbort:null,captures:0,releases:0,finalRowChanged:false,responseFingerprint:null,cancelAfterPosts:0,failureStep:'none',receiverServices,fixtureObservation:new Int32Array(fixtureObservation),receiver:null,receiverLoop:null,receiverDirectAction:null,receiverStop:new AbortController(),receiverLoopState:'not-started',receiverDirectActionState:'not-started',receiverReports:0,receiverReadJson:false,receiverResponse:null};
+  assert.equal(Atomics.load(fixture.fixtureObservation,4),0);
   receiverServices.failure.addEventListener('abort',()=>fixture.receiverStop.abort(receiverServices.failure.reason),{once:true});
   if(receiverServices.failure.aborted)fixture.receiverStop.abort(receiverServices.failure.reason);
   // Fixed fixture instrumentation retains the exact original receipt and invokes
@@ -131,7 +132,7 @@ class FixtureWorkflowLedger {
  }
  get empty():boolean{return Object.values(this.#used).every(n=>n===0);}
 }
-interface FixtureBinding {readonly path:string;readonly runtime:string;readonly ledger:FixtureWorkflowLedger;ran:boolean;scenario:PersistentResidentScenario|null;responseAbort:AbortController|null;captures:number;releases:number;finalRowChanged:boolean;responseFingerprint:string|null;cancelAfterPosts:number;failureStep:PersistentResidentFixtureFailureStep;readonly receiverServices:PersistentReceiverServicesClient;readonly fixtureObservation:Int32Array;receiver:BroadcastReceiver<ResidentServerRequestEvent>|null;receiverLoop:Promise<void>|null;readonly receiverStop:AbortController;receiverLoopState:'not-started'|'pending'|'fulfilled'|'rejected';receiverReports:number;receiverReadJson:boolean;receiverResponse:Readonly<{key:string;requestHash:string;responseHash:string;occurrence:string}>|null}
+interface FixtureBinding {readonly path:string;readonly runtime:string;readonly ledger:FixtureWorkflowLedger;ran:boolean;scenario:PersistentResidentScenario|null;responseAbort:AbortController|null;captures:number;releases:number;finalRowChanged:boolean;responseFingerprint:string|null;cancelAfterPosts:number;failureStep:PersistentResidentFixtureFailureStep;readonly receiverServices:PersistentReceiverServicesClient;readonly fixtureObservation:Int32Array;receiver:BroadcastReceiver<ResidentServerRequestEvent>|null;receiverLoop:Promise<void>|null;receiverDirectAction:Promise<void>|null;readonly receiverStop:AbortController;receiverLoopState:'not-started'|'pending'|'fulfilled'|'rejected';receiverDirectActionState:'not-started'|'pending'|'fulfilled'|'rejected';receiverReports:number;receiverReadJson:boolean;receiverResponse:Readonly<{key:string;requestHash:string;responseHash:string;occurrence:string}>|null}
 const fixtureBindings=new WeakMap<PortableResidentLifecycle,FixtureBinding>();
 /** Fixed scalar diagnostic only; no claim, graph, callback, or authority escapes. */
 export function getPersistentResidentFixtureFailureStep(resident:PortableResidentLifecycle):PersistentResidentFixtureFailureStep{return fixtureBindings.get(resident)?.failureStep??'none';}
@@ -193,10 +194,13 @@ export async function stopPersistentResidentReceiver(resident:PortableResidentLi
  const binding=fixtureBindings.get(resident);if(binding===undefined)return;
  binding.receiverStop.abort(new Error('Fixed resident receiver shutdown'));
  if(binding.receiverLoop!==null)await binding.receiverLoop;
- else if(binding.receiver!==null)binding.receiver.dispose();
+ else{
+  try{if(binding.receiverDirectAction!==null)await binding.receiverDirectAction;}
+  finally{binding.receiver?.dispose();}
+ }
 }
 function startFixtureReceiver(resident:PortableResidentLifecycle,binding:FixtureBinding):void{
- if(binding.receiver===null||binding.receiverLoop!==null)throw new Error('Expected unused original receiver');
+ if(binding.receiver===null||binding.receiverLoop!==null||binding.receiverDirectAction!==null||binding.scenario==='receiver-ack-loss')throw new Error('Expected unused original loop receiver');
  binding.receiverServices.failure.throwIfAborted();binding.receiverStop.signal.throwIfAborted();
  const delivery=new ServerRequestDelivery(binding.path,resident,null,true,undefined,binding.receiverServices);
  binding.receiverLoopState='pending';
@@ -207,7 +211,7 @@ function startFixtureReceiver(resident:PortableResidentLifecycle,binding:Fixture
    assert.ok(event.error instanceof NativeStoreReadError);assert.deepEqual(event.error.diagnostic,{kind:'Json'});
    binding.receiverReadJson=true;binding.receiverStop.abort(new Error('Fixed receiver Json observation complete'));return;
   }
-  if(binding.scenario==='receiver-data-loss'||binding.scenario==='receiver-ack-loss'){assert.equal(binding.receiverServices.failure.aborted,true);return;}
+  if(binding.scenario==='receiver-data-loss'){assert.equal(binding.receiverServices.failure.aborted,true);return;}
   // Recovery can encounter its already-retired request again in the retained
   // original broadcast. The unchanged loop reports it, never responds twice.
   assert.equal(binding.scenario,'receiver-computer-form-recovery');
@@ -215,6 +219,28 @@ function startFixtureReceiver(resident:PortableResidentLifecycle,binding:Fixture
   assert.equal(resident.pendingServerRequests(FIXTURE_TARGET).length,0);
  });
  void binding.receiverLoop.then(()=>{binding.receiverLoopState='fulfilled';},()=>{binding.receiverLoopState='rejected';});
+}
+async function fixtureReceiverDirectAction(resident:PortableResidentLifecycle,binding:FixtureBinding):Promise<void>{
+ assert.equal(binding.scenario,'receiver-ack-loss');assert.notEqual(binding.receiver,null);
+ assert.equal(binding.receiverLoop,null);assert.equal(binding.receiverLoopState,'not-started');assert.equal(binding.receiverDirectAction,null);assert.equal(binding.receiverDirectActionState,'not-started');
+ assert.equal(Atomics.load(binding.fixtureObservation,4),0);
+ // Consume the genuine event from the one pre-emission receiver. The pending
+ // snapshot only verifies its original identity; it never supplies the action.
+ const event=await binding.receiver!.receive(binding.receiverStop.signal);
+ assert.equal(event.kind,'Request');if(event.kind!=='Request')throw new Error('Fixed direct receiver request gap');
+ assert.equal(event.generation,resident.generation());assert.equal(event.request.id,'fixture-receiver-request');
+ const pending=resident.pendingServerRequests(FIXTURE_TARGET);assert.equal(pending.length,1);const original=pending[0]!;
+ assert.equal(event.request.id,original.id);
+ assert.deepEqual(ServerRequestOccurrence.prototype.asBytes.call(event.request.occurrence),ServerRequestOccurrence.prototype.asBytes.call(original.occurrence));
+ const delivery=new ServerRequestDelivery(binding.path,resident,null,true,undefined,binding.receiverServices);
+ binding.receiverDirectActionState='pending';
+ // Retain the exact frozen-method Promise separately from the unchanged loop.
+ binding.receiverDirectAction=ServerRequestDelivery.prototype.process.call(delivery,event.generation,event.request,binding.receiverStop.signal);
+ void binding.receiverDirectAction.then(()=>{binding.receiverDirectActionState='fulfilled';},()=>{binding.receiverDirectActionState='rejected';});
+ await binding.receiverDirectAction;
+ assert.equal(binding.receiverDirectActionState,'fulfilled');
+ // Worker-only success observation, never a native join or cleanup authority.
+ Atomics.store(binding.fixtureObservation,4,1);
 }
 async function fixtureReceiverTurn(resident:PortableResidentLifecycle,binding:FixtureBinding):Promise<void>{
  const generation=resident.generation();binding.failureStep='seed';fixtureRow(binding,generation,'starting');
@@ -233,8 +259,8 @@ async function fixtureReceiverTurn(resident:PortableResidentLifecycle,binding:Fi
 async function runReceiverFixture(resident:PortableResidentLifecycle,binding:FixtureBinding,scenario:PersistentReceiverScenario|PersistentReceiverNegativeScenario):Promise<void>{
  binding.receiverServices.failure.throwIfAborted();assert.equal(binding.receiver,null);
  // Created before both the real turn and any fixture request emission. There is
- // no fixture business subscriber; all observations below use the lifecycle's
- // original pending view, notifications, or durable rows.
+ // no second fixture business subscriber. ACK loss consumes this exact receiver
+ // directly; loop cases use pending views, notifications, or durable rows.
  binding.receiver=resident.subscribeServerRequests();
  const notifications=resident.subscribeNotifications(),observation=new AbortController();
  const deadline=setTimeout(()=>observation.abort(new Error('Fixed receiver notification deadline')),5000);
@@ -250,11 +276,15 @@ async function runReceiverFixture(resident:PortableResidentLifecycle,binding:Fix
  try{
   await fixtureReceiverTurn(resident,binding);await notification('turn/started');
   if(scenario==='receiver-read-json')usingExistingStore(binding.path,db=>db.prepare("UPDATE codex_turn_queue SET baseline_turn_ids='{' WHERE job_id=?").run(FIXTURE_JOB));
-  if(scenario!=='receiver-computer-form-recovery')startFixtureReceiver(resident,binding);
+  if(scenario!=='receiver-computer-form-recovery'&&scenario!=='receiver-ack-loss')startFixtureReceiver(resident,binding);
   await fixtureRequest(resident,binding,'thread/read',{threadId:FIXTURE_TARGET,receiverScenario:scenario});
   const emitted=await notification('fixture/receiver-request-emitted');assert.equal(emitted.requestId,'fixture-receiver-request');assert.equal(emitted.turnId,FIXTURE_TURN);assert.equal(emitted.requests,1);
   const local=scenario==='receiver-computer-form-recovery'||scenario==='receiver-browser-form-event'||scenario==='receiver-unsupported-form-event';
-  if(scenario==='receiver-data-loss'||scenario==='receiver-ack-loss'){
+  if(scenario==='receiver-ack-loss'){
+   await fixtureReceiverDirectAction(resident,binding);
+   throw new Error('Deliberate receiver ACK loss retains component debt');
+  }
+  if(scenario==='receiver-data-loss'){
    // The fixed main-side fault seals admission and independently starts original
    // child disposal. Retain the original loop join; never emit normal PASS.
    await binding.receiverLoop;throw new Error('Deliberate receiver fault retains component debt');
@@ -325,7 +355,9 @@ async function runReceiverFixture(resident:PortableResidentLifecycle,binding:Fix
   binding.failureStep='release-assert';assert.equal(binding.receiverLoopState,'fulfilled');assert.equal(binding.receiverServices.failure.aborted,false);assert.equal(binding.ledger.empty,true);
   const services=binding.receiverServices.snapshot();assert.equal(services.pendingId,null);assert.equal(services.highWater,services.retiredThrough);assert.equal(services.joined,true);
   if(scenario==='receiver-read-json')assert.equal(services.retiredThrough,2);
-  if(scenario==='receiver-native-join')assert.equal(services.retiredThrough,1);
+  // Original authority verification joins all three ordered reads before the
+  // delivery's post-verification cancellation check. Stop never skips a join.
+  if(scenario==='receiver-native-join')assert.equal(services.retiredThrough,3);
   if(scenario==='receiver-browser-form-event'||scenario==='receiver-unsupported-form-event')assert.equal(services.retiredThrough,3);
   if(scenario==='receiver-approval-prompt'||scenario==='receiver-input-prompt'||scenario==='receiver-late-accept')assert.equal(services.retiredThrough,3+4*Atomics.load(binding.fixtureObservation,3));
  }finally{clearTimeout(deadline);notifications.dispose();}

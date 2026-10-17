@@ -96,7 +96,7 @@ if(data.kind==='persistent-resident-bootstrap'){
    if(phase==='initialized'){
     const frame=plain(value,['version','kind','receiverServices','fixtureObservation']);if(frame.version!==1||frame.kind!=='services-initialized')throw new TypeError('Expected initialized native owners');
     const observation=frame.fixtureObservation;
-    if(observation===null||typeof observation!=='object'||types.isProxy(observation)||!(observation instanceof SharedArrayBuffer)||Object.getPrototypeOf(observation)!==SharedArrayBuffer.prototype||Reflect.ownKeys(observation).length!==0||observation.byteLength!==16)throw new TypeError('Invalid fixed receiver observation');
+    if(observation===null||typeof observation!=='object'||types.isProxy(observation)||!(observation instanceof SharedArrayBuffer)||Object.getPrototypeOf(observation)!==SharedArrayBuffer.prototype||Reflect.ownKeys(observation).length!==0||observation.byteLength!==20)throw new TypeError('Invalid fixed receiver observation');
     setPhase('starting');acceptInitialized(Object.freeze({receiverServices:frame.receiverServices,fixtureObservation:observation}));return;
    }
    if(phase==='ready'){

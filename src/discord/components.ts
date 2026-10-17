@@ -18,7 +18,7 @@ function take(s:string,n:number):string{let result="",i=0;for(const c of s){if(i
 function count(s:string):number{let n=0;for(const _ of s)n++;return n;}
 const fingerprint=(s:string,n:number)=>s.length===n&&/^[0-9a-f]+$/.test(s);
 const safeInput=(s:string)=>s.length>=1&&s.length<=20&&/^[A-Za-z0-9_.-]+$/.test(s);
-const invalid=():never=>{throw new ComponentError("Invalid");};
+const invalid:()=>never=()=>{throw new ComponentError("Invalid");};
 function bounded(s:string):string{if(count(s)>100)throw new ComponentError("TooLong");return s;}
 const approvals=new Map<string,ApprovalAnswer>([["1","Approve"],["2","ApproveSession"],["3","Reject"],["cancel","Cancel"]]);
 const actions=new Map<string,BusyAction>([["steer","Steer"],["queue","Queue"],["stop","Stop"],["ignore","Ignore"]]);

@@ -1,0 +1,217 @@
+{
+  "archiveFiles": [
+    "docs/persistent-receiver-workflow-contract-20261017.md",
+    "docs/persistent-receiver-workflow-validation-20261017-manifest.json",
+    "docs/persistent-receiver-workflow-validation-20261017.md",
+    "src/discord/components.ts",
+    "src/runtime/persistent-receiver-owner.ts",
+    "src/runtime/persistent-resident-composition.ts",
+    "src/runtime/persistent-resident-worker.ts",
+    "test/runtime/persistent-receiver-workflow.test.ts"
+  ],
+  "archiveFilesSha256ExcludingSelf": {
+    "docs/persistent-receiver-workflow-contract-20261017.md": "4206c427625f791a44ac43352791bbcc5cba782defb25cafac99d294dd324e9a",
+    "docs/persistent-receiver-workflow-validation-20261017.md": "eb0c65be7d219968c0c7f79a8f4b94b051d60e20197b36f48532505fce950c2b",
+    "src/discord/components.ts": "e2c6698f01bfa11b743675a20030314a712f181e7f2a8313676595d048462a6a",
+    "src/runtime/persistent-receiver-owner.ts": "acda5ad61c11114e56ee55b8a65588d3e3458cf36fd64de70bd8bb87ad094d8b",
+    "src/runtime/persistent-resident-composition.ts": "d04f1f2fbbda395cf7e01da745a587b5072977968a2730bfe239560ed4bcf4e5",
+    "src/runtime/persistent-resident-worker.ts": "b27ad2476051e2be6cb15eb485da0b3709c44dcbd4386d8db8213c03821b640b",
+    "test/runtime/persistent-receiver-workflow.test.ts": "5c97a2ab83a22c6d13ed9f5669e069d11a85ffbdfabbfbf84480ccfde2709f43"
+  },
+  "base": {
+    "local": "9acafb6bb0de1bcd25cf474470e9444c6208e113",
+    "published": "cce58af84746dfba617e1fa33e603d06686b16cc",
+    "tree": "c1fb52e74cfa1bc0223a096d184899982d71581a"
+  },
+  "boundaries": {
+    "cleanupQualified": false,
+    "excludedFromArchive": [
+      "databases",
+      "raw runtime logs",
+      "credentials",
+      "private validation directories"
+    ],
+    "historicalV4": "UNKNOWN and untouched; no closure inference from current process absence",
+    "installedPersistentCutover": false,
+    "negativeReceiverCases": [
+      "after-admission data-port loss through original loop",
+      "ACK loss through direct original delivery, with actual caller Promise success observation"
+    ],
+    "normalWorkflowCases": 8,
+    "operationalRootQualified": false,
+    "overallComponentQualified": false,
+    "transport": "Fixed passive fixture; no HTTP or live CUA/browser execution",
+    "wholeMigrationQualified": false
+  },
+  "compileOnlyRoots": [
+    "test/runtime/native-server-prompt-receipts.test.ts",
+    "test/runtime/discord-runtime/server-request-start.test.ts",
+    "test/runtime/discord-runtime/native-server-prompt-wiring.test.ts"
+  ],
+  "date": "2026-10-17",
+  "expectedMandatoryFailedNames": [
+    "mandatory protocol-negative cleanup and component qualification",
+    "mandatory receiver-negative cleanup and component qualification"
+  ],
+  "finalRuns": {
+    "author": {
+      "allFrozenCurrentInputsAndEmissionsUnchanged": true,
+      "artifactSha256": {
+        "emitted-freeze.json": "a31727a136d3691f225de08543b9acb9b65002fde8e45b344809cf72b6373468",
+        "manifest.json": "191d819375e76c210fd58529a3b55167c3a40fe122ca9fc5c42fe24b25e81e2f",
+        "posttest-audit.json": "1f4a3017e4e489377f97a0ae5085f08da74080a6e41050eb72b25622105509c5",
+        "pretest-audit.json": "fde828f8d987a18806412b37988a9a583a25ba49d5c63481d1b23445b392da4e",
+        "production-process/receipt.json": "8c7ca665e7a8bad8af534e9aa78757d87f4546562bc2c2df6f1f5484e769e761",
+        "selected-process/receipt.json": "7139a437b07e9358faddf4625e7891094dc0f7e44c37171b4e9265b62f6cf761",
+        "tests-process/receipt.json": "7b0d5c8f34d783979f321d6fe8584a22669b5c590eca3c229b3ea3d8a8863ee8"
+      },
+      "cleanupQualified": false,
+      "naturalOwnedProcessClosure": true,
+      "normalFixtureRootsRemaining": 0,
+      "overallComponentQualified": false,
+      "privateHomeEmpty": true,
+      "retainedNegativeRootCounts": {
+        "cdr-normal-protocol-negative-": 3,
+        "cdr-receiver-negative-": 2
+      },
+      "rootsDeletedByAudit": 0,
+      "runtimeElapsedSeconds": 64.2899208739982,
+      "runtimeExitCode": 1,
+      "streamsEof": true,
+      "tests": {
+        "cancelled": 0,
+        "fail": 2,
+        "pass": 100,
+        "skipped": 0,
+        "suites": 0,
+        "tests": 102,
+        "todo": 0
+      },
+      "waitReportedECHILD": true
+    },
+    "independent": {
+      "allFrozenCurrentInputsAndEmissionsUnchanged": true,
+      "artifactSha256": {
+        "emitted-freeze.json": "a31727a136d3691f225de08543b9acb9b65002fde8e45b344809cf72b6373468",
+        "manifest.json": "308727d4606e84333ddb5368ef6cd92e15a4831fd7ccc32286716776714dfce0",
+        "posttest-audit.json": "b82ca05dab80001257252ec994dd74c434e16834718c7804a6816f8180b06ef8",
+        "pretest-audit.json": "38ea95772fcf3ee98e878136ad7e4dc884d02705067be19fb44c8db396dc58e9",
+        "production-process/receipt.json": "0bfa7847af3c9b64cde1794a96ad3dc45ba5893cd40914852399d2a74c8d61ed",
+        "selected-process/receipt.json": "d21b0f8d603cdd820c3879d0898ec8e1507ab876268b587f2819fa33527805c0",
+        "tests-process/receipt.json": "e85acc8d10e131f6c8d28f8fac21fba9718719cb219731dddf3f784516821196"
+      },
+      "cleanupQualified": false,
+      "naturalOwnedProcessClosure": true,
+      "normalFixtureRootsRemaining": 0,
+      "overallComponentQualified": false,
+      "privateHomeEmpty": true,
+      "retainedNegativeRootCounts": {
+        "cdr-normal-protocol-negative-": 3,
+        "cdr-receiver-negative-": 2
+      },
+      "rootsDeletedByAudit": 0,
+      "runtimeElapsedSeconds": 62.7502539990237,
+      "runtimeExitCode": 1,
+      "streamsEof": true,
+      "tests": {
+        "cancelled": 0,
+        "fail": 2,
+        "pass": 100,
+        "skipped": 0,
+        "suites": 0,
+        "tests": 102,
+        "todo": 0
+      },
+      "waitReportedECHILD": true
+    }
+  },
+  "formatVersion": 1,
+  "graph": {
+    "declarations": 178,
+    "emittedMapSha256": {
+      "production": "7ac94bb92d39f1a2a44c463368a9b25b69aa7dc134adeecfddf1e22a154f1b33",
+      "selected": "a0b56ddaab5d99efff6656f0b7531bb2ec3a03879145c11ff3058355059f23fd"
+    },
+    "frozenInputs": 946,
+    "productionEmissions": 673,
+    "productionParityCount": 673,
+    "productionSources": 673,
+    "projectSources": 690,
+    "selectedEmissions": 690,
+    "sha256": "9aaa809b182fff5ff0eb2745d32d1adaeb70127cd3258a48ce87835be946d927",
+    "topLevelTestNamesSha256": "47a14ff02966cfa1c8ebea1c9aa108db7f4f5dca4e8b19619fa336157fe77433"
+  },
+  "implementationFilesSha256": {
+    "src/discord/components.ts": "e2c6698f01bfa11b743675a20030314a712f181e7f2a8313676595d048462a6a",
+    "src/runtime/persistent-receiver-client.ts": "d157e3c9555836be41ff13cfe8e3165c37ccb1c29f41ca795fd314367a7179d7",
+    "src/runtime/persistent-receiver-owner.ts": "acda5ad61c11114e56ee55b8a65588d3e3458cf36fd64de70bd8bb87ad094d8b",
+    "src/runtime/persistent-receiver-protocol.ts": "b631a41de3631a05acd684c5bc2e07fe2f92b5cfe0aff6e56e610623c0ebf6da",
+    "src/runtime/persistent-resident-bootstrap.ts": "25143852d103aa3fc811b411f78fba0d2577debb88e5595ace272393649d5fa2",
+    "src/runtime/persistent-resident-component-report.ts": "55395c3158ec128e82f34ee64038e1f2fee9e6e3810dc9234de426ee08effcbe",
+    "src/runtime/persistent-resident-composition.ts": "d04f1f2fbbda395cf7e01da745a587b5072977968a2730bfe239560ed4bcf4e5",
+    "src/runtime/persistent-resident-store-role.ts": "435be20bb9f7b457f0b35182aabfd2801245708961725f77bba87b6b787cc0d0",
+    "src/runtime/persistent-resident-worker.ts": "b27ad2476051e2be6cb15eb485da0b3709c44dcbd4386d8db8213c03821b640b",
+    "src/runtime/server-request-delivery.ts": "e7ff8ececb716c9f3173a6e233836ab77a87d13071dd5484717b3fa19efeaaee",
+    "test/runtime/fixtures/persistent-resident-inline-responder.ts": "d3fa3da62f79a03c9ce056d9b5ea4c43f308372d51069a6882674980f73acb82",
+    "test/runtime/persistent-receiver-protocol.test.ts": "bc5415ba40ff6d10fb2691d08807b3a180ac82aafee6345d9e45658c84cb8147",
+    "test/runtime/persistent-receiver-workflow.test.ts": "5c97a2ab83a22c6d13ed9f5669e069d11a85ffbdfabbfbf84480ccfde2709f43"
+  },
+  "notRunEndpointCases": [
+    "Before-admission data loss",
+    "Malformed/control-channel loss",
+    "Full-loop ACK loss"
+  ],
+  "preservedEarlierAttempts": [
+    {
+      "correction": "Explicit function-variable never type annotation; throwing body unchanged",
+      "diagnostics": 12,
+      "exitCode": 1,
+      "naturalOwnedProcessClosure": true,
+      "phase": "selected-compile",
+      "receiptSha256": "cef7a5602c3e695dfc7d021e3a0189fb89eaa893498a6d8dc8dd07c82bbc5fa6",
+      "runtimeLaunched": false
+    },
+    {
+      "correction": "Source-reviewed fixture expectations: original input splitter yields 3 chunks; original authority verification joins 3 reads. Earlier native initiating failure attribution is source-supported inference.",
+      "exitCode": 1,
+      "fail": 4,
+      "nativeInitiatingErrorVisibleInTap": false,
+      "naturalOwnedProcessClosure": true,
+      "normalWorkflowRootsRetained": 1,
+      "pass": 98,
+      "phase": "runtime",
+      "receiptSha256": "83788f09f9439f5aad47c1cfb67ac957c0f949ce2acf32aa63ff7cb34234b6c9",
+      "retainedRoots": 6,
+      "sourceGraphSha256": "98299cdc9e132e07281a5d280f8fa6b08dfb45d9add9a838f290e0514607c828",
+      "tests": 102,
+      "unexpectedFailedNames": [
+        "original persistent receiver workflow: receiver-input-prompt",
+        "original persistent receiver workflow: receiver-native-join"
+      ]
+    }
+  ],
+  "remainingGates": [
+    "Before-admission data loss",
+    "Malformed/control-channel loss",
+    "Full-loop ACK loss",
+    "Authentic operational-root qualification after historical Unix-socket EPERM",
+    "Installed persistent cutover and live provider/CUA/browser behavior",
+    "Windows and performance/endurance"
+  ],
+  "reviewedToolSha256": {
+    ".runtime/audit-persistent-receiver-973-20261017.py": "b85fd1064e13b79078988583ae5a2b24edccb535b5ea151531efceaf1c20dc7a",
+    ".runtime/bounded-native-supervisor-20261017.py": "5300f8782a9be6806e2c7f1fc9e3f06743d6de5ca6d7f788da59d126f8fa6f2e",
+    ".runtime/freeze-persistent-receiver-973-20261017.py": "785f135c2b168fbbb4ff4bb98c407f8d66d645565d3db652b750a2cf90a29c4b",
+    ".runtime/verify-persistent-receiver-973-20261017.py": "a7b3528614f6b0a8842be6600d01eb87bacffeb44b0e3d83bf686fbc625427ac"
+  },
+  "runtimeRoots": [
+    "test/runtime/persistent-receiver-protocol.test.ts",
+    "test/runtime/persistent-receiver-workflow.test.ts",
+    "test/runtime/persistent-resident-normal-component.test.ts",
+    "test/runtime/persistent-resident-component-report.test.ts",
+    "test/runtime/server-request-cancellation.test.ts",
+    "test/runtime/server-request-delivery.test.ts",
+    "test/runtime/server-request-worker.test.ts"
+  ],
+  "scope": "Disposable persistent receiver workflow: bounded partial validation; no overall PASS"
+}
