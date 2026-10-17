@@ -1,4 +1,5 @@
 import {createHash,type Hash} from "node:crypto";
+import {types} from "node:util";
 import {requireDiscordText} from "./text.ts";
 export type BusyAction="Steer"|"Queue"|"Stop"|"Ignore";
 export type ApprovalAnswer="Approve"|"ApproveSession"|"Reject"|"Cancel";
@@ -62,6 +63,55 @@ function button(label:string,customId:string,style:1|2|3|4):ButtonComponent{cons
 function row(components:ButtonComponent[]):ActionRowComponent{const value=Object.freeze({type:1 as const,components:Object.freeze([...components])});owned.add(value);return value;}
 /** This bridge's helper-produced button/row profile only, not a general Twilight component codec. */
 export function serializeDiscordComponent(value:DiscordComponent):string{if(!owned.has(value))invalid();return JSON.stringify(value);}
+const SERVER_PROMPT_COMPONENT_BYTES=8192;
+function promptData(value:object,key:string):unknown{const d=Object.getOwnPropertyDescriptor(value,key);if(!d||!d.enumerable||!Object.hasOwn(d,"value"))invalid();return d.value;}
+function promptRecord(value:unknown,keys:readonly string[]):Record<string,unknown>{
+  if(value===null||typeof value!=="object"||types.isProxy(value)||Array.isArray(value))invalid();
+  const p=Object.getPrototypeOf(value),actual=Reflect.ownKeys(value);if((p!==Object.prototype&&p!==null)||actual.length!==keys.length||actual.some(k=>typeof k!=="string"||!keys.includes(k)))invalid();
+  for(const key of keys)promptData(value,key);return value as Record<string,unknown>;
+}
+function promptArray(value:unknown,max:number):asserts value is unknown[]{
+  if(value===null||typeof value!=="object"||types.isProxy(value)||!Array.isArray(value)||Object.getPrototypeOf(value)!==Array.prototype)invalid();
+  const length=Object.getOwnPropertyDescriptor(value,"length")?.value;if(!Number.isSafeInteger(length)||length<0||length>max||Reflect.ownKeys(value).length!==length+1)invalid();
+  for(let i=0;i<length;i++)promptData(value,String(i));
+}
+/** Exact buildServerPrompt output profile only. This is value transfer, never a
+ * component identity, occurrence, actor, response permission or admission proof. */
+function serverPromptTransferProfile(input:unknown,requireOwned:boolean):readonly DiscordComponent[]{
+  promptArray(input,1);if(input.length===0)return input as readonly DiscordComponent[];
+  const r=promptRecord(input[0],["type","components"]);if(r.type!==1||(requireOwned&&!owned.has(r)))invalid();
+  promptArray(r.components,5);if(r.components.length===0)invalid();
+  let profile:"approval"|"input"|undefined,thread:string|undefined,request:string|undefined;
+  for(let i=0;i<r.components.length;i++){
+    const b=promptRecord(r.components[i],["type","custom_id","label","style"]);if(b.type!==2||(requireOwned&&!owned.has(b)))invalid();
+    requireDiscordText(b.custom_id);requireDiscordText(b.label);
+    const match=/^codex_(approval|input):v2:([0-9a-f]{16}):([0-9a-f]{32}):(1|2|3|4|5|cancel)$/.exec(b.custom_id);if(match===null)invalid();
+    const kind=match[1] as "approval"|"input";if(i===0){profile=kind;thread=match[2];request=match[3];}
+    if(kind!==profile||match[2]!==thread||match[3]!==request)invalid();
+    if(kind==="approval"){
+      const expected=APPROVALS[i];if(r.components.length!==4||expected===undefined||b.label!==expected[0]||match[4]!==expected[1]||b.style!==expected[2])invalid();
+    }else{
+      const scalars=count(b.label);if(b.style!==1||match[4]!==String(i+1)||scalars<1||scalars>80||/^\p{White_Space}/u.test(b.label)||(scalars<80&&/\p{White_Space}$/u.test(b.label)))invalid();
+    }
+  }
+  return input as readonly DiscordComponent[];
+}
+/** Serialize only original helper-owned server-prompt rows/buttons. Duplicate
+ * labels and the trim-before-truncate helper's final 80th whitespace survive. */
+export function captureServerPromptComponentTransfer(input:readonly DiscordComponent[]):string{
+  const components=serverPromptTransferProfile(input,true),encoded=`[${components.map(serializeDiscordComponent).join(",")}]`;
+  if(Buffer.byteLength(encoded,"utf8")>SERVER_PROMPT_COMPONENT_BYTES)invalid();return encoded;
+}
+/** A closed reconstruction, not general component rebranding. JSON is bounded
+ * before parsing; canonical round-trip rejects duplicate keys and alternate
+ * encodings. Private constructors preserve already-truncated label bytes. */
+export function restoreServerPromptComponentTransfer(input:string):readonly DiscordComponent[]{
+  if(typeof input!=="string"||Buffer.byteLength(input,"utf8")>SERVER_PROMPT_COMPONENT_BYTES)invalid();requireDiscordText(input);
+  let decoded:unknown;try{decoded=JSON.parse(input);}catch{invalid();}
+  const captured=serverPromptTransferProfile(decoded,false);
+  const result:readonly DiscordComponent[]=Object.freeze(captured.length===0?[]:[row((captured[0] as ActionRowComponent).components.map(b=>button(b.label,b.custom_id,b.style)))]);
+  if(`[${result.map(serializeDiscordComponent).join(",")}]`!==input)invalid();return result;
+}
 export function busyButtonRow(choice:string,allowSteer:boolean):ActionRowComponent{
   requireDiscordText(choice);if(!fingerprint(choice,24)||typeof allowSteer!=="boolean")invalid();return row([button(allowSteer?"Steer now":"Steer (check)",`codex_busy:${choice}:steer`,1),button("Queue next",`codex_busy:${choice}:queue`,2),button("Stop reply",`codex_busy:${choice}:stop`,4),button("Ignore",`codex_busy:${choice}:ignore`,2)]);
 }

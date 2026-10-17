@@ -43,9 +43,15 @@ export function persistentResidentFrame(value:unknown,kind:'role-ready'|'close-u
 export const PERSISTENT_RESIDENT_SCENARIOS=Object.freeze(['normal-start-close','ordinary-queue-stop','response-large','response-concurrent','response-cancel-before','response-cancel-after','response-begin-refused','response-unknown','observation-gap','idle-transition','normal-replacement','final-row-changed'] as const);
 // Deliberate retained-debt fixtures never enter the normal-close test inventory.
 export const PERSISTENT_RESIDENT_NEGATIVE_SCENARIOS=Object.freeze(['mutation-cancel-after-write'] as const);
-export const PERSISTENT_RESIDENT_FIXTURE_SCENARIOS=Object.freeze([...PERSISTENT_RESIDENT_SCENARIOS,...PERSISTENT_RESIDENT_NEGATIVE_SCENARIOS]);
+// Keep the original regression inventory stable. These cases exercise the one
+// original receiver and its separately owned native read/receipt services.
+export const PERSISTENT_RECEIVER_SCENARIOS=Object.freeze(['receiver-computer-form-recovery','receiver-browser-form-event','receiver-unsupported-form-event','receiver-approval-prompt','receiver-input-prompt','receiver-late-accept','receiver-read-json','receiver-native-join'] as const);
+export type PersistentReceiverScenario=typeof PERSISTENT_RECEIVER_SCENARIOS[number];
+export const PERSISTENT_RECEIVER_NEGATIVE_SCENARIOS=Object.freeze(['receiver-data-loss','receiver-ack-loss'] as const);
+export type PersistentReceiverNegativeScenario=typeof PERSISTENT_RECEIVER_NEGATIVE_SCENARIOS[number];
+export const PERSISTENT_RESIDENT_FIXTURE_SCENARIOS=Object.freeze([...PERSISTENT_RESIDENT_SCENARIOS,...PERSISTENT_RESIDENT_NEGATIVE_SCENARIOS,...PERSISTENT_RECEIVER_SCENARIOS,...PERSISTENT_RECEIVER_NEGATIVE_SCENARIOS]);
 export type PersistentResidentScenario=typeof PERSISTENT_RESIDENT_FIXTURE_SCENARIOS[number];
-export type PersistentResidentFixtureResult=Readonly<{scenario:typeof PERSISTENT_RESIDENT_SCENARIOS[number];passed:true}>|Readonly<{scenario:'mutation-cancel-after-write';assertionsPassed:true;cleanupQualified:false;componentQualified:false}>;
+export type PersistentResidentFixtureResult=Readonly<{scenario:typeof PERSISTENT_RESIDENT_SCENARIOS[number]|PersistentReceiverScenario;passed:true}>|Readonly<{scenario:'mutation-cancel-after-write';assertionsPassed:true;cleanupQualified:false;componentQualified:false}>;
 export function capturePersistentResidentFixtureCommand(value:unknown):Readonly<{kind:'run-fixture';scenario:PersistentResidentScenario}>|Readonly<{kind:'close-component'}>{
  if(value!==null&&typeof value==='object'&&!types.isProxy(value)){const d=Object.getOwnPropertyDescriptor(value,'kind');if(d&&Object.hasOwn(d,'value')&&d.value==='close-component'){exact(value,['kind']);return Object.freeze({kind:'close-component'});}}
  const data=exact(value,['kind','scenario']);if(data.kind!=='run-fixture'||typeof data.scenario!=='string'||!PERSISTENT_RESIDENT_FIXTURE_SCENARIOS.includes(data.scenario as PersistentResidentScenario))throw new TypeError('Invalid fixed fixture command');

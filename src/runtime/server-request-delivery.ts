@@ -9,6 +9,8 @@ import {localToolFormResponse} from './server-request-local-tools.ts';
 import {buildServerPrompt} from './server-prompt.ts';
 import {sendReceiptChunk,type DiscordReceiptTransport} from './completion/receipt-sender.ts';
 import {serverPromptIdentity,SentServerPromptCache,SERVER_REQUEST_PROMPT_DOMAIN,requirePromptGeneration} from './server-prompt-identity.ts';
+import {PersistentReceiverServicesClient} from './persistent-receiver-client.ts';
+import {requirePersistentResidentStoreOpen} from './persistent-resident-bootstrap.ts';
 export class ServerRequestGenerationMismatch extends Error{readonly expected:bigint;readonly actual:bigint;constructor(expected:bigint,actual:bigint){super(`app-server generation changed: expected ${expected}, current ${actual}`);this.name='ServerRequestGenerationMismatch';this.expected=expected;this.actual=actual;}}
 export class ServerRequestSnapshotUnstable extends Error{readonly attempts=3;constructor(){super('app-server generation changed during 3 pending-request snapshots');this.name='ServerRequestSnapshotUnstable';}}
 /** Serial original-request delivery core. Caller supplies the exact native owner
@@ -18,11 +20,20 @@ export class ServerRequestSnapshotUnstable extends Error{readonly attempts=3;con
  * work; a late known acceptance is still committed by the receipt state machine.
  * Scheduler retries and runtime startup binding are separate. */
 export class ServerRequestDelivery{
- readonly #promptAuthorityReads:PromptAuthorityReads|undefined;readonly #nativePromptReceipts:boolean;readonly #database:string;readonly #server:PortableResidentLifecycle;readonly #transport:DiscordReceiptTransport;readonly #sent=new SentServerPromptCache();#busy=false;#workerOwned=false;
- constructor(database:string,server:PortableResidentLifecycle,transport:DiscordReceiptTransport,nativePromptReceipts=false,promptAuthorityReads?:PromptAuthorityReads){
+ readonly #promptAuthorityReads:PromptAuthorityReads|undefined;readonly #nativePromptReceipts:boolean;readonly #database:string;readonly #server:PortableResidentLifecycle;readonly #transport:DiscordReceiptTransport|null;readonly #receiver:PersistentReceiverServicesClient|null;readonly #sent=new SentServerPromptCache();#busy=false;#workerOwned=false;
+ constructor(database:string,server:PortableResidentLifecycle,transport:DiscordReceiptTransport|null,nativePromptReceipts=false,promptAuthorityReads?:PromptAuthorityReads,receiver?:PersistentReceiverServicesClient){
   if(typeof nativePromptReceipts!=='boolean')throw new TypeError('Expected native prompt receipt profile flag');this.#nativePromptReceipts=nativePromptReceipts;
-  requireDiscordText(database);PortableResidentLifecycle.prototype.lifecycleSnapshot.call(server);const send=own(transport,'sendValidated');if(typeof send!=='function'||types.isProxy(send)||types.isGeneratorFunction(send))throw new TypeError('Expected owned server prompt transport');
-  this.#promptAuthorityReads=promptAuthorityReads===undefined?undefined:capturePromptAuthorityReads(database,promptAuthorityReads);this.#database=database;this.#server=server;this.#transport=Object.freeze({sendValidated:(request:Parameters<DiscordReceiptTransport['sendValidated']>[0],signal?:AbortSignal)=>Reflect.apply(send,transport,[request,signal])});
+  requireDiscordText(database);PortableResidentLifecycle.prototype.lifecycleSnapshot.call(server);this.#database=database;this.#server=server;
+  if(receiver!==undefined){
+   if(transport!==null||!nativePromptReceipts||promptAuthorityReads!==undefined||types.isProxy(receiver))throw new TypeError('Expected exact persistent receiver delivery profile');
+   requirePersistentResidentStoreOpen(database);
+   // The original frozen method checks private client ownership before any
+   // reads are installed. Structural sender objects/callbacks cannot enter.
+   this.#promptAuthorityReads=capturePromptAuthorityReads(database,PersistentReceiverServicesClient.prototype.promptReads.call(receiver));this.#receiver=receiver;this.#transport=null;
+  }else{
+   const send=own(transport,'sendValidated');if(typeof send!=='function'||types.isProxy(send)||types.isGeneratorFunction(send))throw new TypeError('Expected owned server prompt transport');
+   this.#promptAuthorityReads=promptAuthorityReads===undefined?undefined:capturePromptAuthorityReads(database,promptAuthorityReads);this.#receiver=null;this.#transport=Object.freeze({sendValidated:(request:Parameters<DiscordReceiptTransport['sendValidated']>[0],signal?:AbortSignal)=>Reflect.apply(send,transport,[request,signal])});
+  }
  }
  #generation(expected:bigint){requirePromptGeneration(expected);const actual=PortableResidentLifecycle.prototype.generation.call(this.#server);if(actual!==expected)throw new ServerRequestGenerationMismatch(expected,actual);}
  async #process(generation:bigint,input:PendingServerRequest,signal?:AbortSignal):Promise<void>{
@@ -33,7 +44,9 @@ export class ServerRequestDelivery{
   const chunks=splitDeliveryChunks(prompt.text,true);
   for(let index=0;index<chunks.length;index++){
    signal?.throwIfAborted();this.#generation(generation);const current=await verifyPromptAuthority(this.#database,this.#server,request,generation,this.#promptAuthorityReads);if(current.channelId!==authority.channelId)throw new PromptAuthorityError('original delivery channel changed');signal?.throwIfAborted();
-   await sendReceiptChunk(this.#database,this.#transport,authority.channelId,{domain:SERVER_REQUEST_PROMPT_DOMAIN,logicalKey:key,chunkIndex:index,content:chunks[index]!},index+1===chunks.length?prompt.components:[],null,signal,this.#nativePromptReceipts);
+   const chunk={domain:SERVER_REQUEST_PROMPT_DOMAIN,logicalKey:key,chunkIndex:index,content:chunks[index]!},components=index+1===chunks.length?prompt.components:[];
+   if(this.#receiver!==null)await PersistentReceiverServicesClient.prototype.sendChunk.call(this.#receiver,authority.channelId,chunk,components,signal);
+   else await sendReceiptChunk(this.#database,this.#transport!,authority.channelId,chunk,components,null,signal,this.#nativePromptReceipts);
   }
   this.#sent.remember(generation,key);
  }

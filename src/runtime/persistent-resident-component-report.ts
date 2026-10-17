@@ -20,6 +20,9 @@ export function capturePersistentResidentComponentReport(value:unknown):Record<s
  const result:Record<string,unknown>=Object.create(null);
  for(const key of keys){const d=Object.getOwnPropertyDescriptor(value,key);if(!d||!d.enumerable||!Object.hasOwn(d,'value'))throw new TypeError('Invalid fixed resident component report');result[key]=d.value;}
  if(result.version!==1)throw new TypeError('Invalid fixed resident component report');
+ // receiver-native-stop-observed uses only the default version/kind shape.
+ // Its single allowed scenario/phase is enforced by the original main owner;
+ // it never carries native exit, loop join, or component release evidence.
  if(result.kind==='fixture-negative-result'&&(result.scenario!=='mutation-cancel-after-write'||result.assertionsPassed!==true||result.cleanupQualified!==false||result.componentQualified!==false))throw new TypeError('Invalid negative fixture qualification report');
  if(result.kind==='component-failed'&&(typeof result.phase!=='string'||!PERSISTENT_RESIDENT_COMPONENT_PHASES.some(phase=>phase===result.phase)||(result.category!=='protocol'&&result.category!=='lifecycle')||typeof result.fixtureStep!=='string'||!PERSISTENT_RESIDENT_FIXTURE_FAILURE_STEPS.some(step=>step===result.fixtureStep)))throw new TypeError('Invalid fixed resident component failure');
  if((result.kind==='component-failed'||result.kind==='component-disposed')&&!PERSISTENT_RESIDENT_CHILD_CLOSURES.some(value=>value===result.childClosure))throw new TypeError('Invalid direct child closure diagnostic');

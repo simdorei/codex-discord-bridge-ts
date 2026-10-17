@@ -1,8 +1,9 @@
 import {capturePersistentResidentComponentReport,createPersistentResidentReportEvidence,corruptPersistentResidentReportEvidence,acceptPersistentResidentTerminalReport,type PersistentResidentChildClosure} from './persistent-resident-component-report.ts';
 import {PersistentResidentServicesOwner} from './persistent-resident-services-owner.ts';
+import {PersistentReceiverServicesOwner} from './persistent-receiver-owner.ts';
 import {createMainSequentialMutationBroker,type MainSequentialMutationBroker} from './sequential-mutation-broker-owner.ts';
 import type {SequentialMutationBrokerLimits} from './sequential-mutation-broker-protocol.ts';
-import {PERSISTENT_RESIDENT_FIXTURE_SCENARIOS,type PersistentResidentScenario,type PersistentResidentFixtureResult} from './persistent-resident-bootstrap.ts';
+import {PERSISTENT_RESIDENT_FIXTURE_SCENARIOS,PERSISTENT_RECEIVER_SCENARIOS,PERSISTENT_RECEIVER_NEGATIVE_SCENARIOS,type PersistentResidentScenario,type PersistentResidentFixtureResult,type PersistentReceiverScenario,type PersistentReceiverNegativeScenario} from './persistent-resident-bootstrap.ts';
 export type {PersistentResidentFixtureResult} from './persistent-resident-bootstrap.ts';
 import {Worker,isMainThread,getEnvironmentData,setEnvironmentData} from 'node:worker_threads';
 import {registerStoreWriter,markStoreWorkerSubmitted,releaseStoreWriter,beginAuthorityNativeOwner,type StoreWriterTicket} from '../store/store-authority-domain.ts';
@@ -83,6 +84,8 @@ export interface PersistentResidentNormalComponent {
  runFixture(scenario:PersistentResidentScenario):Promise<PersistentResidentFixtureResult>;
  closeComponent():Promise<void>;
  join():Promise<void>;
+ /** Closed scalar diagnostics only, never release or response authority. */
+ receiverSnapshot():ReturnType<PersistentReceiverServicesOwner['snapshot']>&Readonly<{loopStopObserved:boolean}>;
  snapshot():Readonly<{state:ComponentState;submitted:boolean;exited:boolean;registrationLive:boolean;rootDebt:boolean;runtimeStarted:boolean;servicesClosed:boolean;mutationJoined:boolean;directChildClosure:PersistentResidentChildClosure}>;
 }
 /** Disposable normal lifecycle component only, never called by main startup.
@@ -93,9 +96,10 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
  const entry=record(token);if(entry.submitted||activeComponentPaths.has(entry.descriptor.path))throw new TypeError('Original component registration unavailable');
  const data=capturePersistentResidentBootstrapData({version:1,kind:'persistent-resident-component',runtimeId});
  activeComponentPaths.set(entry.descriptor.path,entry);
- let worker:Worker,services:PersistentResidentServicesOwner,mutation:MainSequentialMutationBroker|null=null;
+ let worker:Worker,services:PersistentResidentServicesOwner,receiver:PersistentReceiverServicesOwner|null=null,mutation:MainSequentialMutationBroker|null=null;
  let state:ComponentState='bootstrapping',exited=false,normalReport=false,runtimeStarted=false,lifecycleMayExist=false,scenario:PersistentResidentScenario|null=null;
  let reportEvidence=createPersistentResidentReportEvidence();
+ let receiverNativeStopObserved=false;
  let readyResolve!:()=>void,readyReject!:(error:unknown)=>void,closeResolve!:()=>void,closeReject!:(error:unknown)=>void,joinResolve!:()=>void,joinReject!:(error:unknown)=>void;
  let runResolve:((result:PersistentResidentFixtureResult)=>void)|null=null,runReject:((error:unknown)=>void)|null=null;
  const ready=new Promise<void>((resolve,reject)=>{readyResolve=resolve;readyReject=reject;});
@@ -110,6 +114,7 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
  const startupCleanup=():Promise<void>=>{
   if(cleanup!==null)return cleanup;
   cleanup=(async()=>{
+   if(receiver!==null)await receiver.closeStartup();
    await services.closeStartupService('dead');
    if(mutation!==null){mutation.quarantine();await mutation.join();}
    await services.closeStartupService('response');
@@ -120,6 +125,7 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
  };
  const fail=()=>{
   if(state==='quarantined'||state==='joined')return;failurePhase=state;state='quarantined';clearTimer();
+  receiver?.quarantine();
   const error=fixedError();readyReject(error);closeReject(error);runReject?.(error);runResolve=null;runReject=null;
   // Before lifecycle construction, use original startup cleanup ordering. Once
   // the worker may own a child, it alone owns disposal/exit settlement: leave
@@ -141,6 +147,9 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
   worker.once('exit',()=>Atomics.store(new Int32Array(entry.descriptor.live),0,0));
   entry.submitted=true;markStoreWorkerSubmitted(entry.writer);
   services=new PersistentResidentServicesOwner(entry.descriptor.path,runtimeId,null,worker);
+  receiver=new PersistentReceiverServicesOwner(entry.descriptor.path,worker);
+  receiver.failure.addEventListener('abort',fail,{once:true});
+  if(receiver.failure.aborted)fail();
   worker.once('error',fail);worker.once('messageerror',corruptReport);
   worker.once('exit',code=>{
    if(exited)return;exited=true;clearTimer();
@@ -151,8 +160,8 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
    void (async()=>{
     try{
      if(cleanup!==null)await cleanup;
-     await services.join();if(mutation!==null)await mutation.join();
-     if(state!=='quarantined'&&code===0&&!reportEvidence.reportCorrupt&&reportEvidence.terminalKind==='disposed'&&normalReport&&services.releasable&&mutation?.snapshot().state==='J'){
+     await services.join();if(mutation!==null)await mutation.join();if(receiver!==null)await receiver.join();
+     if(state!=='quarantined'&&code===0&&!reportEvidence.reportCorrupt&&reportEvidence.terminalKind==='disposed'&&normalReport&&services.releasable&&mutation?.snapshot().state==='J'&&receiver?.releasable===true&&receiver.closed){
       release(entry);state='joined';closeResolve();
      }else{fail();}
      joinResolve();
@@ -188,13 +197,17 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
     }
     if(state==='mutation-handshake'&&kind==='mutation-ready'){
      if(mutation?.snapshot().state!=='R')throw fixedError();
-     services.initializeRemainingOwners();state='starting';lifecycleMayExist=true;post({version:1,kind:'services-initialized'});deadline();return;
+     services.initializeRemainingOwners();state='starting';lifecycleMayExist=true;receiver!.initializeRequester();deadline();return;
     }
     if(state==='starting'&&kind==='component-ready'){
      state='ready';runtimeStarted=true;clearTimer();readyResolve();return;
     }
+    if(state==='running'&&scenario==='receiver-native-join'&&kind==='receiver-native-stop-observed'&&!receiverNativeStopObserved){
+     // Observation only: the real native operation and loop are still owned.
+     receiverNativeStopObserved=true;return;
+    }
     if(state==='running'&&kind==='fixture-result'){
-     if(scenario==='mutation-cancel-after-write'||report.scenario!==scenario||report.passed!==true)throw fixedError();
+     if(scenario==='mutation-cancel-after-write'||scenario==='receiver-data-loss'||scenario==='receiver-ack-loss'||report.scenario!==scenario||report.passed!==true)throw fixedError();
      state='fixture-done';clearTimer();const resolve=runResolve;runResolve=null;runReject=null;
      resolve?.(Object.freeze({scenario:scenario!,passed:true}));return;
     }
@@ -226,7 +239,7 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
    // Fixture work has its own fixed ten-second observation phase, independent
    // from native five-second deadlines. Failure retains ownership, never retries.
    clearTimer();timer=setTimeout(fail,10000);
-   try{post({kind:'run-fixture',scenario:selected});}catch{/* Fixed promise rejected by fail. */}return pending;
+   try{if(PERSISTENT_RECEIVER_SCENARIOS.includes(selected as PersistentReceiverScenario)||PERSISTENT_RECEIVER_NEGATIVE_SCENARIOS.includes(selected as PersistentReceiverNegativeScenario))receiver!.configureFixture(selected);post({kind:'run-fixture',scenario:selected});}catch{fail();}return pending;
   },
   closeComponent():Promise<void>{
    if(state==='closing'||state==='disposed'||state==='joined'||state==='quarantined')return closed;
@@ -234,6 +247,7 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
    state='closing';deadline();try{post({kind:'close-component'});}catch{/* Fixed close promise owns failure. */}return closed;
   },
   join:()=>joined,
+  receiverSnapshot:()=>Object.freeze({...receiver!.snapshot(),loopStopObserved:receiverNativeStopObserved}),
   snapshot:()=>Object.freeze({state,submitted:entry.submitted,exited,registrationLive:Atomics.load(new Int32Array(entry.descriptor.live),0)===1,rootDebt:!entry.released,runtimeStarted,servicesClosed:services.servicesClosed,mutationJoined:mutation?.snapshot().state==='J',directChildClosure:reportEvidence.directChildClosure}),
  });
 }

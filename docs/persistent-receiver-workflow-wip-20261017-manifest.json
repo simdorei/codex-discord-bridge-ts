@@ -1,0 +1,54 @@
+{
+  "base": {
+    "local": "ea41df6d865b57997f8a5cedfab6e169cad94573",
+    "published": "f9033b4251e91d62c112067e96491f7c41ff88cf",
+    "tree": "10fc550d1d94cfd060e8db594f96c548789433cd"
+  },
+  "candidateCoverage": {
+    "isolatedReceiverNegativeModes": [
+      "receiver-data-loss",
+      "receiver-ack-loss"
+    ],
+    "mainTransport": "Fixed passive fixture only; no HTTP or live CUA/browser execution",
+    "negativeCleanupGate": "Mandatory failure remains in full workflow test; no overall component PASS",
+    "normalScenarios": 8
+  },
+  "date": "2026-10-17",
+  "filesSha256": {
+    "docs/persistent-receiver-workflow-contract-20261017.md": "eb23431b10bbf55651cf67c2ec3a32568e27bdc633eaf21f3219d029013bca17",
+    "docs/persistent-receiver-workflow-wip-20261017.md": "eee90692e0545219231bcf082f1751aa0a36b6bf42b5fcf696623ee2d2e7cda5",
+    "src/discord/components.ts": "1f5d298bdd9919369ce7deb6ddeb44c147559bfe8ebaaa22f2abbf63107a9372",
+    "src/runtime/persistent-receiver-client.ts": "d157e3c9555836be41ff13cfe8e3165c37ccb1c29f41ca795fd314367a7179d7",
+    "src/runtime/persistent-receiver-owner.ts": "7b716c7aa6c4197b546957cfa713e831a262b815d594d8ec0e904676271debcc",
+    "src/runtime/persistent-receiver-protocol.ts": "b631a41de3631a05acd684c5bc2e07fe2f92b5cfe0aff6e56e610623c0ebf6da",
+    "src/runtime/persistent-resident-bootstrap.ts": "25143852d103aa3fc811b411f78fba0d2577debb88e5595ace272393649d5fa2",
+    "src/runtime/persistent-resident-component-report.ts": "55395c3158ec128e82f34ee64038e1f2fee9e6e3810dc9234de426ee08effcbe",
+    "src/runtime/persistent-resident-composition.ts": "9cea636c3ddbbf77fa383f5191b80f2ee4de14208b90efa4371fb061043f6c47",
+    "src/runtime/persistent-resident-store-role.ts": "435be20bb9f7b457f0b35182aabfd2801245708961725f77bba87b6b787cc0d0",
+    "src/runtime/persistent-resident-worker.ts": "7fb63ae8947d296b2e25ccbc230875cfb777dfc7b4bba67cbfccb1f76802b222",
+    "src/runtime/server-request-delivery.ts": "e7ff8ececb716c9f3173a6e233836ab77a87d13071dd5484717b3fa19efeaaee",
+    "test/runtime/fixtures/persistent-resident-inline-responder.ts": "d3fa3da62f79a03c9ce056d9b5ea4c43f308372d51069a6882674980f73acb82",
+    "test/runtime/persistent-receiver-protocol.test.ts": "bc5415ba40ff6d10fb2691d08807b3a180ac82aafee6345d9e45658c84cb8147",
+    "test/runtime/persistent-receiver-workflow.test.ts": "2ef9113d3f6c864b869a6083ddcdbc315d9eaecb4aba46be5d04d414045fcce4"
+  },
+  "formatVersion": 1,
+  "historicalProcessState": "Old v4 UNKNOWN unchanged; no inference from process absence",
+  "qualification": {
+    "cleanupQualified": false,
+    "compiled": false,
+    "executed": false,
+    "installedCutover": false,
+    "operationalRootQualified": false,
+    "sourceReview": "Protocol/component and client/delivery leaves reviewed; exact final owner/integration review pending",
+    "wholeMigrationQualified": false
+  },
+  "remainingGates": [
+    "Final exact-source and fixture review",
+    "Explicit allowed graph and exact execution arguments review",
+    "Fresh strict selected/production compilation and emission parity",
+    "Bounded author and independent runtime qualification with process receipts",
+    "Before-admission data loss and malformed/control-path loss accounting",
+    "Authentic operational root gate, installed activation, Windows, provider and performance/endurance qualification"
+  ],
+  "scope": "Disposable persistent receiver workflow, source-only work in progress"
+}
