@@ -19,6 +19,7 @@ import {RuntimeStopSignal} from './stop-signal.ts';
 import {runtimeResidentConfig} from './resident-config.ts';
 import {prepareRuntimeProContext} from './startup-context.ts';
 import {RuntimeResidentStartupCleanupError} from './resident-startup.ts';
+import {requiresPortableSessionCleanupRetention} from '../../app-server/portable-session.ts';
 import {loadRuntimeAutocomplete} from './autocomplete-bootstrap.ts';
 import {startPreparedRuntimeWorkers,type PreparedRuntimeWorkerOwner} from './prepared-workers.ts';
 import {runPreparedRuntimeLifetime,closePreparedRuntimeOuter} from './prepared-lifetime.ts';
@@ -86,9 +87,9 @@ export async function runLocalRuntimeApplication(config:RuntimeConfig,environmen
   if(outerClosed)throw primary;
   authority?.seal();
   const owners=Object.freeze({instance,controller,context,gateway,attachment,workers,stop,authority,remote});
-  // This error already retains a native child whose disposal failed before a
-  // prepared context could be returned. Do not remove its exclusion identity.
-  if(primary instanceof RuntimeResidentStartupCleanupError||primary instanceof ManagedRemoteOwnershipRetainedError||workers!==undefined){retained=true;throw new LocalRuntimeOwnershipRetainedError(primary,new Error('Active ownership requires explicit reconciliation'),owners);}
+  // Startup may retain an exact pending session inside its original aggregate
+  // before a prepared context exists. Do not remove that exclusion identity.
+  if(requiresPortableSessionCleanupRetention(primary)||primary instanceof RuntimeResidentStartupCleanupError||primary instanceof ManagedRemoteOwnershipRetainedError||workers!==undefined){retained=true;throw new LocalRuntimeOwnershipRetainedError(primary,new Error('Active ownership requires explicit reconciliation'),owners);}
   try{if(remote!==undefined){await closePreparedRuntimeRemote(remote);assertPreparedRuntimeRemoteReleased(remote);}await context?.disposeBeforeWorkers();await gateway?.close();await attachment?.close();await controller?.dispose();authority?.closeAfterOwnersJoined();await instance?.release();}
   catch(cleanup){retained=true;throw new LocalRuntimeOwnershipRetainedError(primary,cleanup,owners);}
   throw primary;

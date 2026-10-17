@@ -44,9 +44,43 @@ const ownedResidentPorts=new WeakSet<object>();
 /** Native session provenance only; snapshots/shape-compatible objects are not pins. */
 export function isOwnedPortableResidentClientPort(value:unknown):value is PortableResidentClientPort{return value!==null&&typeof value==="object"&&ownedResidentPorts.has(value);}
 export type SessionDiagnosticRenderer=(stage:"json"|"rpc"|"stdout"|"stderr",error:unknown)=>string;
+const pendingSessionCleanupErrors=new WeakSet<object>();
 export class PortableSessionCleanupPendingError extends Error{
   readonly session:PortableAppServerSession;
-  constructor(session:PortableAppServerSession,cause:unknown){super("portable session startup failed with unconfirmed owned cleanup",{cause});this.name="PortableSessionCleanupPendingError";this.session=session;}
+  constructor(session:PortableAppServerSession,cause:unknown){super("portable session startup failed with unconfirmed owned cleanup",{cause});this.name="PortableSessionCleanupPendingError";this.session=session;pendingSessionCleanupErrors.add(this);}
+}
+/** Retention only, never release or live-owner proof. Preserve the original error
+ * graph; inspect only native aggregate error lists, not causes or session fields.
+ * Opaque aggregate lists or exhausted bounded inspection conservatively retain. */
+export function requiresPortableSessionCleanupRetention(error:unknown):boolean{
+  const pending:unknown[]=[error],seen=new WeakSet<object>();let budget=1024;
+  while(pending.length!==0){
+    if(--budget<0)return true;const current=pending.pop();
+    if(current===null||typeof current!=="object"||types.isProxy(current))continue;
+    if(pendingSessionCleanupErrors.has(current))return true;
+    if(seen.has(current))continue;seen.add(current);
+    if(!types.isNativeError(current))continue;
+    let prototype=Object.getPrototypeOf(current);
+    while(prototype!==null&&prototype!==AggregateError.prototype){
+      if(--budget<0||types.isProxy(prototype))return true;
+      prototype=Object.getPrototypeOf(prototype);
+    }
+    if(prototype===null)continue;
+    const descriptor=Object.getOwnPropertyDescriptor(current,"errors");
+    if(descriptor===undefined||!Object.hasOwn(descriptor,"value"))return true;
+    const errors:unknown=descriptor.value;
+    if(types.isProxy(errors)||!Array.isArray(errors))return true;
+    const length=Object.getOwnPropertyDescriptor(errors,"length")!.value as number;
+    if(length>budget)return true;
+    budget-=length;
+    for(let index=0;index<length;index++){
+      const item=Object.getOwnPropertyDescriptor(errors,String(index));
+      if(item===undefined)continue;
+      if(!Object.hasOwn(item,"value"))return true;
+      pending.push(item.value);
+    }
+  }
+  return false;
 }
 function synchronous(value:unknown):void{if(typeof value!=="function"||types.isProxy(value)||types.isAsyncFunction(value)||types.isGeneratorFunction(value))throw new TypeError("Expected synchronous observer/diagnostic function");}
 /** One non-Windows direct-child client owner. Raw gates, slots and state mutators are
