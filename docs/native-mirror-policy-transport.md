@@ -1,5 +1,7 @@
 # Native mirror-policy fixed transport extraction
 
+> 2026-10-17 update: the selected installed-owner and fixed-transport runtime suites have now run in fresh bounded isolation. Author and independent reviewer each passed 132/132; see [the runtime qualification report](native-mirror-policy-runtime-20261017.md) for the independent result, exact scope and remaining boundaries. Production implementation is unchanged. The 2026-10-16 text below is preserved as historical compile-only evidence, not the current execution status.
+
 2026-10-16 — runtime-unverified WIP. The frozen source graph has passed two
 compile-only checks; application code and tests have not been executed.
 No test PASS, operational activation, migration completion or retry approval is
@@ -115,3 +117,10 @@ and join rejection with the same refusal object. Complete two-query result and
 immutable-policy semantics must remain unchanged. No persistent-worker relocation,
 Windows, root acquisition, descendant cleanup, G7 or full migration gate closes
 from this source extraction.
+
+
+## 2026-10-17 runtime qualification addendum
+
+The new bounded execution authorization was applied only to newly isolated processes and resources. It does not certify the old v4 descendants or reset their state. The [runtime report](native-mirror-policy-runtime-20261017.md) supersedes the historical runtime-not-run statement for its exact five-suite selection.
+
+Real capacity saturation/local busy, exact T/P one-use proofs, wrong-Promise checks, genuine error replay through admitted cancellation, original validation order, actual exit-to-owner-resume cancellation, captured-original-join identity and installed owner regressions now have runtime evidence. The defensive same-refusal join-rejection branch remains source-reviewed: current real slot joins cannot reject, so an artificial replacement would not count as native qualification. The broader persistent-resident cleanup, singleton/root authority, Windows and migration gates remain separate.
