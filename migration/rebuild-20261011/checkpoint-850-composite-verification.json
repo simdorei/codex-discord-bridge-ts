@@ -1,0 +1,62 @@
+{
+  "status": "APPLIED_850_COMPOSITE_AND_ACTUAL_FOCUSED_PASS",
+  "files": [
+    {
+      "path": "src/store/ingress-recovery-custody.ts",
+      "beforeSha256": "e7bc21e222cd2b6af072651cd0d43122a502a6d1e8bad550315b0b1eb035f03c",
+      "afterSha256": "86ecae16369ec151fe2b97e9369db7759f1fdaf88fd606e24672d3f428161958"
+    },
+    {
+      "path": "src/store/queue-cancel-recovery.ts",
+      "beforeSha256": "65a1507d3a724acd64d32ab4f4979230795947ca8b47bc5efbedba27755475a1",
+      "afterSha256": "bfbe3d8b383d8d47be0f3822501b28b034b9fe4cf8ef551c6f82d5f85ee2e6be"
+    },
+    {
+      "path": "test/runtime/writer-recovery/native-owner.test.ts",
+      "beforeSha256": "8b5ab8489a27e89662c5eb91fffd1e890e6d85279da6b6818c194ae58c31a6e2",
+      "afterSha256": "0095b83930cfaef084563ca441784e4ef256f8c79b473609fa7d6a4780d629be"
+    },
+    {
+      "path": "test/store/queue-cancel-recovery-existing.test.ts",
+      "beforeSha256": "c4d784c107803df767f88fd475d7217357db3ce56525cd92288fd6a7d0c0e2b5",
+      "afterSha256": "611e9ec0615b2ae42d122c013e943f10e8505df876d37201854b3001266377c9"
+    }
+  ],
+  "verification": {
+    "status": "COMPOSITE_FROZEN_FILES_COMPLETE",
+    "fingerprint": "9e8bf3ee598d33d4e3e6b6388fc39df431820af69312769b9c3634326efbe4a4",
+    "testFiles": 857,
+    "counts": {
+      "tests": 8750,
+      "pass": 8750,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "ended": "2026-10-14T05:28:15.025Z",
+    "limitation": "Independently terminal file runs over one unchanged compiled graph, not one monolithic full-suite invocation."
+  },
+  "finalFingerprintMatched": true,
+  "sourceTestToolsFileCount": 1742,
+  "actual": {
+    "strictBuildExit": 0,
+    "focusedExit": 0,
+    "focusedTests": 53,
+    "focusedPass": 53,
+    "focusedFail": 0,
+    "focusedSkipped": 0,
+    "focusedLogSha256": "4cf12414d244ac1a46a5ecb2c9416e4eafcd70d59555caec3e7ba013bc2ccafb"
+  },
+  "scope": [
+    "Original ingress scalar byte guard includes every decoded column, including malformed BLOB storage in numeric columns.",
+    "Existing-only borrowed recovery does not create lazy handoff schema or drop its index. Fully absent lazy handoff inventory is empty; a partial table or view is read and errors propagate.",
+    "Initialized compatibility entry retains its previous schema preparation."
+  ],
+  "limits": [
+    "Independent terminal file runs, not one monolithic full-suite invocation.",
+    "Only original recovery custody row reads are byte bounded here; cancellation queue/intake and related ingress inventories still need budget review.",
+    "Recover command/controller/process restart not connected; Selected and Repair refused.",
+    "Protected unavailable redaction fixture neither included nor counted. Windows/live/performance/G1-G7/24-hour/deployment remain unverified."
+  ]
+}

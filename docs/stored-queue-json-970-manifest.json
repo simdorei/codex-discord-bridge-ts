@@ -1,0 +1,187 @@
+{
+  "checkpoint": 970,
+  "dateUtc": "2026-10-17",
+  "status": "WIP; bounded source-category parity, not overall PASS",
+  "localBaseCommit": "4461874d38493c5f292a3e83d922a7b4e2caff27",
+  "evidenceMode": "Fresh final-source author and independent qualification",
+  "rustReference": {
+    "repository": "simdorei/codex-discord-remote-rust",
+    "commit": "d7e1aa0106b2eefd9ea3f96e8e4bc5afdd296d34",
+    "blobs": {
+      "crates/cdr-store/src/queue/read.rs": "51908634a7bf40ea1aa5073f212e7f39b93a0a5e",
+      "crates/cdr-store/src/error.rs": "261d7959f547966b8562d13a07da24879dd4bba1",
+      "crates/cdr-runtime/src/server_prompt_authority.rs": "000c612ad050850ed468306f693cc3f80288aa98",
+      "crates/cdr-runtime/src/server_prompt_redisplay.rs": "ca8ccd8a0b6bdf286814d3cc89dea082a4e6efb7"
+    },
+    "comparison": "Inspected immutable source; no executed Rust artifact comparison"
+  },
+  "changedFilesSha256": {
+    "src/store/queue-read.ts": "dac23366570ff8cb74d8b343f96e4853d78fce56b5a30b8a08173bedb9bf5954",
+    "src/runtime/native-store-read-diagnostic.ts": "924d453dbba713908547b47c2817a2d5f6522d9d29bd5caaf60f87ab782fa927",
+    "test/store/queue-read.test.ts": "085ea9b00d95674a04f3a0be94238b53a71504e7724607dd5aad221418fac8b7",
+    "test/store/queue-generation.test.ts": "9e4b304aa7f9b63a69c01baf932235fc4359ad7379fc66e8cbb5ab49806d30a5",
+    "test/store/queue-start-failure.test.ts": "62640822519d960d3cf253c00010f8dd508ce5a2da9a0079a7b7d9400330d2ca",
+    "test/store/queue-preflight-failure.test.ts": "637e323e3eb4f76f2c84a21004e5299b5a887419688bf4614bb7a6146ce63a96",
+    "test/runtime/native-store-read-diagnostic.test.ts": "2dd2fddf7a9ecf4822718b88c86d379bdfa77cf65335ce554524f241eecd704c"
+  },
+  "sharedQualification": {
+    "strictSelectedProjectModules": 354,
+    "strictProductionProjectModules": 341,
+    "declarationsPerCompilation": 178,
+    "identicalProductionEmissions": 341,
+    "frozenInputsPerRun": 607,
+    "physicalFrozenCopiesPerRun": 608,
+    "sourceGraphSha256": "172cbbfdac032452a9219600b04cd4474cfc6b3255cc06c0183c886a474365b1",
+    "emittedMapSha256": {
+      "production": "c4f769fef81acb81f1f1bec457f2db1445c063a204c36f3049dc6d74da3db599",
+      "selected": "0fc0c2c6b25dc1505d7e0be6d9a0e9f8e98c0019337cd9469d6f787af673136e"
+    },
+    "pinnedNodeSha256": "7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c",
+    "testsPerRun": {
+      "cancelled": 0,
+      "fail": 0,
+      "pass": 137,
+      "skipped": 0,
+      "tests": 137,
+      "todo": 0
+    },
+    "executedSuites": [
+      "test/store/queue-read.test.ts",
+      "test/store/queue-generation.test.ts",
+      "test/store/queue-start-failure.test.ts",
+      "test/store/queue-preflight-failure.test.ts",
+      "test/store/queue-snapshot.test.ts",
+      "test/store/queue-baseline.test.ts",
+      "test/runtime/native-store-read-diagnostic.test.ts",
+      "test/runtime/queue-runner/native-read-state.test.ts",
+      "test/runtime/server-prompt-authority-native.test.ts"
+    ],
+    "compileOnlySuites": [],
+    "unchangedInputsCopiesEmissionsAndNode": true,
+    "privateHomeAndTempEmpty": true
+  },
+  "runs": [
+    {
+      "role": "author",
+      "rootBasename": "store-json-parity-970-author-20261017-Fhkt0dHM",
+      "qualificationManifestSha256": "39dbef0fdb7bb88b36046daede3286823fad5e1c66abd2952ad3a966201fe7ef",
+      "emittedFreezeFileSha256": "61b2ecdd4264e2ae083a465fd94977f6b940e33e5839cdd4f1a8e28f1f99e9b6",
+      "pretestAuditSha256": "5f42f608881d4911040f768dc5fbd1b53c0eb2ac2778f8cdd9b7c48c4a35252e",
+      "posttestAuditSha256": "bdf0238d5ec4f0e8176564b2e3e8fda8e32c09940b3dbf5e2dfc405b1f58798d",
+      "phases": {
+        "selected": {
+          "receiptSha256": "3f24739bfdb38426109d309864f4d1340fcd41f1adfa11393375e016a132b8da",
+          "directExitCode": 0,
+          "directElapsedSeconds": 0.7913065690081567,
+          "supervisorElapsedSeconds": 0.8220586820389144,
+          "observedOwnedProcessIdentities": 1,
+          "allOwnedProcessesExited": true,
+          "streamsEof": true,
+          "waitReportedNoChildren": true,
+          "forcedSignals": [],
+          "errors": [],
+          "applicationCleanupQualifiedBySupervisor": false,
+          "historicalV4": "unknown-and-untouched"
+        },
+        "production": {
+          "receiptSha256": "956c6d715c00cb68b414f1c5dd6469a5181f9605e5e85bda72e438edb4f1950e",
+          "directExitCode": 0,
+          "directElapsedSeconds": 0.7561794419889338,
+          "supervisorElapsedSeconds": 0.7871257980004884,
+          "observedOwnedProcessIdentities": 1,
+          "allOwnedProcessesExited": true,
+          "streamsEof": true,
+          "waitReportedNoChildren": true,
+          "forcedSignals": [],
+          "errors": [],
+          "applicationCleanupQualifiedBySupervisor": false,
+          "historicalV4": "unknown-and-untouched"
+        },
+        "tests": {
+          "receiptSha256": "395a17509f3b53e677a5aae6a501eda0d14081c957077c1c1b8a7a4a95f7732f",
+          "directExitCode": 0,
+          "directElapsedSeconds": 28.771703564969357,
+          "supervisorElapsedSeconds": 28.8026519799605,
+          "observedOwnedProcessIdentities": 15,
+          "allOwnedProcessesExited": true,
+          "streamsEof": true,
+          "waitReportedNoChildren": true,
+          "forcedSignals": [],
+          "errors": [],
+          "applicationCleanupQualifiedBySupervisor": false,
+          "historicalV4": "unknown-and-untouched"
+        }
+      }
+    },
+    {
+      "role": "independent",
+      "rootBasename": "store-json-parity-970-review-20261017-6cORvOQs",
+      "qualificationManifestSha256": "d3bce90ea3937332454ff75978537ac449bcab23f88f46d5119c8053f63260a7",
+      "emittedFreezeFileSha256": "61b2ecdd4264e2ae083a465fd94977f6b940e33e5839cdd4f1a8e28f1f99e9b6",
+      "pretestAuditSha256": "5f42f608881d4911040f768dc5fbd1b53c0eb2ac2778f8cdd9b7c48c4a35252e",
+      "posttestAuditSha256": "0c0f2f4db8f84d1ab8f8d42be63e419e0af0b4a73cba9f0d4977be3137cf5e3b",
+      "phases": {
+        "selected": {
+          "receiptSha256": "934a182c046766963ee4735b7958b03975e60819c3c50941f914f91100d44de0",
+          "directExitCode": 0,
+          "directElapsedSeconds": 0.8372312510036863,
+          "supervisorElapsedSeconds": 0.8680073259747587,
+          "observedOwnedProcessIdentities": 1,
+          "allOwnedProcessesExited": true,
+          "streamsEof": true,
+          "waitReportedNoChildren": true,
+          "forcedSignals": [],
+          "errors": [],
+          "applicationCleanupQualifiedBySupervisor": false,
+          "historicalV4": "unknown-and-untouched"
+        },
+        "production": {
+          "receiptSha256": "35bb2d49433c789f88dff9c20f11f9bcc5dbfb3bfdc0a24cc6d8e5a20421357f",
+          "directExitCode": 0,
+          "directElapsedSeconds": 0.7030952550121583,
+          "supervisorElapsedSeconds": 0.7341752720531076,
+          "observedOwnedProcessIdentities": 1,
+          "allOwnedProcessesExited": true,
+          "streamsEof": true,
+          "waitReportedNoChildren": true,
+          "forcedSignals": [],
+          "errors": [],
+          "applicationCleanupQualifiedBySupervisor": false,
+          "historicalV4": "unknown-and-untouched"
+        },
+        "tests": {
+          "receiptSha256": "9975249ef9b18b40423057e0b710e42c836cb05123f0f9f63df58e663ac3c94a",
+          "directExitCode": 0,
+          "directElapsedSeconds": 28.80126214196207,
+          "supervisorElapsedSeconds": 28.832159484969452,
+          "observedOwnedProcessIdentities": 15,
+          "allOwnedProcessesExited": true,
+          "streamsEof": true,
+          "waitReportedNoChildren": true,
+          "forcedSignals": [],
+          "errors": [],
+          "applicationCleanupQualifiedBySupervisor": false,
+          "historicalV4": "unknown-and-untouched"
+        }
+      }
+    }
+  ],
+  "qualificationBoundary": {
+    "sourceChange": "Only the queue-read baseline parse catch changes from Integrity to Json; successful Value decoding and other Integrity failures stay unchanged",
+    "nativeChange": "Closed Json tag through existing joined diagnostic ownership; shared outer native errors remain unchanged; no raw input/message/cause transfer",
+    "genuine": "Resident child, original pending request, SQLite, native reads, native receipt commit, direct mutation rollback",
+    "passive": "Delivery transport callback and returned message ID; no remote acceptance proof",
+    "unqualified": [
+      "Complete Rust error-text or parser-detail parity",
+      "Universal store JSON failure parity; queue-baseline.ts unchanged",
+      "Cross-worker JavaScript error identity",
+      "Genuine HTTP or installed-startup runtime qualification",
+      "Authentic operational root and physical-store/external-writer exclusion",
+      "Persistent activation or live app-server/CUA installation",
+      "Full local-application/guard semantic compilation",
+      "Filesystem/network/cgroup/namespace isolation",
+      "Historical process closure",
+      "Performance, soak, deployment, overall A-G PASS or migration completion"
+    ]
+  }
+}

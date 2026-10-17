@@ -1,0 +1,22 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 511,
+  "localCommit": "d2a179951d39766d2750f8aacdaa71ee259502d5",
+  "fullTests": 6835,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/discord-runtime/heartbeat-start.ts": "686364b8ec524a61eff9e8290520a7de8f14a3ed8c61f15d637d1b8736285768",
+    "test/runtime/discord-runtime/heartbeat-start.test.ts": "853826e7bfd1eee883c5f0fc5fad42945cf159658f1e8b06584fc0b0d9031063",
+    "test/runtime/discord-runtime/startup-context.test.ts": "f10612df2e81e36db6825004820344cf291801f40d1d1300dff8edc9e0b8f305"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

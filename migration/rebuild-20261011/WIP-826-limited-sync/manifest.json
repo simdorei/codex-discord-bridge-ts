@@ -1,0 +1,23 @@
+{
+  "status": "WIP_UNAPPLIED_FOCUSED6_PASS_WHOLE_PENDING",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/limited-sync.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-826-limited-sync/files/src/runtime/mirror-sync/limited-sync.ts",
+      "sha256": "6350c78ad46dcec1834eee72a7bd0f28a3ad08d0292f39f14edf17026dba503e"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/limited-sync.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-826-limited-sync/files/test/runtime/mirror-sync/limited-sync.test.ts",
+      "sha256": "91d5fd1ffd0f2d4db4e574d9bc51cb0c6445bd9fdb4620decb3d1dbee2e8fb55"
+    }
+  ],
+  "authority": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca mirror_sync/sync.rs explicit-limit branch and deadline.rs",
+  "scope": "Prepared limited synchronization across native source/database and actual HTTP; shared operation lock and cooperative deadline; no cleanup",
+  "limitations": [
+    "Depends on820-825 and827 contract fix",
+    "Unlimited cleanup and ActionExecutor dispatch not wired",
+    "Caller retains process-level single-instance ownership",
+    "Windows/deployment unverified"
+  ]
+}

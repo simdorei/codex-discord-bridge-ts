@@ -1,0 +1,10 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "focusedTests": 12,
+  "focusedPass": 12,
+  "typecheck": 0,
+  "build": 0,
+  "full": "NOT_RUN for this exact independent candidate",
+  "notes": "Borrowed read-only original-job and hold custody. Does not validate native proof, transactions or grant cancellation.",
+  "actualBaseline": "783 R83"
+}

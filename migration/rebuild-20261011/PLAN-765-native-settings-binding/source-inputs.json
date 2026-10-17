@@ -1,0 +1,29 @@
+{
+  "files": [
+    {
+      "path": "crates/cdr-runtime/src/settings_binding.rs",
+      "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+      "sha256": "962cd3bc60936748db7f62e4794b0b15b69abfae664533d70a9d33aa181244b1",
+      "matchesFrozen": true
+    },
+    {
+      "path": "crates/cdr-runtime/src/bridge_state.rs",
+      "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+      "sha256": "f5e84f12f63eb0f23f423ad7d638aebe0b8d8ac3e54f79ddbe51396fecafdae1",
+      "matchesFrozen": true
+    },
+    {
+      "path": "crates/cdr-codex-state/src/store.rs",
+      "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+      "sha256": "ab311172a96b1d6f6fd0917a2183e38807496f6e302e95971b5df2a096ae3395",
+      "matchesFrozen": true
+    },
+    {
+      "path": "crates/cdr-codex-state/src/thread_ref.rs",
+      "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+      "sha256": "bb4d9095462fd6e6a011bc675e817e90e8c83853aba3fb945f04da35005e8fed",
+      "matchesFrozen": true
+    }
+  ],
+  "reviewedScope": "settings_binding bind_reference and route validation complete; bridge selected read/lock; store open/query and existing native resolver contract; unrelated Bridge writes not approved by this read plan"
+}

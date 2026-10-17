@@ -1,0 +1,19 @@
+{
+  "ws": {
+    "version": "8.22.0",
+    "resolved": "https://registry.npmjs.org/ws/-/ws-8.22.0.tgz",
+    "integrity": "sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg=="
+  },
+  "types": {
+    "version": "8.18.2",
+    "resolved": "https://registry.npmjs.org/@types/ws/-/ws-8.18.2.tgz",
+    "integrity": "sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w=="
+  },
+  "officialDocs": "https://github.com/websockets/ws/blob/8.22.0/doc/ws.md",
+  "sourceFiles": {
+    "node_modules/ws/lib/websocket.js": "7ccf305925f0cdb74e06b75b4c84de134b1bd771a220ef409b24520def08128f",
+    "node_modules/ws/lib/stream.js": "a56fcb6e2b152097ee820b6f5410b1f71e59819b45d08d9f8bda588fe39070ec",
+    "node_modules/ws/LICENSE": "2b29dcfe0d6471f7e8c92c5fb38c9f93edee10330937055440192f1832b1ecef"
+  },
+  "installation": "Official npm registry; exact versions; lifecycle scripts disabled. Existing TypeScript optional platform compiler restored after omit-optional removed it; package versions unchanged."
+}

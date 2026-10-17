@@ -1,0 +1,28 @@
+{
+  "status": "WIP_UNAPPLIED_FOCUSED8_PASS_WHOLE_PENDING",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/orphan-cleanup.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-830-orphan-cleanup/files/src/runtime/mirror-sync/orphan-cleanup.ts",
+      "sha256": "3274b454e862fe9577bc2a2bd11d124fd766e80af1b50ee74ae23daa28da928b"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/orphan-cleanup.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-830-orphan-cleanup/files/test/runtime/mirror-sync/orphan-cleanup.test.ts",
+      "sha256": "268a87fa732377bd86ff469050334d6335560f1d7e187a4f48431c9cae974c38"
+    }
+  ],
+  "authority": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca mirror_sync/orphan_cleanup.rs",
+  "verification": {
+    "strictBuildExit": 0,
+    "focusedPass": 8,
+    "focusedFail": 0
+  },
+  "scope": "Orphan thread and stale empty project cleanup using durable deletion fences and native mapping reads",
+  "limitations": [
+    "Caller-owned global sync lock and reconciliation required; full sync not wired",
+    "Synthetic local HTTP only; no live deletion",
+    "Whole regression pending; Windows and deployment unverified"
+  ],
+  "fixtureCorrection": "Original changed-during-DELETE fixture was prevented by existing cleanup guard. Final test changes project during final inventory before fence; raw failing log retained locally."
+}

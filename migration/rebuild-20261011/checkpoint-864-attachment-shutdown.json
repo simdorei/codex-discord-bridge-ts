@@ -1,0 +1,24 @@
+{
+  "checkpoint": 864,
+  "status": "IMPLEMENTED_SCOPED_VERIFIED",
+  "scope": "Bind the actual native attachment HTTP client to prepared lifetime outer cleanup",
+  "changes": [
+    "Prepared workers retain the authentic native AttachmentHttpClient used by captured ingress",
+    "Completed lifetime closes gateway HTTP and attachment HTTP before drain identity removal",
+    "Custom attachment transports remain explicitly caller-owned"
+  ],
+  "verification": {
+    "strictCompiledBuildExit": 0,
+    "focusedTests": 9,
+    "pass": 9,
+    "fail": 0,
+    "skipped": 0,
+    "actualLoopbackEvidence": "An unfinished HTTP attachment response remains active through joined workers; outer cleanup aborts/joins it and leaves zero owned sockets before identity removal",
+    "fullSuiteClaim": false
+  },
+  "limits": [
+    "No full production executable or deployment",
+    "WIP858 singleton EPERM remains unqualified",
+    "Windows ownership remains unqualified"
+  ]
+}

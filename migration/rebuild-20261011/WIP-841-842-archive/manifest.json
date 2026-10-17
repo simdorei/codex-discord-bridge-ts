@@ -1,0 +1,51 @@
+{
+  "status": "WIP_FOCUSED_PASS_FULL_PENDING",
+  "files": [
+    {
+      "path": "src/runtime/archive-delete/records.ts",
+      "sha256": "1abb754bf16be69d8ef9492fd5137cbc7b9521a91d52d1cb1fdb61eb23830cbe",
+      "state": "actual working copy"
+    },
+    {
+      "path": "test/runtime/archive-delete/records.test.ts",
+      "sha256": "a40c4225e20e87757dab4e69a9d90c13c645426f04d44949bbb2589849fda074",
+      "state": "actual working copy"
+    },
+    {
+      "path": "src/runtime/archive-delete/backup-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-841-842-archive/files/src/runtime/archive-delete/backup-worker.ts",
+      "sha256": "16b0c0528971debfd410dbb85f04c51fea741660e355081dd80e4de9cca8718e",
+      "state": "staged only"
+    },
+    {
+      "path": "src/runtime/archive-delete/native-backup.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-841-842-archive/files/src/runtime/archive-delete/native-backup.ts",
+      "sha256": "e14adf9ce7f8cc5977738e709ac1b9fbfc1bf44ae0e75cba2b777b3535e61ae6",
+      "state": "staged only"
+    },
+    {
+      "path": "test/runtime/archive-delete/native-backup.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-841-842-archive/files/test/runtime/archive-delete/native-backup.test.ts",
+      "sha256": "a5edef886db71778325a874a44cd4c261a8314bbf1ae91f6a2b5676153340c5c",
+      "state": "staged only"
+    }
+  ],
+  "focused": {
+    "recordsAndDigests": 19,
+    "backup": 10,
+    "strictBuildExit": 0
+  },
+  "authority": {
+    "rustCommit": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+    "recordsBlob": "9690353e9d888dd20f32deedab70ecbd5fe44537",
+    "backupBlob": "e63d3763af55b5c1c64db6f5444914bcf8371cfc"
+  },
+  "limits": [
+    "Records require native worker caller, independent immutable backup and original reservation.",
+    "Backup creates new recovery files only; no source deletion. Partial recovery retained after errors.",
+    "Parent source/rollout validation, platform handle locks and full command integration not implemented here.",
+    "No Windows or live data qualification; noncooperating filesystem writers not excluded.",
+    "841 full regression still running; 842 full regression pending.",
+    "Metadata backup limited to 1MiB per file, transcript128MiB; native owner30s with joined cancellation."
+  ]
+}

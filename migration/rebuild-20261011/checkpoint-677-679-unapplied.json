@@ -1,0 +1,70 @@
+{
+  "checkpoint": "677/679 rejected integration candidates",
+  "actualApplied": 673,
+  "actualTests": 7668,
+  "actualSourceTestFiles": 1511,
+  "candidate677": {
+    "focused": 122,
+    "full": {
+      "tests": 7705,
+      "pass": 7703,
+      "fail": 2,
+      "skip": 0,
+      "cancelled": 0,
+      "files": 728,
+      "durationMs": 464276.935894
+    },
+    "sameCompiledIsolated": {
+      "tests": 2,
+      "pass": 0,
+      "fail": 2,
+      "skip": 0,
+      "durationMs": 15533.688065
+    }
+  },
+  "candidate679": {
+    "change": "one central Discovery slot, no change to Background3/Control1/Observation2 or timeouts",
+    "sameTestResult": {
+      "tests": 2,
+      "pass": 1,
+      "fail": 1,
+      "skip": 0,
+      "durationMs": 14904.758978
+    },
+    "passing": "heartbeat/mirror interleaving",
+    "failing": "typed prefix/slash completion",
+    "diagnosticSingleRun": {
+      "pass": 1,
+      "evidence": "timing-dependent; does not qualify or negate earlier failure"
+    },
+    "readLockProbe": {
+      "mode": {
+        "journal_mode": "delete"
+      },
+      "write": "failed",
+      "code": "ERR_SQLITE_ERROR",
+      "errcode": 5,
+      "message": "database is locked",
+      "elapsedMs": 103.34077500000001,
+      "afterJoinWrite": true
+    }
+  },
+  "finding": "Interactive native snapshot waits for parent messages while retaining SQLite read transaction. In actual default DELETE journal mode it blocks a synchronous writer on the parent event loop; bounded writer probe gets SQLITE_BUSY after103ms and succeeds after reader joins. Separate Discovery lane fixes one observed capacity failure but not this architectural wait cycle. No production WAL mutation or timeout/assertion weakening authorized by this result.",
+  "disposition": "UNAPPLIED; retain both complete candidates and raw failures; design autonomous native round that can close its snapshot without parent messages",
+  "startupSameTestSha256": "1d86d68611e4d975c576074f5dc101245485bd2502371836c5a57f6d6b81a99f",
+  "nextPlan": "Native worker executes whole pure discovery pass synchronously against one CheckedRead; parent owns atomic queue publication and wake-version merge after actual join. Preserve query decisions/order and opaque cursors, explicitly pin monotonic clock adaptation. No callback RPC while DB transaction remains open.",
+  "remoteWrites": "paused after cancellation; no reattempt",
+  "evidence": {
+    ".runtime/completion-native-discovery-677/full.log": "4ba3c136483dbeaffc86bbfaf97c616b6347d3be987b67792cd22c46482adb60",
+    ".runtime/completion-native-discovery-677/full.tap": "466af3ed5f4e7719072bc778621736a91955cbd7da1562017d5bbad3bae163de",
+    ".runtime/completion-native-discovery-677/full-exit.json": "79ed39c11533fe484b6d32f14a84c0da686d4e33f3a9be6c4f545fbf4b15901a",
+    ".runtime/completion-native-discovery-677/isolated-startup.log": "065f44e2adf8cad19d4b6f55f3bdd9e80d18ee6fa51238de5c8da05346d750e6",
+    ".runtime/completion-native-discovery-677/isolated-startup.exit": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    ".runtime/completion-native-discovery-677/actual-unchanged-after-red.json": "edc12b52f9d78db5c2740bf7614af41a07379b4f1375d6f351a1fb20859a7468",
+    ".runtime/completion-discovery-lane-679/startup-green.log": "fc137892dd10bf75899086cae5ddcbab94177095b733f5554ca30f3031cf7053",
+    ".runtime/completion-discovery-lane-679/startup-green.exit": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    ".runtime/completion-discovery-lane-679/diagnostic-prefix.log": "a8867febbc5147a04e8aaecdb3fd51d1d19190def578985bb9e7e9126f508568",
+    ".runtime/completion-discovery-lane-679/read-lock-probe.json": "2e04d087fdb65f2ae8c192d1c296a85c127ac3bf08494a3f4da8ef487dd15356",
+    ".runtime/completion-discovery-lane-679/startup-same-test-proof.json": "948b62a425825c8c1ada6d4618deb9351811c695b6d417510ee150a0d30a8e87"
+  }
+}

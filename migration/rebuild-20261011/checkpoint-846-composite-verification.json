@@ -1,0 +1,85 @@
+{
+  "status": "APPLIED_846_COMPOSITE_AND_ACTUAL_FOCUSED_PASS",
+  "files": [
+    {
+      "path": "src/runtime/archive-delete/backup-core.ts",
+      "beforeSha256": null,
+      "afterSha256": "05b6ffacbe5201c077ebd087c91f10c1e2562d5ce55555999e46aa2e14ee1979"
+    },
+    {
+      "path": "src/runtime/archive-delete/backup-worker.ts",
+      "beforeSha256": "108e2feb936b489b21d4a62171ac93a002b8397c3eb91fb4d467e840ef982fe2",
+      "afterSha256": "b50942e19c97941c27cada5010d5de004edc4ddd933883ea9e8f70ea230e947d"
+    },
+    {
+      "path": "src/runtime/archive-delete/native-preparation.ts",
+      "beforeSha256": null,
+      "afterSha256": "b757cf8974cc0fbe7f99cffcb3fa8e08f5e4ce7591a1340c1648b5f90b76e12d"
+    },
+    {
+      "path": "src/runtime/archive-delete/preparation-worker.ts",
+      "beforeSha256": null,
+      "afterSha256": "56c73e27998714dcdd923fb3e8a9b545340e8966207c199165ef6e51304cddef"
+    },
+    {
+      "path": "src/store/archive-deletion.ts",
+      "beforeSha256": null,
+      "afterSha256": "80cc2aeeae62576a1d841ad3f8060bbe792d6195c3f4c37cbc00f3671a2b15e6"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "2204a0de5cc5faf9e1a69b576b4cf79a67b8b3ee07a2e9dcc36c9ffcc24d5d6f",
+      "afterSha256": "b6ca9b26e405665e37c46b9cca48644cdae44e0d665873a7c77c7575c27148d6"
+    },
+    {
+      "path": "test/runtime/archive-delete/native-preparation.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "e1fe23d269a2004dbaaeda798ae8bc7ab54cb9afe9b85af475772d70e688b267"
+    },
+    {
+      "path": "test/store/archive-deletion.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "ca6e0787f3f43ae6b7d68637cbc9bafbcb3fbd5a041887a7b3684ad07bb71107"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "fd437bd53b757421db9d8c139849768f7db58fdee7dec04f79a5d5ad3032441a",
+      "afterSha256": "4748f0bd10ee7109a632bc7ab99dfb2179ba6cb9c7bcf1b825461c1d63d93b91"
+    }
+  ],
+  "verification": {
+    "status": "COMPOSITE_FROZEN_FILES_COMPLETE",
+    "fingerprint": "2d72c9367a9eb567e5528b63f7b6b409a28a84002e99424c1c83b7fe35b43bf4",
+    "testFiles": 855,
+    "counts": {
+      "tests": 8723,
+      "pass": 8723,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "ended": "2026-10-14T03:52:48.206Z",
+    "limitation": "Independently terminal file runs over one unchanged compiled graph, not one monolithic full-suite invocation."
+  },
+  "finalFingerprintMatched": true,
+  "sourceTestToolsFileCount": 1738,
+  "sourceTestToolsManifestSha256": "79c11a3b48fee928cfd3c2babfd9429ced170a5c5f4d945d50c8e01806410fdc",
+  "priorWholeRuns": "Two runs lack terminal receipts; neither counted. Independently terminal855 file runs are sole composite evidence.",
+  "limits": [
+    "Not one monolithic full-suite PASS.",
+    "847\u2013848 recovery-owner changes remain staged and are not part of this composite result.",
+    "Archive preparation only: actual source-file deletion and DeleteArchiveConfirm command still not enabled.",
+    "Windows/live/runtime performance/operations/deployment unverified; protected redaction fixture remains absent/unverified."
+  ],
+  "postApply": {
+    "strictBuildExit": 0,
+    "focusedExit": 0,
+    "tests": 111,
+    "pass": 111,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "logSha256": "5e5b7e0e9c3f14ff8774626677e28078d64f753aa93e0e50b357241fe3e5ca0d"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "status": "WIP_STAGED_STRICT0_FOCUSED59_FULL_UNVERIFIED",
+  "files": [
+    {
+      "path": "src/store/ingress-recovery-custody.ts",
+      "sha256": "86ecae16369ec151fe2b97e9369db7759f1fdaf88fd606e24672d3f428161958"
+    },
+    {
+      "path": "src/store/queue-cancel-recovery.ts",
+      "sha256": "bfbe3d8b383d8d47be0f3822501b28b034b9fe4cf8ef551c6f82d5f85ee2e6be"
+    },
+    {
+      "path": "test/runtime/writer-recovery/native-owner.test.ts",
+      "sha256": "0095b83930cfaef084563ca441784e4ef256f8c79b473609fa7d6a4780d629be"
+    },
+    {
+      "path": "test/store/queue-cancel-recovery-existing.test.ts",
+      "sha256": "611e9ec0615b2ae42d122c013e943f10e8505df876d37201854b3001266377c9"
+    }
+  ],
+  "scope": [
+    "Original ingress scalar byte guard includes every decoded column, including malformed BLOB storage in numeric columns.",
+    "Existing-only borrowed recovery does not create lazy handoff schema or drop its index. Fully absent lazy handoff inventory is empty; a partial table or view is read and errors propagate.",
+    "Initialized compatibility entry retains its previous schema preparation."
+  ],
+  "verification": {
+    "strictExit": 0,
+    "focusedExit": 0,
+    "focusedPass": 59,
+    "focusedFail": 0,
+    "focusedSkip": 0
+  },
+  "limits": [
+    "Product remains applied848; this candidate is not applied.",
+    "849 preceding frozen full verification is running. No full PASS claimed for850.",
+    "Cancellation queue/intake and related ingress payload budgets remain pending.",
+    "Protected unavailable redaction fixture excluded. Windows/live/controller/deployment unverified."
+  ],
+  "rejectedAttempt": "Unconditional readonly handoff helpers caused five fixture failures because schema can legitimately be lazily absent. Raw local RED retained. Final candidate explicitly handles complete absence, preserves views as present, and retains compatibility initialization."
+}

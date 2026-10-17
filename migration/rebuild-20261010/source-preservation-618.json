@@ -1,0 +1,29 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 618,
+  "localCommit": "aa581cc33feb1ee3d643849b40aaa7005d1ac3fa",
+  "fullTests": 7341,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/app-server/writer.ts": "73f58d5d6600fecc32eb37e285764c4c0f8c5e68e75f26eac945870f9948b747",
+    "test/app-server/writer-owned-preflight.test.ts": "dff0e7e07c239e7b497f6b8c07bbbb3f1abd8e9f3d73d140ac1856985e27396b"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ],
+  "qualificationProfile": "Compiled stage full7341 PASS, actual1439 src/test files byte-identical; actual focused22/strictTS0/build0",
+  "scope": "Additive owned async writer preflight; resident DB hooks not yet migrated",
+  "inheritedRemoteExclusion": {
+    "path": "test/remote-agent/redaction.test.ts",
+    "reason": "Existing GitHub secret-scanning refusal; not retried or bypassed",
+    "lastCompleteSourceTestRemote": "32b17de2306aab7c084be10db7732460f4007f3d"
+  },
+  "remoteTestTreeComplete": false
+}

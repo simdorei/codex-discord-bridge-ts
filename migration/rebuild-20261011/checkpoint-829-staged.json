@@ -1,0 +1,156 @@
+{
+  "status": "STAGED_TESTS_PASSED_PRODUCT_UNAPPLIED",
+  "candidateFiles": [
+    {
+      "candidatePath": "src/store/state-access-facade.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-828-cleanup-reads/files/src/store/state-access-facade.ts",
+      "sha256": "f568bdc972f859297ef273fd329b14b157d36a1e09a970ed168abb3db6806795"
+    },
+    {
+      "candidatePath": "src/store/mirror-project-creation.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-820-project-lookup/files/src/store/mirror-project-creation.ts",
+      "sha256": "42b329c9fc3788600fe6e82d58500ad5ee58c195d943d5ab5721b832c1891d63"
+    },
+    {
+      "candidatePath": "src/store/mirror-policy-read.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-828-cleanup-reads/files/src/store/mirror-policy-read.ts",
+      "sha256": "1e8ed6982a7ccd1b77267a72179b593d719232225357ee41208745e0482ee49d"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/thread-channel.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-825-clock-guard/files/src/runtime/mirror-sync/thread-channel.ts",
+      "sha256": "8755c58ea07de50f8e0f41d2b861ad0dc43908f57f1f74df2418f52dce8b237e"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-metadata-local.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-824-source-metadata/files/src/runtime/mirror-sync/source-metadata-local.ts",
+      "sha256": "836a6f7e59f1f260de8e11ee7a20fa63030aa5c06a19aa617508ad1a42c04803"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-scope-local.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-823-source-scope/files/src/runtime/mirror-sync/source-scope-local.ts",
+      "sha256": "db8d6e7336073537c18157282615b42103548f4477ce19a1b2cb52492c60b816"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-scope-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-823-source-scope/files/src/runtime/mirror-sync/source-scope-worker.ts",
+      "sha256": "60c62bb2b88486b9dbc820d58010c69b181e3cc6c62b349e365fbb6baf9bf08a"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-scope.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-823-source-scope/files/src/runtime/mirror-sync/source-scope.ts",
+      "sha256": "d3325506ba9836666d90fc64fec107e3eee0b1a7ac1b5b0788929942dfd66225"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/project-channel.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-825-clock-guard/files/src/runtime/mirror-sync/project-channel.ts",
+      "sha256": "7bc715b6818cf9aeb68f7e547eb5f9149b5841a76ab74390c590f9f077e3309e"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/cleanup-admission.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-828-cleanup-reads/files/src/runtime/mirror-sync/cleanup-admission.ts",
+      "sha256": "dbe6391372e34d916cbcf7d3bcece9a9b18e7c8a4ec85ded6704f8fba7e17010"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-metadata.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-824-source-metadata/files/src/runtime/mirror-sync/source-metadata.ts",
+      "sha256": "fb9446328c97376cdb0a104a154907c8ac6e0cf075e7853214af0d6852a41001"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-metadata-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-824-source-metadata/files/src/runtime/mirror-sync/source-metadata-worker.ts",
+      "sha256": "43cc4648e8b45e05410104bba1bd6a1a2dd3282a6f052543b5ce1b3f41d83eec"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/limited-sync.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-826-limited-sync/files/src/runtime/mirror-sync/limited-sync.ts",
+      "sha256": "6350c78ad46dcec1834eee72a7bd0f28a3ad08d0292f39f14edf17026dba503e"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/store-native-protocol.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-828-cleanup-reads/files/src/runtime/mirror-sync/store-native-protocol.ts",
+      "sha256": "e3c22352ced2245f2ed317f58bc5f2bb3d3072395020aa98464c83a9246788ce"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/store-native-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-828-cleanup-reads/files/src/runtime/mirror-sync/store-native-worker.ts",
+      "sha256": "2a1890311c2cee850c41013f87082bbf409e7e4f386be5e5bcd867ebc55acb57"
+    },
+    {
+      "candidatePath": "test/store/state-access-facade.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-828-cleanup-reads/files/test/store/state-access-facade.test.ts",
+      "sha256": "7f7db7a83b3dc0d092579cf35d044ca3b53da7b3786e6ea735d1efad318eccef"
+    },
+    {
+      "candidatePath": "test/store/mirror-project-lookup.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-820-project-lookup/files/test/store/mirror-project-lookup.test.ts",
+      "sha256": "64bcca8adb7dc83533907006e5a068c779132bee8bec1a9f211d9b6bc86578f8"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/limited-sync.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-826-limited-sync/files/test/runtime/mirror-sync/limited-sync.test.ts",
+      "sha256": "91d5fd1ffd0f2d4db4e574d9bc51cb0c6445bd9fdb4620decb3d1dbee2e8fb55"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/thread-channel.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-825-clock-guard/files/test/runtime/mirror-sync/thread-channel.test.ts",
+      "sha256": "f4799c33836166208296097574db6cbf8b080386c9fc5b97a651d1a1418c1c11"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/source-metadata.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-824-source-metadata/files/test/runtime/mirror-sync/source-metadata.test.ts",
+      "sha256": "8ec393faa9122c76de277d47b72b2e79d32014df50491abf1db4c3f37920d39d"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/cleanup-admission.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-829-cleanup-tests/files/test/runtime/mirror-sync/cleanup-admission.test.ts",
+      "sha256": "f1a7020e31a5e99a0637d57c56cb2cc859d3ff9fa8601a3fa9ba80a7cd566c46"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/project-channel.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-825-clock-guard/files/test/runtime/mirror-sync/project-channel.test.ts",
+      "sha256": "d7f129735e9e586732bf204f3d3a2ede0ce138dd144ec1063077ce8d358d8087"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/source-scope.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-823-source-scope/files/test/runtime/mirror-sync/source-scope.test.ts",
+      "sha256": "7314fd9fc0695d03d4998bce2dec34f09e2a1fc3f5ad91e9e78ca6ae52100a77"
+    }
+  ],
+  "verification": {
+    "strictBuildExit": 0,
+    "focused": {
+      "tests": 14,
+      "pass": 14,
+      "fail": 0,
+      "skipped": 0
+    },
+    "full": {
+      "started": "2026-10-13T15:41:48.979Z",
+      "ended": "2026-10-13T15:59:52.835Z",
+      "exit": 0,
+      "signal": null,
+      "testFiles": 840,
+      "tests": 8571,
+      "passCount": 8571,
+      "failCount": 0,
+      "cancelled": 0,
+      "skipped": 0
+    }
+  },
+  "localEvidenceSha256": {
+    "build-tests.json": "202fccd9f925d4cc4570e50d4fa5d12de17d97e54c7227a8a99702aa84ecb671",
+    "build-tests.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "focused-tests.log": "baf0a290c155a322621a7b606fc1ec66c5fb7742b1cdda25cfe25d164b5b3efd",
+    "full-829.log": "f0629843c81881cca9365637dad6b8b2247ced2767bd6d20bc84c2758507984b",
+    "full-829-exit.json": "9bd05ae84ee3b725f87787871034a68652d925ce90c2d11ae81fff6a15373906"
+  },
+  "remoteSnapshotsThrough": "ec6c06eccf48af449682944d46157f21258cfd0d",
+  "limitations": [
+    "Only staged candidate tested; actual product remainscheckpoint819",
+    "No deployment, Windows qualification, live Discord or runtime completion claim",
+    "Protected redaction fixture remains missing and unverified",
+    "Earlier827 overlapping log excluded; this run has unique log and terminal receipt",
+    "Sources, tests and public-safe receipt only; raw logs and databases not uploaded"
+  ]
+}

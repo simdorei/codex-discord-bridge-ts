@@ -1,0 +1,55 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 613,
+  "localCommit": "4f44d439998baef7e855df9ebda18fa93941aecf",
+  "fullTests": 7300,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/remote-agent/files/line-selection.ts": "9a78810ea7a3d203441323294f67328e0fcdab859f5014b08f39bf343b194a01",
+    "src/remote-agent/files/read-file-worker.ts": "0c3596fdf34e444b2a422d031c763cbdd13e4a31f670ee1f57f0cdd381252229",
+    "src/remote-agent/files/read-file.ts": "afd708b18328eaf60fd36432d15d23b55fa0208e20e42239a81f6f9be681523b",
+    "src/remote-agent/files/redaction-cpu.ts": "1f569b26f52ac19149a99e7ca8bcfcd24cd0ebd1c4241ce3a8af38dce35c1b12",
+    "src/remote-agent/files/redaction-worker.ts": "9987a74741ce063e12711612a804db42cb80322ea1b2fea83eff08e69b18a187",
+    "src/remote-agent/files/redaction.ts": "098e88d5f0368ea36e065aa74cd7b86d99f2efd3502c59ddcc62302d57cf46c4",
+    "src/remote-agent/files/unicode16.ts": "e2766379e69d4224091bf493559f996cdd28f2840b0381cbfa51d823f142344c",
+    "src/runtime/owned-worker-slot.ts": "a2c01e22196e24faef81f5feaf771dbeff1ce3eb051f5c71abadf235d1ada08d",
+    "test/remote-agent/line-selection.test.ts": "3e74d305703f922ce7ec51c2c552cadc3ea08d5b4c1295b3400901904c3a1a38",
+    "test/remote-agent/read-file.test.ts": "796802c05c8887b4a1bff6f931f9c2f2dec91bba9ae831c29d4ae5017a056988",
+    "test/remote-agent/redaction.test.ts": "e5b0cdb7883dfd812e5be6e482f739f4d1b20c5cb3575046774c0e8ca61020e5",
+    "test/runtime/owned-cpu-worker.test.ts": "b151263fbd337fe06ce1c688f9897a390066d963a06af63c90550364da965421"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "No Rust binary differential execution",
+    "Official regex tag Unicode table bytes pinned; package artifact checksum not independently compared",
+    "Read owner POSIX only; no atomic hostile rename-and-restore confinement proof",
+    "Remote project/session permission and dispatcher activation absent",
+    "Full remote error taxonomy and external error rendering parity pending integration",
+    "Source redaction is heuristic and partial selected PEM follows source behavior",
+    "Native V8 failure601 not proven globally fixed; compiled execution is a separately tested profile",
+    "Windows/24h/live runtime unqualified"
+  ],
+  "fullTestProfile": "Compiled JS stage, NODE_OPTIONS=--no-strip-types; entire actual src/test1431 files verified byte-identical after application",
+  "actualRootVerification": {
+    "strictTS": 0,
+    "focusedPass": 36,
+    "productionBuild": 0
+  },
+  "unicodeCorrection": {
+    "oldRegressionFail": 1,
+    "newRegressionPass": 10,
+    "sameTestSha256": "e5b0cdb7883dfd812e5be6e482f739f4d1b20c5cb3575046774c0e8ca61020e5",
+    "unicodeScalarsChecked": 1112064,
+    "node17VsRust16PrefixCases": 4699
+  },
+  "publicationScope": "Partial preservation: all production sources and permitted tests; blocked redaction test remains local only",
+  "withheldFiles": {
+    "test/remote-agent/redaction.test.ts": "GitHub422 push protection flags synthetic AWS test literals; no bypass or retry attempted"
+  },
+  "remoteFullTestTreeMatchesLocal": false,
+  "localTestEvidenceOnly": true
+}

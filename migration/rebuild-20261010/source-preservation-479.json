@@ -1,0 +1,22 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 479,
+  "localCommit": "f4a600920d02726a98b531b1f61cf81d375f345e",
+  "fullTests": 6659,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/store/ingress-recovery.ts": "39bdc5afe47b6e843f6b66e4553dfce314827f4896c9ea5406a39bd0fffdfe83",
+    "src/store/startup-ingress-recovery.ts": "b45540a934a2274c6dcd8f2b5e99a015f9de75e9dd4b079402971b6b7859e9f2",
+    "test/store/startup-ingress-recovery.test.ts": "01b01261e6e57ed9fe7cf5d22322cab5215898af894f118a49fa7c155f381d8c"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

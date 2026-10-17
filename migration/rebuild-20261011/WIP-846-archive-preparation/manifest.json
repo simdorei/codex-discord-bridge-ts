@@ -1,0 +1,69 @@
+{
+  "status": "WIP_STRICT_AND_FOCUSED_PASS_FULL_PENDING",
+  "files": [
+    {
+      "path": "src/runtime/archive-delete/backup-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-846-archive-preparation/files/src/runtime/archive-delete/backup-worker.ts",
+      "sha256": "b50942e19c97941c27cada5010d5de004edc4ddd933883ea9e8f70ea230e947d"
+    },
+    {
+      "path": "src/runtime/archive-delete/backup-core.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-846-archive-preparation/files/src/runtime/archive-delete/backup-core.ts",
+      "sha256": "05b6ffacbe5201c077ebd087c91f10c1e2562d5ce55555999e46aa2e14ee1979"
+    },
+    {
+      "path": "src/runtime/archive-delete/native-preparation.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-846-archive-preparation/files/src/runtime/archive-delete/native-preparation.ts",
+      "sha256": "b757cf8974cc0fbe7f99cffcb3fa8e08f5e4ce7591a1340c1648b5f90b76e12d"
+    },
+    {
+      "path": "src/runtime/archive-delete/preparation-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-846-archive-preparation/files/src/runtime/archive-delete/preparation-worker.ts",
+      "sha256": "56c73e27998714dcdd923fb3e8a9b545340e8966207c199165ef6e51304cddef"
+    },
+    {
+      "path": "test/runtime/archive-delete/native-preparation.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-846-archive-preparation/files/test/runtime/archive-delete/native-preparation.test.ts",
+      "sha256": "e1fe23d269a2004dbaaeda798ae8bc7ab54cb9afe9b85af475772d70e688b267"
+    }
+  ],
+  "dependencies": [
+    "WIP-843-archive-preflight",
+    "WIP-844-archive-verification",
+    "WIP-845-archive-fence"
+  ],
+  "strictBuildExit": 0,
+  "focused": {
+    "tests": 111,
+    "pass": 111,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "logSha256": "26fb2c48dcd14489bc2c75dc71f305b56bd4b1b90d8d81f226a1d80e62f27813"
+  },
+  "regression": {
+    "case": "Active source must not install an archive fence",
+    "old": "RED: fence persisted",
+    "fixed": "GREEN: read archived source before reservation; same test unchanged",
+    "redLogSha256": "bb7f67ab7853b7be574c9732a64e66d9473abea446157733c2f7eb03c1ac2741"
+  },
+  "authority": {
+    "rustCommit": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+    "actionBlob": "166769e176ea0b08edcabade6204fc0a3adcddc9",
+    "currentFenceSourceInspectedAtCommit": "d7e1aa0106b2eefd9ea3f96e8e4bc5afdd296d34"
+  },
+  "semantics": [
+    "One bounded Background native owner: archived source read, exact confirmation reservation, mirror snapshot with token verification, validated source backup.",
+    "Main runtime does not perform SQLite/file reads. Inputs pinned before await; no waiting admission queue; cancellation joins actual native exit.",
+    "Failure after reservation retains durable fence and recovery artifacts; no automatic retry or release.",
+    "Refactored backup implementation into worker-only core; original backup API retained and regression tested."
+  ],
+  "limits": [
+    "Staged only and whole-suite pending. 842\u2013844 frozen full suite still running independently.",
+    "Preparation only: does not delete original source, mappings, metadata or transcript; does not complete fence.",
+    "Original target resolution and real command admission are not connected here.",
+    "After submission, timeout/abort may leave a committed fence; exact cancellation is returned only after native exit, never interpreted as rollback.",
+    "Windows exclusive file custody and actual source deletion remain unimplemented.",
+    "No actual Discord/Windows, performance, deployment or 24-hour acceptance. Protected redaction fixture remains absent/unverified."
+  ]
+}

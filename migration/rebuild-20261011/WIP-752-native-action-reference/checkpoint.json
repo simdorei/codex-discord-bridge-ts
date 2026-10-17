@@ -1,0 +1,70 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "baselineProduct": 749,
+  "baselineFullTests": 8125,
+  "foundationFocused": 48,
+  "stagedFocused": {
+    "tests": 474,
+    "pass": 474,
+    "fail": 0,
+    "skip": 0
+  },
+  "strictTypecheck": 0,
+  "wholeRegression": "RUNNING",
+  "node": "24.21.0",
+  "scope": "Exact-only leaf and optional native reference read port installed by concrete root. Synchronous selected writes, other store/custody checks remain. No new pool or deadline relaxation. Windows/live/24h UNVERIFIED.",
+  "files": [
+    {
+      "path": "src/codex-state/reference-reader.ts",
+      "sha256": "13b4d874fe64bd0736eabd6ed975df739904fb85e8d40e3ffa5eca63b5459803"
+    },
+    {
+      "path": "src/codex-state/reference-worker.ts",
+      "sha256": "a8961621812bd07d635b597cb330b5aa551e5fe38f7f20eb92081eec8e5795a0"
+    },
+    {
+      "path": "src/runtime/action-executor/basic-dispatcher.ts",
+      "sha256": "8bcfb17402c89a1b637688b80e5ca4bcea4ad795536df1d88f56cae93d862753"
+    },
+    {
+      "path": "src/runtime/action-executor/retract-action.ts",
+      "sha256": "a6e078351a6d95b3ee763ff124bbe827ea1a5923e3bd7d30ad6952081da56e1f"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "4d7db7b4e249157c281a28b73bd17a0e907d6e84492f29f998b55e175ec5ca88"
+    },
+    {
+      "path": "src/runtime/action-executor/thread-selection.ts",
+      "sha256": "5eba7487a20c160ba984be8465dd9eae74c1bc5ae8b4f790c66dcc20c084ed90"
+    },
+    {
+      "path": "src/runtime/action-executor/resume-action.ts",
+      "sha256": "b2c3e95b49f5c3db0d7d00610cb64894b4c4d8956c960d0231707abc9ccd3aee"
+    },
+    {
+      "path": "src/runtime/action-executor/settings-action.ts",
+      "sha256": "60f856e599c3fe511e32e5f88d60ea5f3904556bc662599c56be8e2f82d77b8d"
+    },
+    {
+      "path": "src/runtime/action-executor/archive-action.ts",
+      "sha256": "cf7f56be2bb9688756534cc0ce0914bfbdc65d84e4e9e4a13bc00ad819ec9c1e"
+    },
+    {
+      "path": "src/runtime/action-executor/thread-selection-native.ts",
+      "sha256": "e91f9ed5eabd4cc789dabdf35b92ad6229cc818a4a0032657f88e9d06fe76ada"
+    },
+    {
+      "path": "test/codex-state/exact-thread-reader.test.ts",
+      "sha256": "7418868a313a572805a34b6a88c183bd5ea52b7e74954666ecc25a8eb70895b6"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "sha256": "f18b2abf6d0d6f3dc24ee4a660136d0f4e985f73e1332c3538b2e9b401374ddf"
+    },
+    {
+      "path": "test/runtime/action-executor/thread-reference-native-paired.test.ts",
+      "sha256": "a3611df5beac27534dfea4b88db6bd057cce412eaeba0ad36ce35f16c2388069"
+    }
+  ]
+}

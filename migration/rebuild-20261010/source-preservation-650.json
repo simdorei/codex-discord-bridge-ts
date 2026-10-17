@@ -1,0 +1,41 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 650,
+  "localCommit": "5532d8df5223bd83deac5520b493ae4d174cfe52",
+  "fullTests": 7539,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/completion/native-observation-state.ts": "e8d53557538a459261bacd84c75fd75009e2fbe43ad45a42bd550d287e5305d7",
+    "src/runtime/completion/pipeline.ts": "647507d599156fbca6547281131e07d68c71bd1b5e6e0c4ac7d51cf333485cc9",
+    "src/runtime/completion/source-certifier.ts": "03f242a4764bd5f31df73d08630ba90a7beeab2bceec5d9948cd40e882c85c42",
+    "src/runtime/completion/source-intake.ts": "3d66ddd11abd8cb2f865cd5ac5f07325231ae17bd163b3fb8d89a24e7296484a",
+    "src/runtime/completion/source-reconciler.ts": "5cff6433fb693cdfa2156808636f56db420a4948721c9f6d0031876df9fdae72",
+    "src/runtime/discord-runtime/completion-start.ts": "9b0c426f472454f57901769a96439df437447ba5105e1841ab1870cf25b7b20a",
+    "src/runtime/native-observation-ledger-worker.ts": "502d49c6d61276c9a2fd3a41b6abeed1cbcf932e5a131e2178e1a349a3cf74d5",
+    "src/runtime/native-observation-ledger.ts": "190e44b4dd24888db0458813ee5f783418347987cbcc7edfbb48d23f7416a5e6",
+    "src/runtime/owned-worker-slot.ts": "5cbe50b689c119dc96146165073364faf7d057eb211f30781c32a31fb52f4dc3",
+    "src/store/observation-ledger.ts": "7bdbbfbe9f40bd5184cd283b52a2086367fe3cfce484f94102bbc2c6f00192f6",
+    "src/store/observation-proof.ts": "8ce2e845b3952220b718ae5d2e29613a606b5f39df9eacb093affb57c8c7696c",
+    "src/store/state-access-facade.ts": "54d0dfa84f19641939fbb0459c2e99a1da32de48bdcd2d6faffb4bad7f590c0e",
+    "test/remote-agent/native-decode.test.ts": "dcd6f5e26fd3e36071ccef25acbf9feb8deebfeb4658b2dcc0597fb08f137812",
+    "test/runtime/completion/native-observation-binding.test.ts": "70ed5e4243af297ecf0288b457d8506f915e29d395f55c16689017533a45e2f2",
+    "test/runtime/completion/pipeline.test.ts": "8a6c1257a082aefdce7ba68b85620187e9621056d30f5e38f1ed4853232e5da0",
+    "test/runtime/native-observation-ledger.test.ts": "5c882daf7dc61227c02b5579b71a054238cc738ca23ac0ae84bae1e9a5f9f5c5",
+    "test/runtime/new-reply/file-observation.test.ts": "baa7e40e04f0e7206a8791aba8846073d440a21facdfad3dbfe6f1c24f196caf",
+    "test/runtime/new-reply/window.test.ts": "8c2289d029da5effd6df7658b1991fdce5631c3e228a463e227f7d970a6cd3ea",
+    "test/runtime/observation-worker-lane.test.ts": "e5ce7774910ea4050ee264d4da3298dc14d65b547190fa05a4b3bb413847b998",
+    "test/runtime/owned-worker-budget.test.ts": "6ea09f63c660a91f5edbf0f17d4782ab49dbc1b8f79143539029311daa0601f5",
+    "test/store/observation-existing-profile.test.ts": "0a52254684854645d58021224f0fb5f4ad34b6ea8c8339f1523da239047b439c",
+    "test/store/state-access-facade.test.ts": "2d8cb30257816d9956584646e6384c43a6ceab4cc1935b8b8bbc76b0739c974f"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

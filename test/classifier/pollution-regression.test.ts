@@ -140,7 +140,7 @@ test('Object.prototype.get and set pollution does not invoke getters during desc
 });
 
 test('cold registry import regression: Object.prototype.allowedLiterals pollution does not leak into registry initialization or freeze external arrays', { concurrency: false }, () => {
-  const registryUrl = new URL('../../src/classifier/registry.ts', import.meta.url).href;
+  const registryUrl = new URL(`../../src/classifier/registry.${new URL(import.meta.url).pathname.endsWith('.js') ? 'js' : 'ts'}`, import.meta.url).href;
 
   const childCode = `
 const externalArray = ['EXTERNAL_LEAK_TEST'];

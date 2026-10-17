@@ -1,0 +1,28 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "actualBaseline": "788 R84 whole8304",
+  "791Full": {
+    "status": "PASS_FOR_AVAILABLE_STAGED_SUITE",
+    "tests": 8327,
+    "pass": 8327,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "files": 810,
+    "exit": 0,
+    "durationMs": 1331730.066622,
+    "missingProtectedTest": "test/remote-agent/redaction.test.ts",
+    "missingTestCountedAsPass": false,
+    "applied": false,
+    "stageFilesRechecked": 1639,
+    "evidenceSha256": {
+      "full.log": "007ddf5154a53b1e5c3695cdef9885acb9c02e9ba6e6e4c63aa558d9778d2125",
+      "full-exit.json": "f269a67dd2b18ad035206386b8c590ec36df4c3c5bde0a3944a11da9ca5ba802",
+      "stage-inputs.json": "f3709405ba143ddaab5b914e64c1752830141060907fcb7ca05edc8dac581c95",
+      "authored-manifest.json": "a06b9c700232193abda4af7475cfea616fce340316da94262a795dc4a3f13a1c"
+    }
+  },
+  "792and793Full": "NOT_RUN",
+  "combinedFull": "NOT_RUN",
+  "runtimeLoop": "NOT_CONNECTED"
+}

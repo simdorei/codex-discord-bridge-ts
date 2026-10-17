@@ -1,0 +1,32 @@
+{
+  "checkpoint": 937,
+  "qualified": false,
+  "ownerAcceptance": true,
+  "nativeConstructed": 19,
+  "nativeStarted": 19,
+  "nativeExited": 19,
+  "initialHeld": 8,
+  "queueOffered": 258,
+  "queueExpired": 3,
+  "queueCancelled": 255,
+  "refusedWithoutConstruction": 12,
+  "liveFifo": 6,
+  "freshAfterJoin": 5,
+  "offeredBytesPerSubmission": 64,
+  "totalOfferedFixtureBytes": 18496,
+  "submissions": 289,
+  "probeIntervalMs": 25,
+  "probeSamples": 406,
+  "probeP95LatenessMs": 0.4051680000002307,
+  "probeMaxLatenessMs": 1.5129359999998542,
+  "probeMaxSendDriftMs": 0.6674629999999979,
+  "probeMaxDeliveryDelayMs": 1.312246999999843,
+  "finalUsage": {
+    "Background": 0,
+    "Control": 0,
+    "Observation": 0,
+    "Discovery": 0,
+    "Maintenance": 0
+  },
+  "executed": true
+}

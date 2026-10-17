@@ -1,0 +1,32 @@
+{
+  "status": "IMPLEMENTED_DIRECT_CHILD_TRANSPORT_FOCUSED_PASS_NOT_RECOVERY_INTEGRATION",
+  "files": [
+    {
+      "path": "src/runtime/writer-recovery/controller-process.ts",
+      "sha256": "592025b432af08553a94645d12faac07b234bf816793f9c91658244bba4cda9e"
+    },
+    {
+      "path": "test/runtime/writer-recovery/controller-process.test.ts",
+      "sha256": "29691bba96da5629c9f5cf4a2b660a4a724da6b6eb417cea693d428219508dc5"
+    }
+  ],
+  "strictExit": 0,
+  "focused": {
+    "tests": 12,
+    "pass": 12,
+    "fail": 0,
+    "skipped": 0,
+    "logSha256": "1797ba302745a3aecd298d597295e457dff9bd6dc7bcd1bb77ac33a4024fd68e"
+  },
+  "compiledBase853Unchanged": true,
+  "addedCompiledFiles": [
+    "src/runtime/writer-recovery/controller-process.js",
+    "test/runtime/writer-recovery/controller-process.test.js"
+  ],
+  "limits": [
+    "Direct child transport only. No process-tree ownership, production recovery controller assets, Windows qualification or command wiring.",
+    "Runtime controller output must close and exit0, fit joint stdout/stderr budget and parse as strict UTF8 lossless JSON.",
+    "Timeout/abort triggers owned direct-child kill; cleanup grace is2seconds, failure remains unconfirmed. No retry.",
+    "No full854 run. Unchanged853 evidence retained; focused12 does not establish deployment readiness."
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "actualCode": "2ba4174129207b7f8b112b05edb17198213acbd5",
+  "actualQualifiedWhole": 7699,
+  "candidate682": {
+    "status": "REJECTED_UNAPPLIED",
+    "focused": {
+      "tests": 63,
+      "pass": 60,
+      "fail": 3,
+      "skip": 0
+    },
+    "typecheckExit": 0,
+    "buildExit": 0,
+    "causes": [
+      {
+        "kind": "production capacity contention",
+        "test": "unchanged startup interleaving",
+        "error": "MirrorEpochError caused by OwnedWorkerBudgetError in discoverMirrorThreads; adding idle Background read competes with typing and ordinary read owners"
+      },
+      {
+        "kind": "new test fixture contract",
+        "count": 2,
+        "error": "report callback e=>errors.push(e) returns number; trusted hook requires synchronous void"
+      }
+    ],
+    "actualBaseline": "681/R48 remains unchanged",
+    "fullRunStarted": false
+  },
+  "candidate684": {
+    "status": "UNAPPLIED_FULL_RUNNING",
+    "focused": 68,
+    "typecheckExit": 0,
+    "buildExit": 0,
+    "workerBudget": {
+      "Background": 3,
+      "Control": 1,
+      "Observation": 2,
+      "Discovery": 1,
+      "Maintenance": 1
+    },
+    "maintenanceReadQueue": 2,
+    "actualAcceptedWriteQueues": 128
+  },
+  "evidence": {
+    ".runtime/completion-native-idle-inventory-682/focused.log": "add74897591011c4aed57a2765c6db31f99ca3189c61fc69e6ca32b6ed174e16",
+    ".runtime/completion-maintenance-read-lane-684/initial-focused-red/focused.log": "5dab29d53dac7c73862ff82104377683d42577697971a695797f4aae0557a63e",
+    ".runtime/completion-maintenance-read-lane-684/focused.log": "0488b64f6c0d68568300d0afb1f69eb80daf0855601f5b09c41e0683ab3225b1",
+    ".runtime/completion-maintenance-read-lane-684/stage-inputs.json": "1fa6914bd53853934550b4bea0fa5b22a7639cd1b4f79df0b2997c7c32e76f92",
+    ".runtime/completion-maintenance-read-lane-684/scope-proof.json": "4a395e710664a218c3d9115351266f8f0aa48f416f7f50bd7fc4a1de101e140e",
+    ".runtime/completion-maintenance-read-lane-684/unchanged-startup-proof.json": "db42e60ce6e31963439cf0b9c78d859f5cb9fe9836926dc18d53268c7285eef9"
+  }
+}

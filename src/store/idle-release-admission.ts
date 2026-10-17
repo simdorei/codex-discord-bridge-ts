@@ -1,28 +1,10 @@
+import { randomUUID } from "node:crypto";
+import { asyncResolutionHeldIn } from "./async-resolution-admission.ts";
+import type { StoredQueueJob } from "./queue-read.ts";
 import type { DatabaseSync } from "node:sqlite";
 import { StoreIntegrityError } from "./schema-assembly.ts";
-import { decodeTextField, textDecoderFor, decodeI64 } from "./sqlite-values.ts";
-
-interface IdleIntent {
-  intentId: string;
-  ownerId: string;
-  generation: bigint;
-  threadId: string;
-  turnId: string;
-  jobId: string;
-  revision: bigint;
-  state: string;
-  detail: string;
-}
-const SELECT_INTENT = `SELECT intent_id,owner_id,generation,thread_id,turn_id,job_id,revision,state,detail,
-  CAST(intent_id AS BLOB) AS b_intent_id,
-  CAST(owner_id AS BLOB) AS b_owner_id,
-  CAST(thread_id AS BLOB) AS b_thread_id,
-  CAST(turn_id AS BLOB) AS b_turn_id,
-  CAST(job_id AS BLOB) AS b_job_id,
-  CAST(state AS BLOB) AS b_state,
-  CAST(detail AS BLOB) AS b_detail,
-  (SELECT encoding FROM pragma_encoding) AS encoding
-  FROM cdr_idle_release WHERE thread_id=?`;
+import {selectIdleIntentIn as selectIntent} from "./idle-release-row.ts";
+import { decodeI64 } from "./sqlite-values.ts";
 
 /** The caller owns the connection and transaction, exactly as before_enqueue. */
 export function beforeEnqueue(db: DatabaseSync, thread: string): void {
@@ -31,19 +13,8 @@ export function beforeEnqueue(db: DatabaseSync, thread: string): void {
     const p=c.codePointAt(0)!;
     if (p>=0xd800 && p<=0xdfff) throw new TypeError("Expected a well-formed thread ID");
   }
-  const stmt = db.prepare(SELECT_INTENT);
-  stmt.setReadBigInts(true);
-  const row = stmt.get(thread);
-  if (row === undefined) return;
-  const decoder = textDecoderFor(row.encoding);
-  const text = (name: string): string => decodeTextField(row[name],row["b_"+name],name,false,decoder)!;
-  const old: IdleIntent = {
-    intentId:text("intent_id"), ownerId:text("owner_id"),
-    generation:decodeI64(row.generation,"generation"),
-    threadId:text("thread_id"), turnId:text("turn_id"), jobId:text("job_id"),
-    revision:decodeI64(row.revision,"revision"),
-    state:text("state"), detail:text("detail"),
-  };
+  const old = selectIntent(db, thread);
+  if (old === null) return;
   if (old.state === "Settled" || old.state === "AwaitUnload") return;
   if (old.state !== "Candidate") {
     throw new StoreIntegrityError(
@@ -57,4 +28,32 @@ export function beforeEnqueue(db: DatabaseSync, thread: string): void {
   if (BigInt(result.changes) !== 1n) {
     throw new StoreIntegrityError("idle release compare-and-set lost");
   }
+}
+
+export function botIdleIn(db: DatabaseSync, thread: string): boolean {
+  if (asyncResolutionHeldIn(db, thread)) return false;
+  const stmt=db.prepare(`SELECT
+    NOT EXISTS(SELECT 1 FROM codex_turn_queue WHERE target_thread_id=?1)
+    AND NOT EXISTS(SELECT 1 FROM cdr_async_questions WHERE thread_id=?1
+      AND state NOT IN ('submitted','rejected','closed_unknown')
+      AND NOT (state='expired' AND chosen IS NULL AND dispatch_mode IS NULL
+        AND reply_job_id IS NULL AND accepted_turn_id IS NULL AND preparation_json IS NULL))
+    AND NOT EXISTS(SELECT 1 FROM cdr_async_question_inbox WHERE thread_id=?1 AND state!='expired')
+    AND NOT EXISTS(SELECT 1 FROM codex_dead_generation_holds WHERE target_thread_id=?1)
+    AND NOT EXISTS(SELECT 1 FROM codex_archive_fences WHERE target_thread_id=?1)
+    AND NOT EXISTS(SELECT 1 FROM cdr_cleanup_fences WHERE target_thread_id=?1) AS idle`);
+  stmt.setReadBigInts(true); return decodeI64(stmt.get(thread)?.idle,"idle")!==0n;
+}
+/** Only stages an unsent candidate. Never sends unsubscribe or resumes a thread. */
+export function stageIdleReleaseCandidateIn(db: DatabaseSync, job: StoredQueueJob, owner: string): void {
+  if(!db.isTransaction) throw new StoreIntegrityError("Borrowed mutation requires an active transaction");
+  if(!botIdleIn(db,job.targetThreadId)) return;
+  const old=selectIntent(db,job.targetThreadId);
+  if(old!==null&&old.state!=="Settled") return;
+  const count=db.prepare("SELECT COUNT(*) AS n FROM cdr_idle_release WHERE state!='Settled'");
+  count.setReadBigInts(true);
+  if(decodeI64(count.get()?.n,"idle release count")>=128n) return;
+  db.exec("DELETE FROM cdr_idle_release WHERE state='Settled' AND thread_id NOT IN (SELECT thread_id FROM cdr_idle_release WHERE state='Settled' ORDER BY rowid DESC LIMIT 32)");
+  db.prepare(`INSERT OR REPLACE INTO cdr_idle_release(intent_id,owner_id,generation,thread_id,turn_id,job_id,revision,state)
+    VALUES(?,?,?,?,?,?,1,'Candidate')`).run(randomUUID(),owner,job.appServerGeneration,job.targetThreadId,job.turnId,job.jobId);
 }

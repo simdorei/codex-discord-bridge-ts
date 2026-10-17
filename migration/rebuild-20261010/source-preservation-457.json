@@ -1,0 +1,25 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 457,
+  "localCommit": "949c8eee8cef6236ad79c97fe2b6337dbcc94000",
+  "fullTests": 6525,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/session-mirror/ownership-reader.ts": "1e01324dca1d07983f3969f171db9f024c97aaf827027f1d5a3c9832a2685338",
+    "src/runtime/session-mirror/ownership-worker.ts": "93b914fa74db74e351c2fa82d72718b3ff9fb29005dbddd9cf3a5cc9a0fdc55f",
+    "src/runtime/session-mirror/ownership.ts": "73e7466e0652150d0515e1082d139c0b59ba8af6e71ecd6a409f70dc80ef0f02",
+    "src/store/queue-snapshot.ts": "100b0f8667c12351d1db4dc952c80dd4c42d0886db045ef81d8e05f1b85932e2",
+    "test/runtime/session-mirror/disposition-observation.test.ts": "d6f63cda3e620713cd5057525bfaeec300ec894a8cdfb78d3f81a8060c8ed4a2",
+    "test/store/queue-snapshot.test.ts": "3c8dc3fe70752891c3c98d01f258df5707b7c8de02a517d1d8e027037ef3eff8"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

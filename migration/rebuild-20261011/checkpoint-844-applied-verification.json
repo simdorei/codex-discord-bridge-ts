@@ -1,0 +1,73 @@
+{
+  "status": "APPLIED_844_QUALIFIED_STAGE_FULL_AND_ACTUAL_FOCUSED_PASS",
+  "files": [
+    {
+      "path": "src/runtime/archive-delete/backup-worker.ts",
+      "sha256": "108e2feb936b489b21d4a62171ac93a002b8397c3eb91fb4d467e840ef982fe2"
+    },
+    {
+      "path": "src/runtime/archive-delete/native-backup.ts",
+      "sha256": "1b1d84e2763aaf0e467d5e1b66accf8a8a3bd4ec9fd4db1caa4acb9f2182d1af"
+    },
+    {
+      "path": "src/runtime/archive-delete/preflight.ts",
+      "sha256": "09052d20acd5ad7602d2d599ab51930d8da546ae60966b3d4c16ba982a8d25ac"
+    },
+    {
+      "path": "src/runtime/archive-delete/verification.ts",
+      "sha256": "b59edff78e4330aa5108376eac73061778e64a7f9eb1d742702f1520c9f16e40"
+    },
+    {
+      "path": "test/runtime/archive-delete/native-backup.test.ts",
+      "sha256": "673ac4b2a7b83d75f5adc04ede9ef0baf9fb330ac263f797274684cd2d0b3942"
+    },
+    {
+      "path": "test/runtime/archive-delete/preflight.test.ts",
+      "sha256": "a656e58669a88831d00b564d91febd77fbd0d23637045cb63534a3cf084e9eb4"
+    },
+    {
+      "path": "test/runtime/archive-delete/verification.test.ts",
+      "sha256": "2887e738d4f50a533695a7850858dd37191119b23903049559ade31a24511fb6"
+    }
+  ],
+  "qualifiedStage": {
+    "started": "2026-10-14T02:39:21.101Z",
+    "ended": "2026-10-14T02:57:52.280Z",
+    "exit": 0,
+    "signal": null,
+    "testFiles": 853,
+    "tests": 8695,
+    "passed": 8695,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "logSha256": "37503627be4a67e98c7764a193b2c066a2cdb95eebacb40231ff04d5211aac80"
+  },
+  "sourceTestTools": {
+    "fileCount": 1732,
+    "exactEquality": true,
+    "manifestSha256": "a051005a25db8bf734c351a7e15696325098c0d0a3db090168920587852b28f1"
+  },
+  "strictBuildExit": 0,
+  "focusedStage": {
+    "tests": 58,
+    "pass": 58
+  },
+  "limits": [
+    "Whole actual src/test/tools bytes match qualified844 stage; actual post-apply strict and focused passed. No separate duplicate actual full run.",
+    "Backup, preflight and verification only; no source deletion or command wiring.",
+    "845\u2013846 staged separately, not included in this full PASS.",
+    "Windows/live/operational/deployment unverified. Protected redaction fixture absent/unverified."
+  ],
+  "actualPostApply": {
+    "strictBuildExit": 0,
+    "focused": {
+      "tests": 63,
+      "pass": 63,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "focusedLogSha256": "de5fe11433d587538b5ce9279e275b1c429fa0144fef38c4919f1e0df7a18450"
+  }
+}

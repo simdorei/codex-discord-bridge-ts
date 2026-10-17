@@ -1,3 +1,5 @@
+import { STARTING_CANDIDATE_HOLD_PREFIX } from "./queue-read.ts";
+export { STARTING_CANDIDATE_HOLD_PREFIX };
 import { Buffer } from "node:buffer";
 import { InvalidAppServerManagedTargetError } from "./queue-managed-target.ts";
 import {
@@ -17,8 +19,7 @@ export {
   StoreIntegrityError,
 };
 
-export const STARTING_CANDIDATE_HOLD_PREFIX =
-  "[cdr-rust:turn-start-candidates-ambiguous:v1] ";
+
 
 export interface RestartReadinessSnapshot {
   readonly targetThreadIds: readonly string[];

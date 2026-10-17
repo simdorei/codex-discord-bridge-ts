@@ -1,0 +1,10 @@
+[
+  {
+    "path": "src/store/stop-terminal-observation.ts",
+    "sha256": "d85ce18041ee10fded7dfd31710e6b1ca85a65fee2cb31a0b7ba54298a776ab5"
+  },
+  {
+    "path": "test/store/stop-terminal-observation.test.ts",
+    "sha256": "12ae1c735e764ff952b9dd3d0d9799b71bebb5c28d34788a8bbd3b616193cdc2"
+  }
+]

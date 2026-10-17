@@ -1,0 +1,6 @@
+{
+  "rustCommit": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+  "authority": "crates/cdr-store/src/ingress/stop/control/recovery.rs:recovery_after",
+  "sha256": "e4a7a3fc697d6fccb26397b350640864c6987f3276362da689f5dfd37db0a179",
+  "scope": "read inventory only, no runtime or settlement installation"
+}

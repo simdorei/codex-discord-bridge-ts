@@ -1,0 +1,21 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 484,
+  "localCommit": "ceea68fdef0a1578c0a3009fe371252a92ab89f1",
+  "fullTests": 6684,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/discord-runtime/executor-bootstrap.ts": "900c613701928aafb2f49044441f96ba44dae34559e8b2397a75a69486706992",
+    "test/runtime/discord-runtime/startup-subscriptions.test.ts": "9eeb98232499acbd2e123fe38bd89abb5d47657169746a87c38856fdbf1e8ff4"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

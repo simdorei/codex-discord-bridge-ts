@@ -1,0 +1,24 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 474,
+  "localCommit": "7b643b6372449136a388d49d962d8293659c6874",
+  "fullTests": 6625,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/discord-runtime/mirror-policy-worker.ts": "008417927fd866e084f8c650381c7918bb257944e9df8139bd9ec8aaa173e60b",
+    "src/runtime/discord-runtime/native-mirror-policy.ts": "f982b6b4579948067fc41c0ad4c0921794dee01f0dbd88953ef7b7edcec465ed",
+    "src/store/mirror-policy-read.ts": "878cb6df5e3b784b895fcfbf64c4434de28b61f66e578b0d889b1acba40e92ef",
+    "src/store/mirror-policy-snapshot.ts": "b7c88463254715ea68e3eaab3ebd419ff60f793465c8d0ea225d9f127049ddda",
+    "test/runtime/discord-runtime/native-mirror-policy.test.ts": "5435eaabbe804e7e2e5b94c395918f1e0b249acdd98ce1b6fd78acd62a98ab95"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

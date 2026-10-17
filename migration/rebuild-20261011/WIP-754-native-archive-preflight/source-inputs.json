@@ -1,0 +1,38 @@
+[
+  {
+    "path": "crates/cdr-runtime/src/action_executor/archive_action.rs",
+    "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+    "sha256": "4afc1b1756d02ad5bdb3eaba0429264edb2ceb8372743e94ca123a3f85dbe28f",
+    "matchesFrozen": true
+  },
+  {
+    "path": "crates/cdr-store/src/queue.rs",
+    "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+    "sha256": "96af0e4e231fb42e44dca081c7116a5b09dd68c031a6e4fb6763dec33d4c0e45",
+    "matchesFrozen": true
+  },
+  {
+    "path": "crates/cdr-store/src/prompt_intake.rs",
+    "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+    "sha256": "4f285a26db2f1fbca0223c074921981890cc579a08ec2c2b321799f295159a1a",
+    "matchesFrozen": true
+  },
+  {
+    "path": "crates/cdr-store/src/queue/read.rs",
+    "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+    "sha256": "087d7e3852aaa2a283ecfd92b8d581ff7f1838821a3d1aa8523dcb572651d27b",
+    "matchesFrozen": true
+  },
+  {
+    "path": "crates/cdr-store/src/prompt_intake/read.rs",
+    "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+    "sha256": "900712b12da69c0cef3244752a04cc253d3886d2be4b4176b4883c4f68fdd4be",
+    "matchesFrozen": true
+  },
+  {
+    "path": "crates/cdr-store/src/prompt_intake/storage.rs",
+    "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+    "sha256": "f4f3a6ebeebc29a1c6d9048b5d34136b5d3f325d5a85e597c22b17d6a1e83951",
+    "matchesFrozen": true
+  }
+]

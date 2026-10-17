@@ -1,0 +1,42 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "baselineProduct": 744,
+  "baselineFullTests": 8095,
+  "baselineAdditionalTestsOnly": 745,
+  "initialFocused": {
+    "tests": 40,
+    "pass": 40
+  },
+  "expandedFocused": {
+    "tests": 45,
+    "pass": 45
+  },
+  "finalFocused": "Node24.21 rerun pending",
+  "unqualifiedAttempt": {
+    "node": "24.19",
+    "tests": 46,
+    "pass": 46,
+    "acceptedAsQualification": false,
+    "reason": "Incorrect PATH; unchanged final bytes rechecked under pinned Node24.21"
+  },
+  "wholeRegression": "PENDING",
+  "implementationScope": "Two original Repair preflight reads use existing native adapters; synchronous mutation guard and claim/lifecycle admission remain direct. No runtime/Windows/live/24h approval.",
+  "files": [
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "6862fa522207eb3a4735c1251b2ca54d58c4e582c3055a51a7a83f7ebaa931f4"
+    },
+    {
+      "path": "src/runtime/action-executor/repair-action.ts",
+      "sha256": "d2fc0b2c563ef9c29b90055bbb002d9e10e109962833741ca137facea7a23f27"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "sha256": "9f32b068db0481db0a1211a09bc670e04a3d6a4a9b288279dca0fd021ebb5291"
+    },
+    {
+      "path": "test/runtime/action-executor/repair-native-paired.test.ts",
+      "sha256": "4fdb990b333831093c786056dc69d50971149daeee9d8763f452bd91effed48d"
+    }
+  ]
+}

@@ -1,3 +1,5 @@
+> **Historical checkpoint log; current status is maintained in the [checkpoint 914 completion ledger](../docs/MIGRATION_COMPLETION_GATES_20261015.md).** The early “latest,” group counts and missing-runtime statements below apply only to their recorded checkpoints. The ledger distinguishes current installed paths from unqualified platform/live acceptance, inactive 893 and uninstalled 913 WIP. Historical text is preserved below.
+
 # Current migration checkpoint
 
 Latest actual APPLIED target:1029/1029 isolated tests PASS, zero failures/skips; strictTypeScript exit0 at2026-10-06T10:03:32.6004748Z. Evidence migration/slice-008-new-reply-seed/applied-windows-helper/final-checkpoint.json. Parent independent scoped PASS then exactly3hash-approved helper/test/frozen observation files applied; all prior source/test bytes unchanged.

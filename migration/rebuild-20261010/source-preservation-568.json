@@ -1,0 +1,25 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 568,
+  "localCommit": "3bce7aa548f54dc402e0ab7b6d2309d472e14110",
+  "fullTests": 7135,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/restart-readiness/inspect.ts": "6a2206b6a83dc975ca0378511e8e8f7c0df1e97dabac188b2cfb7aef675f368a",
+    "src/runtime/restart-readiness/live-drain.ts": "14f6a1efd9e1b13fb4feb82fe254cb4278c92b7784ef262f52f34db15df2ed56",
+    "src/runtime/restart-readiness/wait.ts": "493ba80b5f1ee21055628437d8a3e4625e30b17db4828b381c48d47388352a3b",
+    "src/store/restart-snapshot-owned.ts": "951beb92f9896c38060f050cf6f8a68b7a5b0e45349c72bdd4debcde5156858c",
+    "test/runtime/restart-readiness/inspect.test.ts": "8f1568934911c2233603931e1f9741060e184dda984183ec9d5ba616d7108b3a",
+    "test/runtime/restart-readiness/wait.test.ts": "b61817a309c9c5d9b40668e258656673bfc01b1750f508d1f40cf72977136e11"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

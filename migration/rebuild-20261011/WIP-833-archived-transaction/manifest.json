@@ -1,0 +1,46 @@
+{
+  "status": "WIP_UNAPPLIED_FOCUSED43_PASS_WHOLE_PENDING",
+  "files": [
+    {
+      "candidatePath": "src/store/archived-cleanup.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-833-archived-transaction/files/src/store/archived-cleanup.ts",
+      "sha256": "acc1e8c9c87e3be4e14a690dfb88f2a6ee155686266da1c55eca638f47c44d7d"
+    },
+    {
+      "candidatePath": "src/store/room-cleanup.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-833-archived-transaction/files/src/store/room-cleanup.ts",
+      "sha256": "dba406fbb168944bda4bbe2f8cb495da3434a74877506028022e8b5d76424a5d"
+    },
+    {
+      "candidatePath": "src/store/state-access-facade.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-833-archived-transaction/files/src/store/state-access-facade.ts",
+      "sha256": "139ce7d117796b840bb80565a5ba661694c8c51c90f00364796f707fdfa6f317"
+    },
+    {
+      "candidatePath": "test/store/archived-cleanup.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-833-archived-transaction/files/test/store/archived-cleanup.test.ts",
+      "sha256": "bf5921e2a6f38e8a9d76988e025fb2d5796fd239140b794764725e8323354017"
+    },
+    {
+      "candidatePath": "test/store/state-access-facade.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-833-archived-transaction/files/test/store/state-access-facade.test.ts",
+      "sha256": "f97a4085f1bb15b587493299376ddedc0cbfd4ae1b9eb4b1da0fdcd73a5b7ea6"
+    }
+  ],
+  "dependsOn": "WIP832 archived proof",
+  "verification": {
+    "strictBuildExit": 0,
+    "focusedPass": 43,
+    "focusedFail": 0
+  },
+  "scope": "Atomic archived cleanup fence and append-only non-dispatch audit; ordinary cleanup remains strict; StateAccessFacade exact API verified",
+  "hardening": [
+    "Audit INSERT must affect exactly one row or entire transaction rolls back",
+    "Async/Promise verification callback cannot commit; rejected Promise observed"
+  ],
+  "limitations": [
+    "Native archived source verification and Discord dispatch not yet wired",
+    "Whole regression pending",
+    "No Windows, live runtime or deployment qualification"
+  ]
+}

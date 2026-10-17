@@ -1,0 +1,90 @@
+{
+  "beforeHead": "b1a7c5d31fccad4517eb7e1f23070aed383688b4",
+  "stageFileCount": 1522,
+  "scope": [
+    {
+      "path": "src/runtime/completion/native-typing-worker.ts",
+      "sha256": "aab1f03ab3b692a489697bb4843c34c4f4f7f26ac15527d295656222ba88305e",
+      "beforeSha256": null
+    },
+    {
+      "path": "src/runtime/completion/native-typing.ts",
+      "sha256": "0e32adba1fd629f36acb2e3318540a2d4d1f5f4389f3f1ff7b46aa1b33c31d86",
+      "beforeSha256": null
+    },
+    {
+      "path": "src/runtime/completion/pipeline.ts",
+      "sha256": "8f18760fbf833de8127f426a2bd16466eb8e8830bad5f3f493cf0328ed08f6f5",
+      "beforeSha256": "6aefa4b5a6e543b82f6df21bb82bc669924290dfb8c43c7fcfab7b8b33b18660"
+    },
+    {
+      "path": "src/runtime/completion/typing-driver.ts",
+      "sha256": "de15cf341cbd4137b06e5f5b8d7579119a9530125dd4741b9b29a62d42d108b8",
+      "beforeSha256": "873a6ce189383be91031d2dda944fdedb3f6a99b2f527d09c87728c39dbc32a1"
+    },
+    {
+      "path": "src/runtime/completion/typing.ts",
+      "sha256": "e8cd608b6fdd299102efc44f44b18de0c074f8751303f0373e3a67a41c4aa72e",
+      "beforeSha256": "c3ec265dbf418cbce26db70335a8db8bc859b1ab08132c80f0aac3842a3d02ed"
+    },
+    {
+      "path": "src/store/observed-completion.ts",
+      "sha256": "abe8bb6011fe824e080e22c4f231ad65ec6a27ed1d282b2bb6560cafcf78d2e8",
+      "beforeSha256": "1a19c2823fdb3b37dd666c5254d1314a3e140fa28b9a651968457640d7679038"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "sha256": "b0386aee1b208ea5aff08ca70196cab34bd7384294257e6d3206eeeebf8c5971",
+      "beforeSha256": "f1fd419ae081f0e2d0a1893bf43f520ee3d8e72efc811ddedb6444a1f66a59b1"
+    },
+    {
+      "path": "test/runtime/native-typing-boundary.test.ts",
+      "sha256": "8479ef78e112a5ac6946e190762f398351505acc0172366321e6cfba0e5d8fc1",
+      "beforeSha256": null
+    },
+    {
+      "path": "test/runtime/native-typing.test.ts",
+      "sha256": "46a2890ba0dd95df4a027252d33a2d313c55dc59c382f109ee9bf56f3882a0b5",
+      "beforeSha256": null
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "sha256": "0323a989c4de46f0aa6b53dd35d13033f60c5a729ef02da343d0a746abefb3f6",
+      "beforeSha256": "5434eee8b71833db6722673c861dcb3fd0c1b0437a1bcdce952c20051df03a33"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 7699,
+    "pass": 7699,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 731,
+    "logSha256": "15ab6cd2e052826e137e0d4256a0a7f35056cf398e6d828fcc45ef5bdcbf3044",
+    "tapSha256": "e8c9e821c341634cab3ee58034a8721392e7fd573c5e4b6e2e858d69918490a3"
+  },
+  "claim": "Qualified staged whole7699PASS plus actual65PASS/TS0/build0 and all1522source/test hashes identical. No separate actual full-run claim.",
+  "remoteWrite": "paused after user cancellation; no push",
+  "actualAll1522HashesMatchQualifiedStage": true,
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 65,
+      "pass": 65,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1522
+  },
+  "evidence": {
+    ".runtime/completion-native-typing-681/full.log": "15ab6cd2e052826e137e0d4256a0a7f35056cf398e6d828fcc45ef5bdcbf3044",
+    ".runtime/completion-native-typing-681/full.tap": "e8c9e821c341634cab3ee58034a8721392e7fd573c5e4b6e2e858d69918490a3",
+    ".runtime/completion-native-typing-681/full-exit.json": "6b07467a83d55bbb34addcb2c207000f8bba3ad8a778cfbd0a250c983f007afc",
+    ".runtime/completion-native-typing-681/scope-proof.json": "b0f7ff5c763074bf62402037065296c394b94dfc6e93816fa5184dfaabcf399d",
+    ".runtime/completion-native-typing-681/stage-inputs.json": "20273e7d81adbaf1463e611c02d0067ca44cd0057e76a1b4c4c744893b7f8d32",
+    ".runtime/completion-native-typing-681/decoder-extraction-proof.json": "e593dc3ff5338bab399810144338e74860b7ca7b2fecaf7133f6caa6c91333fe",
+    ".runtime/completion-native-typing-681/applied/typecheck.log": "2fe43fdadeef60ddc24a0c6006626dfdd1c9f6339c778b657049648bc2d0414e",
+    ".runtime/completion-native-typing-681/applied/build.log": "8fd4dfcce49f1e7eca06d775379c993f11caa85ac26d2af9ab759b7834fe36f6",
+    ".runtime/completion-native-typing-681/applied/focused.log": "5ae6014615a9b7556f98ea3cf9b939314a038f90d52194c94dd1983fc64c31b0"
+  }
+}

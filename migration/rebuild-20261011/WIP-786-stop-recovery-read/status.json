@@ -1,0 +1,22 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "focused": {
+    "tests": 6,
+    "pass": 6,
+    "fail": 0,
+    "skipped": 0
+  },
+  "typecheck": 0,
+  "build": 0,
+  "full": "NOT_RUN",
+  "actualBaseline": 779,
+  "earlier783Full": {
+    "tests": 8267,
+    "pass": 8266,
+    "fail": 1,
+    "cancelled": 0,
+    "skipped": 0,
+    "cause": "Native mirror context timeout; same-byte isolated7PASS; cause unverified; whole repeat running"
+  },
+  "originalErrorsRetained": "initial owner:null fixture type error; omitted copied oracle; nested malformed JSON fixture empty join bypass, corrected with queue row; no product SQL change"
+}

@@ -1,0 +1,82 @@
+{
+  "beforeHead": "3e33fe390a0843886504029f7bb616d7cc3e7678",
+  "stageFileCount": 1548,
+  "scope": [
+    {
+      "path": "src/runtime/queue-runner/native-read-state-worker.ts",
+      "beforeSha256": "82f8cc801bd6409cc79d15baf7706b42594845fb8831863867cb63441797e39c",
+      "afterSha256": "6ba48f91182679b56020d8e00abd23ed45f57d3fc40db436a9d7c2bcf90a23b9"
+    },
+    {
+      "path": "src/runtime/queue-runner/native-read-state.ts",
+      "beforeSha256": "6a0f37602b441d1c25d787f80c491e6e8fab90259e88aad72b4462945b0e53a4",
+      "afterSha256": "9886e4dabbeb850a39a45260e2333ce7b68fbe6d166d2d726b83a1eb9531176a"
+    },
+    {
+      "path": "src/store/async-resolution-admission.ts",
+      "beforeSha256": "dff4666504d0c859cdd7923b53c787249ba5c6c646c70dfc0e850f35d3b0dc84",
+      "afterSha256": "4ee6136f245600098cc9b9e4f39ea91bcf0efceca85b7d7fd486a45b6526cc49"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "92eb5b3712efd74aa916b92feb25a069d42631028f373eb33d1c129e0d5f376b",
+      "afterSha256": "b8529c682fbe9c3d280809023098366aece6c097f9532ddbdd0fd8468709ff75"
+    },
+    {
+      "path": "test/runtime/discord-runtime/native-queue-read-wiring.test.ts",
+      "beforeSha256": "03387e18c6b95da64dbe46b62d693db2dfc865660e32cfc21fc328bf4353dbaa",
+      "afterSha256": "f5511de24d5322c1d40b993bc6e3b209e75c1f25b0599e45cb04bd0a84370cf5"
+    },
+    {
+      "path": "test/runtime/queue-runner/native-admission-read.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "4ba58ee7a8391a048d710adbd65dab3b78d328120b987cdcf7522b084fcee25f"
+    },
+    {
+      "path": "test/runtime/queue-runner/native-read-state.test.ts",
+      "beforeSha256": "e53440bd073467e6b02c4c315cd4282e6ccfdff287d497e66493dc1f72c9117a",
+      "afterSha256": "1dec92a45e303d9240e52c7c84545f83285e25b57ac23342981f820bef4d461e"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "0c72e6904aea28365baa3583caf53ad4d5e739c5e95f9c755e963ffaa402f3e9",
+      "afterSha256": "971e3f5ccf17534962a510a18831f233ae9db00276a65bd6ae3ef58d6aa692bb"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 7786,
+    "pass": 7786,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 746,
+    "logSha256": "a3906042ad74b5b618650ce848622bfc4ef16c1ad904d26775b6a63b72508ec1",
+    "tapSha256": "cfbd2b8b76646eaf88d90d7ba0fbf9421f3901380ff3c4283d58740324a02230"
+  },
+  "claim": "Qualified staged whole7786PASS plus actual427PASS/TS0/build0 and all1548source/test hashes identical. No separate actual whole rerun/Windows/performance claim.",
+  "remoteWrite": "Authorized publication active; baseline699 verified5e07a42b; candidate700 not published.",
+  "actualAll1548HashesMatchQualifiedStage": true,
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 427,
+      "pass": 427,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1548
+  },
+  "evidence": {
+    ".runtime/queue-admission-native-700/full.log": "a3906042ad74b5b618650ce848622bfc4ef16c1ad904d26775b6a63b72508ec1",
+    ".runtime/queue-admission-native-700/full.tap": "cfbd2b8b76646eaf88d90d7ba0fbf9421f3901380ff3c4283d58740324a02230",
+    ".runtime/queue-admission-native-700/full-exit.json": "d08cae01c9d9357ece54659e6760a52ac7140fd0ee22f7a5ac93eedd2d90a1e4",
+    ".runtime/queue-admission-native-700/scope-proof.json": "59e6005aca9417c143665eb7989a6bc30309742ebb5eeeef7622ee87b9c50dd2",
+    ".runtime/queue-admission-native-700/stage-inputs.json": "cba1cf809b6fe9b320f1e74f21a50845053ec86d67d96611928d300ba36a3298",
+    ".runtime/queue-admission-native-700/source-inputs.json": "be45c16ce654d1647c23312afa72f32bf3dcb99ebd7e476e768629c605087c8f",
+    ".runtime/queue-admission-native-700/rust-source-identity.json": "890fc88a2aa3895734d1b57db9aa8710c6cad6fd9afbc30e3ceabd66e13acc6e",
+    ".runtime/queue-admission-native-700/original-admission-body-proof.json": "cd68d8d3bfd5f5d1fcfa73387b8155b54470f7f65bb391822685b550342fb0ff",
+    ".runtime/queue-admission-native-700/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/queue-admission-native-700/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/queue-admission-native-700/applied/focused.log": "81325f19fd3aad5d732c429e2463cf5cb3ee2d684d5ac304db7f91017f676045"
+  }
+}

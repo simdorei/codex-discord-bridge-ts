@@ -1,0 +1,72 @@
+{
+  "status": "APPLIED_VERIFIED",
+  "at": "2026-10-12T18:08:51.864143+00:00",
+  "baselineHead": "243e0156f2c1298bc57e245c98482dc1c7422834",
+  "scope": [
+    {
+      "path": "src/codex-state/reference-reader.ts",
+      "beforeSha256": "49d4463d17140fb3961c49165e460a1af0076e3149873429a1fae6f4141b17f8",
+      "afterSha256": "42072a4931590933c71b17a4d1eddffd2701835e4b1b6d6fcc3151d0650c8200"
+    },
+    {
+      "path": "src/codex-state/reference-worker.ts",
+      "beforeSha256": "a2f5760d203e17012f6d5d60193f1ee283c10aabdb0b5281638b5d9fa222597f",
+      "afterSha256": "d525ba074fd5c68a27758e69a97e5d9f04342d2861a1854217b718ad3ec31f27"
+    },
+    {
+      "path": "src/runtime/settings-binding.ts",
+      "beforeSha256": "bfd6d024c7cddce84796c24257e3b6b2e624a40efe58e4f24e76bd92d71b257a",
+      "afterSha256": "9d25434d6998554d8a2dc43f121e67b4dc71b79f03507b96eab8c3ef326ffea5"
+    },
+    {
+      "path": "src/runtime/settings-binding-native.ts",
+      "beforeSha256": null,
+      "afterSha256": "460c39668f43f1c4c2ce486d592ccf5121b4e443587e1cc83a27d3f7ee25c5ad"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "beforeSha256": "79232ad5f86b3419cffb453a8229a80b1787ffb95dc9bc29df61aaa7774d565e",
+      "afterSha256": "99a4d5a0aa85964a7da4b28ad1502e4092b50d493396d8064b188dc50a47ce3e"
+    },
+    {
+      "path": "test/codex-state/settings-open-selected.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "a6fa666c0e93d67c54f73e657131618c70a1352345abf1671300e4f373a68512"
+    },
+    {
+      "path": "test/runtime/settings-binding-ports.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "a50b49a1a348f0a5348c697b75a2f1fad68e37c3edf95a1c758110bc4b6aa066"
+    },
+    {
+      "path": "test/runtime/settings-binding-native.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "f6db26581f171a76a111dcd6bd4e60ce3f3b88d2066f858a84b25fab4dda977a"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "beforeSha256": "c960357b95c4e18ccca3b6a94dd3f62374e15aa9fd2c45d7cc09824261a2963e",
+      "afterSha256": "f1dbad5f4fd7537255fc9dc1df76795b4ed29c66de194f24e38ba8f3b1d06344"
+    }
+  ],
+  "wholeTests": 8228,
+  "wholeFiles": 796,
+  "fullLogSha256": "f610a1fce91a67c59aca88fc707b41c0223fc73923614e9a29a546a34897dee2",
+  "stageInputsSha256": "63e3cec8cac157dbfc56bf03164ba19d81e568f0f84e1e9449e3f86a8b9a5db1",
+  "all1614InputsMatchStage": true,
+  "actualFocused": 168,
+  "typecheck": 0,
+  "build": 0,
+  "verifiedAt": "2026-10-12T18:10:12.337652+00:00",
+  "wholeTestFiles": 796,
+  "testFileConcurrency": 1,
+  "missingProtectedFixture": "not executed or counted as skipped",
+  "runtimeWindowsLive24h": "UNVERIFIED",
+  "evidence": {
+    ".runtime/settings-binding-native-767/full.log": "f610a1fce91a67c59aca88fc707b41c0223fc73923614e9a29a546a34897dee2",
+    ".runtime/settings-binding-native-767/applied/focused.log": "a7c10cca3aad0c8333e3a35c9099107b07f73a52f6d73d671419e70dc064ba16",
+    ".runtime/settings-binding-native-767/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/settings-binding-native-767/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/settings-binding-native-767/stage-inputs.json": "63e3cec8cac157dbfc56bf03164ba19d81e568f0f84e1e9449e3f86a8b9a5db1"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "status": "WIP_UNVERIFIED_UNAPPLIED",
+  "baseRemote": "96918e1acd803ecc7defa3cc86332b8cefa84cd0",
+  "files": [
+    {
+      "candidatePath": "src/discord/mirror-inventory-request.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-812-mirror-inventory/files/src/discord/mirror-inventory-request.ts",
+      "sha256": "1ea30525ac222202f765d49a9e35586d5b7bde7fa694fb5914b84dcb2638c40a"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/inventory-http.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-812-mirror-inventory/files/src/runtime/mirror-sync/inventory-http.ts",
+      "sha256": "840347bb8b4f1c3b609d611616e55153e28c9465b455048c3a292b8e9bca8102"
+    },
+    {
+      "candidatePath": "src/discord/node-http-wire.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-812-mirror-inventory/files/src/discord/node-http-wire.ts",
+      "sha256": "7626f09f3390415dededbcfd7e8fcd35208ea55df2daa3077806b9d397fa4434"
+    },
+    {
+      "candidatePath": "src/discord/rate-header-adapter.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-812-mirror-inventory/files/src/discord/rate-header-adapter.ts",
+      "sha256": "82450ebf4513d0bc0cf2021f9088cdcca2a52b925d6334dc51ccd07320ad0a42"
+    },
+    {
+      "candidatePath": "src/discord/channel-rate-state.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-812-mirror-inventory/files/src/discord/channel-rate-state.ts",
+      "sha256": "c79a978ac499fa36189ed84ac4ead5883a368c67d35c54710999827157b8adbe"
+    },
+    {
+      "candidatePath": "src/discord/response-engine.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-812-mirror-inventory/files/src/discord/response-engine.ts",
+      "sha256": "591da37e4d36efba0494d79d00a052aa65c9db0f9231c195d34d888c8ca8f15b"
+    },
+    {
+      "candidatePath": "src/discord/channel-client.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-812-mirror-inventory/files/src/discord/channel-client.ts",
+      "sha256": "f357c21ff72ebda10a76fb80012dbab5c810ac005204a6b30f1945d29c19476a"
+    },
+    {
+      "candidatePath": "test/discord/mirror-inventory-http.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-812-mirror-inventory/files/test/discord/mirror-inventory-http.test.ts",
+      "sha256": "a97d65bc23d333e3f9417052c5569fdc1e34fad762ffbec3f4cfb3293273f63a"
+    }
+  ],
+  "authority": "Rust mirror_sync/http_cleanup.rs pinned3ebf4223 and twilight0.17.1 listing/timestamp/routing",
+  "validation": "NOT RUN; waiting for whole811 to avoid concurrent suites",
+  "limitations": [
+    "Reconstructed draft810, not byte-identical recovered original.",
+    "Whole operation10s only; no wholeBridgeSync orchestration.",
+    "Full model decoding, six-digit timestamp cursor, BTreeMap-equivalent sorted dedup intended; implementation not yet qualified."
+  ]
+}

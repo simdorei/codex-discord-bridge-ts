@@ -1,0 +1,89 @@
+{
+  "beforeHead": "a9dad7735c20eecbf9e2f91419439b7eca22c72c",
+  "stageFileCount": 1538,
+  "scope": [
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "b0386aee1b208ea5aff08ca70196cab34bd7384294257e6d3206eeeebf8c5971",
+      "sha256": "7ea1f27cf56a65d0210788b10fdb3d077c862446f58b762dd030615b08e9e03f"
+    },
+    {
+      "path": "src/store/delivery.ts",
+      "beforeSha256": "458bdd59c12dd56cbea92623ce2e271504ee4d2935466c973af98b81992d4718",
+      "sha256": "7fc408eca94c1b5c9bc185ed2c2a40fee1a67fefcf4cfa6516b3b19ae0509980"
+    },
+    {
+      "path": "src/runtime/completion/final-delivery.ts",
+      "beforeSha256": "a4f4979ab59aaa4a55369fb1d36a92e101f442e9a8b9e1cdc583bb5168c6a2bd",
+      "sha256": "075ec0658c098a48f5da023937daf5cd9b3a4a8f7d0a9e85655d399d9ef0ff98"
+    },
+    {
+      "path": "src/runtime/completion/native-final-state-worker.ts",
+      "beforeSha256": null,
+      "sha256": "8c1d0f6c0d7868176866c6a0345e60ae492e945b64ea520a812e2cab06091ca7"
+    },
+    {
+      "path": "src/runtime/completion/native-final-state.ts",
+      "beforeSha256": null,
+      "sha256": "6c8266f7c7674e1a236749e50a3a04ad9d4b7d338b5147216f319712eabf3126"
+    },
+    {
+      "path": "test/runtime/native-final-state.test.ts",
+      "beforeSha256": null,
+      "sha256": "9f89e9accabce288559df72a30f0d130e46689f3bea47d29d22db5abc9b21bbf"
+    },
+    {
+      "path": "test/runtime/native-final-state-wiring.test.ts",
+      "beforeSha256": null,
+      "sha256": "6fb535d2f7924d544f8eab3a71a7928e64b41bb8c0ace6856e8deb8ff2f302e6"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "0323a989c4de46f0aa6b53dd35d13033f60c5a729ef02da343d0a746abefb3f6",
+      "sha256": "c57c74cf79d1c9ca24db5601b01c83d3a36b8953dbd1b493a9bb85fe5b2a36bd"
+    },
+    {
+      "path": "test/store/final-state-existing-writes.test.ts",
+      "beforeSha256": null,
+      "sha256": "44ef41c81dd105047fc43ffd4abfa60c7516ad973bbf5460e12c132d7b71442a"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 7746,
+    "pass": 7746,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 740,
+    "logSha256": "fac9c662cabff2d28bb87fb09d4d0159ec4756680f87d615b5a102bd1e83bd7b",
+    "tapSha256": "ecfe108b48d16ec132e0c14ae86d728f26daba0a3105aed4bf9013e3f9cd8712"
+  },
+  "claim": "Qualified staged whole7746PASS plus actual157PASS/TS0/build0 and all1538source/test hashes identical. No separate actual whole rerun/Windows/performance claim.",
+  "remoteWrite": "Authorized publication active;691 remotely verified77dabaaf;692 not yet published",
+  "actualAll1538HashesMatchQualifiedStage": true,
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 157,
+      "pass": 157,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1538
+  },
+  "evidence": {
+    ".runtime/completion-native-final-state-692/full.log": "fac9c662cabff2d28bb87fb09d4d0159ec4756680f87d615b5a102bd1e83bd7b",
+    ".runtime/completion-native-final-state-692/full.tap": "ecfe108b48d16ec132e0c14ae86d728f26daba0a3105aed4bf9013e3f9cd8712",
+    ".runtime/completion-native-final-state-692/full-exit.json": "0bf1b501d89817543666256603371fab006d6ecd4546b6eb48867c3b7e29a103",
+    ".runtime/completion-native-final-state-692/scope-proof.json": "8bffcb5038e34d3fc11a63f7814822958accd3e85d786e2ab5bbacae4ca7a6ad",
+    ".runtime/completion-native-final-state-692/stage-inputs.json": "19bd11d957278f3052dabc5e8f1cfebc86b2538e3aa9562eb16ab7cea09ecdbd",
+    ".runtime/completion-native-final-state-692/source-inputs.json": "ce27d02fd13903460605028ef91fa22d7b383bf045a8ace418efd25aeea9a619",
+    ".runtime/completion-native-final-state-692/owned-body-extraction-proof.json": "25f184ea7b59bc4f76969edcb53cb1d03c4bf7ab0c38aa405e05000f1ed06b6b",
+    ".runtime/completion-native-final-state-692/unchanged-startup-proof.json": "50568d5ece801971fce7ddb4642c7b98c8d767bfaed97afb530156abf691c058",
+    ".runtime/completion-native-final-state-692/fixture-copy-proof.txt": "253c0b370a983904497daf8db06806ca6af96a96973fb4fad62ae789d9bee2f2",
+    ".runtime/completion-native-final-state-692/build-profile-initial-fixture-missing.stderr": "727afb28d003e81a69984411f6f5037c9c58df34b06694d9dad83cd78e7b4592",
+    ".runtime/completion-native-final-state-692/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/completion-native-final-state-692/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/completion-native-final-state-692/applied/focused.log": "b4bc2f930126ac89320672c638cb5885c98efd4f95f8e8c110a6b9a72350f0b3"
+  }
+}

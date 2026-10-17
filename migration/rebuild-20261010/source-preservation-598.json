@@ -1,0 +1,23 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 598,
+  "localCommit": "84cda808ad1ff1d784c752fce56986ce4d98356d",
+  "fullTests": 7240,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/discord/gateway/node-websocket.ts": "81d48b5ff5f4d8837e8a48d8ed60b509e233f00b4bac5e41b79f9a055b3e9542",
+    "src/remote-agent/node-websocket.ts": "06689d1f14a0ae5516f5910294c4675ee700774babc635549769bca5eddb2842",
+    "test/discord/gateway/node-websocket.test.ts": "5d4f02dd2d5ca1a594a9a78ba027658ad24a3aadb91e73bbbb5eac0f49020a6e",
+    "test/remote-agent/node-websocket.test.ts": "f57476974782a5fa5b7b9b99c500e6d8e91980bf5d2b2f48a611733847fc0f9d"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "commit": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+  "pr": "https://github.com/simdorei/codex-discord-remote-rust/pull/5",
+  "files": [
+    {
+      "path": "crates/cdr-app-server/src/manager/recovery_observation.rs",
+      "gitBlob": "74edd6626fd11416262c198da068f058c2485afe",
+      "sha256": "843a02eb256e375673a32e3bce8b07294a69df6a007ad84e96aabdc62d898354",
+      "bytes": 6144
+    },
+    {
+      "path": "crates/cdr-app-server/src/manager/recovery_observation/collector.rs",
+      "gitBlob": "75dd4bf9f473b394b4e3b8c0f1416f97d200f5cc",
+      "sha256": "1989ac8bc2793299a6a2288eca1e3b81df5578bd2af71e3a79d2a690d1ee3962",
+      "bytes": 6101
+    },
+    {
+      "path": "crates/cdr-runtime/src/action_executor.rs",
+      "gitBlob": "b8924bce6abff6680e7442ddb10101276e8a7ea8",
+      "sha256": "5938e50fbb5c8f93543050ef430cb9c4afdc3f9bdaf1b9ce591dfe5df8fd541c",
+      "bytes": 10370
+    },
+    {
+      "path": "crates/cdr-runtime/src/action_executor/stop_recovery.rs",
+      "gitBlob": "5d8ed852c598ea57daff22e4f6bd0d5ace83bf7f",
+      "sha256": "fef8040fe909716566dad2de5ee61c3d3839ca782b8d3c6b4f7d0e928dabdd29",
+      "bytes": 3948
+    },
+    {
+      "path": "crates/cdr-runtime/src/action_executor/stop_worker.rs",
+      "gitBlob": "20d8af3ed49a9c777c08d67e0f743b93033f95f9",
+      "sha256": "a21bc181833aa2636fdbda12bf4371da0d5a3734f40be6648cc19f19c57faca8",
+      "bytes": 4754
+    },
+    {
+      "path": "crates/cdr-runtime/tests/fixtures/app_server/action.rs",
+      "gitBlob": "304cbe4119d4bfab3c83f0b23f04bbafd8d7b240",
+      "sha256": "2eed90c408de11bcfc0b5aeab53befdc4e1f09c6c6ba2267c3f8c404cf00f3b6",
+      "bytes": 7979
+    },
+    {
+      "path": "crates/cdr-runtime/tests/stop_control_worker_contract.rs",
+      "gitBlob": "ba66060be7b749fe05dfbe965172b76eada3a989",
+      "sha256": "e864d481da81f532c13f024b4c512ad9adf0cf53f6d0cfad5c36d2b124f3fc67",
+      "bytes": 17746
+    },
+    {
+      "path": "crates/cdr-store/src/async_resolution.rs",
+      "gitBlob": "f5104e430c5542e6960421d96daac4b57d8a58b6",
+      "sha256": "a937c1f48b06922203d39f99c0c737d43bc172eda663d925b13f630bdf986a62",
+      "bytes": 10050
+    },
+    {
+      "path": "crates/cdr-store/src/async_resolution/history.rs",
+      "gitBlob": "6778c4737f5f8bd385ddb649fb2ba8402883ef35",
+      "sha256": "6eb289ea30b2a79d6f7ca8edf8a3f275a1926a6b3a3d55cce575c2d76199f388",
+      "bytes": 14695
+    },
+    {
+      "path": "crates/cdr-store/src/async_resolution/history/settlement.rs",
+      "gitBlob": "399e98fd0d8072186b3e3e2b1b763b7c874fc92b",
+      "sha256": "56ea0e3b9cfb5af56060446cd315e10ebec1781334022ad49742a7ffe1370811",
+      "bytes": 13985
+    },
+    {
+      "path": "crates/cdr-store/src/ingress/stop/control.rs",
+      "gitBlob": "50f7e7bc3989ad0903fd2acbd8ed6b0492990d92",
+      "sha256": "a5d5b2c7e78a1b7f34937f1dc13762f6b5df49baef4f695fcdb5d94d4387ea20",
+      "bytes": 3510
+    },
+    {
+      "path": "crates/cdr-store/src/ingress/stop/control/recovery.rs",
+      "gitBlob": "62f62ca3157e267f73c739069de3d1ffd7c43c42",
+      "sha256": "e4a7a3fc697d6fccb26397b350640864c6987f3276362da689f5dfd37db0a179",
+      "bytes": 8222
+    },
+    {
+      "path": "crates/cdr-store/src/queue.rs",
+      "gitBlob": "078b56998176ba42a43b697410feff21eacacb1a",
+      "sha256": "41a67aba9339b41a6086b9ee86e7724936eaa0204cdfddfe6054dda8222f922c",
+      "bytes": 5118
+    },
+    {
+      "path": "crates/cdr-store/src/queue/cancel_recovery.rs",
+      "gitBlob": "eda5f49723bb8b6ab3fdd7dae51a2f3223ffe9ac",
+      "sha256": "8f0dfe509ab79fd5991d84cec6b3161054a2840307924012cbfcb11b94598305",
+      "bytes": 8378
+    },
+    {
+      "path": "crates/cdr-store/tests/stop_terminal_recovery_contract.rs",
+      "gitBlob": "ad06fc6939c82826c6a0c8fcec6da1be72296779",
+      "sha256": "a453b5686189e79cc3be2f2aa3c10dc875c32a634735337dc5acbfd775d117ab",
+      "bytes": 8454
+    },
+    {
+      "path": "plugins/codex-discord-remote/.codex-plugin/plugin.json",
+      "gitBlob": "d1c9dde475aa7f5b0c324c4aa1db55b4d2bb4358",
+      "sha256": "90c41567c9335c6a8ce0dbc80e54e96ee44c66535265fdf8f1c14788108b8f35",
+      "bytes": 1010
+    }
+  ],
+  "scope": "Exact changed-file authority snapshot; transitive closure and TS migration pending"
+}

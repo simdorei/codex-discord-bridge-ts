@@ -1,0 +1,41 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "baselineAppliedTests": 8143,
+  "typecheck": 0,
+  "build": 0,
+  "focused": {
+    "tests": 50,
+    "pass": 50,
+    "fail": 0,
+    "skipped": 0
+  },
+  "fullRegression": "RUNNING_UNVERIFIED",
+  "candidate": [
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "9f1dbd6187f531b4671b484e976baa0d7e51c18327ad13e431e3cf0500697f26"
+    },
+    {
+      "path": "src/runtime/action-executor/archive-preflight.ts",
+      "sha256": "dbbca6913645cb424720bde04d3bbd74a2372c687002012e9123d5a1da82de70"
+    },
+    {
+      "path": "src/runtime/action-executor/archive-action.ts",
+      "sha256": "0609a52d15ac479aa4cc6707349298cc5b845d1e29663195bd8e78a83d0fdcf8"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "sha256": "b14e8be49ab665162c83e731c681e18d25dda30baf77dce84121ebd6409b3dd8"
+    },
+    {
+      "path": "test/runtime/action-executor/archive-preflight-native-paired.test.ts",
+      "sha256": "d7132f34bde17e15cb71960ce4ae4674731571178035d196572a186aa5fa2f47"
+    }
+  ],
+  "limitations": [
+    "Windows/live/archive effects unverified",
+    "Unfinished ingress and persistence reads unchanged",
+    "Existing worker serialization bounds do not newly bound SQL materialization"
+  ],
+  "testAuthoringCorrection": "Readonly mutable-port fixture type error retained; no production edits; final50PASS"
+}

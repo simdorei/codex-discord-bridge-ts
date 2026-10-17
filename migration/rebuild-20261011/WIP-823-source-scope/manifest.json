@@ -1,0 +1,32 @@
+{
+  "status": "WIP_UNAPPLIED_FOCUSED7_PASS_WHOLE_PENDING",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-scope-local.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-823-source-scope/files/src/runtime/mirror-sync/source-scope-local.ts",
+      "sha256": "db8d6e7336073537c18157282615b42103548f4477ce19a1b2cb52492c60b816"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-scope-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-823-source-scope/files/src/runtime/mirror-sync/source-scope-worker.ts",
+      "sha256": "60c62bb2b88486b9dbc820d58010c69b181e3cc6c62b349e365fbb6baf9bf08a"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-scope.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-823-source-scope/files/src/runtime/mirror-sync/source-scope.ts",
+      "sha256": "d3325506ba9836666d90fc64fec107e3eee0b1a7ac1b5b0788929942dfd66225"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/source-scope.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-823-source-scope/files/test/runtime/mirror-sync/source-scope.test.ts",
+      "sha256": "7314fd9fc0695d03d4998bce2dec34f09e2a1fc3f5ad91e9e78ca6ae52100a77"
+    }
+  ],
+  "authority": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca mirror_sync/scope.rs blob cce7aa8f54c696dc7dadd5b728554c341def87c7",
+  "scope": "Native full/limited scope selection, active mapped forks, stable ordering; hardlink DB alias refusal",
+  "limitations": [
+    "Depends on WIP820-822 stage",
+    "4MiB transfer gate is not a native materialization heap bound",
+    "Full synchronization caller, Windows and deployment unverified"
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "status": "WIP_STAGED_NOT_APPLIED",
+  "base": "WIP852 e68f7bb50e6e715ffe2fbada3ba9832136e879c5",
+  "files": [
+    {
+      "path": "src/runtime/writer-recovery/handoff.ts",
+      "sha256": "8f1a27b647b23594f336174f4a1db5e899fa27acac48892437bc4a85a76592d8"
+    },
+    {
+      "path": "test/runtime/writer-recovery/handoff.test.ts",
+      "sha256": "5ff0027dc42a30ad3e2c52fa86c3a41430885366866135d7aac5e83c599c4940"
+    }
+  ],
+  "verification": {
+    "strictExit": 0,
+    "focusedExit": 0,
+    "focusedPass": 44,
+    "uniqueNewTests": 10,
+    "full853Run": false
+  },
+  "limits": [
+    "Product remains851. Candidate852 file-composite completed8770 passes; unchanged-input receipt and log hashes rechecked.",
+    "853 focused44 includes34 dependency tests; do not add44 to852 totals.",
+    "Controller is a trusted adapter interface only; tests use mock OS controller. Production Windows adapter and Recover command wiring remain unimplemented.",
+    "No live process replacement, Windows qualification, deployment, or migration completion claim.",
+    "Protected redaction fixture unavailable and not included."
+  ]
+}

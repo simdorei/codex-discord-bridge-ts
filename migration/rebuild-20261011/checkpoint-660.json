@@ -1,0 +1,37 @@
+{
+  "checkpoint": 660,
+  "scope": "Reconstructed bounded native gap queue and owned resident lifetime; not full runtime DB isolation",
+  "qualifiedStage": {
+    "tests": 7564,
+    "pass": 7564,
+    "fail": 0,
+    "cancelled": 0,
+    "skip": 0,
+    "testFiles": 712
+  },
+  "actualApplied": {
+    "focused": 63,
+    "typecheck": 0,
+    "build": 0,
+    "sourceTestFiles": 1489,
+    "entireSourceTestEqualsQualifiedStage": true
+  },
+  "fullRerunOnActual": false,
+  "missingHistoricalFile": "test/remote-agent/redaction.test.ts (10 unavailable tests; not skipped)",
+  "sameTestRedGreen": "native verified=true must not clear failed gap persistence",
+  "remoteWrites": "paused pending reply after cancellation",
+  "limitations": [
+    "Other synchronous store calls remain",
+    "Windows/24-hour/live deployment unverified",
+    "Original lost volume not recovered"
+  ],
+  "evidence": {
+    ".runtime/reconstruct-660-resident-gap/full.log": "7dd8474524fb14cf37d77a3296ecd49082944a33a69a60f8c65977f0b49fa5ce",
+    ".runtime/reconstruct-660-resident-gap/full-exit.json": "7f0a2022e802788b819ea4860a57114b97a64db2c674f0feacf03492849ae9a6",
+    ".runtime/reconstruct-660-resident-gap/sticky-red-green-proof.json": "12645e413b2aa877f32d7cf1d1c8f2c1f40b505bba9edae59b93eade9dd67a2e",
+    ".runtime/reconstruct-660-resident-gap/applied/applied-manifest.json": "28a1b9c2ecd2d3f4c90c5b4dfe4b59ded711587368312ff28a444a255aad57a7",
+    ".runtime/reconstruct-660-resident-gap/applied/source-test-identity.json": "e03571797232e4ec6f1304773df91716046f7a577f1959a56cb4b948e91bc548",
+    ".runtime/reconstruct-660-resident-gap/applied/focused.log": "749778ae1080a854342a2482286aef7c1ce65e3a44bf107ded5fa4fceac8602c"
+  },
+  "at": "2026-10-11T21:25:04.068833+00:00"
+}

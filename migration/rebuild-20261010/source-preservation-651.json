@@ -1,0 +1,33 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 651,
+  "localCommit": "67efcb4b695ff054ffa1bc4be30f17525669c6b2",
+  "fullTests": 7549,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/completion/native-observation-state.ts": "268b0f452e34d2f89dcb500b17f7f1edde0f7352a2657fea78ec2dbaa6fe8bbe",
+    "src/runtime/completion/observation.ts": "59fdbcec054ba9b3c40ab44dbc95248461b5d4803a34391da1682f133ec2feaf",
+    "src/runtime/completion/source-certifier.ts": "b0bc26141326145999176447d476bd580a74c9f88106918a36cb85dfdda77068",
+    "src/runtime/completion/source-intake.ts": "409569fa224f5740b321799ac974719e2633dd8b6df36bc947db40644a883310",
+    "src/runtime/completion/source-reconciler.ts": "dc5248aefdb57dc727fd3aa8c92c603efb1e8ec6b869800981583b52666ecf30",
+    "src/runtime/native-observation-ledger-worker.ts": "946d39121ebbd14ba4c92685673303de5f80988b8b8373499b06a171ad35579d",
+    "src/runtime/native-observation-ledger.ts": "8936972e21c873f26351d93caa949f47780e0017b8dfe85d0d35d6473f5164ce",
+    "src/store/async-resolution-terminal.ts": "1aab1fbbe3792202773ee7c7d703694b57eb9c27da2b8361d135d0b642a23d08",
+    "src/store/observed-completion.ts": "1ba831fb0c7baa0f53372d61ed39b7dd5433eb323a871943129dc4395d7cc1a7",
+    "src/store/observed-final-answer.ts": "d11a9e5b5783da6ee3c2ead983e24486efc05c4241ee0759e6e1391b905dc7a7",
+    "src/store/state-access-facade.ts": "a65c2d1ac9f0f317ba24aa448f030d31378b482294feeea0b4785de35a26fe74",
+    "test/runtime/native-terminal-producer.test.ts": "1a811ad1e0198e46183a7f8a29bcda97df20daa19857164188e51acafb384843",
+    "test/store/observed-existing-profile.test.ts": "a27587ffda914d318c13fb9defbfad939b4dec6ae61a73509e646505a03801b3",
+    "test/store/state-access-facade.test.ts": "fd4a2f3abfc67530ed8349fd6df0c8ddb53e7936c9c0fa6213c8c839430560b7"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

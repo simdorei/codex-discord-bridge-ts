@@ -1,0 +1,27 @@
+{
+  "status": "WIP_UNAPPLIED_FOCUSED8_PASS_WHOLE_PENDING",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/archived-retirement.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-836-archived-retirement/files/src/runtime/mirror-sync/archived-retirement.ts",
+      "sha256": "bf26a42cfd1daed3cf68716757854de1d37131cabc9b08c07a0eaba81ec7a661"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/archived-retirement.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-836-archived-retirement/files/test/runtime/mirror-sync/archived-retirement.test.ts",
+      "sha256": "0c5ef7fe48eb8630fbd5e7806c47eaac16e76382063f94b659becdb77a73091d"
+    }
+  ],
+  "dependsOn": "WIP832-835",
+  "verification": {
+    "strictBuildExit": 0,
+    "focusedPass": 8,
+    "focusedFail": 0
+  },
+  "scope": "Exact archived non-dispatch retirement with source revalidation, unique mapping, remote identity, atomic audit, one-use deletion permit and mapping retirement",
+  "limitations": [
+    "Synthetic HTTP and databases only",
+    "Whole and full sync wiring pending",
+    "Windows/deployment unverified"
+  ]
+}

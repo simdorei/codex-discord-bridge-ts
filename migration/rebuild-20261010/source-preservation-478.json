@@ -1,0 +1,22 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 478,
+  "localCommit": "557eb486bf2f3d46e19d6048cc9f665d3aef5e40",
+  "fullTests": 6653,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/discord-runtime/reserve-retirement-worker.ts": "93f6e9decca46fb9b5be6c25ef87f127e5bb8aa05068c75bbdc4c6b321d86a57",
+    "src/runtime/discord-runtime/reserve-retirement.ts": "4218f19f5edefedefe46137a5f20890af3ea918b8acf48fb8b03f1bb3d6854c9",
+    "test/runtime/discord-runtime/reserve-retirement.test.ts": "9d812477aa746dbbe3ab860cea9398ba49302e9ae5de2286165b206f86f50753"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "native781ManifestSha256": "bc8c9404261eb1c13624a603158cb20b7d2b1c33c67d328448bfab1425107619",
+  "actual779Paths": [
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "e2ec241d25f98cbb02d362681e5aa930a9e9ddbe6f8d115435a6bb3c66b640fa"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-worker.ts",
+      "sha256": "ea29c0996dabb0ff17a05215888182bcd6adc07cec332de7f553093760cce8c4"
+    },
+    {
+      "path": "src/store/stop-control-read.ts",
+      "sha256": "6199b229411b65572af60e63bb1835199726453701e1220d6c01377f3a061557"
+    },
+    {
+      "path": ".runtime/rust-authority/crates/cdr-store/src/ingress/stop/control.rs",
+      "sha256": "cc071c694f4eec443faf3553da60409c4bb25eb72003761158125355d4d8f99b"
+    }
+  ],
+  "scope": "Fixed-path native pending Stop page and serial worker installation; writes remain unchanged synchronous."
+}

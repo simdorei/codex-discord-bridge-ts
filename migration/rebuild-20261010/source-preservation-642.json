@@ -1,0 +1,25 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 642,
+  "localCommit": "b63efd8ae96203b73f481a8ce0fdb33e778f10f7",
+  "fullTests": 7519,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/app-server/maintenance-transport.ts": "a0788f476ae5f5d0a16b53afe4961e45eafb5a8e9fb0e3a6b04a001eda25a13c",
+    "src/app-server/owned-dispatch-attempt.ts": "028e446d1c58ca9ee741ed59c43f98d4a621fdf8729df65f524a2562c925e007",
+    "src/app-server/portable-resident-lifecycle.ts": "c8397fc67a7e2b2aa35e38a35f0445691dff74d8336e7a17f55d22764c8f4ca2",
+    "test/app-server/owned-maintenance-factory.test.ts": "10c63472ce9dfb9fb84cd1594f6cf2da19676982c53e6c95096f3ffe354975ba",
+    "test/runtime/native-maintenance-transport.test.ts": "b006d3a46898e517ff23ab032b0412d970741bb9de336f3d7c35fc5d8022646d",
+    "test/runtime/native-unsubscribe-transport.test.ts": "db3c902823db6bbc98783568928879574ee95677477cd2e8374664c121903731"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

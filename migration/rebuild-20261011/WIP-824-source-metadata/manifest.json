@@ -1,0 +1,32 @@
+{
+  "status": "WIP_UNAPPLIED_FOCUSED7_PASS_WHOLE_PENDING",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-metadata-local.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-824-source-metadata/files/src/runtime/mirror-sync/source-metadata-local.ts",
+      "sha256": "836a6f7e59f1f260de8e11ee7a20fa63030aa5c06a19aa617508ad1a42c04803"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-metadata-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-824-source-metadata/files/src/runtime/mirror-sync/source-metadata-worker.ts",
+      "sha256": "43cc4648e8b45e05410104bba1bd6a1a2dd3282a6f052543b5ce1b3f41d83eec"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-metadata.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-824-source-metadata/files/src/runtime/mirror-sync/source-metadata.ts",
+      "sha256": "fb9446328c97376cdb0a104a154907c8ac6e0cf075e7853214af0d6852a41001"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/source-metadata.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-824-source-metadata/files/test/runtime/mirror-sync/source-metadata.test.ts",
+      "sha256": "8ec393faa9122c76de277d47b72b2e79d32014df50491abf1db4c3f37920d39d"
+    }
+  ],
+  "authority": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca session_index.rs blob f35de98655f4677961000b871176379e85b75428 and mirror_sync/names.rs",
+  "scope": "Native UTF8 session title/rollout reads, POSIX project grouping",
+  "limitations": [
+    "Depends on WIP820-823 stage",
+    "Transfer gate is not native input materialization heap bound",
+    "Full synchronization caller, Windows and deployment unverified"
+  ]
+}

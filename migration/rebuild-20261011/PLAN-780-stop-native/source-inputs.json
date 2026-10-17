@@ -1,0 +1,44 @@
+{
+  "files": [
+    {
+      "path": "src/runtime/action-executor/stop-action.ts",
+      "sha256": "37262cb5b129145120d16e214b2d34ba313de602553ca87238f6696d9bb1158f"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-worker.ts",
+      "sha256": "ea29c0996dabb0ff17a05215888182bcd6adc07cec332de7f553093760cce8c4"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-custody.ts",
+      "sha256": "1d5558ef2f4914c9977187ea6f8faa0b9f4b3bc7305239b0dc29e62ab57f1faf"
+    },
+    {
+      "path": "src/runtime/action-executor/settings-snapshot.ts",
+      "sha256": "08ee59b2a27a716d14ee6b8f7a65459b42a29f7ab95eb85b0481aa3874c29542"
+    },
+    {
+      "path": "src/runtime/bridge-state-native.ts",
+      "sha256": "084beafea86db939e5e3109325157373bf90c6e5ec98d087edb53bca4589e122"
+    },
+    {
+      "path": "src/store/stop-control-read.ts",
+      "sha256": "6199b229411b65572af60e63bb1835199726453701e1220d6c01377f3a061557"
+    },
+    {
+      "path": "src/store/stop-control-admission.ts",
+      "sha256": "aaeb1ef2bf2b3167f99f5a34e929d507d4410ec9bc52851ab6274c287a50ae12"
+    },
+    {
+      "path": "src/store/stop-control-dispatch.ts",
+      "sha256": "9368aced4df9ba3625aa2754f02d37381aa098954b8f252447c9886a0dd47313"
+    },
+    {
+      "path": "src/store/stop-acceptance.ts",
+      "sha256": "0fa728bb890ce3bd9225eeb9ebadbb3142c696874169114641967d11e0f8b901"
+    },
+    {
+      "path": "src/runtime/owned-worker-slot.ts",
+      "sha256": "8847bd560e98c757fe1f0048c19318795c86a9af881177a4131b06fba0c1ab0e"
+    }
+  ]
+}

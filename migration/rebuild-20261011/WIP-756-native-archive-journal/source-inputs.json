@@ -1,0 +1,14 @@
+[
+  {
+    "path": "crates/cdr-store/src/ingress/read.rs",
+    "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+    "sha256": "18214a866dd358bd957562532dcdff931d37a5710072449e6f382454fc7fb420",
+    "matchesFrozen": true
+  },
+  {
+    "path": "crates/cdr-runtime/src/action_executor/archive_action.rs",
+    "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+    "sha256": "4afc1b1756d02ad5bdb3eaba0429264edb2ceb8372743e94ca123a3f85dbe28f",
+    "matchesFrozen": true
+  }
+]

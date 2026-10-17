@@ -1,0 +1,22 @@
+[
+  {
+    "path": "src/runtime/action-executor/control-evidence-native-worker.ts",
+    "sha256": "0040b903d1eafaf8c04e5101f9dba13822887f881627923074243ef5e646b38a"
+  },
+  {
+    "path": "src/runtime/action-executor/control-evidence-native.ts",
+    "sha256": "82c3144764b55f65c2def57f14b7386d76feb3d1419c20aebb02a752d4ca5874"
+  },
+  {
+    "path": "src/store/observed-completion.ts",
+    "sha256": "a6279c345eabf8bdbd7c0f0eaff735a0638609413ecb50c5ca0ae586daaff257"
+  },
+  {
+    "path": "src/store/state-access-facade.ts",
+    "sha256": "935a8c8945461bb8786f1903ec552dd5e56afd9e9578a9e3f85c8d69347b932c"
+  },
+  {
+    "path": "test/runtime/action-executor/control-evidence-native.test.ts",
+    "sha256": "e072c6a2683422f9346e01cc97208c14c1d9c37462e2f016ff9573f813ad6862"
+  }
+]

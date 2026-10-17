@@ -1,0 +1,26 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 456,
+  "localCommit": "c7a17e42b37162f04a1132952497f5a4a2ae44bc",
+  "fullTests": 6516,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/completion/receipt-sender.ts": "4c3cbadbda569f05ac8f2d8a93e6f50fc66fa480db126210f0fb3d2453c561ab",
+    "src/runtime/session-mirror/all-delivered-packet.ts": "7ffd6e891f10d03db664ab71139512261b8d63778b40b2fbaa439582c7d91c0e",
+    "src/runtime/session-mirror/native-sender.ts": "ce15958f799f35d690a81d2d657e9cb4898935e99c975516461cdc3edb5a4bd9",
+    "src/runtime/session-mirror/receipt-plan-worker.ts": "a9f0d799980e347f9d78d02d18e0c612b360d60013f914e13913196b1d390ce8",
+    "src/runtime/session-mirror/receipt-plan.ts": "221ea9113a56b9d3a23d71e042df13e4cf3cae371f30c889d0f207b1f4034462",
+    "test/runtime/session-mirror/native-send-plan.test.ts": "c3bcfac5bf8087e1eb55fd69ba11b467cab52bb50c8034d52041bc9a2f9660b6",
+    "test/runtime/session-mirror/native-sender.test.ts": "6a428ff34fc3b41505a73b04f85b99886677b070426a74b8937917819359bd1b"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

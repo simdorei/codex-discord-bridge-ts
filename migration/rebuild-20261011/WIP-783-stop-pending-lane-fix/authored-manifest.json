@@ -1,0 +1,30 @@
+[
+  {
+    "path": "src/runtime/action-executor/command-executor.ts",
+    "sha256": "d771cca1725ca66fdd16e7346e807c17e2e08acf07f771bac6f01f3ae6567a7e"
+  },
+  {
+    "path": "src/runtime/action-executor/stop-pending-native-worker.ts",
+    "sha256": "ffbb37bd7d84cdff577f96423e5363267fac1fb6423c5a678f8fa27f99fb6e13"
+  },
+  {
+    "path": "src/runtime/action-executor/stop-pending-native.ts",
+    "sha256": "bf7b60e29e820a1832a4241674e5dff753d8876358bfc9ac160238a4d603ee37"
+  },
+  {
+    "path": "src/runtime/action-executor/stop-worker.ts",
+    "sha256": "b73e6051b6df2979a2152b6d8af5b6c8671670e3e2a66ee3b0da08dfbec00b30"
+  },
+  {
+    "path": "test/runtime/action-executor/stop-pending-integration.test.ts",
+    "sha256": "a34032bef025ea20e3276a9227d1d08645f588be35b15ce2ab51127aa5586092"
+  },
+  {
+    "path": "test/runtime/action-executor/stop-pending-lane-regression.test.ts",
+    "sha256": "c545af7c7e67741d792db6ab78a3c6f51b1f39abb816cab93c4cf14cbdbb01aa"
+  },
+  {
+    "path": "test/runtime/action-executor/stop-pending-native.test.ts",
+    "sha256": "44a72f075507b8358e94a1d8ea40499b30874dffc986451d870d323533a91dff"
+  }
+]

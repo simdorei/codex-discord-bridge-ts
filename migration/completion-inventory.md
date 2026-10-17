@@ -1,3 +1,5 @@
+> **Historical snapshot, superseded for current status (2026-10-15).** The group statuses, counts and appended test totals below describe early implementation checkpoints. For current implemented/wired/scoped-tested boundaries and open A–G acceptance gates through checkpoint 913, use the [checkpoint 914 completion ledger](../docs/MIGRATION_COMPLETION_GATES_20261015.md). This historical inventory is preserved unchanged below; its “not started” entries are not current runtime claims.
+
 # Completion inventory
 
 Denominator: 18 named obligation groups, with unequal size. **1 completed within standalone scope, 10 partial, 7 not started; zero end-to-end runtime groups complete.** No completion percentage follows from these counts. Earlier rough percentage estimates were unmeasured and are superseded.

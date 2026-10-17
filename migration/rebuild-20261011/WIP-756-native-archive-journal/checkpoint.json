@@ -1,0 +1,66 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "baselineAppliedTests": 8156,
+  "typecheck": 0,
+  "build": 0,
+  "focused": {
+    "tests": 183,
+    "pass": 183,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "fullRegression": "RUNNING_UNVERIFIED",
+  "candidate": [
+    {
+      "path": "src/store/state-access-facade.ts",
+      "sha256": "6ef86f8a334a989103882a0fe8a2b6850880457a1f1486a801426ccde5fee791"
+    },
+    {
+      "path": "src/store/archive-fence.ts",
+      "sha256": "aeddd4160ab7a5173e79f9ea58d37e09b36c195fe5cf17e788a143b403c4ac3c"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "c69d4058d8675b2446cf8ddab84ad67993504a4065417152d6f42c397315960d"
+    },
+    {
+      "path": "src/runtime/action-executor/archive-preflight.ts",
+      "sha256": "fab60f9b10dd217f18ab640093c75c64f86d3efab55db37c75eec349e680792b"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state.ts",
+      "sha256": "4ccd76cfc73974aa8b7f8f759ae11088500b357f2f36ca92eeab4038eff315bd"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state-worker.ts",
+      "sha256": "f67a99f3759188884700538cba0aae18184a2205abc804bcf75a7b9a62f1eac9"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "sha256": "42df5b1d80bc3ae207d5aad34f89d3a92f07d55c9dbf5b401819dbde00dbc45f"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "sha256": "32c4aa6ef0c8b8b734648cb341cd2b1be5d405833a9154462cb3e541eb4426b6"
+    },
+    {
+      "path": "test/runtime/action-executor/archive-preflight-native-paired.test.ts",
+      "sha256": "149e6719ca2dc8ae297ce9b7290b66e5da259970cd0e66c683cc01a257dfd419"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-archive-journal.test.ts",
+      "sha256": "1914cd87046c8258e4fab62333a651b77dc0f04a265cf21f731095fb41d1d3ac"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-state.test.ts",
+      "sha256": "0f53196192c95e88234bf10917eeb1389730958e63d28ee825edf6a3acb02e0d"
+    }
+  ],
+  "limitations": [
+    "Windows/live/archive effects unverified",
+    "Reservation writer and persistence reads unchanged",
+    "Existing initialized-only native profile does not create or migrate",
+    "Native unavailable errors do not preserve original SQL error taxonomy"
+  ]
+}

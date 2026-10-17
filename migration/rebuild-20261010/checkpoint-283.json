@@ -1,0 +1,57 @@
+{
+  "kind": "read-only-abandonment-routing-and-central-state-api",
+  "rustCommit": "4e213aa69dc89bed1552d8b83e12471d7664b7ae",
+  "files": {
+    "src/store/owned-scope.ts": "ac17fa8b05e4b4f14350e17ccfb8b37810167629c6f9151d980e0a517d190d50",
+    "src/store/state-access-facade.ts": "b48e54fd07f75e9dce6bf770485ec2983d20914609fa70fe61197402674a70d5",
+    "src/store/abandonment-routing.ts": "c4ef23f0ee4380e9b02fb754bad5cebfe2c8efe8070083d54e78a02131bdd1f0",
+    "test/store/abandonment-routing.test.ts": "bdd0c4711ac7e793afeb4c4698b4635893593a46e696608e56ab99c15ad6a709",
+    "test/store/state-access-facade.test.ts": "952b2a581b0c08bd1da370f38832902bb5d03b765fae7d50d0c7cde148a3aebe"
+  },
+  "strictTypeScriptExit": 0,
+  "focused": {
+    "tests": 22,
+    "pass": 22,
+    "fail": 0
+  },
+  "full": {
+    "tests": 5166,
+    "pass": 5166,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "exit": 0,
+    "fileConcurrency": 2
+  },
+  "logs": {
+    "migration/rebuild-20261010/evidence/283-typecheck.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "migration/rebuild-20261010/evidence/283-focused.log.gz": "29e5eb8736a2f0cfddcb3a92b3a8c6fcc58bf55736ead311efe1da5c80ef5ad2",
+    "migration/rebuild-20261010/evidence/283-full-tests.log.gz": "da9cef8b1eed96e90026fef5c27c6098f59ae4849d08ac6f579690b6890b8eb5",
+    "migration/rebuild-20261010/evidence/283-initial-full-red.log.gz": "e3ea3a0d37448b55797b5df5673eb6350dd702e69786c54b8110092631ef5261",
+    "migration/rebuild-20261010/evidence/283-count-oracle-full-red.log.gz": "0b865d1a12eabee208d129ee24cbc674cce4ef7aba1b377afbc636ec83206986",
+    "migration/rebuild-20261010/evidence/283-count-oracle-focused-red.log.gz": "433c840b7bc817d6b946d5197cb63d8049f99b60446bd167241de2771e25f59d"
+  },
+  "review": {
+    "authorities": {
+      ".runtime/rust-authority/crates/cdr-store/src/async_resolution/abandonment/routing.rs": "bee5e5424c0344acb91b135b84fdc42258e754e5f1428f5dc5dce6639e9959f3",
+      ".runtime/rust-authority/crates/cdr-store/src/async_resolution/abandonment/binding.rs": "25b8403a2aa23a4938635b6c607d5982e3287441571b478515caf655a903395a",
+      ".runtime/rust-authority/crates/cdr-store/src/async_resolution/abandonment/decision.rs": "22b121700f79be64e1fa39e4758add9c427efb227df0aa5f567f2651d3d9d3c5",
+      ".runtime/rust-authority/crates/cdr-store/src/async_resolution/abandonment/api.rs": "9c0a46652492eeacacc623f939d01d3a30668b684ae529c811ca9fb091196e53"
+    },
+    "review": [
+      "Owned short-lived read-only connections share existing central cleanup/transaction helpers and preserve source100ms busy timeout",
+      "Command route requires canonical lowercase hyphenated UUID, exact original actor/channel, eligible held Pending and exact mapping; no fallback selection",
+      "New decision authorization validates displayed tuple and fresh snapshot before ACK without requiring not-yet-persisted click",
+      "Consumed event branch permits only exact original interaction/choice and historical authenticated saved click; mapping remains required",
+      "Historical delivery and receipt status do not manufacture fresh consent or execution permission",
+      "Seven owned abandonment APIs exposed through existing central StateAccessFacade with exact function-reference test",
+      "Initial full5166 run had5165PASS/1FAIL: old exact StateAccessFacade export whitelist omitted seven deliberately added APIs. Updated only explicit whitelist, direct-reference assertions and compile-time type equalities; no product code changed for this correction. Initial raw RED retained.",
+      "Second test-only RED was remaining hardcoded facade count205, corrected exactly to212 for seven added APIs. Final focused22PASS; raw count-oracle focused/full RED retained. No production changes for either oracle correction."
+    ],
+    "limitations": [
+      "Runtime component-worker/dispatcher integration still pending",
+      "No fresh Rust executable differential or Windows read-only locking qualification",
+      "Original missing workspace remains unrecovered"
+    ]
+  }
+}

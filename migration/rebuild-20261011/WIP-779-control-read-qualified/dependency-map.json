@@ -1,0 +1,12 @@
+{
+  "baseActual": "775",
+  "WIP777": "migration/rebuild-20261011/WIP-777-control-evidence-native/candidate",
+  "WIP778": "migration/rebuild-20261011/WIP-778-control-read-integration/candidate",
+  "overlay": "candidate/test/store/state-access-facade.test.ts",
+  "precedence": [
+    "baseActual",
+    "WIP777",
+    "WIP778",
+    "overlay"
+  ]
+}

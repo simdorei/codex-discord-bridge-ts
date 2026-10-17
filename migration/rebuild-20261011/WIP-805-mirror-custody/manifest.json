@@ -1,0 +1,110 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "baseLocal": "6174517b02eaa1d5b83d6b97d8acb2f9d99b50e9",
+  "baseRemote": "e1f0095acb3f66cd5a2747f5c06955e8f5c09805",
+  "files": [
+    {
+      "candidatePath": "src/store/mirror-container-creation.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-805-mirror-custody/files/src/store/mirror-container-creation.ts",
+      "sha256": "7da7fbafb0b6515fb8c846fe73ba02eb1db6b02845f978c4a475b07743434cac",
+      "gitBlob": "3c397fd8bb64e6ab60618f0b9acfe2128164a68a"
+    },
+    {
+      "candidatePath": "src/store/mirror-project-creation.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-805-mirror-custody/files/src/store/mirror-project-creation.ts",
+      "sha256": "ac54384189d101d23392f114f3ae849bd5c8f5187c50befeee46a1367b0a8a91",
+      "gitBlob": "6d481a26e390cd80fe0299ad56243978445484cf"
+    },
+    {
+      "candidatePath": "src/store/room-cleanup-pending.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-805-mirror-custody/files/src/store/room-cleanup-pending.ts",
+      "sha256": "cd3eec95ab5d09ea11cebc7a37e4854d597c34e0a7edbe8803680beb4f9a95bd",
+      "gitBlob": "ea3606e28fa9d9d6f6da1f400e4966623138d5fe"
+    },
+    {
+      "candidatePath": "src/store/room-cleanup.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-805-mirror-custody/files/src/store/room-cleanup.ts",
+      "sha256": "ebbc9b345c1e13870ce1122c14a9143508d5aa48273bb7f2f87a33d1933e7e4e",
+      "gitBlob": "8122230c66ba7ea34c2a9bbbdd8ae93463d2d539"
+    },
+    {
+      "candidatePath": "src/store/state-access-facade.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-805-mirror-custody/files/src/store/state-access-facade.ts",
+      "sha256": "684aa23fe9307d0992937b72b2592f6ffbc38954fc7871b45c0fc5d69aca155d",
+      "gitBlob": "36b5484ca385b53187fca0294e77b584e0cad8f1"
+    },
+    {
+      "candidatePath": "test/store/mirror-container-creation.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-805-mirror-custody/files/test/store/mirror-container-creation.test.ts",
+      "sha256": "cf9b36b946525cd4bde08b3e82567c86d390a3aa9cac3c3f1f0ba4716ab28582",
+      "gitBlob": "c583f432f9838104c388855bbf3784da8a251d7c"
+    },
+    {
+      "candidatePath": "test/store/mirror-project-creation.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-805-mirror-custody/files/test/store/mirror-project-creation.test.ts",
+      "sha256": "94ba96bcc0a9785763a1d7ee136a801b3f2c075ba4eb6e671873a2b19f5acb0f",
+      "gitBlob": "166083c2bb83b15238cb150cab717eb66dbda267"
+    },
+    {
+      "candidatePath": "test/store/room-cleanup-pending.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-805-mirror-custody/files/test/store/room-cleanup-pending.test.ts",
+      "sha256": "570279de6c4e0e0ec2f87ac296376c590c3d11cf5ff4c211d4f776d61f34155f",
+      "gitBlob": "c72fc5c88ac1f99c82f3edd056f648f71d57e6e1"
+    },
+    {
+      "candidatePath": "test/store/room-cleanup.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-805-mirror-custody/files/test/store/room-cleanup.test.ts",
+      "sha256": "483c0253a3b10b6ca571e155ef10193229efac58bd3b6409884ec2605d87d11c",
+      "gitBlob": "9ec3abbfa47a23ca8bce4d186a8fe05516024e3b"
+    },
+    {
+      "candidatePath": "test/store/state-access-facade.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-805-mirror-custody/files/test/store/state-access-facade.test.ts",
+      "sha256": "3a86c8d098d807bffadfa590a50413f5ae63508b447f9baf32a0ca444d5ba503",
+      "gitBlob": "24d4865683621c163a6a95fc418af65f8b228c2b"
+    }
+  ],
+  "checks": {
+    "strictTypecheck": 0,
+    "focusedPassed": 58,
+    "focusedFailed": 0,
+    "wholeSuite": "NOT_RUN_FOR_805; 804 predecessor whole suite still running"
+  },
+  "limitations": [
+    "BridgeSync command remains unimplemented",
+    "Native worker placement and complete Discord transport/cleanup coordinator are not wired",
+    "No Windows, live Discord, performance or deployment approval",
+    "Known missing protected redaction fixture remains missing, not reconstructed or counted",
+    "Room begin adds exact fence insert acknowledgment and readback; valid Rust behavior retained, ignored/substituted writes fail closed"
+  ],
+  "authority": {
+    "remoteMain": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+    "files": [
+      {
+        "path": ".runtime/rust-authority/crates/cdr-store/src/mapping/container_creation.rs",
+        "gitBlob": "84c4552f3e30475c82c775e2be241929ebbf0bac",
+        "sha256": "c002d96954caaa48dd096371c8725f5e19edbed76b9350dedccbcc318defd494"
+      },
+      {
+        "path": ".runtime/rust-authority/crates/cdr-store/src/mapping/container_creation/category.rs",
+        "gitBlob": "22ce1c76246d4bc8cea5c44cd0b5fe16f5a01ae1",
+        "sha256": "441e55a12e811d09a491287043f41983b44cad08d9985eeabdd20cc686ee860d"
+      },
+      {
+        "path": ".runtime/rust-authority/crates/cdr-store/src/mapping/container_creation/project.rs",
+        "gitBlob": "26d47fe6a66a1ec184601cffe54b458f69dcc56b",
+        "sha256": "b892f520df0d76f03fa9182113719e018551d5f662e4be33e482f8440ed42afb"
+      },
+      {
+        "path": ".runtime/rust-authority/crates/cdr-store/src/mapping/container_creation/schema.rs",
+        "gitBlob": "bcb3f4ad8d57d1b72dba3587e2668e74f37cb4bd",
+        "sha256": "fbed77c43aa18a5596148cb432752b118d88742cc95f9242458e58d1c2793866"
+      },
+      {
+        "path": ".runtime/rust-authority/crates/cdr-store/src/mapping/project.rs",
+        "gitBlob": "cfdb9ed8166f0a0cec5af32a45683212b8a85c62",
+        "sha256": "6cbcb507332ce75b5a11d2dee83150fa60fb2c5f6546d7fd42b01d84f3fa9515"
+      }
+    ]
+  }
+}

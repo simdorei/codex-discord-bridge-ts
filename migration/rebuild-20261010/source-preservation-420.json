@@ -1,0 +1,30 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 420,
+  "localCommit": "a280743621b6db0b85fe4b991a9973bc24f10478",
+  "fullTests": 6258,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/pro/fingerprint-blocking.ts": "3c89544d024b477243e13d8dd3ff501c3a75f44ef2d88429569d0567d6a400cb",
+    "src/pro/plugin-files-worker.ts": "a52c83559d2f8650b926fff1e4848b73d0f90043f327cc9ad023b92c98e5affe",
+    "src/pro/plugin-files.ts": "f0f13e363960a40cc20f73c2941790a60fd1e92fad882429dee7c11a6443802a",
+    "test/fixtures/pro-fingerprint/chrome/ignored.pyo": "1f233ef14235a2eb787edfd047257529cf53b43f4b7255b22edf9e192e040cdf",
+    "test/fixtures/pro-fingerprint/chrome/plugin.json": "9f574acd06fdc66bf57bc3145931256ea327c0a76a437e3c6ad08834d5a1a00f",
+    "test/fixtures/pro-fingerprint/chrome/scripts/probe.mjs": "d166d55d1f169e795d4c2e7efd1c5d2021ce6c6a48942f34e5d708711753d04a",
+    "test/fixtures/pro-fingerprint/expected.json": "dd99ea3f419de7f090ab45aa818ea338d4216eb46e47398445de722f9a44f520",
+    "test/fixtures/pro-fingerprint/remote/__pycache__/ignored.pyc": "05c6113e8a3aa1180b9692ec4cd114445ff3ee6b6d2c95e2938c9456e96a0133",
+    "test/fixtures/pro-fingerprint/remote/plugin.json": "1c51a3a390fb89994cbb6cdb468aabb2b2c593c9c981de00971a4f52a5f39566",
+    "test/fixtures/pro-fingerprint/remote/skills/sample.md": "bbd830554eacccb8797bb2daa32e96b509a22ed721f59732992995ecbd6de1a0",
+    "test/pro/plugin-files.test.ts": "eb7137f00c8b319c1ce632ed72a89de797e3267567a4d2805b86dd0fec08bbe9"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

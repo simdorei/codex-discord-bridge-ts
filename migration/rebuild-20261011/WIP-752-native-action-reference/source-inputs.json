@@ -1,0 +1,89 @@
+{
+  "status": "BOUNDED_READ_ROUTING_SOURCE_INPUTS",
+  "files": [
+    {
+      "path": "src/runtime/action-executor/thread-selection.ts",
+      "sha256": "2056149c965cc8c31d567350c4db95cd3352b2a7d09a8bf25210687ed82705ea"
+    },
+    {
+      "path": "src/runtime/action-executor/basic-dispatcher.ts",
+      "sha256": "119874742eddec08c3fa433705f732c2822d53121857dea64725cc4bac85a99b"
+    },
+    {
+      "path": "src/runtime/action-executor/settings-action.ts",
+      "sha256": "a1f35322279a13c73bad6b73c880bbe546e0e70cdfc2ba7bdf4413a7050b8980"
+    },
+    {
+      "path": "src/runtime/action-executor/retract-action.ts",
+      "sha256": "cdecb2a043b3b9a8a441c545307e21ea234b6c7bc967681473695f0afab46e95"
+    },
+    {
+      "path": "src/runtime/action-executor/resume-action.ts",
+      "sha256": "e87fd040b2a79bb0daea4f77bab10e5e2792a5dbc1b03ff440084499629396bd"
+    },
+    {
+      "path": "src/runtime/action-executor/archive-action.ts",
+      "sha256": "f548e4913fe86928586089055144def3259ec227e8d3d9fa2524852746d370a9"
+    },
+    {
+      "path": "src/codex-state/reference-reader.ts",
+      "sha256": "b0b07d32d6bdc23456f3d599e2060be13d635658656c8b92ad4446df31734e07"
+    },
+    {
+      "path": "src/codex-state/reference-worker.ts",
+      "sha256": "13b732f30d123a56b2d75fe18725cbb4f8acd10f812702ff26a333394ac065c4"
+    },
+    {
+      "path": "crates/cdr-codex-state/src/store.rs",
+      "sha256": "ab311172a96b1d6f6fd0917a2183e38807496f6e302e95971b5df2a096ae3395",
+      "frozenEqual": true
+    },
+    {
+      "path": "crates/cdr-codex-state/src/thread_ref.rs",
+      "sha256": "bb4d9095462fd6e6a011bc675e817e90e8c83853aba3fb945f04da35005e8fed",
+      "frozenEqual": true
+    },
+    {
+      "path": "crates/cdr-codex-state/src/thread.rs",
+      "sha256": "9ac2112f2660429ab6a7a673db3400c42374efc108f5130612ec457d06ab4810",
+      "frozenEqual": true
+    },
+    {
+      "path": "crates/cdr-codex-state/src/error.rs",
+      "sha256": "b25ab1dcea02630c8c777ec27b32281fb81bd47d5a21248dbc23716bea80b300",
+      "frozenEqual": true
+    },
+    {
+      "path": "crates/cdr-runtime/src/action_executor/selection.rs",
+      "sha256": "2dda5c9d5555d416f55fb976dad343384e73f732ed8b9457d608e18d48af6208",
+      "frozenEqual": true
+    },
+    {
+      "path": "crates/cdr-runtime/src/action_executor/target_resolution.rs",
+      "sha256": "b6fa6be592d44c30852538a5cb5e54a725be5a5b91f51cb0028d160c3a80af7d",
+      "frozenEqual": true
+    },
+    {
+      "path": "crates/cdr-runtime/src/action_executor/resume_action.rs",
+      "sha256": "068c3b0fdd8aed9e5054183e2c5e53f680fc67d54587c163edc019bc0875900c",
+      "frozenEqual": true
+    },
+    {
+      "path": "crates/cdr-runtime/src/action_executor/archive_action.rs",
+      "sha256": "4afc1b1756d02ad5bdb3eaba0429264edb2ceb8372743e94ca123a3f85dbe28f",
+      "frozenEqual": true
+    },
+    {
+      "path": "crates/cdr-runtime/src/action_executor/retract_action.rs",
+      "sha256": "d9f0ec3922fe844afe78b5dfa88d81a8b1f7fdeb9ebad23db2fc4c12beb0b5e2",
+      "frozenEqual": true
+    },
+    {
+      "path": "crates/cdr-runtime/src/action_executor/settings_action.rs",
+      "sha256": "416052d389ec5f9fd125a0f4588a0b57670448c66a51ca689ce9a4648078ecf8",
+      "frozenEqual": true
+    }
+  ],
+  "rustMain": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+  "scope": "Existing TS bodies plus Rust reference resolution/caller entry order; no full transitive parity claim"
+}

@@ -1,0 +1,30 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 473,
+  "localCommit": "c1372c2652d4d4b4192e25873b2eefa3085b3b44",
+  "fullTests": 6618,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/session-mirror/all-delivered-packet.ts": "8aac7de9c768f1c26babcde22e1c30dc11c9c8653def1a67bb06bdf9446ba847",
+    "src/runtime/session-mirror/observed-batch-executor.ts": "829ed3194c7edb39ea1419c85b39734c12071cebde3f4a02c8f323dc5a1b5ce0",
+    "src/runtime/session-mirror/ownership-reader.ts": "99c1a9a079fa683649ee1f12d7d848b33cd66fa5af837c69bf92c4a939928bf0",
+    "src/runtime/session-mirror/ownership-worker.ts": "b2f672103ad84788b1e59feb058d4a6e02bce126c94b60b7a2fa7432f41e401d",
+    "src/runtime/session-mirror/ownership.ts": "2323a6e691d98226d5d7a0f26d9dedceb8a490ecf72c085e338a9f62feabd2ca",
+    "src/runtime/session-mirror/receipt-plan-worker.ts": "e2875b4ccd2eb6523bab0eaf340fc838e8407f8580c14c94a299677083ba3dfe",
+    "src/runtime/session-mirror/receipt-plan.ts": "57dd66e9072756800daa6e8c2c38fbf12b9f446d4f3b894c9d8bccdc7860a6b3",
+    "src/runtime/session-mirror/receipt-store.ts": "d605b2711618077295601c01b5a35e4a47cf006f7c1035e3121748fdd366d55c",
+    "test/runtime/session-mirror/backlog-progress.test.ts": "6285943d03f85847e88dea2605d0c0470918afb8a4882a8249568193a7ff7ba9",
+    "test/runtime/session-mirror/batched-policy.test.ts": "d31a58e986f256481b75efe90792eddfb0e2250324cb145fd00a8d1a456b213f",
+    "test/runtime/session-mirror/confirmed-prefix.test.ts": "b58750c84a4ad5f61521493321205660aa78b561d8c34a1a43b9e0c42647c5be"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

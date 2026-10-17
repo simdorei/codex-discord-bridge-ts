@@ -1,0 +1,21 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 384,
+  "localCommit": "a910d6f78423f9b4cf3e8e0af9278e9b1d865fb2",
+  "fullTests": 5978,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/history-poll/discard-fence.ts": "79af6f39c76e3b21d93ac0757edb1066bc812313a38924a545963e5bef2a1bb3",
+    "test/runtime/history-poll/discard-fence.test.ts": "05499a5a3eb90a1c0933df1bd7c76de1827ddcc3a3bdce3e8646ac221822ba51"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

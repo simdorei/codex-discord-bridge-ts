@@ -1,0 +1,50 @@
+{
+  "scope": [
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "beforeSha256": "117275e7d1d602335a8619c0b91bcfece285b4bafa8079df72356d5fbdec768f",
+      "afterSha256": "6862fa522207eb3a4735c1251b2ca54d58c4e582c3055a51a7a83f7ebaa931f4"
+    },
+    {
+      "path": "src/runtime/action-executor/repair-action.ts",
+      "beforeSha256": "75f61ba7eb0d63cb7c34638bc6202443517c07d46738ba825737be36890be71f",
+      "afterSha256": "d2fc0b2c563ef9c29b90055bbb002d9e10e109962833741ca137facea7a23f27"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "beforeSha256": "bf02b687ecf936bd378208684e779e6a3fa0389c488640558a66a86ec57836e1",
+      "afterSha256": "9f32b068db0481db0a1211a09bc670e04a3d6a4a9b288279dca0fd021ebb5291"
+    },
+    {
+      "path": "test/runtime/action-executor/repair-native-paired.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "4fdb990b333831093c786056dc69d50971149daeee9d8763f452bd91effed48d"
+    }
+  ],
+  "stageFileCount": 1598,
+  "full": {
+    "tests": 8115,
+    "pass": 8115,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "fullLogSha256": "c1f262217c3f0925b1f0c6e7687fac2e3e3e371ef7810fb4bd0087830af70458",
+  "focused": 46,
+  "status": "APPLIED_VERIFIED",
+  "actualFocused": 46,
+  "typecheck": 0,
+  "build": 0,
+  "verifiedAt": "2026-10-12T13:37:08.901230+00:00",
+  "wholeTestFiles": 783,
+  "testFileConcurrency": 1,
+  "missingProtectedFixture": "not executed or counted as skipped",
+  "runtimeWindowsLive24h": "UNVERIFIED",
+  "evidence": {
+    ".runtime/repair-preflight-native-747/full.log": "c1f262217c3f0925b1f0c6e7687fac2e3e3e371ef7810fb4bd0087830af70458",
+    ".runtime/repair-preflight-native-747/applied/focused.log": "a23b911adb3b77599e4d303839d95805b9281f90a0e539a97b06d220e9afadd7",
+    ".runtime/repair-preflight-native-747/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/repair-preflight-native-747/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/repair-preflight-native-747/stage-inputs.json": "955f7312c375c278bfb8afbdcfa543d1a4eaaf15a9160e2d2d76c21dd71267d3"
+  }
+}

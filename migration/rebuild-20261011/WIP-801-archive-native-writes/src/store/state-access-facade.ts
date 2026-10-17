@@ -1,0 +1,1162 @@
+import * as StopRecovery from './stop-terminal-recovery.ts';
+import * as StopRecoveryRead from './stop-control-recovery-read.ts';
+import * as NewReplyFinish from './new-reply-finish.ts';
+import * as PreparedMutationValidation from './prepared-mutation-validation.ts';
+import * as ResumeRestartRecovery from './resume-restart-recovery.ts';
+import * as NewReplyCheckpoint from './new-reply-checkpoint.ts';
+import * as NewReplyPending from './new-reply-pending.ts';
+import * as ReviewedPolicy from './reviewed-recovery-policy.ts';
+import * as RestartReadiness from './restart-readiness.ts';
+import * as HistoryTargets from './history-targets.ts';
+import * as ProcessedClaimGuard from './processed-claim-guard.ts';
+import * as MirrorInspection from './mirror-inspection.ts';
+import * as RecoveryEffect from './recovery-effect-guard.ts';
+import * as ArchiveFence from './archive-fence.ts';
+import * as MirrorCursor from './mirror-cursor.ts';
+import * as ConfirmedDelivery from './delivery-confirmed.ts';
+import * as DiagnosticRead from './diagnostic-read.ts';
+import * as RunnerCounts from './runner-target-counts.ts';
+import * as MirrorSync from './mirror-mapping.ts';
+import * as MirrorCreation from './mirror-creation.ts';
+import * as NewPromptIntake from './prompt-intake-new-thread.ts';
+import * as NewInput from "./ingress-new-input.ts";
+import * as ProcessedMessages from "./processed-messages.ts";
+import * as AbandonmentProposalStore from "./abandonment-proposal.ts";
+import * as AbandonmentDecisionStore from "./abandonment-decision.ts";
+import * as AbandonmentRouting from "./abandonment-routing.ts";
+import * as PublicationConsent from "./publication-consent.ts";
+import * as PublicationProposalStore from "./publication-proposal.ts";
+import * as PublicationBinding from "./publication-binding.ts";
+import * as BusyPromptIntake from "./prompt-intake-busy.ts";
+import * as ControlBinding from "./control-binding.ts";
+import * as MirrorOrigin from "./mirror-origin.ts";
+import * as BusyChoiceStore from "./busy-choice-store.ts";
+import * as ComponentClaims from "./component-claims.ts";
+import * as NewReplyRead from "./new-reply-read.ts";
+import * as MirrorPolicyRead from "./mirror-policy-read.ts";
+import * as MirrorEventRead from "./mirror-event-read.ts";
+import * as QuestionDispatch from "./async-question-dispatch.ts";
+import * as QuestionDelivery from "./async-question-delivery-state.ts";
+import * as QuestionRetention from "./async-question-retention.ts";
+import * as QuestionObservation from "./async-question-observation.ts";
+import * as StopControlRead from "./stop-control-read.ts";
+import * as StopControlAdmission from "./stop-control-admission.ts";
+import * as StopAcceptance from "./stop-acceptance.ts";
+import * as ObservedFinalAnswer from "./observed-final-answer.ts";
+import * as AsyncGuards from "./async-resolution-guards.ts";
+import * as QuestionGuard from "./async-question-guard.ts";
+import * as StopDispatch from "./stop-control-dispatch.ts";
+import * as RuntimeFenceReads from "./runtime-fence-reads.ts";
+import * as QueueStartAuthority from "./queue-start-authority.ts";
+import * as ResponseCustody from "./response-custody.ts";
+import * as DeadCapture from "./dead-generation-capture.ts";
+import * as IdleReleaseStore from "./idle-release-store.ts";
+import * as ObservationProof from "./observation-proof.ts";
+import * as ObservationLedger from "./observation-ledger.ts";
+import * as CompletionPayload from "./completion-payload.ts";
+import * as CompletionRound from "./completion-metadata-round.ts";
+import * as CompletionMetadata from "./completion-metadata.ts";
+import * as StartNoticeOutbox from "./start-notice-outbox.ts";
+import * as CommentaryOutbox from "./commentary-outbox.ts";
+import * as DeliveryPreflight from "./delivery-preflight.ts";
+import * as DeliveryReceipts from "./delivery-receipts.ts";
+import * as NewReplyClaims from "./new-reply-claims.ts";
+import * as RecoveryCancellation from "./queue-cancel-recovery.ts";
+import * as PendingCancellation from "./queue-cancel-pending.ts";
+import * as RecoveryCustody from "./ingress-recovery-custody.ts";
+import * as IngressRecovery from "./ingress-recovery.ts";
+import * as IngressRead from "./ingress-read.ts";
+import * as BusyIngress from "./ingress-busy.ts";
+import * as IngressLifecycle from "./ingress-lifecycle.ts";
+import * as IngressAdmission from "./ingress-admission.ts";
+import * as NewPromptArm from "./ingress-new-prompt-arm.ts";
+import * as NewOrigin from "./new-thread-origin.ts";
+import * as StopRevision from "./stop-revision-read.ts";
+import * as PromptIntakeLease from "./prompt-intake.ts";
+import * as MirrorMapping from "./busy-choice.ts";
+import * as ForkBegin from "./fork-begin.ts";
+import * as ForkTarget from "./fork-target.ts";
+import * as ForkFailure from "./fork-failure.ts";
+import * as ForkCompleted from "./fork-completed-target.ts";
+import * as ForkManaged from "./fork-managed-query.ts";
+import * as PromptIntakeWrite from "./prompt-intake-write.ts";
+import * as PromptIntakePromotion from "./prompt-intake-promotion.ts";
+import * as GoalWaiting from "./queue-goal-waiting.ts";
+import * as GoalAttach from "./queue-attach-goal.ts";
+import * as GoalProgress from "./goal-progress.ts";
+import * as ForkRepair from "./fork-legacy-repair.ts";
+import * as ForkRetirement from "./fork-retirement.ts";
+import * as ForkRead from "./fork-unresolved-read.ts";
+import * as Generation from "./queue-generation.ts";
+import * as AsyncHistory from "./async-history.ts";
+import * as ObservedCompletion from "./observed-completion.ts";
+import * as Delivery from "./delivery.ts";
+import { CheckedRead } from "./owned-driver.ts";
+import * as MutationAttempt from "./mutation-attempt.ts";
+import * as QueueEnqueue from "./queue-enqueue.ts";
+import * as QueueMarkRunning from "./queue-mark-running.ts";
+import * as AsyncAdmission from "./async-resolution-admission.ts";
+import * as QueueRead from "./queue-read.ts";
+import * as ExecutionHold from "./execution-hold.ts";
+import * as QueueClaims from "./queue-claims.ts";
+import * as DeadGeneration from "./dead-generation-admission.ts";
+import * as Preflight from "./queue-preflight-failure.ts";
+
+export const recordAsyncQuestionObservation: typeof QuestionObservation.recordAsyncQuestionObservation = QuestionObservation.recordAsyncQuestionObservation;
+export const recordAsyncQuestionObservationExisting: typeof QuestionObservation.recordAsyncQuestionObservationExisting = QuestionObservation.recordAsyncQuestionObservationExisting;
+export const reconcileAsyncQuestionObservations: typeof QuestionObservation.reconcileAsyncQuestionObservations = QuestionObservation.reconcileAsyncQuestionObservations;
+export const reconcileAsyncQuestionObservationsExisting: typeof QuestionObservation.reconcileAsyncQuestionObservationsExisting = QuestionObservation.reconcileAsyncQuestionObservationsExisting;
+export const observeAsyncQuestion: typeof QuestionObservation.observeAsyncQuestion = QuestionObservation.observeAsyncQuestion;
+export const retireOldAsyncQuestionOwner: typeof QuestionRetention.retireOldAsyncQuestionOwner = QuestionRetention.retireOldAsyncQuestionOwner;
+export const retireOldAsyncQuestionOwnerExisting: typeof QuestionRetention.retireOldAsyncQuestionOwnerExisting = QuestionRetention.retireOldAsyncQuestionOwnerExisting;
+export const supersedeAsyncQuestions: typeof QuestionRetention.supersedeAsyncQuestions = QuestionRetention.supersedeAsyncQuestions;
+export const compactTerminalAsyncQuestions: typeof QuestionRetention.compactTerminalAsyncQuestions = QuestionRetention.compactTerminalAsyncQuestions;
+export const compactTerminalAsyncQuestionsExisting: typeof QuestionRetention.compactTerminalAsyncQuestionsExisting = QuestionRetention.compactTerminalAsyncQuestionsExisting;
+export const getAsyncQuestion: typeof QuestionDelivery.getAsyncQuestion = QuestionDelivery.getAsyncQuestion;
+export const pendingAsyncQuestions: typeof QuestionDelivery.pendingAsyncQuestions = QuestionDelivery.pendingAsyncQuestions;
+export const confirmAsyncQuestionOwner: typeof QuestionDelivery.confirmAsyncQuestionOwner = QuestionDelivery.confirmAsyncQuestionOwner;
+export const requireCurrentAsyncQuestionMapping: typeof QuestionDelivery.requireCurrentAsyncQuestionMapping = QuestionDelivery.requireCurrentAsyncQuestionMapping;
+export const bindAsyncQuestionReceipt: typeof QuestionDelivery.bindAsyncQuestionReceipt = QuestionDelivery.bindAsyncQuestionReceipt;
+export const beginAsyncQuestionDispatch: typeof QuestionDispatch.beginAsyncQuestionDispatch = QuestionDispatch.beginAsyncQuestionDispatch;
+export const confirmAsyncQuestionDispatch: typeof QuestionDispatch.confirmAsyncQuestionDispatch = QuestionDispatch.confirmAsyncQuestionDispatch;
+export const recordAsyncQuestionError: typeof QuestionDispatch.recordAsyncQuestionError = QuestionDispatch.recordAsyncQuestionError;
+export const rejectDefiniteAsyncQuestion: typeof QuestionDispatch.rejectDefiniteAsyncQuestion = QuestionDispatch.rejectDefiniteAsyncQuestion;
+export const rejectUsageLimitAsyncQuestion: typeof QuestionDispatch.rejectUsageLimitAsyncQuestion = QuestionDispatch.rejectUsageLimitAsyncQuestion;
+export const listFilteredExisting: typeof QueueRead.listFilteredExisting = QueueRead.listFilteredExisting;
+export const remainingDiscordIds: typeof MirrorPolicyRead.remainingDiscordIds = MirrorPolicyRead.remainingDiscordIds;
+export const mirrorTargets: typeof MirrorPolicyRead.mirrorTargets = MirrorPolicyRead.mirrorTargets;
+export const unfinishedArchiveRequest: typeof ArchiveFence.unfinishedArchiveRequest = ArchiveFence.unfinishedArchiveRequest;
+export const unfinishedArchiveRequestExisting: typeof ArchiveFence.unfinishedArchiveRequestExisting = ArchiveFence.unfinishedArchiveRequestExisting;
+export const reserveArchiveScope: typeof ArchiveFence.reserveArchiveScope = ArchiveFence.reserveArchiveScope;
+export const reserveArchiveScopeExisting: typeof ArchiveFence.reserveArchiveScopeExisting = ArchiveFence.reserveArchiveScopeExisting;
+export const archiveTargetFenced: typeof ArchiveFence.archiveTargetFenced = ArchiveFence.archiveTargetFenced;
+export const markArchiveVerified: typeof ArchiveFence.markArchiveVerified = ArchiveFence.markArchiveVerified;
+export const markArchiveVerifiedExisting: typeof ArchiveFence.markArchiveVerifiedExisting = ArchiveFence.markArchiveVerifiedExisting;
+export const releaseRejectedArchive: typeof ArchiveFence.releaseRejectedArchive = ArchiveFence.releaseRejectedArchive;
+export const releaseRejectedArchiveExisting: typeof ArchiveFence.releaseRejectedArchiveExisting = ArchiveFence.releaseRejectedArchiveExisting;
+export const claimMirrorEvent: typeof MirrorCursor.claimMirrorEvent = MirrorCursor.claimMirrorEvent;
+export const cleanupMirrorEvents: typeof MirrorCursor.cleanupMirrorEvents = MirrorCursor.cleanupMirrorEvents;
+export const getOrInitMirrorCursor: typeof MirrorCursor.getOrInitMirrorCursor = MirrorCursor.getOrInitMirrorCursor;
+export const getMirrorOffset: typeof MirrorCursor.getMirrorOffset = MirrorCursor.getMirrorOffset;
+export const updateMirrorCursor: typeof MirrorCursor.updateMirrorCursor = MirrorCursor.updateMirrorCursor;
+export const getMirrorCursorTurn: typeof MirrorCursor.getMirrorCursorTurn = MirrorCursor.getMirrorCursorTurn;
+export const updateMirrorCursorWithTurn: typeof MirrorCursor.updateMirrorCursorWithTurn = MirrorCursor.updateMirrorCursorWithTurn;
+export const hasMirrorEventExisting: typeof MirrorEventRead.hasMirrorEventExisting = MirrorEventRead.hasMirrorEventExisting;
+export const hasMirrorEvent: typeof MirrorEventRead.hasMirrorEvent = MirrorEventRead.hasMirrorEvent;
+export const getIdleIntent: typeof IdleReleaseStore.getIdleIntent = IdleReleaseStore.getIdleIntent;
+export const pendingIdleIntents: typeof IdleReleaseStore.pendingIdleIntents = IdleReleaseStore.pendingIdleIntents;
+export const beforeIdleMutation: typeof IdleReleaseStore.beforeIdleMutation = IdleReleaseStore.beforeIdleMutation;
+export const transitionIdleIntent: typeof IdleReleaseStore.transitionIdleIntent = IdleReleaseStore.transitionIdleIntent;
+export const verifyIdleIntent: typeof IdleReleaseStore.verifyIdleIntent = IdleReleaseStore.verifyIdleIntent;
+export const verifyIdleIntentWithObservations: typeof IdleReleaseStore.verifyIdleIntentWithObservations = IdleReleaseStore.verifyIdleIntentWithObservations;
+export const settleExitedIdleOwner: typeof IdleReleaseStore.settleExitedIdleOwner = IdleReleaseStore.settleExitedIdleOwner;
+export const certifyObservation: typeof ObservationProof.certifyObservation = ObservationProof.certifyObservation;
+export const finishObservationPage: typeof ObservationProof.finishObservationPage = ObservationProof.finishObservationPage;
+export const activateObservation: typeof ObservationLedger.activateObservation = ObservationLedger.activateObservation;
+export const discoverObservation: typeof ObservationLedger.discoverObservation = ObservationLedger.discoverObservation;
+export const markUnknownObservation: typeof ObservationLedger.markUnknownObservation = ObservationLedger.markUnknownObservation;
+export const nextObservationGap: typeof ObservationLedger.nextObservationGap = ObservationLedger.nextObservationGap;
+export const observationScopeVerified: typeof ObservationLedger.observationScopeVerified = ObservationLedger.observationScopeVerified;
+
+export const acknowledgeIngress: typeof IngressLifecycle.acknowledgeIngress = IngressLifecycle.acknowledgeIngress;
+export const beginIngressConfirmation: typeof IngressLifecycle.beginIngressConfirmation = IngressLifecycle.beginIngressConfirmation;
+export const beginIngressExecution: typeof IngressLifecycle.beginIngressExecution = IngressLifecycle.beginIngressExecution;
+export const beginIngressThreadStart: typeof IngressLifecycle.beginIngressThreadStart = IngressLifecycle.beginIngressThreadStart;
+export const beginIngressThreadStartExisting: typeof IngressLifecycle.beginIngressThreadStartExisting = IngressLifecycle.beginIngressThreadStartExisting;
+export const recordIngressCreatedThread: typeof IngressLifecycle.recordIngressCreatedThread = IngressLifecycle.recordIngressCreatedThread;
+export const recordIngressCreatedThreadExisting: typeof IngressLifecycle.recordIngressCreatedThreadExisting = IngressLifecycle.recordIngressCreatedThreadExisting;
+export const recordIngressResult: typeof IngressLifecycle.recordIngressResult = IngressLifecycle.recordIngressResult;
+export const confirmIngress: typeof IngressLifecycle.confirmIngress = IngressLifecycle.confirmIngress;
+export const recordIngressProcessingMode: typeof IngressLifecycle.recordIngressProcessingMode = IngressLifecycle.recordIngressProcessingMode;
+
+export const admitMappedSlashIngress: typeof IngressAdmission.admitMappedSlashIngress = IngressAdmission.admitMappedSlashIngress;
+export const recordIngressNewCreation: typeof IngressLifecycle.recordIngressNewCreation = IngressLifecycle.recordIngressNewCreation;
+export const recordIngressNewCreationExisting: typeof IngressLifecycle.recordIngressNewCreationExisting = IngressLifecycle.recordIngressNewCreationExisting;
+
+export const admitBusyInteraction: typeof BusyIngress.admitBusyInteraction = BusyIngress.admitBusyInteraction;
+
+export const holdIngress: typeof IngressRecovery.holdIngress = IngressRecovery.holdIngress;
+export const holdIngressExisting: typeof IngressRecovery.holdIngressExisting = IngressRecovery.holdIngressExisting;
+export const recoverPriorRuntimeIngress: typeof IngressRecovery.recoverPriorRuntimeIngress = IngressRecovery.recoverPriorRuntimeIngress;
+export const ingressByOrigin: typeof IngressRead.ingressByOrigin = IngressRead.ingressByOrigin;
+export const ingressByOriginExisting: typeof IngressRead.ingressByOriginExisting = IngressRead.ingressByOriginExisting;
+export const getIngress: typeof IngressRead.getIngress = IngressRead.getIngress;
+export const getIngressExisting: typeof IngressRead.getIngressExisting = IngressRead.getIngressExisting;
+export const getIngressForOwnerReadonly: typeof IngressRead.getIngressForOwnerReadonly = IngressRead.getIngressForOwnerReadonly;
+export const completeConfirmedDelivery: typeof ConfirmedDelivery.completeConfirmedDelivery = ConfirmedDelivery.completeConfirmedDelivery;
+export const diagnosticDatabaseCounts: typeof DiagnosticRead.diagnosticDatabaseCounts = DiagnosticRead.diagnosticDatabaseCounts;
+export const diagnosticIdleRelease: typeof DiagnosticRead.diagnosticIdleRelease = DiagnosticRead.diagnosticIdleRelease;
+export const runnerTargetCounts: typeof RunnerCounts.runnerTargetCounts = RunnerCounts.runnerTargetCounts;
+export const listIngressesForOwner: typeof IngressRead.listIngressesForOwner = IngressRead.listIngressesForOwner;
+
+export const validateRecoveryEffectIn: typeof RecoveryEffect.validateRecoveryEffectIn = RecoveryEffect.validateRecoveryEffectIn;
+export const claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery = RecoveryCustody.claimIngressRecovery;
+export const validateIngressRecovery: typeof RecoveryCustody.validateIngressRecovery = RecoveryCustody.validateIngressRecovery;
+
+export const cancelLatestPending: typeof PendingCancellation.cancelLatestPending = PendingCancellation.cancelLatestPending;
+
+export const cancelForRecovery: typeof RecoveryCancellation.cancelForRecovery = RecoveryCancellation.cancelForRecovery;
+
+export const beginDeliveryReceipt: typeof DeliveryReceipts.beginDeliveryReceipt = DeliveryReceipts.beginDeliveryReceipt;
+export const confirmDeliveryReceipt: typeof DeliveryReceipts.confirmDeliveryReceipt = DeliveryReceipts.confirmDeliveryReceipt;
+export const releaseRejectedDelivery: typeof DeliveryReceipts.releaseRejectedDelivery = DeliveryReceipts.releaseRejectedDelivery;
+export const blockRejectedDelivery: typeof DeliveryReceipts.blockRejectedDelivery = DeliveryReceipts.blockRejectedDelivery;
+export const unknownDeliveryReceiptCount: typeof DeliveryReceipts.unknownDeliveryReceiptCount = DeliveryReceipts.unknownDeliveryReceiptCount;
+export const blockedDeliveryReceiptCount: typeof DeliveryReceipts.blockedDeliveryReceiptCount = DeliveryReceipts.blockedDeliveryReceiptCount;
+export const confirmedMirrorCreation: typeof MirrorCreation.confirmedMirrorCreation = MirrorCreation.confirmedMirrorCreation;
+export const beginMirrorCreation: typeof MirrorCreation.beginMirrorCreation = MirrorCreation.beginMirrorCreation;
+export const confirmMirrorCreation: typeof MirrorCreation.confirmMirrorCreation = MirrorCreation.confirmMirrorCreation;
+export const mirrorInspectionSnapshotReadonly: typeof MirrorInspection.mirrorInspectionSnapshotReadonly = MirrorInspection.mirrorInspectionSnapshotReadonly;
+export const mirrorThreadChannels: typeof MirrorSync.mirrorThreadChannels = MirrorSync.mirrorThreadChannels;
+export const mirrorProjectForChannel: typeof MirrorSync.mirrorProjectForChannel = MirrorSync.mirrorProjectForChannel;
+export const commitNewThreadSync: typeof MirrorSync.commitNewThreadSync = MirrorSync.commitNewThreadSync;
+export const admitPromptIntakeWithIngress: typeof NewPromptIntake.admitPromptIntakeWithIngress = NewPromptIntake.admitPromptIntakeWithIngress;
+export const admitPromptIntakeWithIngressExisting: typeof NewPromptIntake.admitPromptIntakeWithIngressExisting = NewPromptIntake.admitPromptIntakeWithIngressExisting;
+export const checkpointNewReply: typeof NewReplyCheckpoint.checkpointNewReply = NewReplyCheckpoint.checkpointNewReply;
+export const getNewReplyBounded: typeof NewReplyPending.getNewReplyBounded = NewReplyPending.getNewReplyBounded;
+export const pendingNewReplies: typeof NewReplyPending.pendingNewReplies = NewReplyPending.pendingNewReplies;
+export const validateNewReplyCurrent: typeof NewReplyClaims.validateNewReplyCurrent = NewReplyClaims.validateNewReplyCurrent;
+export const getNewFirstReplyFinish: typeof NewReplyFinish.getNewFirstReplyFinish = NewReplyFinish.getNewFirstReplyFinish;
+export const getNewFirstReplyFinishExisting: typeof NewReplyFinish.getNewFirstReplyFinishExisting = NewReplyFinish.getNewFirstReplyFinishExisting;
+export const getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress = NewReplyRead.getNewReplyByIngress;
+export const newReplyOutputHold: typeof NewReplyClaims.newReplyOutputHold = NewReplyClaims.newReplyOutputHold;
+export const newReplyOutputHoldExisting: typeof NewReplyClaims.newReplyOutputHoldExisting = NewReplyClaims.newReplyOutputHoldExisting;
+export const newReplyAcknowledgementSendable: typeof NewReplyClaims.newReplyAcknowledgementSendable = NewReplyClaims.newReplyAcknowledgementSendable;
+export const releaseNewReplyAcknowledgement: typeof NewReplyClaims.releaseNewReplyAcknowledgement = NewReplyClaims.releaseNewReplyAcknowledgement;
+
+export const stageCommentary: typeof CommentaryOutbox.stageCommentary = CommentaryOutbox.stageCommentary;
+export const pendingCommentary: typeof CommentaryOutbox.pendingCommentary = CommentaryOutbox.pendingCommentary;
+export const hasPendingCommentary: typeof CommentaryOutbox.hasPendingCommentary = CommentaryOutbox.hasPendingCommentary;
+export const hasPendingCommentaryExisting: typeof CommentaryOutbox.hasPendingCommentaryExisting = CommentaryOutbox.hasPendingCommentaryExisting;
+export const completeCommentary: typeof CommentaryOutbox.completeCommentary = CommentaryOutbox.completeCommentary;
+export const completeCommentaryExisting: typeof CommentaryOutbox.completeCommentaryExisting = CommentaryOutbox.completeCommentaryExisting;
+export const pendingStartNotices: typeof StartNoticeOutbox.pendingStartNotices = StartNoticeOutbox.pendingStartNotices;
+export const completeStartNotice: typeof StartNoticeOutbox.completeStartNotice = StartNoticeOutbox.completeStartNotice;
+export const completeStartNoticeExisting: typeof StartNoticeOutbox.completeStartNoticeExisting = StartNoticeOutbox.completeStartNoticeExisting;
+export const completionPage: typeof CompletionMetadata.completionPage = CompletionMetadata.completionPage;
+export const completionHeadsForTarget: typeof CompletionMetadata.completionHeadsForTarget = CompletionMetadata.completionHeadsForTarget;
+export const completionHeadsForTargetExisting: typeof CompletionMetadata.completionHeadsForTargetExisting = CompletionMetadata.completionHeadsForTargetExisting;
+export const readCompletionMetadataRound: typeof CompletionRound.readCompletionMetadataRound = CompletionRound.readCompletionMetadataRound;
+export const loadCompletionPayloadExisting: typeof CompletionPayload.loadCompletionPayloadExisting = CompletionPayload.loadCompletionPayloadExisting;
+export const loadCompletionPayload: typeof CompletionPayload.loadCompletionPayload = CompletionPayload.loadCompletionPayload;
+export const finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight = DeliveryPreflight.finalDeliveryPreflight;
+export const pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply = DeliveryPreflight.pendingFirstReply;
+export const pendingFirstReplyExisting: typeof DeliveryPreflight.pendingFirstReplyExisting = DeliveryPreflight.pendingFirstReplyExisting;
+
+export const recordNewInput: typeof NewInput.recordNewInput = NewInput.recordNewInput;
+export const installReviewedRecoveryPolicy: typeof ReviewedPolicy.installReviewedRecoveryPolicy = ReviewedPolicy.installReviewedRecoveryPolicy;
+export const restartReadinessSnapshot: typeof RestartReadiness.restartReadinessSnapshot = RestartReadiness.restartReadinessSnapshot;
+export const historyPollTargets: typeof HistoryTargets.historyPollTargets = HistoryTargets.historyPollTargets;
+export const claimProcessedMessageGuarded: typeof ProcessedClaimGuard.claimProcessedMessageGuarded = ProcessedClaimGuard.claimProcessedMessageGuarded;
+export const claimProcessedMessage: typeof ProcessedMessages.claimProcessedMessage = ProcessedMessages.claimProcessedMessage;
+export const isProcessedMessage: typeof ProcessedMessages.isProcessedMessage = ProcessedMessages.isProcessedMessage;
+export const markProcessedMessage: typeof ProcessedMessages.markProcessedMessage = ProcessedMessages.markProcessedMessage;
+export const admitIngress: typeof IngressAdmission.admitIngress = IngressAdmission.admitIngress;
+export const admitIngressExisting: typeof IngressAdmission.admitIngressExisting = IngressAdmission.admitIngressExisting;
+export const pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt = NewPromptArm.pendingNewPrompt;
+
+export const newThreadOrigin: typeof NewOrigin.newThreadOrigin = NewOrigin.newThreadOrigin;
+export const recoverStoppedTerminalIn: typeof StopRecovery.recoverStoppedTerminalIn = StopRecovery.recoverStoppedTerminalIn;
+export const recoveryStopControlsAfter: typeof StopRecoveryRead.recoveryStopControlsAfter = StopRecoveryRead.recoveryStopControlsAfter;
+export const pendingStopControlsAfter: typeof StopControlRead.pendingStopControlsAfter = StopControlRead.pendingStopControlsAfter;
+export const stopControlPhase: typeof StopControlRead.stopControlPhase = StopControlRead.stopControlPhase;
+export const acceptRunningStop: typeof StopControlAdmission.acceptRunningStop = StopControlAdmission.acceptRunningStop;
+export const acceptNonrunningStop: typeof StopAcceptance.acceptNonrunningStop = StopAcceptance.acceptNonrunningStop;
+export const acceptUnresolvedStop: typeof StopAcceptance.acceptUnresolvedStop = StopAcceptance.acceptUnresolvedStop;
+export const captureStopOrigin: typeof StopRevision.captureStopOrigin = StopRevision.captureStopOrigin;
+
+export const captureAsyncHistorySnapshot: typeof AsyncHistory.captureAsyncHistorySnapshot = AsyncHistory.captureAsyncHistorySnapshot;
+export const retainAsyncHistoryCandidate: typeof AsyncHistory.retainAsyncHistoryCandidate = AsyncHistory.retainAsyncHistoryCandidate;
+export const captureTerminalHistorySnapshot: typeof AsyncHistory.captureTerminalHistorySnapshot = AsyncHistory.captureTerminalHistorySnapshot;
+export const settleTerminalHistory: typeof AsyncHistory.settleTerminalHistory = AsyncHistory.settleTerminalHistory;
+
+export const recordObservedFinalAnswer: typeof ObservedFinalAnswer.recordObservedFinalAnswer = ObservedFinalAnswer.recordObservedFinalAnswer;
+export const getObservedFinalAnswerExisting: typeof ObservedFinalAnswer.getObservedFinalAnswerExisting = ObservedFinalAnswer.getObservedFinalAnswerExisting;
+export const getObservedFinalAnswer: typeof ObservedFinalAnswer.getObservedFinalAnswer = ObservedFinalAnswer.getObservedFinalAnswer;
+export const hasObservedCompletionResidentEvidence: typeof ObservedCompletion.hasObservedCompletionResidentEvidence = ObservedCompletion.hasObservedCompletionResidentEvidence;
+export const hasObservedCompletionResidentEvidenceExisting: typeof ObservedCompletion.hasObservedCompletionResidentEvidenceExisting = ObservedCompletion.hasObservedCompletionResidentEvidenceExisting;
+export const pendingObservedCompletions: typeof ObservedCompletion.pendingObservedCompletions = ObservedCompletion.pendingObservedCompletions;
+export const pendingObservedCompletionsExisting: typeof ObservedCompletion.pendingObservedCompletionsExisting = ObservedCompletion.pendingObservedCompletionsExisting;
+export const hasObservedCompletionExisting: typeof ObservedCompletion.hasObservedCompletionExisting = ObservedCompletion.hasObservedCompletionExisting;
+export const hasObservedCompletion: typeof ObservedCompletion.hasObservedCompletion = ObservedCompletion.hasObservedCompletion;
+export const recordObservedCompletionError: typeof ObservedCompletion.recordObservedCompletionError = ObservedCompletion.recordObservedCompletionError;
+export const finishObservedCompletion: typeof ObservedCompletion.finishObservedCompletion = ObservedCompletion.finishObservedCompletion;
+
+export const recordObservedCompletionForResident: typeof ObservedCompletion.recordObservedCompletionForResident = ObservedCompletion.recordObservedCompletionForResident;
+
+export const listPendingDeliveries: typeof Delivery.listPendingDeliveries = Delivery.listPendingDeliveries;
+export const recordDeliveryFailure: typeof Delivery.recordDeliveryFailure = Delivery.recordDeliveryFailure;
+export const recordDeliveryFailureExisting: typeof Delivery.recordDeliveryFailureExisting = Delivery.recordDeliveryFailureExisting;
+export const completeDelivery: typeof Delivery.completeDelivery = Delivery.completeDelivery;
+export const completeDeliveryExisting: typeof Delivery.completeDeliveryExisting = Delivery.completeDeliveryExisting;
+
+export const stageOwnedQueueCompletion: typeof Delivery.stageOwnedQueueCompletion = Delivery.stageOwnedQueueCompletion;
+export const stageOwnedQueueCompletionExisting: typeof Delivery.stageOwnedQueueCompletionExisting = Delivery.stageOwnedQueueCompletionExisting;
+
+export const activateDeadGenerationRuntime: typeof DeadCapture.activateDeadGenerationRuntime = DeadCapture.activateDeadGenerationRuntime;
+export const captureDeadGeneration: typeof DeadCapture.captureDeadGeneration = DeadCapture.captureDeadGeneration;
+
+export const captureResponseCustody: typeof ResponseCustody.captureResponseCustody = ResponseCustody.captureResponseCustody;
+export const beginResponseCustody: typeof ResponseCustody.beginResponseCustody = ResponseCustody.beginResponseCustody;
+export const finishResponseCustody: typeof ResponseCustody.finishResponseCustody = ResponseCustody.finishResponseCustody;
+export const checkResponseCustody: typeof ResponseCustody.checkResponseCustody = ResponseCustody.checkResponseCustody;
+export const checkAllResponseCustody: typeof ResponseCustody.checkAllResponseCustody = ResponseCustody.checkAllResponseCustody;
+
+export const validateQueueStartAuthorityIn: typeof QueueStartAuthority.validateQueueStartAuthorityIn = QueueStartAuthority.validateQueueStartAuthorityIn;
+export const revalidateQueueStartAuthorityIn: typeof QueueStartAuthority.revalidateQueueStartAuthorityIn = QueueStartAuthority.revalidateQueueStartAuthorityIn;
+export const validateStopRequestIn: typeof StopRevision.validateStopRequestIn = StopRevision.validateStopRequestIn;
+
+export const scanResumeRecoveryCandidates: typeof ResumeRestartRecovery.scanResumeRecoveryCandidates = ResumeRestartRecovery.scanResumeRecoveryCandidates;
+export const recoverIdleResume: typeof ResumeRestartRecovery.recoverIdleResume = ResumeRestartRecovery.recoverIdleResume;
+export const checkMutationCustody: typeof MutationAttempt.check = MutationAttempt.check;
+export const requireResponseUnheldIn: typeof ResponseCustody.requireResponseUnheldIn = ResponseCustody.requireResponseUnheldIn;
+export const requireAllResponsesResolvedIn: typeof ResponseCustody.requireAllResponsesResolvedIn = ResponseCustody.requireAllResponsesResolvedIn;
+export const requireStopControlUnheldIn: typeof RuntimeFenceReads.requireStopControlUnheldIn = RuntimeFenceReads.requireStopControlUnheldIn;
+export const stopControlTargetHeldExisting: typeof RuntimeFenceReads.stopControlTargetHeldExisting = RuntimeFenceReads.stopControlTargetHeldExisting;
+export const deadGenerationTargetHeldExisting: typeof RuntimeFenceReads.deadGenerationTargetHeldExisting = RuntimeFenceReads.deadGenerationTargetHeldExisting;
+export const deadGenerationSealedExisting: typeof RuntimeFenceReads.deadGenerationSealedExisting = RuntimeFenceReads.deadGenerationSealedExisting;
+
+export const claimStopControl: typeof StopDispatch.claimStopControl = StopDispatch.claimStopControl;
+export const validateStopClaimIn: typeof StopDispatch.validateStopClaimIn = StopDispatch.validateStopClaimIn;
+export const beginStopWire: typeof StopDispatch.beginStopWire = StopDispatch.beginStopWire;
+export const finishStopWire: typeof StopDispatch.finishStopWire = StopDispatch.finishStopWire;
+export const recordStopControlError: typeof StopDispatch.recordStopControlError = StopDispatch.recordStopControlError;
+
+export const captureDeadGenerationExisting: typeof DeadCapture.captureDeadGenerationExisting = DeadCapture.captureDeadGenerationExisting;
+
+export const guardAsyncMutationIn: typeof AsyncGuards.guardAsyncMutationIn = AsyncGuards.guardAsyncMutationIn;
+export const certifiedAsyncSuccessorIn: typeof AsyncGuards.certifiedAsyncSuccessorIn = AsyncGuards.certifiedAsyncSuccessorIn;
+export const sealAsyncQuestionIn: typeof QuestionGuard.sealAsyncQuestionIn = QuestionGuard.sealAsyncQuestionIn;
+export const verifyAsyncQuestionIdentityIn: typeof QuestionGuard.verifyAsyncQuestionIdentityIn = QuestionGuard.verifyAsyncQuestionIdentityIn;
+export const validateAsyncDispatchGuardsIn: typeof QuestionGuard.validateAsyncDispatchGuardsIn = QuestionGuard.validateAsyncDispatchGuardsIn;
+export const validateAsyncDispatchGuardsExisting: typeof QuestionGuard.validateAsyncDispatchGuardsExisting = QuestionGuard.validateAsyncDispatchGuardsExisting;
+export const validateAsyncDispatchGuards: typeof QuestionGuard.validateAsyncDispatchGuards = QuestionGuard.validateAsyncDispatchGuards;
+
+export const nextObservationGapExisting: typeof ObservationLedger.nextObservationGapExisting = ObservationLedger.nextObservationGapExisting;
+export const certifyObservationExisting: typeof ObservationProof.certifyObservationExisting = ObservationProof.certifyObservationExisting;
+export const finishObservationPageExisting: typeof ObservationProof.finishObservationPageExisting = ObservationProof.finishObservationPageExisting;
+export const recordObservedCompletionForResidentExisting: typeof ObservedCompletion.recordObservedCompletionForResidentExisting = ObservedCompletion.recordObservedCompletionForResidentExisting;
+export const recordObservedFinalAnswerExisting: typeof ObservedFinalAnswer.recordObservedFinalAnswerExisting = ObservedFinalAnswer.recordObservedFinalAnswerExisting;
+export const activateObservationExisting: typeof ObservationLedger.activateObservationExisting = ObservationLedger.activateObservationExisting;
+export const discoverObservationExisting: typeof ObservationLedger.discoverObservationExisting = ObservationLedger.discoverObservationExisting;
+export const markUnknownObservationExisting: typeof ObservationLedger.markUnknownObservationExisting = ObservationLedger.markUnknownObservationExisting;
+export const observationScopeVerifiedExisting: typeof ObservationLedger.observationScopeVerifiedExisting = ObservationLedger.observationScopeVerifiedExisting;
+export const getIdleIntentExisting: typeof IdleReleaseStore.getIdleIntentExisting = IdleReleaseStore.getIdleIntentExisting;
+export const pendingIdleIntentsExisting: typeof IdleReleaseStore.pendingIdleIntentsExisting = IdleReleaseStore.pendingIdleIntentsExisting;
+export const beforeIdleMutationExisting: typeof IdleReleaseStore.beforeIdleMutationExisting = IdleReleaseStore.beforeIdleMutationExisting;
+export const transitionIdleIntentExisting: typeof IdleReleaseStore.transitionIdleIntentExisting = IdleReleaseStore.transitionIdleIntentExisting;
+export const verifyIdleIntentWithObservationsExisting: typeof IdleReleaseStore.verifyIdleIntentWithObservationsExisting = IdleReleaseStore.verifyIdleIntentWithObservationsExisting;
+export const settleExitedIdleOwnerExisting: typeof IdleReleaseStore.settleExitedIdleOwnerExisting = IdleReleaseStore.settleExitedIdleOwnerExisting;
+
+export const deadTargetHeld: typeof DeadGeneration.targetIsHeld = DeadGeneration.targetIsHeld;
+export const recordPreflightFailure: typeof Preflight.recordPreflightFailure = Preflight.recordPreflightFailure;
+export const recordPreflightFailureExisting: typeof Preflight.recordPreflightFailureExisting = Preflight.recordPreflightFailureExisting;
+
+export const holdStartingForAmbiguousCandidatesIfClaimed: typeof QueueClaims.holdStartingForAmbiguousCandidatesIfClaimed = QueueClaims.holdStartingForAmbiguousCandidatesIfClaimed;
+
+export const tryBeginAttempt: typeof QueueClaims.tryBeginAttempt = QueueClaims.tryBeginAttempt;
+export const tryBeginAttemptExisting: typeof QueueClaims.tryBeginAttemptExisting = QueueClaims.tryBeginAttemptExisting;
+export const recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed = QueueClaims.recordStartFailureIfClaimed;
+export const recordStartFailureIfClaimedExisting: typeof QueueClaims.recordStartFailureIfClaimedExisting = QueueClaims.recordStartFailureIfClaimedExisting;
+export const markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed = QueueClaims.markRunningIfClaimed;
+export const markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed = QueueClaims.markRunningWithResidentIfClaimed;
+export const markRunningWithResidentIfClaimedExisting: typeof QueueClaims.markRunningWithResidentIfClaimedExisting = QueueClaims.markRunningWithResidentIfClaimedExisting;
+
+export const proposeAbandonment: typeof AbandonmentProposalStore.proposeAbandonment = AbandonmentProposalStore.proposeAbandonment;
+export const bindAbandonmentDelivery: typeof AbandonmentProposalStore.bindAbandonmentDelivery = AbandonmentProposalStore.bindAbandonmentDelivery;
+export const recordAbandonmentDecision: typeof AbandonmentDecisionStore.recordAbandonmentDecision = AbandonmentDecisionStore.recordAbandonmentDecision;
+export const deliveredAbandonmentProposal: typeof AbandonmentRouting.deliveredAbandonmentProposal = AbandonmentRouting.deliveredAbandonmentProposal;
+export const abandonmentDecisionStatus: typeof AbandonmentRouting.abandonmentDecisionStatus = AbandonmentRouting.abandonmentDecisionStatus;
+export const abandonmentCommandTarget: typeof AbandonmentRouting.abandonmentCommandTarget = AbandonmentRouting.abandonmentCommandTarget;
+export const authorizeAbandonmentDecision: typeof AbandonmentRouting.authorizeAbandonmentDecision = AbandonmentRouting.authorizeAbandonmentDecision;
+export const recordPublicationConsent: typeof PublicationConsent.recordPublicationConsent = PublicationConsent.recordPublicationConsent;
+export const proposePublication: typeof PublicationProposalStore.proposePublication = PublicationProposalStore.proposePublication;
+export const bindPublicationDelivery: typeof PublicationProposalStore.bindPublicationDelivery = PublicationProposalStore.bindPublicationDelivery;
+export const deliveredPublicationProposal: typeof PublicationBinding.deliveredPublicationProposal = PublicationBinding.deliveredPublicationProposal;
+export const admitBusyQueue: typeof BusyPromptIntake.admitBusyQueue = BusyPromptIntake.admitBusyQueue;
+export const admitBusyQueueExisting: typeof BusyPromptIntake.admitBusyQueueExisting = BusyPromptIntake.admitBusyQueueExisting;
+export const bindBusyControl: typeof ControlBinding.bindBusyControl = ControlBinding.bindBusyControl;
+export const resolveBusyControl: typeof ControlBinding.resolveBusyControl = ControlBinding.resolveBusyControl;
+export const recordUserOrigin: typeof MirrorOrigin.recordUserOrigin = MirrorOrigin.recordUserOrigin;
+export const createBusyChoice: typeof BusyChoiceStore.createBusyChoice = BusyChoiceStore.createBusyChoice;
+export const readBusyChoiceState: typeof BusyChoiceStore.readBusyChoiceState = BusyChoiceStore.readBusyChoiceState;
+export const claimBusyChoice: typeof BusyChoiceStore.claimBusyChoice = BusyChoiceStore.claimBusyChoice;
+export const releaseBusyChoiceClaim: typeof BusyChoiceStore.releaseBusyChoiceClaim = BusyChoiceStore.releaseBusyChoiceClaim;
+export const claimComponent: typeof ComponentClaims.claimComponent = ComponentClaims.claimComponent;
+export const releaseComponentClaim: typeof ComponentClaims.releaseComponentClaim = ComponentClaims.releaseComponentClaim;
+export const isComponentClaimLive: typeof ComponentClaims.isComponentClaimLive = ComponentClaims.isComponentClaimLive;
+export const listQueueJobs: typeof QueueRead.list = QueueRead.list;
+export const listFiltered: typeof QueueRead.listFiltered = QueueRead.listFiltered;
+export const eligibleJobs: typeof ExecutionHold.eligibleJobs = ExecutionHold.eligibleJobs;
+export const eligibleJobsExisting: typeof ExecutionHold.eligibleJobsExisting = ExecutionHold.eligibleJobsExisting;
+
+export const asyncAdmissionHeld: typeof AsyncAdmission.asyncResolutionAdmissionHeld =
+  AsyncAdmission.asyncResolutionAdmissionHeld;
+export const asyncTargetDispatchHeldExisting: typeof AsyncAdmission.asyncQuestionTargetDispatchHeldExisting = AsyncAdmission.asyncQuestionTargetDispatchHeldExisting;
+export const asyncTargetDispatchHeld: typeof AsyncAdmission.asyncQuestionTargetDispatchHeld =
+  AsyncAdmission.asyncQuestionTargetDispatchHeld;
+
+export const beginAppServerForkHandoff: typeof ForkBegin.beginAppServerForkHandoff = ForkBegin.beginAppServerForkHandoff;
+export const stageAppServerForkTarget: typeof ForkTarget.stageAppServerForkTarget = ForkTarget.stageAppServerForkTarget;
+export const finalizeAppServerForkHandoff: typeof ForkTarget.finalizeAppServerForkHandoff = ForkTarget.finalizeAppServerForkHandoff;
+export const recordAppServerForkFailure: typeof ForkFailure.recordAppServerForkFailure = ForkFailure.recordAppServerForkFailure;
+export const recordAppServerForkFinalizeFailure: typeof ForkFailure.recordAppServerForkFinalizeFailure = ForkFailure.recordAppServerForkFinalizeFailure;
+export const recordAndCancelDefiniteForkFailure: typeof ForkFailure.recordAndCancelDefiniteForkFailure = ForkFailure.recordAndCancelDefiniteForkFailure;
+export const completedAppServerForkTargetForSource: typeof ForkCompleted.completedAppServerForkTargetForSource = ForkCompleted.completedAppServerForkTargetForSource;
+export const isAppServerManagedTarget: typeof ForkManaged.isAppServerManagedTarget = ForkManaged.isAppServerManagedTarget;
+export const mirroredThreadId: typeof MirrorMapping.mirroredThreadId = MirrorMapping.mirroredThreadId;
+export const mirroredThreadIdExisting: typeof MirrorMapping.mirroredThreadIdExisting = MirrorMapping.mirroredThreadIdExisting;
+export const renewPromptIntakeClaimIfCurrent: typeof PromptIntakeLease.renewPromptIntakeClaimIfCurrent = PromptIntakeLease.renewPromptIntakeClaimIfCurrent;
+export const promptIntakeHasDurableOwner: typeof PromptIntakeLease.promptIntakeHasDurableOwner = PromptIntakeLease.promptIntakeHasDurableOwner;
+export const admitPromptIntake: typeof PromptIntakeWrite.admitPromptIntake = PromptIntakeWrite.admitPromptIntake;
+export const admitPromptIntakeExisting: typeof PromptIntakeWrite.admitPromptIntakeExisting = PromptIntakeWrite.admitPromptIntakeExisting;
+export const getPromptIntakeExisting: typeof PromptIntakeLease.getPromptIntakeExisting = PromptIntakeLease.getPromptIntakeExisting;
+export const listPromptIntakesExisting: typeof PromptIntakeLease.listPromptIntakesExisting = PromptIntakeLease.listPromptIntakesExisting;
+export const promptIntakeHasDurableOwnerExisting: typeof PromptIntakeLease.promptIntakeHasDurableOwnerExisting = PromptIntakeLease.promptIntakeHasDurableOwnerExisting;
+export const tryClaimPromptIntakeExisting: typeof PromptIntakeLease.tryClaimPromptIntakeExisting = PromptIntakeLease.tryClaimPromptIntakeExisting;
+export const renewPromptIntakeClaimExisting: typeof PromptIntakeLease.renewPromptIntakeClaimExisting = PromptIntakeLease.renewPromptIntakeClaimExisting;
+export const releaseAllPromptIntakeClaimsExisting: typeof PromptIntakeLease.releaseAllPromptIntakeClaimsExisting = PromptIntakeLease.releaseAllPromptIntakeClaimsExisting;
+export const recordPromptIntakeFailureExisting: typeof PromptIntakeLease.recordPromptIntakeFailureExisting = PromptIntakeLease.recordPromptIntakeFailureExisting;
+export const removePromptIntakeIfQueuedExisting: typeof PromptIntakeWrite.removePromptIntakeIfQueuedExisting = PromptIntakeWrite.removePromptIntakeIfQueuedExisting;
+export const getPromptIntake: typeof PromptIntakeLease.getPromptIntake = PromptIntakeLease.getPromptIntake;
+export const tryClaimPromptIntake: typeof PromptIntakeLease.tryClaimPromptIntake = PromptIntakeLease.tryClaimPromptIntake;
+export const removePromptIntakeIfQueued: typeof PromptIntakeWrite.removePromptIntakeIfQueued = PromptIntakeWrite.removePromptIntakeIfQueued;
+export const recordPromptIntakeFailureIfClaimed: typeof PromptIntakeLease.recordPromptIntakeFailureIfClaimed = PromptIntakeLease.recordPromptIntakeFailureIfClaimed;
+export const releaseAllPromptIntakeClaims: typeof PromptIntakeLease.releaseAllPromptIntakeClaims = PromptIntakeLease.releaseAllPromptIntakeClaims;
+export const listPromptIntakes: typeof PromptIntakeLease.listPromptIntakes = PromptIntakeLease.listPromptIntakes;
+export const executionHoldReason: typeof ExecutionHold.executionHoldReason = ExecutionHold.executionHoldReason;
+export const canonicalizePromptIntakeTarget: typeof PromptIntakeWrite.canonicalizePromptIntakeTarget = PromptIntakeWrite.canonicalizePromptIntakeTarget;
+export const canonicalizePromptIntakeTargetExisting: typeof PromptIntakeWrite.canonicalizePromptIntakeTargetExisting = PromptIntakeWrite.canonicalizePromptIntakeTargetExisting;
+export const promotePromptIntakeToQueue: typeof PromptIntakePromotion.promotePromptIntakeToQueue = PromptIntakePromotion.promotePromptIntakeToQueue;
+export const promotePromptIntakeToQueueExisting: typeof PromptIntakePromotion.promotePromptIntakeToQueueExisting = PromptIntakePromotion.promotePromptIntakeToQueueExisting;
+
+export const enqueue: typeof QueueEnqueue.enqueue = QueueEnqueue.enqueue;
+export const enqueueExisting: typeof QueueEnqueue.enqueueExisting = QueueEnqueue.enqueueExisting;
+export const enqueueIfMirrorMatchesExisting: typeof QueueEnqueue.enqueueIfMirrorMatchesExisting = QueueEnqueue.enqueueIfMirrorMatchesExisting;
+export const enqueueIfMirrorMatches: typeof QueueEnqueue.enqueueIfMirrorMatches =
+  QueueEnqueue.enqueueIfMirrorMatches;
+export const enqueueInTransaction: typeof QueueEnqueue.enqueueInTransaction =
+  QueueEnqueue.enqueueInTransaction;
+export const markRunning: typeof QueueMarkRunning.markRunning =
+  QueueMarkRunning.markRunning;
+export const activate: typeof MutationAttempt.activate =
+  MutationAttempt.activate;
+export const revalidatePreparedMutation: typeof PreparedMutationValidation.revalidatePreparedMutation = PreparedMutationValidation.revalidatePreparedMutation;
+export const beginChecked: typeof MutationAttempt.beginChecked =
+  MutationAttempt.beginChecked;
+export const finish: typeof MutationAttempt.finish =
+  MutationAttempt.finish;
+export const openCheckedRead: typeof CheckedRead.open =
+  CheckedRead.open;
+
+export const adoptTargetGeneration: typeof Generation.adoptTargetGeneration = Generation.adoptTargetGeneration;
+
+export const unresolvedAppServerForkHandoffForSource: typeof ForkRead.unresolvedAppServerForkHandoffForSource = ForkRead.unresolvedAppServerForkHandoffForSource;
+
+export const retireCopyOnlyHandoffs: typeof ForkRetirement.retireCopyOnlyHandoffs = ForkRetirement.retireCopyOnlyHandoffs;
+
+export const repairLegacyDefiniteForkFailures: typeof ForkRepair.repairLegacyDefiniteForkFailures = ForkRepair.repairLegacyDefiniteForkFailures;
+
+export const stageOwnedGoalProgress: typeof GoalProgress.stageOwnedGoalProgress = GoalProgress.stageOwnedGoalProgress;
+export const stageOwnedGoalProgressExisting: typeof GoalProgress.stageOwnedGoalProgressExisting = GoalProgress.stageOwnedGoalProgressExisting;
+
+export const pendingGoalProgress: typeof GoalProgress.pendingGoalProgress = GoalProgress.pendingGoalProgress;
+
+export const recordGoalProgressError: typeof GoalProgress.recordGoalProgressError = GoalProgress.recordGoalProgressError;
+export const recordGoalProgressErrorExisting: typeof GoalProgress.recordGoalProgressErrorExisting = GoalProgress.recordGoalProgressErrorExisting;
+
+export const completeGoalProgress: typeof GoalProgress.completeGoalProgress = GoalProgress.completeGoalProgress;
+export const completeGoalProgressExisting: typeof GoalProgress.completeGoalProgressExisting = GoalProgress.completeGoalProgressExisting;
+
+export const hasPendingGoalProgress: typeof GoalProgress.hasPendingGoalProgress = GoalProgress.hasPendingGoalProgress;
+
+export const attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObservedIfOwned = GoalAttach.attachGoalTurnObservedIfOwned;
+export const attachGoalTurnObservedIfOwnedExisting: typeof GoalAttach.attachGoalTurnObservedIfOwnedExisting = GoalAttach.attachGoalTurnObservedIfOwnedExisting;
+
+export const markGoalWaiting: typeof GoalWaiting.markGoalWaiting = GoalWaiting.markGoalWaiting;
+export const markGoalWaitingExisting: typeof GoalWaiting.markGoalWaitingExisting = GoalWaiting.markGoalWaitingExisting;
+
+export const requireFinalDeadGenerationUnheldIn: typeof PreparedMutationValidation.requireFinalDeadGenerationUnheldIn = PreparedMutationValidation.requireFinalDeadGenerationUnheldIn;
+export const revalidateStopWire: typeof StopDispatch.revalidateStopWire = StopDispatch.revalidateStopWire;
+export interface IStateAccessFacade {
+  readonly revalidateStopWire: typeof StopDispatch.revalidateStopWire;
+  readonly requireFinalDeadGenerationUnheldIn: typeof PreparedMutationValidation.requireFinalDeadGenerationUnheldIn;
+  readonly remainingDiscordIds: typeof MirrorPolicyRead.remainingDiscordIds;
+  readonly mirrorTargets: typeof MirrorPolicyRead.mirrorTargets;
+  readonly unfinishedArchiveRequest: typeof ArchiveFence.unfinishedArchiveRequest;
+  readonly unfinishedArchiveRequestExisting: typeof ArchiveFence.unfinishedArchiveRequestExisting;
+  readonly reserveArchiveScope: typeof ArchiveFence.reserveArchiveScope;
+  readonly reserveArchiveScopeExisting: typeof ArchiveFence.reserveArchiveScopeExisting;
+  readonly archiveTargetFenced: typeof ArchiveFence.archiveTargetFenced;
+  readonly markArchiveVerified: typeof ArchiveFence.markArchiveVerified;
+  readonly markArchiveVerifiedExisting: typeof ArchiveFence.markArchiveVerifiedExisting;
+  readonly releaseRejectedArchive: typeof ArchiveFence.releaseRejectedArchive;
+  readonly releaseRejectedArchiveExisting: typeof ArchiveFence.releaseRejectedArchiveExisting;
+  readonly claimMirrorEvent: typeof MirrorCursor.claimMirrorEvent;
+  readonly cleanupMirrorEvents: typeof MirrorCursor.cleanupMirrorEvents;
+  readonly getOrInitMirrorCursor: typeof MirrorCursor.getOrInitMirrorCursor;
+  readonly getMirrorOffset: typeof MirrorCursor.getMirrorOffset;
+  readonly updateMirrorCursor: typeof MirrorCursor.updateMirrorCursor;
+  readonly getMirrorCursorTurn: typeof MirrorCursor.getMirrorCursorTurn;
+  readonly updateMirrorCursorWithTurn: typeof MirrorCursor.updateMirrorCursorWithTurn;
+  readonly hasMirrorEventExisting: typeof MirrorEventRead.hasMirrorEventExisting;
+  readonly hasMirrorEvent: typeof MirrorEventRead.hasMirrorEvent;
+  readonly listFilteredExisting: typeof QueueRead.listFilteredExisting;
+  readonly beginAsyncQuestionDispatch: typeof QuestionDispatch.beginAsyncQuestionDispatch;
+  readonly confirmAsyncQuestionDispatch: typeof QuestionDispatch.confirmAsyncQuestionDispatch;
+  readonly recordAsyncQuestionError: typeof QuestionDispatch.recordAsyncQuestionError;
+  readonly rejectDefiniteAsyncQuestion: typeof QuestionDispatch.rejectDefiniteAsyncQuestion;
+  readonly rejectUsageLimitAsyncQuestion: typeof QuestionDispatch.rejectUsageLimitAsyncQuestion;
+
+  readonly getAsyncQuestion: typeof QuestionDelivery.getAsyncQuestion;
+  readonly pendingAsyncQuestions: typeof QuestionDelivery.pendingAsyncQuestions;
+  readonly confirmAsyncQuestionOwner: typeof QuestionDelivery.confirmAsyncQuestionOwner;
+  readonly requireCurrentAsyncQuestionMapping: typeof QuestionDelivery.requireCurrentAsyncQuestionMapping;
+  readonly bindAsyncQuestionReceipt: typeof QuestionDelivery.bindAsyncQuestionReceipt;
+
+  readonly retireOldAsyncQuestionOwner: typeof QuestionRetention.retireOldAsyncQuestionOwner;
+  readonly retireOldAsyncQuestionOwnerExisting: typeof QuestionRetention.retireOldAsyncQuestionOwnerExisting;
+  readonly supersedeAsyncQuestions: typeof QuestionRetention.supersedeAsyncQuestions;
+  readonly compactTerminalAsyncQuestions: typeof QuestionRetention.compactTerminalAsyncQuestions;
+  readonly compactTerminalAsyncQuestionsExisting: typeof QuestionRetention.compactTerminalAsyncQuestionsExisting;
+
+  readonly recordAsyncQuestionObservation: typeof QuestionObservation.recordAsyncQuestionObservation;
+  readonly recordAsyncQuestionObservationExisting: typeof QuestionObservation.recordAsyncQuestionObservationExisting;
+  readonly reconcileAsyncQuestionObservations: typeof QuestionObservation.reconcileAsyncQuestionObservations;
+  readonly reconcileAsyncQuestionObservationsExisting: typeof QuestionObservation.reconcileAsyncQuestionObservationsExisting;
+  readonly observeAsyncQuestion: typeof QuestionObservation.observeAsyncQuestion;
+
+  readonly getIdleIntent: typeof IdleReleaseStore.getIdleIntent;
+  readonly pendingIdleIntents: typeof IdleReleaseStore.pendingIdleIntents;
+  readonly beforeIdleMutation: typeof IdleReleaseStore.beforeIdleMutation;
+  readonly transitionIdleIntent: typeof IdleReleaseStore.transitionIdleIntent;
+  readonly verifyIdleIntent: typeof IdleReleaseStore.verifyIdleIntent;
+  readonly verifyIdleIntentWithObservations: typeof IdleReleaseStore.verifyIdleIntentWithObservations;
+  readonly settleExitedIdleOwner: typeof IdleReleaseStore.settleExitedIdleOwner;
+
+  readonly certifyObservation: typeof ObservationProof.certifyObservation;
+  readonly finishObservationPage: typeof ObservationProof.finishObservationPage;
+
+  readonly activateObservation: typeof ObservationLedger.activateObservation;
+  readonly discoverObservation: typeof ObservationLedger.discoverObservation;
+  readonly markUnknownObservation: typeof ObservationLedger.markUnknownObservation;
+  readonly nextObservationGap: typeof ObservationLedger.nextObservationGap;
+  readonly observationScopeVerified: typeof ObservationLedger.observationScopeVerified;
+
+  readonly stageCommentary: typeof CommentaryOutbox.stageCommentary;
+  readonly pendingCommentary: typeof CommentaryOutbox.pendingCommentary;
+  readonly hasPendingCommentary: typeof CommentaryOutbox.hasPendingCommentary;
+  readonly hasPendingCommentaryExisting: typeof CommentaryOutbox.hasPendingCommentaryExisting;
+  readonly completeCommentary: typeof CommentaryOutbox.completeCommentary;
+  readonly completeCommentaryExisting: typeof CommentaryOutbox.completeCommentaryExisting;
+  readonly pendingStartNotices: typeof StartNoticeOutbox.pendingStartNotices;
+  readonly completeStartNotice: typeof StartNoticeOutbox.completeStartNotice;
+  readonly completeStartNoticeExisting: typeof StartNoticeOutbox.completeStartNoticeExisting;
+  readonly completionPage: typeof CompletionMetadata.completionPage;
+  readonly completionHeadsForTarget: typeof CompletionMetadata.completionHeadsForTarget;
+  readonly completionHeadsForTargetExisting: typeof CompletionMetadata.completionHeadsForTargetExisting;
+  readonly readCompletionMetadataRound: typeof CompletionRound.readCompletionMetadataRound;
+  readonly loadCompletionPayloadExisting: typeof CompletionPayload.loadCompletionPayloadExisting;
+  readonly loadCompletionPayload: typeof CompletionPayload.loadCompletionPayload;
+  readonly finalDeliveryPreflight: typeof DeliveryPreflight.finalDeliveryPreflight;
+  readonly pendingFirstReply: typeof DeliveryPreflight.pendingFirstReply;
+  readonly pendingFirstReplyExisting: typeof DeliveryPreflight.pendingFirstReplyExisting;
+
+  readonly beginDeliveryReceipt: typeof DeliveryReceipts.beginDeliveryReceipt;
+  readonly confirmDeliveryReceipt: typeof DeliveryReceipts.confirmDeliveryReceipt;
+  readonly releaseRejectedDelivery: typeof DeliveryReceipts.releaseRejectedDelivery;
+  readonly blockRejectedDelivery: typeof DeliveryReceipts.blockRejectedDelivery;
+  readonly unknownDeliveryReceiptCount: typeof DeliveryReceipts.unknownDeliveryReceiptCount;
+  readonly blockedDeliveryReceiptCount: typeof DeliveryReceipts.blockedDeliveryReceiptCount;
+  readonly confirmedMirrorCreation: typeof MirrorCreation.confirmedMirrorCreation;
+  readonly beginMirrorCreation: typeof MirrorCreation.beginMirrorCreation;
+  readonly confirmMirrorCreation: typeof MirrorCreation.confirmMirrorCreation;
+  readonly mirrorInspectionSnapshotReadonly: typeof MirrorInspection.mirrorInspectionSnapshotReadonly;
+  readonly mirrorThreadChannels: typeof MirrorSync.mirrorThreadChannels;
+  readonly mirrorProjectForChannel: typeof MirrorSync.mirrorProjectForChannel;
+  readonly commitNewThreadSync: typeof MirrorSync.commitNewThreadSync;
+  readonly admitPromptIntakeWithIngress: typeof NewPromptIntake.admitPromptIntakeWithIngress;
+  readonly admitPromptIntakeWithIngressExisting: typeof NewPromptIntake.admitPromptIntakeWithIngressExisting;
+  readonly checkpointNewReply: typeof NewReplyCheckpoint.checkpointNewReply;
+  readonly getNewReplyBounded: typeof NewReplyPending.getNewReplyBounded;
+  readonly pendingNewReplies: typeof NewReplyPending.pendingNewReplies;
+  readonly validateNewReplyCurrent: typeof NewReplyClaims.validateNewReplyCurrent;
+  readonly getNewFirstReplyFinish: typeof NewReplyFinish.getNewFirstReplyFinish;
+  readonly getNewFirstReplyFinishExisting: typeof NewReplyFinish.getNewFirstReplyFinishExisting;
+  readonly getNewReplyByIngress: typeof NewReplyRead.getNewReplyByIngress;
+  readonly newReplyOutputHold: typeof NewReplyClaims.newReplyOutputHold;
+  readonly newReplyOutputHoldExisting: typeof NewReplyClaims.newReplyOutputHoldExisting;
+  readonly newReplyAcknowledgementSendable: typeof NewReplyClaims.newReplyAcknowledgementSendable;
+  readonly releaseNewReplyAcknowledgement: typeof NewReplyClaims.releaseNewReplyAcknowledgement;
+
+  readonly cancelForRecovery: typeof RecoveryCancellation.cancelForRecovery;
+  readonly cancelLatestPending: typeof PendingCancellation.cancelLatestPending;
+  readonly validateRecoveryEffectIn: typeof RecoveryEffect.validateRecoveryEffectIn;
+  readonly claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery;
+  readonly validateIngressRecovery: typeof RecoveryCustody.validateIngressRecovery;
+
+  readonly holdIngress: typeof IngressRecovery.holdIngress;
+  readonly holdIngressExisting: typeof IngressRecovery.holdIngressExisting;
+  readonly recoverPriorRuntimeIngress: typeof IngressRecovery.recoverPriorRuntimeIngress;
+  readonly ingressByOrigin: typeof IngressRead.ingressByOrigin;
+  readonly ingressByOriginExisting: typeof IngressRead.ingressByOriginExisting;
+  readonly getIngress: typeof IngressRead.getIngress;
+  readonly getIngressExisting: typeof IngressRead.getIngressExisting;
+  readonly getIngressForOwnerReadonly: typeof IngressRead.getIngressForOwnerReadonly;
+  readonly completeConfirmedDelivery: typeof ConfirmedDelivery.completeConfirmedDelivery;
+  readonly diagnosticDatabaseCounts: typeof DiagnosticRead.diagnosticDatabaseCounts;
+  readonly diagnosticIdleRelease: typeof DiagnosticRead.diagnosticIdleRelease;
+  readonly runnerTargetCounts: typeof RunnerCounts.runnerTargetCounts;
+  readonly listIngressesForOwner: typeof IngressRead.listIngressesForOwner;
+
+  readonly admitBusyInteraction: typeof BusyIngress.admitBusyInteraction;
+  readonly admitMappedSlashIngress: typeof IngressAdmission.admitMappedSlashIngress;
+  readonly recordIngressNewCreation: typeof IngressLifecycle.recordIngressNewCreation;
+  readonly recordIngressNewCreationExisting: typeof IngressLifecycle.recordIngressNewCreationExisting;
+
+  readonly acknowledgeIngress: typeof IngressLifecycle.acknowledgeIngress;
+  readonly beginIngressConfirmation: typeof IngressLifecycle.beginIngressConfirmation;
+  readonly beginIngressExecution: typeof IngressLifecycle.beginIngressExecution;
+  readonly beginIngressThreadStart: typeof IngressLifecycle.beginIngressThreadStart;
+  readonly beginIngressThreadStartExisting: typeof IngressLifecycle.beginIngressThreadStartExisting;
+  readonly recordIngressCreatedThread: typeof IngressLifecycle.recordIngressCreatedThread;
+  readonly recordIngressCreatedThreadExisting: typeof IngressLifecycle.recordIngressCreatedThreadExisting;
+  readonly recordIngressResult: typeof IngressLifecycle.recordIngressResult;
+  readonly confirmIngress: typeof IngressLifecycle.confirmIngress;
+  readonly recordIngressProcessingMode: typeof IngressLifecycle.recordIngressProcessingMode;
+  readonly recordNewInput: typeof NewInput.recordNewInput;
+  readonly installReviewedRecoveryPolicy: typeof ReviewedPolicy.installReviewedRecoveryPolicy;
+  readonly restartReadinessSnapshot: typeof RestartReadiness.restartReadinessSnapshot;
+  readonly historyPollTargets: typeof HistoryTargets.historyPollTargets;
+  readonly claimProcessedMessageGuarded: typeof ProcessedClaimGuard.claimProcessedMessageGuarded;
+  readonly claimProcessedMessage: typeof ProcessedMessages.claimProcessedMessage;
+  readonly isProcessedMessage: typeof ProcessedMessages.isProcessedMessage;
+  readonly markProcessedMessage: typeof ProcessedMessages.markProcessedMessage;
+  readonly admitIngress: typeof IngressAdmission.admitIngress;
+  readonly admitIngressExisting: typeof IngressAdmission.admitIngressExisting;
+  readonly pendingNewPrompt: typeof NewPromptArm.pendingNewPrompt;
+  readonly newThreadOrigin: typeof NewOrigin.newThreadOrigin;
+  readonly recoverStoppedTerminalIn: typeof StopRecovery.recoverStoppedTerminalIn;
+  readonly recoveryStopControlsAfter: typeof StopRecoveryRead.recoveryStopControlsAfter;
+  readonly pendingStopControlsAfter: typeof StopControlRead.pendingStopControlsAfter;
+  readonly stopControlPhase: typeof StopControlRead.stopControlPhase;
+  readonly acceptRunningStop: typeof StopControlAdmission.acceptRunningStop;
+  readonly acceptNonrunningStop: typeof StopAcceptance.acceptNonrunningStop;
+  readonly acceptUnresolvedStop: typeof StopAcceptance.acceptUnresolvedStop;
+  readonly captureStopOrigin: typeof StopRevision.captureStopOrigin;
+  readonly admitPromptIntake: typeof PromptIntakeWrite.admitPromptIntake;
+  readonly admitPromptIntakeExisting: typeof PromptIntakeWrite.admitPromptIntakeExisting;
+  readonly getPromptIntakeExisting: typeof PromptIntakeLease.getPromptIntakeExisting;
+  readonly listPromptIntakesExisting: typeof PromptIntakeLease.listPromptIntakesExisting;
+  readonly promptIntakeHasDurableOwnerExisting: typeof PromptIntakeLease.promptIntakeHasDurableOwnerExisting;
+  readonly tryClaimPromptIntakeExisting: typeof PromptIntakeLease.tryClaimPromptIntakeExisting;
+  readonly renewPromptIntakeClaimExisting: typeof PromptIntakeLease.renewPromptIntakeClaimExisting;
+  readonly releaseAllPromptIntakeClaimsExisting: typeof PromptIntakeLease.releaseAllPromptIntakeClaimsExisting;
+  readonly recordPromptIntakeFailureExisting: typeof PromptIntakeLease.recordPromptIntakeFailureExisting;
+  readonly removePromptIntakeIfQueuedExisting: typeof PromptIntakeWrite.removePromptIntakeIfQueuedExisting;
+  readonly getPromptIntake: typeof PromptIntakeLease.getPromptIntake;
+  readonly tryClaimPromptIntake: typeof PromptIntakeLease.tryClaimPromptIntake;
+  readonly removePromptIntakeIfQueued: typeof PromptIntakeWrite.removePromptIntakeIfQueued;
+  readonly recordPromptIntakeFailureIfClaimed: typeof PromptIntakeLease.recordPromptIntakeFailureIfClaimed;
+  readonly releaseAllPromptIntakeClaims: typeof PromptIntakeLease.releaseAllPromptIntakeClaims;
+  readonly listPromptIntakes: typeof PromptIntakeLease.listPromptIntakes;
+  readonly executionHoldReason: typeof ExecutionHold.executionHoldReason;
+
+  readonly renewPromptIntakeClaimIfCurrent: typeof PromptIntakeLease.renewPromptIntakeClaimIfCurrent;
+  readonly promptIntakeHasDurableOwner: typeof PromptIntakeLease.promptIntakeHasDurableOwner;
+
+  readonly mirroredThreadId: typeof MirrorMapping.mirroredThreadId;
+  readonly mirroredThreadIdExisting: typeof MirrorMapping.mirroredThreadIdExisting;
+  readonly beginAppServerForkHandoff: typeof ForkBegin.beginAppServerForkHandoff;
+  readonly stageAppServerForkTarget: typeof ForkTarget.stageAppServerForkTarget;
+  readonly finalizeAppServerForkHandoff: typeof ForkTarget.finalizeAppServerForkHandoff;
+  readonly recordAppServerForkFailure: typeof ForkFailure.recordAppServerForkFailure;
+  readonly recordAppServerForkFinalizeFailure: typeof ForkFailure.recordAppServerForkFinalizeFailure;
+  readonly recordAndCancelDefiniteForkFailure: typeof ForkFailure.recordAndCancelDefiniteForkFailure;
+  readonly completedAppServerForkTargetForSource: typeof ForkCompleted.completedAppServerForkTargetForSource;
+  readonly isAppServerManagedTarget: typeof ForkManaged.isAppServerManagedTarget;
+
+  readonly markGoalWaiting: typeof GoalWaiting.markGoalWaiting;
+  readonly markGoalWaitingExisting: typeof GoalWaiting.markGoalWaitingExisting;
+  readonly attachGoalTurnObservedIfOwned: typeof GoalAttach.attachGoalTurnObservedIfOwned;
+  readonly attachGoalTurnObservedIfOwnedExisting: typeof GoalAttach.attachGoalTurnObservedIfOwnedExisting;
+  readonly hasPendingGoalProgress: typeof GoalProgress.hasPendingGoalProgress;
+  readonly completeGoalProgress: typeof GoalProgress.completeGoalProgress;
+  readonly completeGoalProgressExisting: typeof GoalProgress.completeGoalProgressExisting;
+  readonly recordGoalProgressError: typeof GoalProgress.recordGoalProgressError;
+  readonly recordGoalProgressErrorExisting: typeof GoalProgress.recordGoalProgressErrorExisting;
+  readonly pendingGoalProgress: typeof GoalProgress.pendingGoalProgress;
+  readonly stageOwnedGoalProgress: typeof GoalProgress.stageOwnedGoalProgress;
+  readonly stageOwnedGoalProgressExisting: typeof GoalProgress.stageOwnedGoalProgressExisting;
+  readonly repairLegacyDefiniteForkFailures: typeof ForkRepair.repairLegacyDefiniteForkFailures;
+  readonly retireCopyOnlyHandoffs: typeof ForkRetirement.retireCopyOnlyHandoffs;
+  readonly unresolvedAppServerForkHandoffForSource: typeof ForkRead.unresolvedAppServerForkHandoffForSource;
+  readonly adoptTargetGeneration: typeof Generation.adoptTargetGeneration;
+  readonly captureAsyncHistorySnapshot: typeof AsyncHistory.captureAsyncHistorySnapshot;
+  readonly retainAsyncHistoryCandidate: typeof AsyncHistory.retainAsyncHistoryCandidate;
+  readonly captureTerminalHistorySnapshot: typeof AsyncHistory.captureTerminalHistorySnapshot;
+  readonly settleTerminalHistory: typeof AsyncHistory.settleTerminalHistory;
+  readonly recordObservedFinalAnswer: typeof ObservedFinalAnswer.recordObservedFinalAnswer;
+  readonly getObservedFinalAnswerExisting: typeof ObservedFinalAnswer.getObservedFinalAnswerExisting;
+  readonly getObservedFinalAnswer: typeof ObservedFinalAnswer.getObservedFinalAnswer;
+  readonly hasObservedCompletionResidentEvidence: typeof ObservedCompletion.hasObservedCompletionResidentEvidence;
+  readonly hasObservedCompletionResidentEvidenceExisting: typeof ObservedCompletion.hasObservedCompletionResidentEvidenceExisting;
+  readonly pendingObservedCompletions: typeof ObservedCompletion.pendingObservedCompletions;
+  readonly pendingObservedCompletionsExisting: typeof ObservedCompletion.pendingObservedCompletionsExisting;
+  readonly hasObservedCompletionExisting: typeof ObservedCompletion.hasObservedCompletionExisting;
+  readonly hasObservedCompletion: typeof ObservedCompletion.hasObservedCompletion;
+  readonly recordObservedCompletionError: typeof ObservedCompletion.recordObservedCompletionError;
+  readonly finishObservedCompletion: typeof ObservedCompletion.finishObservedCompletion;
+  readonly holdStartingForAmbiguousCandidatesIfClaimed: typeof QueueClaims.holdStartingForAmbiguousCandidatesIfClaimed;
+  readonly listPendingDeliveries: typeof Delivery.listPendingDeliveries;
+  readonly recordDeliveryFailure: typeof Delivery.recordDeliveryFailure;
+  readonly recordDeliveryFailureExisting: typeof Delivery.recordDeliveryFailureExisting;
+  readonly completeDelivery: typeof Delivery.completeDelivery;
+  readonly completeDeliveryExisting: typeof Delivery.completeDeliveryExisting;
+  readonly recordObservedCompletionForResident: typeof ObservedCompletion.recordObservedCompletionForResident;
+  readonly stageOwnedQueueCompletion: typeof Delivery.stageOwnedQueueCompletion;
+  readonly stageOwnedQueueCompletionExisting: typeof Delivery.stageOwnedQueueCompletionExisting;
+  readonly activateDeadGenerationRuntime: typeof DeadCapture.activateDeadGenerationRuntime;
+  readonly captureDeadGeneration: typeof DeadCapture.captureDeadGeneration;
+  readonly captureResponseCustody: typeof ResponseCustody.captureResponseCustody;
+  readonly beginResponseCustody: typeof ResponseCustody.beginResponseCustody;
+  readonly finishResponseCustody: typeof ResponseCustody.finishResponseCustody;
+  readonly checkResponseCustody: typeof ResponseCustody.checkResponseCustody;
+  readonly checkAllResponseCustody: typeof ResponseCustody.checkAllResponseCustody;
+  readonly revalidateQueueStartAuthorityIn: typeof QueueStartAuthority.revalidateQueueStartAuthorityIn;
+  readonly validateQueueStartAuthorityIn: typeof QueueStartAuthority.validateQueueStartAuthorityIn;
+  readonly validateStopRequestIn: typeof StopRevision.validateStopRequestIn;
+  readonly scanResumeRecoveryCandidates: typeof ResumeRestartRecovery.scanResumeRecoveryCandidates;
+  readonly recoverIdleResume: typeof ResumeRestartRecovery.recoverIdleResume;
+  readonly checkMutationCustody: typeof MutationAttempt.check;
+  readonly requireResponseUnheldIn: typeof ResponseCustody.requireResponseUnheldIn;
+  readonly requireAllResponsesResolvedIn: typeof ResponseCustody.requireAllResponsesResolvedIn;
+  readonly requireStopControlUnheldIn: typeof RuntimeFenceReads.requireStopControlUnheldIn;
+  readonly stopControlTargetHeldExisting: typeof RuntimeFenceReads.stopControlTargetHeldExisting;
+  readonly deadGenerationTargetHeldExisting: typeof RuntimeFenceReads.deadGenerationTargetHeldExisting;
+  readonly deadGenerationSealedExisting: typeof RuntimeFenceReads.deadGenerationSealedExisting;
+  readonly claimStopControl: typeof StopDispatch.claimStopControl;
+  readonly validateStopClaimIn: typeof StopDispatch.validateStopClaimIn;
+  readonly beginStopWire: typeof StopDispatch.beginStopWire;
+  readonly finishStopWire: typeof StopDispatch.finishStopWire;
+  readonly recordStopControlError: typeof StopDispatch.recordStopControlError;
+  readonly captureDeadGenerationExisting: typeof DeadCapture.captureDeadGenerationExisting;
+  readonly guardAsyncMutationIn: typeof AsyncGuards.guardAsyncMutationIn;
+  readonly certifiedAsyncSuccessorIn: typeof AsyncGuards.certifiedAsyncSuccessorIn;
+  readonly sealAsyncQuestionIn: typeof QuestionGuard.sealAsyncQuestionIn;
+  readonly verifyAsyncQuestionIdentityIn: typeof QuestionGuard.verifyAsyncQuestionIdentityIn;
+  readonly validateAsyncDispatchGuardsIn: typeof QuestionGuard.validateAsyncDispatchGuardsIn;
+  readonly validateAsyncDispatchGuardsExisting: typeof QuestionGuard.validateAsyncDispatchGuardsExisting;
+  readonly validateAsyncDispatchGuards: typeof QuestionGuard.validateAsyncDispatchGuards;
+  readonly nextObservationGapExisting: typeof ObservationLedger.nextObservationGapExisting;
+  readonly certifyObservationExisting: typeof ObservationProof.certifyObservationExisting;
+  readonly finishObservationPageExisting: typeof ObservationProof.finishObservationPageExisting;
+  readonly recordObservedCompletionForResidentExisting: typeof ObservedCompletion.recordObservedCompletionForResidentExisting;
+  readonly recordObservedFinalAnswerExisting: typeof ObservedFinalAnswer.recordObservedFinalAnswerExisting;
+  readonly activateObservationExisting: typeof ObservationLedger.activateObservationExisting;
+  readonly discoverObservationExisting: typeof ObservationLedger.discoverObservationExisting;
+  readonly markUnknownObservationExisting: typeof ObservationLedger.markUnknownObservationExisting;
+  readonly observationScopeVerifiedExisting: typeof ObservationLedger.observationScopeVerifiedExisting;
+  readonly getIdleIntentExisting: typeof IdleReleaseStore.getIdleIntentExisting;
+  readonly pendingIdleIntentsExisting: typeof IdleReleaseStore.pendingIdleIntentsExisting;
+  readonly beforeIdleMutationExisting: typeof IdleReleaseStore.beforeIdleMutationExisting;
+  readonly transitionIdleIntentExisting: typeof IdleReleaseStore.transitionIdleIntentExisting;
+  readonly verifyIdleIntentWithObservationsExisting: typeof IdleReleaseStore.verifyIdleIntentWithObservationsExisting;
+  readonly settleExitedIdleOwnerExisting: typeof IdleReleaseStore.settleExitedIdleOwnerExisting;
+  readonly deadTargetHeld: typeof DeadGeneration.targetIsHeld;
+  readonly recordPreflightFailure: typeof Preflight.recordPreflightFailure;
+  readonly recordPreflightFailureExisting: typeof Preflight.recordPreflightFailureExisting;
+  readonly tryBeginAttempt: typeof QueueClaims.tryBeginAttempt;
+  readonly tryBeginAttemptExisting: typeof QueueClaims.tryBeginAttemptExisting;
+  readonly recordStartFailureIfClaimed: typeof QueueClaims.recordStartFailureIfClaimed;
+  readonly recordStartFailureIfClaimedExisting: typeof QueueClaims.recordStartFailureIfClaimedExisting;
+  readonly markRunningIfClaimed: typeof QueueClaims.markRunningIfClaimed;
+  readonly markRunningWithResidentIfClaimed: typeof QueueClaims.markRunningWithResidentIfClaimed;
+  readonly markRunningWithResidentIfClaimedExisting: typeof QueueClaims.markRunningWithResidentIfClaimedExisting;
+  readonly proposeAbandonment: typeof AbandonmentProposalStore.proposeAbandonment;
+  readonly bindAbandonmentDelivery: typeof AbandonmentProposalStore.bindAbandonmentDelivery;
+  readonly recordAbandonmentDecision: typeof AbandonmentDecisionStore.recordAbandonmentDecision;
+  readonly deliveredAbandonmentProposal: typeof AbandonmentRouting.deliveredAbandonmentProposal;
+  readonly abandonmentDecisionStatus: typeof AbandonmentRouting.abandonmentDecisionStatus;
+  readonly abandonmentCommandTarget: typeof AbandonmentRouting.abandonmentCommandTarget;
+  readonly authorizeAbandonmentDecision: typeof AbandonmentRouting.authorizeAbandonmentDecision;
+  readonly recordPublicationConsent: typeof PublicationConsent.recordPublicationConsent;
+  readonly proposePublication: typeof PublicationProposalStore.proposePublication;
+  readonly bindPublicationDelivery: typeof PublicationProposalStore.bindPublicationDelivery;
+  readonly deliveredPublicationProposal: typeof PublicationBinding.deliveredPublicationProposal;
+  readonly admitBusyQueue: typeof BusyPromptIntake.admitBusyQueue;
+  readonly admitBusyQueueExisting: typeof BusyPromptIntake.admitBusyQueueExisting;
+  readonly bindBusyControl: typeof ControlBinding.bindBusyControl;
+  readonly resolveBusyControl: typeof ControlBinding.resolveBusyControl;
+  readonly recordUserOrigin: typeof MirrorOrigin.recordUserOrigin;
+  readonly createBusyChoice: typeof BusyChoiceStore.createBusyChoice;
+  readonly readBusyChoiceState: typeof BusyChoiceStore.readBusyChoiceState;
+  readonly claimBusyChoice: typeof BusyChoiceStore.claimBusyChoice;
+  readonly releaseBusyChoiceClaim: typeof BusyChoiceStore.releaseBusyChoiceClaim;
+  readonly claimComponent: typeof ComponentClaims.claimComponent;
+  readonly releaseComponentClaim: typeof ComponentClaims.releaseComponentClaim;
+  readonly isComponentClaimLive: typeof ComponentClaims.isComponentClaimLive;
+  readonly listQueueJobs: typeof QueueRead.list;
+  readonly listFiltered: typeof QueueRead.listFiltered;
+  readonly eligibleJobs: typeof ExecutionHold.eligibleJobs;
+  readonly eligibleJobsExisting: typeof ExecutionHold.eligibleJobsExisting;
+  readonly asyncAdmissionHeld: typeof AsyncAdmission.asyncResolutionAdmissionHeld;
+  readonly asyncTargetDispatchHeldExisting: typeof AsyncAdmission.asyncQuestionTargetDispatchHeldExisting;
+  readonly asyncTargetDispatchHeld: typeof AsyncAdmission.asyncQuestionTargetDispatchHeld;
+  readonly canonicalizePromptIntakeTarget: typeof PromptIntakeWrite.canonicalizePromptIntakeTarget;
+  readonly canonicalizePromptIntakeTargetExisting: typeof PromptIntakeWrite.canonicalizePromptIntakeTargetExisting;
+  readonly promotePromptIntakeToQueue: typeof PromptIntakePromotion.promotePromptIntakeToQueue;
+  readonly promotePromptIntakeToQueueExisting: typeof PromptIntakePromotion.promotePromptIntakeToQueueExisting;
+  readonly enqueue: typeof QueueEnqueue.enqueue;
+  readonly enqueueExisting: typeof QueueEnqueue.enqueueExisting;
+  readonly enqueueIfMirrorMatchesExisting: typeof QueueEnqueue.enqueueIfMirrorMatchesExisting;
+  readonly enqueueIfMirrorMatches: typeof QueueEnqueue.enqueueIfMirrorMatches;
+  readonly enqueueInTransaction: typeof QueueEnqueue.enqueueInTransaction;
+  readonly markRunning: typeof QueueMarkRunning.markRunning;
+  readonly activate: typeof MutationAttempt.activate;
+  readonly revalidatePreparedMutation: typeof PreparedMutationValidation.revalidatePreparedMutation;
+  readonly beginChecked: typeof MutationAttempt.beginChecked;
+  readonly finish: typeof MutationAttempt.finish;
+  readonly openCheckedRead: typeof CheckedRead.open;
+}
+
+export type StateAccessFacade = IStateAccessFacade;
+
+export const StateAccessFacade: IStateAccessFacade = {
+  revalidateStopWire,
+  requireFinalDeadGenerationUnheldIn,
+  remainingDiscordIds,
+  mirrorTargets,
+  unfinishedArchiveRequest,
+  unfinishedArchiveRequestExisting,
+  reserveArchiveScope,
+  reserveArchiveScopeExisting,
+  archiveTargetFenced,
+  markArchiveVerified,
+  markArchiveVerifiedExisting,
+  releaseRejectedArchive,
+  releaseRejectedArchiveExisting,
+  claimMirrorEvent,
+  cleanupMirrorEvents,
+  getOrInitMirrorCursor,
+  getMirrorOffset,
+  updateMirrorCursor,
+  getMirrorCursorTurn,
+  updateMirrorCursorWithTurn,
+  hasMirrorEventExisting,
+  hasMirrorEvent,
+  listFilteredExisting,
+  beginAsyncQuestionDispatch,
+  confirmAsyncQuestionDispatch,
+  recordAsyncQuestionError,
+  rejectDefiniteAsyncQuestion,
+  rejectUsageLimitAsyncQuestion,
+
+  getAsyncQuestion,
+  pendingAsyncQuestions,
+  confirmAsyncQuestionOwner,
+  requireCurrentAsyncQuestionMapping,
+  bindAsyncQuestionReceipt,
+
+  retireOldAsyncQuestionOwner,
+  retireOldAsyncQuestionOwnerExisting,
+  supersedeAsyncQuestions,
+  compactTerminalAsyncQuestions,
+  compactTerminalAsyncQuestionsExisting,
+
+  recordAsyncQuestionObservation,
+  recordAsyncQuestionObservationExisting,
+  reconcileAsyncQuestionObservations,
+  reconcileAsyncQuestionObservationsExisting,
+  observeAsyncQuestion,
+
+  getIdleIntent,
+  pendingIdleIntents,
+  beforeIdleMutation,
+  transitionIdleIntent,
+  verifyIdleIntent,
+  verifyIdleIntentWithObservations,
+  settleExitedIdleOwner,
+
+  certifyObservation,
+  finishObservationPage,
+
+  activateObservation,
+  discoverObservation,
+  markUnknownObservation,
+  nextObservationGap,
+  observationScopeVerified,
+
+  admitPromptIntake,
+  admitPromptIntakeExisting,
+  getPromptIntakeExisting,
+  listPromptIntakesExisting,
+  promptIntakeHasDurableOwnerExisting,
+  tryClaimPromptIntakeExisting,
+  renewPromptIntakeClaimExisting,
+  releaseAllPromptIntakeClaimsExisting,
+  recordPromptIntakeFailureExisting,
+  removePromptIntakeIfQueuedExisting,
+  getPromptIntake,
+  tryClaimPromptIntake,
+  removePromptIntakeIfQueued,
+  recordPromptIntakeFailureIfClaimed,
+  releaseAllPromptIntakeClaims,
+  listPromptIntakes,
+  executionHoldReason,
+
+  renewPromptIntakeClaimIfCurrent,
+  promptIntakeHasDurableOwner,
+
+  acknowledgeIngress,
+  beginIngressConfirmation,
+  beginIngressExecution,
+  beginIngressThreadStart,
+  beginIngressThreadStartExisting,
+  recordIngressCreatedThread,
+  recordIngressCreatedThreadExisting,
+  recordIngressResult,
+  confirmIngress,
+  recordIngressProcessingMode,
+  admitMappedSlashIngress,
+  recordIngressNewCreation,
+  recordIngressNewCreationExisting,
+  admitBusyInteraction,
+  holdIngress,
+  holdIngressExisting,
+  recoverPriorRuntimeIngress,
+  ingressByOrigin,
+  ingressByOriginExisting,
+  getIngress,
+  getIngressExisting,
+  getIngressForOwnerReadonly,
+  completeConfirmedDelivery,
+  diagnosticDatabaseCounts,
+  diagnosticIdleRelease,
+  runnerTargetCounts,
+  listIngressesForOwner,
+  validateRecoveryEffectIn,
+  claimIngressRecovery,
+  validateIngressRecovery,
+  cancelLatestPending,
+  cancelForRecovery,
+  beginDeliveryReceipt,
+  confirmDeliveryReceipt,
+  releaseRejectedDelivery,
+  blockRejectedDelivery,
+  unknownDeliveryReceiptCount,
+  blockedDeliveryReceiptCount,
+  confirmedMirrorCreation,
+  beginMirrorCreation,
+  confirmMirrorCreation,
+  mirrorInspectionSnapshotReadonly,
+  mirrorThreadChannels,
+  mirrorProjectForChannel,
+  commitNewThreadSync,
+  admitPromptIntakeWithIngress,
+  admitPromptIntakeWithIngressExisting,
+  checkpointNewReply,
+  pendingNewReplies,
+  getNewReplyBounded,
+  validateNewReplyCurrent,
+  getNewFirstReplyFinish,
+  getNewFirstReplyFinishExisting,
+  getNewReplyByIngress,
+  newReplyOutputHold,
+  newReplyOutputHoldExisting,
+  newReplyAcknowledgementSendable,
+  releaseNewReplyAcknowledgement,
+  stageCommentary,
+  pendingCommentary,
+  hasPendingCommentary,
+  hasPendingCommentaryExisting,
+  completeCommentary,
+  completeCommentaryExisting,
+  pendingStartNotices,
+  completeStartNotice,
+  completeStartNoticeExisting,
+  completionPage,
+  completionHeadsForTarget,
+  completionHeadsForTargetExisting,
+  readCompletionMetadataRound,
+  loadCompletionPayloadExisting,
+  loadCompletionPayload,
+  finalDeliveryPreflight,
+  pendingFirstReply,
+  pendingFirstReplyExisting,
+  recordNewInput,
+  installReviewedRecoveryPolicy,
+  restartReadinessSnapshot,
+  historyPollTargets,
+  claimProcessedMessageGuarded,
+  claimProcessedMessage,
+  isProcessedMessage,
+  markProcessedMessage,
+  admitIngress,
+  admitIngressExisting,
+  pendingNewPrompt,
+  newThreadOrigin,
+  recoverStoppedTerminalIn,
+  recoveryStopControlsAfter,
+  pendingStopControlsAfter,
+  stopControlPhase,
+  acceptRunningStop,
+  acceptNonrunningStop,
+  acceptUnresolvedStop,
+  captureStopOrigin,
+  mirroredThreadId,
+  mirroredThreadIdExisting,
+  beginAppServerForkHandoff,
+  stageAppServerForkTarget,
+  finalizeAppServerForkHandoff,
+  recordAppServerForkFailure,
+  recordAppServerForkFinalizeFailure,
+  recordAndCancelDefiniteForkFailure,
+  completedAppServerForkTargetForSource,
+  isAppServerManagedTarget,
+
+  markGoalWaiting,
+  markGoalWaitingExisting,
+  attachGoalTurnObservedIfOwned,
+  attachGoalTurnObservedIfOwnedExisting,
+  hasPendingGoalProgress,
+  completeGoalProgress,
+  completeGoalProgressExisting,
+  recordGoalProgressError,
+  recordGoalProgressErrorExisting,
+  pendingGoalProgress,
+  stageOwnedGoalProgress,
+  stageOwnedGoalProgressExisting,
+  repairLegacyDefiniteForkFailures,
+  retireCopyOnlyHandoffs,
+  unresolvedAppServerForkHandoffForSource,
+  adoptTargetGeneration,
+  captureAsyncHistorySnapshot,
+  retainAsyncHistoryCandidate,
+  captureTerminalHistorySnapshot,
+  settleTerminalHistory,
+  recordObservedFinalAnswer,
+  getObservedFinalAnswerExisting,
+  getObservedFinalAnswer,
+  hasObservedCompletionResidentEvidence,
+  hasObservedCompletionResidentEvidenceExisting,
+  pendingObservedCompletions,
+  pendingObservedCompletionsExisting,
+  hasObservedCompletionExisting,
+  hasObservedCompletion,
+  recordObservedCompletionError,
+  finishObservedCompletion,
+  holdStartingForAmbiguousCandidatesIfClaimed,
+  listPendingDeliveries,
+  recordDeliveryFailure,
+  recordDeliveryFailureExisting,
+  completeDelivery,
+  completeDeliveryExisting,
+  recordObservedCompletionForResident,
+  stageOwnedQueueCompletion,
+  stageOwnedQueueCompletionExisting,
+  activateDeadGenerationRuntime,
+  captureDeadGeneration,
+  captureResponseCustody,
+  beginResponseCustody,
+  finishResponseCustody,
+  checkResponseCustody,
+  checkAllResponseCustody,
+  revalidateQueueStartAuthorityIn,
+  validateQueueStartAuthorityIn,
+  validateStopRequestIn,
+  scanResumeRecoveryCandidates,
+  recoverIdleResume,
+  checkMutationCustody,
+  requireResponseUnheldIn,
+  requireAllResponsesResolvedIn,
+  requireStopControlUnheldIn,
+  stopControlTargetHeldExisting,
+  deadGenerationTargetHeldExisting,
+  deadGenerationSealedExisting,
+  claimStopControl,
+  validateStopClaimIn,
+  beginStopWire,
+  finishStopWire,
+  recordStopControlError,
+  captureDeadGenerationExisting,
+  guardAsyncMutationIn,
+  certifiedAsyncSuccessorIn,
+  sealAsyncQuestionIn,
+  verifyAsyncQuestionIdentityIn,
+  validateAsyncDispatchGuardsIn,
+  validateAsyncDispatchGuardsExisting,
+  validateAsyncDispatchGuards,
+  nextObservationGapExisting,
+  certifyObservationExisting,
+  finishObservationPageExisting,
+  recordObservedCompletionForResidentExisting,
+  recordObservedFinalAnswerExisting,
+  activateObservationExisting,
+  discoverObservationExisting,
+  markUnknownObservationExisting,
+  observationScopeVerifiedExisting,
+  getIdleIntentExisting,
+  pendingIdleIntentsExisting,
+  beforeIdleMutationExisting,
+  transitionIdleIntentExisting,
+  verifyIdleIntentWithObservationsExisting,
+  settleExitedIdleOwnerExisting,
+  deadTargetHeld,
+  recordPreflightFailure,
+  recordPreflightFailureExisting,
+  tryBeginAttempt,
+  tryBeginAttemptExisting,
+  recordStartFailureIfClaimed,
+  recordStartFailureIfClaimedExisting,
+  markRunningIfClaimed,
+  markRunningWithResidentIfClaimed,
+  markRunningWithResidentIfClaimedExisting,
+  proposeAbandonment,
+  bindAbandonmentDelivery,
+  recordAbandonmentDecision,
+  deliveredAbandonmentProposal,
+  abandonmentDecisionStatus,
+  abandonmentCommandTarget,
+  authorizeAbandonmentDecision,
+  recordPublicationConsent,
+  proposePublication,
+  bindPublicationDelivery,
+  deliveredPublicationProposal,
+  admitBusyQueue,
+  admitBusyQueueExisting,
+  bindBusyControl,
+  resolveBusyControl,
+  recordUserOrigin,
+  createBusyChoice,
+  readBusyChoiceState,
+  claimBusyChoice,
+  releaseBusyChoiceClaim,
+  claimComponent,
+  releaseComponentClaim,
+  isComponentClaimLive,
+  listQueueJobs,
+  listFiltered,
+  eligibleJobs,
+  eligibleJobsExisting,
+  asyncAdmissionHeld,
+  asyncTargetDispatchHeldExisting,
+  asyncTargetDispatchHeld,
+  canonicalizePromptIntakeTarget,
+  canonicalizePromptIntakeTargetExisting,
+  promotePromptIntakeToQueue,
+  promotePromptIntakeToQueueExisting,
+  enqueue,
+  enqueueExisting,
+  enqueueIfMirrorMatchesExisting,
+  enqueueIfMirrorMatches,
+  enqueueInTransaction,
+  markRunning,
+  activate,
+  revalidatePreparedMutation,
+  beginChecked,
+  finish,
+  openCheckedRead,
+};
+
+

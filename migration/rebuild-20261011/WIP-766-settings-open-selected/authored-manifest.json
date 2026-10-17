@@ -1,0 +1,14 @@
+[
+  {
+    "path": "src/codex-state/reference-reader.ts",
+    "sha256": "42072a4931590933c71b17a4d1eddffd2701835e4b1b6d6fcc3151d0650c8200"
+  },
+  {
+    "path": "src/codex-state/reference-worker.ts",
+    "sha256": "d525ba074fd5c68a27758e69a97e5d9f04342d2861a1854217b718ad3ec31f27"
+  },
+  {
+    "path": "test/codex-state/settings-open-selected.test.ts",
+    "sha256": "a6fa666c0e93d67c54f73e657131618c70a1352345abf1671300e4f373a68512"
+  }
+]

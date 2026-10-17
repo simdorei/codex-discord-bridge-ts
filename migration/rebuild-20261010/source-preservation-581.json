@@ -1,0 +1,22 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 581,
+  "localCommit": "1a627b7f127818995b6c878b879a425165c0fbe9",
+  "fullTests": 7199,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/store/existing-store.ts": "e7e80f5d725cb6cfb1f4b200d94294feb2c2e95dbe206984ca9c1b7cab93acf5",
+    "src/store/owned-driver.ts": "65ad8ddf6a0f8ff4ceb74f162069986034c272d6391910a5fcc33f7b1a62daab",
+    "test/store/native-path-regression.test.ts": "a881f211c20dd9a9df2fc283fefd3c54a08e939e5537a9d5268b11824f5ed9a9"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

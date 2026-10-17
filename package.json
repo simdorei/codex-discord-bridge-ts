@@ -9,6 +9,17 @@
   "description": "In-progress current Rust bridge migration; not ready to run",
   "devDependencies": {
     "@types/node": "24.19.1",
+    "@types/ws": "8.18.2",
     "typescript": "7.0.2"
+  },
+  "dependencies": {
+    "ws": "8.22.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "build:test": "node tools/build-test-profile.mjs",
+    "maintenance": "node --no-strip-types dist/src/cli/maintenance-main.js",
+    "runtime:local": "node --no-strip-types dist/src/cli/local-runtime-main.js"
   }
 }

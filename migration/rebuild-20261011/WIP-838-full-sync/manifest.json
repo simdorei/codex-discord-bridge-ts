@@ -1,0 +1,37 @@
+{
+  "status": "WIP_UNAPPLIED_FOCUSED12_PASS_WHOLE_PENDING",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/sync.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-838-full-sync/files/src/runtime/mirror-sync/sync.ts",
+      "sha256": "6c3f25bc60dbad675428d4a7ec1b3d848c6c454d1216657365b6fcbd236fefde"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/limited-sync.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-838-full-sync/files/src/runtime/mirror-sync/limited-sync.ts",
+      "sha256": "e520c7d004c9a3c695668982c930bdfb9dfbbd48b5647f8b04e850db3ee2608a"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/sync.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-838-full-sync/files/test/runtime/mirror-sync/sync.test.ts",
+      "sha256": "8bf1488b7824beaf3835e0101f39e5902819d4ca9b1ed612c858e08a3c20a586"
+    }
+  ],
+  "verification": {
+    "strictBuildExit": 0,
+    "focusedPass": 12,
+    "focusedFail": 0
+  },
+  "scope": "Shared full/limited synchronization loop; full obsolete and orphan cleanup under same operation lock and deadline; limited compatibility facade retained.",
+  "authority": {
+    "repository": "simdorei/codex-discord-remote-rust",
+    "commit": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+    "syncBlob": "8d7a0680a71dd01c05810668fefd697ac947e0e6"
+  },
+  "limitations": [
+    "Includes WIP836 and837 dependencies, not covered by checkpoint835 full regression.",
+    "Whole regression, actual product application and ActionExecutor dispatch wiring pending.",
+    "Synthetic HTTP and SQLite only; Windows and deployment unverified.",
+    "Protected redaction fixture unavailable and not counted as pass or skip."
+  ]
+}

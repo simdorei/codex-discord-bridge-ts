@@ -1,0 +1,34 @@
+{
+  "status": "WIP_UNAPPLIED_FOCUSED12_PASS_WHOLE_PENDING",
+  "files": [
+    {
+      "candidatePath": "src/runtime/action-executor/command-executor.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-839-mirror-command/files/src/runtime/action-executor/command-executor.ts",
+      "sha256": "9db155496d4c9cea49025642cf7e89930312c5b6608b42341dfbb293273f62ad"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/result.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-839-mirror-command/files/src/runtime/mirror-sync/result.ts",
+      "sha256": "1eaae8abee7adb26c69b61e2a768e8a3fe919239f37cdc8096fb952ecec55ab8"
+    },
+    {
+      "candidatePath": "test/runtime/action-executor/mirror-sync-dispatch.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-839-mirror-command/files/test/runtime/action-executor/mirror-sync-dispatch.test.ts",
+      "sha256": "defd64c415f91610c947eb96f09d047d9d1bb79a32e9d3738c07e85115299b48"
+    }
+  ],
+  "verification": {
+    "strictBuildExit": 0,
+    "focusedPass": 12,
+    "focusedFail": 0
+  },
+  "scope": "BridgeSync command routing, one-owner HTTP configuration, source result display and typed cleanup-refusal translation.",
+  "authority": {
+    "commit": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+    "mirrorActionBlob": "144680255d0d2f3c4d222577999a4239e1c098ec"
+  },
+  "limitations": [
+    "Prepared startup wiring and whole regression pending.",
+    "No live Discord, Windows, deployment or protected redaction fixture validation."
+  ]
+}

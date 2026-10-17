@@ -1,0 +1,7 @@
+# Action target mapping native wiring
+
+The original async ActionThreadSelection.target still awaits the synchronous-backed mirroredThreadId facade. Add a captured typed mapping function with original default for direct compatibility. RuntimeCommandExecutor supplies the already qualified native intake MirrorTarget function to its own selection and to BasicActionDispatcher selection. No new operation, pool or capacity. Do not change reference resolution, Codex reads, selected-state reads/writes or synchronous mutation boundaries in this unit.
+
+Preserve i64/u64 validation before lookup, channel0/null semantics from mapping, mirror precedence before reading selected JSON, stale mapping refusal, error propagation and selected fallback only for an actual null mapping. Native errors never mean unmapped. Require native Promise result, reject proxy/generator function, retain captured original binding. Current native response binds channel and enforces complete typed target/null after actual join.
+
+Tests: original selection scenarios paired through native mapper; corrupted selected JSON not read for mapped target; missing/stale/ambiguous mappings; constructor capture, read failure does not fall back, wrong channel/no dispatch. Concrete root targetThreadId and ordinary command selection must observe real MirrorTarget worker. Synchronous reference/selection operations remain explicitly outside scope. Check cancellation through existing surrounding action checks without claiming native read interruption. Strict/focused/full and actual hashes before application.

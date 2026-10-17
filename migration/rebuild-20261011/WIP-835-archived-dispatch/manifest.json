@@ -1,0 +1,57 @@
+{
+  "status": "WIP_UNAPPLIED_FOCUSED30_PASS_WHOLE_RUNNING",
+  "files": [
+    {
+      "candidatePath": "src/store/room-cleanup.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-835-archived-dispatch/files/src/store/room-cleanup.ts",
+      "sha256": "2131157dcf4e9509043859aa832c8e27148bc4adbc568645482db3d8779ca49a"
+    },
+    {
+      "candidatePath": "src/store/state-access-facade.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-835-archived-dispatch/files/src/store/state-access-facade.ts",
+      "sha256": "2204a0de5cc5faf9e1a69b576b4cf79a67b8b3ee07a2e9dcc36c9ffcc24d5d6f"
+    },
+    {
+      "candidatePath": "test/store/state-access-facade.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-835-archived-dispatch/files/test/store/state-access-facade.test.ts",
+      "sha256": "fd437bd53b757421db9d8c139849768f7db58fdee7dec04f79a5d5ad3032441a"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/store-native-protocol.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-835-archived-dispatch/files/src/runtime/mirror-sync/store-native-protocol.ts",
+      "sha256": "18884cab4057b86886b3089e76ad015083b775678331b4fee899311de923ae31"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/store-native-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-835-archived-dispatch/files/src/runtime/mirror-sync/store-native-worker.ts",
+      "sha256": "56ac5e39109d974a2bf17855f1cbc8ca9b7010a49b1f55c5ab7f21dc812f050c"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/delete-guard.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-835-archived-dispatch/files/src/runtime/mirror-sync/delete-guard.ts",
+      "sha256": "c441b04ffabb79e5bcf0879bbf8bc74422598a7ebf0cd4d4364753252d10f0ae"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/archived-native.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-835-archived-dispatch/files/src/runtime/mirror-sync/archived-native.ts",
+      "sha256": "7387eca34ab7a530fb7f3857abde5a6b42ab0f91023c98eb7b7740040c039fcf"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/archived-native.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-835-archived-dispatch/files/test/runtime/mirror-sync/archived-native.test.ts",
+      "sha256": "194b11a5d90fbec028034a7c3c24827d7622b891677952a74711e7153362cf7b"
+    }
+  ],
+  "dependsOn": "WIP832-834",
+  "verification": {
+    "strictBuildExit": 0,
+    "focusedPass": 30,
+    "focusedFail": 0
+  },
+  "scope": "Prepared archived deletion requires an unforgeable one-use local permit, exact database/room and unfinished durable token; shares existing rejection/completion logic",
+  "limitations": [
+    "Whole run ongoing in unique835 destination",
+    "Archived retirement coordinator and full BridgeSync not wired",
+    "No Windows/live Discord/deployment qualification"
+  ]
+}

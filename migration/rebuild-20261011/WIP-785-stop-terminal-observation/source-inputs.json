@@ -1,0 +1,6 @@
+{
+  "rustCommit": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+  "predicate": "crates/cdr-store/src/ingress/stop/control/recovery.rs: verify_observation",
+  "rustFileSha256": "e4a7a3fc697d6fccb26397b350640864c6987f3276362da689f5dfd37db0a179",
+  "scope": "pure predicate only; no full recover_terminal_in claim"
+}

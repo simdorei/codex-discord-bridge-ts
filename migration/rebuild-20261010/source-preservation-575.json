@@ -1,0 +1,24 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 575,
+  "localCommit": "2d31023aa3ce947d76d7fb8a35484c4077e2295a",
+  "fullTests": 7172,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/cli/maintenance.ts": "c040e3cdbafd8e6f0c23565a43d279ad18e36a1ae6e61dbe00e2bb882a669455",
+    "src/store/cutover-backup-worker.ts": "7b64f1a3451b42e4404d9a44aa830f07d08fd8448a05652d446559a508194303",
+    "src/store/cutover-backup.ts": "f5ea45ca0c63d29cd67637a343744a37fe17becb772583cf595581cef649d306",
+    "test/cli/maintenance.test.ts": "5b5c1d6402cc905f2cbc59ae221499052d91a660d17576c583cfc88f36930fd0",
+    "test/store/cutover-backup.test.ts": "1d1cdc18101bfb1f701f0142196ef66478fd8527c6afd3dd5dde700416419fb4"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

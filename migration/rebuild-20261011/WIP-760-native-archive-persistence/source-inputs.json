@@ -1,0 +1,18 @@
+{
+  "mainRecheckedAt": "2026-10-12T16:25:23.743317+00:00",
+  "files": [
+    {
+      "path": "crates/cdr-runtime/src/action_executor/archive_action.rs",
+      "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+      "sha256": "4afc1b1756d02ad5bdb3eaba0429264edb2ceb8372743e94ca123a3f85dbe28f",
+      "matchesFrozen": true
+    },
+    {
+      "path": "crates/cdr-codex-state/src/store.rs",
+      "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+      "sha256": "ab311172a96b1d6f6fd0917a2183e38807496f6e302e95971b5df2a096ae3395",
+      "matchesFrozen": true
+    }
+  ],
+  "reviewedScope": "archive_action.rs verify_archived complete body and current TS exact-row decoder/worker/persistence; no unrelated closure certification"
+}

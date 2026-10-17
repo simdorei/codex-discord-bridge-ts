@@ -1,0 +1,20 @@
+{
+  "status": "AUTHORED_UNTESTED_UNAPPLIED",
+  "files": [
+    {
+      "path": "src/store/prompt-intake-busy.ts",
+      "beforeSha256": "90d280b74db51a58a0500a0964a0fb70f09bd7b8340fe15414bc99ffe9fd19fd",
+      "afterSha256": "a5ff22e40c9c8055cb6a040b6d3a2ac9ff8b5ced29c0da5fcb2a5dd3643408f1",
+      "callbackSha256": "8d4b3a9e7309199e01c180ee8f00c2cb69332cf087837dd902bac5aa98853e37",
+      "validationSha256": "bc5c34f015dd734ff190d620aca085c7883238dc3cebf241d23fff824f593ba2"
+    },
+    {
+      "path": "src/store/prompt-intake-new-thread.ts",
+      "beforeSha256": "c2ad7869c5fb69d1737b64c5f7e7686c6ab309706e238645c2db8c8a56826efe",
+      "afterSha256": "97386df6fe1a8907a6016a734692316816b16a9fcd59a2f529cfb8e999685914",
+      "callbackSha256": "7e229770c770dca277069d0ec6090f3a78b6ca585be0643b08b5fbdd97d98ead",
+      "validationSha256": "64931281de10b4035d0cdc6f7378a6c9e0d5edefee3ecfd46c8dfbbd999ac367"
+    }
+  ],
+  "commentPlacement": "Original operation contract remains attached to public initialized entry; existing entry has its own current-catalog comment."
+}

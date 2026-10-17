@@ -1,0 +1,2159 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": 923,
+  "qualification": "partial synthetic G1 integrated mirror file-fault read-work only",
+  "node": "v24.21.0",
+  "bootstrap": {
+    "cases": 8,
+    "recordsPerCase": 16,
+    "bytesPerCase": 4096,
+    "historicalTransportAttempts": 0,
+    "revision": 1,
+    "finalTurnRetained": true,
+    "readWorkMeasured": false
+  },
+  "limits": {
+    "maxWindowBytes": 4096,
+    "maxRecordBytes": 512,
+    "maxRecords": 4,
+    "nativeTimeoutMs": 5000,
+    "ownershipMaxJobs": 32,
+    "ownershipMaxValueBytes": 1048576,
+    "testSafetyTimeoutMs": 60000
+  },
+  "totals": {
+    "cases": 8,
+    "polls": 30,
+    "dataBytes": 9619,
+    "anchorBytes": 22272,
+    "returnedBytes": 31891,
+    "adapterCalls": 143,
+    "decodedRecords": 16,
+    "transportAttempts": 15,
+    "confirmedReceipts": 15,
+    "unknownReceipts": 0,
+    "cursorAdvances": 14
+  },
+  "adapterCalls": {
+    "cursor-store-worker:Read": 30,
+    "decode-worker": 24,
+    "ownership-worker": 30,
+    "receipt-plan-worker": 15,
+    "receipt-store-worker:Begin": 15,
+    "receipt-store-worker:Confirm": 15,
+    "cursor-store-worker:MixedAdvance": 14
+  },
+  "polls": [
+    {
+      "poll": 1,
+      "case": "split-utf8",
+      "phase": "seed",
+      "startOffset": 4096,
+      "nextOffset": 4352,
+      "revision": 2,
+      "dataBytes": 256,
+      "anchorBytes": 1024,
+      "returnedBytes": 1280,
+      "readCalls": 5,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 3840,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 1,
+      "events": 1,
+      "decodedNextOffset": 4352,
+      "stop": "WindowEnd",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 1,
+      "satisfiedDeliveries": 1,
+      "adapterCalls": 8,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1,
+        "ownership-worker": 2,
+        "receipt-plan-worker": 1,
+        "receipt-store-worker:Begin": 1,
+        "receipt-store-worker:Confirm": 1,
+        "cursor-store-worker:MixedAdvance": 1
+      },
+      "transportAttempts": 1,
+      "confirmedReceipts": 1,
+      "unknownReceipts": 0,
+      "cursorAdvanced": true,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 2,
+      "case": "split-utf8",
+      "phase": "prefix-and-split",
+      "startOffset": 4352,
+      "nextOffset": 4608,
+      "revision": 3,
+      "dataBytes": 328,
+      "anchorBytes": 1024,
+      "returnedBytes": 1352,
+      "readCalls": 5,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4352,
+          "requestedBytes": 328,
+          "returnedBytes": 328,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 4352,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 1,
+      "events": 1,
+      "decodedNextOffset": 4608,
+      "stop": "IncompleteRecord",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 1,
+      "satisfiedDeliveries": 1,
+      "adapterCalls": 8,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1,
+        "ownership-worker": 2,
+        "receipt-plan-worker": 1,
+        "receipt-store-worker:Begin": 1,
+        "receipt-store-worker:Confirm": 1,
+        "cursor-store-worker:MixedAdvance": 1
+      },
+      "transportAttempts": 1,
+      "confirmedReceipts": 2,
+      "unknownReceipts": 0,
+      "cursorAdvanced": true,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 3,
+      "case": "split-utf8",
+      "phase": "unchanged-split",
+      "startOffset": 4608,
+      "nextOffset": 4608,
+      "revision": 3,
+      "dataBytes": 72,
+      "anchorBytes": 512,
+      "returnedBytes": 584,
+      "readCalls": 3,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4352,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4608,
+          "requestedBytes": 72,
+          "returnedBytes": 72,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 0,
+      "events": 0,
+      "decodedNextOffset": 4608,
+      "stop": "IncompleteRecord",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 0,
+      "satisfiedDeliveries": 0,
+      "adapterCalls": 2,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1
+      },
+      "transportAttempts": 0,
+      "confirmedReceipts": 2,
+      "unknownReceipts": 0,
+      "cursorAdvanced": false,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 4,
+      "case": "split-utf8",
+      "phase": "completed-split",
+      "startOffset": 4608,
+      "nextOffset": 4864,
+      "revision": 4,
+      "dataBytes": 256,
+      "anchorBytes": 1024,
+      "returnedBytes": 1280,
+      "readCalls": 5,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4352,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4608,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 4608,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 1,
+      "events": 1,
+      "decodedNextOffset": 4864,
+      "stop": "WindowEnd",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 1,
+      "satisfiedDeliveries": 1,
+      "adapterCalls": 8,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1,
+        "ownership-worker": 2,
+        "receipt-plan-worker": 1,
+        "receipt-store-worker:Begin": 1,
+        "receipt-store-worker:Confirm": 1,
+        "cursor-store-worker:MixedAdvance": 1
+      },
+      "transportAttempts": 1,
+      "confirmedReceipts": 3,
+      "unknownReceipts": 0,
+      "cursorAdvanced": true,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 5,
+      "case": "split-utf8",
+      "phase": "final-eof",
+      "startOffset": 4864,
+      "nextOffset": 4864,
+      "revision": 4,
+      "dataBytes": 0,
+      "anchorBytes": 512,
+      "returnedBytes": 512,
+      "readCalls": 2,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4608,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 0,
+      "events": 0,
+      "decodedNextOffset": 4864,
+      "stop": "WindowEnd",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 0,
+      "satisfiedDeliveries": 0,
+      "adapterCalls": 2,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1
+      },
+      "transportAttempts": 0,
+      "confirmedReceipts": 3,
+      "unknownReceipts": 0,
+      "cursorAdvanced": false,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 6,
+      "case": "invalid-json",
+      "phase": "seed",
+      "startOffset": 4096,
+      "nextOffset": 4352,
+      "revision": 2,
+      "dataBytes": 256,
+      "anchorBytes": 1024,
+      "returnedBytes": 1280,
+      "readCalls": 5,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 3840,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 1,
+      "events": 1,
+      "decodedNextOffset": 4352,
+      "stop": "WindowEnd",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 1,
+      "satisfiedDeliveries": 1,
+      "adapterCalls": 8,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1,
+        "ownership-worker": 2,
+        "receipt-plan-worker": 1,
+        "receipt-store-worker:Begin": 1,
+        "receipt-store-worker:Confirm": 1,
+        "cursor-store-worker:MixedAdvance": 1
+      },
+      "transportAttempts": 1,
+      "confirmedReceipts": 1,
+      "unknownReceipts": 0,
+      "cursorAdvanced": true,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 7,
+      "case": "invalid-json",
+      "phase": "valid-prefix",
+      "startOffset": 4352,
+      "nextOffset": 4608,
+      "revision": 3,
+      "dataBytes": 768,
+      "anchorBytes": 1024,
+      "returnedBytes": 1792,
+      "readCalls": 5,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4352,
+          "requestedBytes": 768,
+          "returnedBytes": 768,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 4352,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 1,
+      "events": 1,
+      "decodedNextOffset": 4608,
+      "stop": "InvalidJson",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 1,
+      "satisfiedDeliveries": 1,
+      "adapterCalls": 8,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1,
+        "ownership-worker": 2,
+        "receipt-plan-worker": 1,
+        "receipt-store-worker:Begin": 1,
+        "receipt-store-worker:Confirm": 1,
+        "cursor-store-worker:MixedAdvance": 1
+      },
+      "transportAttempts": 1,
+      "confirmedReceipts": 2,
+      "unknownReceipts": 0,
+      "cursorAdvanced": true,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 8,
+      "case": "invalid-json",
+      "phase": "held-1",
+      "startOffset": 4608,
+      "nextOffset": 4608,
+      "revision": 3,
+      "dataBytes": 512,
+      "anchorBytes": 512,
+      "returnedBytes": 1024,
+      "readCalls": 3,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4352,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4608,
+          "requestedBytes": 512,
+          "returnedBytes": 512,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 0,
+      "events": 0,
+      "decodedNextOffset": 4608,
+      "stop": "InvalidJson",
+      "outcome": "MirrorPollRecordHeldError",
+      "cause": null,
+      "heldStop": "InvalidJson",
+      "packetRetained": false,
+      "targets": null,
+      "satisfiedDeliveries": null,
+      "adapterCalls": 2,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1
+      },
+      "transportAttempts": 0,
+      "confirmedReceipts": 2,
+      "unknownReceipts": 0,
+      "cursorAdvanced": false,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 9,
+      "case": "invalid-json",
+      "phase": "held-2",
+      "startOffset": 4608,
+      "nextOffset": 4608,
+      "revision": 3,
+      "dataBytes": 512,
+      "anchorBytes": 512,
+      "returnedBytes": 1024,
+      "readCalls": 3,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4352,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4608,
+          "requestedBytes": 512,
+          "returnedBytes": 512,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 0,
+      "events": 0,
+      "decodedNextOffset": 4608,
+      "stop": "InvalidJson",
+      "outcome": "MirrorPollRecordHeldError",
+      "cause": null,
+      "heldStop": "InvalidJson",
+      "packetRetained": false,
+      "targets": null,
+      "satisfiedDeliveries": null,
+      "adapterCalls": 2,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1
+      },
+      "transportAttempts": 0,
+      "confirmedReceipts": 2,
+      "unknownReceipts": 0,
+      "cursorAdvanced": false,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 10,
+      "case": "invalid-utf8",
+      "phase": "seed",
+      "startOffset": 4096,
+      "nextOffset": 4352,
+      "revision": 2,
+      "dataBytes": 256,
+      "anchorBytes": 1024,
+      "returnedBytes": 1280,
+      "readCalls": 5,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 3840,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 1,
+      "events": 1,
+      "decodedNextOffset": 4352,
+      "stop": "WindowEnd",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 1,
+      "satisfiedDeliveries": 1,
+      "adapterCalls": 8,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1,
+        "ownership-worker": 2,
+        "receipt-plan-worker": 1,
+        "receipt-store-worker:Begin": 1,
+        "receipt-store-worker:Confirm": 1,
+        "cursor-store-worker:MixedAdvance": 1
+      },
+      "transportAttempts": 1,
+      "confirmedReceipts": 1,
+      "unknownReceipts": 0,
+      "cursorAdvanced": true,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 11,
+      "case": "invalid-utf8",
+      "phase": "valid-prefix",
+      "startOffset": 4352,
+      "nextOffset": 4608,
+      "revision": 3,
+      "dataBytes": 768,
+      "anchorBytes": 1024,
+      "returnedBytes": 1792,
+      "readCalls": 5,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4352,
+          "requestedBytes": 768,
+          "returnedBytes": 768,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 4352,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 1,
+      "events": 1,
+      "decodedNextOffset": 4608,
+      "stop": "InvalidUtf8",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 1,
+      "satisfiedDeliveries": 1,
+      "adapterCalls": 8,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1,
+        "ownership-worker": 2,
+        "receipt-plan-worker": 1,
+        "receipt-store-worker:Begin": 1,
+        "receipt-store-worker:Confirm": 1,
+        "cursor-store-worker:MixedAdvance": 1
+      },
+      "transportAttempts": 1,
+      "confirmedReceipts": 2,
+      "unknownReceipts": 0,
+      "cursorAdvanced": true,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 12,
+      "case": "invalid-utf8",
+      "phase": "held-1",
+      "startOffset": 4608,
+      "nextOffset": 4608,
+      "revision": 3,
+      "dataBytes": 512,
+      "anchorBytes": 512,
+      "returnedBytes": 1024,
+      "readCalls": 3,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4352,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4608,
+          "requestedBytes": 512,
+          "returnedBytes": 512,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 0,
+      "events": 0,
+      "decodedNextOffset": 4608,
+      "stop": "InvalidUtf8",
+      "outcome": "MirrorPollRecordHeldError",
+      "cause": null,
+      "heldStop": "InvalidUtf8",
+      "packetRetained": false,
+      "targets": null,
+      "satisfiedDeliveries": null,
+      "adapterCalls": 2,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1
+      },
+      "transportAttempts": 0,
+      "confirmedReceipts": 2,
+      "unknownReceipts": 0,
+      "cursorAdvanced": false,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 13,
+      "case": "invalid-utf8",
+      "phase": "held-2",
+      "startOffset": 4608,
+      "nextOffset": 4608,
+      "revision": 3,
+      "dataBytes": 512,
+      "anchorBytes": 512,
+      "returnedBytes": 1024,
+      "readCalls": 3,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4352,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4608,
+          "requestedBytes": 512,
+          "returnedBytes": 512,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 0,
+      "events": 0,
+      "decodedNextOffset": 4608,
+      "stop": "InvalidUtf8",
+      "outcome": "MirrorPollRecordHeldError",
+      "cause": null,
+      "heldStop": "InvalidUtf8",
+      "packetRetained": false,
+      "targets": null,
+      "satisfiedDeliveries": null,
+      "adapterCalls": 2,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1
+      },
+      "transportAttempts": 0,
+      "confirmedReceipts": 2,
+      "unknownReceipts": 0,
+      "cursorAdvanced": false,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 14,
+      "case": "oversized-record",
+      "phase": "seed",
+      "startOffset": 4096,
+      "nextOffset": 4352,
+      "revision": 2,
+      "dataBytes": 256,
+      "anchorBytes": 1024,
+      "returnedBytes": 1280,
+      "readCalls": 5,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 3840,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 1,
+      "events": 1,
+      "decodedNextOffset": 4352,
+      "stop": "WindowEnd",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 1,
+      "satisfiedDeliveries": 1,
+      "adapterCalls": 8,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1,
+        "ownership-worker": 2,
+        "receipt-plan-worker": 1,
+        "receipt-store-worker:Begin": 1,
+        "receipt-store-worker:Confirm": 1,
+        "cursor-store-worker:MixedAdvance": 1
+      },
+      "transportAttempts": 1,
+      "confirmedReceipts": 1,
+      "unknownReceipts": 0,
+      "cursorAdvanced": true,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 15,
+      "case": "oversized-record",
+      "phase": "valid-prefix",
+      "startOffset": 4352,
+      "nextOffset": 4608,
+      "revision": 3,
+      "dataBytes": 1025,
+      "anchorBytes": 1024,
+      "returnedBytes": 2049,
+      "readCalls": 5,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4352,
+          "requestedBytes": 1025,
+          "returnedBytes": 1025,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 4352,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 1,
+      "events": 1,
+      "decodedNextOffset": 4608,
+      "stop": "OversizedRecord",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 1,
+      "satisfiedDeliveries": 1,
+      "adapterCalls": 8,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1,
+        "ownership-worker": 2,
+        "receipt-plan-worker": 1,
+        "receipt-store-worker:Begin": 1,
+        "receipt-store-worker:Confirm": 1,
+        "cursor-store-worker:MixedAdvance": 1
+      },
+      "transportAttempts": 1,
+      "confirmedReceipts": 2,
+      "unknownReceipts": 0,
+      "cursorAdvanced": true,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 16,
+      "case": "oversized-record",
+      "phase": "held-1",
+      "startOffset": 4608,
+      "nextOffset": 4608,
+      "revision": 3,
+      "dataBytes": 769,
+      "anchorBytes": 512,
+      "returnedBytes": 1281,
+      "readCalls": 3,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4352,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4608,
+          "requestedBytes": 769,
+          "returnedBytes": 769,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 0,
+      "events": 0,
+      "decodedNextOffset": 4608,
+      "stop": "OversizedRecord",
+      "outcome": "MirrorPollRecordHeldError",
+      "cause": null,
+      "heldStop": "OversizedRecord",
+      "packetRetained": false,
+      "targets": null,
+      "satisfiedDeliveries": null,
+      "adapterCalls": 2,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1
+      },
+      "transportAttempts": 0,
+      "confirmedReceipts": 2,
+      "unknownReceipts": 0,
+      "cursorAdvanced": false,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 17,
+      "case": "oversized-record",
+      "phase": "held-2",
+      "startOffset": 4608,
+      "nextOffset": 4608,
+      "revision": 3,
+      "dataBytes": 769,
+      "anchorBytes": 512,
+      "returnedBytes": 1281,
+      "readCalls": 3,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4352,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4608,
+          "requestedBytes": 769,
+          "returnedBytes": 769,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 0,
+      "events": 0,
+      "decodedNextOffset": 4608,
+      "stop": "OversizedRecord",
+      "outcome": "MirrorPollRecordHeldError",
+      "cause": null,
+      "heldStop": "OversizedRecord",
+      "packetRetained": false,
+      "targets": null,
+      "satisfiedDeliveries": null,
+      "adapterCalls": 2,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1
+      },
+      "transportAttempts": 0,
+      "confirmedReceipts": 2,
+      "unknownReceipts": 0,
+      "cursorAdvanced": false,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 18,
+      "case": "same-path-replacement",
+      "phase": "seed",
+      "startOffset": 4096,
+      "nextOffset": 4352,
+      "revision": 2,
+      "dataBytes": 256,
+      "anchorBytes": 1024,
+      "returnedBytes": 1280,
+      "readCalls": 5,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 3840,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 1,
+      "events": 1,
+      "decodedNextOffset": 4352,
+      "stop": "WindowEnd",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 1,
+      "satisfiedDeliveries": 1,
+      "adapterCalls": 8,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1,
+        "ownership-worker": 2,
+        "receipt-plan-worker": 1,
+        "receipt-store-worker:Begin": 1,
+        "receipt-store-worker:Confirm": 1,
+        "cursor-store-worker:MixedAdvance": 1
+      },
+      "transportAttempts": 1,
+      "confirmedReceipts": 1,
+      "unknownReceipts": 0,
+      "cursorAdvanced": true,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 19,
+      "case": "same-path-replacement",
+      "phase": "rejected-1",
+      "startOffset": 4352,
+      "nextOffset": 4352,
+      "revision": 2,
+      "dataBytes": 0,
+      "anchorBytes": 512,
+      "returnedBytes": 512,
+      "readCalls": 2,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 0,
+      "scannedRecords": null,
+      "events": null,
+      "decodedNextOffset": null,
+      "stop": null,
+      "outcome": "MirrorFileChangedError",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": null,
+      "satisfiedDeliveries": null,
+      "adapterCalls": 1,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1
+      },
+      "transportAttempts": 0,
+      "confirmedReceipts": 1,
+      "unknownReceipts": 0,
+      "cursorAdvanced": false,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 20,
+      "case": "same-path-replacement",
+      "phase": "rejected-2",
+      "startOffset": 4352,
+      "nextOffset": 4352,
+      "revision": 2,
+      "dataBytes": 0,
+      "anchorBytes": 512,
+      "returnedBytes": 512,
+      "readCalls": 2,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 0,
+      "scannedRecords": null,
+      "events": null,
+      "decodedNextOffset": null,
+      "stop": null,
+      "outcome": "MirrorFileChangedError",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": null,
+      "satisfiedDeliveries": null,
+      "adapterCalls": 1,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1
+      },
+      "transportAttempts": 0,
+      "confirmedReceipts": 1,
+      "unknownReceipts": 0,
+      "cursorAdvanced": false,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 21,
+      "case": "truncation",
+      "phase": "seed",
+      "startOffset": 4096,
+      "nextOffset": 4352,
+      "revision": 2,
+      "dataBytes": 256,
+      "anchorBytes": 1024,
+      "returnedBytes": 1280,
+      "readCalls": 5,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 3840,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 1,
+      "events": 1,
+      "decodedNextOffset": 4352,
+      "stop": "WindowEnd",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 1,
+      "satisfiedDeliveries": 1,
+      "adapterCalls": 8,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1,
+        "ownership-worker": 2,
+        "receipt-plan-worker": 1,
+        "receipt-store-worker:Begin": 1,
+        "receipt-store-worker:Confirm": 1,
+        "cursor-store-worker:MixedAdvance": 1
+      },
+      "transportAttempts": 1,
+      "confirmedReceipts": 1,
+      "unknownReceipts": 0,
+      "cursorAdvanced": true,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 22,
+      "case": "truncation",
+      "phase": "rejected-1",
+      "startOffset": 4352,
+      "nextOffset": 4352,
+      "revision": 2,
+      "dataBytes": 0,
+      "anchorBytes": 128,
+      "returnedBytes": 128,
+      "readCalls": 1,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 128,
+          "returnedBytes": 128,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 0,
+      "scannedRecords": null,
+      "events": null,
+      "decodedNextOffset": null,
+      "stop": null,
+      "outcome": "MirrorFileChangedError",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": null,
+      "satisfiedDeliveries": null,
+      "adapterCalls": 1,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1
+      },
+      "transportAttempts": 0,
+      "confirmedReceipts": 1,
+      "unknownReceipts": 0,
+      "cursorAdvanced": false,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 23,
+      "case": "truncation",
+      "phase": "rejected-2",
+      "startOffset": 4352,
+      "nextOffset": 4352,
+      "revision": 2,
+      "dataBytes": 0,
+      "anchorBytes": 128,
+      "returnedBytes": 128,
+      "readCalls": 1,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 128,
+          "returnedBytes": 128,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 0,
+      "scannedRecords": null,
+      "events": null,
+      "decodedNextOffset": null,
+      "stop": null,
+      "outcome": "MirrorFileChangedError",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": null,
+      "satisfiedDeliveries": null,
+      "adapterCalls": 1,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1
+      },
+      "transportAttempts": 0,
+      "confirmedReceipts": 1,
+      "unknownReceipts": 0,
+      "cursorAdvanced": false,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 24,
+      "case": "prefix-changed-growth",
+      "phase": "seed",
+      "startOffset": 4096,
+      "nextOffset": 4352,
+      "revision": 2,
+      "dataBytes": 256,
+      "anchorBytes": 1024,
+      "returnedBytes": 1280,
+      "readCalls": 5,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 3840,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 1,
+      "events": 1,
+      "decodedNextOffset": 4352,
+      "stop": "WindowEnd",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 1,
+      "satisfiedDeliveries": 1,
+      "adapterCalls": 8,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1,
+        "ownership-worker": 2,
+        "receipt-plan-worker": 1,
+        "receipt-store-worker:Begin": 1,
+        "receipt-store-worker:Confirm": 1,
+        "cursor-store-worker:MixedAdvance": 1
+      },
+      "transportAttempts": 1,
+      "confirmedReceipts": 1,
+      "unknownReceipts": 0,
+      "cursorAdvanced": true,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 25,
+      "case": "prefix-changed-growth",
+      "phase": "rejected-1",
+      "startOffset": 4352,
+      "nextOffset": 4352,
+      "revision": 2,
+      "dataBytes": 0,
+      "anchorBytes": 512,
+      "returnedBytes": 512,
+      "readCalls": 2,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 0,
+      "scannedRecords": null,
+      "events": null,
+      "decodedNextOffset": null,
+      "stop": null,
+      "outcome": "MirrorFileChangedError",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": null,
+      "satisfiedDeliveries": null,
+      "adapterCalls": 1,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1
+      },
+      "transportAttempts": 0,
+      "confirmedReceipts": 1,
+      "unknownReceipts": 0,
+      "cursorAdvanced": false,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 26,
+      "case": "prefix-changed-growth",
+      "phase": "rejected-2",
+      "startOffset": 4352,
+      "nextOffset": 4352,
+      "revision": 2,
+      "dataBytes": 0,
+      "anchorBytes": 512,
+      "returnedBytes": 512,
+      "readCalls": 2,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 0,
+      "scannedRecords": null,
+      "events": null,
+      "decodedNextOffset": null,
+      "stop": null,
+      "outcome": "MirrorFileChangedError",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": null,
+      "satisfiedDeliveries": null,
+      "adapterCalls": 1,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1
+      },
+      "transportAttempts": 0,
+      "confirmedReceipts": 1,
+      "unknownReceipts": 0,
+      "cursorAdvanced": false,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 27,
+      "case": "accepted-send-append",
+      "phase": "seed",
+      "startOffset": 4096,
+      "nextOffset": 4352,
+      "revision": 2,
+      "dataBytes": 256,
+      "anchorBytes": 1024,
+      "returnedBytes": 1280,
+      "readCalls": 5,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 3840,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 1,
+      "events": 1,
+      "decodedNextOffset": 4352,
+      "stop": "WindowEnd",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 1,
+      "satisfiedDeliveries": 1,
+      "adapterCalls": 8,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1,
+        "ownership-worker": 2,
+        "receipt-plan-worker": 1,
+        "receipt-store-worker:Begin": 1,
+        "receipt-store-worker:Confirm": 1,
+        "cursor-store-worker:MixedAdvance": 1
+      },
+      "transportAttempts": 1,
+      "confirmedReceipts": 1,
+      "unknownReceipts": 0,
+      "cursorAdvanced": true,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 28,
+      "case": "accepted-send-append",
+      "phase": "accepted-send-held-cursor",
+      "startOffset": 4352,
+      "nextOffset": 4352,
+      "revision": 2,
+      "dataBytes": 256,
+      "anchorBytes": 1024,
+      "returnedBytes": 1280,
+      "readCalls": 5,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4352,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 4352,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 1,
+      "events": 1,
+      "decodedNextOffset": 4608,
+      "stop": "WindowEnd",
+      "outcome": "MirrorBatchExecutionError",
+      "cause": "MirrorFileChangedError",
+      "heldStop": null,
+      "packetRetained": true,
+      "targets": null,
+      "satisfiedDeliveries": null,
+      "adapterCalls": 7,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1,
+        "ownership-worker": 2,
+        "receipt-plan-worker": 1,
+        "receipt-store-worker:Begin": 1,
+        "receipt-store-worker:Confirm": 1
+      },
+      "transportAttempts": 1,
+      "confirmedReceipts": 2,
+      "unknownReceipts": 0,
+      "cursorAdvanced": false,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 29,
+      "case": "accepted-send-append",
+      "phase": "confirmed-receipt-reuse",
+      "startOffset": 4352,
+      "nextOffset": 4864,
+      "revision": 3,
+      "dataBytes": 512,
+      "anchorBytes": 1024,
+      "returnedBytes": 1536,
+      "readCalls": 5,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4096,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "data",
+          "position": 4352,
+          "requestedBytes": 512,
+          "returnedBytes": 512,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 4608,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 2,
+      "events": 2,
+      "decodedNextOffset": 4864,
+      "stop": "WindowEnd",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 1,
+      "satisfiedDeliveries": 2,
+      "adapterCalls": 8,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1,
+        "ownership-worker": 2,
+        "receipt-plan-worker": 1,
+        "receipt-store-worker:Begin": 1,
+        "receipt-store-worker:Confirm": 1,
+        "cursor-store-worker:MixedAdvance": 1
+      },
+      "transportAttempts": 1,
+      "confirmedReceipts": 3,
+      "unknownReceipts": 0,
+      "cursorAdvanced": true,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    },
+    {
+      "poll": 30,
+      "case": "accepted-send-append",
+      "phase": "final-eof",
+      "startOffset": 4864,
+      "nextOffset": 4864,
+      "revision": 3,
+      "dataBytes": 0,
+      "anchorBytes": 512,
+      "returnedBytes": 512,
+      "readCalls": 2,
+      "readRanges": [
+        {
+          "kind": "anchor",
+          "position": 4608,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        },
+        {
+          "kind": "anchor",
+          "position": 0,
+          "requestedBytes": 256,
+          "returnedBytes": 256,
+          "readCalls": 1
+        }
+      ],
+      "decoderSubmissions": 1,
+      "scannedRecords": 0,
+      "events": 0,
+      "decodedNextOffset": 4864,
+      "stop": "WindowEnd",
+      "outcome": "Completed",
+      "cause": null,
+      "heldStop": null,
+      "packetRetained": false,
+      "targets": 0,
+      "satisfiedDeliveries": 0,
+      "adapterCalls": 2,
+      "adapterCallKinds": {
+        "cursor-store-worker:Read": 1,
+        "decode-worker": 1
+      },
+      "transportAttempts": 0,
+      "confirmedReceipts": 3,
+      "unknownReceipts": 0,
+      "cursorAdvanced": false,
+      "nativeHoldingsAfterPoll": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReadsAfterPoll": 0
+    }
+  ],
+  "outcome": "passed",
+  "failureStage": null,
+  "unfinishedPoll": null,
+  "cleanup": {
+    "nativeHoldings": {
+      "Background": 0,
+      "Control": 0,
+      "Observation": 0,
+      "Discovery": 0,
+      "Maintenance": 0
+    },
+    "activeFileReads": 0
+  }
+}

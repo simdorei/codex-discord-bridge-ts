@@ -1,0 +1,81 @@
+import {decodeI64} from './sqlite-values.ts';
+import type {SelectedReadBudget} from './selected-read-budget.ts';
+import {requireRecoverySnapshot,type RecoveryDecisionClick} from './recovery-decision-binding.ts';
+import type {DatabaseSync} from 'node:sqlite';
+import {usingExistingReadOnlyStore,withStoreTransaction,commitStore} from './owned-scope.ts';
+import {checkAbandonmentCompatibility,AbandonmentIntegrityError} from './schema-abandonment.ts';
+import {readAbandonmentProposalIn,readDeliveredAbandonmentIn,requireAbandonmentActor,requireAbandonmentDatabase,verifyAbandonmentFreshIn,type DeliveredAbandonmentProposal,abandonmentDecisionSnapshotIn} from './abandonment-proposal-read.ts';
+import {readAbandonmentDecisionIn} from './abandonment-decision.ts';
+import {verifyAbandonmentClickIn,AbandonmentRowMissingError} from './abandonment-identity.ts';
+import {asyncResolutionHeldIn} from './async-resolution-admission.ts';
+import {receiptRow,receiptText,receiptTextColumns} from './delivery-receipt-key.ts';
+import type {AbandonmentDecision,AbandonmentDecisionReceipt} from './abandonment-codec.ts';
+import {requireDiscordText} from '../discord/text.ts';
+import {serdeField} from '../app-server/value.ts';
+import {isRustUuidText} from '../core/rust-uuid-text.ts';
+const invalid=(reason:string):never=>{throw new AbandonmentIntegrityError(reason);};
+const i64=(v:unknown):v is bigint=>typeof v==='bigint'&&v>=-(1n<<63n)&&v<1n<<63n;
+function requireMapping(db:DatabaseSync,target:string,channel:bigint,budget?:SelectedReadBudget):void {
+ const row=receiptRow(db,'SELECT count(*)=1 AND MAX(codex_thread_id=?1 AND discord_thread_id=?2) AS held FROM mirror_threads WHERE codex_thread_id=?1 OR discord_thread_id=?2',target,channel);budget?.row(row);
+ if(decodeI64(row?.held,'held')===0n)invalid('exact original mapping is unavailable');
+}
+/** Read-only routing identity only. No selected-target fallback or permission. */
+export function abandonmentCommandTarget(path:string,job:string,channel:bigint,owner:bigint,budget?:SelectedReadBudget):string {
+ requireDiscordText(path);
+ if(!i64(channel)||channel<=0n||!i64(owner)||owner<=0n||!isRustUuidText(job)||job.length!==36||job.toLowerCase()!==job)return invalid('exact job and authenticated actor are required');
+ return usingExistingReadOnlyStore(path,db=>withStoreTransaction(db,'DEFERRED',()=>{
+  checkAbandonmentCompatibility(db,1n);
+  const row=receiptRow(db,`SELECT target_thread_id,${receiptTextColumns('target_thread_id')} FROM codex_turn_queue WHERE job_id=? AND channel_id=? AND owner_user_id=?
+   AND state='pending' AND turn_id IS NULL AND goal_waiting=0 AND discord_message_id>0 AND app_server_generation>0 AND length(target_thread_id) BETWEEN 1 AND 256`,job,channel,owner);
+  budget?.row(row);if(row===undefined)throw new AbandonmentRowMissingError();const target=receiptText(row,'target_thread_id')!;
+  if(!asyncResolutionHeldIn(db,target,budget))return invalid('original request is not held');requireMapping(db,target,channel,budget);return commitStore(target);
+ }));
+}
+export interface AbandonmentDecisionRouteInput {
+ readonly proposal_id:string;readonly revision:bigint;readonly interaction_id:bigint;readonly application_id:bigint;readonly channel_id:bigint;
+ readonly owner_user_id:bigint;readonly source_message_id:bigint;readonly decision:AbandonmentDecision;readonly now:number;
+}
+/** Called before ACK and again under the runtime target lock. A new event needs
+ * fresh proposal evidence; only its exact consumed event can use historical data. */
+export function authorizeAbandonmentDecision(path:string,value:AbandonmentDecisionRouteInput):DeliveredAbandonmentProposal {
+ requireDiscordText(path);const id=serdeField(value,'proposal_id'),revision=serdeField(value,'revision'),event=serdeField(value,'interaction_id'),app=serdeField(value,'application_id'),channel=serdeField(value,'channel_id'),owner=serdeField(value,'owner_user_id'),message=serdeField(value,'source_message_id'),decision=serdeField(value,'decision'),now=serdeField(value,'now');
+ requireDiscordText(id);if(!i64(revision)||!i64(app)||!i64(channel)||!i64(owner)||!i64(message))throw new TypeError('Expected i64 abandonment routing identities');
+ if(!i64(event)||event<=0n||typeof now!=='number'||!Number.isFinite(now)||now<0)return invalid('invalid authenticated interaction identity');
+ if(decision!=='AbandonOnly'&&decision!=='KeepHeld')throw new TypeError('Expected abandonment decision');
+ return usingExistingReadOnlyStore(path,db=>withStoreTransaction(db,'DEFERRED',()=>commitStore(authorizeAbandonmentDecisionIn(db,path,{proposal_id:id,revision,interaction_id:event,application_id:app,channel_id:channel,owner_user_id:owner,source_message_id:message,decision,now}))));
+}
+function authorizeAbandonmentDecisionIn(db:DatabaseSync,path:string,value:AbandonmentDecisionRouteInput):DeliveredAbandonmentProposal {
+ const {proposal_id:id,revision,interaction_id:event,application_id:app,channel_id:channel,owner_user_id:owner,source_message_id:message,decision,now}=value;
+  const stored=readAbandonmentProposalIn(db,id);requireAbandonmentDatabase(path,stored);const delivered=readDeliveredAbandonmentIn(db,id,revision);
+  requireAbandonmentActor(delivered,app,channel,owner,message);requireMapping(db,delivered.proposal.thread_id,channel);
+  const receipt=readAbandonmentDecisionIn(db,stored);
+  if(receipt!==null){const ingress='interaction:'+event;
+   if(receipt.ingress_id!==ingress||receipt.interaction_id!==event||receipt.decision!==decision||verifyAbandonmentClickIn(db,stored,ingress,decision,false)!==event)
+    return invalid('decision was already consumed by another interaction');
+  }else verifyAbandonmentFreshIn(db,path,stored,now);
+  return delivered;
+}
+/** Historical read-only identity. Does not assert freshness or grant consent. */
+export function deliveredAbandonmentProposal(path:string,id:string,revision:bigint):DeliveredAbandonmentProposal {
+ requireDiscordText(path);requireDiscordText(id);if(!i64(revision))throw new TypeError('Expected i64 revision');
+ return usingExistingReadOnlyStore(path,db=>withStoreTransaction(db,'DEFERRED',()=>{
+  const stored=readAbandonmentProposalIn(db,id);requireAbandonmentDatabase(path,stored);return commitStore(readDeliveredAbandonmentIn(db,id,revision));
+ }));
+}
+export function abandonmentDecisionStatus(path:string,id:string,revision:bigint):AbandonmentDecisionReceipt|null {
+ requireDiscordText(path);requireDiscordText(id);if(!i64(revision))throw new TypeError('Expected i64 revision');
+ return usingExistingReadOnlyStore(path,db=>withStoreTransaction(db,'DEFERRED',()=>{
+  const stored=readAbandonmentProposalIn(db,id);requireAbandonmentDatabase(path,stored);
+  if(revision<1n||stored.proposal.revision!==revision)return invalid('status revision differs');
+  return commitStore(readAbandonmentDecisionIn(db,stored));
+ }));
+}
+
+export function readAbandonmentDecisionSnapshotExisting(path:string,click:RecoveryDecisionClick,now:number) {
+ if(click.flow!=='Abandonment'||click.decision==='ApproveExact')throw new TypeError('Expected abandonment click');
+ const decision=click.decision;
+ return usingExistingReadOnlyStore(path,db=>withStoreTransaction(db,'DEFERRED',()=>{
+  authorizeAbandonmentDecisionIn(db,path,{proposal_id:click.proposalId,revision:click.revision,interaction_id:click.interactionId,application_id:click.applicationId,channel_id:click.channelId,owner_user_id:click.actorId,source_message_id:click.sourceMessageId,decision,now});
+  const value=abandonmentDecisionSnapshotIn(db,click.proposalId,click.revision);requireRecoverySnapshot(click,value);return commitStore(value);
+ }));
+}

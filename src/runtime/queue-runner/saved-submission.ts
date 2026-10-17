@@ -1,3 +1,5 @@
+import { STARTING_CANDIDATE_HOLD_PREFIX } from "../../store/queue-read.ts";
+export { STARTING_CANDIDATE_HOLD_PREFIX };
 import type { enqueue } from "../../store/state-access-facade.ts";
 
 export type SourceQueueJob = Awaited<ReturnType<typeof enqueue>>["job"];
@@ -26,7 +28,7 @@ export interface Submission {
 }
 
 export const UNRESOLVED_FORK_ERROR_PREFIX = "[cdr-rust:app-server-fork-unresolved:v1] ";
-export const STARTING_CANDIDATE_HOLD_PREFIX = "[cdr-rust:turn-start-candidates-ambiguous:v1] ";
+
 export const EXECUTION_HOLD_PREFIX = "[cdr-rust:execution-held:v1] ";
 export const AUTO_RESERVE_HOLD_PREFIX = "[cdr-rust:auto-reserve-hold:v1] ";
 

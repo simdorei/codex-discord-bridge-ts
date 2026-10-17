@@ -1,0 +1,78 @@
+[
+  {
+    "path": "src/runtime/action-executor/settings-snapshot.ts",
+    "sha256": "08ee59b2a27a716d14ee6b8f7a65459b42a29f7ab95eb85b0481aa3874c29542"
+  },
+  {
+    "path": "src/runtime/action-executor/thread-selection.ts",
+    "sha256": "ecc2b1de558a5e56d828463fdf30b6dba45bc74d7bfb58e25b50c667a9d8e48a"
+  },
+  {
+    "path": "src/runtime/action-executor/action-target.ts",
+    "sha256": "d343e05929b5580e66f2b76d85e9454079e4a58e58f8f00fac92dc28fd87b689"
+  },
+  {
+    "path": "src/runtime/action-executor/new-executor.ts",
+    "sha256": "bc1bfa7606c3bafc324ee73b8ba1cbe2a75e754c00efe30f367c61c3ffe4105f"
+  },
+  {
+    "path": "src/runtime/action-executor/open-thread.ts",
+    "sha256": "eb3d4ac7a7c2352253e663879465948457f9772605df6fb641cf7d2fbd38b1c3"
+  },
+  {
+    "path": "src/runtime/action-executor/settings-action.ts",
+    "sha256": "d064c4d72cf66bbb8c7067e3ada1cc746d6345f2f35cb52449e0b735fb4268a9"
+  },
+  {
+    "path": "src/runtime/action-executor/resume-action.ts",
+    "sha256": "6f7f58db1037c55c898b7dcaa357f33b962520330a384aca0f9c7d1485eed332"
+  },
+  {
+    "path": "src/runtime/action-executor/archive-action.ts",
+    "sha256": "4e7e0e9032a1e87299941f11e055c8cca97086fdafa822abcc1e3553228245d7"
+  },
+  {
+    "path": "src/runtime/action-executor/control-turn.ts",
+    "sha256": "d480c4a2aa49b5302f7aadfde56005a338a32a5dbab9d54bd777f36bf33778e6"
+  },
+  {
+    "path": "src/runtime/action-executor/stop-action.ts",
+    "sha256": "37262cb5b129145120d16e214b2d34ba313de602553ca87238f6696d9bb1158f"
+  },
+  {
+    "path": "src/runtime/action-executor/stop-worker.ts",
+    "sha256": "ea29c0996dabb0ff17a05215888182bcd6adc07cec332de7f553093760cce8c4"
+  },
+  {
+    "path": "src/runtime/action-executor/stop-custody.ts",
+    "sha256": "1d5558ef2f4914c9977187ea6f8faa0b9f4b3bc7305239b0dc29e62ab57f1faf"
+  },
+  {
+    "path": "src/runtime/action-executor/recovery-custody.ts",
+    "sha256": "e889ee118d34a393a194cf75a322583725e404505ecb2c9f22cf0f9cb6d72001"
+  },
+  {
+    "path": "src/runtime/action-executor/repair-action.ts",
+    "sha256": "0927f50e0e53f941ee03c21be6ae0a5652f862ade370bfb5ae255fd09072215c"
+  },
+  {
+    "path": "src/runtime/settings-binding.ts",
+    "sha256": "ea778b451297eb36f39381d2c202ef625d3903d0d3416298378c36f9cebd2b09"
+  },
+  {
+    "path": "src/runtime/action-executor/basic-dispatcher.ts",
+    "sha256": "cfb0848abbb23540b4663037bcea9c1c7027e3e38967478dfe79a0f45851aa16"
+  },
+  {
+    "path": "src/runtime/action-executor/command-executor.ts",
+    "sha256": "18134f05cbecf2fa429b34d48804ff66a34a5e15eee57aa842c2076824eeaa27"
+  },
+  {
+    "path": "src/runtime/bridge-state-native.ts",
+    "sha256": "084beafea86db939e5e3109325157373bf90c6e5ec98d087edb53bca4589e122"
+  },
+  {
+    "path": "test/runtime/bridge-selection-epoch.test.ts",
+    "sha256": "32bb7f12c31d42afd65b3d314a7afd45927277fef29f329e9b3b3b774addbf03"
+  }
+]

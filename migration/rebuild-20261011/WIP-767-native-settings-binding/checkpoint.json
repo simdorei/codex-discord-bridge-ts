@@ -1,0 +1,63 @@
+{
+  "status": "WIP_NOT_APPLIED",
+  "at": "2026-10-12T17:44:07.158460+00:00",
+  "focused": {
+    "tests": 168,
+    "pass": 168,
+    "fail": 0,
+    "typecheck": 0,
+    "build": 0
+  },
+  "whole": "PENDING",
+  "candidate": [
+    {
+      "path": "src/codex-state/reference-reader.ts",
+      "sha256": "42072a4931590933c71b17a4d1eddffd2701835e4b1b6d6fcc3151d0650c8200"
+    },
+    {
+      "path": "src/codex-state/reference-worker.ts",
+      "sha256": "d525ba074fd5c68a27758e69a97e5d9f04342d2861a1854217b718ad3ec31f27"
+    },
+    {
+      "path": "src/runtime/settings-binding.ts",
+      "sha256": "9d25434d6998554d8a2dc43f121e67b4dc71b79f03507b96eab8c3ef326ffea5"
+    },
+    {
+      "path": "src/runtime/settings-binding-native.ts",
+      "sha256": "460c39668f43f1c4c2ce486d592ccf5121b4e443587e1cc83a27d3f7ee25c5ad"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "99a4d5a0aa85964a7da4b28ad1502e4092b50d493396d8064b188dc50a47ce3e"
+    },
+    {
+      "path": "test/codex-state/settings-open-selected.test.ts",
+      "sha256": "a6fa666c0e93d67c54f73e657131618c70a1352345abf1671300e4f373a68512"
+    },
+    {
+      "path": "test/runtime/settings-binding-ports.test.ts",
+      "sha256": "a50b49a1a348f0a5348c697b75a2f1fad68e37c3edf95a1c758110bc4b6aa066"
+    },
+    {
+      "path": "test/runtime/settings-binding-native.test.ts",
+      "sha256": "f6db26581f171a76a111dcd6bd4e60ce3f3b88d2066f858a84b25fab4dda977a"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "sha256": "f1dbad5f4fd7537255fc9dc1df76795b4ed29c66de194f24e38ba8f3b1d06344"
+    }
+  ],
+  "productionBaseline": "5d8e3657d24421a3e419e314ecc97c3247ad75f4",
+  "limits": [
+    "POSIX only",
+    "Existing initialized mirror precondition; missing DB refusal rather than source initialization",
+    "Native bounds/error taxonomy distinct",
+    "Windows/live/performance/24h unverified"
+  ],
+  "evidenceSha256": {
+    "focused.log": "96914f7739dce02bdb681e397e7b33497aeb8fcfd12309e30e077b46808bd32a",
+    "typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stage-inputs.json": "63e3cec8cac157dbfc56bf03164ba19d81e568f0f84e1e9449e3f86a8b9a5db1"
+  }
+}

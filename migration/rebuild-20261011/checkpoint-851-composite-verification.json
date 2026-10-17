@@ -1,0 +1,54 @@
+{
+  "status": "APPLIED_851_COMPOSITE_AND_ACTUAL_FOCUSED_PASS",
+  "files": [
+    {
+      "path": "src/store/queue-cancel-recovery.ts",
+      "beforeSha256": "bfbe3d8b383d8d47be0f3822501b28b034b9fe4cf8ef551c6f82d5f85ee2e6be",
+      "afterSha256": "ad3f1df948eae5084f234241b425647f2a499140f3548e2d90eb32306e02b4f4"
+    },
+    {
+      "path": "test/store/recovery-cancellation-budget.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "02182c2a4b2b2f79248419b13e671b0ef671effc9a392ea76a1f270e53c170fe"
+    }
+  ],
+  "verification": {
+    "status": "COMPOSITE_FROZEN_FILES_COMPLETE",
+    "fingerprint": "26ba08ba2b9604c212732e9b5d362e688f7218258aa67d2ef69be7a8a70486d1",
+    "testFiles": 858,
+    "counts": {
+      "tests": 8760,
+      "pass": 8760,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "ended": "2026-10-14T05:59:48.464Z",
+    "limitation": "Independently terminal file runs over one unchanged compiled graph, not one monolithic full-suite invocation."
+  },
+  "finalFingerprintMatched": true,
+  "sourceTestToolsFileCount": 1743,
+  "actual": {
+    "strictBuildExit": 0,
+    "focusedExit": 0,
+    "focusedPass": 47,
+    "focusedFail": 0,
+    "focusedSkipped": 0,
+    "focusedLogSha256": "92b971977f58a294daa875891d21e6fd8bcd89eaf7e8f64d019c07df54d761f0"
+  },
+  "scope": [
+    "Existing-only/borrowed recovery refuses row evidence above1MiB and cumulative scalar preflight charges above8MiB before SQLite returns raw text or BLOB to JS.",
+    "Scalar queries return at most129 rows;128 is the accepted inventory cap. Queue/intake reads are rechecked before each cancellation to catch trigger changes.",
+    "Related original ingress rows and all active unowned target rows are bounded before decoding or JSON filtering. No truncation or partial cancellation.",
+    "Repeated checks consume budget again. Oversized or too many non-prompt active target rows can conservatively refuse recovery. This is an explicitly stricter bounded refusal, not exact Rust acceptance parity.",
+    "Initialized compatibility API keeps previous behavior."
+  ],
+  "regressionEvidence": "Original eight cases: six oversized inputs were accepted; numeric BLOB was refused after eager decode instead of byte preflight; one small/unrelated control passed. Final ten cases all pass, including owned ingress and trigger rollback.",
+  "limits": [
+    "Composite independently terminal858 file runs, not one monolithic full suite.",
+    "Conservative refusal caps are stricter than Rust acceptance and include active non-prompt target records. Initialized compatibility entry retains previous behavior.",
+    "Auxiliary mapping/handoff reads and native allocator limits are not qualified here.",
+    "Recover controller/command integration, Windows/live/G1-G7/24-hour/deployment remain unverified. Protected unavailable redaction fixture neither included nor counted."
+  ]
+}

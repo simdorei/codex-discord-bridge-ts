@@ -1,0 +1,49 @@
+{
+  "status": "WIP_STAGED_FOCUSED41_PASS_FULL_PENDING",
+  "files": [
+    {
+      "path": "src/runtime/archive-delete/preflight.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-843-archive-preflight/files/src/runtime/archive-delete/preflight.ts",
+      "sha256": "09052d20acd5ad7602d2d599ab51930d8da546ae60966b3d4c16ba982a8d25ac"
+    },
+    {
+      "path": "src/runtime/archive-delete/backup-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-843-archive-preflight/files/src/runtime/archive-delete/backup-worker.ts",
+      "sha256": "108e2feb936b489b21d4a62171ac93a002b8397c3eb91fb4d467e840ef982fe2"
+    },
+    {
+      "path": "src/runtime/archive-delete/native-backup.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-843-archive-preflight/files/src/runtime/archive-delete/native-backup.ts",
+      "sha256": "1b1d84e2763aaf0e467d5e1b66accf8a8a3bd4ec9fd4db1caa4acb9f2182d1af"
+    },
+    {
+      "path": "test/runtime/archive-delete/preflight.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-843-archive-preflight/files/test/runtime/archive-delete/preflight.test.ts",
+      "sha256": "a656e58669a88831d00b564d91febd77fbd0d23637045cb63534a3cf084e9eb4"
+    },
+    {
+      "path": "test/runtime/archive-delete/native-backup.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-843-archive-preflight/files/test/runtime/archive-delete/native-backup.test.ts",
+      "sha256": "673ac4b2a7b83d75f5adc04ede9ef0baf9fb330ac263f797274684cd2d0b3942"
+    }
+  ],
+  "checks": {
+    "strictBuildExit": 0,
+    "focusedPass": 41,
+    "focusedFail": 0,
+    "prefixOldRed": true,
+    "prefixCorrectedGreen": true
+  },
+  "scope": [
+    "Bounded raw UTF8 archived-rollout read and canonical containment.",
+    "Validated backup derives rollout from source state and checks bridge/global JSON before creating recovery directory.",
+    "Correct Rust filter-then-take8 recovery directory prefix."
+  ],
+  "limits": [
+    "Source backup only; no transcript deletion, metadata rewrite or overall archive completion.",
+    "Native Windows handle-exclusive file ownership remains unimplemented and unverified.",
+    "Canonical containment is a snapshot and requires recheck under final file ownership.",
+    "Timeout requests cancellation; synchronous SQLite work is not hard-preempted and owner is joined.",
+    "Full regression pending for this staged combination; protected redaction fixture absent."
+  ]
+}

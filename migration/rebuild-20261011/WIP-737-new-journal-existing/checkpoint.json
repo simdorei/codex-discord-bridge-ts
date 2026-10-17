@@ -1,0 +1,66 @@
+{
+  "status": "WIP_FOCUSED_VERIFIED_UNAPPLIED",
+  "createdAt": "2026-10-12T10:11:12.749776+00:00",
+  "baselineLocalCommit": "c052b1b6d76466f57db9faa08504b42a96e02e42",
+  "baselineRemoteCommit": "115981e02474c76417bc439c2111540ac69edec2",
+  "candidateFiles": [
+    {
+      "path": "src/store/ingress-admission.ts",
+      "sha256": "0ab630c8ff740634571504103664f7965b74d62d7abff5fb851969ecbfe1d98a"
+    },
+    {
+      "path": "src/store/ingress-read.ts",
+      "sha256": "1f68d23c01d11303980786c4c9cd5aa3e16916c76389fe7e80255a692b6c881a"
+    },
+    {
+      "path": "src/store/ingress-recovery.ts",
+      "sha256": "f15bb194afabbf73abba3da201da9b87fe935cc3f26cd8c2aff6e9e338079645"
+    },
+    {
+      "path": "test/store/ingress-admission-existing.test.ts",
+      "sha256": "b4abc1d18539423b43cba924af94843461316dad8c9566665c6e046745578ed9"
+    },
+    {
+      "path": "test/store/ingress-existing-boundary.test.ts",
+      "sha256": "82814549fc856a29db73289b5c5bab2cc81cf66742843b9646894aecdd820cd2"
+    },
+    {
+      "path": "test/store/ingress-recovery-existing.test.ts",
+      "sha256": "f0f726e889e36d8c43b7c6fb14277095292ebe80f03fa47f8ca4543ccdc756b1"
+    }
+  ],
+  "focused": {
+    "tests": 116,
+    "pass": 116,
+    "fail": 0,
+    "skip": 0,
+    "durationMs": 9634.755021
+  },
+  "typecheckExit": 0,
+  "buildExit": 0,
+  "fullSuite": "NOT_RUN_FOR_737",
+  "nativeRuntimeIntegration": "NOT_IMPLEMENTED",
+  "bodyIdentity": [
+    {
+      "path": "src/store/ingress-admission.ts",
+      "bodySha256": "f18aeccfd85326038864e0d8cb6988f361bf1a0e8c449fec8f34c903c5e44bad",
+      "byteIdentical": true
+    },
+    {
+      "path": "src/store/ingress-recovery.ts",
+      "bodySha256": "a23d4131b555796012479b535755039aad22a4652b56f48824f1fa1f6be4a3ec",
+      "byteIdentical": true
+    },
+    {
+      "path": "src/store/ingress-read.ts",
+      "bodySha256": "4caabf0bc4eb0b446b84932a52201134403f90ad1c14ebdb104b5e8e921da593",
+      "byteIdentical": true
+    }
+  ],
+  "logHashes": {
+    "focused.log": "c28902bab198a38a835d70c5e52fcde6451734659b32d8081a1b9bdaded4143d",
+    "typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "excluded": "No raw logs, databases, credentials or protected redaction fixture included."
+}

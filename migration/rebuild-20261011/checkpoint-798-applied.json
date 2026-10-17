@@ -1,0 +1,135 @@
+{
+  "status": "APPLIED_BOUNDED_COMPOSITE_VALIDATED",
+  "at": "2026-10-13T06:13:11.757978+00:00",
+  "scope": [
+    {
+      "path": "src/admission/drain-gate.ts",
+      "beforeSha256": "ae4efc9f482dda3183944ca1ed4bab0e185a122c4c01081687e0b70345c0f7dc",
+      "afterSha256": "f812e401d6d3e4bf04a670230bf76d25c4ac7cd064568664b357dbd58a1e4706"
+    },
+    {
+      "path": "src/app-server/portable-resident-lifecycle.ts",
+      "beforeSha256": "721947c22146310b487d35f50c25610d0f17f8e3429d4d577dbb224b0821ac71",
+      "afterSha256": "327251c76e40ce3737e8ac024e755efa657cb9ecab00cf094b5fbcab6a12532f"
+    },
+    {
+      "path": "src/app-server/recovery-collector.ts",
+      "beforeSha256": "7bb82eaea8ea10dda1bc1ac18e4a3394c78b6e17c5feda78eabad068ef32709a",
+      "afterSha256": "7ae168f37b16d2bfdb292143144a4b7bb454b1127ed73c2e3cc4283e30d58796"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "beforeSha256": "d771cca1725ca66fdd16e7346e807c17e2e08acf07f771bac6f01f3ae6567a7e",
+      "afterSha256": "998938ba7d52d499b536d54a98bb0349a0a7101d86222c756c7a88f6ddadc206"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-pending-native-worker.ts",
+      "beforeSha256": "ffbb37bd7d84cdff577f96423e5363267fac1fb6423c5a678f8fa27f99fb6e13",
+      "afterSha256": "7ad6eb24d487b9bb0a760ccd69bd19694c01d0d8c4fa205aef1952814cc2698a"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-pending-native.ts",
+      "beforeSha256": "bf7b60e29e820a1832a4241674e5dff753d8876358bfc9ac160238a4d603ee37",
+      "afterSha256": "f2a8520d81fb306dbd75d159827d073263575639fc8aa3ded829532792665bed"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-recovery.ts",
+      "beforeSha256": null,
+      "afterSha256": "776737d159b291bfa8862f98979b6636bbe204db5973708a6f72ff99b062ff84"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-worker.ts",
+      "beforeSha256": "b73e6051b6df2979a2152b6d8af5b6c8671670e3e2a66ee3b0da08dfbec00b30",
+      "afterSha256": "129faa156d5fad650a0edee803440728366bd31d9946e90ceda51570321dcb6a"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "935a8c8945461bb8786f1903ec552dd5e56afd9e9578a9e3f85c8d69347b932c",
+      "afterSha256": "ddd2a75129fc1a4734782ea03b6f2995958f3178e94bfc4e4b1d2db8535c9387"
+    },
+    {
+      "path": "test/admission/drain-gate-instrumentation.test.ts",
+      "beforeSha256": "97ab87da46c99947272bc9d07ba3ab13fe3ad0335cbdab7a2cb48faccaf52938",
+      "afterSha256": "dad76d384ec1b3d51f0c5297dddafecf13d9c3763781c07464c52f6093ee266d"
+    },
+    {
+      "path": "test/admission/unsealed-commit.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "4b0a878c687f8b05512fb85fa34b879765a6398c86646479b03fd2a9f9c8db49"
+    },
+    {
+      "path": "test/app-server/native-stopped-observation.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "2e9fbd5b0c5d999af23f79a3b53796e3b3715096c7efbeb2cf45059b3a73d902"
+    },
+    {
+      "path": "test/app-server/stopped-recovery-collector.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "7eece0ed30ca3e935893994c7d4e09158089d7f5073dbfcf0fcd55edfd10eddc"
+    },
+    {
+      "path": "test/runtime/action-executor/stop-recovery-worker.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "1d0bae94141759823901cc88ef7f4b8ec1be946ebb64c1bf0cd83aff21ace5fa"
+    },
+    {
+      "path": "test/runtime/action-executor/stop-recovery.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "a16c23f781fc3a096fdbb47eedcb3f9095367d849798bb6d38d6dc313212bd95"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "d1d18d2a5bc1abfe351c6ead8b7d748df445ec64db40de81494c2e6437c7198b",
+      "afterSha256": "675b13e839c3f2ac19b6110c61e5e8dea20370bec8d9fa3688cb6470c7da7efd"
+    },
+    {
+      "path": "tools/build-test-profile.mjs",
+      "beforeSha256": "04e8ce73a6d9f9c65f0277600c93551559ccb22a22446adf0cf66a172ae5f894",
+      "afterSha256": "c001baf550d16dda0c28d8c78b3aea535d9c16d310467cb6fb56d52b4881fc77"
+    },
+    {
+      "path": "test/runtime/discord-runtime/stop-control-start.test.ts",
+      "beforeSha256": "be3d2ec102d5eb092739374244b94e4c48715d95e1ba3fe889ead0f08ed021b8",
+      "afterSha256": "b0bc805c7627c0f6a94d67e8780b85e8b4ac68934657892a2ae17d9ad6746c59"
+    }
+  ],
+  "originalWholeRun": {
+    "tests": 8358,
+    "pass": 8357,
+    "fail": 1,
+    "cancelled": 0,
+    "skipped": 0,
+    "files": 815,
+    "exit": 1,
+    "logSha256": "0d412216c943bca5da3840c4ce952f948512f819efa6fc19e799731daabe53fd"
+  },
+  "replacement": {
+    "changedFile": "test/runtime/discord-runtime/stop-control-start.test.ts",
+    "replacedTests": 4,
+    "focusedTests": 9,
+    "focusedPass": 9,
+    "focusedLogSha256": "6585ba75b11a91dd1949b155e9de88e478c0ba2722e1cf6cdff362ca41e94096"
+  },
+  "qualifiedUniqueTests": 8358,
+  "qualification": "8354 unchanged results plus4 corrected fixture reruns; NOT a single full8358/8358 run",
+  "allOtherSourceTestsToolsUnchanged": true,
+  "prior795": {
+    "tests": 8353,
+    "pass": 8340,
+    "fail": 1,
+    "cancelled": 12,
+    "pinFailure": "fixed in796",
+    "backlogTimeout": "same unchanged test passed in796, root cause not established"
+  },
+  "missingProtectedTest": "test/remote-agent/redaction.test.ts",
+  "liveDeploymentQualified": false,
+  "migrationComplete": false,
+  "actualTypecheckExit": 0,
+  "actualBuildExit": 0,
+  "actualFocusedTests": 55,
+  "actualFocusedPass": 55,
+  "actualFocusedFail": 0,
+  "actualFocusedLogSha256": "1857f76fd49f50cd22750f70818184a37aa75bb9caeb6151171cf599df88a963",
+  "all1647SourceTestToolInputsMatch": true,
+  "compiledEquivalenceSha256": "78edc85ee8802738e84510ef69b8061bcc97be06fde77a8cd719762bce26fb71"
+}

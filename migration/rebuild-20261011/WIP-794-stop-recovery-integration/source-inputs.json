@@ -1,0 +1,37 @@
+[
+  {
+    "candidate": "stop-terminal-transaction-791",
+    "focusedPass": 30,
+    "typecheck": 0,
+    "build": 0,
+    "sourceInputs": {
+      "rustCommit": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+      "authority": "ingress/stop/control/recovery.rs:recover_terminal_in",
+      "sha256": "e4a7a3fc697d6fccb26397b350640864c6987f3276362da689f5dfd37db0a179",
+      "scope": "borrowed transaction; native lifetime and runtime still external"
+    }
+  },
+  {
+    "candidate": "stopped-native-observation-792",
+    "focusedPass": 27,
+    "typecheck": 0,
+    "build": 0,
+    "sourceInputs": {
+      "rustCommit": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+      "source": "manager/recovery_observation.rs and recovery_observation/collector.rs",
+      "scope": "native bounded Stop observation only; no runtime recovery dispatch"
+    }
+  },
+  {
+    "candidate": "admission-unsealed-793",
+    "focusedPass": 23,
+    "typecheck": 0,
+    "build": 0,
+    "sourceInputs": {
+      "rustCommit": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+      "source": "restart_readiness/drain.rs:AdmissionPermit.with_unsealed",
+      "sha256": "6fc044d07fbb426dc185ce38181c534e876d01c44539e0899e8f92134d1f09e6",
+      "scope": "synchronous final commit only; TS reentry fail-closed instead of Rust mutex deadlock; no actor-cross-thread synchronization claim"
+    }
+  }
+]

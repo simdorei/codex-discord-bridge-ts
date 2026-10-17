@@ -1,0 +1,50 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "baseRemote": "4e1a933a67dd1a8f5dbc32ca90d06aa388f9b9a0",
+  "baseTree": "0a80d424664f8d9ebcf1cee2a28879e4aa4dd03f",
+  "reconstruct": "Apply WIP-807-mirror-runtime overlay to its applied804 base, then overlay these three files. Root product remains applied804.",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/store-native-protocol.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-808-native-retirement/files/src/runtime/mirror-sync/store-native-protocol.ts",
+      "sha256": "d45f60bf8c90a5265a927c72401dc6a53c6c1bd09af73f9117d512975d053947"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/store-native-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-808-native-retirement/files/src/runtime/mirror-sync/store-native-worker.ts",
+      "sha256": "5b49a131c0febf1b0aaad0b425836b903bb4bfd7904e03181f6c175b46e0e6a1"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/store-native-retirement.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-808-native-retirement/files/test/runtime/mirror-sync/store-native-retirement.test.ts",
+      "sha256": "6bba94fce3b021df77f0cb928a649948dc2a7b2d199a372d3fc8436d8682b901"
+    }
+  ],
+  "verification": {
+    "strictTypecheckExit": 0,
+    "compiledBuildExit": 0,
+    "focusedTests": 22,
+    "focusedPass": 22,
+    "focusedFail": 0,
+    "focusedSkipped": 0,
+    "whole808": "RUNNING, not qualified",
+    "whole805": {
+      "tests": 8429,
+      "pass": 8426,
+      "fail": 2,
+      "cancelled": 1
+    },
+    "serial805Replay": {
+      "tests": 44,
+      "pass": 42,
+      "fail": 1,
+      "cancelled": 1
+    }
+  },
+  "limitations": [
+    "New native requests are not wired to full BridgeSync command.",
+    "Original whole805 timing failures passed serial replay, but another lifetime timeout and following Control-budget failure occurred. Cause unresolved; deadlines and assertions unchanged.",
+    "Protected redaction test absent; not reconstructed and not claimed PASS.",
+    "No Windows/live Discord/deployment qualification."
+  ]
+}

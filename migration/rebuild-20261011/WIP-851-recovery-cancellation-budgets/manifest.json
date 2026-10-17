@@ -1,0 +1,37 @@
+{
+  "status": "WIP_STAGED_STRICT0_FOCUSED47_FULL_PENDING",
+  "files": [
+    {
+      "path": "src/store/queue-cancel-recovery.ts",
+      "sha256": "ad3f1df948eae5084f234241b425647f2a499140f3548e2d90eb32306e02b4f4"
+    },
+    {
+      "path": "test/store/recovery-cancellation-budget.test.ts",
+      "sha256": "02182c2a4b2b2f79248419b13e671b0ef671effc9a392ea76a1f270e53c170fe"
+    }
+  ],
+  "verification": {
+    "strictExit": 0,
+    "focusedExit": 0,
+    "focusedPass": 47,
+    "focusedFail": 0,
+    "focusedSkipped": 0,
+    "originalEightRegressionCases": {
+      "pass": 1,
+      "fail": 7
+    },
+    "finalTenRegressionCases": "Included in focused47; two additional owner/trigger cases added after initial RED."
+  },
+  "scope": [
+    "Existing-only/borrowed recovery refuses row evidence above1MiB and cumulative scalar preflight charges above8MiB before SQLite returns raw text or BLOB to JS.",
+    "Scalar queries return at most129 rows;128 is the accepted inventory cap. Queue/intake reads are rechecked before each cancellation to catch trigger changes.",
+    "Related original ingress rows and all active unowned target rows are bounded before decoding or JSON filtering. No truncation or partial cancellation.",
+    "Repeated checks consume budget again. Oversized or too many non-prompt active target rows can conservatively refuse recovery. This is an explicitly stricter bounded refusal, not exact Rust acceptance parity.",
+    "Initialized compatibility API keeps previous behavior."
+  ],
+  "limits": [
+    "Staged only, product850 unchanged. Full regression not completed.",
+    "Native controller/process restart and command routing still missing. Auxiliary mapping/handoff reads and native allocator limits are not qualified by these tests.",
+    "Protected unavailable redaction fixture excluded; no raw logs, live DB or secrets published. Windows/live/performance/deployment unverified."
+  ]
+}

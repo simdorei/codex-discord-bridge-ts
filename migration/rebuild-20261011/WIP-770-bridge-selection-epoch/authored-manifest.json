@@ -1,0 +1,10 @@
+[
+  {
+    "path": "src/runtime/bridge-state-native.ts",
+    "sha256": "084beafea86db939e5e3109325157373bf90c6e5ec98d087edb53bca4589e122"
+  },
+  {
+    "path": "test/runtime/bridge-selection-epoch.test.ts",
+    "sha256": "32bb7f12c31d42afd65b3d314a7afd45927277fef29f329e9b3b3b774addbf03"
+  }
+]

@@ -1,0 +1,43 @@
+{
+  "checkpoint": 662,
+  "scope": "Owned native question preparation/retention for completion maintenance",
+  "qualifiedStage": {
+    "tests": 7592,
+    "pass": 7592,
+    "fail": 0,
+    "cancelled": 0,
+    "skip": 0,
+    "testFiles": 716
+  },
+  "actualApplied": {
+    "focused": 50,
+    "typecheck": 0,
+    "build": 0,
+    "sourceTestFiles": 1493,
+    "entireSourceTestEqualsQualifiedStage": true
+  },
+  "fullRerunOnActual": false,
+  "contracts": [
+    "Original two autocommit opens preserved for retirement and compaction",
+    "Retire then reconcile then worker wall clock then compact",
+    "Original resident generation admission held until actual worker exit",
+    "One pending maintenance per owner; unchanged global Background3/Observation2/Control1",
+    "Partial commits retained, cancelled accepted work joined, no automatic retry"
+  ],
+  "missingHistoricalFile": "test/remote-agent/redaction.test.ts (10 unavailable tests; not skipped)",
+  "remoteWrites": "paused pending reply after cancellation",
+  "limitations": [
+    "Independent question delivery preparation and scheduler discovery/state admission remain synchronous",
+    "Windows/24-hour/live deployment unverified",
+    "Original volume not recovered"
+  ],
+  "evidence": {
+    ".runtime/question-maintenance-662/full.log": "fe733ffef598432ffacbd206f0f64c07d66eecba400a77e958f61e02efff3781",
+    ".runtime/question-maintenance-662/full-exit.json": "370d217e7e065a5b45209e272bdf6721bf6324545b5576701607c5d01129850b",
+    ".runtime/question-maintenance-662/source-equality-proof.json": "41d4accd04a75e3faddcfc877c9350bf839fedb5364f5614292b12891b5f7b63",
+    ".runtime/question-maintenance-662/applied/applied-manifest.json": "a381666e1e91726be2930b0eafc93923f221e59aec0fbd17b539dd90474d0f57",
+    ".runtime/question-maintenance-662/applied/source-test-identity.json": "ef163b9f64d1256bb0c9f54088bc6c840ff8a81241dfdf1fd762ec31bf0eb52d",
+    ".runtime/question-maintenance-662/applied/focused.log": "b2579ea145a6433e33d41d178e1a5fe3bde86a09dc6962521e3415c897d0174f"
+  },
+  "at": "2026-10-11T21:45:48.450570+00:00"
+}

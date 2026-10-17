@@ -1,0 +1,27 @@
+{
+  "dependencies": [
+    {
+      "path": ".runtime/control-evidence-native-777",
+      "manifestSha256": "09107603717cb9b03aa522e1a48505e691f99ceb4ab09bc1e17c7229ed8afdef"
+    },
+    {
+      "path": ".runtime/control-read-integration-778",
+      "manifestSha256": "7c8dd2da0d5540f452f49ea13e9933a879059cd1d9518e2b875a1d2cae2f3f70"
+    }
+  ],
+  "actualBaseline": "775",
+  "correction": "Only add explicit new API to facade identity assertions and exact key inventory. No pipeline production/test/deadline change.",
+  "prior777Full": {
+    "tests": 8256,
+    "pass": 8253,
+    "fail": 1,
+    "cancelled": 2,
+    "skip": 0
+  },
+  "unchangedIsolatedPipeline": {
+    "tests": 11,
+    "pass": 11,
+    "exit": 0,
+    "causality": "Unresolved full-run timeouts; isolated pass does not erase RED."
+  }
+}

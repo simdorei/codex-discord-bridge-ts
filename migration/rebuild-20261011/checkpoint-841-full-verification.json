@@ -1,0 +1,37 @@
+{
+  "status": "ACTUAL_841_FULL_REGRESSION_PASS",
+  "files": [
+    {
+      "path": "src/runtime/archive-delete/records.ts",
+      "sha256": "1abb754bf16be69d8ef9492fd5137cbc7b9521a91d52d1cb1fdb61eb23830cbe"
+    },
+    {
+      "path": "test/runtime/archive-delete/records.test.ts",
+      "sha256": "a40c4225e20e87757dab4e69a9d90c13c645426f04d44949bbb2589849fda074"
+    }
+  ],
+  "full": {
+    "started": "2026-10-14T02:20:51.065Z",
+    "ended": "2026-10-14T02:39:06.852Z",
+    "exit": 0,
+    "signal": null,
+    "testFiles": 850,
+    "tests": 8667,
+    "pass": 8667,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "logSha256": "b7d53e68ea708ab45cc239d2bccc7f514ae49a2312aa7e10408b52cab191705d"
+  },
+  "strictBuildExit": 0,
+  "focused": {
+    "tests": 19,
+    "pass": 19
+  },
+  "limits": [
+    "Only record-deletion leaves added to actual product. No DeleteArchiveConfirm command integration.",
+    "842\u2013844 are staged only and running a separate full suite.",
+    "Windows, live Discord and deployment remain unverified.",
+    "Protected redaction fixture absent and excluded from qualification."
+  ]
+}

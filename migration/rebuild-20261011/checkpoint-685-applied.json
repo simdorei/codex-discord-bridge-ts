@@ -1,0 +1,60 @@
+{
+  "beforeHead": "feb3e24191c979998a663fc6f57bfb24d939bf60",
+  "stageFileCount": 1529,
+  "scope": [
+    {
+      "path": "src/runtime/completion/idle-release.ts",
+      "beforeSha256": "e7b8741bce8b6b3cdaea0e196de09a5d5fb87a69996a5cc37568afdc08aaa30c",
+      "sha256": "76fd617d3f0123aa97662a0713829f63f68b2c95544c665e49739de01c3b13c4"
+    },
+    {
+      "path": "src/runtime/completion/native-idle-deferral.ts",
+      "beforeSha256": null,
+      "sha256": "143221800cee6f1efe84906e1b66791be897ca3c75bfb69c3ae15c222590394e"
+    },
+    {
+      "path": "src/runtime/completion/pipeline.ts",
+      "beforeSha256": "f3b9b4e2a65d3d302f29fddab284c56acee3b18abbc2f03214be7f89fe2317cf",
+      "sha256": "2ef7bfde5c17974d8778c40e9cd314eb3a6bf5e48c0001fd377c183e191212da"
+    },
+    {
+      "path": "test/runtime/native-idle-deferral.test.ts",
+      "beforeSha256": null,
+      "sha256": "df658ac8e0fcdbf81e063b835a0d5275f0cae3cdc51a5eccb9cfbbcdec7a5e89"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 7717,
+    "pass": 7717,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 735,
+    "logSha256": "5b571c588b9e8533c1223eab040df5aacc51e40c2edf60f7fe97fe9a411e927e",
+    "tapSha256": "72085eb4f8d4f9e7267e81444b8bb70c3cf78f4e6467323a6f3b36a06a61c410"
+  },
+  "claim": "Qualified staged whole7717PASS plus actual70PASS/TS0/build0 and all1529source/test hashes identical. No separate actual full-run claim.",
+  "remoteWrite": "Authorized publication resumed;684 remotely verified cfa1adcc;685 not yet published",
+  "actualAll1529HashesMatchQualifiedStage": true,
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 70,
+      "pass": 70,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1529
+  },
+  "evidence": {
+    ".runtime/completion-native-idle-deferral-685/full.log": "5b571c588b9e8533c1223eab040df5aacc51e40c2edf60f7fe97fe9a411e927e",
+    ".runtime/completion-native-idle-deferral-685/full.tap": "72085eb4f8d4f9e7267e81444b8bb70c3cf78f4e6467323a6f3b36a06a61c410",
+    ".runtime/completion-native-idle-deferral-685/full-exit.json": "8582e4666808c64531a892d4aa4e7e040ea52733116badd5666cd513df93cdc8",
+    ".runtime/completion-native-idle-deferral-685/scope-proof.json": "13e62dbcbd5ead850aab0a70e3a26d73c73492d768aa641b3e0c35128682088d",
+    ".runtime/completion-native-idle-deferral-685/stage-inputs.json": "0059e854130fad6d758de43e89cd38ed461e9d4b88b36964e3d98dd49e637256",
+    ".runtime/completion-native-idle-deferral-685/unchanged-startup-proof.json": "66b3541eee7fae798867ac5d9bcf5fe3fb7a4a375a9610a3e71d941a28c8123d",
+    ".runtime/completion-native-idle-deferral-685/applied/typecheck.log": "2fe43fdadeef60ddc24a0c6006626dfdd1c9f6339c778b657049648bc2d0414e",
+    ".runtime/completion-native-idle-deferral-685/applied/build.log": "20a31ff560445d86c5a1d858d7357b488321080fb90510e6a6fe9a551e8750f6",
+    ".runtime/completion-native-idle-deferral-685/applied/focused.log": "75dc49c3795e9a6a90643aedaab00b442615c65e14ccb19dae1fb8a343d21fad"
+  }
+}

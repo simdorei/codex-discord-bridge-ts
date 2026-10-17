@@ -1,0 +1,33 @@
+{
+  "status": "APPLIED_PROJECT_CUSTODY_819",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/project-custody.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-819-project-custody/files/src/runtime/mirror-sync/project-custody.ts",
+      "sha256": "d098c5e55d431deda52607fc1864178df5a4904df8571bbefd23b24c63ebef53"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/project-custody.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-819-project-custody/files/test/runtime/mirror-sync/project-custody.test.ts",
+      "sha256": "1410e506c88e7b113c71b5c75d29af6d9f577c4138e0d1937871fec8147ed4a8"
+    }
+  ],
+  "full": {
+    "tests": 8520,
+    "pass_count": 8520,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "started": "2026-10-13T14:39:06.115Z",
+    "ended": "2026-10-13T14:56:47.831Z",
+    "exit": 0,
+    "signal": null,
+    "testFiles": 833
+  },
+  "otherSourceTestToolBytesMatchWholeStage": true,
+  "limitations": [
+    "820-822 are separately preserved WIP, not covered by this full run",
+    "Full BridgeSync/Windows/deployment unverified",
+    "Protected redaction fixture absent and unverified"
+  ]
+}

@@ -266,7 +266,10 @@ export function migrateMutationAttempt(db: DatabaseSync): void {
         CREATE UNIQUE INDEX IF NOT EXISTS codex_mutation_prepared_target
         ON codex_mutation_attempts(target_thread_id) WHERE scoped=1 AND state='prepared';
         CREATE INDEX IF NOT EXISTS codex_mutation_prepared
-        ON codex_mutation_attempts(state,scoped,target_thread_id);`);
+        ON codex_mutation_attempts(state,scoped,target_thread_id);
+        CREATE TABLE IF NOT EXISTS cdr_resume_restart_recoveries(
+        attempt_id TEXT PRIMARY KEY, original_json TEXT NOT NULL,
+        proof_json TEXT NOT NULL, runtime_id TEXT NOT NULL, recovered_at REAL NOT NULL);`);
 }
 
 export function schemaCurrentMutationAttempt(db: DatabaseSync): boolean {
@@ -275,7 +278,8 @@ export function schemaCurrentMutationAttempt(db: DatabaseSync): boolean {
       `SELECT
         EXISTS(SELECT 1 FROM pragma_table_info('codex_mutation_attempts') WHERE name='request_sha256')
         AND EXISTS(SELECT 1 FROM pragma_table_info('codex_mutation_runtime') WHERE name='runtime_id')
-        AND EXISTS(SELECT 1 FROM sqlite_schema WHERE name='codex_mutation_prepared_target')`,
+        AND EXISTS(SELECT 1 FROM sqlite_schema WHERE name='codex_mutation_prepared_target')
+        AND EXISTS(SELECT 1 FROM sqlite_schema WHERE name='cdr_resume_restart_recoveries')`,
     )
     .get() as Record<string, unknown> | undefined;
   return decodeSqliteBoolean(row);

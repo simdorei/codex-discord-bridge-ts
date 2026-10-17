@@ -1,0 +1,120 @@
+{
+  "beforeHead": "3f37f10ae3c1c7a1c68693b74ec2e1f5a71ff081",
+  "stageFileCount": 1543,
+  "scope": [
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "7ea1f27cf56a65d0210788b10fdb3d077c862446f58b762dd030615b08e9e03f",
+      "sha256": "94c7f86c78bcc74582631469b5668df61469ab245ad96a0bc4d36e12b1fe7f86"
+    },
+    {
+      "path": "src/store/start-notice-outbox.ts",
+      "beforeSha256": "33246662fe96527fca05b3802937878bf95178f14e4822e66f16d15352ab50eb",
+      "sha256": "9322647172d7022f259ddb74997ad5d4a449b9057131500431d502561bf8d816"
+    },
+    {
+      "path": "src/store/new-reply-claims.ts",
+      "beforeSha256": "f5e02b0f997309dec77f59f8c32fca50ed0d1ac4f2d43769dbf624f3d3952fef",
+      "sha256": "5072ee5fed3f65299c7cb3f50005bcb696641b400a6d0875733185f23ac1fe3b"
+    },
+    {
+      "path": "src/store/goal-progress.ts",
+      "beforeSha256": "4fefbddad0e8b812617cc9874aecdebc516492a816a915180e106d87dfbc3282",
+      "sha256": "f6f0ca2749e2e3dfa85bfb62f8f54a16ff35eac750685d0255c059af2ac2887e"
+    },
+    {
+      "path": "src/store/delivery-preflight.ts",
+      "beforeSha256": "814be6dd1ced1663fc2aa4f33b083cc290d905c298d31a9481f97bc796a6ae09",
+      "sha256": "4969905cd90013b9a839830e0a247592667fab2c2708ed3150d4b136e815e840"
+    },
+    {
+      "path": "src/store/commentary-outbox.ts",
+      "beforeSha256": "d34be5b58b2fe9b771423b7e9e05eb51bfc420a6e142941e71751fce228c96dd",
+      "sha256": "c8a96d090fa2b279b877df30885be74d4711c0b59e259eda35012d61693ea3a3"
+    },
+    {
+      "path": "src/runtime/completion/commentary-delivery.ts",
+      "beforeSha256": "a24c152486bd95747148d9d4cc688f12ed05b73779a5d0eefe371af2ab9cc898",
+      "sha256": "9c31741dd4125038f4b76be284953a87934335a92a3ac120c40abd07779b3321"
+    },
+    {
+      "path": "src/runtime/completion/native-progress-state-worker.ts",
+      "beforeSha256": null,
+      "sha256": "f3ab151579fb99f2dd5bd970dcd5015046515126fcc37bee2a846be1fddc0af2"
+    },
+    {
+      "path": "src/runtime/completion/goal-delivery.ts",
+      "beforeSha256": "560abf38b9738771b09141d84b13ab501509811b0ab2b166f2c57affbb5a6fbf",
+      "sha256": "87ad905cd3bcf87e44811a17f413983155a83bdeafad2734b10ac749eeea2ba9"
+    },
+    {
+      "path": "src/runtime/completion/pending-delivery.ts",
+      "beforeSha256": "ade817cee1432c6dafdfdc695a29ee8cf560e325134fe53b5776b9393a7b02ac",
+      "sha256": "3fb83c978725fb0a8692a2c1709d41208e173094c4e2af6c04e40311019f2798"
+    },
+    {
+      "path": "src/runtime/completion/native-progress-state.ts",
+      "beforeSha256": null,
+      "sha256": "80a81982ed342e9409df56d63f1b733a9a5b967a6fd5ef92a9cf101fccee81d4"
+    },
+    {
+      "path": "test/runtime/native-progress-state-wiring.test.ts",
+      "beforeSha256": null,
+      "sha256": "db0328d9d36c08d1d217f287652d6bf083b8e51a5c865e7676d87f25690e16c9"
+    },
+    {
+      "path": "test/runtime/native-progress-state.test.ts",
+      "beforeSha256": null,
+      "sha256": "45c53f073c411478495849b04869774b8d56db0dd378264b3405ee5380713266"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "c57c74cf79d1c9ca24db5601b01c83d3a36b8953dbd1b493a9bb85fe5b2a36bd",
+      "sha256": "1f91c6bf079be8c9e823a5c1667b355ef0b9937f6338fa9ff9a982d5e8085791"
+    },
+    {
+      "path": "test/store/progress-existing-state.test.ts",
+      "beforeSha256": null,
+      "sha256": "f8797bfa269aa3d4a1340b7630b290736c13b99b522e38c60adba31cdc0e6392"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 7764,
+    "pass": 7764,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 743,
+    "logSha256": "7722fe4c2b214342575f5f642237024b2fe820d82494d7bfd782909ddedbd3e6",
+    "tapSha256": "57d5cb6abb38fdda029cb954697d39033354041f30af4658ac095e51ab0a0b42"
+  },
+  "claim": "Qualified staged whole7764PASS plus actual183PASS/TS0/build0 and all1543source/test hashes identical. No separate actual whole rerun/Windows/performance claim.",
+  "remoteWrite": "Authorized publication active;692 remotely verified5565c756;695 not yet published",
+  "actualAll1543HashesMatchQualifiedStage": true,
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 183,
+      "pass": 183,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1543
+  },
+  "evidence": {
+    ".runtime/completion-native-progress-state-695/full.log": "7722fe4c2b214342575f5f642237024b2fe820d82494d7bfd782909ddedbd3e6",
+    ".runtime/completion-native-progress-state-695/full.tap": "57d5cb6abb38fdda029cb954697d39033354041f30af4658ac095e51ab0a0b42",
+    ".runtime/completion-native-progress-state-695/full-exit.json": "73544cbeb990cb2f426385581848978c343afde6b774cef1de32c702eff68c9a",
+    ".runtime/completion-native-progress-state-695/scope-proof.json": "046dfe881922b48c92dacc64846903df2550d12a921bfdd52f7a5e1bebbf0057",
+    ".runtime/completion-native-progress-state-695/stage-inputs.json": "f18daaec70d6dfa819ba07a64032f86e8df50559a10c20e69a537cebc0eec140",
+    ".runtime/completion-native-progress-state-695/source-inputs.json": "cd2ae42d4a4c9111f2c1201e073ef9a8be392a5983788ce6068afd11e9d5bdda",
+    ".runtime/completion-native-progress-state-695/owned-body-identity.json": "dbc54b833d335c067ddea8360751729a527a2a215c895f6de7a410d0ca5d0b14",
+    ".runtime/completion-native-progress-state-695/unchanged-startup-proof.json": "27b678ab95ef9abe2c0b22375cc018b6f426b8cc3481de44cfda3bd0875d6cca",
+    ".runtime/completion-native-progress-state-695/test-type-fix-proof.json": "1be1eefa71f38aba962aa2247127d7ea9315c972df02d2d76a982fec8a2d105f",
+    ".runtime/completion-native-progress-state-695/initial-test-type-error/typecheck.log": "a63701814f2c1d2f7aaa03e86b43e477ca13d0d3cac6591ca4aa49636040535e",
+    ".runtime/completion-native-progress-state-695/orchestration-source-inputs.json": "0b30498bbd3f49cb30673bf8bc7a6ad4789816c028d506f603fd1a5bfe7be2f4",
+    ".runtime/completion-native-progress-state-695/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/completion-native-progress-state-695/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/completion-native-progress-state-695/applied/focused.log": "2e261551d0c91ebf2b4932cddccecde098e1cc43961732f6bbdd78a00be0eb8d"
+  }
+}

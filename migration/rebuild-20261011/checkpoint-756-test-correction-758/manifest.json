@@ -1,0 +1,7 @@
+{
+  "file": "test/runtime/action-executor/command-executor.test.ts",
+  "beforeSha256": "32c4aa6ef0c8b8b734648cb341cd2b1be5d405833a9154462cb3e541eb4426b6",
+  "afterSha256": "70912ab2b6f2a44edb0a6c1cc83c330aee239ab8ac301aaaa0cecc4c0634b84d",
+  "scope": "test-only",
+  "fullResultReuse": "UNVERIFIED until corrected focused completion"
+}

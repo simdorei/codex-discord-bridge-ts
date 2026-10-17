@@ -1,0 +1,20 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "focused": {
+    "tests": 94,
+    "pass": 94,
+    "fail": 0,
+    "cancelled": 0,
+    "skip": 0,
+    "durationMs": 121008.251618
+  },
+  "typecheckExit": 0,
+  "buildExit": 0,
+  "full": "RUNNING_EXPECTED_8267_TESTS_805_FILES",
+  "actualBaseline": "779 whole8259 PASS",
+  "limitations": [
+    "4MiB response cap refuses oversized valid pages rather than claiming unlimited parity; SQL input memory itself is not bounded by that cap.",
+    "No native Stop acceptance/claim/write offload.",
+    "No hard2s deadline, Windows or live deployment qualification."
+  ]
+}

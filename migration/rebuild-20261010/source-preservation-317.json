@@ -1,0 +1,27 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 317,
+  "localCommit": "d412afc1f86b9987269242c3a4c008f660bea9c5",
+  "fullTests": 5458,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/discord/channel-client.ts": "790cff7cc3de69f1906a513155c8c80951b0982d71de58e1ca5063f95c8ce27a",
+    "src/discord/channel-rate-state.ts": "6235237b77db6a6e64409111412e0d0d234ec09805ffd0962850c20533fb46c9",
+    "src/discord/mirror-channel-request.ts": "7201fb5be4c58057e72151ec889356e4a1a2b4d9bb9335eb86311a095eb62ecd",
+    "src/discord/node-http-wire.ts": "3dbca53c4c638c1c1e9e7c0885fd9939bf85d1d93c4626ae756ae6f20d353853",
+    "src/discord/rate-header-adapter.ts": "5df07d1282f6f6f4d5495be1636ce42b702840cef9e49b93942a1b425a96197d",
+    "src/discord/response-engine.ts": "ada53b8c425ac57e915b2dd9a5f1ee93cbd3df5eee53090541129ee41bcd16cf",
+    "src/runtime/mirror-sync/new-mirror-http.ts": "ec914f0b95dca083bc9e6115d146471c0a8c2e474ed6cf34423c224f6b06713e",
+    "test/discord/mirror-http.test.ts": "3154d74f9c2c8da3b61a95a477d03593c89ed3aae506c6ec011a1b85006e5519"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

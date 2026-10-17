@@ -1,0 +1,21 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 379,
+  "localCommit": "faf12232ed3db1deb22ff59eac7842ed0bbc0058",
+  "fullTests": 5947,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/history-poll/discord-gap.ts": "7da5a4d1e2d8d66960f902bacd832d42bab75138ff8a98221a85dd3ef9c8f786",
+    "test/runtime/history-poll/discord-gap.test.ts": "2a5b8c1476d3fd5056fa59c3946b8d5be7bd9d81466df680aaedcff621b94854"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

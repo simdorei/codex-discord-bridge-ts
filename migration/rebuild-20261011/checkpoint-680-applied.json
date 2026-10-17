@@ -1,0 +1,147 @@
+{
+  "beforeHead": "6708c44bdf46e0bb6ef0880247bdba5f1469456f",
+  "stageFileCount": 1518,
+  "scope": [
+    {
+      "path": "src/runtime/completion/native-discovery-worker.ts",
+      "sha256": "89f8d95463b05d23b4bfc291a5f8fe27070e6d15446a7dfa1a0d16033b37cba0",
+      "beforeSha256": null
+    },
+    {
+      "path": "src/runtime/completion/native-discovery.ts",
+      "sha256": "2b1fed521f25729551b05d352205bcb4410639d1045589fffe3d0f53fee9d0b2",
+      "beforeSha256": null
+    },
+    {
+      "path": "src/runtime/completion/pipeline.ts",
+      "sha256": "6aefa4b5a6e543b82f6df21bb82bc669924290dfb8c43c7fcfab7b8b33b18660",
+      "beforeSha256": "21bca9b7f615de4c75a48a2e7b88e3ff66c373f6906b01b3a733db3a30a2b613"
+    },
+    {
+      "path": "src/runtime/completion/scheduler/discovery.ts",
+      "sha256": "a09f57dec05ba889f357b0046bf004d71d2b9e48dde98e037a2ced8ad67adcad",
+      "beforeSha256": "94e899c3182b3f3870d1f289f796854f7b68e269b9a1dfbcb4c71d19a44434bb"
+    },
+    {
+      "path": "src/runtime/completion/scheduler/ready.ts",
+      "sha256": "633995b5972e751dd850de15817cfd11f04b83d83fcecb3ffb3ce8a300b35bc6",
+      "beforeSha256": "9a717c7fb5e669a49d46644fd172b56eb28c74864b50377526d1a4ca24ba9d7d"
+    },
+    {
+      "path": "src/runtime/completion/scheduler/run.ts",
+      "sha256": "51e0347a83946c470279d2245133b103ed141feef1a27b3df9b8060dfdf03014",
+      "beforeSha256": "b82e23816a030347962603e2f610aa3a021556d7c5957b6015cbb86cb5805e4c"
+    },
+    {
+      "path": "src/runtime/owned-worker-slot.ts",
+      "sha256": "f43b92676f31916b28bde5d8e7f5725436a53225ffddc50189d63f8d1fd5cec6",
+      "beforeSha256": "5f4be67192a5a5f05b2887525560a94685c885d55745e8aaef8c095e427c75bd"
+    },
+    {
+      "path": "src/store/completion-metadata.ts",
+      "sha256": "77f7200efa7a1d01e2b77f1d39b61a126a0a15d203c13643284e743b908ef41c",
+      "beforeSha256": "53e6ff8bc14f67fc0b532ae040f42edd7df857cc80138e9eaaa9c5d6c085ad46"
+    },
+    {
+      "path": "test/remote-agent/native-decode.test.ts",
+      "sha256": "1c3d5c5cafe4503d0277b72e99ce48f033558548483e96ffc170994ec2576655",
+      "beforeSha256": "dcd6f5e26fd3e36071ccef25acbf9feb8deebfeb4658b2dcc0597fb08f137812"
+    },
+    {
+      "path": "test/runtime/autonomous-discovery-lock.test.ts",
+      "sha256": "3a94f7da8f624d5b94008cb484cbf75f173cf0a43572b0e94ff30f0017b23a03",
+      "beforeSha256": null
+    },
+    {
+      "path": "test/runtime/completion/scheduler/async-draft.test.ts",
+      "sha256": "0f803144fbc4aa324d15baad0daf596759d6213bef026380b65da91e37ce917b",
+      "beforeSha256": null
+    },
+    {
+      "path": "test/runtime/completion/scheduler/native-discovery.test.ts",
+      "sha256": "31b6049158467b53e9fd66c173ee4e3bda07da0f6d4fcd417943c65c28a4a45e",
+      "beforeSha256": null
+    },
+    {
+      "path": "test/runtime/discovery-worker-lane.test.ts",
+      "sha256": "3b7cfc3208658867d2596ef36afdbc3415e069d9a5eb6274bac56f4fc66e16b0",
+      "beforeSha256": null
+    },
+    {
+      "path": "test/runtime/native-completion-history.test.ts",
+      "sha256": "c681c939dc5c1c1fe519cd29a7482974aa8b1822efa5dc79b0a373b5fe21ecb6",
+      "beforeSha256": "91af663930883b26a71c61591587f8cc18212a91e137e9934e7b609442964ead"
+    },
+    {
+      "path": "test/runtime/native-completion-owner-read.test.ts",
+      "sha256": "7c5fdf108a301c0886df593efdcbe6de7e58d1643ea1178654fb0636a787650e",
+      "beforeSha256": "8d17832406d30a9f47df7879545776d1e6d2d941c217a6bd6e76f46c3857c670"
+    },
+    {
+      "path": "test/runtime/native-discovery-boundary.test.ts",
+      "sha256": "62a666b6d5f430652fdeef061f076d5272799bc8fcc8f8cc8765b75d509236aa",
+      "beforeSha256": null
+    },
+    {
+      "path": "test/runtime/native-http-payload.test.ts",
+      "sha256": "b4b003b6a94b7d23807967e2772e6d811d7002ad02827fdad1efdec8f7544fce",
+      "beforeSha256": "2ee6c75425ad7ba919e648d7530d1ebb5ae694b97734bec16db7eb67dcfc1d90"
+    },
+    {
+      "path": "test/runtime/native-observed-payload.test.ts",
+      "sha256": "558fe9af37a5b67872543c3a765fcdb22f7ade003a7a2021133fb533b0eb5368",
+      "beforeSha256": "ff73fd8c7af967ec1faef63dcaa1cccffebbbcccfcecf746efc8400324ece608"
+    },
+    {
+      "path": "test/runtime/new-reply/file-observation.test.ts",
+      "sha256": "47891c0b93224f37604fce89a0bed9abd13b8410232b265fc45d1815168d645a",
+      "beforeSha256": "baa7e40e04f0e7206a8791aba8846073d440a21facdfad3dbfe6f1c24f196caf"
+    },
+    {
+      "path": "test/runtime/new-reply/window.test.ts",
+      "sha256": "b465394578f09f5946f6794e6d64394a9eed286e2222a01af74347f1a71c136a",
+      "beforeSha256": "8c2289d029da5effd6df7658b1991fdce5631c3e228a463e227f7d970a6cd3ea"
+    },
+    {
+      "path": "test/runtime/owned-worker-budget.test.ts",
+      "sha256": "ae882ad7d135971c7f38771c1e90512fa8fadc1339afccbdd03dbaa5ad300cae",
+      "beforeSha256": "6ea09f63c660a91f5edbf0f17d4782ab49dbc1b8f79143539029311daa0601f5"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 7689,
+    "pass": 7689,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 729,
+    "logSha256": "1ae2ef82bb296239ba4e2e9c33b8a8fcb2091c0f8f09ae34cd59d8e1dec5633d",
+    "tapSha256": "99ada4e401eae165a1b43a4a0f223fa897380db5e2e7b8e0273480e26fb3fcb0"
+  },
+  "claim": "Qualified staged whole7689PASS plus actual135PASS/TS0/build0 and all1518source/test hashes identical. No separate actual full-run claim.",
+  "remoteWrite": "paused after user cancellation; no push",
+  "actualAll1518HashesMatchQualifiedStage": true,
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 135,
+      "pass": 135,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1518
+  },
+  "evidence": {
+    ".runtime/completion-autonomous-discovery-680/full.log": "1ae2ef82bb296239ba4e2e9c33b8a8fcb2091c0f8f09ae34cd59d8e1dec5633d",
+    ".runtime/completion-autonomous-discovery-680/full.tap": "99ada4e401eae165a1b43a4a0f223fa897380db5e2e7b8e0273480e26fb3fcb0",
+    ".runtime/completion-autonomous-discovery-680/full-exit.json": "3095c2e611cd45af6a05c06dd0086e55d221a1ea4ab53d77b241743cc55ecd7e",
+    ".runtime/completion-autonomous-discovery-680/scope-proof.json": "bfa136c53ef6c26fc2d76985936cc1350bdabb597dcd93621c6d0f73c830233b",
+    ".runtime/completion-autonomous-discovery-680/stage-inputs.json": "6ef049a1a29131342b2406d0a6e9483af6a4f7d9fd11b299fbfcd802b3dd258c",
+    ".runtime/completion-autonomous-discovery-680/unchanged-oracle-proof.json": "7cf394ec216823667e5862467e010668cf3bdb7c63975cbe20ea59b6de335004",
+    ".runtime/completion-autonomous-discovery-680/lock-lane-initial-red.log": "339b2c67059285114b9627d267b6766a15cced9a978b0efb8c812c9e0ed45d01",
+    ".runtime/completion-autonomous-discovery-680/lock-lane.log": "8e2f266b0f272b8c79ac6dd9098f1ff823cb5b8e1e30fc2cd03fe3145a44629a",
+    ".runtime/completion-autonomous-discovery-680/applied/typecheck.log": "2fe43fdadeef60ddc24a0c6006626dfdd1c9f6339c778b657049648bc2d0414e",
+    ".runtime/completion-autonomous-discovery-680/applied/build.log": "8fd4dfcce49f1e7eca06d775379c993f11caa85ac26d2af9ab759b7834fe36f6",
+    ".runtime/completion-autonomous-discovery-680/applied/focused.log": "40e835b195d3eb679867c602c9dd5b46bd752d3fe836aeb18779f4719ca51c0b"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "status": "APPLIED_VERIFIED_STANDALONE_EPOCH",
+  "at": "2026-10-12T19:05:05.076495+00:00",
+  "baselineHead": "ee1bb03e436f8252290b77573576d0cf3ea2acc3",
+  "scope": [
+    {
+      "path": "src/runtime/bridge-state-native.ts",
+      "beforeSha256": "afcf9380bddfe1baa0e75749fcf9f6881e4f69ab455ec57673999a1840edeab5",
+      "afterSha256": "084beafea86db939e5e3109325157373bf90c6e5ec98d087edb53bca4589e122"
+    },
+    {
+      "path": "test/runtime/bridge-selection-epoch.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "32bb7f12c31d42afd65b3d314a7afd45927277fef29f329e9b3b3b774addbf03"
+    }
+  ],
+  "wholeTests": 8239,
+  "wholeFiles": 797,
+  "fullLogSha256": "b38e708561fd65e0899830eb78bce4cd0f9a2e8bae5af02fcd862776f7cf2d6e",
+  "stageInputsSha256": "f34f46b5fe35c0c8f6de4b845ac9da786a1a44f9031936d8c01d0c505a02ef21",
+  "all1618InputsMatchStage": true,
+  "runtimeInstalled": false,
+  "actualFocused": 137,
+  "typecheck": 0,
+  "build": 0,
+  "verifiedAt": "2026-10-12T19:06:01.199744+00:00",
+  "wholeTestFiles": 798,
+  "testFileConcurrency": 1,
+  "missingProtectedFixture": "not executed or counted as skipped",
+  "runtimeWindowsLive24h": "UNVERIFIED",
+  "evidence": {
+    ".runtime/bridge-selection-epoch-770/full.log": "b38e708561fd65e0899830eb78bce4cd0f9a2e8bae5af02fcd862776f7cf2d6e",
+    ".runtime/bridge-selection-epoch-770/applied/focused.log": "b6277c48293de72f2817e7d72bb0c2ec26deafccf204a3bfc1beaae257794836",
+    ".runtime/bridge-selection-epoch-770/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/bridge-selection-epoch-770/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/bridge-selection-epoch-770/stage-inputs.json": "f34f46b5fe35c0c8f6de4b845ac9da786a1a44f9031936d8c01d0c505a02ef21"
+  }
+}

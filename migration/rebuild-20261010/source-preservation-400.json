@@ -1,0 +1,21 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 400,
+  "localCommit": "55bf43b807695ba39318d29503492b31cf138e50",
+  "fullTests": 6118,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/discord-runtime/gateway-drain.ts": "e45414c392ddb8f505556bd4c33e8e9fbc6b69e17e33d420aa8b11e1838531cc",
+    "test/runtime/discord-runtime/gateway-drain.test.ts": "dd461c45858a9e0fec4c66b2cfde5757fde3a0a93e03249b22d4a556f076e25c"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

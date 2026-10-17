@@ -1,0 +1,93 @@
+{
+  "status": "APPLIED_VERIFIED_CONTROL_READ_COMPOSITION",
+  "at": "2026-10-12T20:45:49.164523+00:00",
+  "baselineHead": "82bf31374f495421be593801a4ffec10330fb767",
+  "scope": [
+    {
+      "path": "src/runtime/action-executor/basic-dispatcher.ts",
+      "beforeSha256": "151d46eba14e2340688e20bab5294b8c07070cee6b7f081da74fb5e0d8baeb88",
+      "afterSha256": "831121203772c6ca958b71debc81b4ba0cca953ef0670c03b950483137cb2d6b"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "beforeSha256": "18134f05cbecf2fa429b34d48804ff66a34a5e15eee57aa842c2076824eeaa27",
+      "afterSha256": "e2ec241d25f98cbb02d362681e5aa930a9e9ddbe6f8d115435a6bb3c66b640fa"
+    },
+    {
+      "path": "src/runtime/action-executor/control-evidence-native-worker.ts",
+      "beforeSha256": null,
+      "afterSha256": "0040b903d1eafaf8c04e5101f9dba13822887f881627923074243ef5e646b38a"
+    },
+    {
+      "path": "src/runtime/action-executor/control-evidence-native.ts",
+      "beforeSha256": null,
+      "afterSha256": "82c3144764b55f65c2def57f14b7386d76feb3d1419c20aebb02a752d4ca5874"
+    },
+    {
+      "path": "src/runtime/action-executor/control-evidence-state.ts",
+      "beforeSha256": null,
+      "afterSha256": "6ddf39af9f57cc6436940d874aad3183ea8e0e67a03eeffe13d502ace4dc3d47"
+    },
+    {
+      "path": "src/store/observed-completion.ts",
+      "beforeSha256": "abe8bb6011fe824e080e22c4f231ad65ec6a27ed1d282b2bb6560cafcf78d2e8",
+      "afterSha256": "a6279c345eabf8bdbd7c0f0eaff735a0638609413ecb50c5ca0ae586daaff257"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "6ef86f8a334a989103882a0fe8a2b6850880457a1f1486a801426ccde5fee791",
+      "afterSha256": "935a8c8945461bb8786f1903ec552dd5e56afd9e9578a9e3f85c8d69347b932c"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "beforeSha256": "486ea128efbc623269155a592abadadddfe7e81fc1f5cbdad40573619e2d135b",
+      "afterSha256": "7e09f8f0e4fdf8892bf0d9b29fc52404662222e258d61ef784c63ebbdccd7a47"
+    },
+    {
+      "path": "test/runtime/action-executor/control-evidence-native.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "e072c6a2683422f9346e01cc97208c14c1d9c37462e2f016ff9573f813ad6862"
+    },
+    {
+      "path": "test/runtime/action-executor/control-evidence-state.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "a43b82ab43f46e157043a7c689e511478a753c68eab3f853bcf5fea447e06444"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "42df5b1d80bc3ae207d5aad34f89d3a92f07d55c9dbf5b401819dbde00dbc45f",
+      "afterSha256": "d1d18d2a5bc1abfe351c6ead8b7d748df445ec64db40de81494c2e6437c7198b"
+    }
+  ],
+  "wholeTests": 8259,
+  "wholeFiles": 802,
+  "fullLogSha256": "d9beb23027b9f52a0c1e09ed8b39cfebefc2b243c54c192af3837d24da1c8b42",
+  "stageInputsSha256": "0b33bc590c1b1b6cdb967b2a5e99d55a902da515003d81408eb15e8f3f2ce76a",
+  "priorRedRetained": true,
+  "liveDeploymentQualified": false,
+  "all1625InputsMatchStage": true,
+  "runtimeCompositionInstalled": true,
+  "operationalDeployed": false,
+  "actualFocused": 55,
+  "typecheck": 0,
+  "build": 0,
+  "verifiedAt": "2026-10-12T20:47:35.956065+00:00",
+  "testFileConcurrency": 1,
+  "missingProtectedFixture": "not executed or counted skipped",
+  "runtimeWindowsLive24h": "UNVERIFIED",
+  "prior777Red": {
+    "tests": 8256,
+    "pass": 8253,
+    "fail": 1,
+    "cancelled": 2,
+    "skipped": 0
+  },
+  "timeoutCause": "UNVERIFIED; unchanged isolated and new full run pass, not proof of a fixed cause",
+  "evidence": {
+    ".runtime/control-read-qualified-779/full.log": "d9beb23027b9f52a0c1e09ed8b39cfebefc2b243c54c192af3837d24da1c8b42",
+    ".runtime/control-read-qualified-779/applied/focused.log": "8355a52647181bdd7e9e490bf19899de576d964c6d326d0cfc138c68d10394c2",
+    ".runtime/control-read-qualified-779/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/control-read-qualified-779/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/control-read-qualified-779/stage-inputs.json": "0b33bc590c1b1b6cdb967b2a5e99d55a902da515003d81408eb15e8f3f2ce76a"
+  }
+}

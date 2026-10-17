@@ -1,0 +1,26 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 520,
+  "localCommit": "24d0b0a74468e19206ff8c39f94b7660ebbdbeb4",
+  "fullTests": 6857,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/discord-runtime/history-bootstrap.ts": "0c9810910dcf01b32236085a8eea4e606c8320066f607e66d0b4861d213f6826",
+    "src/runtime/discord-runtime/history-operations.ts": "53ec299c35c16f6c5dcd953f39e39fe4a0f23db8a90b1dbd4dd2a0674e5cc523",
+    "src/runtime/discord-runtime/native-history-targets.ts": "1236fb794852177323c10c9816b1537b55ef7e760c93f651a03d34fc335193fd",
+    "src/runtime/discord-runtime/periodic-history.ts": "4c1991a3a34d0e5123f0b028f4357c3cb1de172899c305b266f6f453a59c002f",
+    "src/runtime/discord-runtime/prepared-typed-ingress.ts": "0d2f6bf2f87d0c211de1e4331a3c6029de5d4b3b9586e8cf3c8b3344e7fec50a",
+    "test/runtime/discord-runtime/startup-context.test.ts": "d11836b93385e9fdbfcc9359d03a5ec88f8b947533eec19bb51b71d01a21dc5f",
+    "test/runtime/history-poll/discord-gap.test.ts": "98335939c6623cce2a5bfef8b5de3d5562cd4216dc97ee2a7e9ac082575f7aaf"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

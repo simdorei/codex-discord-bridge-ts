@@ -1,0 +1,55 @@
+{
+  "status": "WIP_STRICT_AND_FOCUSED_PASS_FULL_PENDING",
+  "files": [
+    {
+      "path": "src/store/archive-deletion.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-845-archive-fence/files/src/store/archive-deletion.ts",
+      "sha256": "80cc2aeeae62576a1d841ad3f8060bbe792d6195c3f4c37cbc00f3671a2b15e6"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-845-archive-fence/files/src/store/state-access-facade.ts",
+      "sha256": "b6ca9b26e405665e37c46b9cca48644cdae44e0d665873a7c77c7575c27148d6"
+    },
+    {
+      "path": "test/store/archive-deletion.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-845-archive-fence/files/test/store/archive-deletion.test.ts",
+      "sha256": "ca6e0787f3f43ae6b7d68637cbc9bafbcb3fbd5a041887a7b3684ad07bb71107"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-845-archive-fence/files/test/store/state-access-facade.test.ts",
+      "sha256": "4748f0bd10ee7109a632bc7ab99dfb2179ba6cb9c7bcf1b825461c1d63d93b91"
+    }
+  ],
+  "strictBuildExit": 0,
+  "focused": {
+    "tests": 39,
+    "pass": 39,
+    "fail": 0,
+    "skipped": 0,
+    "logSha256": "6ea15ad671a492791d0ceffd3c9ec5af1d84a5b5b1420ff65e4975f56dd856cd"
+  },
+  "authority": {
+    "rustCommit": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+    "sourcePaths": [
+      "crates/cdr-store/src/room_cleanup/archive.rs",
+      "crates/cdr-store/src/mapping/maintenance.rs"
+    ]
+  },
+  "semantics": [
+    "Exact original message/event/channel/user/reference/executing ingress custody before reservation.",
+    "Immediate transaction protects pending checks and durable fence insertion. Only exact confirmation is excluded.",
+    "Target/token/deleting guard protects mapping/cursor deletion; errors rollback; durable fence remains for recovery.",
+    "Central StateAccessFacade explicit exports, identity and exact membership tests maintained."
+  ],
+  "limits": [
+    "Staged only; no command wiring or actual source-file deletion.",
+    "Existing-only store boundary replaces initialization in runtime native worker paths; 100ms SQLite busy timeout.",
+    "Room evidence bounded at4096 and completeness refusal beyond bound; schema primary key normally permits one.",
+    "Caller must use native worker and verify source deletion before mirror deletion. Token alone is not source deletion proof.",
+    "Whole suite pending; 842\u2013844 full currently running against separate frozen stage.",
+    "Windows exclusive handle deletion and metadata write custody still unimplemented.",
+    "No live DB/Discord, performance, operational or deployment qualification. Protected redaction fixture remains absent/unverified."
+  ]
+}

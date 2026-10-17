@@ -1,0 +1,27 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 294,
+  "localCommit": "e7c4384ed53e2a52f35432305bf0e7f5a277787a",
+  "fullTests": 5277,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/message-worker/admission.ts": "9ad085fc7857b62382d60b2e133dc2427b19d6dedd4b5bebfd86f81bd18dac44",
+    "src/runtime/message-worker/discard.ts": "4b72fd210510c4555107d37781fdc92300826b9fdeeb2c468685be243d516527",
+    "src/runtime/message-worker/reply-delivery.ts": "5df6c19574ddf12fa4cf6528ad86fad3fabeb1e8600f414a34aa43f3cdc68d8a",
+    "src/store/processed-messages.ts": "f1a92ff5ab4d1199550ec0635df7cfe9e239806b774f848a6f9de927e55823f6",
+    "src/store/state-access-facade.ts": "42c1206e5909affcfb4976e84e4894cad938dd493a452f66d8a42f99b8260db2",
+    "test/runtime/message-worker/discard.test.ts": "30dc14ae1c0e8a0694156b3a2f9132b9385fa02f02e5517b8f79754a05076eac",
+    "test/runtime/message-worker/reply-delivery.test.ts": "ad8345e43b8a0bb18c3b4914549495197fd5eccfd49963a2e36b3b654ad894f7",
+    "test/store/state-access-facade.test.ts": "fa696a9524afb7d6c1b24343cd67d8e575b87f72847dcfdf4d68e10234564994"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows integration incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

@@ -1,0 +1,226 @@
+{
+  "asOf": "2026-10-13T06:59:00Z",
+  "kind": "STATIC_ROUTE_INVENTORY_NOT_FUNCTIONAL_ACCEPTANCE",
+  "counts": {
+    "described": 38,
+    "directRouteBranches": 32,
+    "upstreamMessageHandler": 1,
+    "unsupportedAtCommandDispatch": 5
+  },
+  "inputs": [
+    {
+      "path": "src/runtime/action-executor/command-snapshot.ts",
+      "sha256": "5c06636fd60fa95e9c4c2b38d570a4a5b05d2aea771befe88e04fad7b70f96ed"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "fe9c84cd53885154acc1b8735b7965405901ea727d8ea2028ead34e0bc2b9f0e"
+    },
+    {
+      "path": "src/runtime/action-executor/basic-dispatcher.ts",
+      "sha256": "831121203772c6ca958b71debc81b4ba0cca953ef0670c03b950483137cb2d6b"
+    },
+    {
+      "path": "src/runtime/message-worker/processor.ts",
+      "sha256": "7bf3834031ecb5b7c205ade1f12fd95bec5e25bbf89185f5a1703f887a02ef83"
+    }
+  ],
+  "commands": [
+    {
+      "name": "Help",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Where",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Doctor",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Approval",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Runners",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "MirrorCheck",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "QaButtons",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "RestartCodex",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "ForceRestartCodex",
+      "route": "UnsupportedAtCommandDispatch",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Identity",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Resources",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "HostReboot",
+      "route": "UnsupportedAtCommandDispatch",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "List",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "ArchivedList",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Use",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Status",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Settings",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "AutoReserve",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Context",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Usage",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "New",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Ask",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Interview",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Steer",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Retract",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "SavedRequest",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "DiscardRequest",
+      "route": "UpstreamMessageHandler",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "MirrorInspect",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "BridgeSync",
+      "route": "UnsupportedAtCommandDispatch",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Open",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Stop",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Recover",
+      "route": "UnsupportedAtCommandDispatch",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Repair",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Archive",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "Resume",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "SettingsOptions",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "DeleteArchivePreview",
+      "route": "RouteBranchPresent",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    },
+    {
+      "name": "DeleteArchiveConfirm",
+      "route": "UnsupportedAtCommandDispatch",
+      "functionalAcceptance": "UNVERIFIED_BY_THIS_INVENTORY"
+    }
+  ],
+  "limits": [
+    "No percentage of whole migration can be derived from this routing count",
+    "Existing route can have unsupported platform or missing runtime dependency",
+    "Only exact current command snapshot boundary enumerated; not all Rust functionality",
+    "No tests are claimed by this static inventory"
+  ]
+}

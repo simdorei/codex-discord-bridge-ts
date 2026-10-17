@@ -1,0 +1,10 @@
+[
+  {
+    "path": "src/codex-state/store.ts",
+    "sha256": "01e9c4f7eb314b0033424e399619ec08140f8ae990a2bcfb9d5ce62e5391948d"
+  },
+  {
+    "path": "test/codex-state/limited-thread-store.test.ts",
+    "sha256": "8918254f3b8a3cdc4c4514c660f2f8374da5c4bec765674a7f89d01f8e2217e5"
+  }
+]

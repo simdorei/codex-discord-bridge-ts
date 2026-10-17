@@ -1,0 +1,27 @@
+{
+  "status": "WIP_UNAPPLIED_FOCUSED14_PASS_WHOLE_RUNNING",
+  "files": [
+    {
+      "candidatePath": "test/runtime/mirror-sync/cleanup-admission.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-829-cleanup-tests/files/test/runtime/mirror-sync/cleanup-admission.test.ts",
+      "sha256": "f1a7020e31a5e99a0637d57c56cb2cc859d3ff9fa8601a3fa9ba80a7cd566c46"
+    }
+  ],
+  "candidateSources": "WIP-828-cleanup-reads, incorporating820-827 and826",
+  "verification": {
+    "strictBuildExit": 0,
+    "focused": {
+      "tests": 14,
+      "pass": 14,
+      "fail": 0,
+      "skip": 0
+    },
+    "full": "Running in a unique new log destination; result not yet known"
+  },
+  "correctionTo828": "Original827 process was not interrupted. Independent terminal exit0 at2026-10-13T15:40:27.973Z and8559PASS summary observed; retry was mistakenly started due to per-command PID namespace visibility and used same logfile. Retry stopped with exit130; overlapping log is not used to qualify product apply. Original terminal and raw logs retained locally.",
+  "limitations": [
+    "Focused synthetic tests only; no full or deployment PASS claimed",
+    "Product unchanged at checkpoint819",
+    "Missing protected redaction test remains unverified"
+  ]
+}

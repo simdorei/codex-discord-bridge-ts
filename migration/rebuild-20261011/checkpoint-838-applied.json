@@ -1,0 +1,151 @@
+{
+  "files": [
+    {
+      "candidatePath": "src/store/archived-cleanup-proof.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-832-archived-proof/files/src/store/archived-cleanup-proof.ts",
+      "sha256": "819b11e9131aa795cbf6e9a96de11a7480e46eb2a5422b7739b28caf7507e875"
+    },
+    {
+      "candidatePath": "test/store/archived-cleanup-proof.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-832-archived-proof/files/test/store/archived-cleanup-proof.test.ts",
+      "sha256": "e4cea80ba798883b00f9ab28a41c6500231f8e8d4520be2463f80dc1eeeecee0"
+    },
+    {
+      "candidatePath": "src/store/archived-cleanup.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-833-archived-transaction/files/src/store/archived-cleanup.ts",
+      "sha256": "acc1e8c9c87e3be4e14a690dfb88f2a6ee155686266da1c55eca638f47c44d7d"
+    },
+    {
+      "candidatePath": "src/store/room-cleanup.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-835-archived-dispatch/files/src/store/room-cleanup.ts",
+      "sha256": "2131157dcf4e9509043859aa832c8e27148bc4adbc568645482db3d8779ca49a"
+    },
+    {
+      "candidatePath": "src/store/state-access-facade.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-835-archived-dispatch/files/src/store/state-access-facade.ts",
+      "sha256": "2204a0de5cc5faf9e1a69b576b4cf79a67b8b3ee07a2e9dcc36c9ffcc24d5d6f"
+    },
+    {
+      "candidatePath": "test/store/archived-cleanup.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-833-archived-transaction/files/test/store/archived-cleanup.test.ts",
+      "sha256": "bf5921e2a6f38e8a9d76988e025fb2d5796fd239140b794764725e8323354017"
+    },
+    {
+      "candidatePath": "test/store/state-access-facade.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-835-archived-dispatch/files/test/store/state-access-facade.test.ts",
+      "sha256": "fd437bd53b757421db9d8c139849768f7db58fdee7dec04f79a5d5ad3032441a"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/archived-native.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-835-archived-dispatch/files/src/runtime/mirror-sync/archived-native.ts",
+      "sha256": "7387eca34ab7a530fb7f3857abde5a6b42ab0f91023c98eb7b7740040c039fcf"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/archived-native-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-834-archived-native/files/src/runtime/mirror-sync/archived-native-worker.ts",
+      "sha256": "e0168c2bd6a2f1d0a08a4f03784ada8994e8c3a11bd5527cac49a63345f2f2f3"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/archived-native.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-835-archived-dispatch/files/test/runtime/mirror-sync/archived-native.test.ts",
+      "sha256": "194b11a5d90fbec028034a7c3c24827d7622b891677952a74711e7153362cf7b"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/store-native-protocol.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-835-archived-dispatch/files/src/runtime/mirror-sync/store-native-protocol.ts",
+      "sha256": "18884cab4057b86886b3089e76ad015083b775678331b4fee899311de923ae31"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/store-native-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-835-archived-dispatch/files/src/runtime/mirror-sync/store-native-worker.ts",
+      "sha256": "56ac5e39109d974a2bf17855f1cbc8ca9b7010a49b1f55c5ab7f21dc812f050c"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/delete-guard.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-835-archived-dispatch/files/src/runtime/mirror-sync/delete-guard.ts",
+      "sha256": "c441b04ffabb79e5bcf0879bbf8bc74422598a7ebf0cd4d4364753252d10f0ae"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/archived-retirement.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-836-archived-retirement/files/src/runtime/mirror-sync/archived-retirement.ts",
+      "sha256": "bf26a42cfd1daed3cf68716757854de1d37131cabc9b08c07a0eaba81ec7a661"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/archived-retirement.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-836-archived-retirement/files/test/runtime/mirror-sync/archived-retirement.test.ts",
+      "sha256": "0c5ef7fe48eb8630fbd5e7806c47eaac16e76382063f94b659becdb77a73091d"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/obsolete-cleanup.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-837-obsolete-cleanup/files/src/runtime/mirror-sync/obsolete-cleanup.ts",
+      "sha256": "fea4fa20ce633c57c9f0d3da076b5256848c2714a8485796d03c7fdb5baf2340"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/obsolete-cleanup.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-837-obsolete-cleanup/files/test/runtime/mirror-sync/obsolete-cleanup.test.ts",
+      "sha256": "0ad64d1ebb134bc08b5e21ed0d0966c5a5b63cdcfb0f0fbe61e2b5d024e20f32"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/sync.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-838-full-sync/files/src/runtime/mirror-sync/sync.ts",
+      "sha256": "6c3f25bc60dbad675428d4a7ec1b3d848c6c454d1216657365b6fcbd236fefde"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/limited-sync.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-838-full-sync/files/src/runtime/mirror-sync/limited-sync.ts",
+      "sha256": "e520c7d004c9a3c695668982c930bdfb9dfbbd48b5647f8b04e850db3ee2608a"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/sync.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-838-full-sync/files/test/runtime/mirror-sync/sync.test.ts",
+      "sha256": "8bf1488b7824beaf3835e0101f39e5902819d4ca9b1ed612c858e08a3c20a586"
+    }
+  ],
+  "beforeSha256": {
+    "src/store/archived-cleanup-proof.ts": null,
+    "test/store/archived-cleanup-proof.test.ts": null,
+    "src/store/archived-cleanup.ts": null,
+    "src/store/room-cleanup.ts": "ebbc9b345c1e13870ce1122c14a9143508d5aa48273bb7f2f87a33d1933e7e4e",
+    "src/store/state-access-facade.ts": "f568bdc972f859297ef273fd329b14b157d36a1e09a970ed168abb3db6806795",
+    "test/store/archived-cleanup.test.ts": null,
+    "test/store/state-access-facade.test.ts": "7f7db7a83b3dc0d092579cf35d044ca3b53da7b3786e6ea735d1efad318eccef",
+    "src/runtime/mirror-sync/archived-native.ts": null,
+    "src/runtime/mirror-sync/archived-native-worker.ts": null,
+    "test/runtime/mirror-sync/archived-native.test.ts": null,
+    "src/runtime/mirror-sync/store-native-protocol.ts": "e3c22352ced2245f2ed317f58bc5f2bb3d3072395020aa98464c83a9246788ce",
+    "src/runtime/mirror-sync/store-native-worker.ts": "2a1890311c2cee850c41013f87082bbf409e7e4f386be5e5bcd867ebc55acb57",
+    "src/runtime/mirror-sync/delete-guard.ts": "16158f4a7557956cbeac47f9fc84bda027050f3837f84b63cb509b91c38be237",
+    "src/runtime/mirror-sync/archived-retirement.ts": null,
+    "test/runtime/mirror-sync/archived-retirement.test.ts": null,
+    "src/runtime/mirror-sync/obsolete-cleanup.ts": null,
+    "test/runtime/mirror-sync/obsolete-cleanup.test.ts": null,
+    "src/runtime/mirror-sync/sync.ts": null,
+    "src/runtime/mirror-sync/limited-sync.ts": "6350c78ad46dcec1834eee72a7bd0f28a3ad08d0292f39f14edf17026dba503e",
+    "test/runtime/mirror-sync/sync.test.ts": null
+  },
+  "sourceTestToolsGraphMatchesQualifiedStage": true,
+  "status": "APPLIED_838_SOURCE_TEST_GRAPH_MATCHES_QUALIFIED_STAGE",
+  "full": {
+    "started": "2026-10-13T19:10:02.629Z",
+    "ended": "2026-10-13T19:28:36.432Z",
+    "exit": 0,
+    "signal": null,
+    "testFiles": 848,
+    "pass": 8644,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "logSha256": "e6faf3da1150ae19399f774c6590b7c5ab92b123813b81970e1ad616c7596bdf"
+  },
+  "actualPostApply": {
+    "strictBuildExit": 0,
+    "focusedPass": 12,
+    "focusedFail": 0,
+    "focusedLogSha256": "55784e0f4065bdd855e39ca3edbe89aefd6dec1561d576ce15c8667bce4f193e"
+  },
+  "limitations": [
+    "Full regression ran against the isolated stage. Actual source/test/tools bytes match that stage; actual post-apply strict build and 12 focused tests reran successfully.",
+    "ActionExecutor BridgeSync wiring, Windows, performance, 24-hour operation, live Discord and deployment remain unverified.",
+    "Protected redaction fixture unavailable, not counted as pass or skip."
+  ]
+}

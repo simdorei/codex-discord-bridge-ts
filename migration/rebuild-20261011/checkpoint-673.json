@@ -1,0 +1,71 @@
+{
+  "checkpoint": 673,
+  "scope": "Native exact resident terminal provenance read and first Waiting Goal owner selection",
+  "qualifiedStage": {
+    "tests": 7668,
+    "pass": 7668,
+    "fail": 0,
+    "cancelled": 0,
+    "skip": 0,
+    "testFiles": 724,
+    "durationMs": 456838.384419
+  },
+  "actualApplied": {
+    "focused": 64,
+    "typecheck": 0,
+    "build": 0,
+    "sourceTestFiles": 1511,
+    "entireSourceTestEqualsQualifiedStage": true
+  },
+  "fullRerunOnActual": false,
+  "contracts": [
+    "Same resident evidence SQL requires thread/turn/i64 generation/resident together",
+    "Durable JSON replay never mints resident provenance or idle-release permission",
+    "First Waiting selection preserves complete whole-queue decode, distinct from unique History rule",
+    "Cancelled proof read retains exact target lease until actual native join and cannot stage terminal/diagnostic",
+    "Original writer and release transaction remain authoritative",
+    "Facade explicit272 aliases and function identity checks"
+  ],
+  "firstFull": {
+    "tests": 7668,
+    "pass": 7662,
+    "fail": 6,
+    "skip": 0,
+    "cancelled": 0,
+    "durationMs": 535851.058067,
+    "disposition": "preserved, not qualified"
+  },
+  "failureAnalysis": "Five old worker timer/deadline tests and one native mirror cancelled-begin deadline failed during overlapping test/build work. Exact failing test and worker/receipt source SHA unchanged from qualified672. Same compiled artifact isolated four-file24PASS, then complete non-overlapped7668PASS without any code/test/deadline/assertion change. Scheduling pressure plausible, not proven root cause; production load/performance remains unqualified.",
+  "missingHistoricalFile": "test/remote-agent/redaction.test.ts (10 unavailable tests; not skipped)",
+  "remoteWrites": "paused after cancellation pending user reply",
+  "limitations": [
+    "General discovery/live/recovery/HTTP guards and writes unfinished",
+    "No Windows/performance/24hour qualification",
+    "Original volume not recovered"
+  ],
+  "files": {
+    "src/store/state-access-facade.ts": "f1fd419ae081f0e2d0a1893bf43f520ee3d8e72efc811ddedb6444a1f66a59b1",
+    "src/store/observed-completion.ts": "1a19c2823fdb3b37dd666c5254d1314a3e140fa28b9a651968457640d7679038",
+    "src/runtime/completion/native-owner-read-worker.ts": "12c0c045fae98a1742465d1dd82776e5b258dafff5e6084031ee01fd71959235",
+    "src/runtime/completion/staged-handler.ts": "a9336671e5f38406da2ebe0cf9d57afb1bcec11a805c2c22f83b8f14aa90b5c8",
+    "src/runtime/completion/native-owner-read.ts": "d6aca2ae92b318806d28b0c935ecbce90e667c72a45b364f7e99d4d344959456",
+    "src/runtime/completion/native-history-read-worker.ts": "44661c69c8426b10404f5093ef0fa48e82dd3dde9b0bd81acfe6045a97a72363",
+    "src/runtime/completion/native-history-read.ts": "073638825d831f3371a1e87d0360c13478eca1388bce129af001c0bc99553b6e",
+    "test/runtime/native-completion-terminal-evidence.test.ts": "c2d02df5db51052d6328438dca50942dcc3d965aaf04e789965b83348034fbe0",
+    "test/store/state-access-facade.test.ts": "5434eee8b71833db6722673c861dcb3fd0c1b0437a1bcdce952c20051df03a33"
+  },
+  "evidence": {
+    ".runtime/completion-terminal-evidence-673/isolated-full.log": "37bb9597efecf9a2c187712098bc2da9ee88d766f670fa2a720eab01fdedf95d",
+    ".runtime/completion-terminal-evidence-673/isolated-full-exit.json": "c7486048b8364347745d21de9a8d700f4b17d7df4149ad82c2a882e3ed6dcf26",
+    ".runtime/completion-terminal-evidence-673/initial-full-red/full.log": "28570d0857e9251e315edab5de3a1ac042a5778390bdf1d87773d9b26565ba49",
+    ".runtime/completion-terminal-evidence-673/initial-full-red/full-exit.json": "6d80e82856d34bacec13eafb1c2dd67e911d2510d748c6238b13029f8949576b",
+    ".runtime/completion-terminal-evidence-673/initial-full-red/unchanged-failure-source-proof.json": "cd2c5b41db513b8dc4e781cf5308f1786ddbfae9d063e4b87852ff50f7dc3647",
+    ".runtime/completion-terminal-evidence-673/isolated-failure-probe.log": "f36098e55fbe3585d6a3348b473e3fb9013db02bb2c5877253b7c163a751572d",
+    ".runtime/completion-terminal-evidence-673/REVIEW.md": "106485d6576d7eb14d3f8c79ba75711e7a3962b9ef286a65b6304dc761c850d5",
+    ".runtime/completion-terminal-evidence-673/scope-proof.json": "ca9a931d4f74a637f365d7bcdd7fd0767eddcf3a13f006e17024b39a82ecf761",
+    ".runtime/completion-terminal-evidence-673/applied/applied-manifest.json": "83070d517bb2ebae6197e1470e1b62d733f9cad589b39aa4a3755501b4228f5f",
+    ".runtime/completion-terminal-evidence-673/applied/source-test-identity.json": "4a00794a5bb229710ff11938472a13026f04b2fd74ef95ad1e5ce1bffeb7f061",
+    ".runtime/completion-terminal-evidence-673/applied/focused.log": "776677edf721e382b6b398c7625fc01fca3a7d4f10d8197a1376c2194b2f9b3b",
+    ".runtime/completion-terminal-evidence-673/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

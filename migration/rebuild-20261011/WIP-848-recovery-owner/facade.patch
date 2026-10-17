@@ -1,0 +1,66 @@
+--- a/src/store/state-access-facade.ts
++++ b/src/store/state-access-facade.ts
+@@ -198,6 +198,9 @@
+ export const listIngressesForOwner: typeof IngressRead.listIngressesForOwner = IngressRead.listIngressesForOwner;
+ 
+ export const validateRecoveryEffectIn: typeof RecoveryEffect.validateRecoveryEffectIn = RecoveryEffect.validateRecoveryEffectIn;
++export const claimIngressRecoverySnapshotIn: typeof RecoveryCustody.claimIngressRecoverySnapshotIn = RecoveryCustody.claimIngressRecoverySnapshotIn;
++export const claimIngressRecoverySnapshotExisting: typeof RecoveryCustody.claimIngressRecoverySnapshotExisting = RecoveryCustody.claimIngressRecoverySnapshotExisting;
++export const validateIngressRecoverySnapshotIn: typeof RecoveryCustody.validateIngressRecoverySnapshotIn = RecoveryCustody.validateIngressRecoverySnapshotIn;
+ export const claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery = RecoveryCustody.claimIngressRecovery;
+ export const validateIngressRecovery: typeof RecoveryCustody.validateIngressRecovery = RecoveryCustody.validateIngressRecovery;
+ 
+@@ -669,6 +672,9 @@
+   readonly cancelForRecovery: typeof RecoveryCancellation.cancelForRecovery;
+   readonly cancelLatestPending: typeof PendingCancellation.cancelLatestPending;
+   readonly validateRecoveryEffectIn: typeof RecoveryEffect.validateRecoveryEffectIn;
++  readonly claimIngressRecoverySnapshotIn: typeof RecoveryCustody.claimIngressRecoverySnapshotIn;
++  readonly claimIngressRecoverySnapshotExisting: typeof RecoveryCustody.claimIngressRecoverySnapshotExisting;
++  readonly validateIngressRecoverySnapshotIn: typeof RecoveryCustody.validateIngressRecoverySnapshotIn;
+   readonly claimIngressRecovery: typeof RecoveryCustody.claimIngressRecovery;
+   readonly validateIngressRecovery: typeof RecoveryCustody.validateIngressRecovery;
+ 
+@@ -1014,6 +1020,9 @@
+   runnerTargetCounts,
+   listIngressesForOwner,
+   validateRecoveryEffectIn,
++  claimIngressRecoverySnapshotIn,
++  claimIngressRecoverySnapshotExisting,
++  validateIngressRecoverySnapshotIn,
+   claimIngressRecovery,
+   validateIngressRecovery,
+   cancelLatestPending,
+--- a/test/store/state-access-facade.test.ts
++++ b/test/store/state-access-facade.test.ts
+@@ -437,6 +437,12 @@
+     assert.strictEqual(StateAccessFacade.diagnosticDatabaseCounts, DiagnosticRead.diagnosticDatabaseCounts);
+     assert.strictEqual(StateAccessFacade.diagnosticIdleRelease, DiagnosticRead.diagnosticIdleRelease);
+     assert.strictEqual(StateAccessFacade.runnerTargetCounts, RunnerCounts.runnerTargetCounts);
++    assert.strictEqual(StateAccessFacade.claimIngressRecoverySnapshotIn, RecoveryCustody.claimIngressRecoverySnapshotIn);
++    assert.strictEqual(FacadeExports.claimIngressRecoverySnapshotIn, RecoveryCustody.claimIngressRecoverySnapshotIn);
++    assert.strictEqual(StateAccessFacade.claimIngressRecoverySnapshotExisting, RecoveryCustody.claimIngressRecoverySnapshotExisting);
++    assert.strictEqual(FacadeExports.claimIngressRecoverySnapshotExisting, RecoveryCustody.claimIngressRecoverySnapshotExisting);
++    assert.strictEqual(StateAccessFacade.validateIngressRecoverySnapshotIn, RecoveryCustody.validateIngressRecoverySnapshotIn);
++    assert.strictEqual(FacadeExports.validateIngressRecoverySnapshotIn, RecoveryCustody.validateIngressRecoverySnapshotIn);
+     assert.strictEqual(StateAccessFacade.claimIngressRecovery, RecoveryCustody.claimIngressRecovery);
+     assert.strictEqual(StateAccessFacade.validateIngressRecovery, RecoveryCustody.validateIngressRecovery);
+     assert.strictEqual(StateAccessFacade.cancelLatestPending, PendingCancellation.cancelLatestPending);
+@@ -840,6 +846,9 @@
+       "diagnosticIdleRelease",
+       "runnerTargetCounts",
+       "validateRecoveryEffectIn",
++      "claimIngressRecoverySnapshotIn",
++      "claimIngressRecoverySnapshotExisting",
++      "validateIngressRecoverySnapshotIn",
+       "claimIngressRecovery",
+       "validateIngressRecovery",
+       "cancelLatestPending",
+@@ -968,7 +977,7 @@
+     assert.strictEqual(StateAccessFacade.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);assert.strictEqual(FacadeExports.releaseAllPromptIntakeClaimsExisting, PromptIntakeLease.releaseAllPromptIntakeClaimsExisting);
+ assert.strictEqual(StateAccessFacade.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);assert.strictEqual(FacadeExports.recordPromptIntakeFailureExisting, PromptIntakeLease.recordPromptIntakeFailureExisting);
+ assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);assert.strictEqual(FacadeExports.removePromptIntakeIfQueuedExisting, PromptIntakeWrite.removePromptIntakeIfQueuedExisting);
+-    assert.strictEqual(actual.length, 359);
++    assert.strictEqual(actual.length, 362);
+   });
+ 
+   it("does not expose unsupplied readPendingAuthority on the facade", () => {

@@ -1,0 +1,404 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": 936,
+  "qualification": "partial Linux synthetic G5 cursor handoff crash custody",
+  "node": "v24.21.0",
+  "outcome": "passed",
+  "failureStage": null,
+  "limits": {
+    "nativeMs": 5000,
+    "bootstrapMs": 10000,
+    "childMs": 15000,
+    "terminationMs": 5000,
+    "matrixMs": 180000,
+    "fileBytes": 65536,
+    "maxRequests": 4
+  },
+  "bootstrap": {
+    "cases": 2,
+    "records": 16,
+    "bytes": 4096,
+    "historicalTransportAttempts": 0,
+    "seedOffset": 4352,
+    "seedRevision": 2,
+    "targetBytes": 256
+  },
+  "totals": {
+    "cases": 2,
+    "spawnedChildren": 4,
+    "settledChildren": 4,
+    "maxLiveChildren": 1,
+    "seedTransportAttempts": 2,
+    "targetTransportAttempts": 2,
+    "externalTargetAcceptances": 2
+  },
+  "cases": [
+    {
+      "cut": "before-commit",
+      "crash": {
+        "outcome": "parked",
+        "cut": "before-commit",
+        "mode": "crash",
+        "stage": "held-in-original-worker",
+        "counts": {
+          "native": {
+            "cursor:Read": 1,
+            "decode": 1,
+            "ownership": 2,
+            "plan": 1,
+            "receipt:Begin": 1,
+            "receipt:Confirm": 1,
+            "cursor:MixedAdvance": 1
+          },
+          "transportEntries": 1,
+          "beginResults": [
+            "New"
+          ],
+          "confirmEntries": 1,
+          "confirmTrue": 1
+        },
+        "polls": [],
+        "nativeHoldings": {
+          "Background": 1,
+          "Control": 0,
+          "Observation": 0,
+          "Discovery": 0,
+          "Maintenance": 0
+        },
+        "activeFileReads": 0,
+        "handoff": {
+          "stage": "held",
+          "ready": 1,
+          "threadId": 9,
+          "begins": 1,
+          "commitsEntered": 1,
+          "commitsForwarded": 0,
+          "closes": 0,
+          "ackEntries": 0,
+          "held": 1,
+          "operationId": "a59dc5d8-54ff-409c-825f-6504b19a16a0",
+          "receiptSetHash": "212f6a6f33fe238048da9ca166635803176e0e509d7a2c87eb9f87335657d8aa",
+          "responseReceived": false
+        }
+      },
+      "termination": {
+        "spawned": true,
+        "spawnFailed": false,
+        "errorSeen": false,
+        "exitSeen": true,
+        "closeSeen": true,
+        "exitCode": null,
+        "exitSignal": "SIGKILL",
+        "closeCode": null,
+        "closeSignal": "SIGKILL",
+        "killAttempted": true,
+        "killAccepted": true
+      },
+      "restart": {
+        "outcome": "passed",
+        "cut": "before-commit",
+        "mode": "restart",
+        "stage": "complete",
+        "counts": {
+          "native": {
+            "cursor:Read": 1,
+            "decode": 1
+          },
+          "transportEntries": 0,
+          "beginResults": [],
+          "confirmEntries": 0,
+          "confirmTrue": 0
+        },
+        "polls": [
+          {
+            "poll": 1,
+            "outcome": "ReusedConfirmed",
+            "error": null,
+            "cause": null,
+            "innerCause": null,
+            "deliveryFailure": null,
+            "satisfied": 1,
+            "offset": 4608,
+            "revision": 3,
+            "receiptsUnchanged": true,
+            "fullStateUnchanged": false,
+            "counts": {
+              "native": {
+                "cursor:Read": 1,
+                "decode": 1,
+                "ownership": 1,
+                "plan": 1,
+                "cursor:MixedAdvance": 1
+              },
+              "transportEntries": 0,
+              "beginResults": [],
+              "confirmEntries": 0,
+              "confirmTrue": 0
+            },
+            "nativeHoldings": {
+              "Background": 0,
+              "Control": 0,
+              "Observation": 0,
+              "Discovery": 0,
+              "Maintenance": 0
+            },
+            "activeFileReads": 0
+          },
+          {
+            "poll": 2,
+            "outcome": "EOF",
+            "error": null,
+            "cause": null,
+            "innerCause": null,
+            "deliveryFailure": null,
+            "satisfied": 0,
+            "offset": 4608,
+            "revision": 3,
+            "receiptsUnchanged": true,
+            "fullStateUnchanged": true,
+            "counts": {
+              "native": {
+                "cursor:Read": 1,
+                "decode": 1
+              },
+              "transportEntries": 0,
+              "beginResults": [],
+              "confirmEntries": 0,
+              "confirmTrue": 0
+            },
+            "nativeHoldings": {
+              "Background": 0,
+              "Control": 0,
+              "Observation": 0,
+              "Discovery": 0,
+              "Maintenance": 0
+            },
+            "activeFileReads": 0
+          }
+        ],
+        "nativeHoldings": {
+          "Background": 0,
+          "Control": 0,
+          "Observation": 0,
+          "Discovery": 0,
+          "Maintenance": 0
+        },
+        "activeFileReads": 0,
+        "handoff": null
+      },
+      "restartExit": {
+        "spawned": true,
+        "spawnFailed": false,
+        "errorSeen": false,
+        "exitSeen": true,
+        "closeSeen": true,
+        "exitCode": 0,
+        "exitSignal": null,
+        "closeCode": 0,
+        "closeSignal": null,
+        "killAttempted": false,
+        "killAccepted": null
+      },
+      "targetTransportAttempts": 1,
+      "externalAcceptances": 1,
+      "exactLargeIdPreserved": true,
+      "baselineCursorsRetainedAfterCrash": true,
+      "seedPreserved": true,
+      "mappingPreserved": true,
+      "rolloutIdentityPreserved": true,
+      "targetReceiptState": "Confirmed",
+      "finalOffset": 4608,
+      "finalRevision": 3,
+      "fixtureRemoved": true
+    },
+    {
+      "cut": "before-ack",
+      "crash": {
+        "outcome": "parked",
+        "cut": "before-ack",
+        "mode": "crash",
+        "stage": "held-in-original-worker",
+        "counts": {
+          "native": {
+            "cursor:Read": 1,
+            "decode": 1,
+            "ownership": 2,
+            "plan": 1,
+            "receipt:Begin": 1,
+            "receipt:Confirm": 1,
+            "cursor:MixedAdvance": 1
+          },
+          "transportEntries": 1,
+          "beginResults": [
+            "New"
+          ],
+          "confirmEntries": 1,
+          "confirmTrue": 1
+        },
+        "polls": [],
+        "nativeHoldings": {
+          "Background": 1,
+          "Control": 0,
+          "Observation": 0,
+          "Discovery": 0,
+          "Maintenance": 0
+        },
+        "activeFileReads": 0,
+        "handoff": {
+          "stage": "held",
+          "ready": 1,
+          "threadId": 9,
+          "begins": 1,
+          "commitsEntered": 1,
+          "commitsForwarded": 1,
+          "closes": 1,
+          "ackEntries": 1,
+          "held": 1,
+          "operationId": "4743aa51-54e1-4bf4-baf1-cf71db04894a",
+          "receiptSetHash": "a8bc7c3da13c09b3c670f0c6898daecc216fb81d8686faf6ff5bde551b8795d4",
+          "responseReceived": false
+        }
+      },
+      "termination": {
+        "spawned": true,
+        "spawnFailed": false,
+        "errorSeen": false,
+        "exitSeen": true,
+        "closeSeen": true,
+        "exitCode": null,
+        "exitSignal": "SIGKILL",
+        "closeCode": null,
+        "closeSignal": "SIGKILL",
+        "killAttempted": true,
+        "killAccepted": true
+      },
+      "restart": {
+        "outcome": "passed",
+        "cut": "before-ack",
+        "mode": "restart",
+        "stage": "complete",
+        "counts": {
+          "native": {
+            "cursor:Read": 1,
+            "decode": 1
+          },
+          "transportEntries": 0,
+          "beginResults": [],
+          "confirmEntries": 0,
+          "confirmTrue": 0
+        },
+        "polls": [
+          {
+            "poll": 1,
+            "outcome": "EOF",
+            "error": null,
+            "cause": null,
+            "innerCause": null,
+            "deliveryFailure": null,
+            "satisfied": 0,
+            "offset": 4608,
+            "revision": 3,
+            "receiptsUnchanged": true,
+            "fullStateUnchanged": true,
+            "counts": {
+              "native": {
+                "cursor:Read": 1,
+                "decode": 1
+              },
+              "transportEntries": 0,
+              "beginResults": [],
+              "confirmEntries": 0,
+              "confirmTrue": 0
+            },
+            "nativeHoldings": {
+              "Background": 0,
+              "Control": 0,
+              "Observation": 0,
+              "Discovery": 0,
+              "Maintenance": 0
+            },
+            "activeFileReads": 0
+          },
+          {
+            "poll": 2,
+            "outcome": "EOF",
+            "error": null,
+            "cause": null,
+            "innerCause": null,
+            "deliveryFailure": null,
+            "satisfied": 0,
+            "offset": 4608,
+            "revision": 3,
+            "receiptsUnchanged": true,
+            "fullStateUnchanged": true,
+            "counts": {
+              "native": {
+                "cursor:Read": 1,
+                "decode": 1
+              },
+              "transportEntries": 0,
+              "beginResults": [],
+              "confirmEntries": 0,
+              "confirmTrue": 0
+            },
+            "nativeHoldings": {
+              "Background": 0,
+              "Control": 0,
+              "Observation": 0,
+              "Discovery": 0,
+              "Maintenance": 0
+            },
+            "activeFileReads": 0
+          }
+        ],
+        "nativeHoldings": {
+          "Background": 0,
+          "Control": 0,
+          "Observation": 0,
+          "Discovery": 0,
+          "Maintenance": 0
+        },
+        "activeFileReads": 0,
+        "handoff": null
+      },
+      "restartExit": {
+        "spawned": true,
+        "spawnFailed": false,
+        "errorSeen": false,
+        "exitSeen": true,
+        "closeSeen": true,
+        "exitCode": 0,
+        "exitSignal": null,
+        "closeCode": 0,
+        "closeSignal": null,
+        "killAttempted": false,
+        "killAccepted": null
+      },
+      "targetTransportAttempts": 1,
+      "externalAcceptances": 1,
+      "exactLargeIdPreserved": true,
+      "baselineCursorsRetainedAfterCrash": false,
+      "seedPreserved": true,
+      "mappingPreserved": true,
+      "rolloutIdentityPreserved": true,
+      "targetReceiptState": "Confirmed",
+      "finalOffset": 4608,
+      "finalRevision": 3,
+      "fixtureRemoved": true
+    }
+  ],
+  "unfinished": null,
+  "cleanup": {
+    "parentNativeHoldings": {
+      "Background": 0,
+      "Control": 0,
+      "Observation": 0,
+      "Discovery": 0,
+      "Maintenance": 0
+    },
+    "parentActiveFileReads": 0,
+    "unconfirmedOwnedChildProcesses": 0,
+    "fixtureCleanupDebt": 0,
+    "killedChildHoldingsAfterDeath": "not observable; only pre-death active holdings and actual process exit/close are evidenced"
+  }
+}

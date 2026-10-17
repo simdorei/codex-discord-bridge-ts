@@ -1,0 +1,43 @@
+{
+  "checkpoint": 661,
+  "scope": "Original async question notification journal and certificate isolated in owned native workers",
+  "qualifiedStage": {
+    "tests": 7579,
+    "pass": 7579,
+    "fail": 0,
+    "cancelled": 0,
+    "skip": 0,
+    "testFiles": 714
+  },
+  "actualApplied": {
+    "focused": 69,
+    "typecheck": 0,
+    "build": 0,
+    "sourceTestFiles": 1491,
+    "entireSourceTestEqualsQualifiedStage": true
+  },
+  "fullRerunOnActual": false,
+  "missingHistoricalFile": "test/remote-agent/redaction.test.ts (10 unavailable tests; not skipped)",
+  "contracts": [
+    "Per-record transaction followed by separate promotion; partial success preserved",
+    "Existing-only store; no implicit creation/migration",
+    "Original owner/generation/turn/item/index/clock snapshot",
+    "Native accepted cancellation joins actual exit; unknown results are not retried",
+    "32 maximum valid question bodies certified; bounded 4MiB all-Question envelope; mixed/other1MiB unchanged"
+  ],
+  "remoteWrites": "paused pending reply after cancellation",
+  "limitations": [
+    "Other synchronous store calls remain, including question preparation/retention and delivery",
+    "Windows/24-hour/live deployment unverified",
+    "Original lost volume not recovered; this is new reconstruction evidence"
+  ],
+  "evidence": {
+    ".runtime/reconstruct-661-question-producer/full.log": "e6d86c09d97b05c8a54363f3e5171d9123c1e54baffffe95dfd616f579d2d096",
+    ".runtime/reconstruct-661-question-producer/full-exit.json": "d95f98523ad27bc6c62397b462ceec6e1369eee5e6d595080886fad395ea6a92",
+    ".runtime/reconstruct-661-question-producer/shared-transaction-proof.json": "aa7296dfb356dcdf88c97c07704a9ca2d18c68f3b1d7a001c57e52f875b1a0df",
+    ".runtime/reconstruct-661-question-producer/applied/applied-manifest.json": "1f3e20037161c27d2b9588a196c49334a8bd3eba646e6d793843ceebb3353924",
+    ".runtime/reconstruct-661-question-producer/applied/source-test-identity.json": "f773b4b94877eb02a137c1097c5901dae37d72e5bdae7d60d97c80910c36d6ca",
+    ".runtime/reconstruct-661-question-producer/applied/focused.log": "0fe592b31bc896c7281d9470187065aeda02b2da17c5a66f14b178b5fa7569ee"
+  },
+  "at": "2026-10-11T21:29:52.143239+00:00"
+}

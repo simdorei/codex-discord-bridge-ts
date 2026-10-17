@@ -1,0 +1,25 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 553,
+  "localCommit": "3426ad201d4f214bb0397d6a9668bc005486a467",
+  "fullTests": 7054,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/remote-agent/command-fingerprint.ts": "e4f69d9703a9d1b73e92e68a11747032981b8ec72b7d2cc939b5750fc58a950e",
+    "src/remote-agent/decode-worker.ts": "d2663041428273829d9b4148804981b222f9e07421bb259faa16c9af4442b8f4",
+    "src/remote-agent/dispatch-contract.ts": "db7228e0ff1df6ddc95c4277a2893d802abc43aa49f87c84b0868b4c25ed1b77",
+    "src/remote-agent/native-decode.ts": "8918f2702c739db2d50ab49e4aea4bb873f055ab513588f085d68667bf873de9",
+    "test/remote-agent/command-fingerprint.test.ts": "b59966e88bd2b4fdf15d5df43395267dfa572254c6fc6a2a71d9e1c8e47e2f8b",
+    "test/remote-agent/dispatch-contract.test.ts": "d6cef67b16fd90359a38f0ae6d35b1dcc6924b2f90e62f0e5b3b7f3410319228"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

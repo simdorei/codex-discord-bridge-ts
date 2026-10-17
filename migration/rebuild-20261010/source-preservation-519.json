@@ -1,0 +1,25 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 519,
+  "localCommit": "8488de6b9a9edf356b84beaa8dce438d15a219f2",
+  "fullTests": 6855,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/discord-runtime/history-target-worker.ts": "9d7ba1db770cf6a6c177222d7fb06fb290d62033527c7c91c50c035f148dba54",
+    "src/runtime/discord-runtime/native-history-targets.ts": "8d23d82475cece108248ea828780d16ee3f61ec1af2641586d97ba6254ca63ab",
+    "src/runtime/discord-runtime/prepared-typed-ingress.ts": "88476b506c8c364cf2f573df1a92bc172bb0733c18c877f079a186d5d0c66a43",
+    "src/store/history-targets.ts": "ca6f874ea6feab9e7a70a33aa6c7aec9736ad29e7588f020ee697a7d7b805af9",
+    "test/runtime/discord-runtime/native-history-targets.test.ts": "55351340040e33af4ca371d7a87cd349c128dbf77a5e865e937569e0fb92130c",
+    "test/runtime/discord-runtime/startup-context.test.ts": "3bcde155eac4df8410fd3b1b277f4206c4d172aaf9406673844300e476f617aa"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

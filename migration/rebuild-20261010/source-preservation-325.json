@@ -1,0 +1,26 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 325,
+  "localCommit": "d7e9f2bbc08b546ad7c6363fe4b15112655357eb",
+  "fullTests": 5530,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/codex-state/context-batch.ts": "db86c75d3efa126815583f12dffae988c628bfb6e6195bbeb97c6b37b7c2a10e",
+    "src/codex-state/context-reader.ts": "8d689cd79eb44a3e856b4484f38eb3a548f617ea1766b3847653a5056e3b03d0",
+    "src/codex-state/context-worker.ts": "a3dbb67f254152690727a045ec05e124de7eeddad7c364916e4a115154860a24",
+    "src/runtime/owned-worker-slot.ts": "781e79846116b2f9bfd88f5a9cae1da33d96d9eb26ef16f5ab9b2157296d78cc",
+    "test/codex-state/context-batch.test.ts": "f727c1b0c725811bfab8cb8267724eaddc0b5c992cef3610c3096bf67c67042d",
+    "test/codex-state/context-reader.test.ts": "b666903c6692854df0adcd2dc62777e7cf8a34d961a86fd63a278bf2572a3b9c",
+    "test/runtime/owned-worker-slot.test.ts": "f81a669b3b8b1cea57d8cf05db8428f610562a46c12ea27d00337a2807c8d9e4"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}
