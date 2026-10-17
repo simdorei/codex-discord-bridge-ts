@@ -9,7 +9,8 @@ import {claimStopControl,serializeStopControl,type StopControl} from '../store/s
 import {parseSerdeValue} from '../core/serde-json-parse.ts';
 import {measurePassiveValue,SERVICE_PROFILES,validateServiceRequest} from './persistent-resident-services-protocol.ts';
 import type {PersistentResidentScenario,PersistentResidentFixtureFailureStep} from './persistent-resident-bootstrap.ts';
-import type {PendingServerRequest} from '../app-server/server-request-state.ts';
+import {ownedServerResponseFailure,type PendingServerRequest} from '../app-server/server-request-state.ts';
+import {ownedResidentFailure} from '../app-server/resident-state.ts';
 import {requirePersistentResidentRole} from './persistent-resident-bootstrap.ts';
 import {ResidentLocalMutationOwner} from './resident-local-mutation-owner.ts';
 import type {SequentialMutationClient} from './sequential-mutation-broker-client.ts';
@@ -188,7 +189,15 @@ export async function runPersistentResidentFixture(resident:PortableResidentLife
    binding.failureStep='seed';fixtureRow(binding,generation,'running');let request:PendingServerRequest|null=await fixtureServerRequest(resident,binding);
    if(scenario==='response-begin-refused'){
     usingExistingStore(binding.path,db=>db.exec("CREATE TRIGGER fixture_refuse_response BEFORE INSERT ON cdr_server_responses BEGIN SELECT RAISE(ABORT,'fixed fixture begin refusal'); END"));
-    try{for(let i=0;i<3;i++){await assert.rejects(fixtureRespond(resident,binding,request,{decision:'accept'}));binding.failureStep='durable-assert';assert.equal(fixtureCount(binding,"SELECT count(*) AS n FROM cdr_server_responses"),0);}}
+    try{
+     await assert.rejects(fixtureRespond(resident,binding,request,{decision:'accept'}),error=>ownedResidentFailure(error)?.kind==='MutationHeld');
+     // Normal responses claim the original occurrence before durable preflight.
+     // A refused begin releases its local receipt but retains that occurrence
+     // as indeterminate; it must never acquire permission to replay.
+     for(let i=0;i<2;i++)await assert.rejects(fixtureRespond(resident,binding,request,{decision:'accept'}),error=>ownedServerResponseFailure(error)==='ServerRequestResponseIndeterminate');
+     binding.failureStep='durable-assert';assert.equal(fixtureCount(binding,"SELECT count(*) AS n FROM cdr_server_responses"),0);
+     binding.failureStep='release-assert';assert.equal(binding.captures,1);assert.equal(binding.releases,1);
+    }
     finally{usingExistingStore(binding.path,db=>db.exec('DROP TRIGGER fixture_refuse_response'));}
    }
    if(scenario==='response-cancel-before'){
@@ -211,6 +220,13 @@ export async function runPersistentResidentFixture(resident:PortableResidentLife
     finally{usingExistingStore(binding.path,db=>db.exec('DROP TRIGGER fixture_refuse_completion'));}
     binding.failureStep='durable-assert';assert.equal(fixtureCount(binding,"SELECT count(*) AS n FROM cdr_server_responses WHERE phase='admitted'"),1);
     await assert.rejects(fixtureRespond(resident,binding,request,{decision:'accept'}));
+   }else if(scenario==='response-begin-refused'){
+    // Removing the DB refusal does not reset the retained original occurrence.
+    await assert.rejects(fixtureRespond(resident,binding,request,{decision:'accept'}),error=>ownedServerResponseFailure(error)==='ServerRequestResponseIndeterminate');
+    binding.failureStep='durable-assert';assert.equal(fixtureCount(binding,"SELECT count(*) AS n FROM cdr_server_responses"),0);
+    const read=await fixtureRequest(resident,binding,'thread/read',{threadId:FIXTURE_TARGET,includeTurns:true});assert.equal((read as {fixture:{responses:number}}).fixture.responses,0);
+    assert.equal(resident.pendingServerRequests(FIXTURE_TARGET).length,0);assert.equal(resident.hasUnsettledServerRequests(),true);
+    binding.failureStep='release-assert';assert.equal(binding.captures,1);assert.equal(binding.releases,1);
    }else{
     let result:unknown=scenario==='response-large'?{decision:'accept',content:'x'.repeat(2*1024*1024)}:{decision:'accept'};
     await fixtureChildResponseAck(resident,binding,()=>fixtureRespond(resident,binding,request!,result));result=null;

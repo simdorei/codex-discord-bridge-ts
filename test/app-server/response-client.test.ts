@@ -7,7 +7,7 @@ import {ClientCloseCoordinator} from "../../src/app-server/close-coordinator.ts"
 import {AppServerWriter} from "../../src/app-server/writer.ts";
 import {AppServerResponseClient} from "../../src/app-server/response-client.ts";
 import {ServerRequestOccurrence,parseLosslessJson} from "../../src/protocol/ids.ts";
-import type {PendingServerRequest} from "../../src/app-server/server-request-state.ts";
+import {ownedServerResponseFailure,type PendingServerRequest} from "../../src/app-server/server-request-state.ts";
 function deferred(){let resolve!:()=>void;const promise=new Promise<void>(r=>{resolve=r;});return {promise,resolve};}
 function fixture(onWrite:()=>void|Promise<void>=()=>{}){
   const gate=new ClientLifecycle(),state=new ClientRuntimeState(),pending=new PendingResponses(gate),close=new ClientCloseCoordinator(gate,state,pending),frames:unknown[]=[],promoted:PendingServerRequest[]=[];
@@ -59,4 +59,14 @@ test("custom preflight failure holds normal claim but leaves current claim unacq
     await assert.rejects(task,e=>e===sentinel);assert.equal(f.frames.length,0);assert.equal(f.close.closed,false);assert.equal(f.gate.snapshot().inFlight,0n);
     if(current)assert.equal(f.state.pendingServerRequests().length,1);else assert.throws(()=>f.state.serverResponseCandidate(f.request.id,f.request.occurrence),/indeterminate/);
   }
+});
+test("normal preflight refusal rejects repeated replay after the refusal is removed",async()=>{
+  const f=fixture(),sentinel={};let refuse=true,preflights=0,writeStarts=0;
+  const hooks={preflight(){preflights++;if(refuse)throw sentinel;},writeStarted(){writeStarts++;}};
+  await assert.rejects(f.client.respond(f.request.id,f.request.occurrence,true,hooks),error=>error===sentinel);
+  refuse=false;
+  for(let i=0;i<3;i++)await assert.rejects(f.client.respond(f.request.id,f.request.occurrence,true,hooks),error=>ownedServerResponseFailure(error)==="ServerRequestResponseIndeterminate");
+  assert.equal(preflights,1);assert.equal(writeStarts,0);assert.deepEqual(f.frames,[]);assert.deepEqual(f.promoted,[]);
+  assert.equal(f.state.pendingServerRequests().length,0);assert.equal(f.state.hasUnsettledServerRequests,true);
+  assert.equal(f.close.closed,false);assert.equal(f.gate.snapshot().inFlight,0n);
 });
