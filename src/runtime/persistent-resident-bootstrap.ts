@@ -49,7 +49,9 @@ export const PERSISTENT_RECEIVER_SCENARIOS=Object.freeze(['receiver-computer-for
 export type PersistentReceiverScenario=typeof PERSISTENT_RECEIVER_SCENARIOS[number];
 export const PERSISTENT_RECEIVER_NEGATIVE_SCENARIOS=Object.freeze(['receiver-data-loss','receiver-ack-loss'] as const);
 export type PersistentReceiverNegativeScenario=typeof PERSISTENT_RECEIVER_NEGATIVE_SCENARIOS[number];
-export const PERSISTENT_RESIDENT_FIXTURE_SCENARIOS=Object.freeze([...PERSISTENT_RESIDENT_SCENARIOS,...PERSISTENT_RESIDENT_NEGATIVE_SCENARIOS,...PERSISTENT_RECEIVER_SCENARIOS,...PERSISTENT_RECEIVER_NEGATIVE_SCENARIOS]);
+// Temporary pre-fix diagnostic only: never a normal or negative qualification case.
+export const PERSISTENT_RECEIVER_PROBE_SCENARIOS=Object.freeze(['receiver-control-before-admission-probe'] as const);
+export const PERSISTENT_RESIDENT_FIXTURE_SCENARIOS=Object.freeze([...PERSISTENT_RESIDENT_SCENARIOS,...PERSISTENT_RESIDENT_NEGATIVE_SCENARIOS,...PERSISTENT_RECEIVER_SCENARIOS,...PERSISTENT_RECEIVER_NEGATIVE_SCENARIOS,...PERSISTENT_RECEIVER_PROBE_SCENARIOS]);
 export type PersistentResidentScenario=typeof PERSISTENT_RESIDENT_FIXTURE_SCENARIOS[number];
 export type PersistentResidentFixtureResult=Readonly<{scenario:typeof PERSISTENT_RESIDENT_SCENARIOS[number]|PersistentReceiverScenario;passed:true}>|Readonly<{scenario:'mutation-cancel-after-write';assertionsPassed:true;cleanupQualified:false;componentQualified:false}>;
 export function capturePersistentResidentFixtureCommand(value:unknown):Readonly<{kind:'run-fixture';scenario:PersistentResidentScenario}>|Readonly<{kind:'close-component'}>{

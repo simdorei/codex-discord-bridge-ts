@@ -12,16 +12,18 @@ import {captureReceiverCommand,captureReceiverControlCommand,captureReceiverTerm
 
 type Operation={readonly id:number;input:ReceiverOperation|null;controller:AbortController|null;task:Promise<void>|null;joined:boolean;cancelled:boolean;result:ReceiverTerminal|null;terminalSent:boolean};
 type Phase='boot'|'idle'|'running'|'terminal'|'closing'|'closed';
-const fixtureScenarios=new Set(['receiver-computer-form-recovery','receiver-browser-form-event','receiver-unsupported-form-event','receiver-approval-prompt','receiver-input-prompt','receiver-late-accept','receiver-read-json','receiver-native-join','receiver-data-loss','receiver-ack-loss']);
+const fixtureScenarios=new Set(['receiver-computer-form-recovery','receiver-browser-form-event','receiver-unsupported-form-event','receiver-approval-prompt','receiver-input-prompt','receiver-late-accept','receiver-read-json','receiver-native-join','receiver-data-loss','receiver-ack-loss','receiver-control-before-admission-probe']);
 const transportScenarios=new Set(['receiver-approval-prompt','receiver-input-prompt','receiver-late-accept','receiver-native-join','receiver-data-loss','receiver-ack-loss']);
 const fixedFailure=()=>new Error('Persistent receiver service unavailable; original work and component debt retained');
 
 /** Fixed disposable transport, deliberately not an installed HTTP adapter. No
  * callback, request body, URL or credential can configure it. The first four
  * shared integers are main-only transport observations. The fifth is a worker-
- * only direct client-result observation; none is join or release evidence. */
+ * only direct client-result observation. Probe words 5..8 record exact dropped
+ * ID, pending client ID, deliberate rescue, and unresolved client slot at exit.
+ * None is join or release evidence. */
 class ReceiverFixtureTransport implements DiscordReceiptTransport{
- readonly observation=new SharedArrayBuffer(20);readonly #words=new Int32Array(this.observation);
+ readonly observation=new SharedArrayBuffer(36);readonly #words=new Int32Array(this.observation);
  readonly #data:MessagePort;
  #scenario:string|null=null;#calls=0;#hash:string|null=null;
  #chunk:Extract<ReceiverOperation,{op:'server-prompt-chunk'}>|null=null;#components:readonly DiscordComponent[]|null=null;
@@ -53,7 +55,7 @@ class ReceiverFixtureTransport implements DiscordReceiptTransport{
   // A validated provider acceptance remains known after original cancellation.
   Atomics.store(this.#words,2,this.#calls);Atomics.notify(this.#words,2);return 100n+BigInt(this.#calls);
  }
- snapshot(){return Object.freeze({calls:this.#calls,lastRequestHash:this.#hash,clientResultObserved:Atomics.load(this.#words,4)===1});}
+ snapshot(){return Object.freeze({calls:this.#calls,lastRequestHash:this.#hash,clientResultObserved:Atomics.load(this.#words,4)===1,probeDroppedId:Atomics.load(this.#words,5),probePendingId:Atomics.load(this.#words,6),probeRescueIssued:Atomics.load(this.#words,7)===1,probeClientUnjoinedAtExit:Atomics.load(this.#words,8)===1});}
 }
 
 /** Main-only, fixed service owner for the disposable original serial receiver.
@@ -117,6 +119,14 @@ export class PersistentReceiverServicesOwner{
   await this.#joined;
  }
  snapshot(){return Object.freeze({closed:this.closed,releasable:this.releasable,quarantined:this.#quarantined,pending:this.#slot!==null&&!this.#slot.joined,terminalRetained:this.#slot?.joined===true,submitted:this.#high,retired:this.#retired,completed:this.#completed,dataClosed:this.#dataClosed,controlClosed:this.#controlClosed,controlReplySent:this.#controlReplySent,...this.#transport.snapshot()});}
+ /** Diagnostic rescue only. The component dispatcher calls this only after its
+  * original disposal report proves child closure. It closes this construction's
+  * remaining endpoint; it never settles the client slot or releases root debt. */
+ rescueBeforeAdmissionProbe():void{
+  const words=new Int32Array(this.#transport.observation);
+  if(this.#scenario!=='receiver-control-before-admission-probe'||!this.#quarantined||this.#controlValid||!this.#dataValid||this.#dataClosed||this.#phase!=='idle'||this.#slot!==null||this.#high!==0||this.#completed!==0||this.#retired!==0||Atomics.load(words,5)!==1||Atomics.load(words,6)!==1||Atomics.load(words,7)!==0)throw fixedFailure();
+  Atomics.store(words,7,1);this.#fault('data');
+ }
  #post(body:ReceiverReply):void{if(!this.#dataValid||this.#dataClosed)throw fixedFailure();try{this.#data.postMessage(receiverFrame(this.#epoch,body));}catch(error){this.#fault('data');throw error;}}
  #checkJoined():void{if(this.#dataClosed&&this.#controlClosed&&(this.#slot===null||this.#slot.joined))this.#joinResolve();}
  #closeAfterRequesterExit():void{
@@ -138,8 +148,16 @@ export class PersistentReceiverServicesOwner{
   if(!this.#dataValid)return;
   try{
    const command=captureReceiverCommand(raw,this.#epoch);
+   if(this.#scenario==='receiver-control-before-admission-probe'&&command.kind==='submit'&&!this.#quarantined){
+    if(command.id!==1||this.#phase!=='idle'||this.#slot!==null||this.#high!==0||this.#retired!==0)throw fixedFailure();
+    this.#fault('control');
+   }
    // Control-only fault keeps just the original terminal/cancel/retirement path.
-   if(this.#quarantined&&!['cancel','ack-terminal'].includes(command.kind))return;
+   if(this.#quarantined&&!['cancel','ack-terminal'].includes(command.kind)){
+    // Record the actual validated submit discarded at the unfixed filter.
+    if(this.#scenario==='receiver-control-before-admission-probe'&&command.kind==='submit'&&command.id===1&&this.#phase==='idle'&&this.#slot===null&&this.#high===0&&!this.#controlValid)Atomics.store(new Int32Array(this.#transport.observation),5,command.id);
+    return;
+   }
    if(command.kind==='ready'){
     if(this.#phase!=='boot'||this.#slot!==null)throw fixedFailure();this.#phase='idle';this.#post({kind:'ready'});return;
    }

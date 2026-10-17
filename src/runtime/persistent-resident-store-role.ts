@@ -3,7 +3,7 @@ import {PersistentResidentServicesOwner} from './persistent-resident-services-ow
 import {PersistentReceiverServicesOwner} from './persistent-receiver-owner.ts';
 import {createMainSequentialMutationBroker,type MainSequentialMutationBroker} from './sequential-mutation-broker-owner.ts';
 import type {SequentialMutationBrokerLimits} from './sequential-mutation-broker-protocol.ts';
-import {PERSISTENT_RESIDENT_FIXTURE_SCENARIOS,PERSISTENT_RECEIVER_SCENARIOS,PERSISTENT_RECEIVER_NEGATIVE_SCENARIOS,type PersistentResidentScenario,type PersistentResidentFixtureResult,type PersistentReceiverScenario,type PersistentReceiverNegativeScenario} from './persistent-resident-bootstrap.ts';
+import {PERSISTENT_RESIDENT_FIXTURE_SCENARIOS,PERSISTENT_RECEIVER_SCENARIOS,PERSISTENT_RECEIVER_NEGATIVE_SCENARIOS,PERSISTENT_RECEIVER_PROBE_SCENARIOS,type PersistentResidentScenario,type PersistentResidentFixtureResult,type PersistentReceiverScenario,type PersistentReceiverNegativeScenario} from './persistent-resident-bootstrap.ts';
 export type {PersistentResidentFixtureResult} from './persistent-resident-bootstrap.ts';
 import {Worker,isMainThread,getEnvironmentData,setEnvironmentData} from 'node:worker_threads';
 import {registerStoreWriter,markStoreWorkerSubmitted,releaseStoreWriter,beginAuthorityNativeOwner,type StoreWriterTicket} from '../store/store-authority-domain.ts';
@@ -181,7 +181,11 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
      if(typeof report.phase!=='string'||typeof report.fixtureStep!=='string'||(report.category!=='protocol'&&report.category!=='lifecycle'))throw fixedError();
      if(report.phase==='failed'||report.phase==='closed'||state==='joined'||state==='disposed')throw fixedError();
      reportEvidence=acceptPersistentResidentTerminalReport(reportEvidence,'failed',report.childClosure as PersistentResidentChildClosure);
-     workerFailurePhase=report.phase;workerFailureCategory=report.category;workerFixtureStep=report.fixtureStep;fail();return;
+     workerFailurePhase=report.phase;workerFailureCategory=report.category;workerFixtureStep=report.fixtureStep;fail();
+     // Separately labeled pre-fix rescue, only after this original child's
+     // genuine disposal proof. No normal report, slot settlement or release.
+     if(scenario==='receiver-control-before-admission-probe'&&reportEvidence.directChildClosure==='confirmed')receiver!.rescueBeforeAdmissionProbe();
+     return;
     }
     if(state==='bootstrapping'&&kind==='role-ready'){state='role-ready';deadline();return;}
     if(state==='role-ready'&&kind==='local-fence-ready'){
@@ -207,7 +211,7 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
      receiverNativeStopObserved=true;return;
     }
     if(state==='running'&&kind==='fixture-result'){
-     if(scenario==='mutation-cancel-after-write'||scenario==='receiver-data-loss'||scenario==='receiver-ack-loss'||report.scenario!==scenario||report.passed!==true)throw fixedError();
+     if(scenario==='mutation-cancel-after-write'||scenario==='receiver-data-loss'||scenario==='receiver-ack-loss'||scenario==='receiver-control-before-admission-probe'||report.scenario!==scenario||report.passed!==true)throw fixedError();
      state='fixture-done';clearTimer();const resolve=runResolve;runResolve=null;runReject=null;
      resolve?.(Object.freeze({scenario:scenario!,passed:true}));return;
     }
@@ -239,7 +243,7 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
    // Fixture work has its own fixed ten-second observation phase, independent
    // from native five-second deadlines. Failure retains ownership, never retries.
    clearTimer();timer=setTimeout(fail,10000);
-   try{if(PERSISTENT_RECEIVER_SCENARIOS.includes(selected as PersistentReceiverScenario)||PERSISTENT_RECEIVER_NEGATIVE_SCENARIOS.includes(selected as PersistentReceiverNegativeScenario))receiver!.configureFixture(selected);post({kind:'run-fixture',scenario:selected});}catch{fail();}return pending;
+   try{if(PERSISTENT_RECEIVER_SCENARIOS.includes(selected as PersistentReceiverScenario)||PERSISTENT_RECEIVER_NEGATIVE_SCENARIOS.includes(selected as PersistentReceiverNegativeScenario)||PERSISTENT_RECEIVER_PROBE_SCENARIOS.includes(selected as typeof PERSISTENT_RECEIVER_PROBE_SCENARIOS[number]))receiver!.configureFixture(selected);post({kind:'run-fixture',scenario:selected});}catch{fail();}return pending;
   },
   closeComponent():Promise<void>{
    if(state==='closing'||state==='disposed'||state==='joined'||state==='quarantined')return closed;

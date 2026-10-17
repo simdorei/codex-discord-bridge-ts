@@ -29,7 +29,7 @@ if(data.kind==='persistent-resident-bootstrap'){
  let phase:Phase='loading',services:Services|null=null,mutation:SequentialMutationClient|null=null,resident:PortableResidentLifecycle|null=null,receiver:PersistentReceiverServicesClient|null=null;
  const currentPhase=():Phase=>phase;
  let fixtureStep:PersistentResidentFixtureFailureStep='none';
- let startEntered=false,replacementMayHaveStarted=false;
+ let startEntered=false,replacementMayHaveStarted=false,preAdmissionProbe=false;
  let startAttempt:Promise<PortableResidentLifecycle>|null=null,disposal:Promise<void>|null=null;
  // Receiver/native join and resident/child disposal remain separate obligations.
  // In particular a failed control channel cannot prevent original child cleanup.
@@ -96,11 +96,11 @@ if(data.kind==='persistent-resident-bootstrap'){
    if(phase==='initialized'){
     const frame=plain(value,['version','kind','receiverServices','fixtureObservation']);if(frame.version!==1||frame.kind!=='services-initialized')throw new TypeError('Expected initialized native owners');
     const observation=frame.fixtureObservation;
-    if(observation===null||typeof observation!=='object'||types.isProxy(observation)||!(observation instanceof SharedArrayBuffer)||Object.getPrototypeOf(observation)!==SharedArrayBuffer.prototype||Reflect.ownKeys(observation).length!==0||observation.byteLength!==20)throw new TypeError('Invalid fixed receiver observation');
+    if(observation===null||typeof observation!=='object'||types.isProxy(observation)||!(observation instanceof SharedArrayBuffer)||Object.getPrototypeOf(observation)!==SharedArrayBuffer.prototype||Reflect.ownKeys(observation).length!==0||observation.byteLength!==36)throw new TypeError('Invalid fixed receiver observation');
     setPhase('starting');acceptInitialized(Object.freeze({receiverServices:frame.receiverServices,fixtureObservation:observation}));return;
    }
    if(phase==='ready'){
-    const command=capturePersistentResidentFixtureCommand(value);if(command.kind!=='run-fixture')throw new TypeError('Run the fixed fixture once before close');setPhase('running');if(command.scenario==='normal-replacement')replacementMayHaveStarted=true;
+    const command=capturePersistentResidentFixtureCommand(value);if(command.kind!=='run-fixture')throw new TypeError('Run the fixed fixture once before close');setPhase('running');if(command.scenario==='normal-replacement')replacementMayHaveStarted=true;preAdmissionProbe=command.scenario==='receiver-control-before-admission-probe';
     void (async()=>{const {runPersistentResidentFixture,getPersistentResidentFixtureFailureStep}=await import('./persistent-resident-composition.ts');let result;try{result=await runPersistentResidentFixture(resident!,command.scenario);}catch(error){fixtureStep=getPersistentResidentFixtureFailureStep(resident!);throw error;}if(currentPhase()!=='running')return;setPhase('ran');port.postMessage({version:1,kind:result.scenario==='mutation-cancel-after-write'?'fixture-negative-result':'fixture-result',...result});})().catch(failLifecycle);return;
    }
    if(phase==='ran'){
@@ -129,7 +129,21 @@ if(data.kind==='persistent-resident-bootstrap'){
   const frame=await initialized;if(currentPhase()==='failed')return;
   const {PersistentReceiverServicesClient}=await import('./persistent-receiver-client.ts');
   receiver=new PersistentReceiverServicesClient(requirePersistentResidentRole().path,frame.receiverServices as ReceiverDescriptor);
-  receiver.failure.addEventListener('abort',failProtocol,{once:true});
+  const receiverObservation=new Int32Array(frame.fixtureObservation);
+  const originalPendingProbe=():boolean=>{const state=receiver!.snapshot();return state.pendingId===1&&state.highWater===1&&state.retiredThrough===0&&state.terminalKnown===false&&state.joined===false&&state.controlJoined===false&&state.closed===false;};
+  receiver.failure.addEventListener('abort',()=>{
+   if(preAdmissionProbe&&originalPendingProbe()){
+    Atomics.store(receiverObservation,6,1);
+    // Probe-only teardown instrumentation: keep existing native close usable
+    // until original disposal settles, then fail() applies final quarantine.
+    // The receiver drop, posted slot, and all release predicates are unchanged.
+    failLifecycle();return;
+   }
+   failProtocol();
+  },{once:true});
+  // Synchronous diagnostics at actual requester exit: an unresolved Promise is
+  // not a joined receiver merely because the explicit rescue closed its ports.
+  process.once('exit',()=>{if(Atomics.load(receiverObservation,7)===1&&originalPendingProbe())Atomics.store(receiverObservation,8,1);});
   if(receiver.failure.aborted){failProtocol();return;}await receiver.ready();if(currentPhase()==='failed')return;startEntered=true;
   startAttempt=prepared.start(services,mutation,responsePort,receiver,frame.fixtureObservation);resident=await startAttempt;
   if(currentPhase()==='failed'){await disposeOriginal();return;}setPhase('ready');report('component-ready');

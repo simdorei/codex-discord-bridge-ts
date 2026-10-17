@@ -371,6 +371,14 @@ export async function runPersistentResidentFixture(resident:PortableResidentLife
  assert.equal(fixtureCount(binding,"SELECT count(*) AS n FROM codex_mutation_runtime"),1);
  assert.equal(fixtureCount(binding,"SELECT count(*) AS n FROM codex_app_server_runtime"),1);
  switch(scenario){
+  case 'receiver-control-before-admission-probe':{
+   // A genuine persistent resident and SQLite lifecycle are already running.
+   // This exact original client read posts ID 1; main drops it before admission.
+   // The unresolved read is retained. Diagnostic rescue is separately gated on
+   // original resident disposal and must not fabricate a service task join.
+   await binding.receiverServices.promptReads().listQueueJobs(binding.path);
+   throw new Error('Pre-fix receiver probe must never resolve its original read');
+  }
   case 'receiver-data-loss':case 'receiver-ack-loss':await runReceiverFixture(resident,binding,scenario);throw new Error('Negative receiver scenario cannot qualify normal cleanup');
   case 'receiver-computer-form-recovery':case 'receiver-browser-form-event':case 'receiver-unsupported-form-event':case 'receiver-approval-prompt':case 'receiver-input-prompt':case 'receiver-late-accept':case 'receiver-read-json':case 'receiver-native-join':await runReceiverFixture(resident,binding,scenario);break;
   case 'normal-start-close':break;
