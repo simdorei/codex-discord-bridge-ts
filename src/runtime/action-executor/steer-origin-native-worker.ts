@@ -4,7 +4,7 @@ import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {captureSteerOrigin,steerOriginBinding,STEER_ORIGIN_REQUEST_BYTES,STEER_ORIGIN_REPLY_BYTES} from './steer-origin-snapshot.ts';
 const port=parentPort;if(port===null)throw new Error('Owned Steer origin worker required');
 try{
- if(process.platform==='win32')throw new TypeError('Windows Steer origin writer unqualified');
+
  if(boundedSerdeByteCount(q,STEER_ORIGIN_REQUEST_BYTES)===null)throw new RangeError('Steer origin request exceeds native budget');
  const op=captureSteerOrigin(q.input),binding=steerOriginBinding(q.id,q.path,op);
  if(Object.keys(q).length!==Object.keys(binding).length+1)throw new TypeError('Invalid Steer origin request');

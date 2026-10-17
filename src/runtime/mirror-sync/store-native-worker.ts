@@ -1,13 +1,13 @@
 import {parentPort,workerData as data} from 'node:worker_threads';
 import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
 import {RoomCleanupProtectedError} from '../../store/room-cleanup.ts';
-import {normalizeWorkspacePathPosix} from '../../codex-state/thread-reference.ts';
+import {normalizeWorkspacePath} from '../../codex-state/thread-reference.ts';
 import {captureMirrorStoreRequest} from './store-native-protocol.ts';
 const port=parentPort;if(port===null)throw new Error('Owned mirror store worker required');
 const binding={id:data.id,path:data.path,kind:data.operation.kind};
-const matches=(a:string,b:string)=>a===b||normalizeWorkspacePathPosix(a)===normalizeWorkspacePathPosix(b);
+const matches=(a:string,b:string)=>a===b||normalizeWorkspacePath(a)===normalizeWorkspacePath(b);
 try{
- if(process.platform==='win32')throw new Error('Windows mirror store profile is unqualified');
+
  const q=captureMirrorStoreRequest(data.operation);let value:unknown=null;
  switch(q.kind){
   case 'MirrorTargets':value=await state.mirrorTargets(data.path,(1n<<63n)-1n);break;

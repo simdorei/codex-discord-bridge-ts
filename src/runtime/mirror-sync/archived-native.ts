@@ -48,7 +48,7 @@ export class NativeArchivedCleanup {
   async #run(kind: 'Pending' | 'Begin', channel: bigint, target: string, now: number, parent: bigint | null, expected: ThreadInfo | null, signal: AbortSignal): Promise<unknown> {
     signal.throwIfAborted(); id(channel); requireDiscordText(target);
     if (typeof now !== 'number' || !Number.isFinite(now) || Buffer.byteLength(target) > 16384) throw new TypeError('Invalid archive query');
-    if (process.platform === 'win32') throw new Error('Windows archived cleanup unqualified');
+
     if (this.#slot.busy) throw new OwnedWorkerBusyError();
     const idValue = randomUUID(), request = {id: idValue, codex: this.#codex, mirror: this.#mirror, kind, channel, target, now, parent, expected};
     if (boundedSerdeByteCount(request, 262144) === null) throw new RangeError('Archived cleanup request exceeds budget');

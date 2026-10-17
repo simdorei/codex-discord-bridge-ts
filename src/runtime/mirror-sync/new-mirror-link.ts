@@ -1,7 +1,7 @@
 import {types} from 'node:util';
 import {TargetLocks} from '../../core/keyed-locks.ts';
 import {cloneOwnedSerdeValue} from '../../core/owned-serde-value.ts';
-import {normalizeWorkspacePathPosix} from '../../codex-state/thread-reference.ts';
+import {normalizeWorkspacePath} from '../../codex-state/thread-reference.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
 import type {NewMirrorLink} from '../action-executor/new-executor.ts';
@@ -28,14 +28,14 @@ export function newMirrorThreadName(prompt:string,thread:string):string {require
 export class NewThreadMirrorLink implements NewMirrorLink {
  readonly linkNewThread:NewMirrorLink['linkNewThread'];
  constructor(database:string,remote:NewMirrorTransport,locks:TargetLocks,guild:bigint|null=null,now:()=>number=systemNow){
-  requireDiscordText(database);if(guild!==null)id(guild);if(process.platform==='win32')throw new Error('Windows mirror workspace normalization not yet qualified');if(typeof remote!=='object'||remote===null||types.isProxy(remote))throw new TypeError('Expected mirror transport');if(typeof now!=='function'||types.isProxy(now)||types.isAsyncFunction(now)||types.isGeneratorFunction(now))throw new TypeError('Expected synchronous timestamp');
+  requireDiscordText(database);if(guild!==null)id(guild);if(typeof remote!=='object'||remote===null||types.isProxy(remote))throw new TypeError('Expected mirror transport');if(typeof now!=='function'||types.isProxy(now)||types.isAsyncFunction(now)||types.isGeneratorFunction(now))throw new TypeError('Expected synchronous timestamp');
   const read=method<NewMirrorTransport['channel']>(remote,'channel'),create=method<NewMirrorTransport['createThread']>(remote,'createThread'),update=method<NewMirrorTransport['updateThread']>(remote,'updateThread');
   const readChannel=async(value:bigint,signal:AbortSignal)=>{signal.throwIfAborted();const result=await native<MirrorChannel|null>(Reflect.apply(read,remote,[value,signal]));signal.throwIfAborted();return result===null?null:snapshot(result);};
   const work=async(originId:bigint,thread:string,prompt:string,cwd:string|null,signal:AbortSignal):Promise<bigint>=>{
    const origin=await readChannel(originId,signal)??invalid('new-thread origin channel is unavailable');if(origin.id!==originId)invalid('origin channel response identity changed');const actualGuild=origin.guildId??invalid('new-thread origin has no guild');if(guild!==null&&guild!==actualGuild)invalid('new-thread origin has the wrong guild');
    const parent=[10n,11n,12n].includes(origin.kind)?origin.parentId??invalid('origin thread has no project parent'):origin.kind===0n?origin.id:invalid('new requires a project text channel or its thread');
-   const project=await state.mirrorProjectForChannel(database,dbId(parent));signal.throwIfAborted();const projectKey=project?.[0]??null,key=projectKey??(cwd===null?invalid('new-thread project identity is unavailable'):normalizeWorkspacePathPosix(cwd));
-   if(key!=='codex:chats'&&!key.startsWith('projectless:')&&cwd!==null&&normalizeWorkspacePathPosix(cwd)!==normalizeWorkspacePathPosix(key))invalid('new-thread project changed before room creation');
+   const project=await state.mirrorProjectForChannel(database,dbId(parent));signal.throwIfAborted();const projectKey=project?.[0]??null,key=projectKey??(cwd===null?invalid('new-thread project identity is unavailable'):normalizeWorkspacePath(cwd));
+   if(key!=='codex:chats'&&!key.startsWith('projectless:')&&cwd!==null&&normalizeWorkspacePath(cwd)!==normalizeWorkspacePath(key))invalid('new-thread project changed before room creation');
    const name=newMirrorThreadName(prompt,thread),expected=await state.mirrorThreadChannels(database,thread);signal.throwIfAborted();const scope={thread,guild:dbId(actualGuild),parent:dbId(parent),expected};const confirmed=await state.confirmedMirrorCreation(database,scope);signal.throwIfAborted();let channel:MirrorChannel|null=null;
    if(confirmed!==null){channel=await readChannel(id(confirmed),signal)??invalid(`confirmed created room ${confirmed} is unavailable; creation will not be repeated`);if(channel.id!==confirmed)invalid('created room response identity changed');validate(channel,actualGuild,parent);}
    else if(expected!==null){channel=await readChannel(id(expected[1]),signal);if(channel!==null&&channel.id!==expected[1])invalid('stored room response identity changed');}

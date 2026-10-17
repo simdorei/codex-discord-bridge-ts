@@ -13,7 +13,7 @@ export class NativeNewProjectUnavailableError extends Error {constructor(cause:u
 export function createNativeNewProjectLookup(path:string,timeoutMs=5000):NewProjectLookup {
  requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new TypeError('Invalid project store path');if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid project deadline');const fixed=pinNativeRuntimePath(path);
  return async(given,input,signal)=>{
-  signal?.throwIfAborted();if(process.platform==='win32')throw new Error('Windows new project resolution is not yet qualified');if(given!==path)throw new TypeError('Project store differs from original binding');
+  signal?.throwIfAborted();if(given!==path)throw new TypeError('Project store differs from original binding');
   if(boundedSerdeByteCount(input,LIMIT)===null)throw new TypeError('Expected bounded passive origin');const origin=serializeSerdeValue(decodeNewThreadOrigin(input)),base=process.cwd(),data={path:fixed,base,origin};if(boundedSerdeByteCount(data,LIMIT)===null)throw new RangeError('Project request exceeds complete wire bound');
   const slot=new OwnedWorkerSlot('Discovery');let admitted=false,raw:unknown;
   try{const pending=slot.run(new URL('./new-project-worker.ts',import.meta.url),data,timeoutMs,signal);admitted=slot.busy;try{raw=await pending;}finally{await slot.join();}}catch(error){if(signal?.aborted)throw signal.reason;if(admitted)throw new NativeNewProjectUnavailableError(error);throw error;}

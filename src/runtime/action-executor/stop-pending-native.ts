@@ -18,7 +18,7 @@ export class NativeStopPendingReader{
  async recovery(after:bigint,signal?:AbortSignal,timeoutMs=6000){return this.#read('Recovery',after,signal,timeoutMs);}
  async #read(operation:'Pending'|'Recovery',after:bigint,signal?:AbortSignal,timeoutMs=6000):Promise<readonly (readonly [bigint,StopControl])[]>{
   if(signal!==undefined&&(types.isProxy(signal)||!(signal instanceof AbortSignal)))throw new TypeError('Expected AbortSignal');signal?.throwIfAborted();
-  if(typeof after!=='bigint'||after<MIN||after>MAX)throw new RangeError('Expected i64 Stop cursor');if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Stop timeout');if(process.platform==='win32')throw new Error('Windows Stop reader is unqualified');if(this.#slot.busy)throw new OwnedWorkerBusyError();
+  if(typeof after!=='bigint'||after<MIN||after>MAX)throw new RangeError('Expected i64 Stop cursor');if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Stop timeout');if(this.#slot.busy)throw new OwnedWorkerBusyError();
   const id=randomUUID(),request={id,path:this.#path,operation,after};let raw:unknown,admitted=false;
   try{const task=this.#slot.runMaintenanceRead(new URL('./stop-pending-native-worker.ts',import.meta.url),request,timeoutMs,signal);admitted=this.#slot.busy;try{raw=await task;}finally{await this.#slot.join();}}
   catch(e){if(signal?.aborted)throw signal.reason;if(!admitted)throw e;throw new NativeStopPendingUnavailable();}signal?.throwIfAborted();

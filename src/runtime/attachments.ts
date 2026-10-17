@@ -22,9 +22,8 @@ export async function enrichMessageAttachments(message:DecodedGatewayMessage,bas
  const attachments=message.attachments as readonly {filename:string;size:bigint;url:string;content_type?:string|null}[];
  if(required&&attachments.length>0&&!enabled)throw new AttachmentError('Required','attachments are disabled; no new thread started');
  if(attachments.length===0||!enabled)return basePrompt;
- if(process.platform==='win32')throw new TypeError('Windows attachment path profile is not implemented');
  if(typeof report!=='function'||types.isProxy(report)||types.isAsyncFunction(report)||types.isGeneratorFunction(report))throw new TypeError('Expected synchronous attachment reporter');
- const directory=joinRuntimePath(pinNativeRuntimePath(root),`${message.channel_id}/${message.id}`,'posix');try{await mkdir(directory,{recursive:true});}catch(error){throw new AttachmentError('Io',error);}
+  const directory=joinRuntimePath(pinNativeRuntimePath(root),`${message.channel_id}/${message.id}`,process.platform==='win32'?'win32':'posix');try{await mkdir(directory,{recursive:true});}catch(error){throw new AttachmentError('Io',error);}
  const details:string[]=[],previews:(readonly [string,string])[]=[];
  for(let offset=0;offset<attachments.length;offset++){
   signal?.throwIfAborted();

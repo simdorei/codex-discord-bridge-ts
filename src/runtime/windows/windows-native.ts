@@ -47,6 +47,7 @@ export interface WindowsNativeBinding {
   createMutex(name: string): WindowsMutexResult;
   closeHandle(handle: bigint): WindowsCloseResult;
   moveReplaceWriteThrough(source: string, destination: string): WindowsMoveSubmission;
+  moveReplaceWriteThroughSync(source: string, destination: string): WindowsMoveCompletion;
 }
 
 type NativeFunction = (...args: unknown[]) => unknown;
@@ -202,6 +203,15 @@ function construct(platform: string, arch: string, loadKoffi: () => unknown): Wi
     closeHandle(known: bigint): WindowsCloseResult {
       if (!handle(known)) throw new WindowsNativeBindingError('close-handle', 'input');
       return closeKnown(known);
+    },
+    moveReplaceWriteThroughSync(source: string, destination: string): WindowsMoveCompletion {
+      const capturedSource = input(source, 'move-file'), capturedDestination = input(destination, 'move-file');
+      if (pendingMoves.size !== 0) throw new WindowsNativeBindingError('move-file', 'busy');
+      const raw = captureSync(moveFile, [capturedSource, capturedDestination, 0x9]);
+      if (raw.kind === 'failed') return failure('move-file', raw.phase);
+      if (!int32(raw.value)) return failure('move-file', 'result');
+      if (!uint32(raw.lastError)) return failure('move-file', 'last-error');
+      return Object.freeze({kind: 'win32', value: raw.value, lastError: raw.lastError});
     },
     moveReplaceWriteThrough(source: string, destination: string): WindowsMoveSubmission {
       // Primitive strings are captured before submission; Koffi owns its UTF-16

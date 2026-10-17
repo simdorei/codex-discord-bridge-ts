@@ -33,7 +33,7 @@ export class NativeSteerOriginWriter{
  /** One bounded unresolved original; no new Steer write can silently replay it. */
  assertReady():void{if(this.#unresolved!==undefined)throw this.#unresolved;}
  async execute(input:SteerOriginWrite,signal?:AbortSignal,timeoutMs=6000):Promise<void>{
-  NativeSteerOriginWriter.prototype.assertReady.call(this);checkSignal(signal);if(process.platform==='win32')throw new Error('Windows Steer origin writer is unqualified');if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Steer origin timeout');
+  NativeSteerOriginWriter.prototype.assertReady.call(this);checkSignal(signal);if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Steer origin timeout');
   const operation=captureSteerOrigin(input);if(this.#active||this.#slot.busy)throw new OwnedWorkerBusyError();
   const id=randomUUID(),binding=steerOriginBinding(id,this.#path,operation),request={...binding,input:operation};if(boundedSerdeByteCount(request,STEER_ORIGIN_REQUEST_BYTES)===null)throw new RangeError('Steer origin envelope exceeds native budget');if(boundedSerdeByteCount({...binding,ok:true},STEER_ORIGIN_REPLY_BYTES)===null)throw new RangeError('Steer origin acknowledgement exceeds native budget');
   const source=signal,owned=ownSignal(source);this.#active=true;let admitted=false;

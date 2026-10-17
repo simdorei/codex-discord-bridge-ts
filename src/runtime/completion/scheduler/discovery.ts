@@ -1,6 +1,6 @@
 import {isMainThread} from "node:worker_threads";
 import type {NativeCompletionDiscoveryReader,NativeDiscoverySnapshot} from "../native-discovery.ts";
-import {StateAccessFacade as state} from "../../../store/state-access-facade.ts";
+import {readCompletionMetadataRound} from "../../../store/completion-metadata-round.ts";
 import {initialCompletionCursor,equalCompletionEntry,nativeCompletionCursorRestore,nativeCompletionCursorWire,snapshotCompletionEntry,type CompletionCursor,type CompletionEntry} from "../../../store/completion-metadata.ts";
 import {COMPLETION_SOURCES,requireCompletionSource,completionSourceIsState,type CompletionSource} from "../../../store/completion-metadata-sql.ts";
 import type {CompletionMetadataRound} from "../../../store/completion-metadata-round.ts";
@@ -43,7 +43,7 @@ export class CompletionDiscovery {
     if(this.#native!==undefined||this.#reading)throw new TypeError("Discovery reader mode or ownership mismatch");
     if(this.#scans.length===0)return [];
     const rotation=this.#rotation%this.#scans.length,staged=this.#scans.map(s=>({...s,pending:[...s.pending]}));
-    const reports=ready.draft(()=>state.readCompletionMetadataRound(path,runtime,generation,reader=>{
+    const reports=ready.draft(()=>readCompletionMetadataRound(path,runtime,generation,reader=>{
       const result:DiscoveryReport[]=[];
       for(let offset=0;offset<staged.length;offset++){
         const index=(rotation+offset)%staged.length,candidate={...staged[index]!,pending:[...staged[index]!.pending]};

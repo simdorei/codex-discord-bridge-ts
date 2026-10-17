@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {sanitizeAttachmentFilename as safe,isTextAttachment as text,renderAttachmentPrompt as render} from '../../src/runtime/attachment-format.ts';
-test('Unix source path leaf normalization never treats backslash as separator',()=>{
- for(const [input,expected] of [['/tmp/name.txt','name.txt'],['a//./b.txt/','b.txt'],['a/.','a'],['a/..','attachment-2'],['/','attachment-2'],['.','attachment-2'],['C:\\dir\\name.txt','C__dir_name.txt']])assert.equal(safe(input!,2),expected);
+test('source path leaf normalization follows the host separator rules',()=>{
+ for(const [input,expected] of [['/tmp/name.txt','name.txt'],['a//./b.txt/','b.txt'],['a/.','a'],['a/..','attachment-2'],['/','attachment-2'],['.','attachment-2'],['C:\\dir\\name.txt',process.platform==='win32'?'name.txt':'C__dir_name.txt']])assert.equal(safe(input!,2),expected);
 });
 test('ASCII-only filename projection counts Unicode scalars then trims exact spaces and dots',()=>{
  assert.equal(safe('한😀글.txt',1),'___.txt');assert.equal(safe(' .. foo... ',1),'foo');assert.equal(safe('a\nb\tc',1),'a_b_c');assert.equal(safe(' . ',0),'attachment-0');assert.equal(safe('x'.repeat(130)+'.txt',1),'x'.repeat(120));assert.equal(safe('....',18446744073709551615n),'attachment-18446744073709551615');

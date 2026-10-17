@@ -44,7 +44,7 @@ test('postsubmit abort and deadline join actual SQLite exit, reject late success
  finally{clearInterval(timer);if(db.isTransaction)db.exec('ROLLBACK');db.close();}
 }));
 test('captured relative path and native symlink parent spelling select the original existing database',()=>storeFixture(async path=>{
- const dir=dirname(path),real=join(dir,'real'),child=join(real,'child');mkdirSync(child,{recursive:true});symlinkSync(child,join(dir,'link'),'dir');const actual=join(real,'store.sqlite');await seed(actual);const reader=new NativeRunnerInspectionReader(join(dir,'link')+'/../store.sqlite');assert.match(await reader.detail(channel,user,'original'),/Saved Discord request/);assert.equal(existsSync(path),false);
+ const dir=dirname(path),real=join(dir,'real'),child=join(real,'child');mkdirSync(child,{recursive:true});symlinkSync(child,join(dir,'link'),process.platform==='win32'?'junction':'dir');const actual=join(real,'store.sqlite');await seed(actual);if(process.platform==='win32')await seed(path);const reader=new NativeRunnerInspectionReader(join(dir,'link')+'/../store.sqlite');assert.match(await reader.detail(channel,user,'original'),/Saved Discord request/);assert.equal(existsSync(path),process.platform==='win32');
  const prior=process.cwd();try{process.chdir(dir);const pinned=new NativeRunnerInspectionReader(relative(dir,actual));process.chdir('/');assert.match(await pinned.detail(channel,user,'original'),/Saved Discord request/);}finally{process.chdir(prior);}
  assert.throws(()=>reader.assertPath(path),/another database/);
 }));

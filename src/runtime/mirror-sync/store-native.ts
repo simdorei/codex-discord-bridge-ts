@@ -14,13 +14,13 @@ export class NativeMirrorStoreUnknownError extends Error {
 /** One initialized store path, existing shared Control budget, zero local queue.
  * Includes schema/open work off the event loop. Cancellation joins SQLite native
  * exit; no forced termination or automatic write retry. Full BridgeSync wiring
- * and Windows behavior remain outside this storage transport. */
+ * remains outside this storage transport. */
 export class NativeMirrorStore {
  readonly #path:string;readonly #slot=new OwnedWorkerSlot('Control');
  constructor(path:string){requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new TypeError('Invalid mirror database path');this.#path=pinNativeRuntimePath(path);if(Buffer.byteLength(this.#path)>32768)throw new RangeError('Mirror database path exceeds budget');Object.freeze(this);}
  assertPath(path:string):void{if(pinNativeRuntimePath(path)!==this.#path)throw new TypeError('Mirror store belongs to another database');}
  async execute(input:MirrorStoreRequest,signal?:AbortSignal,timeoutMs=6000):Promise<MirrorStoreResult>{
-  if(signal!==undefined&&(types.isProxy(signal)||!(signal instanceof AbortSignal)))throw new TypeError('Expected AbortSignal');signal?.throwIfAborted();if(process.platform==='win32')throw new Error('Windows native mirror store unqualified');if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid mirror store timeout');
+  if(signal!==undefined&&(types.isProxy(signal)||!(signal instanceof AbortSignal)))throw new TypeError('Expected AbortSignal');signal?.throwIfAborted();if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid mirror store timeout');
   const operation=captureMirrorStoreRequest(input);if(this.#slot.busy)throw new OwnedWorkerBusyError();const id=randomUUID();let admitted=false,raw:unknown;
   try{const task=this.#slot.run(new URL('./store-native-worker.ts',import.meta.url),{id,path:this.#path,operation},timeoutMs,signal);admitted=this.#slot.busy;try{raw=await task;}finally{await this.#slot.join();}}catch(error){if(admitted)throw new NativeMirrorStoreUnknownError(id,operation.kind,error);throw error;}
   let protectedError:MirrorCleanupProtectedError|undefined;

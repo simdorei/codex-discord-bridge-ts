@@ -36,9 +36,10 @@ export interface DrainMarkerStore{
  * MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH contract.
  * Caller must own the runtime instance. Read-then-remove matches source, but is
  * not an atomic compare/unlink against an independently writing foreign process. */
-export class PosixDrainMarkerStore implements DrainMarkerStore{
+export abstract class FileDrainMarkerStore implements DrainMarkerStore{
  readonly #root:string;
- constructor(root:string){requireDiscordText(root);if(process.platform==='win32')throw new Error('Windows drain marker write-through adapter is not implemented');this.#root=root;}
+ constructor(root:string){requireDiscordText(root);this.#root=root;}
+ protected abstract writeMarker(kind:'identity'|'ack',path:string,text:string):Promise<void>;
  #path(kind:keyof typeof DRAIN_MARKER_NAMES):string{return this.#root===''?DRAIN_MARKER_NAMES[kind]:this.#root+(this.#root.endsWith('/')?'':'/')+DRAIN_MARKER_NAMES[kind];}
  async #exists(kind:keyof typeof DRAIN_MARKER_NAMES,fileOnly=false):Promise<boolean>{try{const value=await stat(this.#path(kind));return fileOnly?value.isFile():true;}catch{return false;}}
  prepareExists(){return this.#exists('prepare');}ackExists(){return this.#exists('ack');}stopRequested(){return this.#exists('stop',true);}
@@ -54,10 +55,14 @@ export class PosixDrainMarkerStore implements DrainMarkerStore{
  async readPrepare(){const text=await this.#read('prepare');return text===null?null:parseRuntimeFenceMarker(text,this.#path('prepare'));}
  async readAck(){const text=await this.#read('ack');return text===null?null:parseRuntimeFenceMarker(text,this.#path('ack'),'sealed');}
  async readRestart(){const text=await this.#read('restart');return text===null?null:parseRuntimeFenceMarker(text,this.#path('restart'));}
- async #write(kind:'identity'|'ack',text:string):Promise<void>{const path=this.#path(kind);try{await writePosixAtomicMarker(path,text);}catch(error){throw new DrainMarkerError('Io',path,null,error);}}
+ async #write(kind:'identity'|'ack',text:string):Promise<void>{const path=this.#path(kind);try{await this.writeMarker(kind,path,text);}catch(error){throw new DrainMarkerError('Io',path,null,error);}}
  async publishIdentity(marker:RuntimeMarker){await this.#write('identity',encodeRuntimeIdentityMarker(marker));}
  async publishAck(key:DrainFenceKey){await this.#write('ack',encodeRuntimeAckMarker(key));}
  async #remove(kind:'identity'|'ack'){const path=this.#path(kind);try{await unlink(path);}catch(error){if(code(error)!=='ENOENT')throw new DrainMarkerError('Io',path,null,error);}}
  async removeIdentityIfOwned(marker:RuntimeMarker){const expected=identity(marker),current=await this.readIdentity();if(current!==null&&current.runtimeId===expected.runtimeId&&current.processId===expected.processId)await this.#remove('identity');}
  async removeAckIfOwned(key:DrainFenceKey){if(getDrainFenceKeyRecord(key)===null)throw new DrainGateError('InvalidKey');const current=await this.readAck();if(current!==null&&DrainFenceKey.prototype.equals.call(key,current))await this.#remove('ack');}
+}
+export class PosixDrainMarkerStore extends FileDrainMarkerStore{
+ constructor(root:string){if(process.platform==='win32')throw new Error('Windows drain marker write-through adapter is not implemented');super(root);}
+ protected async writeMarker(_kind:'identity'|'ack',path:string,text:string):Promise<void>{await writePosixAtomicMarker(path,text);}
 }

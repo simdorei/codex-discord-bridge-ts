@@ -71,8 +71,7 @@ function assertRedacted(error: unknown, phase?: string): void {
   assert.doesNotMatch(`${String(error)} ${error.stack} ${JSON.stringify(error)}`, /PRIVATE/);
 }
 
-test('real factory is import-safe and refuses this non-Windows host before loading', () => {
-  assert.notEqual(process.platform, 'win32', 'This selected suite is cloud mock evidence only');
+test('real factory is import-safe and refuses this non-Windows host before loading', {skip: process.platform === 'win32'}, () => {
   assert.throws(createWindowsNativeBinding, error => { assertRedacted(error, 'platform'); return true; });
 });
 

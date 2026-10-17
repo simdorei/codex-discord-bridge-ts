@@ -85,6 +85,7 @@ const entries:readonly (readonly [string,'path'|'mirror'|'mirrorDb'|null])[]=[
  ['runtime/session-mirror/startup-context-worker.ts',null],
  ['runtime/session-mirror/startup-intent-store-worker.ts','path'],
  ['runtime/session-mirror/store-discovery-worker.ts',null],
+ ['runtime/windows/windows-resources-worker.ts',null],
  ['runtime/writer-recovery/native-repair-worker.ts','path'],
  ['runtime/writer-recovery/native-worker.ts','path'],
  ['store/cutover-backup-worker.ts',null],

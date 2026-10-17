@@ -1,4 +1,5 @@
 import {joinRuntimePath} from './runtime-paths/path-text.ts';
+import {replaceWindowsFileSync} from './windows/windows-file.ts';
 import {constants,readFileSync,readSync,mkdirSync,openSync,writeFileSync,fsyncSync,closeSync,renameSync,lstatSync,unlinkSync,fstatSync} from "node:fs";
 import {dirname} from "node:path";
 import {randomUUID} from "node:crypto";
@@ -72,7 +73,7 @@ export class BridgeState {
     const parent=dirname(this.#path);try{mkdirSync(parent,{recursive:true});}catch(error){throw new BridgeStateError("Io",this.#path,error);}
     let bytes:string;try{bytes=serializePrettySerdeValue(state)+'\n';if(this.#maxBytes!==undefined&&Buffer.byteLength(bytes)>this.#maxBytes)throw new RangeError('Bridge state exceeds write budget');}catch(error){throw new BridgeStateError("Json",this.#path,error);}
     const temporary=joinRuntimePath(parent,`.cdr-state-${randomUUID()}.tmp`,process.platform==='win32'?'win32':'posix');let fd:number|undefined,identity:ReturnType<typeof fstatSync>|undefined,renamed=false;
-    try{fd=openSync(temporary,"wx",0o600);identity=fstatSync(fd);writeFileSync(fd,bytes,"utf8");fsyncSync(fd);closeSync(fd);fd=undefined;renameSync(temporary,this.#path);renamed=true;}
+    try{fd=openSync(temporary,"wx",0o600);identity=fstatSync(fd);writeFileSync(fd,bytes,"utf8");fsyncSync(fd);closeSync(fd);fd=undefined;if(process.platform==='win32')replaceWindowsFileSync(temporary,this.#path);else renameSync(temporary,this.#path);renamed=true;}
     catch(error){throw new BridgeStateError("Io",this.#path,error);}
     finally{
       if(fd!==undefined){try{closeSync(fd);}catch{/* preserve primary write error */}}

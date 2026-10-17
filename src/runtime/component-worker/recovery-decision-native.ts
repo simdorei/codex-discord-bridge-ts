@@ -61,7 +61,7 @@ export class NativeRecoveryDecisionOwner {
  }
  #unknown(held:Held,cause:unknown):NativeRecoveryDecisionUnknownError {const error=new NativeRecoveryDecisionUnknownError(held.handle,cause);this.#unresolved??=error;return error;}
  #run(operation:RecoveryDecisionOperation,held:Held,now:number,signal?:AbortSignal):Promise<unknown> {
-  signalCheck(signal);if(this.#closed)throw new Error('Recovery owner closed');if(this.#tasks.size>0)throw new OwnedWorkerBusyError();if(process.platform==='win32')throw new Error('Windows recovery owner unqualified');
+  signalCheck(signal);if(this.#closed)throw new Error('Recovery owner closed');if(this.#tasks.size>0)throw new OwnedWorkerBusyError();
   const binding=recoveryDecisionBinding(randomUUID(),this.#path,operation,held.click,held.snapshot?.sealJson??null,held.snapshot?.displayedJson??null,now);if(boundedSerdeByteCount(binding,RECOVERY_DECISION_REQUEST_BYTES)===null)throw new RangeError('Recovery decision exceeds native boundary');
   const slot=new OwnedWorkerSlot('Control'),controller=new AbortController(),abort=()=>controller.abort(signal!.reason);signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();this.#controllers.add(controller);
   const task=(async()=>{let admitted=false;try{const pending=slot.run(new URL('./recovery-decision-native-worker.ts',import.meta.url),binding,this.#timeout,controller.signal);admitted=slot.busy;let raw:unknown;try{raw=await pending;}finally{await slot.join();}controller.signal.throwIfAborted();

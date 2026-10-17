@@ -86,7 +86,7 @@ export class MirrorSynchronizer {
     Object.freeze(this);
   }
   static async create(codexPath: string, mirrorPath: string, client: DiscordChannelClient, locks: TargetLocks, guild: bigint | null, signal: AbortSignal): Promise<MirrorSynchronizer> {
-    signal.throwIfAborted(); if (process.platform === 'win32') throw new Error('Windows mirror sync unqualified'); if (guild !== null) id(guild);
+    signal.throwIfAborted(); if (guild !== null) id(guild);
     const codex = pinNativeRuntimePath(codexPath), mirror = pinNativeRuntimePath(mirrorPath);
     const lease = await locks.acquire('mirror-sync-operation', signal);
     try { await prepareRuntimeStorageOffThread({stateDb: codex, mirrorDb: mirror}, 10000, signal); return new MirrorSynchronizer(token, codex, mirror, client, locks, guild); }

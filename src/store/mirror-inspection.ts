@@ -1,6 +1,6 @@
 import {DatabaseSync} from 'node:sqlite';
 import {requireDiscordText} from '../discord/text.ts';
-import {normalizeWorkspacePathPosix} from '../codex-state/thread-reference.ts';
+import {normalizeWorkspacePath} from '../codex-state/thread-reference.ts';
 import type {MirrorTarget} from './mirror-policy-read.ts';
 import {receiptText,receiptTextColumns} from './delivery-receipt-key.ts';
 import {decodeI64} from './sqlite-values.ts';
@@ -13,7 +13,7 @@ export interface MirrorInspectionSnapshot {
  * fallback on missing/corrupt data. This synchronous leaf needs an owned worker
  * in the runtime inspector; it is not a network/poll-loop implementation. */
 export function mirrorInspectionSnapshotReadonly(path:string):MirrorInspectionSnapshot{
- requireDiscordText(path);if(process.platform==='win32')throw new Error('Windows mirror workspace normalization is not yet qualified');
+ requireDiscordText(path);
  const db=new DatabaseSync(path,{readOnly:true});let rows:readonly {row:MirrorTarget;key:string}[],projects:readonly {key:string;channel:bigint}[];
  try{
   db.exec('PRAGMA query_only=true; BEGIN DEFERRED');
@@ -26,7 +26,7 @@ export function mirrorInspectionSnapshotReadonly(path:string):MirrorInspectionSn
  const parents=[...channels.keys()].sort((a,b)=>a<b?-1:a>b?1:0),issues:string[]=[];let duplicate=0,missing=0,mismatch=0,ambiguous=0;
  for(const channel of parents){const count=channels.get(channel)!;if(count>1){duplicate++;issues.push(`duplicate_project_channel | channel=${channel} | projects=${count}`);}}
  for(const {row,key} of rows){
-  const candidates=projects.filter(p=>p.key===key||normalizeWorkspacePathPosix(p.key)===normalizeWorkspacePathPosix(key));let issue:string|null=null;
+  const candidates=projects.filter(p=>p.key===key||normalizeWorkspacePath(p.key)===normalizeWorkspacePath(key));let issue:string|null=null;
   if(candidates.length===0){missing++;issue='missing_project_mapping';}
   else if(candidates.length>1){ambiguous++;issue='ambiguous_project_mapping';}
   else if(candidates[0]!.channel!==row.discordChannelId){mismatch++;issue='project_parent_mismatch';}

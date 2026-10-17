@@ -83,10 +83,10 @@ export function requiresPortableSessionCleanupRetention(error:unknown):boolean{
   return false;
 }
 function synchronous(value:unknown):void{if(typeof value!=="function"||types.isProxy(value)||types.isAsyncFunction(value)||types.isGeneratorFunction(value))throw new TypeError("Expected synchronous observer/diagnostic function");}
-/** One non-Windows direct-child client owner. Raw gates, slots and state mutators are
+/** One native child client owner. Raw gates, slots and state mutators are
  * private, so request/response/drain/close components cannot be cross-wired by callers.
- * Not a resident-generation manager, Windows owner or Discord execution grant.
- * Descendant-inherited pipes and the outer 45s startup envelope remain unsupported:
+ * Resident-generation management and Discord execution grants remain separate.
+ * POSIX descendant-inherited pipes and the outer startup envelope remain separate:
  * dispose joins drains after child exit and can wait on a still-open inherited pipe. */
 export class PortableAppServerSession{
   readonly #resident:PortableResidentClientPort;

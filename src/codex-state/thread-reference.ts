@@ -2,6 +2,7 @@ import {types} from 'node:util';
 import {rustTrim} from '../app-server/value.ts';
 import {requireDiscordText} from '../discord/text.ts';
 import type {ThreadInfo} from './thread.ts';
+import {windowsPathComponents,joinRuntimePath} from '../runtime/runtime-paths/path-text.ts';
 
 type Kind = 'NoThreads' | 'NoAlternate' | 'IndexOutOfRange' | 'Ambiguous' | 'NotFound';
 export class ThreadResolveError extends Error {
@@ -36,7 +37,7 @@ export function stripWindowsExtendedPrefix(path: string): string {
 }
 /** Exact source POSIX lexical components/pop profile. Parent components pop
  * an existing segment; excess parents are dropped, unlike path.normalize().
- * Windows Path::components is a separate pending qualification. */
+ * Windows uses its separate Path::components implementation below. */
 export function normalizeWorkspacePathPosix(path: string): string {
   const value = stripWindowsExtendedPrefix(path);
   if (value === '') return '';
@@ -47,6 +48,27 @@ export function normalizeWorkspacePathPosix(path: string): string {
     else parts.push(part);
   }
   return (rooted ? '/' : '') + parts.join('/');
+}
+/** Frozen Rust PathBuf components/pop algorithm on Windows, including its
+ * Unicode lowercase and preservation of UNC prefix spelling. */
+export function normalizeWorkspacePathWindows(path: string): string {
+  let value = '';
+  for (const part of windowsPathComponents(stripWindowsExtendedPrefix(path))) {
+    if (part.kind === 'current') continue;
+    if (part.kind === 'parent') {
+      // A normal component such as "D:folder" can replace the current drive
+      // when PathBuf::push receives it. Pop the resulting path, not the input.
+      const parts = [...windowsPathComponents(value)];
+      if (parts.at(-1)?.kind === 'normal') {
+        parts.pop(); value = '';
+        for (const prior of parts) value = joinRuntimePath(value, prior.text, 'win32');
+      }
+    } else value = joinRuntimePath(value, part.text, 'win32');
+  }
+  return lower(value);
+}
+export function normalizeWorkspacePath(path: string): string {
+  return process.platform === 'win32' ? normalizeWorkspacePathWindows(path) : normalizeWorkspacePathPosix(path);
 }
 interface Row {readonly value: ThreadInfo; readonly id: string; readonly cwd: string}
 function rows(threads: readonly ThreadInfo[]): Row[] {
@@ -100,6 +122,12 @@ export function workspaceReferenceMap(threads: readonly ThreadInfo[]): ReadonlyM
 export function resolveThreadRefPosix(
   threads: readonly ThreadInfo[], threadRef: string, selected: string | null, archived: boolean,
 ): ThreadInfo {
+  return resolveThreadReference(threads,threadRef,selected,archived,normalizeWorkspacePathPosix);
+}
+export function resolveThreadRef(threads:readonly ThreadInfo[],threadRef:string,selected:string|null,archived:boolean):ThreadInfo {
+  return resolveThreadReference(threads,threadRef,selected,archived,normalizeWorkspacePath);
+}
+function resolveThreadReference(threads:readonly ThreadInfo[],threadRef:string,selected:string|null,archived:boolean,normalize:(path:string)=>string):ThreadInfo {
   if (typeof archived !== 'boolean') throw new TypeError('Expected archived flag');
   const entries = rows(threads);
   if (entries.length === 0) throw new ThreadResolveError('NoThreads', '', archived);
@@ -123,10 +151,10 @@ export function resolveThreadRefPosix(
     if (index < 1n || index > BigInt(entries.length)) throw new ThreadResolveError('IndexOutOfRange', reference, archived);
     return entries[Number(index - 1n)]!.value;
   }
-  const refs = references(entries), path = normalizeWorkspacePathPosix(reference);
+  const refs = references(entries), path = normalize(reference);
   const matches = entries.filter(row => (shortId(reference) && lower(row.id).startsWith(normalized))
     || lower(refs.get(row.id)!) === normalized
-    || normalizeWorkspacePathPosix(row.cwd) === path
+    || normalize(row.cwd) === path
     || lower(workspaceName(row)) === normalized);
   if (matches.length === 0) throw new ThreadResolveError('NotFound', reference);
   if (matches.length > 1) throw new ThreadResolveError('Ambiguous', reference, false, matches.slice(0, 10).map(row => row.id).join(', '));

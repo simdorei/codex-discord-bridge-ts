@@ -1,18 +1,19 @@
 {
   "name": "codex-discord-bridge-ts",
-  "version": "0.0.0",
+  "version": "0.1.0-alpha.1",
   "private": true,
   "type": "module",
   "engines": {
-    "node": "24.21.0"
+    "node": ">=24.21.0 <25"
   },
-  "description": "In-progress current Rust bridge migration; not ready to run",
+  "description": "TypeScript migration of Codex Discord Remote (alpha)",
   "devDependencies": {
     "@types/node": "24.19.1",
     "@types/ws": "8.18.2",
     "typescript": "7.0.2"
   },
   "dependencies": {
+    "koffi": "3.3.3",
     "ws": "8.22.0"
   },
   "scripts": {
@@ -20,6 +21,25 @@
     "typecheck": "tsc --noEmit",
     "build:test": "node tools/build-test-profile.mjs",
     "maintenance": "node --no-strip-types dist/src/cli/maintenance-main.js",
-    "runtime:local": "node --no-strip-types dist/src/cli/local-runtime-main.js"
+    "runtime:local": "node --no-strip-types dist/src/cli/local-runtime-main.js",
+    "prepare": "npm run build",
+    "prepack": "npm run build",
+    "test": "npm run build && node tools/run-tests.mjs",
+    "start": "node bin/codex-discord-bridge.mjs",
+    "test:migration": "npm run build && node tools/run-tests.mjs --profile windows-migration"
+  },
+  "bin": {
+    "codex-discord-bridge": "bin/codex-discord-bridge.mjs"
+  },
+  "files": [
+    "bin/",
+    "dist/src/",
+    "README.md",
+    ".env.example",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simdorei/codex-discord-bridge-ts.git"
   }
 }

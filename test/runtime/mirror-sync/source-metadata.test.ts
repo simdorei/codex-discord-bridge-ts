@@ -24,12 +24,12 @@ test('rollout availability observes current file state and directories stay fals
   writeFileSync(path, '{}'); assert.equal(await reader.rollout(path, fresh()), true);
   mkdirSync(path + '.directory'); assert.equal(await reader.rollout(path + '.directory', fresh()), false);
 }));
-test('project grouping recognizes desktop chat layout and preserves POSIX path semantics', () => {
-  assert.deepEqual(mirrorProjectIdentity(' /a/Docs/../project/ '), ['/a/project', 'project']);
+test('project grouping recognizes desktop chat layout and preserves host path semantics', () => {
+  assert.deepEqual(mirrorProjectIdentity(' /a/Docs/../project/ '), [process.platform==='win32'?'\\a\\project':'/a/project', 'project']);
   assert.deepEqual(mirrorProjectIdentity('/Users/me/Documents/Codex/2026-10-13/new-chat-2'), ['codex:chats', '채팅']);
   assert.deepEqual(mirrorProjectIdentity('C:\\Users\\me\\DOCUMENTS\\CODEX\\2026-10-13\\chatgpt-conversation-1'), ['codex:chats', '채팅']);
   assert.deepEqual(mirrorProjectIdentity(' \n'), ['projectless:projectless', 'projectless']);
-  assert.deepEqual(mirrorProjectIdentity('/'), ['/', 'projectless']);
+  assert.deepEqual(mirrorProjectIdentity('/'), [process.platform==='win32'?'\\':'/', 'projectless']);
   assert.notEqual(mirrorProjectIdentity('/Users/me/Documents/Codex/날짜00000000/new-chat-1')[0], 'codex:chats');
 });
 test('source title formatting collapses Rust whitespace and respects UTF16 limit without splitting astral', () => {

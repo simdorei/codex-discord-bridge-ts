@@ -34,7 +34,7 @@ export class NativeBusyCreateWriter{
  /** One bounded unresolved original; no new Busy creation can silently replay it. */
  assertReady():void{if(this.#unresolved!==undefined)throw this.#unresolved;}
  async execute(input:BusyCreateWrite,signal?:AbortSignal,timeoutMs=6000):Promise<string>{
-  NativeBusyCreateWriter.prototype.assertReady.call(this);checkSignal(signal);if(process.platform==='win32')throw new Error('Windows Busy creation writer is unqualified');if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Busy creation timeout');
+  NativeBusyCreateWriter.prototype.assertReady.call(this);checkSignal(signal);if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Busy creation timeout');
   const operation=captureBusyCreate(input);if(this.#active||this.#slot.busy)throw new OwnedWorkerBusyError();
   const id=randomUUID(),choiceId=randomUUID().replaceAll('-','').slice(0,24),binding=busyCreateBinding(id,this.#path,choiceId,operation),request={...binding,input:operation};if(boundedSerdeByteCount(request,BUSY_CREATE_REQUEST_BYTES)===null)throw new RangeError('Busy creation envelope exceeds native budget');if(boundedSerdeByteCount({...binding,ok:true},BUSY_CREATE_REPLY_BYTES)===null)throw new RangeError('Busy creation acknowledgement exceeds native budget');
   const source=signal,owned=ownSignal(source);this.#active=true;let admitted=false;

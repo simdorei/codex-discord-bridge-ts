@@ -1,7 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import {mkdir, open, unlink} from 'node:fs/promises';
 import type {FileHandle} from 'node:fs/promises';
-import {isAbsolute, join} from 'node:path';
+import {isAbsolute, join, win32} from 'node:path';
 import {
   createWindowsNativeBinding, createWindowsNativeBindingForTest, WindowsNativeBindingError,
 } from './windows-native.ts';
@@ -12,10 +12,10 @@ import {
 } from './windows-singleton-owner.ts';
 import type {WindowsSingletonOwner, WindowsSingletonCloseObservation} from './windows-singleton-owner.ts';
 
-/** Uninstalled, limited-input publication profile. Windows qualification: NOT RUN. */
+/** Serialized write-through publication under the original native singleton. */
 declare const profileBrand: unique symbol;
 export interface WindowsAtomicMarkerProfile { readonly [profileBrand]: true; }
-export type WindowsAtomicMarker = 'identity' | 'ack';
+export type WindowsAtomicMarker = 'identity' | 'ack' | 'lock' | 'heartbeat';
 export type WindowsAtomicMarkerPhase = 'binding' | 'mkdir' | 'open' | 'write' | 'sync' | 'close' | 'native' | 'cleanup';
 type Outcome = 'not-published' | 'unconfirmed' | 'published';
 type Reason = 'identity' | 'root' | 'selector' | 'text' | 'busy' | 'sealed' | 'quarantined' | 'binding' | 'io' | 'zero-progress' | 'native';
@@ -58,10 +58,12 @@ export interface WindowsAtomicMarkerShutdown {
   readonly ownerRelease: WindowsSingletonCloseObservation | null;
 }
 
-const LEAVES = Object.freeze({identity: '.codex_discord_rust.drain.identity', ack: '.codex_discord_rust.drain.ack'});
+const LEAVES = Object.freeze({identity: '.codex_discord_rust.drain.identity', ack: '.codex_discord_rust.drain.ack',
+  lock: '.codex_discord_rust.runtime.lock', heartbeat: '.codex_discord_rust.heartbeat'});
 const TEMP_PREFIX = '.codex_discord_rust.marker.';
 const TEMP_SUFFIX = '.tmp';
-const MAX_PATH_UNITS = 259;
+// Reserve four units for the extended prefix and one for the terminating NUL.
+const MAX_PATH_UNITS = 32762;
 const MAX_TEXT_BYTES = 4096;
 type FilePhase = Exclude<WindowsAtomicMarkerPhase, 'binding' | 'native'>;
 type TestEvent = Readonly<{phase: FilePhase; path: string; offset: number}>;
@@ -105,9 +107,13 @@ interface Entry {
 function nativePath(root: string, leaf: string): string {
   return `${root}${root.endsWith('\\') || root.endsWith('/') ? '' : '\\'}${leaf}`;
 }
+function movePath(root: string, leaf: string): string {
+  const path = nativePath(root, leaf);
+  return path.length > 259 ? win32.toNamespacedPath(path) : path;
+}
 function captureRoot(root: string): string {
   if (typeof root !== 'string' || root.length > MAX_PATH_UNITS ||
-      !/^[A-Za-z]:[\\/]/.test(root) || /[^\x20-\x7e]/.test(root) ||
+      !/^[A-Za-z]:[\\/]/.test(root) || /[\x00-\x1f\x7f]/.test(root) || /[\uD800-\uDFFF]/u.test(root) ||
       nativePath(root, `${TEMP_PREFIX}${'0'.repeat(36)}${TEMP_SUFFIX}`).length > MAX_PATH_UNITS ||
       nativePath(root, LEAVES.identity).length > MAX_PATH_UNITS ||
       nativePath(root, LEAVES.ack).length > MAX_PATH_UNITS) {
@@ -223,7 +229,7 @@ async function execute(scope: Context, entry: Entry, operation: Operation, marke
     // Only the private real 925 binding is used; no JS rename fallback exists.
     // A launch throw is caught by 925 and DOES NOT settle its completion.
     try {
-      operation.submission = entry.binding!.moveReplaceWriteThrough(nativePath(entry.root, temporaryLeaf!), nativePath(entry.root, LEAVES[marker]));
+      operation.submission = entry.binding!.moveReplaceWriteThrough(movePath(entry.root, temporaryLeaf!), movePath(entry.root, LEAVES[marker]));
       launchDiagnostic = operation.submission.launchError;
       const completion = await operation.submission.completion;
       if (completion.kind === 'binding-error') {
@@ -271,7 +277,7 @@ function publish(scope: Context, profile: unknown, marker: WindowsAtomicMarker, 
   if (entry.sealed) throw new WindowsAtomicMarkerError('sealed');
   if (entry.quarantined) throw new WindowsAtomicMarkerError('quarantined');
   if (entry.active !== null) throw new WindowsAtomicMarkerError('busy');
-  if (marker !== 'identity' && marker !== 'ack') throw new WindowsAtomicMarkerError('selector');
+  if (marker !== 'identity' && marker !== 'ack' && marker !== 'lock' && marker !== 'heartbeat') throw new WindowsAtomicMarkerError('selector');
   const bytes = captureText(text);
   let resolve!: (value: WindowsAtomicMarkerPublication) => void;
   let reject!: (error: unknown) => void;
@@ -315,6 +321,13 @@ function shutdown(scope: Context, profile: unknown): Promise<WindowsAtomicMarker
 }
 
 export function acquireWindowsAtomicMarkerProfile(root: string): WindowsAtomicMarkerProfile { return acquire(production, root); }
+export function assertWindowsAtomicMarkerHeld(profile: unknown, root: string): void {
+  const entry = authentic(production, profile);
+  if (entry.sealed) throw new WindowsAtomicMarkerError('sealed');
+  if (entry.quarantined) throw new WindowsAtomicMarkerError('quarantined');
+  if (entry.root !== root) throw new WindowsAtomicMarkerError('root');
+  production.assertOwner(entry.owner, root);
+}
 export function publishWindowsAtomicMarker(profile: unknown, marker: WindowsAtomicMarker, text: string): Promise<WindowsAtomicMarkerPublication> {
   return publish(production, profile, marker, text);
 }

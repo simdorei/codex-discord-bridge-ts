@@ -24,6 +24,27 @@ function components(path:string,p:Prefix|null):Component[]{
  const parts=tail.split(p?.verbatim?'\\':/[\\/]/);
  for(let i=0;i<parts.length;i++){const text=parts[i]!;if(text==='')continue;if(text==='.'&&!p?.verbatim){if(i===0&&!p&&!physical)out.push({kind:'current',text});continue;}out.push({kind:text==='.'?'current':text==='..'?'parent':'normal',text});}return out;
 }
+export function windowsPathComponents(path:string):readonly Readonly<Component>[] {
+ requireDiscordText(path);return components(path,prefix(path));
+}
+/** Rust Windows Path equality is lexical and case-sensitive except drive letters.
+ * It does not resolve '..', symlinks, or case-insensitive filesystem aliases. */
+export function sameWindowsRuntimePath(left:string,right:string):boolean {
+ const key=(path:string)=>{
+  const p=prefix(path);
+  return windowsPathComponents(path).map(c=>{
+   if(c.kind!=='prefix')return `${c.kind}:${c.text}`;
+   let text=p?.verbatim?c.text:c.text.replaceAll('/','\\');
+   if(p?.drive)text=text[0]!.toUpperCase()+text.slice(1);
+   else if(/^\\\\\?\\[a-z]:$/i.test(text))text=text.slice(0,4)+text[4]!.toUpperCase()+text.slice(5);
+   return `prefix:${text}`;
+  });
+ };
+ requireDiscordText(left);requireDiscordText(right);const a=key(left),b=key(right);return a.length===b.length&&a.every((v,i)=>v===b[i]);
+}
+export function windowsRuntimeFilename(path:string):string {
+ const last=windowsPathComponents(path).at(-1);return last?.kind==='normal'?last.text:'';
+}
 /** Rust PathBuf push semantics for well-formed Unicode paths, without resolving
  * symlinks or normalizing ordinary '..'. Verbatim Windows paths follow Rust's
  * special append normalization. Native Windows filesystem qualification pending.

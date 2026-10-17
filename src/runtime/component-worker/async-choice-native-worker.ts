@@ -8,7 +8,7 @@ import {requireAsyncQuestionOccurrence} from '../../store/async-question-read.ts
 import {captureAsyncChoiceClick,asyncChoiceBinding,parseAsyncChoiceQuestion,parseAsyncChoiceClaim,snapshotAsyncChoiceQuestion,ASYNC_CHOICE_REQUEST_BYTES,ASYNC_CHOICE_REPLY_BYTES} from './async-choice-native-snapshot.ts';
 const port=parentPort;if(port===null)throw new Error('AsyncChoice requires owned native worker');
 try{
- if(process.platform==='win32')throw new TypeError('Windows AsyncChoice worker unqualified');
+
  if(boundedSerdeByteCount(q,ASYNC_CHOICE_REQUEST_BYTES)===null)throw new RangeError('AsyncChoice request exceeds native budget');
  const click=captureAsyncChoiceClick(q),binding=asyncChoiceBinding(q.id,q.path,q.operation,click,q.questionJson,q.claimJson,q.detail);
  if(Object.keys(q).length!==Object.keys(binding).length)throw new TypeError('Invalid AsyncChoice request');for(const [key,value]of Object.entries(binding))if(!Object.is(q[key],value))throw new TypeError('Crossed AsyncChoice request');

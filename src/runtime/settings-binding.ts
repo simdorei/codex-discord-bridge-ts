@@ -4,7 +4,7 @@ import type {ThreadInfo} from '../codex-state/thread.ts';
 import {passiveErrorText} from '../core/passive-error-text.ts';
 import {types} from 'node:util';
 import {CodexThreadStore} from '../codex-state/store.ts';
-import {resolveThreadRefPosix, ThreadResolveError} from '../codex-state/thread-reference.ts';
+import {resolveThreadRef, ThreadResolveError} from '../codex-state/thread-reference.ts';
 import {StateAccessFacade as state} from '../store/state-access-facade.ts';
 import {cloneOwnedSerdeValue} from '../core/owned-serde-value.ts';
 import {rustTrim} from '../app-server/value.ts';
@@ -94,7 +94,7 @@ export class SlashSettingsTargetResolver {
   }
   async #bindReference(command: CommandAction, inputReference: string | null, channel: bigint, label: 'settings' | 'lifecycle'): Promise<FrozenSettingsBinding> {
     channelId(channel);
-    if (process.platform === 'win32') throw new Error('Windows original-thread reference binding is not yet qualified');
+
     const store = this.#reads===undefined?CodexThreadStore.open(this.#statePath):null;
     const selected = this.#reads===undefined?this.#bridge.selectedThreadId():await promise(this.#reads.openSelected());
     if(selected!==null)requireDiscordText(selected);
@@ -102,7 +102,7 @@ export class SlashSettingsTargetResolver {
     if (inputReference !== null) {
       const reference = rustTrim(inputReference);
       if(this.#reads!==undefined){const resolved=cloneOwnedSerdeValue(await promise(this.#reads.resolve(reference,selected))) as ThreadInfo;requireDiscordText(resolved.id);target=resolved.id;}
-      else {const exact=store!.loadThread(reference,false);target=(exact??resolveThreadRefPosix(store!.loadRecentThreads(0n),reference,selected,false)).id;}
+      else {const exact=store!.loadThread(reference,false);target=(exact??resolveThreadRef(store!.loadRecentThreads(0n),reference,selected,false)).id;}
       route = 'Explicit';
     } else {
       sqliteChannel(channel);

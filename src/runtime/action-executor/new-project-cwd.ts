@@ -11,7 +11,7 @@ const optionalI64:StructFieldDecoder=(_r,_d,c)=>c.value()===null?null:c.decode('
 const SHAPE:StructShape={fields:[['version',byte],['channel','i64'],['target','string?'],['mapped_project','string?'],['parent_channel',optionalI64],['project','string?'],['parent_project','string?'],['chat_targets','string[]']],mapDefaults:{parent_channel:null}};
 export function decodeNewThreadOrigin(value:unknown):NewThreadOrigin{return parseSerdeStruct(serializeSerdeValue(value),SHAPE) as unknown as NewThreadOrigin;}
 function checkedCwd(input:string,base:string):string {
- const cwd=stripWindowsExtendedPrefix(input);let directory=false;try{directory=statSync(joinRuntimePath(base,cwd,'posix')).isDirectory();}catch{}
+ const cwd=stripWindowsExtendedPrefix(input);let directory=false;try{directory=statSync(joinRuntimePath(base,cwd,process.platform==='win32'?'win32':'posix')).isDirectory();}catch{}
  if(!directory)throw new InvalidActionRequestError(`project directory is unavailable: ${cwd}`);return cwd;
 }
 export function resolveNewProjectCwd(statePath:string,origin:NewThreadOrigin,base=process.cwd()):string|null {

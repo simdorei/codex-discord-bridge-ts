@@ -7,7 +7,7 @@ import {captureStopDispatch,captureStopDispatchDiagnostic,stopDispatchBinding,as
 const port=parentPort;if(port===null)throw new Error('Owned Stop dispatch worker required');
 let binding:ReturnType<typeof stopDispatchBinding>|undefined;
 try{
- if(process.platform==='win32'||(q.operation!=='Claim'&&q.operation!=='Error'))throw new TypeError('Unsupported Stop dispatch profile');
+ if((q.operation!=='Claim'&&q.operation!=='Error'))throw new TypeError('Unsupported Stop dispatch profile');
  const control=captureStopDispatch(q.control);binding=stopDispatchBinding(q.id,q.path,q.operation,control);for(const [key,value] of Object.entries(binding))if(q[key]!==value)throw new TypeError('Crossed Stop dispatch request');
  assertStopDispatchRequestBudget(binding,control,q.token,q.diagnostic);let token:string|null=null;
  if(q.operation==='Claim'){

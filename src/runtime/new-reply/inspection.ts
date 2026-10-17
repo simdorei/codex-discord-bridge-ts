@@ -4,7 +4,7 @@ import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {serializeSerdeValue} from '../../core/serde-json.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
-import {normalizeWorkspacePathPosix} from '../../codex-state/thread-reference.ts';
+import {normalizeWorkspacePath} from '../../codex-state/thread-reference.ts';
 import type {ThreadInfo} from '../../codex-state/thread.ts';
 import type {NewReply} from '../../store/new-reply-read.ts';
 import {parseNewReplyIdentity} from '../../store/new-reply-identity.ts';
@@ -48,7 +48,7 @@ export async function inspectNewReply(input:NewReply,signal?:AbortSignal):Promis
  if(record.state==='verified')return new NewReplyInspection(TOKEN,record,record.scan,true,null,null,true);
  const before=await readNewReplyThreadOffThread(id.state_db,id.thread_id,signal);
  if(before===null){const result=new NewReplyInspection(TOKEN,record,record.scan,false,null,null,false);await result.verifyCurrent(signal);return result;}
- if(normalizeWorkspacePathPosix(before.cwd)!==normalizeWorkspacePathPosix(id.cwd))throw new Error('new thread persisted in a different project');
+ if(normalizeWorkspacePath(before.cwd)!==normalizeWorkspacePath(id.cwd))throw new Error('new thread persisted in a different project');
  const identity={threadId:id.thread_id,cwd:id.cwd,turnId:record.turnId,promptSha256:id.prompt_sha256},scan=record.scan;let cursor:NewReplyFileCursor;
  if(scan!==null&&typeof scan==='object'&&!Array.isArray(scan)&&Object.keys(scan).length===0)cursor=await beginNewReplyFileCursor(before.rolloutPath,identity,signal);
  else{

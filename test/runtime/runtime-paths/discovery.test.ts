@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';import {it} from 'node:test';import {mkdir,writeFile,readdir} from 'node:fs/promises';import {dirname,join} from 'node:path';
+import assert from 'node:assert/strict';import {it} from 'node:test';import {mkdir,writeFile,readdir,realpath} from 'node:fs/promises';import {dirname,join} from 'node:path';
 import {storeFixture} from '../../helpers/store-fixture.ts';
 import {discoverRuntimePathInputs as discover,splitRuntimeSearchPath as split,RuntimePathDiscoveryError} from '../../../src/runtime/runtime-paths/discovery.ts';
 import {resolveRuntimePaths} from '../../../src/runtime/runtime-paths/resolve.ts';
@@ -32,5 +32,12 @@ it('invalid entries and hostile environment never trigger getters or coercion',a
  let hooks=0;await assert.rejects(discover({get HOME(){hooks++;return '/home';}},'/repo','posix',probe().port),TypeError);await assert.rejects(discover({HOME:'/home'},'/repo','posix',{...probe().port,entryNames:async()=>['../escape']}),TypeError);await assert.rejects(discover({HOME:'/home'},'/repo','posix',{...probe().port,isFile:()=>({then(){hooks++;}}) as never}),TypeError);assert.equal(hooks,0);
 });
 it('actual native discovery and resolver compose on inert files without executing or creating data',()=>storeFixture(async file=>{
- const root=dirname(file),home=join(root,'home'),local=join(root,'local'),app=join(local,'OpenAI/Codex/bin/build'),bin=join(root,'bin');await mkdir(home);await mkdir(app,{recursive:true});await mkdir(bin);await writeFile(join(app,'codex'),'inert app');await writeFile(join(bin,'codex'),'inert path');const env={HOME:home,LOCALAPPDATA:local,PATH:bin},before=await readdir(root);const input=await discover(env,root,'posix');assert.deepEqual(input.localAppCandidates,[join(app,'codex')]);assert.deepEqual(input.pathCandidates,[join(bin,'codex')]);const resolved=await resolveRuntimePaths(env,input,'posix');assert.equal(resolved.codexExe,join(app,'codex'));assert.equal(resolved.codexExeSource,'LocalAppBin');assert.deepEqual(await readdir(root),before);
+ const root=dirname(file),home=join(root,'home'),local=join(root,'local'),app=join(local,'OpenAI/Codex/bin/build'),bin=join(root,'bin');
+ const platform=process.platform==='win32'?'win32':'posix',binary=platform==='win32'?'codex.exe':'codex';
+ await mkdir(home);await mkdir(app,{recursive:true});await mkdir(bin);await writeFile(join(app,binary),'inert app');await writeFile(join(bin,binary),'inert path');
+ if(platform==='win32')await writeFile(join(app,'codex-code-mode-host.exe'),'inert matching host');
+ const env={HOME:home,LOCALAPPDATA:local,PATH:bin},before=await readdir(root),input=await discover(env,root,platform);
+ assert.equal(input.localAppCandidates.length,1);assert.equal(await realpath(input.localAppCandidates[0]!),await realpath(join(app,binary)));
+ assert.equal(input.pathCandidates.length,1);assert.equal(await realpath(input.pathCandidates[0]!),await realpath(join(bin,binary)));
+ const resolved=await resolveRuntimePaths(env,input,platform);assert.equal(resolved.codexExe,input.localAppCandidates[0]);assert.equal(resolved.codexExeSource,'LocalAppBin');assert.deepEqual(await readdir(root),before);
 }));

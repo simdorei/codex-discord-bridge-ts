@@ -20,7 +20,7 @@ export class NativeMirrorSourceScope {
   }
   async load(limit: bigint | null, signal: AbortSignal): Promise<readonly ThreadInfo[]> {
     signal.throwIfAborted(); if (limit !== null) integer(limit);
-    if (process.platform === 'win32') throw new Error('Windows mirror source scope unqualified');
+
     if (this.#slot.busy) throw new OwnedWorkerBusyError();
     const id = randomUUID(); let raw: unknown;
     try { raw = await this.#slot.run(new URL('./source-scope-worker.ts', import.meta.url), {id, codex: this.#codex, mirror: this.#mirror, limit}, 10000, signal); }

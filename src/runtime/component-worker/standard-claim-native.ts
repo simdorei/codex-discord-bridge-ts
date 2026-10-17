@@ -58,7 +58,7 @@ export class NativeStandardClaimOwner{
   const error=new NativeStandardClaimUnknownError(operation,identity,cause);if(operation!=='RecoverReady')this.#unresolved??=error;return error;
  }
  #run(operation:StandardClaimOperation,identity:StandardClaimIdentity,now:number,signal?:AbortSignal):Promise<unknown>{
-  signalCheck(signal);if(this.#closed)throw new Error('Standard claim owner closed');if((operation==='Claim'||operation==='RecoverReady')&&this.#tasks.size>0)throw new OwnedWorkerBusyError();if(process.platform==='win32')throw new Error('Windows standard claim owner unqualified');
+  signalCheck(signal);if(this.#closed)throw new Error('Standard claim owner closed');if((operation==='Claim'||operation==='RecoverReady')&&this.#tasks.size>0)throw new OwnedWorkerBusyError();
   const binding=standardClaimBinding(randomUUID(),this.#path,operation,identity,now);if(boundedSerdeByteCount(binding,STANDARD_CLAIM_REQUEST_BYTES)===null)throw new RangeError('Standard claim exceeds native budget');
   const slot=new OwnedWorkerSlot('Control'),controller=new AbortController(),abort=()=>controller.abort(signal!.reason);signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();this.#controllers.add(controller);
   const task=(async()=>{let admitted=false;try{

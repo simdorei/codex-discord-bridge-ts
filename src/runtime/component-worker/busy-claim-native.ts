@@ -85,7 +85,7 @@ export class NativeBusyClaimOwner{
   const error=new NativeBusyClaimUnknownError(operation,identity,cause);if(operation!=='RecoverReady'&&operation!=='ReadReady')this.#unresolved??=error;return error;
  }
  #run(operation:BusyClaimOperation,identity:BusyClaimIdentity,now:number,signal?:AbortSignal):Promise<unknown>{
-  signalCheck(signal);if(this.#closed)throw new Error('Busy claim owner closed');if((operation==='Claim'||operation==='RecoverReady'||operation==='ReadReady'||operation==='Resolve')&&this.#tasks.size>0)throw new OwnedWorkerBusyError();if(process.platform==='win32')throw new Error('Windows Busy claim owner unqualified');
+  signalCheck(signal);if(this.#closed)throw new Error('Busy claim owner closed');if((operation==='Claim'||operation==='RecoverReady'||operation==='ReadReady'||operation==='Resolve')&&this.#tasks.size>0)throw new OwnedWorkerBusyError();
   const binding=busyClaimBinding(randomUUID(),this.#path,operation,identity,now);if(boundedSerdeByteCount(binding,BUSY_CLAIM_REQUEST_BYTES)===null)throw new RangeError('Busy claim exceeds native budget');
   const slot=new OwnedWorkerSlot('Control'),controller=new AbortController(),abort=()=>controller.abort(signal!.reason);signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();this.#controllers.add(controller);
   const task=(async()=>{let admitted=false;try{

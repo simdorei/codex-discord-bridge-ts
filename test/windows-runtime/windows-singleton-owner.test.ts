@@ -18,6 +18,10 @@ const NAME_VECTORS = Object.freeze([
   ['C:\\Repo\\.\\Child', 'Local\\CodexDiscordBot_9d935467d50b0aa8'],
   ['C:\\Repo\\..\\Other', 'Local\\CodexDiscordBot_c78d6818d9c3ef9e'],
   ['D:\\PROJECT WITH SPACES', 'Local\\CodexDiscordBot_30ccd501119c6037'],
+  ['C:\\한글', 'Local\\CodexDiscordBot_7a67b1fc290d6606'],
+  ['C:\\İ', 'Local\\CodexDiscordBot_556e08beba62e375'],
+  ['C:\\😀', 'Local\\CodexDiscordBot_6bb6e336602c9448'],
+  ['C:\\ΟΣ', 'Local\\CodexDiscordBot_fea1077fb9dc59f7'],
 ] as const);
 
 function fixture(host: {platform?: string; arch?: string; mainThread?: boolean} = {}) {
@@ -108,7 +112,7 @@ test('excluded root classes and nonprimitive inputs fail before loader or coerci
   const invalid: unknown[] = [undefined, null, true, 1, 1n, Symbol('root'), new String('C:\\Repo'), object,
     '', 'Repo', 'C:', 'C:Repo', '\\Repo', '/Repo', '\\\\server\\share', '\\\\?\\C:\\Repo', '\\\\.\\C:\\Repo',
     'C:\\a\0b', 'C:\\Repo\n', 'C:\\Repo\r', 'C:\\Repo\t', 'C:\\Repo\x1f', 'C:\\Repo\x7f',
-    'C:\\é', 'C:\\한글', 'C:\\İ', 'C:\\😀', 'C:\\\ud800', 'C:\\\udfff'];
+    'C:\\\ud800', 'C:\\\udfff'];
   for (const root of invalid) {
     refused(() => windowsSingletonName(root as string), 'input');
     refused(() => f.harness.acquire(root as string), 'input');
@@ -127,8 +131,7 @@ test('65536 UTF-8-byte ASCII boundary is exact and oversize fails before loading
   await f.harness.release(owner);
 });
 
-test('real factory remains import-safe and non-Windows refusal cannot use a caller port', () => {
-  assert.notEqual(process.platform, 'win32', 'This suite is cloud mock evidence only');
+test('real factory remains import-safe and non-Windows refusal cannot use a caller port', {skip: process.platform === 'win32'}, () => {
   const fake = {createMutex() { assert.fail('Caller binding must not run'); }};
   const error = refused(() => Reflect.apply(acquireWindowsSingletonOwner, fake, ['C:\\PRIVATE', fake]), 'binding');
   assert.equal(error.diagnostic?.operation, 'factory'); assert.equal(error.diagnostic?.phase, 'platform');

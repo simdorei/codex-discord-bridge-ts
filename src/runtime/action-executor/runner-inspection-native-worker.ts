@@ -8,7 +8,7 @@ const port=parentPort;if(port===null)throw new Error('Runner inspection requires
 // original scope field, never decoded payloads or credential-bearing diagnostics.
 const binding={id:q.id,path:q.path,operation:q.operation,channel:q.channel,user:q.user,requestId:q.requestId,target:q.target,source:q.source,owned:q.owned};
 try{
- if(process.platform==='win32'||boundedSerdeByteCount(q,128*1024)===null)throw new TypeError('Unsupported runner inspection request');let text:string;
+ if(boundedSerdeByteCount(q,128*1024)===null)throw new TypeError('Unsupported runner inspection request');let text:string;
  switch(q.operation){
   case 'Detail':{const record=state.runnerInspectionDetailExisting(q.path,q.requestId,q.channel,q.user);if(record===null){port.postMessage({...binding,ok:false,error:'Missing'});port.close();break;}text=formatSavedRequestMessage(record);port.postMessage({...binding,ok:true,text});break;}
   case 'Summary':text=formatSavedRequestSummary(state.runnerInspectionSummaryExisting(q.path,q.channel,q.user));port.postMessage({...binding,ok:true,text});break;

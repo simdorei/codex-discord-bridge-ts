@@ -1,5 +1,6 @@
 import {parentPort,workerData as q} from 'node:worker_threads';
-import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
+import * as statePromptIntakePromotion from '../../store/prompt-intake-promotion.ts';
+import * as stateQueueEnqueue from '../../store/queue-enqueue.ts';
 import {MirrorMappingChangedError} from '../../store/queue-enqueue.ts';
 import {ForkHandoffTargetMovedError} from '../../store/fork-handoff-admission.ts';
 import {DeadGenerationTargetHeldError} from '../../store/fork-completed-target.ts';
@@ -9,8 +10,8 @@ try{
  let response:unknown;
  try{
   let value:unknown;
-  if(q.operation==='Promote')value=state.promotePromptIntakeToQueueExisting(q.path,q.claim,q.job,q.now);
-  else if(q.operation==='Enqueue')value=q.mapping===null?state.enqueueExisting(q.path,q.job):state.enqueueIfMirrorMatchesExisting(q.path,q.job,q.mapping);
+  if(q.operation==='Promote')value=statePromptIntakePromotion.promotePromptIntakeToQueueExisting(q.path,q.claim,q.job,q.now);
+  else if(q.operation==='Enqueue')value=q.mapping===null?stateQueueEnqueue.enqueueExisting(q.path,q.job):stateQueueEnqueue.enqueueIfMirrorMatchesExisting(q.path,q.job,q.mapping);
   else throw new TypeError('Unknown queue submission operation');
   response={kind:'Enqueued',value};
  }catch(error){

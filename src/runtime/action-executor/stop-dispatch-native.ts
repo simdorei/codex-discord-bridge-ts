@@ -80,7 +80,7 @@ export class NativeStopDispatchWriter{
   }catch(error){if(admitted)throw new NativeStopErrorPersistenceUnknownError(id,claim.control.operation_id,error);throw error;}
   finally{try{owned.release();}finally{this.#active=false;}}
  }
- #profile(timeoutMs:number):void{if(process.platform==='win32')throw new Error('Windows Stop dispatch is unqualified');if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Stop dispatch timeout');}
+ #profile(timeoutMs:number):void{if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Stop dispatch timeout');}
  #ack(raw:unknown,binding:ReturnType<typeof stopDispatchBinding>):unknown{
   if(boundedSerdeByteCount(raw,STOP_DISPATCH_REPLY_BYTES)===null||raw===null||typeof raw!=='object'||Object.keys(raw).length!==Object.keys(binding).length+2)throw new TypeError('Invalid bounded Stop dispatch acknowledgement');
   for(const [key,value] of Object.entries(binding))if(own(raw,key)!==value)throw new TypeError('Crossed Stop dispatch acknowledgement');if(own(raw,'ok')!==true)throw new TypeError('Stop dispatch acknowledgement unavailable');return own(raw,'token');

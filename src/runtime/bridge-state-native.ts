@@ -70,7 +70,7 @@ export class NativeBridgeStateOwner{
   Atomics.store(new Int32Array(held.proof.active),0,0);this.#selectionLease=null;
  }
  async execute(input:BridgeOperation,signal?:AbortSignal,timeoutMs=6000):Promise<string|null|readonly string[]|SavedThreadSettings|boolean|undefined>{
-  signal?.throwIfAborted();if(this.#selectionLease!==null)throw new OwnedWorkerBusyError();if(process.platform==='win32')throw new Error('Windows Bridge owner is not yet qualified');if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Bridge owner timeout');const operation=capture(input);if(this.#slot.busy)throw new OwnedWorkerBusyError();
+  signal?.throwIfAborted();if(this.#selectionLease!==null)throw new OwnedWorkerBusyError();if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Bridge owner timeout');const operation=capture(input);if(this.#slot.busy)throw new OwnedWorkerBusyError();
   const id=randomUUID(),request={id,path:this.#path,operation};let admitted=false,raw:unknown;
   try{const pending=this.#slot.run(new URL('./bridge-state-native-worker.ts',import.meta.url),request,timeoutMs,signal);admitted=this.#slot.busy;if(admitted&&['Select','Remember','Fork','ClearScope'].includes(operation.kind))this.#epoch++;try{raw=await pending;}finally{await this.#slot.join();}}
   catch(error){if(admitted)throw new NativeBridgeStateUnavailableError(operation.kind,error);throw error;}

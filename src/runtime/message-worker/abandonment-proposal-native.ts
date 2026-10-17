@@ -65,7 +65,7 @@ export class NativeAbandonmentProposalOwner{
   }catch(error){if(this.#proposalSubmitted&&error!==null&&(typeof error==='object'||typeof error==='function'))proposalFailures.add(error);throw error;}finally{AdmissionPermit.prototype.release.call(owned);}
  }
  async #run(operation:ProposalOperation,target:string|null,at:number,message:bigint|null,revision:bigint|null,hash:string|null,signal?:AbortSignal):Promise<unknown>{
-  checkSignal(signal);if(process.platform==='win32')throw new TypeError('Windows native proposal is unqualified');
+  checkSignal(signal);
   const binding=proposalBinding(randomUUID(),this.#original,operation,target,at,message,revision,hash),slot=new OwnedWorkerSlot('Control');let admitted=false;
   try{
    const url=new URL('./abandonment-proposal-native-worker.ts',import.meta.url),pending=operation==='Bind'?slot.runControlCompletion(url,binding,this.#timeout):slot.run(url,binding,this.#timeout,signal);admitted=slot.busy;if(operation==='Prepare'&&admitted)this.#proposalSubmitted=true;

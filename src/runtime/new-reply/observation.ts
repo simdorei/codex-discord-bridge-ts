@@ -4,7 +4,7 @@ import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {serdeField} from '../../app-server/value.ts';
-import {normalizeWorkspacePathPosix} from '../../codex-state/thread-reference.ts';
+import {normalizeWorkspacePath} from '../../codex-state/thread-reference.ts';
 export interface NewReplyObservationIdentity{readonly threadId:string;readonly cwd:string;readonly turnId:string|null;readonly promptSha256:string;}
 export interface NewReplyObservationState{readonly sessionSeen:boolean;readonly turn:string|null;readonly matched:boolean;}
 const MAX_EVENT_BYTES=262144,MAX_ID_BYTES=16384;
@@ -29,7 +29,7 @@ export class NewReplyObserver{
   const event=cloneOwnedSerdeValue(input),payload=serdeField(event,'payload');if(payload===undefined)return false;
   const type=serdeField(event,'type'),kind=serdeField(payload,'type'),id=this.#identity;let {sessionSeen,turn}=this.#state;
   if(type==='session_meta'){
-   const cwd=serdeField(payload,'cwd');if(serdeField(payload,'id')!==id.threadId||typeof cwd!=='string'||normalizeWorkspacePathPosix(cwd)!==normalizeWorkspacePathPosix(id.cwd))throw new Error('new rollout thread/project identity mismatch');sessionSeen=true;
+   const cwd=serdeField(payload,'cwd');if(serdeField(payload,'id')!==id.threadId||typeof cwd!=='string'||normalizeWorkspacePath(cwd)!==normalizeWorkspacePath(id.cwd))throw new Error('new rollout thread/project identity mismatch');sessionSeen=true;
   }else if(type==='turn_context'||type==='event_msg'&&kind==='task_started'){const value=serdeField(payload,'turn_id');if(typeof value==='string'){text(value);turn=value;}else turn=null;}
   else if(type==='event_msg'&&kind==='task_complete')turn=null;
   let matched=false;

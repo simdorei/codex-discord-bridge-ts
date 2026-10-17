@@ -6,7 +6,7 @@ import {captureStopAcceptance,stopAcceptanceIngress,stopAcceptanceBinding,assert
 const port=parentPort;if(port===null)throw new Error('Owned Stop acceptance worker required');
 let binding:ReturnType<typeof stopAcceptanceBinding>|undefined;
 try{
- if(process.platform==='win32')throw new TypeError('Windows Stop acceptance unqualified');
+
  const op=captureStopAcceptance({scope:q.operation.scope,binding:q.operation.binding,ingress:stopAcceptanceIngress(q.operation),resident:q.operation.resident,now:q.operation.now});
  binding=stopAcceptanceBinding(q.id,q.path,op);assertStopAcceptanceRequestBudget(binding,op);for(const [key,value] of Object.entries(binding))if(q[key]!==value)throw new TypeError('Crossed Stop request');
  if(q.operation.operationId!==op.operationId)throw new TypeError('Stop operation differs');

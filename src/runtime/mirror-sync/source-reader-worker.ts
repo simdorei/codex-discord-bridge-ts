@@ -5,7 +5,7 @@ const port = parentPort;
 if (port === null) throw new Error('Owned source reader required');
 const binding = {id: input.id, path: input.path, kind: input.kind, thread: input.thread, archived: input.archived};
 try {
-  if (process.platform === 'win32') throw new Error('Windows source reader unqualified');
+
   const store = CodexThreadStore.open(input.path);
   let value: unknown;
   if (input.kind === 'ActiveIds') value = [...new Set(store.loadRecentThreads(0n).map(row => row.id))];

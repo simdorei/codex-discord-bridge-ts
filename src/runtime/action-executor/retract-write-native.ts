@@ -35,7 +35,7 @@ export class NativeRetractWriter{
  assertPath(path:string):void{requireDiscordText(path);if(pinNativeRuntimePath(path)!==this.#path)throw new TypeError('Retract writer belongs to another database');}
  async execute(input:RetractWrite,signal?:AbortSignal,timeoutMs=6000):Promise<string|null>{
   if(signal!==undefined&&(types.isProxy(signal)||!(signal instanceof AbortSignal)))throw new TypeError('Expected AbortSignal');signal?.throwIfAborted();
-  if(process.platform==='win32')throw new Error('Windows Retract writer is unqualified');if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Retract write timeout');
+  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Retract write timeout');
   const operation=capture(input);if(this.#slot.busy)throw new OwnedWorkerBusyError();
   const id=randomUUID(),request={id,path:this.#path,operation};let admitted=false,raw:unknown;
   try{const task=this.#slot.run(new URL('./retract-write-native-worker.ts',import.meta.url),request,timeoutMs,signal);admitted=this.#slot.busy;try{raw=await task;}finally{await this.#slot.join();}}

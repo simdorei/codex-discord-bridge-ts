@@ -4,7 +4,7 @@ import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {captureStandardClaimIdentity,standardClaimBinding,STANDARD_CLAIM_REQUEST_BYTES,STANDARD_CLAIM_REPLY_BYTES} from './standard-claim-snapshot.ts';
 const port=parentPort;if(port===null)throw new Error('Standard claim requires owned native worker');
 try{
- if(process.platform==='win32')throw new TypeError('Windows standard claim worker unqualified');
+
  if(boundedSerdeByteCount(q,STANDARD_CLAIM_REQUEST_BYTES)===null)throw new RangeError('Standard claim request exceeds native budget');
  const identity=captureStandardClaimIdentity(q),binding=standardClaimBinding(q.id,q.path,q.operation,identity,q.now);
  if(Object.keys(q).length!==Object.keys(binding).length)throw new TypeError('Invalid standard claim request');

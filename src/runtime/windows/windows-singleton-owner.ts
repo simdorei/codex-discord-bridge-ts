@@ -5,7 +5,7 @@ import {
 } from './windows-native.ts';
 import type {WindowsCloseResult, WindowsMutexQuarantine, WindowsMutexResult, WindowsNativeBinding} from './windows-native.ts';
 
-/** Limited-input, uninstalled ownership prototype. Windows qualification: NOT RUN. */
+/** Native named-mutex ownership for a bounded local drive root. */
 declare const ownerBrand: unique symbol;
 export interface WindowsSingletonOwner { readonly [ownerBrand]: true; }
 export interface WindowsSingletonCloseObservation {
@@ -60,18 +60,20 @@ const MAX_ROOT_BYTES = 65_536;
 const ERROR_ALREADY_EXISTS = 183;
 
 function capturedRoot(root: string): string {
-  // Every admitted code unit is one UTF-8 byte. Check the finite bound before
+  // Check both UTF-16 and UTF-8 bounds before
   // hashing; never coerce, normalize, resolve, trim, or inspect a caller object.
   if (typeof root !== 'string' || root.length > MAX_ROOT_BYTES ||
-      !/^[A-Za-z]:[\\/]/.test(root) || /[^\x20-\x7e]/.test(root)) {
+      !/^[A-Za-z]:[\\/]/.test(root) || /[\x00-\x1f\x7f]/.test(root) ||
+      /[\uD800-\uDFFF]/u.test(root) || Buffer.byteLength(root, 'utf8') > MAX_ROOT_BYTES) {
     throw new WindowsSingletonOwnerError('name', 'input');
   }
   return root;
 }
 
-/** Frozen Rust lexical algorithm, qualified here for printable ASCII only. */
+/** Rust lexical Unicode lowercase / SHA-256 algorithm; no path normalization. */
 export function windowsSingletonName(root: string): string {
   const captured = capturedRoot(root);
+  if (process.versions.unicode !== '17.0') throw new WindowsSingletonOwnerError('name', 'input');
   return `Local\\CodexDiscordBot_${createHash('sha256').update(captured.toLowerCase(), 'utf8').digest('hex').slice(0, 16)}`;
 }
 

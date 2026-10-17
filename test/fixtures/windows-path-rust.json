@@ -1,0 +1,848 @@
+{
+  "rustCommit": "d7e1aa0106b2eefd9ea3f96e8e4bc5afdd296d34",
+  "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+  "platform": "windows-x64",
+  "algorithm": "crates/cdr-codex-state/src/session_index.rs::normalize_workspace_path; std::path::Path equality and file_name",
+  "cases": [
+    {
+      "input": "",
+      "normalized": "",
+      "filename": "",
+      "equivalent": [
+        0
+      ]
+    },
+    {
+      "input": ".",
+      "normalized": "",
+      "filename": "",
+      "equivalent": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "input": "./",
+      "normalized": "",
+      "filename": "",
+      "equivalent": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "input": ".\\",
+      "normalized": "",
+      "filename": "",
+      "equivalent": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "input": "..",
+      "normalized": "",
+      "filename": "",
+      "equivalent": [
+        4
+      ]
+    },
+    {
+      "input": "../a",
+      "normalized": "a",
+      "filename": "a",
+      "equivalent": [
+        5,
+        6
+      ]
+    },
+    {
+      "input": "..\\a",
+      "normalized": "a",
+      "filename": "a",
+      "equivalent": [
+        5,
+        6
+      ]
+    },
+    {
+      "input": "a",
+      "normalized": "a",
+      "filename": "a",
+      "equivalent": [
+        7,
+        9,
+        10,
+        13,
+        14
+      ]
+    },
+    {
+      "input": "A",
+      "normalized": "a",
+      "filename": "A",
+      "equivalent": [
+        8
+      ]
+    },
+    {
+      "input": "a/",
+      "normalized": "a",
+      "filename": "a",
+      "equivalent": [
+        7,
+        9,
+        10,
+        13,
+        14
+      ]
+    },
+    {
+      "input": "a\\",
+      "normalized": "a",
+      "filename": "a",
+      "equivalent": [
+        7,
+        9,
+        10,
+        13,
+        14
+      ]
+    },
+    {
+      "input": "./a",
+      "normalized": "a",
+      "filename": "a",
+      "equivalent": [
+        11,
+        12
+      ]
+    },
+    {
+      "input": ".\\a",
+      "normalized": "a",
+      "filename": "a",
+      "equivalent": [
+        11,
+        12
+      ]
+    },
+    {
+      "input": "a/.",
+      "normalized": "a",
+      "filename": "a",
+      "equivalent": [
+        7,
+        9,
+        10,
+        13,
+        14
+      ]
+    },
+    {
+      "input": "a\\.",
+      "normalized": "a",
+      "filename": "a",
+      "equivalent": [
+        7,
+        9,
+        10,
+        13,
+        14
+      ]
+    },
+    {
+      "input": "a/..",
+      "normalized": "",
+      "filename": "",
+      "equivalent": [
+        15
+      ]
+    },
+    {
+      "input": "a/../b",
+      "normalized": "b",
+      "filename": "b",
+      "equivalent": [
+        16,
+        17
+      ]
+    },
+    {
+      "input": "a\\..\\b",
+      "normalized": "b",
+      "filename": "b",
+      "equivalent": [
+        16,
+        17
+      ]
+    },
+    {
+      "input": "a//b",
+      "normalized": "a\\b",
+      "filename": "b",
+      "equivalent": [
+        18,
+        19,
+        20,
+        21
+      ]
+    },
+    {
+      "input": "a\\b",
+      "normalized": "a\\b",
+      "filename": "b",
+      "equivalent": [
+        18,
+        19,
+        20,
+        21
+      ]
+    },
+    {
+      "input": "a/b",
+      "normalized": "a\\b",
+      "filename": "b",
+      "equivalent": [
+        18,
+        19,
+        20,
+        21
+      ]
+    },
+    {
+      "input": "a/./b",
+      "normalized": "a\\b",
+      "filename": "b",
+      "equivalent": [
+        18,
+        19,
+        20,
+        21
+      ]
+    },
+    {
+      "input": "/",
+      "normalized": "\\",
+      "filename": "",
+      "equivalent": [
+        22,
+        23
+      ]
+    },
+    {
+      "input": "\\",
+      "normalized": "\\",
+      "filename": "",
+      "equivalent": [
+        22,
+        23
+      ]
+    },
+    {
+      "input": "/a",
+      "normalized": "\\a",
+      "filename": "a",
+      "equivalent": [
+        24,
+        25
+      ]
+    },
+    {
+      "input": "\\a",
+      "normalized": "\\a",
+      "filename": "a",
+      "equivalent": [
+        24,
+        25
+      ]
+    },
+    {
+      "input": "/a/../b",
+      "normalized": "\\b",
+      "filename": "b",
+      "equivalent": [
+        26
+      ]
+    },
+    {
+      "input": "C:",
+      "normalized": "c:",
+      "filename": "",
+      "equivalent": [
+        27,
+        28,
+        29,
+        30
+      ]
+    },
+    {
+      "input": "c:",
+      "normalized": "c:",
+      "filename": "",
+      "equivalent": [
+        27,
+        28,
+        29,
+        30
+      ]
+    },
+    {
+      "input": "C:.",
+      "normalized": "c:",
+      "filename": "",
+      "equivalent": [
+        27,
+        28,
+        29,
+        30
+      ]
+    },
+    {
+      "input": "c:.",
+      "normalized": "c:",
+      "filename": "",
+      "equivalent": [
+        27,
+        28,
+        29,
+        30
+      ]
+    },
+    {
+      "input": "C:foo",
+      "normalized": "c:foo",
+      "filename": "foo",
+      "equivalent": [
+        31,
+        32
+      ]
+    },
+    {
+      "input": "c:foo",
+      "normalized": "c:foo",
+      "filename": "foo",
+      "equivalent": [
+        31,
+        32
+      ]
+    },
+    {
+      "input": "C:/",
+      "normalized": "c:\\",
+      "filename": "",
+      "equivalent": [
+        33,
+        34,
+        35
+      ]
+    },
+    {
+      "input": "c:/",
+      "normalized": "c:\\",
+      "filename": "",
+      "equivalent": [
+        33,
+        34,
+        35
+      ]
+    },
+    {
+      "input": "C:\\",
+      "normalized": "c:\\",
+      "filename": "",
+      "equivalent": [
+        33,
+        34,
+        35
+      ]
+    },
+    {
+      "input": "C:/foo",
+      "normalized": "c:\\foo",
+      "filename": "foo",
+      "equivalent": [
+        36,
+        37,
+        39,
+        40
+      ]
+    },
+    {
+      "input": "c:\\foo",
+      "normalized": "c:\\foo",
+      "filename": "foo",
+      "equivalent": [
+        36,
+        37,
+        39,
+        40
+      ]
+    },
+    {
+      "input": "C:/FOO",
+      "normalized": "c:\\foo",
+      "filename": "FOO",
+      "equivalent": [
+        38
+      ]
+    },
+    {
+      "input": "C:/foo/",
+      "normalized": "c:\\foo",
+      "filename": "foo",
+      "equivalent": [
+        36,
+        37,
+        39,
+        40
+      ]
+    },
+    {
+      "input": "C:\\foo\\.",
+      "normalized": "c:\\foo",
+      "filename": "foo",
+      "equivalent": [
+        36,
+        37,
+        39,
+        40
+      ]
+    },
+    {
+      "input": "C:\\foo\\..",
+      "normalized": "c:\\",
+      "filename": "",
+      "equivalent": [
+        41
+      ]
+    },
+    {
+      "input": "C:\\foo\\..\\..\\bar",
+      "normalized": "c:\\bar",
+      "filename": "bar",
+      "equivalent": [
+        42
+      ]
+    },
+    {
+      "input": "C:\\foo\\bar",
+      "normalized": "c:\\foo\\bar",
+      "filename": "bar",
+      "equivalent": [
+        43,
+        44,
+        45,
+        46
+      ]
+    },
+    {
+      "input": "C:/foo/bar",
+      "normalized": "c:\\foo\\bar",
+      "filename": "bar",
+      "equivalent": [
+        43,
+        44,
+        45,
+        46
+      ]
+    },
+    {
+      "input": "C:/foo//bar",
+      "normalized": "c:\\foo\\bar",
+      "filename": "bar",
+      "equivalent": [
+        43,
+        44,
+        45,
+        46
+      ]
+    },
+    {
+      "input": "C:/foo/./bar",
+      "normalized": "c:\\foo\\bar",
+      "filename": "bar",
+      "equivalent": [
+        43,
+        44,
+        45,
+        46
+      ]
+    },
+    {
+      "input": "C:/foo/../bar",
+      "normalized": "c:\\bar",
+      "filename": "bar",
+      "equivalent": [
+        47
+      ]
+    },
+    {
+      "input": "C:foo/../bar",
+      "normalized": "c:bar",
+      "filename": "bar",
+      "equivalent": [
+        48
+      ]
+    },
+    {
+      "input": "\\\\server\\share",
+      "normalized": "\\\\server\\share\\",
+      "filename": "",
+      "equivalent": [
+        49,
+        50
+      ]
+    },
+    {
+      "input": "\\\\server\\share\\",
+      "normalized": "\\\\server\\share\\",
+      "filename": "",
+      "equivalent": [
+        49,
+        50
+      ]
+    },
+    {
+      "input": "\\\\server\\share\\a",
+      "normalized": "\\\\server\\share\\a",
+      "filename": "a",
+      "equivalent": [
+        51,
+        52
+      ]
+    },
+    {
+      "input": "//server/share/a",
+      "normalized": "//server/share\\a",
+      "filename": "a",
+      "equivalent": [
+        51,
+        52
+      ]
+    },
+    {
+      "input": "\\\\SERVER\\share\\a",
+      "normalized": "\\\\server\\share\\a",
+      "filename": "a",
+      "equivalent": [
+        53
+      ]
+    },
+    {
+      "input": "\\\\server\\share\\a\\..\\b",
+      "normalized": "\\\\server\\share\\b",
+      "filename": "b",
+      "equivalent": [
+        54
+      ]
+    },
+    {
+      "input": "\\\\server\\share\\..\\..\\b",
+      "normalized": "\\\\server\\share\\b",
+      "filename": "b",
+      "equivalent": [
+        55
+      ]
+    },
+    {
+      "input": "\\\\?\\C:\\foo\\..\\bar",
+      "normalized": "c:\\bar",
+      "filename": "bar",
+      "equivalent": [
+        56
+      ]
+    },
+    {
+      "input": "\\\\?\\C:\\foo\\.\\bar",
+      "normalized": "c:\\foo\\bar",
+      "filename": "bar",
+      "equivalent": [
+        57
+      ]
+    },
+    {
+      "input": "\\\\?\\C:\\foo/bar",
+      "normalized": "c:\\foo\\bar",
+      "filename": "foo/bar",
+      "equivalent": [
+        58
+      ]
+    },
+    {
+      "input": "\\\\?\\UNC\\server\\share\\a\\..\\b",
+      "normalized": "\\\\server\\share\\b",
+      "filename": "b",
+      "equivalent": [
+        59
+      ]
+    },
+    {
+      "input": "\\\\.\\pipe\\name",
+      "normalized": "\\\\.\\pipe\\name",
+      "filename": "name",
+      "equivalent": [
+        60
+      ]
+    },
+    {
+      "input": "C:\\한글\\사진.png",
+      "normalized": "c:\\한글\\사진.png",
+      "filename": "사진.png",
+      "equivalent": [
+        61,
+        62
+      ]
+    },
+    {
+      "input": "C:/한글/사진.png",
+      "normalized": "c:\\한글\\사진.png",
+      "filename": "사진.png",
+      "equivalent": [
+        61,
+        62
+      ]
+    },
+    {
+      "input": "C:\\한글\\..\\다른폴더",
+      "normalized": "c:\\다른폴더",
+      "filename": "다른폴더",
+      "equivalent": [
+        63
+      ]
+    },
+    {
+      "input": "C:\\İΣ\\Ｆolder",
+      "normalized": "c:\\i̇ς\\ｆolder",
+      "filename": "Ｆolder",
+      "equivalent": [
+        64
+      ]
+    },
+    {
+      "input": " name.txt ",
+      "normalized": "name.txt",
+      "filename": " name.txt ",
+      "equivalent": [
+        65
+      ]
+    },
+    {
+      "input": ".hidden",
+      "normalized": ".hidden",
+      "filename": ".hidden",
+      "equivalent": [
+        66
+      ]
+    },
+    {
+      "input": "file.",
+      "normalized": "file.",
+      "filename": "file.",
+      "equivalent": [
+        67
+      ]
+    },
+    {
+      "input": "file.txt",
+      "normalized": "file.txt",
+      "filename": "file.txt",
+      "equivalent": [
+        68
+      ]
+    },
+    {
+      "input": "a/../file.txt",
+      "normalized": "file.txt",
+      "filename": "file.txt",
+      "equivalent": [
+        69,
+        70
+      ]
+    },
+    {
+      "input": "a\\../file.txt",
+      "normalized": "file.txt",
+      "filename": "file.txt",
+      "equivalent": [
+        69,
+        70
+      ]
+    },
+    {
+      "input": "C:file.txt",
+      "normalized": "c:file.txt",
+      "filename": "file.txt",
+      "equivalent": [
+        71
+      ]
+    },
+    {
+      "input": "C:\\temp\\file.txt",
+      "normalized": "c:\\temp\\file.txt",
+      "filename": "file.txt",
+      "equivalent": [
+        72
+      ]
+    },
+    {
+      "input": "C:\\temp\\CON",
+      "normalized": "c:\\temp\\con",
+      "filename": "CON",
+      "equivalent": [
+        73
+      ]
+    },
+    {
+      "input": "C:\\temp\\aux.txt",
+      "normalized": "c:\\temp\\aux.txt",
+      "filename": "aux.txt",
+      "equivalent": [
+        74
+      ]
+    },
+    {
+      "input": "\\\\server\\share\\a.txt",
+      "normalized": "\\\\server\\share\\a.txt",
+      "filename": "a.txt",
+      "equivalent": [
+        75
+      ]
+    },
+    {
+      "input": "...",
+      "normalized": "...",
+      "filename": "...",
+      "equivalent": [
+        76
+      ]
+    },
+    {
+      "input": "a/../../",
+      "normalized": "",
+      "filename": "",
+      "equivalent": [
+        77,
+        78
+      ]
+    },
+    {
+      "input": "a/../..",
+      "normalized": "",
+      "filename": "",
+      "equivalent": [
+        77,
+        78
+      ]
+    },
+    {
+      "input": "C:/../",
+      "normalized": "c:\\",
+      "filename": "",
+      "equivalent": [
+        79
+      ]
+    },
+    {
+      "input": "C:../a",
+      "normalized": "c:a",
+      "filename": "a",
+      "equivalent": [
+        80
+      ]
+    },
+    {
+      "input": "//server",
+      "normalized": "\\server",
+      "filename": "server",
+      "equivalent": [
+        81,
+        82
+      ]
+    },
+    {
+      "input": "//server/",
+      "normalized": "\\server",
+      "filename": "server",
+      "equivalent": [
+        81,
+        82
+      ]
+    },
+    {
+      "input": "///server/share/a",
+      "normalized": "\\server\\share\\a",
+      "filename": "a",
+      "equivalent": [
+        83
+      ]
+    },
+    {
+      "input": "C:/  A / B  ",
+      "normalized": "c:\\  a \\ b",
+      "filename": " B  ",
+      "equivalent": [
+        84
+      ]
+    },
+    {
+      "input": "a/C:foo/..",
+      "normalized": "c:",
+      "filename": "",
+      "equivalent": [
+        85
+      ]
+    },
+    {
+      "input": "a/C:foo/../bar",
+      "normalized": "c:bar",
+      "filename": "bar",
+      "equivalent": [
+        86
+      ]
+    },
+    {
+      "input": "x/C:/..",
+      "normalized": "c:",
+      "filename": "",
+      "equivalent": [
+        87
+      ]
+    },
+    {
+      "input": "C:/a/D:foo/../z",
+      "normalized": "d:z",
+      "filename": "z",
+      "equivalent": [
+        88
+      ]
+    },
+    {
+      "input": "C:/a/D:/../z",
+      "normalized": "d:z",
+      "filename": "z",
+      "equivalent": [
+        89
+      ]
+    },
+    {
+      "input": "C:/a/./D:foo",
+      "normalized": "d:foo",
+      "filename": "D:foo",
+      "equivalent": [
+        90
+      ]
+    },
+    {
+      "input": "a/C:/z",
+      "normalized": "c:z",
+      "filename": "z",
+      "equivalent": [
+        91
+      ]
+    }
+  ]
+}

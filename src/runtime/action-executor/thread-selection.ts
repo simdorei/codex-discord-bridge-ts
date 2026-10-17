@@ -3,7 +3,7 @@ import {types} from 'node:util';
 import {gatewayOwnField} from '../../discord/gateway/values.ts';
 import {resolveThreadReferenceOffThread} from '../../codex-state/reference-reader.ts';
 import {CodexThreadStore} from '../../codex-state/store.ts';
-import {resolveThreadRefPosix, ThreadResolveError} from '../../codex-state/thread-reference.ts';
+import {resolveThreadRef, ThreadResolveError} from '../../codex-state/thread-reference.ts';
 import type {ThreadInfo} from '../../codex-state/thread.ts';
 import {rustTrim} from '../../app-server/value.ts';
 import {requireDiscordText} from '../../discord/text.ts';
@@ -49,12 +49,12 @@ export class ActionThreadSelection {
   resolveReference(input: string, archived = false): ThreadInfo {
     requireDiscordText(input);
     if (typeof archived !== 'boolean') throw new TypeError('Expected archived flag');
-    if (process.platform === 'win32') throw new Error('Windows action reference resolution is not yet qualified');
+
     const store = CodexThreadStore.open(this.#statePath), reference = rustTrim(input);
     const exact = store.loadThread(reference, archived);
     if (exact !== null) return exact;
     const threads = archived ? store.loadArchivedThreads(0n) : store.loadRecentThreads(0n);
-    return resolveThreadRefPosix(threads, reference, this.#selected(), archived);
+    return resolveThreadRef(threads, reference, this.#selected(), archived);
   }
   async archiveDeletePreview(reference:string,signal?:AbortSignal):Promise<string>{
     signal?.throwIfAborted();const thread=await resolveThreadReferenceOffThread(this.#statePath,reference,null,true,signal,6000,this.#bridgePath);

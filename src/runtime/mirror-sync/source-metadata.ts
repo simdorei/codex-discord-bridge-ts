@@ -12,7 +12,7 @@ export class NativeMirrorMetadata {
   readonly #slot = new OwnedWorkerSlot('Control');
   async #read(kind: 'titles' | 'rollout', input: string, signal: AbortSignal): Promise<unknown> {
     signal.throwIfAborted(); requireDiscordText(input);
-    if (process.platform === 'win32') throw new Error('Windows mirror metadata unqualified');
+
     if (this.#slot.busy) throw new OwnedWorkerBusyError();
     const id = randomUUID(), path = pinNativeRuntimePath(input); let raw: unknown;
     try { raw = await this.#slot.run(new URL('./source-metadata-worker.ts', import.meta.url), {id, path, kind}, 10000, signal); }

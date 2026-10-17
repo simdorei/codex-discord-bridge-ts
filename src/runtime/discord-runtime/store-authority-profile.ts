@@ -3,6 +3,7 @@ import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {StoreAuthorityDomain,authorityStorePath} from '../../store/store-authority-domain.ts';
 import {PosixRuntimeInstance} from '../runtime-instance.ts';
+import {WindowsRuntimeInstance} from '../windows/windows-runtime-instance.ts';
 import type {RuntimePaths} from '../runtime-paths/resolve.ts';
 
 /** Explicit opt-in to accounting only. No assertion about external writers,
@@ -19,9 +20,10 @@ function binding(paths:Pick<RuntimePaths,'root'|'mirrorDb'>):Readonly<{root:stri
 export function requireLocalStoreAuthorityPaths(paths:Pick<RuntimePaths,'root'|'mirrorDb'>):void{binding(paths);}
 /** Synchronous enrollment is deliberately before the first storage-preparation
  * await. Authentic singleton ownership is retained until this domain closes. */
-export function enrollLocalStoreAuthority(instance:PosixRuntimeInstance,paths:Pick<RuntimePaths,'root'|'mirrorDb'>,profile:LocalStoreAuthorityProfile):StoreAuthorityDomain{
+export function enrollLocalStoreAuthority(instance:PosixRuntimeInstance|WindowsRuntimeInstance,paths:Pick<RuntimePaths,'root'|'mirrorDb'>,profile:LocalStoreAuthorityProfile):StoreAuthorityDomain{
  captureLocalStoreAuthorityProfile(profile);const pinned=binding(paths);
- PosixRuntimeInstance.prototype.requireHeldRoot.call(instance,pinned.root);
+ const prototype=instance instanceof WindowsRuntimeInstance?WindowsRuntimeInstance.prototype:PosixRuntimeInstance.prototype;
+ prototype.requireHeldRoot.call(instance,pinned.root);
  const domain=StoreAuthorityDomain.enroll(pinned.mirrorDb);
- try{PosixRuntimeInstance.prototype.retainStoreAuthority.call(instance,pinned.root,domain);return domain;}catch(error){domain.closeAfterOwnersJoined();throw error;}
+ try{prototype.retainStoreAuthority.call(instance,pinned.root,domain);return domain;}catch(error){domain.closeAfterOwnersJoined();throw error;}
 }

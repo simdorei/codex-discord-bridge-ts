@@ -7,7 +7,7 @@ import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {captureBusyClaimIdentity,busyClaimBinding,BUSY_CLAIM_REQUEST_BYTES,BUSY_CLAIM_REPLY_BYTES} from './busy-claim-snapshot.ts';
 const port=parentPort;if(port===null)throw new Error('Busy claim requires owned native worker');
 try{
- if(process.platform==='win32')throw new TypeError('Windows Busy claim worker unqualified');
+
  if(boundedSerdeByteCount(q,BUSY_CLAIM_REQUEST_BYTES)===null)throw new RangeError('Busy claim request exceeds native budget');
  const identity=captureBusyClaimIdentity(q),binding=busyClaimBinding(q.id,q.path,q.operation,identity,q.now);
  if(Object.keys(q).length!==Object.keys(binding).length)throw new TypeError('Invalid Busy claim request');

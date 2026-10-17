@@ -1,4 +1,5 @@
 import {rustDebugString} from '../../core/rust-debug.ts';
+import {sameWindowsRuntimePath} from '../runtime-paths/path-text.ts';
 import {AdmissionPermit} from '../../admission/drain-gate.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {getOwn,pointer} from '../../store/async-resolution-json-helpers.ts';
@@ -22,7 +23,7 @@ export class MessageDatabaseMismatchError extends Error {
 /** Rust Path::components comparison on Unix UTF-8 paths. No filesystem lookup,
  * symlink resolution or '..' collapse. Windows path semantics remain gated. */
 export function sameMessageDatabasePath(a:string,b:string):boolean {
- requireDiscordText(a);requireDiscordText(b);if(process.platform==='win32')throw new TypeError('Windows message path affinity is not implemented');
+  requireDiscordText(a);requireDiscordText(b);if(process.platform==='win32')return sameWindowsRuntimePath(a,b);
  const components=(s:string)=>{const out:string[]=[];if(s.startsWith('/'))out.push('/');else if(s==='.'||s.startsWith('./'))out.push('.');for(const p of s.split('/'))if(p!==''&&p!=='.')out.push(p);return out;};
  const left=components(a),right=components(b);return left.length===right.length&&left.every((v,i)=>v===right[i]);
 }
@@ -63,7 +64,6 @@ Object.freeze(AdmittedMessage.prototype);
  * Gateway gap fencing and caller permit retention are separate mandatory layers. */
 export async function admitMessageCandidateAt(candidate:MessageCandidate,observedAt:number,options:MessageCustodyOptions):Promise<AdmittedMessage|null>{
  const parts=MessageCandidate.prototype.intoAdmissionParts.call(candidate);
- if(process.platform==='win32')throw new TypeError('Windows message admission affinity is not implemented');
  if(typeof observedAt!=='number'||!Number.isFinite(observedAt)||observedAt<0)throw new TypeError('Expected nonnegative finite admission time');
  const input=request(parts,observedAt),captured=captureMessageCustodyOptions(parts.database,options);
  const {admission,owner}=await admitOriginalMessageJournal(parts.database,input,captured.messageJournal!);if(!admission.created)return null;

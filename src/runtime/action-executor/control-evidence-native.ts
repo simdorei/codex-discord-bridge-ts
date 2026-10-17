@@ -18,7 +18,7 @@ export class NativeControlEvidenceReader{
  constructor(path:string){requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new TypeError('Invalid control evidence path');this.#path=pinNativeRuntimePath(path);if(Buffer.byteLength(this.#path)>32768)throw new RangeError('Control path exceeds native boundary');Object.freeze(this);}
  async observed(thread:string,turn:string,signal?:AbortSignal,timeoutMs=6000):Promise<boolean>{
   if(signal!==undefined&&(types.isProxy(signal)||!(signal instanceof AbortSignal)))throw new TypeError('Expected AbortSignal');signal?.throwIfAborted();
-  if(process.platform==='win32')throw new Error('Windows control evidence reader is not qualified');identity(thread);identity(turn);if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid control evidence timeout');if(this.#slot.busy)throw new OwnedWorkerBusyError();
+  identity(thread);identity(turn);if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid control evidence timeout');if(this.#slot.busy)throw new OwnedWorkerBusyError();
   const id=randomUUID(),request={id,path:this.#path,operation:'Observed',thread,turn};if(boundedSerdeByteCount(request,262144)===null)throw new RangeError('Control request exceeds boundary');let raw:unknown,admitted=false;
   try{const pending=this.#slot.run(new URL('./control-evidence-native-worker.ts',import.meta.url),request,timeoutMs,signal);admitted=this.#slot.busy;try{raw=await pending;}finally{await this.#slot.join();}}
   catch(error){if(signal?.aborted)throw signal.reason;if(!admitted)throw error;throw new NativeControlEvidenceUnavailable();}

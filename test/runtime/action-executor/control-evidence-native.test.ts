@@ -20,8 +20,8 @@ it('response Boolean alone or wrong bound original identity cannot mint control 
  const owner=new NativeControlEvidenceReader(path);let mode=0;t.mock.method(OwnedWorkerSlot.prototype,'run',async(_url:URL,q:Record<string,unknown>)=>mode===0?{ok:true,value:false}:mode===1?{...q,ok:true,turn:'replacement',value:true}:{...q,ok:true,value:'false'});
  for(mode=0;mode<3;mode++)await assert.rejects(owner.observed('T','V'),NativeControlEvidenceUnavailable);assert.equal(ownedWorkerUsage().Control,0);
 }));
-it('native path traversal after symlink stays bound to actual filesystem parent',()=>storeFixture(async root=>{
- const dir=dirname(root),outside=join(dir,'real'),inside=join(outside,'child');mkdirSync(inside,{recursive:true});symlinkSync(inside,join(dir,'link'),'dir');const actual=join(outside,'evidence.sqlite'),lexical=join(dir,'evidence.sqlite');
+it('native path traversal after a directory link follows host filesystem semantics',()=>storeFixture(async root=>{
+ const dir=dirname(root),outside=join(dir,'real'),inside=join(outside,'child');mkdirSync(inside,{recursive:true});symlinkSync(inside,join(dir,'link'),process.platform==='win32'?'junction':'dir');const actual=join(outside,'evidence.sqlite'),lexical=join(dir,'evidence.sqlite');
  for(const [path,turn] of [[actual,'real'],[lexical,'lexical']]){const db=new DatabaseSync(path!);try{db.exec('CREATE TABLE codex_observed_completions(thread_id TEXT,turn_id TEXT)');db.prepare('INSERT INTO codex_observed_completions VALUES(?,?)').run('T',turn!);}finally{db.close();}}
- const owner=new NativeControlEvidenceReader(join(dir,'link')+'/../evidence.sqlite');assert.equal(await owner.observed('T','real'),true);assert.equal(await owner.observed('T','lexical'),false);
+ const owner=new NativeControlEvidenceReader(join(dir,'link')+'/../evidence.sqlite');assert.equal(await owner.observed('T','real'),process.platform!=='win32');assert.equal(await owner.observed('T','lexical'),process.platform==='win32');
 }));

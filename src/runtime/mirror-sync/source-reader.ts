@@ -30,7 +30,7 @@ export class NativeMirrorSourceReader {
     return value;
   }
   async #read(kind: 'ActiveIds' | 'Thread', thread: string | null, archived: boolean, signal: AbortSignal): Promise<unknown> {
-    signal.throwIfAborted(); if (process.platform === 'win32') throw new Error('Windows source reader unqualified');
+    signal.throwIfAborted();
     if (this.#slot.busy) throw new OwnedWorkerBusyError();
     const id = randomUUID(); let raw: unknown;
     try { raw = await this.#slot.run(new URL('./source-reader-worker.ts', import.meta.url), {id, path: this.#path, kind, thread, archived}, 10000, signal); }

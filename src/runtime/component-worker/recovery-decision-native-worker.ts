@@ -9,7 +9,7 @@ import {getIngressExisting} from '../../store/ingress-read.ts';
 import {recoveryDecisionBinding,encodeRecoverySnapshot,encodeRecoveryReceipt,RECOVERY_DECISION_REQUEST_BYTES,RECOVERY_DECISION_REPLY_BYTES} from './recovery-decision-native-snapshot.ts';
 const port=parentPort;if(port===null)throw new Error('Recovery decision requires owned worker');
 try {
- if(process.platform==='win32'||boundedSerdeByteCount(q,RECOVERY_DECISION_REQUEST_BYTES)===null)throw new TypeError('Unsupported recovery decision worker request');
+ if(boundedSerdeByteCount(q,RECOVERY_DECISION_REQUEST_BYTES)===null)throw new TypeError('Unsupported recovery decision worker request');
  const click=captureRecoveryDecisionClick(q),binding=recoveryDecisionBinding(q.id,q.path,q.operation,click,q.sealJson,q.displayedJson,q.now);
  if(Object.keys(q).length!==Object.keys(binding).length)throw new TypeError('Invalid recovery decision request');for(const [key,value]of Object.entries(binding))if(!Object.is(q[key],value))throw new TypeError('Crossed recovery decision request');
  const original=q.sealJson===null?null:recoverySnapshot(click.flow,q.sealJson,q.displayedJson);let value:string|boolean|null;

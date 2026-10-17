@@ -9,7 +9,7 @@ const port = parentPort;
 if (port === null) throw new Error('Owned archived cleanup worker required');
 const binding = {id: input.id, codex: input.codex, mirror: input.mirror, kind: input.kind};
 try {
-  if (process.platform === 'win32') throw new Error('Windows archived cleanup unqualified');
+
   let value: string | null;
   if (input.kind === 'Pending') value = state.archivedCleanupPendingReason(input.mirror, input.channel, input.target, input.now);
   else if (input.kind === 'Begin') {

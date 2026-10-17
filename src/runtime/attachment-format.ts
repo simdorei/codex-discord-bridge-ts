@@ -2,9 +2,10 @@ import {types} from 'node:util';
 import {requireDiscordText} from '../discord/text.ts';
 import {rustTrim} from '../app-server/value.ts';
 import {gatewayOwnField} from '../discord/gateway/values.ts';
+import {windowsRuntimeFilename} from './runtime-paths/path-text.ts';
 const TEXT_EXTENSIONS=new Set(['bat','cmd','css','csv','html','ini','js','json','log','md','ps1','py','rs','sh','toml','ts','tsx','txt','xml','yaml','yml']);
 const asciiLower=(s:string)=>s.replace(/[A-Z]/g,c=>c.toLowerCase());
-function leaf(path:string):string{if(process.platform==='win32')throw new TypeError('Windows attachment path grammar is not implemented');const parts=path.split('/').filter(p=>p!==''&&p!=='.'),last=parts.at(-1);return last===undefined||last==='..'?'':last;}
+function leaf(path:string):string{if(process.platform==='win32')return windowsRuntimeFilename(path);const parts=path.split('/').filter(p=>p!==''&&p!=='.'),last=parts.at(-1);return last===undefined||last==='..'?'':last;}
 /** Rust Unix Path file_name + ASCII filename projection. No file is opened. */
 export function sanitizeAttachmentFilename(filename:string,index:bigint|number):string {
  requireDiscordText(filename);if(typeof index!=='bigint'&&(typeof index!=='number'||!Number.isSafeInteger(index)))throw new TypeError('Expected lossless usize index');const i=BigInt(index);if(i<0n||i>=1n<<64n)throw new RangeError('Expected u64 usize index');

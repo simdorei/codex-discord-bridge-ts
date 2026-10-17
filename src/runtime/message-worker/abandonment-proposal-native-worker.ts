@@ -12,7 +12,7 @@ import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {captureProposalOriginal,proposalBinding,proposalFields,ABANDONMENT_PROPOSAL_REQUEST_BYTES,ABANDONMENT_PROPOSAL_REPLY_BYTES} from './abandonment-proposal-protocol.ts';
 const port=parentPort;if(port===null)throw new TypeError('Proposal requires owned worker');
 try{
- if(process.platform==='win32'||boundedSerdeByteCount(q,ABANDONMENT_PROPOSAL_REQUEST_BYTES)===null)throw new TypeError('Unsupported proposal request');
+ if(boundedSerdeByteCount(q,ABANDONMENT_PROPOSAL_REQUEST_BYTES)===null)throw new TypeError('Unsupported proposal request');
  const original=captureProposalOriginal(Object.fromEntries(['path','ingress','event','channel','actor','application','job','content','proposal'].map(key=>[key,q[key]]))),binding=proposalBinding(q.requestId,original,q.operation,q.target,q.at,q.message,q.revision,q.hash);
  proposalFields(q,Object.keys(binding));for(const [key,value]of Object.entries(binding))if(!Object.is(q[key],value))throw new TypeError('Crossed proposal request');
  let value:unknown;

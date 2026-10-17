@@ -30,7 +30,7 @@ export class NativeRunnerInspectionReader{
  async #read(operation:Operation,scope:Scope,signal?:AbortSignal,timeoutMs=6000):Promise<string>{
   if(signal!==undefined&&(types.isProxy(signal)||!(signal instanceof AbortSignal)))throw new TypeError('Expected AbortSignal');signal?.throwIfAborted();
   if(operation==='Detail'||operation==='Summary'){actor(scope.channel!);actor(scope.user!);}for(const value of [scope.requestId,scope.target,scope.source,scope.owned])if(value!==null)text(value);
-  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid runner inspection timeout');if(process.platform==='win32')throw new Error('Windows runner inspection is not qualified');if(this.#slot.busy)throw new OwnedWorkerBusyError();
+  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid runner inspection timeout');if(this.#slot.busy)throw new OwnedWorkerBusyError();
   const request={id:randomUUID(),path:this.#path,operation,...scope};if(boundedSerdeByteCount(request,INPUT_BYTES)===null)throw new RangeError('Runner inspection request exceeds native boundary');let raw:unknown,admitted=false;
   try{const task=this.#slot.run(new URL('./runner-inspection-native-worker.ts',import.meta.url),request,timeoutMs,signal);admitted=this.#slot.busy;try{raw=await task;}finally{await this.#slot.join();}}
   catch(error){if(signal?.aborted)throw signal.reason;if(!admitted)throw error;throw new NativeRunnerInspectionUnavailable();}signal?.throwIfAborted();

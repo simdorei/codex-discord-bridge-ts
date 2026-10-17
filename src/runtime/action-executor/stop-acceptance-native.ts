@@ -42,7 +42,7 @@ export class NativeStopAcceptanceWriter {
  assertOwner(path:string,bridge:NativeBridgeStateOwner):void{if(pinNativeRuntimePath(path)!==this.#path||bridge!==this.#bridge)throw new TypeError('Stop writer belongs to another database or Bridge owner');}
  async execute(input:StopAcceptanceInput,signal?:AbortSignal,timeoutMs=6000):Promise<StopAcceptanceDisplay>{
   checkSourceSignal(signal);
-  if(process.platform==='win32')throw new Error('Windows Stop acceptance is unqualified');if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Stop acceptance timeout');
+  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid Stop acceptance timeout');
   const operation=captureStopAcceptance(input);if(this.#active||this.#slot.busy)throw new OwnedWorkerBusyError();
   const id=randomUUID(),binding=stopAcceptanceBinding(id,this.#path,operation);assertStopAcceptanceRequestBudget(binding,operation);
   const sourceSignal=signal,ownedSignal=ownSignal(sourceSignal);signal=ownedSignal.signal;this.#active=true;

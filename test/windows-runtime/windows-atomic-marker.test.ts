@@ -55,6 +55,7 @@ async function fixture(t: TestContext, options: FixtureOptions = {}) {
     launch: null as ((callback: Callback, index: number) => void) | null,
   };
   function local(path: string): string {
+    if (path.startsWith('\\\\?\\')) path = path.slice(4);
     const prefix = `${root}${root.endsWith('\\') || root.endsWith('/') ? '' : '\\'}`;
     assert.ok(path.startsWith(prefix));
     const leaf = path.slice(prefix.length);
@@ -143,8 +144,7 @@ async function failed(promise: Promise<unknown>, phase: WindowsAtomicMarkerPhase
 }
 
 test('01 import-safe real host and worker gates, and mock host gates, precede filesystem access', async t => {
-  assert.notEqual(process.platform, 'win32', 'Cloud mock evidence only');
-  assert.throws(() => acquireWindowsAtomicMarkerProfile(ROOT), WindowsSingletonOwnerError);
+  if (process.platform !== 'win32') assert.throws(() => acquireWindowsAtomicMarkerProfile(ROOT), WindowsSingletonOwnerError);
   const worker = new Worker(`const {parentPort}=require('node:worker_threads'); import(${JSON.stringify(new URL('../../src/runtime/windows/windows-atomic-marker.js', import.meta.url).href)}).then(m=>{try{m.acquireWindowsAtomicMarkerProfile('C:\\\\worker');}catch(e){parentPort.postMessage(e.reason);}});`, {eval: true, execArgv: ['--no-strip-types']});
   assert.equal(await new Promise(resolve => { worker.once('message', resolve); worker.once('error', error => { throw error; }); }), 'thread');
   await worker.terminate();
@@ -192,15 +192,15 @@ test('03 fixed identity/ack paths preserve exact root spelling and frozen indepe
   await f.harness.shutdown(p);
 });
 
-test('04 generated short-path maximum 259 units inclusive and all excluded roots fail before load', async t => {
-  // Temp leaf is 27 prefix + 36 UUID + 4 suffix = 67; root 191 + separator 1.
-  const boundary = 'C:\\' + 'a'.repeat(188);
-  assert.equal(boundary.length, 191);
+test('04 extended path maximum reserves prefix and terminator; excluded roots fail before load', async t => {
+  // Temp leaf is 67 units; reserve the extended prefix and terminating NUL.
+  const boundary = 'C:\\' + 'a'.repeat(32691);
+  assert.equal(boundary.length, 32694);
   const f = await fixture(t, {root: boundary}), p = f.harness.acquire(boundary);
   const write = f.harness.publish(p, 'ack', 'x'); await f.waitMove();
-  assert.equal(f.moves[0]!.source.length, 259); await f.complete(); await write; await f.harness.shutdown(p);
+  assert.equal(f.moves[0]!.source.length, 32766); await f.complete(); await write; await f.harness.shutdown(p);
   let loads = 0;
-  for (const root of [boundary + 'a', '', 'relative', 'C:relative', '\\root', '\\\\host\\share', '\\\\?\\C:\\a', '/root', 'C:\\한글', 'C:\\a\0', 'C:\\a\n', 'C:\\a\x7f', 'C:\\a\ud800', new String(ROOT), {toString() { assert.fail('No coercion'); }}]) {
+  for (const root of [boundary + 'a', '', 'relative', 'C:relative', '\\root', '\\\\host\\share', '\\\\?\\C:\\a', '/root', 'C:\\a\0', 'C:\\a\n', 'C:\\a\x7f', 'C:\\a\ud800', new String(ROOT), {toString() { assert.fail('No coercion'); }}]) {
     assert.throws(() => createWindowsAtomicMarkerHarnessForTest({platform: 'win32', arch: 'x64', mainThread: true,
       loadKoffi() { loads++; return {}; }, mapping: {windowsRoot: root as string, fixtureRoot: f.directory}}), refusal('root'));
   }

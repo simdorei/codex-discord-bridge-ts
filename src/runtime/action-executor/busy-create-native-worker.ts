@@ -6,7 +6,7 @@ import {captureBusyCreate,busyCreateBinding,BUSY_CREATE_REQUEST_BYTES,BUSY_CREAT
 const port=parentPort;if(port===null)throw new Error('Owned busy creation worker required');
 let binding:ReturnType<typeof busyCreateBinding>|undefined;
 try{
- if(process.platform==='win32')throw new TypeError('Windows busy creation is unqualified');
+
  if(boundedSerdeByteCount(q,BUSY_CREATE_REQUEST_BYTES)===null)throw new RangeError('Busy creation envelope exceeds budget');
  const op=captureBusyCreate(q.input);binding=busyCreateBinding(q.id,q.path,q.choiceId,op);
  for(const [key,value] of Object.entries(binding))if(!Object.is(q[key],value))throw new TypeError('Crossed busy creation request');
