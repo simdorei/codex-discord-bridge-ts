@@ -22,7 +22,7 @@ export class ServerRequestDelivery{
  constructor(database:string,server:PortableResidentLifecycle,transport:DiscordReceiptTransport,nativePromptReceipts=false,promptAuthorityReads?:PromptAuthorityReads){
   if(typeof nativePromptReceipts!=='boolean')throw new TypeError('Expected native prompt receipt profile flag');this.#nativePromptReceipts=nativePromptReceipts;
   requireDiscordText(database);PortableResidentLifecycle.prototype.lifecycleSnapshot.call(server);const send=own(transport,'sendValidated');if(typeof send!=='function'||types.isProxy(send)||types.isGeneratorFunction(send))throw new TypeError('Expected owned server prompt transport');
-  this.#promptAuthorityReads=promptAuthorityReads===undefined?undefined:capturePromptAuthorityReads(database,promptAuthorityReads);this.#database=database;this.#server=server;this.#transport=Object.freeze({sendValidated:(request:Parameters<DiscordReceiptTransport['sendValidated']>[0])=>Reflect.apply(send,transport,[request])});
+  this.#promptAuthorityReads=promptAuthorityReads===undefined?undefined:capturePromptAuthorityReads(database,promptAuthorityReads);this.#database=database;this.#server=server;this.#transport=Object.freeze({sendValidated:(request:Parameters<DiscordReceiptTransport['sendValidated']>[0],signal?:AbortSignal)=>Reflect.apply(send,transport,[request,signal])});
  }
  #generation(expected:bigint){requirePromptGeneration(expected);const actual=PortableResidentLifecycle.prototype.generation.call(this.#server);if(actual!==expected)throw new ServerRequestGenerationMismatch(expected,actual);}
  async #process(generation:bigint,input:PendingServerRequest,signal?:AbortSignal):Promise<void>{

@@ -36,11 +36,11 @@ import {recoverDiscordHistoryChannel} from '../../../src/runtime/history-poll/di
 import {prepareServerPrompts} from '../../../src/runtime/server-prompt-redisplay.ts';
 const identity={applicationId:4n,userId:9n},signal=new AbortController().signal;
 function record(path:string){const db=new DatabaseSync(path,{readOnly:true});try{return db.prepare('SELECT receipt_key,message_id FROM codex_delivery_receipts ORDER BY receipt_key').all();}finally{db.close();}}
-function inspect(t:TestContext){
+function inspect(t:TestContext,beforeConfirm?:()=>void){
  for(const name of ['beginDeliveryReceipt','confirmDeliveryReceipt','releaseRejectedDelivery','blockRejectedDelivery'] as const)t.mock.method(state,name,()=>assert.fail(`main-thread receipt ${name}`));
  const operations:{lane:string;operation:string;key:string;guard:unknown}[]=[],run=OwnedWorkerSlot.prototype.run,complete=OwnedWorkerSlot.prototype.runControlCompletion;
  t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof run>){if(String(args[0]).endsWith('/native-receipt-store-worker.ts'))operations.push({lane:'begin',...args[1] as {operation:string;key:string;guard:unknown}});return run.apply(this,args);});
- t.mock.method(OwnedWorkerSlot.prototype,'runControlCompletion',function(this:OwnedWorkerSlot,...args:Parameters<typeof complete>){if(String(args[0]).endsWith('/native-receipt-store-worker.ts'))operations.push({lane:'completion',...args[1] as {operation:string;key:string;guard:unknown}});return complete.apply(this,args);});
+ t.mock.method(OwnedWorkerSlot.prototype,'runControlCompletion',function(this:OwnedWorkerSlot,...args:Parameters<typeof complete>){if(String(args[0]).endsWith('/native-receipt-store-worker.ts')){const data=args[1] as {operation:string;key:string;guard:unknown};operations.push({lane:'completion',...data});if(data.operation==='Confirm')beforeConfirm?.();}return complete.apply(this,args);});
  return operations;
 }
 function verify(operations:ReturnType<typeof inspect>,domain:string){assert.deepEqual(operations.map(x=>[x.lane,x.operation]),[['begin','Begin'],['completion','Confirm']]);assert.ok(operations.every(x=>x.guard===null&&x.key.includes(domain)));assert.equal(ownedWorkerUsage().Control,0);}
@@ -52,10 +52,10 @@ async function setup(path:string,server:PortableResidentLifecycle) {
  return {path,server,queue,gate,options,reports,startup:{owner:server,queue,executor,policy}};
 }
 test('installed automatic startup uses native receipt ownership with poisoned facade and joins accepted response after stop',async t=>{
- const operations=inspect(t),stop=new AbortController();await promptFixture(async(path,server)=>promptHttpFixture(async(http,seen)=>{
+ const stop=new AbortController(),operations=inspect(t,()=>stop.abort(Error('stop after validated HTTP enters Confirm')));await promptFixture(async(path,server)=>promptHttpFixture(async(http,seen)=>{
   const exits=new RuntimeWorkerExitChannel(),receiver=server.subscribeServerRequests(),errors:unknown[]=[],worker=await startServerRequestRuntimeWorker({owner:server,serverRequestReceiver:receiver},path,http,stop.signal,exits,error=>errors.push(error));
   try{assert.deepEqual(await worker.join(),{kind:'Returned',result:{ok:true}});assert.equal(receiver.tryReceive().kind,'Closed');assert.equal(seen.length,1);assert.equal(record(path)[0]!.message_id,'901');assert.deepEqual(errors,[]);verify(operations,'server-request/prompt/v1');assert.deepEqual(await callPromptFixture(server,'answers'),[]);}finally{stop.abort();await worker.join();receiver.dispose();exits.close();}
- },()=>{stop.abort(Error('stop after request accepted'));}));
+ }));
 });
 test('installed slash approval traverses original executor, action custody and native redisplay receipt before followup',async t=>{
  const operations=inspect(t);await fixture(f=>promptHttpFixture(async(http,seen)=>{
@@ -93,8 +93,9 @@ test('receipt profiles are captured as own strict booleans without executing get
  await fixture(f=>promptHttpFixture(async(http,seen)=>{const captured=capturePreparedMessageOptions(f.startup,f.gate,http,f.options),bad=Object.defineProperty({...captured.context},'nativePromptReceipts',{get(){hooks++;return true;}});assert.throws(()=>createGatewayMessageHandler({...captured,context:bad}),TypeError);await assert.rejects(recoverDiscordHistoryChannel({...captured,context:bad,applicationId:4n,botUserId:9n},1n,{micros:0n,messageId:1n}),TypeError);assert.equal(hooks,0);assert.deepEqual(seen,[]);}));
 });
 test('installed automatic stop retains worker and receiver until accepted native confirmation exits a real SQLite lock',async t=>{
- const operations=inspect(t),stop=new AbortController();let blocker:DatabaseSync|undefined;await promptFixture(async(path,server)=>promptHttpFixture(async(http,seen)=>{
+ const stop=new AbortController();let blocker:DatabaseSync|undefined,database:string|undefined;const operations=inspect(t,()=>{assert.ok(database);blocker=new DatabaseSync(database);blocker.exec('BEGIN IMMEDIATE');stop.abort(Error('stop after validated HTTP enters Confirm'));});await promptFixture(async(path,server)=>promptHttpFixture(async(http,seen)=>{
+  database=path;
   const exits=new RuntimeWorkerExitChannel(),receiver=server.subscribeServerRequests(),errors:unknown[]=[],worker=await startServerRequestRuntimeWorker({owner:server,serverRequestReceiver:receiver},path,http,stop.signal,exits,error=>errors.push(error));let ticks=0;const timer=setInterval(()=>ticks++,5);
   try{const deadline=performance.now()+5000;while(!operations.some(x=>x.operation==='Confirm')){assert.ok(performance.now()<deadline);await new Promise(resolve=>setTimeout(resolve,5));}await new Promise(resolve=>setTimeout(resolve,100));assert.equal(worker.peek(),undefined);assert.equal(receiver.tryReceive().kind,'Empty');assert.equal(ownedWorkerUsage().Control,1);assert.ok(ticks>3);assert.equal(seen.length,1);blocker!.exec('ROLLBACK');assert.deepEqual(await worker.join(),{kind:'Returned',result:{ok:true}});assert.equal(record(path)[0]!.message_id,'901');assert.equal(receiver.tryReceive().kind,'Closed');assert.deepEqual(errors,[]);verify(operations,'server-request/prompt/v1');}finally{clearInterval(timer);if(blocker?.isTransaction)blocker.exec('ROLLBACK');stop.abort();await worker.join();blocker?.close();receiver.dispose();exits.close();}
- },()=>{blocker=new DatabaseSync(path);blocker.exec('BEGIN IMMEDIATE');stop.abort(Error('stop during accepted HTTP'));}));
+ }));
 });

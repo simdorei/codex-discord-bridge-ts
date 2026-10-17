@@ -1,0 +1,98 @@
+{
+  "checkpoint": 969,
+  "status": "WIP; bounded recovered qualification only; no overall PASS",
+  "dateUtc": "2026-10-17",
+  "localBaseCommit": "2d54088ca4fd9b0400fad54aa6863831a78bbec8",
+  "evidenceMode": "Recovered saved final author and independent receipts; no test or compiler rerun during recovery",
+  "changedFilesSha256": {
+    "src/runtime/discord-runtime/server-request-start.ts": "ee8280726bb1d153da92a6411dab032e38fe8486ffc46a0188c1a464a820c211",
+    "src/runtime/server-request-delivery.ts": "0a01440397e8710c17e69578d404447af9be68a90c354d4b30fdb123b2d9e59d",
+    "test/runtime/discord-runtime/native-server-prompt-wiring.test.ts": "3fba6b101012f8faf8363c26be375a34449aa7d30c94937da9367842c9386b5f",
+    "test/runtime/discord-runtime/server-request-start.test.ts": "1ae404e7dbbdafa0962bb6dd2f7d80ba57af58b2e2466de633e476a8db1fb678",
+    "test/runtime/native-server-prompt-receipts.test.ts": "34cbf72d9fbf9bf89e47c79a066ae80ac3db0f6ccab713c59663d65b1e80e93b",
+    "test/runtime/server-request-cancellation.test.ts": "a38ee3608eb47d86df14c50035b070e5ec8fd2864cc3d2cd05ea6a08dca1bd5d"
+  },
+  "sharedQualification": {
+    "strictSelectedProjectModules": 668,
+    "strictProductionProjectModules": 656,
+    "declarationFilesPerCompilation": 178,
+    "identicalProductionEmissions": 656,
+    "frozenInputs": 921,
+    "physicalFrozenCopiesPerRun": 922,
+    "sourceGraphSha256": "8a2c98dbea6d66f524618c296a4f3415c52bfbd6d724c16558caeb70e05011e7",
+    "productionEmissionMapSha256": "4f868c1b27695959fa2f2406d161871c25f13ed7e4089a05d6c7dea3fe8e34d0",
+    "selectedEmissionMapSha256": "e85074b1c7d570a1f5615923291d02a4282047169acc3d5bcd931045a85f31aa",
+    "emittedFreezeFileSha256": "e4dd89819140639e8bb8cf4bd8096a96428aa76ffbe04a865dd747340f3297c2",
+    "pretestAuditSha256": "2bd8a209fc1592ad7d076e584b9bf513ff8cc9bc8a3b9b421b11998c9a758cd6",
+    "pinnedNodeSha256": "7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c",
+    "testsPerRun": { "tests": 33, "pass": 33, "fail": 0, "cancelled": 0, "skipped": 0, "todo": 0 },
+    "executedSuites": [
+      { "path": "test/runtime/server-request-cancellation.test.ts", "tests": 6 },
+      { "path": "test/runtime/server-request-delivery.test.ts", "tests": 17 },
+      { "path": "test/runtime/server-request-worker.test.ts", "tests": 10 }
+    ],
+    "compileOnlySuites": [
+      "test/runtime/native-server-prompt-receipts.test.ts",
+      "test/runtime/discord-runtime/server-request-start.test.ts",
+      "test/runtime/discord-runtime/native-server-prompt-wiring.test.ts"
+    ]
+  },
+  "runs": [
+    {
+      "role": "author-final",
+      "rootBasename": "server-request-cancellation-969-author-final-20261017-WtGiOxrV",
+      "qualificationManifestSha256": "254dd60081883a2741e136a9a3732c2da55e97a8124baeed9fd3146f5c1db8c1",
+      "selectedProcessReceiptSha256": "3221b43ecc0242bdf9a974f03f4635d53e8f77e73a77dff44d5c1821a87a80db",
+      "productionProcessReceiptSha256": "7430a34af5b0542cf4fbc005a5476283cfb85087c2dee84ca469e06cc8784d56",
+      "testProcessReceiptSha256": "26719ba2d13a171f74c9544bb5ee75bad3c047193eb26e217f56445bf4eec792",
+      "posttestAuditSha256": "bbaabe1e3ba18fbfbb7fa06a58eacb128662d86e906e1653160ec4df7a46a8a6",
+      "testDirectElapsedSeconds": 15.034820084983949,
+      "testSupervisorElapsedSeconds": 15.065894870029297
+    },
+    {
+      "role": "independent",
+      "rootBasename": "server-request-cancellation-969-review-20261017-gDYQnpxR",
+      "qualificationManifestSha256": "334eca0a0c81d3780e86a2994e5feb80bd34cd9fb655de3419bbdb446b4f92b3",
+      "selectedProcessReceiptSha256": "582a9e337fba550f87a6526b031bee69c77551221e7b3bf2e2a6f7624905dae7",
+      "productionProcessReceiptSha256": "4fb56991f246fd9274430f95c8e71ccb93b183cc20dbe2e88afb12e71b767314",
+      "testProcessReceiptSha256": "9b7e02328fde4f237e53a5e5d8b32044a32e29fdd37889c104c1f8fb9c8149df",
+      "posttestAuditSha256": "60159f7ec28dba086a4918e82dae7c0c73b665147e49704a686953de2a43eca4",
+      "testDirectElapsedSeconds": 14.080257594003342,
+      "testSupervisorElapsedSeconds": 14.111353259009775
+    }
+  ],
+  "processQualification": {
+    "scope": "Owned identities of these saved runs only",
+    "allSixPhaseExitCodes": 0,
+    "allOwnedProcessesExited": true,
+    "streamsEof": true,
+    "waitReportedNoChildren": true,
+    "forcedSignals": [],
+    "supervisorErrors": [],
+    "applicationCleanupQualifiedBySupervisor": false,
+    "oldV4DescendantStatus": "unknown-and-untouched"
+  },
+  "recoveryChecks": {
+    "allCurrentFrozenInputsMatchBothManifests": true,
+    "allPhysicalFrozenCopiesMatchBothManifests": true,
+    "allRecordedEmissionsMatchBothFreezes": true,
+    "pinnedNodeUnchanged": true,
+    "privateHomeAndTempStillEmpty": true,
+    "testOrCompilerRerun": false
+  },
+  "qualificationBoundary": {
+    "genuine": "Resident child, original receiver and worker where exercised, SQLite receipts, native read and receipt owners, locked native confirmation",
+    "passive": "Transport callbacks and returned message IDs; no proof of remote acceptance",
+    "startupAdapter": "Static source review and strict compilation only",
+    "unqualified": [
+      "Genuine HTTP and installed-startup runtime behavior",
+      "Complete Rust cancellation parity or Tokio future-drop equivalence",
+      "Authentic operational root and physical-store/external-writer exclusion",
+      "Persistent activation or live app-server/CUA installation",
+      "Full local-application/guard semantic compilation",
+      "Filesystem/network/cgroup/namespace isolation",
+      "Historical process cleanup",
+      "Performance, soak, deployment, overall A-G PASS or migration completion"
+    ]
+  }
+}
