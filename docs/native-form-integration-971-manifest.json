@@ -1,0 +1,248 @@
+{
+  "checkpoint": 971,
+  "dateUtc": "2026-10-17",
+  "status": "WIP; six bounded installed-core integration cases qualified, not overall PASS",
+  "localBaseCommit": "6060351f0f3078c8c25aaa71e482f1477ce843a5",
+  "evidenceMode": "Fresh final-source author and independent qualification",
+  "rustReference": {
+    "repository": "simdorei/codex-discord-remote-rust",
+    "commit": "d7e1aa0106b2eefd9ea3f96e8e4bc5afdd296d34",
+    "blobs": {
+      "crates/cdr-runtime/src/server_request_worker.rs": "5173d828b261f9f0d0429b75a6dbb09d76410707",
+      "crates/cdr-runtime/src/server_request_worker/local_tools.rs": "6cf1300755b3f3cf44021129b677fa920944f989"
+    },
+    "comparison": "Independently inspected immutable source; no executed Rust artifact comparison"
+  },
+  "changedCodeFilesSha256": {
+    "test/runtime/server-request-native-form-integration.test.ts": "20187fa2ad0b87f000aa47f92bdd9837fa3085e0b8d0f80d5ceb69d0d3eac8ed"
+  },
+  "productionSourceChanges": false,
+  "scopeDocument": {
+    "path": "docs/native-form-integration-20261017.md",
+    "sha256": "dbae608176e3acd22f7a67bda343e630fd1e27778455442d807d2f95be881b09"
+  },
+  "sharedQualification": {
+    "strictSelectedProjectModules": 341,
+    "strictProductionProjectModules": 338,
+    "declarationsPerCompilation": 178,
+    "identicalProductionEmissions": 338,
+    "frozenInputsPerRun": 594,
+    "physicalFrozenCopiesPerRun": 595,
+    "sourceGraphSha256": "686a8494fabfd1f45df418645b04a6bf3ab7ce6daed12dbbf825af6298377ac5",
+    "emittedMapSha256": {
+      "production": "79b1c6d41b4150c3695fd4ee66c04bae06a3a34f339606492ffef3358c50e8a8",
+      "selected": "c634b040796b84fb73843c77cf40a96e124b42ea20543e55ed97c3f2c01ebf18"
+    },
+    "pinnedNodeSha256": "7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c",
+    "testsPerRun": {
+      "cancelled": 0,
+      "fail": 0,
+      "pass": 6,
+      "skipped": 0,
+      "tests": 6,
+      "todo": 0
+    },
+    "executedSuites": [
+      "test/runtime/server-request-native-form-integration.test.ts"
+    ],
+    "compileOnlySuites": [],
+    "unchangedInputsCopiesEmissionsAndNode": true,
+    "privateHomeAndTempEmpty": true
+  },
+  "runs": [
+    {
+      "role": "author-final",
+      "rootBasename": "native-form-integration-971-author-final-20261017-2pQR6gZa",
+      "qualificationManifestSha256": "ef14ef00c5d7545fb58e6803620a7668673294ce8d150d9b82e3383ba071b3c3",
+      "emittedFreezeFileSha256": "9404a7c1e0d8667852dd304add42f3c50638d583cc8b4118929624448c38323b",
+      "pretestAuditSha256": "463a77cc85dadba25703281ad714e7eae4dfc693569db4943a1b7b62d4ed2732",
+      "posttestAuditSha256": "6b67c151235ed392a08f2c6883f1bfd892494d34c7f0ef7cb1b04a20cfad6e81",
+      "phases": {
+        "selected": {
+          "receiptSha256": "f50298d655433a1244c0e30eba62aa5dcfe5c86872168a03599955200714f070",
+          "directExitCode": 0,
+          "directElapsedSeconds": 0.8186858540284447,
+          "supervisorElapsedSeconds": 0.8494252770324238,
+          "observedOwnedProcessIdentities": 1,
+          "allOwnedProcessesExited": true,
+          "streamsEof": true,
+          "waitReportedNoChildren": true,
+          "shutdownReason": null,
+          "forcedSignals": [],
+          "errors": [],
+          "applicationCleanupQualifiedBySupervisor": false,
+          "historicalV4": "unknown-and-untouched"
+        },
+        "production": {
+          "receiptSha256": "98e08ffd7530075bda71e7dda2499f50dc08559f8bb546a2af902657e9341eaa",
+          "directExitCode": 0,
+          "directElapsedSeconds": 0.7572423059609719,
+          "supervisorElapsedSeconds": 0.7882290169945918,
+          "observedOwnedProcessIdentities": 1,
+          "allOwnedProcessesExited": true,
+          "streamsEof": true,
+          "waitReportedNoChildren": true,
+          "shutdownReason": null,
+          "forcedSignals": [],
+          "errors": [],
+          "applicationCleanupQualifiedBySupervisor": false,
+          "historicalV4": "unknown-and-untouched"
+        },
+        "tests": {
+          "receiptSha256": "4bf6cc1be43c62815fa6ae7971aa0b54f3ecd32c926849a35d58c2324a08b2d4",
+          "directExitCode": 0,
+          "directElapsedSeconds": 10.779514160007238,
+          "supervisorElapsedSeconds": 10.810408123012166,
+          "observedOwnedProcessIdentities": 8,
+          "allOwnedProcessesExited": true,
+          "streamsEof": true,
+          "waitReportedNoChildren": true,
+          "shutdownReason": null,
+          "forcedSignals": [],
+          "errors": [],
+          "applicationCleanupQualifiedBySupervisor": false,
+          "historicalV4": "unknown-and-untouched"
+        }
+      }
+    },
+    {
+      "role": "independent-final",
+      "rootBasename": "native-form-integration-971-review-20261017-v9WYlXQ8",
+      "qualificationManifestSha256": "3d73de4d6133e46826bfb582530ea67619fa901ecdaa8c94f7dc37d7219b99ed",
+      "emittedFreezeFileSha256": "9404a7c1e0d8667852dd304add42f3c50638d583cc8b4118929624448c38323b",
+      "pretestAuditSha256": "463a77cc85dadba25703281ad714e7eae4dfc693569db4943a1b7b62d4ed2732",
+      "posttestAuditSha256": "d93438f054c158c9dccac9295dad88903a36bb3346d0ac728fc7fd7fc0e232d4",
+      "phases": {
+        "selected": {
+          "receiptSha256": "5ad268e653fb59c08ce6e9caff941597a83ad08f38e6da8d82d752a1a2ee9ab8",
+          "directExitCode": 0,
+          "directElapsedSeconds": 0.7526153039652854,
+          "supervisorElapsedSeconds": 0.7835523219546303,
+          "observedOwnedProcessIdentities": 1,
+          "allOwnedProcessesExited": true,
+          "streamsEof": true,
+          "waitReportedNoChildren": true,
+          "shutdownReason": null,
+          "forcedSignals": [],
+          "errors": [],
+          "applicationCleanupQualifiedBySupervisor": false,
+          "historicalV4": "unknown-and-untouched"
+        },
+        "production": {
+          "receiptSha256": "26b10df92c50c11950cc80f9466ecee78f8896115b549a6e50a04df376d7d2a1",
+          "directExitCode": 0,
+          "directElapsedSeconds": 0.7695690160035156,
+          "supervisorElapsedSeconds": 0.800362843030598,
+          "observedOwnedProcessIdentities": 1,
+          "allOwnedProcessesExited": true,
+          "streamsEof": true,
+          "waitReportedNoChildren": true,
+          "shutdownReason": null,
+          "forcedSignals": [],
+          "errors": [],
+          "applicationCleanupQualifiedBySupervisor": false,
+          "historicalV4": "unknown-and-untouched"
+        },
+        "tests": {
+          "receiptSha256": "520d9b3037427ed019ad7cf584375f4af3803aa99f22a525e8c22ae588929965",
+          "directExitCode": 0,
+          "directElapsedSeconds": 10.394197499961592,
+          "supervisorElapsedSeconds": 10.424932386958972,
+          "observedOwnedProcessIdentities": 8,
+          "allOwnedProcessesExited": true,
+          "streamsEof": true,
+          "waitReportedNoChildren": true,
+          "shutdownReason": null,
+          "forcedSignals": [],
+          "errors": [],
+          "applicationCleanupQualifiedBySupervisor": false,
+          "historicalV4": "unknown-and-untouched"
+        }
+      }
+    }
+  ],
+  "preservedFailedAttempt": {
+    "role": "author-initial",
+    "rootBasename": "native-form-integration-971-author-20261017-eEiEgE1m",
+    "qualificationManifestSha256": "775cbb86ad20fef2bc009652587f767d9971eb8707ef71a1b41e0ee622123266",
+    "emittedFreezeFileSha256": "cf7c6d5602dd765ce6994301b1774b625b77f92483a7712fbf4c143a727ac7de",
+    "pretestAuditSha256": "463a77cc85dadba25703281ad714e7eae4dfc693569db4943a1b7b62d4ed2732",
+    "posttestAuditSha256": "c4c5708b474c0a3894636b9f77cf7675ddf8bff0f4ff6e3a6a225462ffbeb9e6",
+    "phases": {
+      "selected": {
+        "receiptSha256": "63ebba83f088d84510ce3da876c5558a6268b521d21d899db23db8f9bbad66d6",
+        "directExitCode": 0,
+        "directElapsedSeconds": 0.7653915709815919,
+        "supervisorElapsedSeconds": 0.796186878986191,
+        "observedOwnedProcessIdentities": 1,
+        "allOwnedProcessesExited": true,
+        "streamsEof": true,
+        "waitReportedNoChildren": true,
+        "shutdownReason": null,
+        "forcedSignals": [],
+        "errors": [],
+        "applicationCleanupQualifiedBySupervisor": false,
+        "historicalV4": "unknown-and-untouched"
+      },
+      "production": {
+        "receiptSha256": "dd38e3c58e5213679a241bbf5b53047297b308870e219047b544872822b0d9e4",
+        "directExitCode": 0,
+        "directElapsedSeconds": 0.7777953849872574,
+        "supervisorElapsedSeconds": 0.8086143290274777,
+        "observedOwnedProcessIdentities": 1,
+        "allOwnedProcessesExited": true,
+        "streamsEof": true,
+        "waitReportedNoChildren": true,
+        "shutdownReason": null,
+        "forcedSignals": [],
+        "errors": [],
+        "applicationCleanupQualifiedBySupervisor": false,
+        "historicalV4": "unknown-and-untouched"
+      },
+      "tests": {
+        "receiptSha256": "2ed1da432a77d146c5d6d93f9ff8fb28053673664d8514a59c004514d699b283",
+        "directExitCode": 1,
+        "directElapsedSeconds": 9.3240006089909,
+        "supervisorElapsedSeconds": 9.354986011981964,
+        "observedOwnedProcessIdentities": 7,
+        "allOwnedProcessesExited": true,
+        "streamsEof": true,
+        "waitReportedNoChildren": true,
+        "shutdownReason": null,
+        "forcedSignals": [],
+        "errors": [],
+        "applicationCleanupQualifiedBySupervisor": false,
+        "historicalV4": "unknown-and-untouched"
+      }
+    },
+    "tests": {
+      "tests": 5,
+      "pass": 4,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "testSourceSha256": "a08bd3c53edf4f438cdb90b3f5c08daf1261e36dc6b4dd7d29992509447379c4",
+    "sourceGraphSha256": "8c9b8ec82a3e6437cc39bddb4a9ad0d252c5fb785522d98202e67dc1ec464f4c",
+    "allFrozenCurrentInputsAndEmissionsUnchangedAfterRun": true,
+    "privateHomeAndTempEmpty": true,
+    "reason": "Initial recovery propagates original stop reason and suppresses downstream completion failure; test incorrectly expected a reported Unknown. Corrected expectation and added separate live-event case; no production defect established."
+  },
+  "qualificationBoundary": {
+    "genuine": "Original startRuntimeResident custody and child, one original business receiver/serial loop plus passive test observer, native prompt observations, occurrence-bound response and native completion, SQLite and native delivery receipt",
+    "passive": "Non-form sendValidated callback returns a fixed fixture message ID; no HTTP or remote acceptance proof",
+    "instrumented": "Existing test-only real Worker constructor instrumentation holds actual exit after unchanged native response completion commits and posts its original ACK",
+    "unqualified": [
+      "Actual connected Computer Use/browser/provider execution or installation",
+      "Discord HTTP, HTTP startup wrapper, gateway and complete local application",
+      "Operational singleton/root and physical-store/external-writer exclusion",
+      "Persistent resident activation and full ordinary integration contracts",
+      "Universal same-target/occupied-service liveness or performance",
+      "Full local-application semantic compilation",
+      "Historical v4 process closure or retained protocol cleanup debt",
+      "Filesystem/network/cgroup/namespace isolation",
+      "Windows, cutover, soak, deployment and original A-G migration completion"
+    ]
+  }
+}
