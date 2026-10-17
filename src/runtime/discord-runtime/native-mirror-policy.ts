@@ -2,7 +2,8 @@ import {pinNativeRuntimePath} from '../runtime-paths/path-text.ts';
 import {InteractionAccessPolicy} from '../../discord/interaction-access.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
-import {OwnedWorkerSlot,OwnedWorkerBusyError,takeOwnedWorkerAdmissionRefusal} from '../owned-worker-slot.ts';
+import {OwnedWorkerBusyError} from '../owned-worker-slot.ts';
+import {submitNativeMirrorPolicy,takeNativeMirrorPolicyTransportRefusal} from './native-mirror-policy-transport.ts';
 export interface NativeMirrorPolicyLimits {
  readonly maxRows:bigint;readonly maxValueBytes:bigint;readonly maxOutputIds:number;readonly timeoutMs:number;
 }
@@ -20,7 +21,6 @@ export function takeMirrorPolicyCapacityRefusal(pending:Promise<InteractionAcces
  if(pending===undefined||!capacityRefusals.has(pending)||capacityRefusals.get(pending)!==error)return false;
  capacityRefusals.delete(pending);return true;
 }
-const slot=new OwnedWorkerSlot();
 export function captureNativeMirrorPolicyLimits(limits:NativeMirrorPolicyLimits):NativeMirrorPolicyLimits{
  const maxRows=own(limits,'maxRows'),maxValueBytes=own(limits,'maxValueBytes'),maxOutputIds=own(limits,'maxOutputIds'),timeoutMs=own(limits,'timeoutMs');
  if(typeof maxRows!=='bigint'||maxRows<1n||maxRows>4096n||typeof maxValueBytes!=='bigint'||maxValueBytes<1n||maxValueBytes>4194304n||typeof maxOutputIds!=='number'||!Number.isSafeInteger(maxOutputIds)||maxOutputIds<1||maxOutputIds>16384||typeof timeoutMs!=='number'||!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid native policy limits');
@@ -53,17 +53,15 @@ export function refreshMirrorPolicyOffThread(policy:InteractionAccessPolicy,path
  return pending;
 }
 async function refresh(origin:object,policy:InteractionAccessPolicy,path:string,limits:NativeMirrorPolicyLimits,signal?:AbortSignal):Promise<InteractionAccessPolicy>{
- signal?.throwIfAborted();const resolved=capturePath(path),{maxRows,maxValueBytes,maxOutputIds,timeoutMs}=captureNativeMirrorPolicyLimits(limits);
+ signal?.throwIfAborted();const resolved=capturePath(path),captured=captureNativeMirrorPolicyLimits(limits),{maxOutputIds}=captured;
  // Validate the private policy receiver before any native work, without reading
  // caller fields. This immutable probe does not grant its dynamic IDs to anyone.
  InteractionAccessPolicy.prototype.withMirroredChannelIds.call(policy,[]);
- if(slot.busy)throw new NativeMirrorPolicyCapacityError(origin);
- let response:unknown,pending:Promise<unknown>|undefined,admitted=false,joined=Promise.resolve();
+ let response:unknown,pending:Promise<unknown>|undefined;
  try{
-  try{pending=slot.run(new URL('./mirror-policy-worker.ts',import.meta.url),{path:resolved,maxRows,maxValueBytes,maxOutputIds,timeoutMs},timeoutMs,signal);}
-  finally{admitted=slot.busy;joined=slot.join();}
+  pending=submitNativeMirrorPolicy(resolved,captured,signal);
   response=await pending;
- }catch(error){if(!admitted&&takeOwnedWorkerAdmissionRefusal(slot,pending,error))throw new NativeMirrorPolicyCapacityError(origin);throw error;}finally{await joined;}
+ }catch(error){if(takeNativeMirrorPolicyTransportRefusal(pending,error))throw new NativeMirrorPolicyCapacityError(origin);throw error;}
  signal?.throwIfAborted();
  if(own(response,'ok')!==true){const detail=own(response,'detail');throw new NativeMirrorPolicyError(typeof detail==='string'?detail:'invalid worker result');}
  const ids=own(response,'ids');if(!Array.isArray(ids)||ids.length>maxOutputIds)throw new NativeMirrorPolicyError('invalid output count');
