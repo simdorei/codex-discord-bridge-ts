@@ -2,7 +2,8 @@ import {capturePersistentResidentComponentReport,createPersistentResidentReportE
 import {PersistentResidentServicesOwner} from './persistent-resident-services-owner.ts';
 import {createMainSequentialMutationBroker,type MainSequentialMutationBroker} from './sequential-mutation-broker-owner.ts';
 import type {SequentialMutationBrokerLimits} from './sequential-mutation-broker-protocol.ts';
-import {PERSISTENT_RESIDENT_SCENARIOS,type PersistentResidentScenario} from './persistent-resident-bootstrap.ts';
+import {PERSISTENT_RESIDENT_FIXTURE_SCENARIOS,type PersistentResidentScenario,type PersistentResidentFixtureResult} from './persistent-resident-bootstrap.ts';
+export type {PersistentResidentFixtureResult} from './persistent-resident-bootstrap.ts';
 import {Worker,isMainThread,getEnvironmentData,setEnvironmentData} from 'node:worker_threads';
 import {registerStoreWriter,markStoreWorkerSubmitted,releaseStoreWriter,beginAuthorityNativeOwner,type StoreWriterTicket} from '../store/store-authority-domain.ts';
 import {ownedWorkerModuleUrl} from './owned-worker-slot.ts';
@@ -77,7 +78,6 @@ export function constructPersistentResidentWorker(token:PersistentResidentRegist
 // receipts remain unchanged. This is not a production capacity default.
 const NORMAL_COMPONENT_MUTATION_PROFILE=Object.freeze({maxClaimUtf8Bytes:1048576,maxClaimStringUnits:1048576,maxClaimNodes:65536,maxClaimEdges:65536,maxClaimDepth:64,maxContainerEntries:65536,maxNativeResultUtf8Bytes:16384,maxRetainedLogicalBytes:22249600,maxRetainedNodes:393488,maxRetainedEdges:393484,nativeTimeoutMs:5000,handshakeTimeoutMs:5000,exchangeTimeoutMs:5000,preparedAwaitFinishTimeoutMs:5000,terminalRetentionMs:5000,minStatusIntervalMs:1,phaseObservationTimeoutMs:10000,maxOperationId:2147483647,maxExchangeId:2147483647} satisfies SequentialMutationBrokerLimits);
 type ComponentState='bootstrapping'|'role-ready'|'fence-ready'|'custody-ready'|'mutation-handshake'|'starting'|'ready'|'running'|'fixture-done'|'closing'|'disposed'|'joined'|'quarantined';
-export interface PersistentResidentFixtureResult {readonly scenario:PersistentResidentScenario;readonly passed:true}
 export interface PersistentResidentNormalComponent {
  ready():Promise<void>;
  runFixture(scenario:PersistentResidentScenario):Promise<PersistentResidentFixtureResult>;
@@ -194,9 +194,14 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
      state='ready';runtimeStarted=true;clearTimer();readyResolve();return;
     }
     if(state==='running'&&kind==='fixture-result'){
-     if(report.scenario!==scenario||report.passed!==true)throw fixedError();
+     if(scenario==='mutation-cancel-after-write'||report.scenario!==scenario||report.passed!==true)throw fixedError();
      state='fixture-done';clearTimer();const resolve=runResolve;runResolve=null;runReject=null;
      resolve?.(Object.freeze({scenario:scenario!,passed:true}));return;
+    }
+    if(state==='running'&&kind==='fixture-negative-result'){
+     if(scenario!=='mutation-cancel-after-write'||report.scenario!==scenario)throw fixedError();
+     state='fixture-done';clearTimer();const resolve=runResolve;runResolve=null;runReject=null;
+     resolve?.(Object.freeze({scenario,assertionsPassed:true,cleanupQualified:false,componentQualified:false}));return;
     }
     if(state==='closing'&&kind==='component-disposed'){
      if(!services.servicesClosed||mutation?.snapshot().state!=='C')throw fixedError();
@@ -215,7 +220,7 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
  return Object.freeze({
   ready:()=>ready,
   runFixture(selected:PersistentResidentScenario):Promise<PersistentResidentFixtureResult>{
-   if(state!=='ready'||scenario!==null||!PERSISTENT_RESIDENT_SCENARIOS.includes(selected))return Promise.reject(new TypeError('Fixed fixture unavailable or already initiated'));
+   if(state!=='ready'||scenario!==null||!PERSISTENT_RESIDENT_FIXTURE_SCENARIOS.includes(selected))return Promise.reject(new TypeError('Fixed fixture unavailable or already initiated'));
    scenario=selected;state='running';
    const pending=new Promise<PersistentResidentFixtureResult>((resolve,reject)=>{runResolve=resolve;runReject=reject;});void pending.catch(()=>undefined);
    // Fixture work has its own fixed ten-second observation phase, independent

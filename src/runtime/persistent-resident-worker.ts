@@ -82,7 +82,7 @@ if(data.kind==='persistent-resident-bootstrap'){
    }
    if(phase==='ready'){
     const command=capturePersistentResidentFixtureCommand(value);if(command.kind!=='run-fixture')throw new TypeError('Run the fixed fixture once before close');setPhase('running');if(command.scenario==='normal-replacement')replacementMayHaveStarted=true;
-    void (async()=>{const {runPersistentResidentFixture,getPersistentResidentFixtureFailureStep}=await import('./persistent-resident-composition.ts');try{await runPersistentResidentFixture(resident!,command.scenario);}catch(error){fixtureStep=getPersistentResidentFixtureFailureStep(resident!);throw error;}if(currentPhase()!=='running')return;setPhase('ran');port.postMessage({version:1,kind:'fixture-result',scenario:command.scenario,passed:true});})().catch(failLifecycle);return;
+    void (async()=>{const {runPersistentResidentFixture,getPersistentResidentFixtureFailureStep}=await import('./persistent-resident-composition.ts');let result;try{result=await runPersistentResidentFixture(resident!,command.scenario);}catch(error){fixtureStep=getPersistentResidentFixtureFailureStep(resident!);throw error;}if(currentPhase()!=='running')return;setPhase('ran');port.postMessage({version:1,kind:result.scenario==='mutation-cancel-after-write'?'fixture-negative-result':'fixture-result',...result});})().catch(failLifecycle);return;
    }
    if(phase==='ran'){
     const command=capturePersistentResidentFixtureCommand(value);if(command.kind!=='close-component')throw new TypeError('Expected final component close');setPhase('closing');

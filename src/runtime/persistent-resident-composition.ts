@@ -8,12 +8,12 @@ import {selectJob,serializeStoredQueueJob} from '../store/queue-read.ts';
 import {claimStopControl,serializeStopControl,type StopControl} from '../store/stop-control-dispatch.ts';
 import {parseSerdeValue} from '../core/serde-json-parse.ts';
 import {measurePassiveValue,SERVICE_PROFILES,validateServiceRequest} from './persistent-resident-services-protocol.ts';
-import type {PersistentResidentScenario,PersistentResidentFixtureFailureStep} from './persistent-resident-bootstrap.ts';
+import type {PersistentResidentScenario,PersistentResidentFixtureFailureStep,PersistentResidentFixtureResult} from './persistent-resident-bootstrap.ts';
 import {ownedServerResponseFailure,type PendingServerRequest} from '../app-server/server-request-state.ts';
 import {ownedResidentFailure} from '../app-server/resident-state.ts';
 import {requirePersistentResidentRole} from './persistent-resident-bootstrap.ts';
 import {ResidentLocalMutationOwner} from './resident-local-mutation-owner.ts';
-import type {SequentialMutationClient} from './sequential-mutation-broker-client.ts';
+import {ClosedBeforePost,type SequentialMutationClient} from './sequential-mutation-broker-client.ts';
 import type {createPersistentResidentServicesClient} from './persistent-resident-services-client.ts';
 import {installRuntimeIdleJournalNative} from './idle-release-journal.ts';
 import {PortableResidentLifecycle} from '../app-server/portable-resident-lifecycle.ts';
@@ -162,7 +162,7 @@ async function fixtureEventually(check:()=>boolean):Promise<void>{
 }
 /** One compiled scenario per original component. No transported SQL, callbacks,
  * executable, payload, or claim enters this driver. A pass follows real assertions. */
-export async function runPersistentResidentFixture(resident:PortableResidentLifecycle,scenario:PersistentResidentScenario):Promise<Readonly<{scenario:PersistentResidentScenario;passed:true}>>{
+export async function runPersistentResidentFixture(resident:PortableResidentLifecycle,scenario:PersistentResidentScenario):Promise<PersistentResidentFixtureResult>{
  const binding=fixtureBindings.get(resident);if(!binding||binding.ran)throw new Error('Expected unused original fixed fixture resident');binding.ran=true;binding.scenario=scenario;
  requirePersistentResidentRole();const generation=resident.generation();
  assert.equal(generation,1n);assert.equal(resident.lifecycleSnapshot().healthy,true);assert.equal(resident.observationTrackingEnabled(),true);
@@ -170,6 +170,41 @@ export async function runPersistentResidentFixture(resident:PortableResidentLife
  assert.equal(fixtureCount(binding,"SELECT count(*) AS n FROM codex_app_server_runtime"),1);
  switch(scenario){
   case 'normal-start-close':break;
+  case 'mutation-cancel-after-write':{
+   // A real child notification proves the original wire reached the responder.
+   // Cancellation uses the original lifecycle signal; no hook/owner is replaced.
+   const source=resident.subscribeNotifications(),observation=new AbortController(),controller=new AbortController();
+   const reason=new Error('Fixed fixture mutation cancellation after child receipt');
+   const timer=setTimeout(()=>observation.abort(new Error('Fixed fixture mutation barrier deadline')),5000);
+   let settled=false;
+   binding.failureStep='request';
+   const mutation=fixtureWorkflow(binding,'mutation',{method:'thread/settings/update',params:{threadId:'fixture-independent',model:'fixture-model'},timeoutMs:5000},async input=>resident.execute(input as {method:string;params:unknown;timeoutMs:number},generation,controller.signal));
+   void mutation.then(()=>{settled=true;},()=>{settled=true;});
+   try{
+    const event=await source.receive(observation.signal);
+    assert.equal(event.kind,'Notification');if(event.kind!=='Notification')throw new Error('Fixed fixture mutation notification gap');
+    assert.equal(event.generation,generation);assert.equal(event.notification.method,'fixture/mutation-held');
+    assert.equal((event.notification.params as {threadId:string}).threadId,'fixture-independent');assert.equal(settled,false);
+    const read=()=>usingExistingStore(binding.path,db=>db.prepare('SELECT * FROM codex_mutation_attempts').all());
+    binding.failureStep='durable-assert';const original=read();assert.equal(original.length,1);
+    const row=original[0]!;assert.equal(row.runtime_id,binding.runtime);assert.equal(row.owner_id,resident.instanceId);
+    assert.equal(BigInt(row.generation as number|bigint),generation);assert.equal(row.method,'thread/settings/update');
+    assert.equal(row.target_thread_id,'fixture-independent');assert.equal(row.state,'prepared');
+    assert.equal(typeof row.attempt_id,'string');assert.notEqual(row.attempt_id,'');assert.equal(typeof row.wire_id,'string');assert.notEqual(row.wire_id,'');
+    const cancelled=assert.rejects(mutation,error=>error===reason);controller.abort(reason);await cancelled;
+    assert.equal(settled,true);assert.deepEqual(read(),original);assert.equal(resident.generation(),generation);assert.equal(resident.lifecycleSnapshot().healthy,true);
+    // A different, otherwise clear target reaches the real local admission
+    // refusal rather than borrowing the original target's durable custody hold.
+    await assert.rejects(fixtureRequest(resident,binding,'thread/settings/update',{threadId:FIXTURE_TARGET,model:'fixture-model'}),ClosedBeforePost);
+    assert.deepEqual(read(),original);binding.failureStep='release-assert';
+   }finally{
+    clearTimeout(timer);source.dispose();if(!controller.signal.aborted)controller.abort(reason);
+    await Promise.allSettled([mutation]);
+   }
+   // Assertions may pass, but original terminal disposal must still reject:
+   // the cancelled original intent and broker quarantine cannot become clean.
+   break;
+  }
   case 'ordinary-queue-stop':{
    fixtureRow(binding,generation,'starting');
    await fixtureRequest(resident,binding,'thread/settings/update',{threadId:FIXTURE_TARGET,model:'fixture-model'});
@@ -286,5 +321,6 @@ export async function runPersistentResidentFixture(resident:PortableResidentLife
   }
   default:throw new Error('Unsupported fixed resident fixture scenario');
  }
- assert.equal(binding.ledger.empty,true);return Object.freeze({scenario,passed:true});
+ assert.equal(binding.ledger.empty,true);
+ return scenario==='mutation-cancel-after-write'?Object.freeze({scenario,assertionsPassed:true,cleanupQualified:false,componentQualified:false}):Object.freeze({scenario,passed:true});
 }

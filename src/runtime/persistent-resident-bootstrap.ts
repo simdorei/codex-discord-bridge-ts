@@ -41,10 +41,14 @@ export function persistentResidentFrame(value:unknown,kind:'role-ready'|'close-u
 }
 
 export const PERSISTENT_RESIDENT_SCENARIOS=Object.freeze(['normal-start-close','ordinary-queue-stop','response-large','response-concurrent','response-cancel-before','response-cancel-after','response-begin-refused','response-unknown','observation-gap','idle-transition','normal-replacement','final-row-changed'] as const);
-export type PersistentResidentScenario=typeof PERSISTENT_RESIDENT_SCENARIOS[number];
+// Deliberate retained-debt fixtures never enter the normal-close test inventory.
+export const PERSISTENT_RESIDENT_NEGATIVE_SCENARIOS=Object.freeze(['mutation-cancel-after-write'] as const);
+export const PERSISTENT_RESIDENT_FIXTURE_SCENARIOS=Object.freeze([...PERSISTENT_RESIDENT_SCENARIOS,...PERSISTENT_RESIDENT_NEGATIVE_SCENARIOS]);
+export type PersistentResidentScenario=typeof PERSISTENT_RESIDENT_FIXTURE_SCENARIOS[number];
+export type PersistentResidentFixtureResult=Readonly<{scenario:typeof PERSISTENT_RESIDENT_SCENARIOS[number];passed:true}>|Readonly<{scenario:'mutation-cancel-after-write';assertionsPassed:true;cleanupQualified:false;componentQualified:false}>;
 export function capturePersistentResidentFixtureCommand(value:unknown):Readonly<{kind:'run-fixture';scenario:PersistentResidentScenario}>|Readonly<{kind:'close-component'}>{
  if(value!==null&&typeof value==='object'&&!types.isProxy(value)){const d=Object.getOwnPropertyDescriptor(value,'kind');if(d&&Object.hasOwn(d,'value')&&d.value==='close-component'){exact(value,['kind']);return Object.freeze({kind:'close-component'});}}
- const data=exact(value,['kind','scenario']);if(data.kind!=='run-fixture'||typeof data.scenario!=='string'||!PERSISTENT_RESIDENT_SCENARIOS.includes(data.scenario as PersistentResidentScenario))throw new TypeError('Invalid fixed fixture command');
+ const data=exact(value,['kind','scenario']);if(data.kind!=='run-fixture'||typeof data.scenario!=='string'||!PERSISTENT_RESIDENT_FIXTURE_SCENARIOS.includes(data.scenario as PersistentResidentScenario))throw new TypeError('Invalid fixed fixture command');
  return Object.freeze({kind:'run-fixture',scenario:data.scenario as PersistentResidentScenario});
 }
 
