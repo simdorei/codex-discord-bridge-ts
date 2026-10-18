@@ -1,3 +1,4 @@
+import {open,stat} from 'node:fs/promises';
 import {snapshotMirrorCursorAnchor as captureExpected,mirrorCursorAnchorVersionForPath,type MirrorCursorAnchor} from '../../core/mirror-cursor-anchor.ts';
 import {observeMirrorBatch,type MirrorBatchObservation} from './batch-observation.ts';
 import {snapshotMirrorReadLimits,type MirrorReadLimits} from './read-window.ts';
@@ -22,11 +23,12 @@ export class MirrorContinuityObservation{
  async verifyCurrent(signal?:AbortSignal):Promise<void>{await this.#window.verifyCurrent(signal);}
 }
 Object.freeze(MirrorContinuityObservation.prototype);
-/** Reads at most 256 prefix + 256 pre-cursor bytes, not the whole rollout.
+/** V1/V2 sample 256 prefix + 256 pre-cursor bytes. V3 additionally hashes every
+ * consumed byte under the full-prefix resource budget.
  * A zero cursor needs one bounded byte read for native metadata only.
  * The caller must already know what the offset means; capturing now does not
  * retroactively prove old delivery, generation or append-only history. */
-export async function captureMirrorCursorAnchor(path:string,offset:bigint,signal?:AbortSignal):Promise<MirrorContinuityObservation>{
+export async function captureMirrorCursorAnchor(path:string,offset:bigint,signal?:AbortSignal,fullPrefix=false):Promise<MirrorContinuityObservation>{
  requireDiscordText(path);if(path.length>32768||Buffer.byteLength(path)>32768)throw new RangeError('Mirror anchor path budget exceeded');
  if(typeof offset!=='bigint'||offset<0n||offset>=(1n<<64n))throw new RangeError('Expected u64 cursor');
  const length=Number(offset<256n?offset:256n),start=offset-BigInt(length);
@@ -38,18 +40,18 @@ export async function captureMirrorCursorAnchor(path:string,offset:bigint,signal
   if(!sameStamp(tail.generation,prefix.generation))throw new MirrorFileChangedError();
   prefixBytes=prefix.copyBytes();
  }
- const anchor=captureExpected({version:mirrorCursorAnchorVersionForPath(tail.path),path:tail.path,offset,stamp:tail.generation,prefixHash:hash(prefixBytes),tailHash:hash(tailBytes)});
+ const historyHash=fullPrefix?await hashMirrorHistoryPrefix(tail.path,offset,tail.generation,signal):undefined;
+ const anchor=captureExpected({...(historyHash===undefined?{}:{historyHash}),version:fullPrefix?3:mirrorCursorAnchorVersionForPath(tail.path),path:tail.path,offset,stamp:tail.generation,prefixHash:hash(prefixBytes),tailHash:hash(tailBytes)});
  signal?.throwIfAborted();return new MirrorContinuityObservation(token,anchor,tail);
 }
-/** Replacement, observed shrink, changed anchors, or same-size metadata change
- * is refused. Growth with matching bounded anchors is classified, NOT certified:
- * an in-place rewrite outside those anchors followed by append can remain unseen.
- * Use requires a separate producer append-only contract; never silently upgrade
- * an unbound legacy cursor or infer successful delivery from this result. */
+/** Replacement, shrink, changed anchors or same-size metadata changes refuse.
+ * V3 also compares the complete consumed prefix, including middle rewrites.
+ * V1/V2 still require a separate producer append-only contract. No version
+ * retroactively establishes delivery or permission to adopt a legacy cursor. */
 export async function observeMirrorCursorContinuity(expected:MirrorCursorAnchor,signal?:AbortSignal):Promise<Readonly<{kind:MirrorContinuity;observation:MirrorContinuityObservation}>>{
  const prior=captureExpected(expected);signal?.throwIfAborted();
- const observation=await captureMirrorCursorAnchor(prior.path,prior.offset,signal),now=observation.anchor;
- if(prior.stamp.dev!==now.stamp.dev||prior.stamp.ino!==now.stamp.ino||prior.stamp.birthtimeNs!==now.stamp.birthtimeNs||now.stamp.size<prior.stamp.size||prior.prefixHash!==now.prefixHash||prior.tailHash!==now.tailHash)throw new MirrorFileChangedError();
+ const observation=await captureMirrorCursorAnchor(prior.path,prior.offset,signal,prior.version===3),now=observation.anchor;
+ if(prior.stamp.dev!==now.stamp.dev||prior.stamp.ino!==now.stamp.ino||prior.stamp.birthtimeNs!==now.stamp.birthtimeNs||now.stamp.size<prior.stamp.size||prior.prefixHash!==now.prefixHash||prior.tailHash!==now.tailHash||prior.historyHash!==now.historyHash)throw new MirrorFileChangedError();
  const sameSize=prior.stamp.size===now.stamp.size;
  if(sameSize&&!sameStamp(prior.stamp,now.stamp))throw new MirrorFileChangedError();
  return Object.freeze({kind:sameSize?'UnchangedMetadataAndAnchors':'SameIdentityGrowthAndAnchors',observation});
@@ -72,7 +74,7 @@ export class AnchoredMirrorBatch{
   * also refuses this observation; already confirmed receipts must be reconciled
   * on the next poll, not blindly resent or treated as permission to reset. */
  async observeNextBoundary(signal?:AbortSignal):Promise<MirrorContinuityObservation>{
-  const batch=this.#batch;const next=await captureMirrorCursorAnchor(batch.path,batch.nextOffset,signal);
+  const batch=this.#batch;const next=await captureMirrorCursorAnchor(batch.path,batch.nextOffset,signal,this.expectedAnchor.version===3);
   if(!sameStamp(next.anchor.stamp,batch.fileStamp))throw new MirrorFileChangedError();
   return next;
  }
@@ -84,4 +86,16 @@ export async function observeAnchoredMirrorBatch(expected:MirrorCursorAnchor,lim
  const batch=await observeMirrorBatch(anchor.path,anchor.offset,bounds,context,signal);
  if(!sameStamp(anchor.stamp,batch.fileStamp))throw new MirrorFileChangedError();
  signal?.throwIfAborted();return new AnchoredMirrorBatch(token,observed.kind,anchor,batch,pinned);
+}
+
+/** Hash every consumed byte, bounded to 512 MiB and 10 seconds. Unlike sampled
+ * anchors this detects rewrites in the middle followed by append, across restart.
+ * Replacement, mutation during observation or a budget overrun holds the cursor. */
+async function hashMirrorHistoryPrefix(path:string,offset:bigint,expected:MirrorFileStamp,signal?:AbortSignal):Promise<string>{
+ if(offset>536870912n)throw new RangeError('Mirror history exceeds 512 MiB verification budget');
+ const file=await open(path,'r'),deadline=performance.now()+10000;
+ try{if(!sameStamp(expected,await file.stat({bigint:true})))throw new MirrorFileChangedError();const digest=createHash('sha256'),buffer=Buffer.alloc(1048576);let at=0n;
+  while(at<offset){signal?.throwIfAborted();if(performance.now()>deadline)throw new RangeError('Mirror history verification deadline');const length=Number(offset-at>1048576n?1048576n:offset-at),{bytesRead}=await file.read(buffer,0,length,at);if(bytesRead===0)throw new MirrorFileChangedError();digest.update(buffer.subarray(0,bytesRead));at+=BigInt(bytesRead);}
+  if(!sameStamp(expected,await file.stat({bigint:true}))||!sameStamp(expected,await stat(path,{bigint:true})))throw new MirrorFileChangedError();return digest.digest('hex');
+ }finally{await file.close();}
 }

@@ -57,7 +57,7 @@ export function snapshotBoundMirrorPollOptions(options:BoundMirrorPollOptions):B
  return Object.freeze({read,ownership:Object.freeze({maxJobs,maxValueBytes,timeoutMs})});
 }
 export interface MirrorWorkerBootstrapPolicy{
- readonly kind:'SkipExistingHistory';readonly context:MirrorStartupContextLimits;readonly totalTimeoutMs:number;
+ readonly fullPrefix?:boolean;readonly kind:'SkipExistingHistory';readonly context:MirrorStartupContextLimits;readonly totalTimeoutMs:number;
 }
 export interface BoundMirrorWorkerConfig{
  readonly stateDatabasePath:string;readonly bridgeDatabasePath:string;
@@ -84,7 +84,7 @@ export async function runBoundMirrorWorker(config:BoundMirrorWorkerConfig,transp
  return runMirrorWorker(()=>new MirrorSnapshotOwner(state,bridge,discovery,ready,async(hint,channel,jobs,abort)=>withMirrorMappingLocks(locks,hint.id,abort,async()=>{
   if(bootstrap!==undefined){
    const startup=new MirrorTargetBootstrapCoordinator({databasePath:bridge,thread:hint.id,rolloutPath:hint.rolloutPath,channel,operationId:randomUUID(),createdAt:Date.now()/1000,...bootstrap});
-   try{await startup.run(abort);}finally{await startup.close();}
+   try{const result=await startup.run(abort);if(bootstrap.fullPrefix===true&&result.cursor.anchor.version!==3)throw new MirrorBoundCursorRequiredError();}finally{await startup.close();}
    abort.throwIfAborted();
   }
   return pollBoundMirrorTarget(bridge,hint,channel,jobs,poll,transport,abort);
@@ -104,7 +104,7 @@ export function captureBoundMirrorWorkerConfig(config:BoundMirrorWorkerConfig):B
  if(policy?.value!==undefined){
   const kind=own(policy.value,'kind'),totalTimeoutMs=own(policy.value,'totalTimeoutMs');
   if(kind!=='SkipExistingHistory'||typeof totalTimeoutMs!=='number'||!Number.isSafeInteger(totalTimeoutMs)||totalTimeoutMs<1||totalTimeoutMs>10000)throw new RangeError('Invalid explicit mirror bootstrap policy');
-  bootstrap=Object.freeze({kind,totalTimeoutMs,context:snapshotMirrorStartupContextLimits(own(policy.value,'context') as MirrorStartupContextLimits)});
+  bootstrap=Object.freeze({...(Object.getOwnPropertyDescriptor(policy.value,'fullPrefix')?.value===true?{fullPrefix:true}:{}),kind,totalTimeoutMs,context:snapshotMirrorStartupContextLimits(own(policy.value,'context') as MirrorStartupContextLimits)});
  }
  return Object.freeze({stateDatabasePath:state,bridgeDatabasePath:bridge,discovery,ready,poll,...(bootstrap===undefined?{}:{bootstrap})});
 }

@@ -1,4 +1,4 @@
-import {assertSyntheticRuntimeRemoteProfileAvailable,prepareSyntheticRuntimeRemote,closePreparedRuntimeRemote,assertPreparedRuntimeRemoteReleased,type SyntheticRuntimeRemoteProfile,type PreparedRuntimeRemote} from './remote-start.ts';
+import {createConfiguredRuntimeRemoteProfile,assertSyntheticRuntimeRemoteProfileAvailable,prepareSyntheticRuntimeRemote,closePreparedRuntimeRemote,assertPreparedRuntimeRemoteReleased,type RuntimeRemoteProfile,type PreparedRuntimeRemote} from './remote-start.ts';
 import {ManagedRemoteOwnershipRetainedError} from '../../remote-agent/managed-agent.ts';
 import {StoreAuthorityDomain} from '../../store/store-authority-domain.ts';
 import {captureLocalStoreAuthorityProfile,requireLocalStoreAuthorityPaths,enrollLocalStoreAuthority,type LocalStoreAuthorityProfile} from './store-authority-profile.ts';
@@ -20,12 +20,17 @@ import {requiresPortableSessionCleanupRetention} from '../../app-server/portable
 import {loadRuntimeAutocomplete} from './autocomplete-bootstrap.ts';
 import {startPreparedRuntimeWorkers,type PreparedRuntimeWorkerOwner} from './prepared-workers.ts';
 import {runPreparedRuntimeLifetime,closePreparedRuntimeOuter} from './prepared-lifetime.ts';
-import {captureLocalSessionMirrorProfile,requireLocalSessionMirrorPaths,requireLocalSessionMirrorDatabase,prepareLocalSessionMirrorSchemas,type LocalSessionMirrorProfile} from './local-session-mirror-profile.ts';
+import {createVerifiedLocalSessionMirrorProfile,captureLocalSessionMirrorProfile,requireLocalSessionMirrorPaths,requireLocalSessionMirrorDatabase,prepareLocalSessionMirrorSchemas,type LocalSessionMirrorProfile} from './local-session-mirror-profile.ts';
 import {createSessionMirrorHttpTransport} from './session-mirror-http.ts';
 import {captureRuntimeMirrorInput} from './session-mirror-start.ts';
+import {AdmittedRecoverExecutor} from '../action-executor/recover-action.ts';
+import {createWindowsRecoveryController} from '../writer-recovery/windows-controller.ts';
+import {createWindowsHostControl} from '../windows/host-control.ts';
+import {createArchiveDeletionController} from '../archive-delete/controller.ts';
+import {withOwnedWorkerBackpressure} from '../owned-worker-slot.ts';
 
 export class LocalRuntimeUnsupportedError extends Error{
- constructor(){super('Local runtime profile requires remote and host commands disabled, and session mirror disabled or an explicit qualified programmatic profile');this.name='LocalRuntimeUnsupportedError';}
+ constructor(){super('Host commands require the Windows controller');this.name='LocalRuntimeUnsupportedError';}
 }
 export class LocalRuntimeOwnershipRetainedError extends AggregateError{
  constructor(primary:unknown,cleanup:unknown,readonly owners:Readonly<object>){super([primary,cleanup],'Runtime ownership retained: cleanup is unconfirmed; do not restart');this.name='LocalRuntimeOwnershipRetainedError';}
@@ -33,22 +38,23 @@ export class LocalRuntimeOwnershipRetainedError extends AggregateError{
 function milliseconds(value:bigint):number{
  if(typeof value!=='bigint'||value<0n||value%1000000n!==0n||value/1000000n>2147483647n)throw new TypeError('Unsupported runtime duration');return Number(value/1000000n);
 }
-/** Candidate local-only composition. This is not full remote parity or
- * production qualification. Session mirroring requires the explicit caller-owned
- * profile; the CLI intentionally never supplies one. An optional synthetic remote
- * profile installs loopback ownership only; configured remote MCP remains rejected.
+/** Installed runtime composition, including configured remote MCP and verified
+ * full-prefix session mirroring. Synthetic profiles remain test-only adapters.
  * Singleton acquisition must succeed before
  * any marker publication, store preparation, native launch or Discord connection.
  * Defaults below are finite safety budgets, not measured throughput guarantees.
  * Startup cleanup releases outer ownership only after confirmed native disposal;
  * a failed active lifetime retains its owners rather than guessing it has joined.
  */
-export async function runLocalRuntimeApplication(config:RuntimeConfig,environment:RuntimeEnvironment,root:string,version:string,mirrorProfile?:LocalSessionMirrorProfile,authorityProfile?:LocalStoreAuthorityProfile,remoteProfile?:SyntheticRuntimeRemoteProfile):Promise<void>{
- if(config.remoteMcp!==null||config.hostCommands||(config.sessionMirror&&mirrorProfile===undefined))throw new LocalRuntimeUnsupportedError();
+export function runLocalRuntimeApplication(config:RuntimeConfig,environment:RuntimeEnvironment,root:string,version:string,mirrorProfile?:LocalSessionMirrorProfile,authorityProfile?:LocalStoreAuthorityProfile,remoteProfile?:RuntimeRemoteProfile):Promise<void>{
+ return withOwnedWorkerBackpressure(()=>runApplication(config,environment,root,version,mirrorProfile,authorityProfile,remoteProfile));
+}
+async function runApplication(config:RuntimeConfig,environment:RuntimeEnvironment,root:string,version:string,mirrorProfile?:LocalSessionMirrorProfile,authorityProfile?:LocalStoreAuthorityProfile,remoteProfile?:RuntimeRemoteProfile):Promise<void>{
+ if(config.hostCommands&&process.platform!=='win32')throw new LocalRuntimeUnsupportedError();
  if(remoteProfile!==undefined)assertSyntheticRuntimeRemoteProfileAvailable(remoteProfile);
  if(typeof config.sessionMirror!=='boolean'||(!config.sessionMirror&&mirrorProfile!==undefined))throw new TypeError('Local mirror profile and sessionMirror configuration differ');
  const capturedAuthority=authorityProfile===undefined?null:captureLocalStoreAuthorityProfile(authorityProfile);
- const capturedMirror=mirrorProfile===undefined?null:captureLocalSessionMirrorProfile(mirrorProfile);
+ let capturedMirror=mirrorProfile===undefined?null:captureLocalSessionMirrorProfile(mirrorProfile);
  const env=snapshotRuntimeEnvironment(environment),resumeMs=milliseconds(config.appServerResumeTimeoutNs),historyMs=milliseconds(config.appServerHistoryReadTimeoutNs),historyPeriodMs=config.historyPollIntervalNs===null?null:milliseconds(config.historyPollIntervalNs);
  const access={allowedChannelIds:new Set(config.allowedChannelIds),allowedUserIds:new Set(config.allowedUserIds),allowAllChannels:config.allowAllChannels},mentions=new Set(config.plainAskMentionUserIds);
  const startupChannel=config.startupChannelId,guild=config.guildId,messageContent=config.enableMessageContent,qa=config.qaCommands,notify=config.startupNotify,commentary=config.streamCommentary;
@@ -60,6 +66,8 @@ export async function runLocalRuntimeApplication(config:RuntimeConfig,environmen
  const report=()=>{process.stderr.write('runtime_diagnostic: inspect protected local evidence\n');},render=()=> 'runtime operation failed';
  try{
   const inputs=await discoverRuntimePathInputs(env,root);stop.signal.throwIfAborted();const paths=await resolveRuntimePaths(env,inputs);stop.signal.throwIfAborted();
+  if(config.remoteMcp!==null){if(remoteProfile!==undefined)throw new TypeError('Remote profile already supplied');remoteProfile=createConfiguredRuntimeRemoteProfile(config.remoteMcp,paths.root,paths.codexExe,env.CODEX_REMOTE_MCP_RESUME_BINDINGS==='1');}
+  if(config.sessionMirror&&capturedMirror===null)capturedMirror=createVerifiedLocalSessionMirrorProfile(paths);
   if(capturedMirror!==null)requireLocalSessionMirrorPaths(capturedMirror,paths);
   if(capturedAuthority!==null)requireLocalStoreAuthorityPaths(paths);
   const platform=await acquireRuntimePlatform(paths.root);instance=platform.instance;
@@ -70,6 +78,11 @@ export async function runLocalRuntimeApplication(config:RuntimeConfig,environmen
   let linker:NewThreadMirrorLink|undefined;
   const mirror={linkNewThread:async(channel:bigint,thread:string,prompt:string,cwd:string|null,signal?:AbortSignal)=>{if(linker===undefined)throw new Error('Runtime mirror transport is not connected');return linker.linkNewThread(channel,thread,prompt,cwd,signal);}};
   context=await prepareRuntimeProContext({paths,process:runtimeResidentConfig(paths,version),runtimeId:controller.runtimeId,startupChannel,admission:controller.admissionGate,access,reserveLimits:{maxRows:4096,maxBytes:4194304},policyLimits:{maxRows:4096n,maxValueBytes:4194304n,maxOutputIds:8192,timeoutMs:10000},storageTimeoutMs:10000,executor:{render,mirror,reportNewAttempt:report,reportPolicyFailure:report,notifyDeliveryReady:()=>{},resumeTimeoutMs:resumeMs,historyTimeoutMs:historyMs,pro:{executable:paths.codexExe,remote:null,report}}},stop.signal,remoteProfile);
+  if(process.platform==='win32'){
+   context.executor.configureRecovery(new AdmittedRecoverExecutor(paths.mirrorDb,paths.root,'win32',createWindowsRecoveryController(paths.root,paths.codexHome)));
+   context.executor.configureHostControl(createWindowsHostControl(paths.root,controller.runtimeId,config.hostCommands));
+   context.executor.configureArchiveDeletion(createArchiveDeletionController(paths.mirrorDb,{state:paths.stateDb,logs:paths.logDb,global:paths.globalState,bridge:paths.bridgeState,index:paths.sessionIndex,archivedSessions:paths.archivedSessions,root:paths.maintenanceBackupRoot}));
+  }
   if(capturedMirror!==null)await prepareLocalSessionMirrorSchemas(capturedMirror,paths,stop.signal);
   if(remoteProfile!==undefined)remote=await prepareSyntheticRuntimeRemote(remoteProfile,context,stop.signal);
   gateway=await RecommendedGateway.startPaused({token,messageContent,reportReceiveErrorDrop:report,reportTriggerFailure:report,reportHttpError:report,signal:stop.signal});

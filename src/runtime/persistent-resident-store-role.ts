@@ -184,7 +184,8 @@ export function createPersistentResidentNormalComponent(token:PersistentResident
      workerFailurePhase=report.phase;workerFailureCategory=report.category;workerFixtureStep=report.fixtureStep;fail();
      // Separately labeled pre-fix rescue, only after this original child's
      // genuine disposal proof. No normal report, slot settlement or release.
-     if(scenario==='receiver-control-before-admission-probe'&&reportEvidence.directChildClosure==='confirmed')receiver!.rescueBeforeAdmissionProbe();
+     // The exact no-admission proof now joins the logical request. Physical
+     // endpoint rescue is not a substitute and is never invoked here.
      return;
     }
     if(state==='bootstrapping'&&kind==='role-ready'){state='role-ready';deadline();return;}

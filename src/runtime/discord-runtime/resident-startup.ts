@@ -44,7 +44,7 @@ interface RuntimeResidentComposition {
 function createRuntimeResidentComposition(path:string,runtimeId:string,render:(error:unknown)=>string,custody:RuntimeCustody,cleanup:Array<()=>Promise<void>>):RuntimeResidentComposition{
  const dead=custody.nativeDeadGeneration;
  const native=new NativeMutationOwner(path,runtimeId,render);cleanup.push(()=>native.close());
- const idle=new NativeIdleBeforeOwner(path,render);cleanup.push(()=>idle.close());
+ const idle=new NativeIdleBeforeOwner(path,render,5000,true);cleanup.push(()=>idle.close());
  const responses=new NativeResponseCompletionOwner(path,runtimeId);cleanup.splice(2,0,()=>responses.close());
  const nativeResponseCompletion=Object.freeze({captureResponse:responses.captureResponse.bind(responses),finishResponse:responses.finishResponse.bind(responses),close:()=>responses.close()});
  const observation=new NativeObservationLedgerOwner(path);cleanup.push(()=>observation.close());

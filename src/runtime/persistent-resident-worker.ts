@@ -132,19 +132,15 @@ if(data.kind==='persistent-resident-bootstrap'){
   const receiverObservation=new Int32Array(frame.fixtureObservation);
   const originalPendingProbe=():boolean=>{const state=receiver!.snapshot();return state.pendingId===1&&state.highWater===1&&state.retiredThrough===0&&state.terminalKnown===false&&state.joined===false&&state.controlJoined===false&&state.closed===false;};
   receiver.failure.addEventListener('abort',()=>{
-   if(preAdmissionProbe&&originalPendingProbe()){
-    Atomics.store(receiverObservation,6,1);
-    // Probe-only teardown instrumentation: keep existing native close usable
-    // until original disposal settles, then fail() applies final quarantine.
-    // The receiver drop, posted slot, and all release predicates are unchanged.
-    failLifecycle();return;
-   }
-   failProtocol();
+   if(preAdmissionProbe&&originalPendingProbe())Atomics.store(receiverObservation,6,1);
+   // Receiver faults are isolated from the separate native-service protocol.
+   // Preserve its exact close route until original child disposal has joined.
+   failLifecycle();
   },{once:true});
   // Synchronous diagnostics at actual requester exit: an unresolved Promise is
   // not a joined receiver merely because the explicit rescue closed its ports.
-  process.once('exit',()=>{if(Atomics.load(receiverObservation,7)===1&&originalPendingProbe())Atomics.store(receiverObservation,8,1);});
-  if(receiver.failure.aborted){failProtocol();return;}await receiver.ready();if(currentPhase()==='failed')return;startEntered=true;
+  process.once('exit',()=>{if(preAdmissionProbe)Atomics.store(receiverObservation,8,receiver!.joined?-1:1);});
+  if(receiver.failure.aborted){failLifecycle();return;}await receiver.ready();if(currentPhase()==='failed')return;startEntered=true;
   startAttempt=prepared.start(services,mutation,responsePort,receiver,frame.fixtureObservation);resident=await startAttempt;
   if(currentPhase()==='failed'){await disposeOriginal();return;}setPhase('ready');report('component-ready');
  })().catch(failLifecycle);

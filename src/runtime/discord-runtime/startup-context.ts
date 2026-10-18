@@ -1,4 +1,4 @@
-import {claimSyntheticRuntimeRemoteForPro,type SyntheticRuntimeRemoteProfile} from './remote-start.ts';
+import {claimSyntheticRuntimeRemoteForPro,type RuntimeRemoteProfile} from './remote-start.ts';
 import {AdmittedRecoverExecutor} from '../action-executor/recover-action.ts';
 import {RuntimeDeliveryWake} from './delivery-wake.ts';
 import {invokeSynchronousVoid} from '../../core/synchronous-void.ts';
@@ -29,9 +29,9 @@ export interface RuntimeProStartupContextOptions extends Omit<RuntimeStartupCont
  * exact subscriptions for completion/server-request workers. On later startup
  * failure call disposeBeforeWorkers; after workers start use joined shutdown.
  * DB recovery writes may already be committed on failure/cancellation. */
-const remoteContexts=new WeakMap<object,{binding:Readonly<{profile:SyntheticRuntimeRemoteProfile;root:string;gate:AdmissionGate}>;open:boolean}>();
+const remoteContexts=new WeakMap<object,{binding:Readonly<{profile:RuntimeRemoteProfile;root:string;gate:AdmissionGate}>;open:boolean}>();
 export function preparedRuntimeRemoteContextBinding(context:object){const entry=remoteContexts.get(context);if(entry===undefined)throw new TypeError('Expected exact remote Pro startup context');if(!entry.open)throw new TypeError('Remote Pro startup context is closed');return entry.binding;}
-async function prepareContext(input:RuntimeStartupContextOptions|RuntimeProStartupContextOptions,proMode:boolean,signal?:AbortSignal,remoteProfile?:SyntheticRuntimeRemoteProfile){
+async function prepareContext(input:RuntimeStartupContextOptions|RuntimeProStartupContextOptions,proMode:boolean,signal?:AbortSignal,remoteProfile?:RuntimeRemoteProfile){
  if(signal!==undefined&&(types.isProxy(signal)||!(signal instanceof AbortSignal)))throw new TypeError('Expected startup context abort signal');signal?.throwIfAborted();
  const get=<K extends keyof RuntimeStartupContextOptions>(key:K)=>own(input,key) as RuntimeStartupContextOptions[K];
  const paths=cloneOwnedSerdeValue(get('paths')) as RuntimeStartupContextOptions['paths'],process=cloneOwnedSerdeValue(get('process')) as PortableSessionConfig;
@@ -61,4 +61,4 @@ async function prepareContext(input:RuntimeStartupContextOptions|RuntimeProStart
 
 export function prepareRuntimeContext(input:RuntimeStartupContextOptions,signal?:AbortSignal){return prepareContext(input,false,signal);}
 /** Same owned startup chain with source-ordered actual Pro capture. */
-export function prepareRuntimeProContext(input:RuntimeProStartupContextOptions,signal?:AbortSignal,remoteProfile?:SyntheticRuntimeRemoteProfile){return prepareContext(input,true,signal,remoteProfile);}
+export function prepareRuntimeProContext(input:RuntimeProStartupContextOptions,signal?:AbortSignal,remoteProfile?:RuntimeRemoteProfile){return prepareContext(input,true,signal,remoteProfile);}

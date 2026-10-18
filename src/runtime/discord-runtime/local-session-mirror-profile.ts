@@ -15,7 +15,7 @@ import {prepareMirrorBootstrapSchemas} from '../session-mirror/bootstrap-schema.
 export interface LocalSessionMirrorProfile {
  readonly kind:'RootOwnedAppendOnlyMirror';
  readonly ownership:'CooperatingSingletonRootWithStableDatabaseIdentity';
- readonly producer:{readonly kind:'CallerQualifiedAppendOnly';readonly qualification:string};
+ readonly producer:{readonly kind:'CallerQualifiedAppendOnly'|'VerifiedRolloutPrefix';readonly qualification:string};
  readonly worker:BoundMirrorWorkerConfig&{readonly bootstrap:MirrorWorkerBootstrapPolicy};
  readonly schemaTimeoutMs:number;
 }
@@ -25,11 +25,21 @@ export function captureLocalSessionMirrorProfile(input:LocalSessionMirrorProfile
  if(own(input,'kind')!=='RootOwnedAppendOnlyMirror'||own(input,'ownership')!=='CooperatingSingletonRootWithStableDatabaseIdentity')throw new TypeError('Expected explicit root-owned mirror ownership profile');
  const producer=own(input,'producer'),kind=own(producer,'kind'),qualification=own(producer,'qualification');
  requireDiscordText(qualification);
- if(kind!=='CallerQualifiedAppendOnly'||qualification.trim()===''||qualification.includes('\0')||Buffer.byteLength(qualification)>4096)throw new TypeError('Expected caller-qualified append-only producer policy');
+ if((kind!=='CallerQualifiedAppendOnly'&&kind!=='VerifiedRolloutPrefix')||qualification.trim()===''||qualification.includes('\0')||Buffer.byteLength(qualification)>4096)throw new TypeError('Expected mirror source continuity policy');
  const worker=captureBoundMirrorWorkerConfig(own(input,'worker') as LocalSessionMirrorProfile['worker']),schemaTimeoutMs=own(input,'schemaTimeoutMs');
  if(worker.bootstrap===undefined)throw new TypeError('Local mirror profile requires explicit SkipExistingHistory bootstrap');
+ if(kind==='VerifiedRolloutPrefix'&&worker.bootstrap.fullPrefix!==true)throw new TypeError('Verified source policy requires complete consumed-prefix hashes');
  if(typeof schemaTimeoutMs!=='number'||!Number.isSafeInteger(schemaTimeoutMs)||schemaTimeoutMs<1||schemaTimeoutMs>10000)throw new RangeError('Invalid local mirror schema budget');
  return Object.freeze({kind:'RootOwnedAppendOnlyMirror',ownership:'CooperatingSingletonRootWithStableDatabaseIdentity',producer:Object.freeze({kind,qualification}),worker:Object.freeze({...worker,bootstrap:worker.bootstrap}),schemaTimeoutMs});
+}
+
+/** CLI source policy: preserve native file identity and a durable SHA-256 of
+ * every consumed byte. No append-only assertion is inferred from a flag. */
+export function createVerifiedLocalSessionMirrorProfile(paths:Pick<RuntimePaths,'stateDb'|'mirrorDb'>):LocalSessionMirrorProfile{
+ return captureLocalSessionMirrorProfile({kind:'RootOwnedAppendOnlyMirror',ownership:'CooperatingSingletonRootWithStableDatabaseIdentity',producer:{kind:'VerifiedRolloutPrefix',qualification:'Native file identity and complete consumed-prefix SHA-256; changed history is held without reset or replay.'},schemaTimeoutMs:10000,worker:{stateDatabasePath:paths.stateDb,bridgeDatabasePath:paths.mirrorDb,
+  discovery:{threads:{maxRows:4096n,maxValueBytes:4194304n,maxOutputBytes:4194304,timeoutMs:10000},store:{maxTargets:4096n,maxJobs:4096n,maxValueBytes:4194304n,maxOutputBytes:4194304,timeoutMs:10000}},ready:{maxTargets:4096,maxBytes:1048576},
+  poll:{read:{maxWindowBytes:1048576,maxRecordBytes:262144,maxRecords:1024,decodeTimeoutMs:10000},ownership:{maxJobs:4096n,maxValueBytes:4194304n,timeoutMs:10000}},
+  bootstrap:{kind:'SkipExistingHistory',fullPrefix:true,totalTimeoutMs:10000,context:{maxBytes:67108864,maxRecords:1048576,maxRecordBytes:262144,maxWindowBytes:1048576,maxTurnBytes:16384,timeoutMs:10000}}}});
 }
 
 /** Paths must describe this application's exact original state/bridge stores.

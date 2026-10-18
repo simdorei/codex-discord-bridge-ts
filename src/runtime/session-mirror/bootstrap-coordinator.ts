@@ -16,7 +16,7 @@ export interface MirrorTargetBootstrapInput {
  readonly databasePath:string;readonly thread:string;readonly rolloutPath:string;readonly channel:bigint;
  /** Used only for a genuinely absent target; pending uses its original values. */
  readonly operationId:string;readonly createdAt:number;
- readonly context:MirrorStartupContextLimits;readonly totalTimeoutMs:number;
+ readonly fullPrefix?:boolean;readonly context:MirrorStartupContextLimits;readonly totalTimeoutMs:number;
 }
 export interface MirrorTargetBootstrapResult {readonly kind:'Existing'|'Initialized'|'Resumed';readonly cursor:BoundMirrorCursor;readonly reconciled:boolean;}
 export class MirrorBootstrapBindingError extends Error {constructor(){super('Mirror startup target or rollout binding changed');this.name='MirrorBootstrapBindingError';}}
@@ -46,7 +46,7 @@ function capture(input:MirrorTargetBootstrapInput):MirrorTargetBootstrapInput {
  if(typeof channel!=='bigint'||channel<=0n||channel>=(1n<<63n))throw new RangeError('Expected mapped positive i64 channel');
  if(typeof createdAt!=='number'||!Number.isFinite(createdAt)||createdAt<0)throw new TypeError('Invalid mirror bootstrap timestamp in seconds');
  if(typeof totalTimeoutMs!=='number'||!Number.isSafeInteger(totalTimeoutMs)||totalTimeoutMs<1||totalTimeoutMs>10000)throw new RangeError('Invalid total mirror bootstrap deadline');
- return Object.freeze({databasePath,rolloutPath,thread,operationId,channel,createdAt,totalTimeoutMs,context:snapshotMirrorStartupContextLimits(own(input,'context') as MirrorStartupContextLimits)});
+ return Object.freeze({...(Object.getOwnPropertyDescriptor(input,'fullPrefix')?.value===true?{fullPrefix:true}:{}),databasePath,rolloutPath,thread,operationId,channel,createdAt,totalTimeoutMs,context:snapshotMirrorStartupContextLimits(own(input,'context') as MirrorStartupContextLimits)});
 }
 function samePending(a:PendingMirrorStartupIntent,b:PendingMirrorStartupIntent):boolean {
  const x=a.cutoff,y=b.cutoff;
@@ -98,7 +98,7 @@ export class MirrorTargetBootstrapCoordinator {
     pending=initial.pending;if(pending.cutoff.path!==input.rolloutPath)throw new MirrorBootstrapBindingError();
    }else{
     // Persist the authentic original N before reading any historical context.
-    check();const cutoff=await captureMirrorStartupCutoff(input.rolloutPath,Math.min(input.context.timeoutMs,Math.max(1,Math.ceil(deadline-performance.now()))),active);
+    check();const cutoff=await captureMirrorStartupCutoff(input.rolloutPath,Math.min(input.context.timeoutMs,Math.max(1,Math.ceil(deadline-performance.now()))),active,input.fullPrefix===true);
     pending=snapshotPendingMirrorStartupIntent({thread:input.thread,cutoff:cutoff.captured(),operationId:input.operationId,createdAt:input.createdAt});
     try{
      check();const retained=await store.retain(input.thread,cutoff,input.createdAt,input.operationId,active);

@@ -1,6 +1,7 @@
 import {NativePromptIntakeUnavailableError} from '../../../src/runtime/prompt-intake/native-state.ts';
 import {selectJob} from '../../../src/store/queue-read.ts';
-import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {join,dirname} from 'node:path';import {existsSync,mkdirSync,symlinkSync} from 'node:fs';
+import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {join,dirname} from 'node:path';import {existsSync,mkdirSync,symlinkSync,writeFileSync} from 'node:fs';
+import {joinRuntimePath} from '../../../src/runtime/runtime-paths/path-text.ts';
 import {storeFixture} from '../../helpers/store-fixture.ts';import {startRuntimeFoundation} from '../../../src/runtime/discord-runtime/startup-foundation.ts';import {buildRuntimeCommandExecutor,type RuntimeExecutorBootstrapOptions} from '../../../src/runtime/discord-runtime/executor-bootstrap.ts';import {AdmissionGate} from '../../../src/admission/drain-gate.ts';import {openInitialized} from '../../../src/store/owned-driver.ts';import {StateAccessFacade as state} from '../../../src/store/state-access-facade.ts';
 const render=(e:unknown)=>e instanceof Error?e.message:'opaque';const limits={maxRows:128,maxBytes:1048576};
 const script="import readline from'node:readline';readline.createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line);if(m.id!==undefined)process.stdout.write(JSON.stringify({id:m.id,result:m.method==='turn/start'?{turn:{id:JSON.stringify(m.params.input)}}:{}})+'\\n');});";
@@ -38,27 +39,29 @@ test('mandatory null timeouts reject before policy installation or any startup r
 }));
 
 test('executor sends exact native Pro skill path in the owned claimed turn request',async()=>fixture(async(paths,owner)=>{
- mkdirSync(paths.root+'/physical/child',{recursive:true});symlinkSync(paths.root+'/physical/child',paths.root+'/alias','dir');
- const rawRoot=paths.root+'/alias/..',result=await buildRuntimeCommandExecutor({...paths,root:rawRoot},owner,new AdmissionGate(),options());
+ mkdirSync(paths.root+'/physical/child',{recursive:true});symlinkSync(paths.root+'/physical/child',paths.root+'/alias',process.platform==='win32'?'junction':'dir');
+ const rawRoot=paths.root+'/alias/..',platform=process.platform==='win32'?'win32':'posix',plugin=joinRuntimePath(rawRoot,'plugins/codex-discord-remote',platform);
+ mkdirSync(joinRuntimePath(plugin,'.codex-plugin',platform),{recursive:true});writeFileSync(joinRuntimePath(plugin,'.codex-plugin/plugin.json',platform),'{}');
+ const result=await buildRuntimeCommandExecutor({...paths,root:rawRoot},owner,new AdmissionGate(),options());
  const db=await openInitialized(paths.mirrorDb);try{
  db.exec("INSERT INTO codex_turn_queue(job_id,target_thread_id,channel_id,owner_user_id,app_server_generation,execution_generation,prompt,queued,ack_sent,state,attempt_count,baseline_turn_ids,created_at,updated_at) VALUES('path-job','T',42,3,1,1,'$ask-chatgpt-pro [@Chrome](plugin://chrome@openai-bundled)',0,1,'starting',1,'[]',1,1)");
  const input=JSON.parse(await result.backend.startClaimedTurn(selectJob(db,'path-job')));
- assert.deepEqual(input[1],{type:'skill',name:'ask-chatgpt-pro',path:rawRoot+'/plugins/codex-discord-remote/skills/ask-chatgpt-pro/SKILL.md'});
+ assert.deepEqual(input[1],{type:'skill',name:'ask-chatgpt-pro',path:joinRuntimePath(plugin,'skills/ask-chatgpt-pro/SKILL.md',platform)});
  }finally{db.close();result.disposeReceivers();}
 }));
 
 test('explicit startup recovery executor is installed once and bound to the mirror database',async()=>fixture(async(paths,owner)=>{
  const {AdmittedRecoverExecutor}=await import('../../../src/runtime/action-executor/recover-action.ts');
- const recovery=new AdmittedRecoverExecutor(paths.mirrorDb,paths.root,'posix',{inspect:async()=>assert.fail('startup must not inspect'),start:async()=>assert.fail('startup must not restart'),join:async()=>{}});
+ const recovery=new AdmittedRecoverExecutor(paths.mirrorDb,paths.root,process.platform==='win32'?'win32':'posix',{inspect:async()=>assert.fail('startup must not inspect'),start:async()=>assert.fail('startup must not restart'),join:async()=>{}});
  const input={...options(),recovery};const pending=buildRuntimeCommandExecutor(paths,owner,new AdmissionGate(),input);
- input.recovery=new AdmittedRecoverExecutor(join(paths.root,'foreign.sqlite'),paths.root,'posix',{inspect:async()=>assert.fail(),start:async()=>assert.fail(),join:async()=>{}});
+ input.recovery=new AdmittedRecoverExecutor(join(paths.root,'foreign.sqlite'),paths.root,process.platform==='win32'?'win32':'posix',{inspect:async()=>assert.fail(),start:async()=>assert.fail(),join:async()=>{}});
  const result=await pending;
  assert.throws(()=>result.executor.configureRecovery(recovery),/already configured/);
  result.disposeReceivers();
 }));
 test('wrong-database recovery is rejected before queue recovery writes',async()=>fixture(async(paths,owner)=>{
  const {AdmittedRecoverExecutor}=await import('../../../src/runtime/action-executor/recover-action.ts');
- const recovery=new AdmittedRecoverExecutor(join(paths.root,'foreign.sqlite'),paths.root,'posix',{inspect:async()=>assert.fail(),start:async()=>assert.fail(),join:async()=>{}});
+ const recovery=new AdmittedRecoverExecutor(join(paths.root,'foreign.sqlite'),paths.root,process.platform==='win32'?'win32':'posix',{inspect:async()=>assert.fail(),start:async()=>assert.fail(),join:async()=>{}});
  await assert.rejects(buildRuntimeCommandExecutor(paths,owner,new AdmissionGate(),{...options(),recovery}),/database differs/);
  const db=new DatabaseSync(paths.mirrorDb,{readOnly:true});try{assert.equal(db.prepare('SELECT COUNT(*) AS n FROM cdr_async_recovery_policies').get()!.n,0);}finally{db.close();}
 }));

@@ -6,6 +6,7 @@ import {serializeSerdeValue} from "../core/serde-json.ts";
 import {serdeValueEqual} from "../core/serde-value-equal.ts";
 import {decodeI64,decodeOptionalI64} from "./sqlite-values.ts";
 import {parseReceiptKey,receiptHash,receiptRow,receiptText,receiptTextColumns,receiptExists,type DeliveryGuard} from "./delivery-receipt-key.ts";
+import {splitDeliveryChunks} from '../discord/text.ts';
 interface FinalRecoveryRequest {delivery_id:string;job_id:string;thread_id:string;turn_id:string;channel_id:bigint;original_sha256:string;ingress_id:string;error_receipt_key:string;error_message_id:string;error_sha256:string}
 interface Grant {request:FinalRecoveryRequest;content_sha256:string;chunks:string[];ingress:unknown}
 const REQUEST:StructShape={fields:[["delivery_id","string"],["job_id","string"],["thread_id","string"],["turn_id","string"],["channel_id","i64"],["original_sha256","string"],["ingress_id","string"],["error_receipt_key","string"],["error_message_id","string"],["error_sha256","string"]]};
@@ -41,6 +42,26 @@ function validate(db:DatabaseSync,pending:StoredDelivery,grant:Grant):void{
 }
 /** Validate an existing grant only. This API never creates publication authorization. */
 export function finalRecoveryAuthorizedIn(db:DatabaseSync,pending:StoredDelivery):boolean{const grant=read(db,pending.deliveryId);if(grant===null)return false;validate(db,pending,grant);return true;}
+/** Explicit local administration only. The caller owns the IMMEDIATE transaction;
+ * authorizes the saved payload, never a new turn or an uncertain prior send. */
+export function authorizeSavedFinalIn(db:DatabaseSync,encoded:string):{deliveryId:string;jobId:string}{
+  if(!db.isTransaction)invalid('saved final authorization requires an owned transaction');
+  if(Buffer.byteLength(encoded)>1048576)invalid('saved final request exceeds budget');
+  const request=parseSerdeStruct(encoded,REQUEST) as unknown as FinalRecoveryRequest;
+  const pending=selectDelivery(db,request.delivery_id),old=read(db,request.delivery_id);
+  if(old!==null){if(!serdeValueEqual(old.request,request))invalid('recovery authorization differs from its existing grant');validate(db,pending,old);return {deliveryId:request.delivery_id,jobId:request.job_id};}
+  identity(pending,request);if(receiptHash(pending.content)!==request.original_sha256)invalid('saved final payload changed');
+  const ingress=evidence(db,request);
+  if(receiptExists(db,"SELECT EXISTS(SELECT 1 FROM codex_delivery_receipts WHERE json_valid(receipt_key) AND json_extract(receipt_key,'$[1]')='completion/v1' AND json_extract(receipt_key,'$[2]')=?) AS held",request.delivery_id))invalid('saved final already has output intent or receipt; no new authorization');
+  progressClear(db,pending);
+  const content='[저장된 답변 복구]\n앞서 오류로 안내했지만 이미 생성되어 저장된 답변을 복구합니다. 요청을 다시 실행하지 않았습니다.\n\n'+pending.content;
+  const chunks=splitDeliveryChunks(content,true);
+  if(chunks.length===0||chunks.some(c=>c===''||[...c].length>2000))invalid('invalid completion chunk manifest');
+  const grant:Grant={request,content_sha256:receiptHash(content),chunks:chunks.map(receiptHash),ingress};
+  if(BigInt(db.prepare('UPDATE codex_delivery_outbox SET content=? WHERE delivery_id=? AND content=?').run(content,request.delivery_id,pending.content).changes)!==1n)invalid('saved final changed during authorization');
+  db.prepare('INSERT INTO cdr_final_recovery(delivery_id,grant_json,created_at) VALUES (?,?,unixepoch())').run(request.delivery_id,serializeSerdeValue(grant));
+  return {deliveryId:request.delivery_id,jobId:request.job_id};
+}
 export function validateFinalRecoveryClaimIn(db:DatabaseSync,key:string,hash:string,guard:DeliveryGuard|null):void{
   const parsed=parseReceiptKey(key);if(parsed===null||parsed[1]!=="completion/v1")return;const [channel,,id,index]=parsed,grant=read(db,id);if(grant===null)return;
   const pending=selectDelivery(db,id);validate(db,pending,grant);

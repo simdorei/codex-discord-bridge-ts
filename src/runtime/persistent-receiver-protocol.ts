@@ -30,6 +30,7 @@ export type ReceiverCommand=Readonly<{kind:'ready'|'close'|'ack-close'}>
  |Readonly<{kind:'submit';id:number;operation:ReceiverOperation}>
  |Readonly<{kind:'cancel'|'ack-terminal';id:number}>;
 export type ReceiverReply=Readonly<{kind:'ready'|'closed'}>
+ |Readonly<{kind:'sealed-no-admission';id:number;retiredThrough:number}>
  |Readonly<{kind:'terminal';id:number;operation:ReceiverOperationTag;result:ReceiverTerminal}>
  |Readonly<{kind:'retired';id:number}>;
 export type ReceiverControlCommand=Readonly<{kind:'stop-and-join';id:number}>;
@@ -223,6 +224,7 @@ export function captureReceiverReply(input:unknown,expectedEpoch:string,expected
  const body=envelope(input,expectedEpoch),kind=data(body,'kind');
  if(kind==='ready'||kind==='closed'){exact(body,['kind']);wrapper(expectedEpoch,body);return Object.freeze({kind});}
  if(kind==='retired'){exact(body,['kind','id']);id(body.id);wrapper(expectedEpoch,body);return Object.freeze({kind,id:body.id});}
+ if(kind==='sealed-no-admission'){exact(body,['kind','id','retiredThrough']);id(body.id);id(body.retiredThrough,true);if(body.id!==(body.retiredThrough as number)+1)invalid();wrapper(expectedEpoch,body);return Object.freeze({kind,id:body.id,retiredThrough:body.retiredThrough});}
  if(kind==='terminal'){
   exact(body,['kind','id','operation','result']);id(body.id);if(expectedOperation===undefined)invalid();
   const operation=captureReceiverOperation(expectedOperation);if(body.operation!==operation.op)invalid();

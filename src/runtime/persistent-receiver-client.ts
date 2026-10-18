@@ -147,7 +147,7 @@ export class PersistentReceiverServicesClient{
   // With no slot, every submitted operation was already truly joined (or none
   // was ever submitted). Losing control cannot create an unjoined operation.
   if(this.#slot===null)this.#faultClosureReady=true;
-  this.#seal();this.#closeFaultedPorts();
+  this.#seal();if(this.#slot!==null&&this.#slot.terminal!==null)this.#settle(this.#slot);this.#closeFaultedPorts();
  }
  #closeFaultedPorts():void{
   if(!this.#sealed||this.#slot!==null||(!this.#controlJoined&&!this.#faultClosureReady))return;
@@ -173,6 +173,10 @@ export class PersistentReceiverServicesClient{
   if(this.#dataFault||this.#phase==='Closed')return;
   try{
    const slot=this.#slot,reply=captureReceiverReply(raw,this.#epoch,slot?.operation);
+   if(reply.kind==='sealed-no-admission'){
+    if(slot===null||!slot.posted||slot.terminal!==null||this.#phase!=='WaitingTerminal'||reply.id!==slot.id||reply.id!==this.#highWater||reply.retiredThrough!==this.#retiredThrough)throw new TypeError('Unexpected receiver no-admission proof');
+    this.#seal();this.#removeAbort(slot);this.#slot=null;this.#phase='Idle';this.#faultClosureReady=true;slot.reject(new PersistentReceiverBridgeUnconfirmedError(slot.operation.op));this.#closeFaultedPorts();return;
+   }
    if(reply.kind==='ready'){
     if(this.#sealed||this.#phase!=='Boot'||this.#ready===null)throw new TypeError('Unexpected receiver ready');
     this.#phase='Idle';this.#ready.resolve();return;

@@ -15,8 +15,8 @@ function target(attempt:CutoverBackupAttempt,value:unknown):string{ text(value,6
  * caller outcome retains its unique attempt and is never permission to retry.
  * This is not a native Windows or adversarial pathname-custody implementation. */
 export async function snapshotCutoverStore(path:string,signal?:AbortSignal,timeoutMs=30000):Promise<string>{
- signal?.throwIfAborted();text(path,32768);if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>30000)throw new RangeError('Invalid backup timeout');if(process.platform==='win32')throw new TypeError('Native Windows cutover backup ownership is not qualified');if(slot.busy)throw new OwnedWorkerBusyError();
- const source=joinRuntimePath(process.cwd(),path,'posix'),stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z'),attempt=Object.freeze({source,directory:joinRuntimePath(dirname(source),'.codex-discord-backups','posix'),stem:parse(source).name||'store',suffix:stamp+'.'+randomUUID().replaceAll('-','').slice(0,12)});
+ signal?.throwIfAborted();text(path,32768);if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>30000)throw new RangeError('Invalid backup timeout');if(slot.busy)throw new OwnedWorkerBusyError();
+ const platform=process.platform==='win32'?'win32':'posix',source=joinRuntimePath(process.cwd(),path,platform),stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z'),attempt=Object.freeze({source,directory:joinRuntimePath(dirname(source),'.codex-discord-backups',platform),stem:parse(source).name||'store',suffix:stamp+'.'+randomUUID().replaceAll('-','').slice(0,12)});
  const cancelled=new Int32Array(new SharedArrayBuffer(4)),abort=()=>{Atomics.store(cancelled,0,1);},timer=setTimeout(abort,timeoutMs);signal?.addEventListener('abort',abort,{once:true});
  let reply:unknown;
  try{const work=slot.run(new URL('./cutover-backup-worker.ts',import.meta.url),{attempt,cancelled:cancelled.buffer},timeoutMs,signal),joined=slot.join();try{reply=await work;}finally{await joined;}}

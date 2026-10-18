@@ -24,6 +24,9 @@ function freezeResult(value:unknown,maxStringUnits:number):void{
   Object.freeze(item);
  };visit(value,0);
 }
+/** Transfer a trusted native backend's privately owned result to the immutable
+ * dispatcher boundary. This does not relax wire or session validation. */
+export function freezeRemoteBackendResult<T>(value:T):T{freezeResult(value,12032768);requireImmutableRemoteDto(value,12032768);return value;}
 /** Validate passive immutable native DTO shape without walking large string
  * contents. Only decoded immutable trees enter structured clone; no caller
  * getters or toJSON hooks can execute. Graph/key enumeration overhead remains. */

@@ -7,14 +7,11 @@ import {DatabaseSync} from 'node:sqlite';
 import {openInitialized} from '../../src/store/owned-driver.ts';
 import {createPersistentResidentRegistration,createPersistentResidentNormalComponent} from '../../src/runtime/persistent-resident-store-role.ts';
 
-// Diagnostic pre-fix counterexample, not a normal workflow qualification. Run
-// only in the reviewed fresh graph under the owned-process bounded supervisor.
-// The fixed rescue closes only this construction's surviving data endpoint,
-// after genuine child disposal. Probe-only failure teardown leaves the existing
-// native close path usable until disposal, then applies final quarantine. Neither
-// intervention can settle the original client read or qualify production cleanup.
+// Regression for an exact submitted-but-never-admitted ID. The surviving data
+// endpoint carries a bounded proof; no endpoint rescue manufactures completion.
+// Root quarantine still records the independent receiver control failure.
 let defectObserved=false;
-test('pre-fix posted receiver ID is stranded until explicitly labeled endpoint rescue',{concurrency:false,timeout:20000},async t=>{
+test('exact no-admission proof joins posted receiver ID without endpoint rescue',{concurrency:false,timeout:30000},async t=>{
  const parent=realpathSync(tmpdir()),root=mkdtempSync(join(parent,'cdr-receiver-pre-admission-probe-'));
  const initial=realpathSync(root),identity=lstatSync(root),path=join(root,'store.sqlite');
  (await openInitialized(path)).close();
@@ -35,8 +32,8 @@ test('pre-fix posted receiver ID is stranded until explicitly labeled endpoint r
  assert.equal(state.registrationLive,false);assert.equal(state.rootDebt,true);
  assert.equal(state.directChildClosure,'confirmed');
  assert.equal(receiver.probeDroppedId,1);assert.equal(receiver.probePendingId,1);
- assert.equal(receiver.probeRescueIssued,true);assert.equal(receiver.probeClientUnjoinedAtExit,true);
- assert.equal(receiver.submitted,0);assert.equal(receiver.completed,0);assert.equal(receiver.retired,0);
+ assert.equal(receiver.probeRescueIssued,false);assert.equal(receiver.probeClientUnjoinedAtExit,false);assert.equal(receiver.probeClientJoinedAtExit,true);
+ assert.equal(receiver.submitted,1);assert.equal(receiver.completed,0);assert.equal(receiver.retired,0);
  assert.equal(receiver.calls,0);assert.equal(receiver.clientResultObserved,false);
  assert.equal(receiver.controlReplySent,false);assert.equal(receiver.terminalRetained,false);
  assert.equal(receiver.dataClosed,true);assert.equal(receiver.controlClosed,true);
@@ -49,9 +46,10 @@ test('pre-fix posted receiver ID is stranded until explicitly labeled endpoint r
  const current=lstatSync(root);assert.equal(current.isSymbolicLink(),false);assert.equal(current.dev,identity.dev);assert.equal(current.ino,identity.ino);
  // The owned root deliberately remains, including unresolved logical debt.
  defectObserved=true;
- t.diagnostic('CDR_RECEIVER_PRE_ADMISSION_PROBE_V1 '+JSON.stringify({version:1,postedId:1,droppedId:1,admitted:0,completed:0,clientJoinedAtExit:false,originalChildClosure:'confirmed',rescue:'construction-data-endpoint-after-child-disposal',teardown:'probe-only-lifecycle-before-final-quarantine',requesterExited:true,rootDebt:true,cleanupQualified:false,temporaryRoot:'retained'}));
+ t.diagnostic('CDR_RECEIVER_PRE_ADMISSION_FIXED_V1 '+JSON.stringify({version:1,postedId:1,admitted:0,completed:0,clientJoinedAtExit:true,originalChildClosure:'confirmed',rescue:false,requesterExited:true,rootDebt:true,temporaryRoot:'retained'}));
 });
-test('mandatory pre-fix receiver logical cleanup qualification',{concurrency:false},()=>{
+test('mandatory exact-ID logical cleanup and no-replay evidence',{concurrency:false},()=>{
  assert.equal(defectObserved,true,'Original bounded counterexample evidence missing');
- assert.equal(false,true,'Endpoint rescue allowed physical exit; the original client slot and component root debt remain unresolved');
+ // The preceding assertions require an observed logical join as well as actual
+ // child, requester and endpoint closure. Abnormal root quarantine is retained.
 });

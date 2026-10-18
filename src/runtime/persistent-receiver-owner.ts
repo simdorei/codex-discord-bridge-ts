@@ -10,7 +10,7 @@ import {createNativePromptAuthorityReads} from './server-prompt-authority-reads.
 import {sendReceiptChunk,type DiscordReceiptTransport} from './completion/receipt-sender.ts';
 import {captureReceiverCommand,captureReceiverControlCommand,captureReceiverTerminal,projectReceiverFailure,receiverFrame,type ReceiverDescriptor,type ReceiverOperation,type ReceiverTerminal,type ReceiverReply} from './persistent-receiver-protocol.ts';
 
-type Operation={readonly id:number;input:ReceiverOperation|null;controller:AbortController|null;task:Promise<void>|null;joined:boolean;cancelled:boolean;result:ReceiverTerminal|null;terminalSent:boolean};
+type Operation={readonly id:number;input:ReceiverOperation|null;controller:AbortController|null;task:Promise<void>|null;joined:boolean;cancelled:boolean;abortOrigin:'caller'|'bridge'|null;result:ReceiverTerminal|null;terminalSent:boolean};
 type Phase='boot'|'idle'|'running'|'terminal'|'closing'|'closed';
 const fixtureScenarios=new Set(['receiver-computer-form-recovery','receiver-browser-form-event','receiver-unsupported-form-event','receiver-approval-prompt','receiver-input-prompt','receiver-late-accept','receiver-read-json','receiver-native-join','receiver-data-loss','receiver-ack-loss','receiver-control-before-admission-probe']);
 const transportScenarios=new Set(['receiver-approval-prompt','receiver-input-prompt','receiver-late-accept','receiver-native-join','receiver-data-loss','receiver-ack-loss']);
@@ -55,7 +55,7 @@ class ReceiverFixtureTransport implements DiscordReceiptTransport{
   // A validated provider acceptance remains known after original cancellation.
   Atomics.store(this.#words,2,this.#calls);Atomics.notify(this.#words,2);return 100n+BigInt(this.#calls);
  }
- snapshot(){return Object.freeze({calls:this.#calls,lastRequestHash:this.#hash,clientResultObserved:Atomics.load(this.#words,4)===1,probeDroppedId:Atomics.load(this.#words,5),probePendingId:Atomics.load(this.#words,6),probeRescueIssued:Atomics.load(this.#words,7)===1,probeClientUnjoinedAtExit:Atomics.load(this.#words,8)===1});}
+ snapshot(){return Object.freeze({calls:this.#calls,lastRequestHash:this.#hash,clientResultObserved:Atomics.load(this.#words,4)===1,probeDroppedId:Atomics.load(this.#words,5),probePendingId:Atomics.load(this.#words,6),probeRescueIssued:Atomics.load(this.#words,7)===1,probeClientUnjoinedAtExit:Atomics.load(this.#words,8)===1,probeClientJoinedAtExit:Atomics.load(this.#words,8)===-1});}
 }
 
 /** Main-only, fixed service owner for the disposable original serial receiver.
@@ -108,7 +108,7 @@ export class PersistentReceiverServicesOwner{
   // The component's own failure listener may reenter after a control-only fault.
   // Do not turn that notification into data loss: its exact current terminal
   // remains a permitted source of real join evidence.
-  if(!this.releasable&&!this.#quarantined)this.#fault('data');
+  if(!this.releasable&&!this.#quarantined)this.#fault('generic');
  }
  async closeStartup():Promise<void>{
   this.#fault('data');
@@ -134,11 +134,11 @@ export class PersistentReceiverServicesOwner{
   if(this.#slot!==null&&!this.#slot.joined)return;
   this.#dataValid=false;this.#controlValid=false;this.#data.close();this.#control.close();this.#checkJoined();
  }
- #fault(which:'data'|'control'):void{
+ #fault(which:'data'|'control'|'generic'):void{
   if(this.releasable)return;
   this.#quarantined=true;
-  if(which==='data'){this.#dataValid=false;this.#data.close();}else{this.#controlValid=false;this.#control.close();}
-  const slot=this.#slot;if(slot!==null&&!slot.joined&&slot.input?.op==='server-prompt-chunk')slot.controller!.abort(fixedFailure());
+  if(which==='data'){this.#dataValid=false;this.#data.close();}else if(which==='control'){this.#controlValid=false;this.#control.close();}
+  const slot=this.#slot;if(slot!==null&&!slot.joined&&slot.input?.op==='server-prompt-chunk'&&!slot.controller!.signal.aborted){slot.abortOrigin='bridge';slot.controller!.abort(fixedFailure());}
   // Listener sees the original local signal; no dependency on parent quarantine.
   if(!this.#failure.signal.aborted)this.#failure.abort(fixedFailure());
   if(!this.#transferred){this.#remoteData.close();this.#remoteControl.close();this.#data.close();this.#control.close();}
@@ -156,6 +156,10 @@ export class PersistentReceiverServicesOwner{
    if(this.#quarantined&&!['cancel','ack-terminal'].includes(command.kind)){
     // Record the actual validated submit discarded at the unfixed filter.
     if(this.#scenario==='receiver-control-before-admission-probe'&&command.kind==='submit'&&command.id===1&&this.#phase==='idle'&&this.#slot===null&&this.#high===0&&!this.#controlValid)Atomics.store(new Int32Array(this.#transport.observation),5,command.id);
+    // This exact next ID was validated after admission was permanently sealed.
+    // No task exists for it. Keep a viable route for the finite no-admission
+    // proof instead of silently dropping a client-owned logical pending slot.
+    if(command.kind==='submit'&&this.#phase==='idle'&&this.#slot===null&&this.#high===this.#retired&&command.id===this.#high+1){this.#post({kind:'sealed-no-admission',id:command.id,retiredThrough:this.#retired});this.#high=command.id;}
     return;
    }
    if(command.kind==='ready'){
@@ -164,12 +168,12 @@ export class PersistentReceiverServicesOwner{
    if(command.kind==='submit'){
     if(this.#phase!=='idle'||this.#slot!==null||command.id!==this.#high+1)throw fixedFailure();
     this.#high=command.id;this.#phase='running';
-    const slot:Operation={id:command.id,input:command.operation,controller:command.operation.op==='server-prompt-chunk'?new AbortController():null,task:null,joined:false,cancelled:false,result:null,terminalSent:false};
+    const slot:Operation={id:command.id,input:command.operation,controller:command.operation.op==='server-prompt-chunk'?new AbortController():null,task:null,joined:false,cancelled:false,abortOrigin:null,result:null,terminalSent:false};
     this.#slot=slot;slot.task=this.#run(slot);void slot.task.catch(()=>this.#fault('data'));return;
    }
    if(command.kind==='cancel'){
     const slot=this.#slot;if(slot===null||slot.id!==command.id||slot.input?.op!=='server-prompt-chunk'||slot.cancelled)throw fixedFailure();
-    slot.cancelled=true;if(!slot.joined)slot.controller!.abort(new Error('Original receiver chunk cancelled'));return;
+    slot.cancelled=true;if(!slot.joined&&!slot.controller!.signal.aborted){slot.abortOrigin='caller';slot.controller!.abort(new Error('Original receiver chunk cancelled'));}return;
    }
    if(command.kind==='ack-terminal'){
     const slot=this.#slot;if(slot===null||slot.id!==command.id||!slot.joined||!slot.terminalSent||slot.result===null)throw fixedFailure();
@@ -220,7 +224,7 @@ export class PersistentReceiverServicesOwner{
   const input=slot.input!;
   try{
    try{const value=await this.#execute(input,slot.controller?.signal);slot.result=captureReceiverTerminal(input,{kind:'ok',value});}
-   catch(error){slot.result=captureReceiverTerminal(input,{kind:'error',failure:projectReceiverFailure(input,error,slot.controller?.signal)});}
+   catch(error){slot.result=captureReceiverTerminal(input,{kind:'error',failure:projectReceiverFailure(input,error,slot.abortOrigin==='caller'?slot.controller?.signal:undefined)});}
   }catch{
    slot.result={kind:'error',failure:{kind:input.op==='server-prompt-chunk'?'unclassified-chunk-failure':'unclassified-read-failure'}};
    this.#fault('data');

@@ -1,4 +1,5 @@
 import {prepareMaintenanceStartup} from './maintenance.ts';
+import {runAdmin} from './admin.ts';
 import {RuntimeConfigError} from '../config/runtime.ts';
 import {RuntimeExecutableError} from '../runtime/runtime-paths/executable.ts';
 import {RuntimePathDiscoveryError} from '../runtime/runtime-paths/discovery.ts';
@@ -13,10 +14,11 @@ export async function runLocalRuntimeCli(applicationPath: string, version: strin
     const env = new Map<string, string>();
     for (const [key, value] of Object.entries(process.env)) if (value !== undefined) env.set(key, value);
     const stop = RuntimeStopSignal.install(); let prepared;
-    try { prepared = await prepareMaintenanceStartup(process.argv.slice(2), env, applicationPath, process.cwd(), version, stop.signal); }
+    try { prepared = await prepareMaintenanceStartup(process.argv.slice(2), env, applicationPath, process.cwd(), version, stop.signal);
+      if(prepared.kind==='admin')prepared={kind:'output' as const,text:await runAdmin(prepared.args,env,process.cwd(),version,stop.signal)};
+    }
     finally { stop.dispose(); }
     if (prepared.kind === 'output') process.stdout.write(prepared.text + '\n');
-    else if (prepared.kind === 'admin') { process.stderr.write('local_runtime_unsupported_admin\n'); return 2; }
     else {
       const environment: Record<string, string> = Object.create(null);
       Map.prototype.forEach.call(prepared.environment, (value: string, key: string) => { Object.defineProperty(environment, key, {value, enumerable: true}); });
@@ -25,7 +27,7 @@ export async function runLocalRuntimeCli(applicationPath: string, version: strin
     return 0;
   } catch (error) {
     if (error instanceof LocalRuntimeUnsupportedError) {
-      process.stderr.write('local_runtime_unsupported_profile: configured remote MCP, session mirror or host commands require additional runtime wiring\n'); return 2;
+      process.stderr.write('local_runtime_unsupported_profile: host commands require Windows\n'); return 2;
     }
     if (error instanceof LocalRuntimeOwnershipRetainedError) process.stderr.write('local_runtime_ownership_retained: cleanup unconfirmed; do not restart\n');
     else if (error instanceof RuntimeConfigError) process.stderr.write(`local_runtime_config: ${error.message}\n`);

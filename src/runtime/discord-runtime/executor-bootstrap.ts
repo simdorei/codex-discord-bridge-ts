@@ -1,5 +1,5 @@
 import {AdmittedRecoverExecutor} from '../action-executor/recover-action.ts';
-import {joinRuntimePath} from '../runtime-paths/path-text.ts';
+import {runtimePluginPaths} from '../../pro/plugin-paths.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {requireDiscordText} from '../../discord/text.ts';
@@ -52,8 +52,8 @@ type Prepared={readonly preparePrompt:RuntimeExecutorBootstrapOptions['preparePr
 /** Exact-ID source build_executor. Caller owns resident and guard/drain lifetime.
  * Subscriptions precede recovery; preprocessor capture follows stabilization and
  * precedes intake. Success transfers exact receivers, failure releases them.
- * Existing synchronous stores and unsupported host/archive-delete/full mirror
- * actions remain explicit. No gateway, remote agent or browser starts here. */
+ * Platform controllers are installed by the application composition. No gateway,
+ * remote agent or browser starts here. */
 async function build(paths:Paths,server:PortableResidentLifecycle,admission:AdmissionGate,options:CommonOptions,capture:(root:string,state:string)=>Promise<Prepared>){
  const root=own(paths,'root'),stateDb=own(paths,'stateDb'),mirrorDb=own(paths,'mirrorDb'),bridgePath=own(paths,'bridgeState');for(const v of [root,stateDb,mirrorDb,bridgePath])requireDiscordText(v as string);
  const {render,mirror,reportNewAttempt,reportPolicyFailure,notifyDeliveryReady,resumeTimeoutMs,historyTimeoutMs}=options;
@@ -62,7 +62,8 @@ async function build(paths:Paths,server:PortableResidentLifecycle,admission:Admi
  let serverRequestReceiver:ReturnType<PortableResidentLifecycle['subscribeServerRequests']>|undefined;let transferred=false;
  try{
   serverRequestReceiver=PortableResidentLifecycle.prototype.subscribeServerRequests.call(server);
-  const recovered=await buildRecoveredRuntimeQueue(mirrorDb as string,server,admission,render,reportPolicyFailure,notifyDeliveryReady,{resumeTimeoutMs,historyTimeoutMs,proSkillPath:joinRuntimePath(root as string,'plugins/codex-discord-remote/skills/ask-chatgpt-pro/SKILL.md',process.platform==='win32'?'win32':'posix')});
+  const plugin=await runtimePluginPaths(root as string);
+  const recovered=await buildRecoveredRuntimeQueue(mirrorDb as string,server,admission,render,reportPolicyFailure,notifyDeliveryReady,{resumeTimeoutMs,historyTimeoutMs,proSkillPath:plugin.proSkill});
   const prepared=await capture(root as string,stateDb as string);
   const bridge=new BridgeState(bridgePath as string),executor=new RuntimeCommandExecutor({paths:{state:stateDb as string,mirror:mirrorDb as string,bridge:bridgePath as string},bridge,server,backend:recovered.backend,queue:recovered.queue,render,preparePrompt:prepared.preparePrompt,mirror,reportNewAttempt,resumeTimeoutMs});
   if(options.recovery!==undefined)RuntimeCommandExecutor.prototype.configureRecovery.call(executor,options.recovery);

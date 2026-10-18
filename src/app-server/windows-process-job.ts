@@ -69,6 +69,10 @@ export class WindowsProcessJob {
     if (this.#closed) return;
     requireBool(this.#api.terminate(this.#handle, 1), 'TerminateJobObject', this.#api);
   }
+  assignProcess(handle:bigint):void {
+    if(this.#closed||this.#finish!==undefined||typeof handle!=='bigint'||handle<=0n)throw new WindowsProcessJobError('invalid-process-assignment');
+    requireBool(this.#api.assign(this.#handle,handle),'AssignProcessToJobObject',this.#api);
+  }
   finish(timeoutMs = 5000): Promise<void> {
     return this.#finish ??= this.#finishOwned(timeoutMs);
   }

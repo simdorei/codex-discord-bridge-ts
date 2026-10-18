@@ -77,14 +77,14 @@ export async function admitOriginalMessageJournal(path:string,input:NewIngress,p
  * zero-queue Control admission. Only the private original custody's Result,
  * Confirm and Hold use the finite completion FIFO. No cancellation signal can
  * discard persistence after an accepted response or HTTP receipt. */
-export function createNativeMessageJournal(path:string,timeoutMs=5000):MessageJournal{
+export function createNativeMessageJournal(path:string,timeoutMs=5000,queueAdmission=false):MessageJournal{
  requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new TypeError('Invalid message store path');
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)throw new RangeError('Invalid message journal deadline');const fixed=pinNativeRuntimePath(path);
  const identity=(value:string)=>{requireDiscordText(value);if(Buffer.byteLength(value)>65536)throw new RangeError('Message journal identity exceeds boundary');};
  async function run<T>(operation:Operation,id:string,fields:object,decode:(value:unknown)=>T,completion:boolean,binding?:{origin:string;owner:string|null}):Promise<T>{
   identity(id);const requestId=binding===undefined?undefined:randomUUID(),data={path:fixed,operation,id,...fields,...(binding===undefined?{}:{...binding,requestId})};if(boundedSerdeByteCount(data,LIMIT)===null)throw new RangeError('Message journal input exceeds boundary');
   const slot=new OwnedWorkerSlot('Control');let admitted=false,raw:unknown;
-  try{const url=new URL('./native-journal-worker.ts',import.meta.url),pending=completion?slot.runControlCompletion(url,data,timeoutMs):slot.run(url,data,timeoutMs);admitted=slot.busy;try{raw=await pending;}finally{await slot.join();}}
+  try{const url=new URL('./native-journal-worker.ts',import.meta.url),pending=completion?slot.runControlCompletion(url,data,timeoutMs):queueAdmission?slot.runControlAdmission(url,data,timeoutMs):slot.run(url,data,timeoutMs);admitted=slot.busy;try{raw=await pending;}finally{await slot.join();}}
   catch(error){if(admitted)throw new NativeMessageJournalUnavailableError(operation,error);throw error;}
   try{if(boundedSerdeByteCount(raw,LIMIT)===null||own(raw,'ok')!==true||own(raw,'operation')!==operation||own(raw,'path')!==fixed||own(raw,'id')!==id)throw new TypeError('No exact message journal acknowledgement');if(binding!==undefined&&(own(raw,'origin')!==binding.origin||own(raw,'owner')!==binding.owner||own(raw,'requestId')!==requestId))throw new TypeError('No original message preparation acknowledgement');return decode(own(raw,'value'));}
   catch(error){throw new NativeMessageJournalUnavailableError(operation,error);}

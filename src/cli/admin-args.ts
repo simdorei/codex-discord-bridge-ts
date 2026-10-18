@@ -10,6 +10,7 @@ const options:ReadonlyMap<string,readonly string[]>=new Map([
  ['recover-writer',['--thread-id','--channel-id','--owner-user-id','--dry-run']],
  ['recover-tools',['--thread-id','--channel-id','--owner-user-id','--dry-run']],
  ['inspect-async-recovery',['--database','--thread-id','--dry-run']],
+ ['migrate-mirror-cursors',['--thread-id']],
  ['check-recovery-compatibility',['--database','--env']],
  ['send-attachment',['--channel-id','--thread-ref','--work-thread','--content','--content-file']],
 ]);

@@ -1,0 +1,31 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "^(exec|functions\\.exec|js|mcp__node_repl__js|node_repl\\.js)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${PLUGIN_ROOT}/bin/cdr-pro-helper\" browser-hook",
+            "commandWindows": "\"${PLUGIN_ROOT}\\bin\\cdr-pro-helper.exe\" browser-hook",
+            "timeout": 10,
+            "statusMessage": "Verifying Chrome evidence"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${PLUGIN_ROOT}/bin/cdr-pro-helper\" browser-hook",
+            "commandWindows": "\"${PLUGIN_ROOT}\\bin\\cdr-pro-helper.exe\" browser-hook",
+            "timeout": 10,
+            "statusMessage": "Checking Chrome claims"
+          }
+        ]
+      }
+    ]
+  }
+}

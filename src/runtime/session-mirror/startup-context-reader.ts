@@ -36,17 +36,17 @@ export class MirrorStartupContextObservation {
  /** Only <=512 anchor bytes are read here. Append after the reconstruction is
   * a changed observation, not permission to replace its exact N or context. */
  async verifyCurrent(signal?:AbortSignal):Promise<void>{
-  const anchor=this.#anchor,now=(await captureMirrorCursorAnchor(anchor.path,anchor.offset,signal)).anchor;
-  if(!sameMirrorStartupStamp(anchor.stamp,now.stamp)||anchor.prefixHash!==now.prefixHash||anchor.tailHash!==now.tailHash)throw new MirrorFileChangedError();
+  const anchor=this.#anchor,now=(await captureMirrorCursorAnchor(anchor.path,anchor.offset,signal,anchor.version===3)).anchor;
+  if(!sameMirrorStartupStamp(anchor.stamp,now.stamp)||anchor.prefixHash!==now.prefixHash||anchor.tailHash!==now.tailHash||anchor.historyHash!==now.historyHash)throw new MirrorFileChangedError();
  }
 }
 Object.freeze(MirrorStartupContextObservation.prototype);
 
 /** One owned native reader, zero queue. Capture is separate so no failed read
  * implicitly resamples EOF. No store is opened, initialized or written here. */
-export async function captureMirrorStartupCutoff(path:string,timeoutMs=5000,signal?:AbortSignal):Promise<MirrorStartupCutoff> {
+export async function captureMirrorStartupCutoff(path:string,timeoutMs=5000,signal?:AbortSignal,fullPrefix=false):Promise<MirrorStartupCutoff> {
  signal?.throwIfAborted();boundedPath(path);const pinned=pinNativeRuntimePath(path);boundedPath(pinned);deadline(timeoutMs);
- const value=await native({kind:'Capture',path:pinned},timeoutMs,signal),data=snapshotMirrorStartupCutoffData(value);
+ const value=await native({kind:'Capture',path:pinned,fullPrefix},timeoutMs,signal),data=snapshotMirrorStartupCutoffData(value);
  if(data.path!==pinned)throw new TypeError('Unexpected native mirror startup path');
  return new MirrorStartupCutoff(token,data);
 }

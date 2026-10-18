@@ -13,7 +13,7 @@ export function pluginFilesBusy():boolean{return slot.busy;}
 async function inspect(mode:'Tree'|'Fingerprint'|'Manifest',input:string,signal?:AbortSignal):Promise<string>{
  signal?.throwIfAborted();requireDiscordText(input);if(input.includes('\0'))throw new TypeError('NUL plugin input');
  if(Buffer.byteLength(input)>(mode==='Fingerprint'?1048576:32768))throw new RangeError('Plugin input exceeds observation budget');
- if(process.platform==='win32')throw new TypeError('Windows plugin file ownership requires native reparse-point validation');if(slot.busy)throw new OwnedWorkerBusyError();
+ if(slot.busy)throw new OwnedWorkerBusyError();
  const pending=slot.run(new URL('./plugin-files-worker.ts',import.meta.url),{mode,input},15000,signal),exited=slot.join();let response:unknown;
  try{response=cloneOwnedSerdeValue(await pending);}finally{await exited;}signal?.throwIfAborted();
  if(serdeField(response,'ok')===true){const value=serdeField(response,'value');if(typeof value!=='string'||(mode==='Manifest'?value==='':!/^[0-9a-f]{64}$/.test(value)))throw new TypeError('Invalid plugin file worker result');return value;}

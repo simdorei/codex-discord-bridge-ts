@@ -6,6 +6,8 @@ import {authorityStorePath} from '../store/store-authority-domain.ts';
  * Backup output files retain their separate exclusive-artifact checks. */
 const entries:readonly (readonly [string,'path'|'mirror'|'mirrorDb'|null])[]=[
  ['cli/admin-store-worker.ts',null],
+ ['cli/admin-database-worker.ts','path'],
+ ['cli/mirror-migration-worker.ts','path'],
  ['cli/environment-worker.ts',null],
  ['codex-state/context-worker.ts',null],
  ['codex-state/reference-worker.ts',null],
@@ -16,6 +18,7 @@ const entries:readonly (readonly [string,'path'|'mirror'|'mirrorDb'|null])[]=[
  ['remote-agent/decode-worker.ts',null],
  ['remote-agent/files/read-file-worker.ts',null],
  ['remote-agent/files/redaction-worker.ts',null],
+ ['runtime/windows/window-worker.ts',null],
  ['runtime/action-executor/archive-write-native-worker.ts','path'],
  ['runtime/action-executor/busy-create-native-worker.ts','path'],
  ['runtime/action-executor/control-evidence-native-worker.ts','path'],
@@ -28,6 +31,7 @@ const entries:readonly (readonly [string,'path'|'mirror'|'mirrorDb'|null])[]=[
  ['runtime/action-executor/stop-pending-native-worker.ts','path'],
  ['runtime/archive-delete/backup-worker.ts',null],
  ['runtime/archive-delete/preparation-worker.ts','mirror'],
+ ['runtime/archive-delete/delete-worker.ts','mirror'],
  ['runtime/archive-delete/row-digest-worker.ts',null],
  ['runtime/async-question-publication-native-worker.ts','path'],
  ['runtime/bridge-state-native-worker.ts',null],

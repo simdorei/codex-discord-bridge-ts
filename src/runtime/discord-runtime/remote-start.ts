@@ -1,4 +1,10 @@
 import {RuntimeDeliveryWake} from './delivery-wake.ts';
+import {join} from 'node:path';
+import type {RemoteMcpConfig} from '../../config/remote.ts';
+import {openNativeRemoteProject} from '../../remote-agent/native-project.ts';
+import {claimWindowsRestartHandoff,writeWindowsRestartHandoff} from '../../remote-agent/restart-handoff-persistence.ts';
+import {prepareConfiguredManagedRemoteAgent,type ConfiguredManagedRemoteConfiguration} from '../../remote-agent/managed-agent.ts';
+import {FileDrainMarkerStore} from '../restart-readiness/drain-marker.ts';
 import {PortableResidentLifecycle} from '../../app-server/portable-resident-lifecycle.ts';
 import {types} from 'node:util';
 import {validateHeaderValue} from 'node:http';
@@ -20,12 +26,15 @@ import type {AdmissionGate} from '../../admission/drain-gate.ts';
  * not qualify native project authority, a protector, or configured remote use. */
 export interface SyntheticRuntimeRemoteConfiguration extends Omit<SyntheticManagedRemoteConfiguration,'kind'|'status'|'control'|'handoff'>{readonly kind:'SyntheticRuntimeRemote';readonly handoff:SyntheticManagedRemoteConfiguration['handoff']|PosixRuntimeRestartHandoff;}
 export interface SyntheticRuntimeRemoteProfile{readonly kind:'SyntheticRuntimeRemoteProfile';}
+export interface ConfiguredRuntimeRemoteProfile{readonly kind:'ConfiguredRuntimeRemoteProfile';}
+export type RuntimeRemoteProfile=SyntheticRuntimeRemoteProfile|ConfiguredRuntimeRemoteProfile;
 export interface PreparedRuntimeRemote{readonly kind:'PreparedSyntheticRuntimeRemote';}
 export type RuntimeRemoteBranch={readonly kind:'DisabledRemote'}|PreparedRuntimeRemote;
-type ProfileState={config:SyntheticManagedRemoteConfiguration;connection:ProRemoteConnection;phase:'new'|'context'|'preparing'|'prepared'|'failed'};
-type RemoteState={managed:PreparedManagedRemoteAgent;context:RuntimeCoreStartup;gate:AdmissionGate;markers:PosixDrainMarkerStore;phase:'prepared'|'claimed'|'starting'|'started'|'closed'|'retained';worker:RuntimeMonitoredWorker|null;closing:Promise<void>|null};
+type ProfileState={config:SyntheticManagedRemoteConfiguration|ConfiguredManagedRemoteConfiguration;connection:ProRemoteConnection;phase:'new'|'context'|'preparing'|'prepared'|'failed'};
+type RemoteState={managed:PreparedManagedRemoteAgent;context:RuntimeCoreStartup;gate:AdmissionGate;markers:FileDrainMarkerStore;phase:'prepared'|'claimed'|'starting'|'started'|'closed'|'retained';worker:RuntimeMonitoredWorker|null;closing:Promise<void>|null};
+class RemoteMarkerReader extends FileDrainMarkerStore{protected async writeMarker():Promise<void>{throw new TypeError('Remote marker reader has no publication authority');}}
 const profiles=new WeakMap<object,ProfileState>(),owners=new WeakMap<object,RemoteState>(),workerOwners=new WeakMap<RuntimeMonitoredWorker,PreparedRuntimeRemote>();
-function profile(input:SyntheticRuntimeRemoteProfile):ProfileState{if(input===null||typeof input!=='object'||types.isProxy(input)||!profiles.has(input))throw new TypeError('Expected authentic synthetic runtime remote profile');return profiles.get(input)!;}
+function profile(input:RuntimeRemoteProfile):ProfileState{if(input===null||typeof input!=='object'||types.isProxy(input)||!profiles.has(input))throw new TypeError('Expected authentic runtime remote profile');return profiles.get(input)!;}
 function state(input:PreparedRuntimeRemote):RemoteState{if(input===null||typeof input!=='object'||types.isProxy(input)||!owners.has(input))throw new TypeError('Expected authentic prepared runtime remote owner');return owners.get(input)!;}
 function signal(input:AbortSignal){if(types.isProxy(input)||!(input instanceof AbortSignal))throw new TypeError('Expected remote startup signal');input.throwIfAborted();}
 function text(input:unknown):string{requireDiscordText(input);if(input.length===0||input.length>4096)throw new TypeError('Invalid synthetic remote text');return input;}
@@ -52,21 +61,21 @@ function captureFixtureHandoff(h:unknown):SyntheticManagedRemoteConfiguration['h
 }
 /** Internal startup transfer: single-use, before any resident/store effects. The
  * exact closure is installed by prepareRuntimeProContext, never caller readiness. */
-export function assertSyntheticRuntimeRemoteProfileAvailable(input:SyntheticRuntimeRemoteProfile):void{if(profile(input).phase!=='new')throw new TypeError('Synthetic runtime remote profile already consumed');}
-export function claimSyntheticRuntimeRemoteForPro(input:SyntheticRuntimeRemoteProfile):ProRemoteConnection{const s=profile(input);if(s.phase!=='new')throw new TypeError('Synthetic runtime remote profile already consumed');s.phase='context';return s.connection;}
-export function syntheticRuntimeRemoteSnapshot(input:SyntheticRuntimeRemoteProfile){const s=profile(input);return Object.freeze({phase:s.phase,deviceId:s.connection.deviceId,status:RemoteAgentStatus.prototype.snapshot.call(s.config.status),handoffRequested:RemoteAgentControl.prototype.restartHandoffRequested.call(s.config.control)});}
+export function assertSyntheticRuntimeRemoteProfileAvailable(input:RuntimeRemoteProfile):void{if(profile(input).phase!=='new')throw new TypeError('Synthetic runtime remote profile already consumed');}
+export function claimSyntheticRuntimeRemoteForPro(input:RuntimeRemoteProfile):ProRemoteConnection{const s=profile(input);if(s.phase!=='new')throw new TypeError('Synthetic runtime remote profile already consumed');s.phase='context';return s.connection;}
+export function syntheticRuntimeRemoteSnapshot(input:RuntimeRemoteProfile){const s=profile(input);return Object.freeze({phase:s.phase,deviceId:s.connection.deviceId,status:RemoteAgentStatus.prototype.snapshot.call(s.config.status),handoffRequested:RemoteAgentControl.prototype.restartHandoffRequested.call(s.config.control)});}
 export class RuntimeRemoteOwnershipRetainedError extends AggregateError{
  constructor(primary:unknown,readonly owner:PreparedRuntimeRemote){super([primary],'Remote cleanup is unconfirmed; runtime ownership retained');this.name='RuntimeRemoteOwnershipRetainedError';}
 }
 /** Restores once after the exact Pro context, before the caller opens a gateway.
  * Context records are minted only by the actual startup chain. Root/marker and
  * queue/resident/gate identity cannot be supplied as unrelated callback ports. */
-export async function prepareSyntheticRuntimeRemote(input:SyntheticRuntimeRemoteProfile,context:RuntimeCoreStartup,shutdown:AbortSignal):Promise<PreparedRuntimeRemote>{
+export async function prepareSyntheticRuntimeRemote(input:RuntimeRemoteProfile,context:RuntimeCoreStartup,shutdown:AbortSignal):Promise<PreparedRuntimeRemote>{
  signal(shutdown);const s=profile(input),binding=preparedRuntimeRemoteContextBinding(context);
  if(binding.profile!==input||s.phase!=='context')throw new TypeError('Synthetic remote profile and prepared context differ or already consumed');
  RuntimeDeliveryWake.prototype.assertAvailable.call(context.deliveryWake);if(!PortableResidentLifecycle.prototype.lifecycleSnapshot.call(context.owner).healthy)throw new TypeError('Remote requires a live prepared resident');
- const markers=new PosixDrainMarkerStore(binding.root);s.phase='preparing';
- try{const managed=await prepareManagedRemoteAgent(s.config,shutdown);
+ const markers=new RemoteMarkerReader(binding.root);s.phase='preparing';
+ try{const managed=await (s.config.kind==='ConfiguredManagedRemote'?prepareConfiguredManagedRemoteAgent(s.config,shutdown):prepareManagedRemoteAgent(s.config,shutdown));
   try{preparedRuntimeRemoteContextBinding(context);RuntimeDeliveryWake.prototype.assertAvailable.call(context.deliveryWake);if(!PortableResidentLifecycle.prototype.lifecycleSnapshot.call(context.owner).healthy)throw new TypeError('Remote requires a live prepared resident');}
   catch(primary){try{await closePreparedManagedRemoteAgent(managed);}catch(cleanup){throw new ManagedRemoteOwnershipRetainedError(primary,cleanup,managed);}throw primary;}
   const result:PreparedRuntimeRemote=Object.freeze({kind:'PreparedSyntheticRuntimeRemote'});owners.set(result,{managed,context,gate:binding.gate,markers,phase:'prepared',worker:null,closing:null});s.phase='prepared';return result;}
@@ -107,4 +116,16 @@ export function assertPreparedRuntimeRemoteReleased(input:PreparedRuntimeRemote)
 export function assertRuntimeRemoteWorkerReleased(worker:RuntimeMonitoredWorker):void{const owner=workerOwners.get(worker);if(owner!==undefined)assertPreparedRuntimeRemoteReleased(owner);}
 /** Bound native marker read, with explicit-stop precedence. Caller observes this
  * Promise under the original shutdown deadline before the first remote stop. */
-export async function requestPreparedRuntimeRemoteHandoff(input:PreparedRuntimeRemote):Promise<void>{const s=state(input);if(await PosixDrainMarkerStore.prototype.restartRequested.call(s.markers))RemoteAgentControl.prototype.requestRestartHandoff.call(s.managed.control);}
+export async function requestPreparedRuntimeRemoteHandoff(input:PreparedRuntimeRemote):Promise<void>{const s=state(input);if(await FileDrainMarkerStore.prototype.restartRequested.call(s.markers))RemoteAgentControl.prototype.requestRestartHandoff.call(s.managed.control);}
+
+/** Configured protocol-10 service, actual native project resources and DPAPI
+ * handoff. Synthetic credentials and callback grant fixtures remain separate. */
+export function createConfiguredRuntimeRemoteProfile(remote:RemoteMcpConfig,root:string,codexExe:string,resumeRequested=false):ConfiguredRuntimeRemoteProfile{
+ if(process.platform!=='win32')throw new Error('Configured remote secret storage currently requires Windows DPAPI');
+ const bridgeUrl=remote.bridgeUrl.href,deviceId=remote.deviceId,deviceToken=new SecretToken(SecretToken.prototype.expose.call(remote.deviceToken)),status=new RemoteAgentStatus(),control=new RemoteAgentControl(),binding=Object.freeze({bridgeUrl,deviceId}),path=join(root,'.codex-remote-mcp','restart-handoff.json');
+ const nowUtc=()=>{const ms=BigInt(Date.now());return Object.freeze({seconds:ms/1000n,nanosecond:ms%1000n*1000000n});};
+ const config:ConfiguredManagedRemoteConfiguration=Object.freeze({kind:'ConfiguredManagedRemote',socket:Object.freeze({bridgeUrl,deviceId,deviceToken}),reconnectDelaySeconds:remote.reconnectDelaySeconds,status,control,
+ dispatcher:Object.freeze({openProject:(project:RemoteProjectBinding)=>openNativeRemoteProject(project,codexExe),nowUtc,nowMonotonic:()=>process.hrtime.bigint(),maxResultBytes:12000000}),
+ handoff:Object.freeze({kind:'WindowsProtectedBindingPorts',restore:async()=>claimWindowsRestartHandoff(resumeRequested,path,binding,nowUtc()),protect:async(projects:readonly RemoteProjectBinding[],now:ReturnType<typeof nowUtc>)=>writeWindowsRestartHandoff(path,projects,binding,now)}),disconnected:async()=>{}});
+ const receipt:ConfiguredRuntimeRemoteProfile=Object.freeze({kind:'ConfiguredRuntimeRemoteProfile'});profiles.set(receipt,{config,connection:Object.freeze({deviceId,isConnected:()=>RemoteAgentStatus.prototype.isConnected.call(status)}),phase:'new'});return receipt;
+}

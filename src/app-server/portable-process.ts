@@ -5,7 +5,7 @@ import {WindowsProcessJob} from "./windows-process-job.ts";
 import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
 import {serdeField,serdeObject} from "./value.ts";
 import {NodeAppServerInput,NodeAppServerByteSource} from "./node-streams.ts";
-export interface PortableProcessConfig{readonly executable:string;readonly arguments:readonly string[];readonly environment:Readonly<Record<string,string>>}
+export interface PortableProcessConfig{readonly cwd?:string;readonly inheritEnvironment?:boolean;readonly executable:string;readonly arguments:readonly string[];readonly environment:Readonly<Record<string,string>>}
 const ownedSpawnFailures = new WeakSet<object>();
 export function isOwnedAppServerSpawnError(value: unknown): boolean {return value !== null && (typeof value === "object" || typeof value === "function") && ownedSpawnFailures.has(value);}
 export class AppServerSpawnError extends Error{readonly executable:string;constructor(executable:string,cause:unknown){super(`could not start Codex app-server at ${executable}`,{cause});this.name="AppServerSpawnError";this.executable=executable;ownedSpawnFailures.add(this);}}
@@ -19,10 +19,11 @@ function text(value:unknown):asserts value is string{if(typeof value!=="string"|
 function configSnapshot(config:PortableProcessConfig){
   const value=cloneOwnedSerdeValue(config),executable=serdeField(value,"executable"),args=serdeField(value,"arguments"),environment=serdeField(value,"environment");text(executable);if(!Array.isArray(args)||!serdeObject(environment))throw new TypeError("Expected process arguments and environment");
   const arguments_:string[]=[];for(const arg of args){text(arg);arguments_.push(arg);}
-  const env:NodeJS.ProcessEnv=Object.assign(Object.create(null),process.env);
+  const cwd=serdeField(value,'cwd'),inherit=serdeField(value,'inheritEnvironment');if(cwd!==undefined)text(cwd);if(inherit!==undefined&&typeof inherit!=='boolean')throw new TypeError('Invalid environment inheritance');
+  const env:NodeJS.ProcessEnv=Object.assign(Object.create(null),inherit===false?{}:process.env);
   if(process.platform==='win32')for(const key of Object.keys(env))if(['CODEX_APP_TOOLS_PIPE_PATH','BROWSER_USE_ACCESS_VERIFYING_IDENTITY','CODEX_TASK_WORKSPACE_VERIFYING_IDENTITY','SKY_CUA_NATIVE_PIPE_DIRECTORY','CODEX_INTERNAL_ORIGINATOR_OVERRIDE','CODEX_SESSION_ID','CODEX_THREAD_ID'].includes(key.toUpperCase()))delete env[key];
   for(const key of Object.keys(environment)){text(key);if(key===""||key.includes("="))throw new TypeError("Invalid environment variable name");const value=serdeField(environment,key);text(value);if(process.platform==='win32')for(const inherited of Object.keys(env))if(inherited.toLowerCase()===key.toLowerCase())delete env[inherited];env[key]=value;}
-  return {executable,arguments:arguments_,environment:env};
+  return {executable,arguments:arguments_,environment:env,...(cwd===undefined?{}:{cwd:cwd as string})};
 }
 function waitWithSignal<T>(result:Promise<T>,signal?:AbortSignal):Promise<T>{
   if(signal===undefined)return result;if(signal.aborted)return Promise.reject(signal.reason);
@@ -43,7 +44,7 @@ export class OwnedPortableAppServerProcess{
         const helper=fileURLToPath(new URL('./windows-process-bootstrap.js',import.meta.url));
         const helperEnv={...copied.environment};for(const key of Object.keys(helperEnv))if(key.toUpperCase()==='NODE_OPTIONS')delete helperEnv[key];
         child=spawn(process.execPath,['--no-strip-types',helper,job.name,nonce],{stdio:['pipe','pipe','pipe','ipc'],shell:false,windowsHide:true,env:helperEnv}) as ChildProcessWithoutNullStreams;
-      }else child=spawn(copied.executable,copied.arguments,{stdio:["pipe","pipe","pipe"],shell:false,env:copied.environment});
+      }else child=spawn(copied.executable,copied.arguments,{stdio:["pipe","pipe","pipe"],shell:false,env:copied.environment,...(copied.cwd===undefined?{}:{cwd:copied.cwd})});
     }catch(error){if(job!==undefined)await job.finish();throw new AppServerSpawnError(copied.executable,error);}
     let resolveExit!:()=>void,rejectExit!:(error:unknown)=>void,resolveClose!:()=>void;
     const record:ProcessRecord={child,job,exited:false,pipesClosed:false,exit:new Promise((resolve,reject)=>{resolveExit=resolve;rejectExit=reject;}),closed:new Promise(resolve=>{resolveClose=resolve;})};
@@ -68,6 +69,7 @@ export class OwnedPortableAppServerProcess{
     const result=new OwnedPortableAppServerProcess(record,processId);for(const stream of [child.stdin,child.stdout,child.stderr])stream.off("error",streamError);return result;
   }
   get exitConfirmed():boolean{return this.#record.exited;}
+  get exitCode():number|null{return this.#record.child.exitCode;}
   get stdioClosed():boolean{return this.#record.pipesClosed;}
   wait(signal?:AbortSignal):Promise<void>{return waitWithSignal(this.#record.exit,signal);}
   tryWait():boolean{return this.#record.exited;}

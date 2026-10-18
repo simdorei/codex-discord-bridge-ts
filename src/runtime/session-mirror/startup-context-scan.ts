@@ -8,7 +8,7 @@ import {MirrorStartupContextHeldError,sameMirrorStartupStamp,type MirrorStartupC
 function nativeOnly():void{if(isMainThread)throw new TypeError('Mirror startup file scans require the owned native worker');}
 /** Fixed <=515-byte native capture. A non-LF EOF is retained as a held cutoff,
  * never rounded down and never made valid by observing a later append. */
-export async function captureMirrorStartupCutoffNative(path:string,check:()=>void):Promise<MirrorStartupCutoffData> {
+export async function captureMirrorStartupCutoffNative(path:string,check:()=>void,fullPrefix=false):Promise<MirrorStartupCutoffData> {
  nativeOnly();check();const first=await MirrorFileWindow.read(path,0n,1);check();const offset=first.generation.size;
  if(offset<0n||offset>=(1n<<63n))throw new RangeError('Mirror startup EOF is outside nonnegative i64');
  if(offset>0n){
@@ -16,7 +16,7 @@ export async function captureMirrorStartupCutoffNative(path:string,check:()=>voi
   if(!sameMirrorStartupStamp(first.generation,last.generation))throw new MirrorFileChangedError();
   if(!last.isCompleteRecordBoundary(offset)){await first.verifyCurrent();check();return {path:first.path,offset,stamp:first.generation,anchor:null};}
  }
- const observed=await captureMirrorCursorAnchor(first.path,offset);check();
+ const observed=await captureMirrorCursorAnchor(first.path,offset,undefined,fullPrefix);check();
  if(!sameMirrorStartupStamp(first.generation,observed.anchor.stamp))throw new MirrorFileChangedError();
  await first.verifyCurrent();check();return {path:first.path,offset,stamp:first.generation,anchor:observed.anchor};
 }

@@ -1,6 +1,9 @@
+import {writeWindowsAtomicFile} from '../runtime/windows/windows-atomic-file.ts';
+import {WindowsFilePin} from '../runtime/windows/windows-file-pin.ts';
+import {windowsDpapiProtector} from '../runtime/windows/dpapi.ts';
 import {randomUUID} from 'node:crypto';
 import {open, realpath, rename, stat, unlink} from 'node:fs/promises';
-import {basename, dirname} from 'node:path';
+import {basename, dirname, isAbsolute} from 'node:path';
 import {types} from 'node:util';
 import {writePosixAtomicMarker} from '../runtime/atomic-marker.ts';
 import {formatRemoteUtcDateTime} from './datetime-format.ts';
@@ -55,14 +58,14 @@ function captureProtector(value: RestartHandoffProtector): RestartHandoffProtect
      typeof captured.unprotect !== 'function' || types.isProxy(captured.unprotect)) return malformed();
  return Object.freeze({protect: captured.protect as Transform, unprotect: captured.unprotect as Transform});
 }
-function capturePath(value: string): string {
+function capturePath(value: string, windows=false): string {
  // Absolute caller-supplied paths avoid discovering a storage location or
  // allowing process.chdir during protection to change the publication target.
  if (typeof value !== 'string') return malformed();
  if (value.length > MAX_RESTART_HANDOFF_BYTES) return tooLarge();
- if (!value.startsWith('/') || value.includes('\0') || /[\uD800-\uDFFF]/u.test(value)) return malformed();
+ if (!(windows?isAbsolute(value):value.startsWith('/')) || value.includes('\0') || /[\uD800-\uDFFF]/u.test(value)) return malformed();
  if (Buffer.byteLength(value) > MAX_RESTART_HANDOFF_BYTES) return tooLarge();
- if (process.platform === 'win32') throw new RestartHandoffPersistenceError('UnsupportedPlatform');
+ if ((process.platform === 'win32') !== windows) throw new RestartHandoffPersistenceError('UnsupportedPlatform');
  return value;
 }
 function captureContext(binding: RestartHandoffBinding, now: RemoteUtcDateTime): {
@@ -120,21 +123,22 @@ async function io<T>(code: ErrorCode, operation: () => Promise<T>): Promise<T> {
 }
 /** Returns true only after actual protected-envelope publication completes.
  * Empty projects return false without inspecting context/path/protector or IO. */
-export async function writePosixRestartHandoff(
+async function writeRestartHandoff(
  path: string, projects: readonly RestartHandoffProject[], binding: RestartHandoffBinding,
- now: RemoteUtcDateTime, protector: RestartHandoffProtector,
+ now: RemoteUtcDateTime, protector: RestartHandoffProtector, windows=false,
 ): Promise<boolean> {
  const plaintext = encodeRestartHandoffPayload(projects, binding, now);
  if (plaintext === null) return false;
- const destination = capturePath(path), {protect} = captureProtector(protector);
+ const destination = capturePath(path,windows), {protect} = captureProtector(protector);
  const ciphertext = await transform(protect, Buffer.from(plaintext, 'utf8'), MAX_RESTART_HANDOFF_BYTES, 'ProtectionFailed');
  const envelope = encodeRestartHandoffEnvelope(ciphertext.toString('base64'));
  // Protection and the complete serialized envelope cap precede mkdir/open.
- await io('PublicationFailed', () => writePosixAtomicMarker(destination, envelope));
+ await io('PublicationFailed', () => windows?writeWindowsAtomicFile(destination,envelope):writePosixAtomicMarker(destination, envelope));
  return true;
 }
 async function readBounded(path: string): Promise<Buffer> {
- const handle = await io('ReadFailed', () => open(path, 'r'));
+ const pin=process.platform==='win32'?WindowsFilePin.acquire(path,'file',true):undefined;
+ let handle;try{handle=await io('ReadFailed', () => open(path, 'r'));}catch(error){pin?.close();throw error;}
  let result: Buffer | undefined, failed = false, primary: unknown;
  try {
   const metadata = await io('ReadFailed', () => handle.stat());
@@ -150,7 +154,7 @@ async function readBounded(path: string): Promise<Buffer> {
   if (total > MAX_RESTART_HANDOFF_BYTES) tooLarge();
   result = bytes.subarray(0, total);
  } catch (error) { failed = true; primary = error; }
- try { await io('ReadFailed', () => handle.close()); }
+ try { try{await io('ReadFailed', () => handle.close());}finally{pin?.close();} }
  catch (error) { if (!failed) { failed = true; primary = error; } }
  if (failed) throw primary;
  return result!;
@@ -168,7 +172,7 @@ async function validateClaim(
   if (project.root === '') throw new RestartHandoffPersistenceError('ProjectRootUnavailable');
   // Raw concatenation preserves symlink/.. traversal; path.resolve/join would
   // normalize it lexically and can change the directory selected by Rust.
-  const input = project.root.startsWith('/') ? project.root : rootBase + '/' + project.root;
+  const input = isAbsolute(project.root) ? project.root : rootBase + '/' + project.root;
   const root = await io('ProjectRootUnavailable', () => realpath(input));
   const metadata = await io('ProjectRootUnavailable', () => stat(root));
   if (!metadata.isDirectory()) throw new RestartHandoffPersistenceError('ProjectRootUnavailable');
@@ -179,13 +183,13 @@ async function validateClaim(
 /** Rename claims only the current pathname entry. This is not global replay
  * protection, hostile-filesystem containment, or a restoration capability.
  * Results are withheld until the claimed entry has actually been removed. */
-export async function claimPosixRestartHandoff(
+async function claimRestartHandoff(
  resumeRequested: boolean, path: string, binding: RestartHandoffBinding,
- now: RemoteUtcDateTime, protector: RestartHandoffProtector,
+ now: RemoteUtcDateTime, protector: RestartHandoffProtector, windows=false,
 ): Promise<readonly RestartHandoffProject[]> {
  if (typeof resumeRequested !== 'boolean') return malformed();
  if (!resumeRequested) return Object.freeze([]);
- const source = capturePath(path), {binding: capturedBinding, now: capturedNow} = captureContext(binding, now);
+ const source = capturePath(path,windows), {binding: capturedBinding, now: capturedNow} = captureContext(binding, now);
  const {unprotect} = captureProtector(protector);
  // Async context pinning only: no environment variable or storage discovery.
  let rootBase: string;
@@ -205,3 +209,8 @@ export async function claimPosixRestartHandoff(
  if (failed) throw primary;
  return result!;
 }
+
+export function writePosixRestartHandoff(path:string,projects:readonly RestartHandoffProject[],binding:RestartHandoffBinding,now:RemoteUtcDateTime,protector:RestartHandoffProtector):Promise<boolean>{return writeRestartHandoff(path,projects,binding,now,protector);}
+export function claimPosixRestartHandoff(resume:boolean,path:string,binding:RestartHandoffBinding,now:RemoteUtcDateTime,protector:RestartHandoffProtector):Promise<readonly RestartHandoffProject[]>{return claimRestartHandoff(resume,path,binding,now,protector);}
+export function writeWindowsRestartHandoff(path:string,projects:readonly RestartHandoffProject[],binding:RestartHandoffBinding,now:RemoteUtcDateTime):Promise<boolean>{return writeRestartHandoff(path,projects,binding,now,windowsDpapiProtector(),true);}
+export function claimWindowsRestartHandoff(resume:boolean,path:string,binding:RestartHandoffBinding,now:RemoteUtcDateTime):Promise<readonly RestartHandoffProject[]>{return claimRestartHandoff(resume,path,binding,now,windowsDpapiProtector(),true);}

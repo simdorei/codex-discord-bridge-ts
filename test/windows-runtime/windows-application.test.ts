@@ -9,47 +9,61 @@ import test from 'node:test';
 import {setTimeout as delay} from 'node:timers/promises';
 import {WebSocketServer, type WebSocket} from 'ws';
 import {OwnedPortableAppServerProcess} from '../../src/app-server/portable-process.ts';
+import {PortableResidentLifecycle} from '../../src/app-server/portable-resident-lifecycle.ts';
 import {loadRuntimeConfig} from '../../src/config/runtime.ts';
 import {RecommendedGateway} from '../../src/discord/gateway/recommended.ts';
 import {runLocalRuntimeApplication} from '../../src/runtime/discord-runtime/local-application.ts';
 import {RuntimeStopSignal} from '../../src/runtime/discord-runtime/stop-signal.ts';
 import {WindowsRuntimeInstance} from '../../src/runtime/windows/windows-runtime-instance.ts';
-import {ownedWorkerUsage} from '../../src/runtime/owned-worker-slot.ts';
+import {OwnedWorkerSlot,ownedWorkerUsage} from '../../src/runtime/owned-worker-slot.ts';
+import {openInitialized} from '../../src/store/owned-driver.ts';
 
-const message = (id: string, content: string, user = '2') => ({
+const message = (id: string, content: string, user = '2',channel='7') => ({
   attachments: [], author: {id: user, username: 'fixture', discriminator: '0', bot: user === '9'},
-  channel_id: '7', content, embeds: [], id, type: 0, mention_everyone: false,
+  channel_id: channel, content, embeds: [], id, type: 0, mention_everyone: false,
   mention_roles: [], mentions: [], pinned: false, timestamp: '2026-10-18T00:00:00+00:00', tts: false,
 });
 const ready = {application: {id: '4', flags: 0}, guilds: [], resume_gateway_url: 'wss://gateway.discord.gg',
   session_id: 'offline', user: {id: '9', username: 'fixture', discriminator: '0', mfa_enabled: false}, v: 10};
 const provider = `import readline from 'node:readline';
-const emit=v=>process.stdout.write(JSON.stringify(v)+'\\n');let turn=null;
+const emit=v=>process.stdout.write(JSON.stringify(v)+'\\n');const turns=new Map();let next=0;
 readline.createInterface({input:process.stdin}).on('line',line=>{
  const m=JSON.parse(line);if(m.id===undefined)return;let result={};
  if(m.method==='model/list')result={data:[]};
- if(m.method==='thread/read'||m.method==='thread/resume')result={thread:{id:'fixture-thread',turns:turn?[turn]:[]}};
+ const thread=m.params?.threadId??'fixture-thread';let turn=turns.get(thread);
+ if(m.method==='thread/read'||m.method==='thread/resume')result={thread:{id:thread,status:{type:turn?.status==='inProgress'?'active':'idle',activeFlags:[]},turns:turn?[turn]:[]}};
  if(m.method==='turn/start'){
-  turn={id:'fixture-turn',status:'inProgress',items:[]};emit({id:m.id,result:{turn}});
-  emit({method:'turn/started',params:{threadId:'fixture-thread',turn}});
-  setTimeout(()=>{turn={id:'fixture-turn',status:'completed',items:[{id:'answer',type:'agentMessage',phase:'final_answer',text:'WINDOWS_FINAL_OK'}]};
-   emit({method:'item/completed',params:{threadId:'fixture-thread',turnId:turn.id,item:turn.items[0]}});
-   emit({method:'turn/completed',params:{threadId:'fixture-thread',turn}});},100);return;
+  turn={id:'fixture-turn-'+(++next),status:'inProgress',items:[]};turns.set(thread,turn);emit({id:m.id,result:{turn}});
+  emit({method:'turn/started',params:{threadId:thread,turn}});
+  if(!JSON.stringify(m.params).includes('HOLD_FOR_STOP'))setTimeout(()=>{turn={id:turn.id,status:'completed',items:[{id:'answer',type:'agentMessage',phase:'final_answer',text:'WINDOWS_FINAL_OK '+thread+' '+turn.id}]};turns.set(thread,turn);
+   emit({method:'item/completed',params:{threadId:thread,turnId:turn.id,item:turn.items[0]}});
+   emit({method:'turn/completed',params:{threadId:thread,turn}});},100);return;
  }
+ if(m.method==='turn/interrupt'&&turn){turn={...turn,status:'interrupted'};turns.set(thread,turn);emit({id:m.id,result:{}});emit({method:'turn/completed',params:{threadId:thread,turn}});return;}
  emit({id:m.id,result});
 });`;
 
-test('Windows application receives Discord commands, delivers a final and releases native owners',
-  {skip: process.platform !== 'win32', timeout: 45000}, async t => {
+for(const parallel of [false,true])test(parallel?'three simultaneous threads deliver repeated finals, stop one turn and resume without leaked owners':'Windows application receives Discord commands, delivers a final and releases native owners',
+  {skip: process.platform !== 'win32', timeout: parallel?120000:45000}, async t => {
   const root = await mkdtemp(join(tmpdir(), 'cdr-windows-app-')), state = join(root, 'state.sqlite');
   await mkdir(join(root, 'project'));
   const db = new DatabaseSync(state);
   try {
     db.exec('CREATE TABLE threads(id TEXT PRIMARY KEY,title TEXT,cwd TEXT,updated_at INTEGER,rollout_path TEXT,model TEXT,reasoning_effort TEXT,tokens_used INTEGER,archived INTEGER,archived_at INTEGER)');
     db.prepare("INSERT INTO threads(id,title,cwd,updated_at,archived) VALUES('fixture-thread','Fixture',?,1,0)").run(join(root, 'project'));
+    if(parallel)for(const id of ['fixture-thread-8','fixture-thread-9'])db.prepare('INSERT INTO threads(id,title,cwd,updated_at,archived) VALUES(?,?,?,1,0)').run(id,id,join(root,'project'));
   } finally { db.close(); }
   await writeFile(join(root, 'bridge.json'), JSON.stringify({selected_thread_id: 'fixture-thread'}));
+  const channels=parallel?['7','8','9']:['7'],threadFor=(c:string)=>c==='7'?'fixture-thread':'fixture-thread-'+c;
+  if(parallel){const mirror=await openInitialized(join(root,'discord_mirror.sqlite'));for(const c of channels)mirror.prepare('INSERT INTO mirror_threads VALUES(?,?,?,?,?,?)').run(threadFor(c),'project','Fixture',BigInt(c),BigInt(c),1);mirror.close();}
   const sent: string[] = [], calls: string[] = [], processes: OwnedPortableAppServerProcess[] = [];
+  const refusals=new Set<string>(),runWorker=OwnedWorkerSlot.prototype.run;
+  t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof runWorker>){
+    const origin=new Error().stack,pending=runWorker.apply(this,args);
+    void pending.catch(error=>{refusals.add(String(error)+' '+args[0].pathname+'\n'+origin);});return pending;
+  });
+  const executeQueueTurn=PortableResidentLifecycle.prototype.executeQueueTurn;
+  t.mock.method(PortableResidentLifecycle.prototype,'executeQueueTurn',function(this:PortableResidentLifecycle,...args:Parameters<typeof executeQueueTurn>){const pending=executeQueueTurn.apply(this,args);void pending.catch(error=>{refusals.add('QUEUE START '+String(error)+'\n'+(error?.stack??'')+'\nCAUSE: '+String(error?.cause));});return pending;});
   let registered = false, sequence = 1, reply = 1000, peer: WebSocket | undefined;
   const http = createServer((req, res) => {
     assert.equal(req.headers.authorization, undefined); let raw = '';
@@ -87,34 +101,51 @@ test('Windows application receives Discord commands, delivers a final and releas
     processes.push(child); return child;
   });
   const config = loadRuntimeConfig(new Map([
-    ['DISCORD_BOT_TOKEN', 'synthetic-only'], ['DISCORD_ALLOWED_CHANNEL_IDS', '7'], ['DISCORD_ALLOWED_USER_IDS', '2'],
-    ['DISCORD_SESSION_MIRROR', '0'], ['DISCORD_STARTUP_NOTIFY', '0'], ['DISCORD_ENABLE_MESSAGE_CONTENT', '1'],
+    ['DISCORD_BOT_TOKEN', 'synthetic-only'], ['DISCORD_ALLOWED_CHANNEL_IDS', channels.join(',')], ['DISCORD_ALLOWED_USER_IDS', '2'],
+    ['DISCORD_SESSION_MIRROR', '1'], ['DISCORD_ENABLE_HOST_COMMANDS', '1'], ['DISCORD_STARTUP_NOTIFY', '0'], ['DISCORD_ENABLE_MESSAGE_CONTENT', '1'],
   ]));
   let failed: unknown, finished = false;
   const running = runLocalRuntimeApplication(config, {HOME: root, CODEX_EXE: process.execPath, CODEX_HOME: root,
     CODEX_STATE_DB: state, CODEX_BRIDGE_STATE: join(root, 'bridge.json')}, root, 'windows-fixture')
     .then(() => {finished = true;}, error => {failed = error; finished = true;});
   const until = async (condition: () => boolean, label: string) => {
-    const end = performance.now() + 20000;
+    const end = performance.now() + (parallel?35000:20000);
     while (!condition()) {
       if (failed !== undefined) throw failed;
       assert.ok(!finished, `Runtime exited before ${label}`);
-      assert.ok(performance.now() < end, `${label}: ${JSON.stringify(sent)}`); await delay(10);
+      if(performance.now()>=end){const evidence=`${label}: ${JSON.stringify(sent.filter(s=>!s.includes('Codex Discord Remote')&&!s.startsWith('[2/2]')))}\n${[...refusals].join('\n')}`;process.stderr.write(evidence+'\n');assert.fail(evidence);}await delay(10);
     }
   };
-  const send = (id: string, content: string) => peer!.send(JSON.stringify({op: 0, t: 'MESSAGE_CREATE', s: sequence++, d: message(id, content)}));
+  const send = (id: string, content: string,channel='7') => peer!.send(JSON.stringify({op: 0, t: 'MESSAGE_CREATE', s: sequence++, d: message(id, content,'2',channel)}));
+  const queueMatches=(sql:string,expected:boolean)=>{let db:DatabaseSync|undefined;try{db=new DatabaseSync(join(root,'discord_mirror.sqlite'),{readOnly:true});return (db.prepare(sql).get()!==undefined)===expected;}catch(error){if((error as {errcode?:number}).errcode===5)return false;throw error;}finally{db?.close();}};
   try {
     const startedAt = performance.now();
     await until(() => registered, 'command registration');
     const registeredAt = performance.now();
     send('101', '!help'); await until(() => sent.length > 0, 'help response');
     const promptAt = performance.now();
-    send('102', 'fixture prompt'); await until(() => sent.some(text => text.includes('WINDOWS_FINAL_OK')), 'final delivery');
+    const rssStart=process.memoryUsage().rss;let peakRss=rssStart;const sample=setInterval(()=>{peakRss=Math.max(peakRss,process.memoryUsage().rss);},100);
+    try{
+    const rounds=parallel?3:1;
+    for(let round=0;round<rounds;round++){
+      for(const channel of channels)send(String(102+round*10+Number(channel)),'fixture prompt '+round,channel);
+      await until(()=>channels.every(c=>sent.filter(text=>text.includes('WINDOWS_FINAL_OK '+threadFor(c)+' ')).length===round+1),'all finals round '+round);
+    }
+    if(parallel){
+      send('500','HOLD_FOR_STOP','7');
+      await until(()=>queueMatches("SELECT 1 FROM codex_turn_queue WHERE target_thread_id='fixture-thread' AND state='running'",true),'held fixture turn starts');
+      send('501','!stop','7');await until(()=>sent.some(text=>/Stop request|Stop accepted|stop request|정지|중지/.test(text)),'stop acknowledgement');
+      await until(()=>queueMatches("SELECT 1 FROM codex_turn_queue WHERE target_thread_id='fixture-thread' AND state IN ('running','starting')",false),'stopped job leaves active queue');
+      send('502','fixture after stop','7');await until(()=>sent.filter(text=>text.includes('WINDOWS_FINAL_OK fixture-thread ')).length===4,'final after stop');
+    }
+    }finally{clearInterval(sample);}
     const finalAt = performance.now();
     assert.ok(calls.includes('app-server'));
     stop.abort(); await running; assert.equal(failed, undefined);
-    t.diagnostic(JSON.stringify({startupMs: Math.round(registeredAt - startedAt), finalMs: Math.round(finalAt - promptAt), shutdownMs: Math.round(performance.now() - finalAt)}));
-    assert.equal(processes.length, 1); assert.equal(processes[0]!.exitConfirmed, true);
+    t.diagnostic(JSON.stringify({parallel,threads:channels.length,startupMs: Math.round(registeredAt - startedAt), workMs: Math.round(finalAt - promptAt), shutdownMs: Math.round(performance.now() - finalAt),rssStart,rssPeak:peakRss,rssEnd:process.memoryUsage().rss}));
+    // The automatic mirror owns a separate reader session in addition to the
+    // turn provider. Both native owners must really exit before root release.
+    assert.equal(processes.length, 2); assert.ok(processes.every(child => child.exitConfirmed));
     assert.ok(Object.values(ownedWorkerUsage()).every(count => count === 0));
     const instance = await WindowsRuntimeInstance.acquire(root); await instance.release();
     assert.ok(!(await readdir(root)).some(name => name.endsWith('.runtime.lock') || name.endsWith('.heartbeat') || name.endsWith('.drain.identity')));

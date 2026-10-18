@@ -79,6 +79,8 @@ export interface RuntimeExecutorDependencies{
  * A native server, queue backend and live gateway still require bootstrap and
  * ownership qualification; this constructor does not start any of them. */
 export class RuntimeCommandExecutor implements MessageBusinessServices{
+ #hostControl:((action:'ForceRestartCodex'|'HostReboot',signal?:AbortSignal)=>Promise<ActionResult>)|undefined;
+ #archiveDelete:((reference:string,actor:{discordMessageId:bigint|null;channelId:bigint;userId:bigint},signal?:AbortSignal)=>Promise<ActionResult>)|undefined;
  readonly #bridgeOwner:NativeBridgeStateOwner;readonly #busySteer:NativeBusySteerServices;
  #recovery:AdmittedRecoverExecutor|null=null;
  readonly #stopWorkerFactory:(report:(event:StopWorkerFailure)=>void)=>StopControlWorker;
@@ -141,6 +143,8 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
  }
  /** Startup-only installation of an explicitly owned recovery controller. */
  configureRecovery(executor:AdmittedRecoverExecutor):void{if(this.#recovery!==null)throw new InvalidActionRequestError('recovery controller is already configured');AdmittedRecoverExecutor.prototype.requireDatabase.call(executor,this.#database);AdmittedRecoverExecutor.prototype.configureBridge.call(executor,this.#bridgeOwner);this.#recovery=executor;}
+ configureHostControl(control:(action:'ForceRestartCodex'|'HostReboot',signal?:AbortSignal)=>Promise<ActionResult>):void{if(this.#hostControl!==undefined)throw new InvalidActionRequestError('host control already configured');this.#hostControl=control;}
+ configureArchiveDeletion(control:(reference:string,actor:{discordMessageId:bigint|null;channelId:bigint;userId:bigint},signal?:AbortSignal)=>Promise<ActionResult>):void{if(this.#archiveDelete!==undefined)throw new InvalidActionRequestError('archive deletion already configured');this.#archiveDelete=control;}
  async #syncMirror(channel:bigint,limit:bigint|null,signal?:AbortSignal):Promise<ActionResult>{
   if(this.#mirrorSync===null)throw new ActionExecutionError('Unsupported','mirror sync transport is not configured');
   try{return snapshotActionResult({text:formatMirrorSyncResult(await this.#mirrorSync.sync(channel,limit,signal)),waitsForFinal:false,ui:null});}
@@ -171,6 +175,7 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
    else if('Interview'in action)result=await this.#prompts.interview(actor.channelId,actor.userId,actor.discordMessageId,actor.autoQueueWhenBusy,action.Interview.prompt,signal,key);
    else if('Settings'in action||'AutoReserve'in action)result=await this.#settings.execute(actor,action,key,signal);
    else if('Archive'in action){if(this.#archive===null)throw new MissingActionAppServerError();result=await this.#archive.execute(actor,action.Archive.reference,key,signal);}
+   else if('DeleteArchiveConfirm'in action){if(this.#archiveDelete===undefined)throw new ActionExecutionError('Unsupported','archive deletion is not configured');result=await this.#archiveDelete(action.DeleteArchiveConfirm.reference,actor,signal);}
    else if('Resume'in action){if(this.#resume===null)throw new MissingActionAppServerError();result=await this.#resume.execute(actor,action.Resume.reference,key,signal);}
    else if('Stop'in action)result=await this.#stop.execute(actor,action.Stop.reference,key,signal);
    else if('Recover'in action){if(this.#recovery===null)throw new ActionExecutionError('Unsupported','recovery controller is not configured');result=await AdmittedRecoverExecutor.prototype.execute.call(this.#recovery,{key,channelId:actor.channelId,ownerUserId:actor.userId,eventId:actor.discordMessageId,reference:action.Recover.reference},signal);}
@@ -180,7 +185,8 @@ export class RuntimeCommandExecutor implements MessageBusinessServices{
    else if('Open'in action)result=await this.#open.open(action.Open.reference,action.Open.abort,signal);
    else if('DiscardRequest'in action)throw new InvalidActionRequestError('discard-request requires authenticated message custody and live normal admission');
    else result=await this.#basic.execute(action,actor,signal);
-  }else if(action==='MirrorCheck')result=await this.#inspect(actor.channelId,null,false,signal);
+  }else if(action==='ForceRestartCodex'||action==='HostReboot'){if(this.#hostControl===undefined)throw new ActionExecutionError('Unsupported','Windows host controller is not configured');result=await this.#hostControl(action,signal);}
+  else if(action==='MirrorCheck')result=await this.#inspect(actor.channelId,null,false,signal);
   else if(action==='Approval')result=await this.#controls.approval(actor.channelId,actor.userId,signal);
   else result=await this.#basic.execute(action,actor,signal);
   signal?.throwIfAborted();return snapshotActionResult(result);

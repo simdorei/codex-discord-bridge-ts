@@ -20,6 +20,11 @@ const epoch='a'.repeat(32),occurrence=new Uint8Array(16),domain='server-request/
 const observed=captureReceiverOperation({op:'observed-completion',thread:'thread',turn:'turn'});
 const jobs=captureReceiverOperation({op:'all-jobs'});
 const mapping=captureReceiverOperation({op:'channel-mapping',channel:1n});
+test('sealed non-admission proof requires exact next ID, retired prefix and original epoch',()=>{
+ const body={kind:'sealed-no-admission' as const,id:1,retiredThrough:0};assert.deepEqual(captureReceiverReply(receiverFrame(epoch,body),epoch),body);
+ for(const value of [{...body,id:0},{...body,id:2},{...body,retiredThrough:-1},{...body,retiredThrough:1},{...body,id:1.5},{...body,extra:true}])assert.throws(()=>captureReceiverReply({version:1,epoch,body:value},epoch),TypeError);
+ assert.throws(()=>captureReceiverReply({version:1,epoch:'b'.repeat(32),body},epoch),TypeError);
+});
 const chunk=captureReceiverOperation({op:'server-prompt-chunk',channel:1n,logicalKey:'request\0raw',chunkIndex:0n,content:'prompt',components:'[]'});
 function job():PersistentPromptReadJob{return {jobId:'job',targetThreadId:'thread',channelId:-(1n<<63n),ownerUserId:null,discordMessageId:(1n<<63n)-1n,
  appServerGeneration:-1n,executionGeneration:null,turnObservationGeneration:2n,goalWaiting:false,prompt:'🙂\0',queued:false,ackSent:true,state:'Running',attemptCount:-1n,

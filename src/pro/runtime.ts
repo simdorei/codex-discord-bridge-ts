@@ -1,4 +1,5 @@
-import {joinRuntimePath} from '../runtime/runtime-paths/path-text.ts';import {types} from 'node:util';
+import {types} from 'node:util';
+import {runtimePluginPaths} from './plugin-paths.ts';
 import {PortableResidentLifecycle} from '../app-server/portable-resident-lifecycle.ts';
 import {gatewayOwnField as own} from '../discord/gateway/values.ts';
 import {requireDiscordText} from '../discord/text.ts';
@@ -19,7 +20,7 @@ function callback(value:unknown):asserts value is (...args:any[])=>unknown{if(ty
 export class ProPromptRuntime{
  readonly #state:string;readonly #executable:string;readonly #manifest:string;readonly #server:PortableResidentLifecycle;readonly #remote:ProRemoteConnection|null;readonly #render:(e:unknown)=>string;readonly #report:(d:ProRuntimeDiagnostic)=>void;
  #generation:bigint;#fingerprint:string|null;#captureError:string|null;
- private constructor(token:symbol,input:ProRuntimeOptions,generation:bigint,fingerprint:string|null,error:string|null){if(token!==TOKEN)throw new TypeError('Use ProPromptRuntime.capture');this.#state=input.stateDatabase;this.#executable=input.executable;this.#manifest=joinRuntimePath(input.root,'plugins/codex-discord-remote/.codex-plugin/plugin.json',process.platform==='win32'?'win32':'posix');this.#server=input.server;this.#remote=input.remote;this.#render=input.render;this.#report=input.report;this.#generation=generation;this.#fingerprint=fingerprint;this.#captureError=error;}
+ private constructor(token:symbol,input:ProRuntimeOptions,generation:bigint,fingerprint:string|null,error:string|null,manifest:string){if(token!==TOKEN)throw new TypeError('Use ProPromptRuntime.capture');this.#state=input.stateDatabase;this.#executable=input.executable;this.#manifest=manifest;this.#server=input.server;this.#remote=input.remote;this.#render=input.render;this.#report=input.report;this.#generation=generation;this.#fingerprint=fingerprint;this.#captureError=error;}
  static async capture(input:ProRuntimeOptions,signal?:AbortSignal):Promise<ProPromptRuntime>{
   signal?.throwIfAborted();const root=own(input,'root'),state=own(input,'stateDatabase'),executable=own(input,'executable'),server=own(input,'server') as PortableResidentLifecycle,rawRemote=own(input,'remote'),render=own(input,'render'),report=own(input,'report');
   for(const value of [root,state,executable]){requireDiscordText(value);if(value.includes('\0'))throw new TypeError('NUL Pro runtime path');}callback(render);callback(report);
@@ -28,7 +29,8 @@ export class ProPromptRuntime{
   const options={root:root as string,stateDatabase:state as string,executable:executable as string,server,remote,render:render as (e:unknown)=>string,report:report as (d:ProRuntimeDiagnostic)=>void};
   let fingerprint:string|null=null,error:string|null=null;
   try{fingerprint=(await captureProPlugins(options.executable,signal)).fingerprint;}catch(cause){signal?.throwIfAborted();const d=ownedProDiagnostic(cause);if(d===null)throw cause;error=d.internalDetail;}
-  signal?.throwIfAborted();return new ProPromptRuntime(TOKEN,options,generation,fingerprint,error);
+  const {manifest}=await runtimePluginPaths(options.root);
+  signal?.throwIfAborted();return new ProPromptRuntime(TOKEN,options,generation,fingerprint,error,manifest);
  }
  async #preflight(signal?:AbortSignal){
   const current=await captureProPlugins(this.#executable,signal);const expected=await expectedRemotePluginVersion(this.#manifest,signal);signal?.throwIfAborted();

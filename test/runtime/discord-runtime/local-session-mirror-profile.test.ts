@@ -8,7 +8,7 @@ import {storeFixture} from '../../helpers/store-fixture.ts';
 import {localMirrorProfile} from '../../helpers/local-mirror-profile.ts';
 import {loadRuntimeConfig} from '../../../src/config/runtime.ts';
 import {openInitialized} from '../../../src/store/owned-driver.ts';
-import {captureLocalSessionMirrorProfile,requireLocalSessionMirrorPaths,requireLocalSessionMirrorDatabase,prepareLocalSessionMirrorSchemas} from '../../../src/runtime/discord-runtime/local-session-mirror-profile.ts';
+import {createVerifiedLocalSessionMirrorProfile,captureLocalSessionMirrorProfile,requireLocalSessionMirrorPaths,requireLocalSessionMirrorDatabase,prepareLocalSessionMirrorSchemas} from '../../../src/runtime/discord-runtime/local-session-mirror-profile.ts';
 import {runLocalRuntimeApplication,LocalRuntimeUnsupportedError} from '../../../src/runtime/discord-runtime/local-application.ts';
 import {PosixRuntimeInstance,RUNTIME_LOCK_NAME} from '../../../src/runtime/runtime-instance.ts';
 import {ownedWorkerUsage} from '../../../src/runtime/owned-worker-slot.ts';
@@ -17,10 +17,9 @@ import {NativeMirrorCursorStore} from '../../../src/runtime/session-mirror/curso
 import {NativeMirrorStartupIntentStore,MirrorStartupIntentWriteUnconfirmedError} from '../../../src/runtime/session-mirror/startup-intent-store.ts';
 
 const config=()=>loadRuntimeConfig(new Map([['DISCORD_BOT_TOKEN','offline-fixture'],['DISCORD_ALLOW_ALL_CHANNELS','1']]));
-test('default local application still rejects mirror without a programmatic profile before reading environment',async()=>{
- let hooks=0;const env=new Proxy({},{ownKeys(){hooks++;assert.fail('No environment reads');}});
- await assert.rejects(runLocalRuntimeApplication(config(),env,'/unused','test'),LocalRuntimeUnsupportedError);
- assert.equal(hooks,0);assert.equal(mirrorRunnerBusy(),false);
+test('default local mirror uses complete-prefix continuity without inventing a producer assertion',()=>{
+ const profile=createVerifiedLocalSessionMirrorProfile({stateDb:'/state.sqlite',mirrorDb:'/root/discord_mirror.sqlite'});
+ assert.equal(profile.producer.kind,'VerifiedRolloutPrefix');assert.equal(profile.worker.bootstrap.fullPrefix,true);assert.equal(profile.worker.bootstrap.kind,'SkipExistingHistory');assert.equal(mirrorRunnerBusy(),false);
 });
 
 test('missing policy, disabled-config mismatch and invalid bounds reject before startup effects',async()=>{

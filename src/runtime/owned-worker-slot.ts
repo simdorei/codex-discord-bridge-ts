@@ -1,4 +1,5 @@
 import {performance} from 'node:perf_hooks';
+import {AsyncLocalStorage} from 'node:async_hooks';
 import {Worker,isMainThread} from 'node:worker_threads';
 import {registerStoreWorker,constructStoreWorker,releaseStoreWorker,type StoreWorkerRegistration} from './store-worker-authority.ts';
 export class OwnedWorkerBusyError extends Error {constructor(){super('context reader is still running; no extra reader started');this.name='OwnedWorkerBusyError';}}
@@ -39,15 +40,26 @@ export function takeOwnedWorkerAdmissionRefusal(slot:OwnedWorkerSlot,pending:Pro
 export const OWNED_COMPLETION_QUEUE_LIMIT=128;
 /** Periodic read owners only: one active plus at most two queued globally. */
 export const OWNED_MAINTENANCE_QUEUE_LIMIT=2;
+/** Installed ingress waits only for native capacity, never replays a worker.
+ * Completion persistence keeps priority and the eight active-slot cap is intact. */
+export const OWNED_CONTROL_ADMISSION_QUEUE_LIMIT=8;
+export const OWNED_ADMISSION_QUEUE_LIMITS=Object.freeze({Background:16,Control:8,Observation:8,Discovery:2,Maintenance:2});
+const admissionContext=new AsyncLocalStorage<boolean>();
+/** The installed application opts into bounded pre-submission backpressure.
+ * Low-level adapters keep their explicit zero-queue contracts outside this
+ * lifetime. A waiting request is never a submitted or replayed native effect. */
+export function withOwnedWorkerBackpressure<T>(run:()=>T):T{return admissionContext.run(true,run);}
 type CompletionWaiter={grant(release:()=>void):void};
 type CompletionClass='Control'|'Observation'|'Maintenance';
 const completions:Record<CompletionClass,CompletionWaiter[]>={Control:[],Observation:[],Maintenance:[]};
-function take(kind:OwnedWorkerClass):()=>void{occupied[kind]++;let released=false;return()=>{if(released)return;released=true;occupied[kind]--;if(kind==='Control'||kind==='Observation'||kind==='Maintenance')pump(kind);};}
-function pump(kind:CompletionClass):void{const queue=completions[kind];while(occupied[kind]<OWNED_WORKER_LIMITS[kind]&&queue.length>0)queue.shift()!.grant(take(kind));}
-function acquire(kind:OwnedWorkerClass):(()=>void)|null{if(!isMainThread)throw new TypeError('Native workers must be submitted by the main runtime owner');if(occupied[kind]>=OWNED_WORKER_LIMITS[kind]||((kind==='Control'||kind==='Observation'||kind==='Maintenance')&&completions[kind].length>0))return null;return take(kind);}
-function waitCompletion(kind:CompletionClass,timeoutMs:number,signal?:AbortSignal):Promise<()=>void>{
- if(!isMainThread)throw new TypeError('Native workers must be submitted by the main runtime owner');signal?.throwIfAborted();const queue=completions[kind];
- if(queue.length>=(kind==='Maintenance'?OWNED_MAINTENANCE_QUEUE_LIMIT:OWNED_COMPLETION_QUEUE_LIMIT))return Promise.reject(new OwnedWorkerBudgetError());
+const admissions:Record<OwnedWorkerClass,CompletionWaiter[]>={Background:[],Control:[],Observation:[],Discovery:[],Maintenance:[]};
+function priority(kind:OwnedWorkerClass):CompletionWaiter[]|undefined{return kind==='Control'||kind==='Observation'||kind==='Maintenance'?completions[kind]:undefined;}
+function take(kind:OwnedWorkerClass):()=>void{occupied[kind]++;let released=false;return()=>{if(released)return;released=true;occupied[kind]--;pump(kind);};}
+function pump(kind:OwnedWorkerClass):void{while(occupied[kind]<OWNED_WORKER_LIMITS[kind]){const entry=priority(kind)?.shift()??admissions[kind].shift();if(entry===undefined)break;entry.grant(take(kind));}}
+function acquire(kind:OwnedWorkerClass):(()=>void)|null{if(!isMainThread)throw new TypeError('Native workers must be submitted by the main runtime owner');if(occupied[kind]>=OWNED_WORKER_LIMITS[kind]||admissions[kind].length>0||(priority(kind)?.length??0)>0)return null;return take(kind);}
+function waitCompletion(kind:OwnedWorkerClass,timeoutMs:number,signal?:AbortSignal,admission=false):Promise<()=>void>{
+ if(!isMainThread)throw new TypeError('Native workers must be submitted by the main runtime owner');signal?.throwIfAborted();const queue=admission?admissions[kind]:priority(kind)!;
+ if(queue.length>=(admission?OWNED_ADMISSION_QUEUE_LIMITS[kind]:kind==='Maintenance'?OWNED_MAINTENANCE_QUEUE_LIMIT:OWNED_COMPLETION_QUEUE_LIMIT))return Promise.reject(new OwnedWorkerBudgetError());
  return new Promise((resolve,reject)=>{
   let settled=false;const cleanup=()=>{clearTimeout(timer);signal?.removeEventListener('abort',abort);};
   const entry:CompletionWaiter={grant:release=>{if(settled){release();return;}settled=true;cleanup();resolve(release);}};
@@ -60,11 +72,12 @@ function waitCompletion(kind:CompletionClass,timeoutMs:number,signal?:AbortSigna
 /** One native worker owner. Timeout/abort settles the caller but does not release
  * the slot until native exit; late messages are never delivered to that caller. */
 export class OwnedWorkerSlot {
+ readonly #backpressure=admissionContext.getStore()===true;
  #worker:Worker|null=null;#idle:Promise<void>=Promise.resolve();#completion:Promise<unknown>|null=null;readonly #class:OwnedWorkerClass;
  constructor(kind:OwnedWorkerClass='Background'){if(kind!=='Background'&&kind!=='Control'&&kind!=='Observation'&&kind!=='Discovery'&&kind!=='Maintenance')throw new TypeError('Invalid native worker class');this.#class=kind;}
  get busy():boolean{return this.#worker!==null||this.#completion!==null;}
  join():Promise<void>{return this.#completion===null?this.#idle:this.#completion.then(()=>undefined,()=>undefined);}
- run(url:URL,workerData:unknown,timeoutMs:number,signal?:AbortSignal):Promise<unknown>{if(this.#completion!==null)return Promise.reject(new OwnedWorkerBusyError());return this.#run(url,workerData,timeoutMs,signal,false);}
+ run(url:URL,workerData:unknown,timeoutMs:number,signal?:AbortSignal):Promise<unknown>{if(this.#completion!==null)return Promise.reject(new OwnedWorkerBusyError());return this.#backpressure||admissionContext.getStore()===true?this.#queuedCompletion(this.#class,url,workerData,timeoutMs,signal,true):this.#run(url,workerData,timeoutMs,signal,false);}
  /** Only for trusted pure CPU modules with no external I/O or mutation. Caller
   * cancellation requests native termination; budget remains owned until exit.
   * Never use this method to make a blocked database/file operation look joined. */
@@ -73,6 +86,11 @@ export class OwnedWorkerSlot {
   * Used only to settle a privately owned original receipt after observed outcome. */
  runControlCompletion(url:URL,workerData:unknown,timeoutMs:number,signal?:AbortSignal):Promise<unknown>{
   if(this.#class!=='Control')throw new TypeError('Completion requires Control lane');return this.#queuedCompletion('Control',url,workerData,timeoutMs,signal);
+ }
+ /** Explicit installed ingress backpressure. This grants a native worker slot,
+  * not original-effect completion or replay authority. */
+ runControlAdmission(url:URL,workerData:unknown,timeoutMs:number,signal?:AbortSignal):Promise<unknown>{
+  if(this.#class!=='Control')throw new TypeError('Ingress admission requires Control lane');return this.#queuedCompletion('Control',url,workerData,timeoutMs,signal,true);
  }
  /** Original gap persistence may wait in its own bounded FIFO; reads never queue. */
  runObservationCompletion(url:URL,workerData:unknown,timeoutMs:number,signal?:AbortSignal):Promise<unknown>{
@@ -83,15 +101,15 @@ export class OwnedWorkerSlot {
  runMaintenanceRead(url:URL,workerData:unknown,timeoutMs:number,signal?:AbortSignal):Promise<unknown>{
   if(this.#class!=='Maintenance')throw new TypeError('Periodic read requires Maintenance lane');return this.#queuedCompletion('Maintenance',url,workerData,timeoutMs,signal);
  }
- #queuedCompletion(kind:CompletionClass,url:URL,workerData:unknown,timeoutMs:number,signal?:AbortSignal):Promise<unknown>{
+ #queuedCompletion(kind:OwnedWorkerClass,url:URL,workerData:unknown,timeoutMs:number,signal?:AbortSignal,admission=false):Promise<unknown>{
   if(this.busy)return Promise.reject(new OwnedWorkerBusyError());
   if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>2147483647)throw new TypeError('Expected bounded completion deadline');signal?.throwIfAborted();
   const executable=ownedWorkerModuleUrl(url,import.meta.url),registration=registerStoreWorker(executable,workerData);
-  const began=performance.now();const task=(async()=>{let release:(()=>void)|undefined,transferred=false;try{
-   release=await waitCompletion(kind,timeoutMs,signal);signal?.throwIfAborted();const left=Math.ceil(timeoutMs-(performance.now()-began));if(left<=0)throw new OwnedWorkerTimeoutError();
+  const began=performance.now();let transferred=false;const task=(async()=>{let release:(()=>void)|undefined;try{
+   release=await waitCompletion(kind,timeoutMs,signal,admission);signal?.throwIfAborted();const left=Math.ceil(timeoutMs-(performance.now()-began));if(left<=0)throw new OwnedWorkerTimeoutError();
    transferred=true;try{return await this.#run(executable,workerData,left,signal,false,release,registration);}finally{await this.#idle;}
   }finally{if(!transferred)releaseStoreWorker(registration,false);release?.();}})();
-  this.#completion=task;const clear=()=>{if(this.#completion===task)this.#completion=null;};void task.then(clear,clear);return task;
+  this.#completion=task;const clear=()=>{if(this.#completion===task)this.#completion=null;};void task.then(clear,error=>{if(!transferred&&error instanceof OwnedWorkerBudgetError)admissionRefusals.set(task,{slot:this,error});clear();});return task;
  }
  #run(url:URL,workerData:unknown,timeoutMs:number,signal:AbortSignal|undefined,terminateCpu:boolean,completionRelease?:()=>void,prepared?:StoreWorkerRegistration):Promise<unknown>{
   let registration=prepared,releaseBudget:(()=>void)|null|undefined,worker:Worker;
