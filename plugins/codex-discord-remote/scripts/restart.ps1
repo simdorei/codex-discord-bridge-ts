@@ -3,6 +3,7 @@ param(
     [string]$RepoRoot,
     [switch]$DryRun,
     [switch]$Immediate,
+    [switch]$Force,
     [switch]$Deferred,
     [string]$ExpectedBotIdentity,
     [string]$ExpectedRuntimeId,
@@ -23,12 +24,22 @@ if (Test-Path -LiteralPath $Supervisor) {
     $State = Get-Content -LiteralPath $Supervisor -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($State.version -ne 1 -or $State.root -ine $RepoRoot) { throw 'Supervisor binding differs.' }
     if ($DryRun) { $State | ConvertTo-Json -Compress; exit 0 }
-    if ($ExpectedBotIdentity) { throw 'Use -ExpectedRuntimeId for TS generation-bound control.' }
-    if ($QuietSeconds -ne 90 -or $WaitTimeoutSeconds -ne 900) { throw 'Custom legacy quiet/wait values are not supported by the TS supervisor. Its drain acknowledgement remains mandatory.' }
-    if ($DelaySeconds -gt 0) { Start-Sleep -Seconds $DelaySeconds }
-    $Action = if ($Immediate) { 'force_restart' } else { 'restart' }
+    $Identity = Get-Content -LiteralPath (Join-Path $RepoRoot '.codex_discord_rust.drain.identity') -Raw -Encoding UTF8 | ConvertFrom-StringData
+    if ($Identity.version -ne '1' -or $Identity.state -ne 'open' -or [int]$Identity.pid -ne $State.childPid) { throw 'Runtime identity differs.' }
+    if ($ExpectedBotIdentity) {
+        $OwnedProcess = Get-Process -Id $State.childPid -ErrorAction Stop
+        $Ticks = $OwnedProcess.StartTime.ToUniversalTime().Ticks
+        $RoundedTicks = $Ticks - ($Ticks % 10)
+        if ($ExpectedBotIdentity -ne "$($State.childPid)|$RoundedTicks") { throw 'Expected bot identity differs.' }
+    }
+    if ($ExpectedRuntimeId -and $ExpectedRuntimeId -ne $Identity.runtime_id) { throw 'Expected runtime generation differs.' }
+    $Action = if ($Force) { 'force_restart' } else { 'restart' }
     $ControlArguments = @($State.entry, '--supervisor-control', $Action, '--runtime-root', $RepoRoot)
-    if ($ExpectedRuntimeId) { $ControlArguments += @('--expected-runtime', $ExpectedRuntimeId) }
+    $ControlArguments += @('--expected-runtime', $Identity.runtime_id)
+    if (-not $Force) {
+        $Delay = if ($Immediate) { 0 } else { $DelaySeconds }
+        $ControlArguments += @('--delay-seconds', "$Delay", '--restart-quiet-seconds', "$QuietSeconds", '--restart-wait-timeout-seconds', "$WaitTimeoutSeconds")
+    }
     & $State.node @ControlArguments
     exit $LASTEXITCODE
 }
@@ -42,6 +53,7 @@ if ([string]::IsNullOrWhiteSpace($RuntimeMode)) {
     $RuntimeMode = 'rust'
 }
 if ($RuntimeMode -eq 'rust') {
+    if ($Force) { throw 'Use the Rust force-restart entry point when no TS supervisor is registered.' }
     & (Join-Path $RepoRoot 'codex-discord-rust-restart.ps1') `
         -RepoRoot $RepoRoot `
         -DryRun:$DryRun `

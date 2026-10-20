@@ -2,10 +2,11 @@ import {performance} from 'node:perf_hooks';
 import {recoverMirrorStartupContextNative,verifyMirrorStartupRecoveryNative,completeMirrorStartupRecoveryNative,reconcileMirrorStartupRecoveryNative} from './startup-intent-recovery-native.ts';
 import {MirrorStartupContextHeldError,snapshotMirrorStartupContextLimits} from './startup-context-limits.ts';
 import {MirrorFileChangedError} from './file-window.ts';
-import {parentPort,workerData as q} from 'node:worker_threads';
+import {serveReusableWorker} from '../reusable-worker-entry.ts';
+import type {ReusableNativeOperation} from '../reusable-worker-operations.ts';
 import {usingExistingReadOnlyStore,usingExistingStore} from '../../store/owned-scope.ts';
 import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
-if(parentPort===null)throw new Error('Mirror startup intent store requires an owned native worker');
+export const runNativeOperation:ReusableNativeOperation=async (q,parentPort)=>{
 try{
  const started=performance.now(),cancel=new Int32Array(q.cancel);
  const check=()=>{if(Atomics.load(cancel,0)!==0)throw new MirrorStartupContextHeldError('Cancelled');if(performance.now()-started>=q.timeoutMs)throw new MirrorStartupContextHeldError('Deadline');};
@@ -33,3 +34,5 @@ try{
  }
 }catch(error){parentPort.postMessage({ok:false,reason:error instanceof MirrorStartupContextHeldError?error.reason:error instanceof MirrorFileChangedError?'ChangedFile':null,detail:[...(error instanceof Error?error.message:'Mirror startup intent operation failed')].slice(0,2048).join('')});}
 finally{parentPort.close();}
+};
+await serveReusableWorker(runNativeOperation);

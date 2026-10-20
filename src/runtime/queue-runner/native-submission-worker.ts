@@ -1,11 +1,12 @@
-import {parentPort,workerData as q} from 'node:worker_threads';
+import {serveReusableWorker} from '../reusable-worker-entry.ts';
+import type {ReusableNativeOperation} from '../reusable-worker-operations.ts';
 import * as statePromptIntakePromotion from '../../store/prompt-intake-promotion.ts';
 import * as stateQueueEnqueue from '../../store/queue-enqueue.ts';
 import {MirrorMappingChangedError} from '../../store/queue-enqueue.ts';
 import {ForkHandoffTargetMovedError} from '../../store/fork-handoff-admission.ts';
 import {DeadGenerationTargetHeldError} from '../../store/fork-completed-target.ts';
 import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
-const port=parentPort;if(port===null)throw new Error('Queue submission requires owned worker');
+export const runNativeOperation:ReusableNativeOperation=(q,port)=>{
 try{
  let response:unknown;
  try{
@@ -28,3 +29,5 @@ try{
  if(boundedSerdeByteCount(response,16*1024*1024)===null)throw new Error('Queue submission response exceeds wire budget');
  port.postMessage(response);
 }catch{port.postMessage({kind:'Unconfirmed'});}finally{port.close();}
+};
+await serveReusableWorker(runNativeOperation);

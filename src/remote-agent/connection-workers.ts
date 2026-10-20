@@ -20,7 +20,7 @@ export class RemoteConnectionWorkers<T> {
  #collector:Promise<RemoteWorkerResult<T>|null>|null=null;
  #readiness:Promise<boolean>|null=null;
  #drain:Promise<RemoteConnectionOutcome>|null=null;
- constructor(generation:bigint,maxActive=4,maxPending=16,maxBytes=4194304){
+ constructor(generation:bigint,maxActive=4,maxPending=16,maxBytes=48000000){
   if(typeof generation!=='bigint'||generation<0n||generation>18446744073709551615n)throw new RangeError('Invalid connection generation');
   this.#generation=generation;this.#workers=new BoundedRemoteWorkers(maxActive,maxPending,maxBytes);
  }

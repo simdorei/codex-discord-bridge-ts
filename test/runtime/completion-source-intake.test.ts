@@ -81,3 +81,17 @@ test('pre-aborted source intake disposes transferred startup receiver without cr
  const f=fake(),receiver=f.broadcast.subscribe(),tick=deferred(),shutdown=new AbortController();shutdown.abort('already stopped');f.server.subscribeNotifications=()=>{throw Error('must not subscribe');};const intake=new CompletionSourceIntake(path,f.server,new TerminalFence(),false,()=>{});
  try{await intake.run(shutdown.signal,{wait:()=>tick.promise,close:()=>tick.resolve()},receiver);assert.equal(f.broadcast.receiverCount,0);assert.deepEqual(receiver.tryReceive(),{kind:'Closed'});}finally{receiver.dispose();}
 }));
+
+test('idle intake discovers each confirmed source upper once and resets on generation change',async()=>storeFixture(async path=>{
+ const f=fake(),discovered:{generation:bigint;upper:bigint}[]=[];
+ const injected={activateObservation:state.activateObservation,discoverObservation:async(p:string,s:Parameters<typeof state.discoverObservation>[1],upper:bigint)=>{await state.discoverObservation(p,s,upper);discovered.push({generation:s.generation,upper});}};
+ const intake=new CompletionSourceIntake(path,f.server,new TerminalFence(),false,()=>{},new CompletionEventBudget(),injected);
+ try{await intake.scanOnce();await intake.scanOnce();f.notifications.record(unknown());await intake.scanOnce();await intake.scanOnce();f.setGeneration(2n);await intake.scanOnce();assert.deepEqual(discovered,[{generation:1n,upper:0n},{generation:1n,upper:1n},{generation:2n,upper:1n}]);assert.equal(intake.queue.length,2);}finally{intake.close();}
+}));
+
+test('failed discovery is not cached even when the source cursor already advanced',async()=>storeFixture(async path=>{
+ const f=fake();f.notifications.record(unknown());let attempts=0;
+ const injected={activateObservation:state.activateObservation,discoverObservation:async(...args:Parameters<typeof state.discoverObservation>)=>{if(++attempts===1)throw new Error('unconfirmed');await state.discoverObservation(...args);}};
+ const intake=new CompletionSourceIntake(path,f.server,new TerminalFence(),false,()=>{},new CompletionEventBudget(),injected);
+ try{await intake.scanOnce();await intake.scanOnce();await intake.scanOnce();assert.equal(attempts,2);assert.equal(intake.forwarded,1n);assert.equal(intake.queue.length,1);assert.equal(await state.observationScopeVerified(path,{ownerId:OWNER,generation:1n},1n),false);}finally{intake.close();}
+}));

@@ -241,7 +241,7 @@ test('TTL disposes terminal reservation without assuming result versus close ord
 });
 
 test('broker and direct original codecs share exactly Background3 and release on actual exits',{timeout:25000},async()=>{
- assert.deepEqual(OWNED_WORKER_LIMITS,{Background:3,Control:1,Observation:2,Discovery:1,Maintenance:1});assert.equal(ownedWorkerUsage().Background,0);
+ assert.deepEqual(OWNED_WORKER_LIMITS,{Background:3,Control:1,Bridge:1,Observation:2,Discovery:1,Maintenance:1});assert.equal(ownedWorkerUsage().Background,0);
  const root=createMainNativeCodecBroker(BASE),fixture=startFixture('round-trip',[HELLO]);
  const direct=Array.from({length:3},()=>new RemoteNativeCodecOwner());
  const nativeWorkers:Worker[]=[],exitCodes:number[]=[];let launched=false,observedAtLaunch=-1;
@@ -263,7 +263,7 @@ test('broker and direct original codecs share exactly Background3 and release on
   const refused=results.filter(result=>!result.ok);assert.equal(refused.length,1);assert.ok(refused[0]!.error instanceof OwnedWorkerBudgetError);
   await Promise.all(direct.map(owner=>owner.join()));
   assert.equal(nativeWorkers.length,3);assert.deepEqual(exitCodes,[0,0,0]);
-  assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0});
+  assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});
  }finally{process.off('worker',observe);await Promise.all(direct.map(owner=>owner.join()));await finish(root,fixture);}
 });
 
@@ -422,5 +422,5 @@ test('three gated actual Background workers make broker adapter fail without a f
  }
  const results=await Promise.all(pending);assert.ok(results.every(result=>result.ok));
  assert.equal(constructions,3);assert.deepEqual(exits,[0,0,0]);
- assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0});
+ assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});
 });

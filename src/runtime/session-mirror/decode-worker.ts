@@ -1,10 +1,11 @@
 import {usingExistingReadOnlyStore} from '../../store/owned-scope.ts';
 import {mirrorDetailModeIn} from '../../store/mirror-policy-read.ts';
-import {parentPort,workerData} from 'node:worker_threads';
+import {serveReusableWorker} from '../reusable-worker-entry.ts';
+import type {ReusableNativeOperation} from '../reusable-worker-operations.ts';
 import {decodeMirrorRecordWindow} from './record-window.ts';
 import {collectSessionItems} from './collect.ts';
 import {serializeSerdeValue} from '../../core/serde-json.ts';
-if(parentPort===null)throw new Error('Mirror decode worker requires an owned parent');
+export const runNativeOperation:ReusableNativeOperation=(workerData,parentPort)=>{
 try{
  const {bytes,startOffset,maxWindowBytes,maxRecordBytes,maxRecords,context}=workerData;
  const decoded=decodeMirrorRecordWindow(bytes,startOffset,maxWindowBytes,maxRecordBytes,maxRecords);
@@ -20,3 +21,5 @@ try{
  }
 }catch(error){parentPort.postMessage({ok:false,message:error instanceof Error?error.message:'Mirror decode failed'});}
 finally{parentPort.close();}
+};
+await serveReusableWorker(runNativeOperation);

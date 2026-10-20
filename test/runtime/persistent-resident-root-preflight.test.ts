@@ -9,7 +9,7 @@ import {ownedWorkerUsage} from '../../src/runtime/owned-worker-slot.ts';
 // Passive rejection only. No actual singleton, socket, Worker or DB is created.
 // These tests cannot establish successful root binding or debt retention.
 const root=join(process.cwd(),'unopened-root'),paths=Object.freeze({root,mirrorDb:join(root,'discord_mirror.sqlite')});
-const emptyUsage=Object.freeze({Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0});
+const emptyUsage=Object.freeze({Background:0,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});
 function clean():void{assert.equal(anyStoreAuthorityEnrolled(),false);assert.deepEqual(ownedWorkerUsage(),emptyUsage);}
 
 test('root-bound preparation rejects structural, prototype-only and proxy singleton lookalikes without invoking caller methods',()=>{

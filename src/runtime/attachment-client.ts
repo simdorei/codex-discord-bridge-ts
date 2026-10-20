@@ -8,9 +8,10 @@ interface ResponseOwner {abort():void; release():Promise<void>}
 /** Credential-free HTTP/1.1 attachment streaming. Own agents and sockets only.
  * No decompression (source reqwest features omit compression), no automatic
  * retry, no global client shutdown and no synthetic timeout. Caller closes it.
- * Proxy environments/credential URLs/HTTP2 parity are not implemented. */
+ * Proxy routing follows the environment captured at construction. */
 export class AttachmentHttpClient implements AttachmentTransport {
- readonly #http=new http.Agent({keepAlive:true});readonly #https=new https.Agent({keepAlive:true});
+ readonly #http:http.Agent;readonly #https:https.Agent;
+ constructor(proxyEnv:NodeJS.ProcessEnv={...process.env}){const options={keepAlive:true,proxyEnv:{...proxyEnv}};this.#http=new http.Agent(options);this.#https=new https.Agent(options);}
  readonly #active=new Set<ResponseOwner>();readonly #sockets=new Map<Socket,Promise<void>>();#closed=false;#closing:Promise<void>|null=null;
  get activeRequests(){return this.#active.size;}get ownedSockets(){return this.#sockets.size;}
  #url(value:string,base?:URL):URL {

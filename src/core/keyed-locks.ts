@@ -17,8 +17,8 @@ export interface TargetLocksRetainedWorkSnapshot {
   readonly heldLeaseReferenceCount: number;
 }
 
-interface Entry { held: boolean; waiters: Waiter[]; }
-interface Waiter { grant(): void; }
+interface Entry { held: boolean; readers: number; waiters: Waiter[]; }
+interface Waiter { readonly shared: boolean; grant(): void; }
 
 function validateTarget(target: string): void {
   if (typeof target !== "string" || /[\uD800-\uDFFF]/u.test(target)) {
@@ -55,7 +55,7 @@ export class TargetLocks {
     let entry = this.#entries.get(target);
     if (entry?.held) return undefined;
     if (entry === undefined) {
-      entry = {held: true, waiters: []};
+      entry = {held: true, readers: 0, waiters: []};
       this.#entries.set(target, entry);
     } else entry.held = true;
     return this.#lease(target, entry);
@@ -77,10 +77,13 @@ export class TargetLocks {
         settled = true;
         const index = entry.waiters.indexOf(waiter);
         if (index !== -1) { entry.waiters.splice(index, 1); this.#queuedWaiterCount--; }
+        // A cancelled writer no longer blocks readers behind it. They may join
+        // the existing cohort without waiting for an unrelated slow reader.
+        if(entry.readers>0)while(entry.waiters[0]?.shared){this.#queuedWaiterCount--;entry.waiters.shift()!.grant();}
         signal?.removeEventListener("abort", abort);
         reject(signal?.reason);
       };
-      const waiter: Waiter = {grant: () => {
+      const waiter: Waiter = {shared: false, grant: () => {
         if (settled) return;
         settled = true;
         signal?.removeEventListener("abort", abort);
@@ -95,6 +98,44 @@ export class TargetLocks {
   async run<T>(target: string, work: (lease: TargetLease) => T | Promise<T>, signal?: AbortSignal): Promise<T> {
     const lease = await this.acquire(target, signal);
     try { return await work(lease); } finally { lease.release(); }
+  }
+
+  /** Shared readers overlap, but cannot jump a queued writer. Exclusive locks
+   * use the same registry and remain excluded until every reader has joined. */
+  acquireShared(target: string, signal?: AbortSignal): Promise<TargetLease> {
+    validateTarget(target);
+    if (signal?.aborted) return Promise.reject(signal.reason);
+    let entry = this.#entries.get(target);
+    if (entry === undefined) {
+      entry = {held: true, readers: 1, waiters: []};
+      this.#entries.set(target, entry);
+      return Promise.resolve(this.#lease(target, entry, {references: 0, shared: true}));
+    }
+    if (entry.readers > 0 && entry.waiters.length === 0) {
+      entry.readers++;
+      return Promise.resolve(this.#lease(target, entry, {references: 0, shared: true}));
+    }
+    const held = entry;
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const abort = (): void => {
+        if (settled) return;
+        settled = true;
+        const index = held.waiters.indexOf(waiter);
+        if (index !== -1) { held.waiters.splice(index, 1); this.#queuedWaiterCount--; }
+        signal?.removeEventListener('abort', abort);
+        reject(signal?.reason);
+      };
+      const waiter: Waiter = {shared: true, grant: () => {
+        if (settled) return;
+        settled = true;
+        signal?.removeEventListener('abort', abort);
+        held.readers++;
+        resolve(this.#lease(target, held, {references: 0, shared: true}));
+      }};
+      held.waiters.push(waiter); this.#queuedWaiterCount++;
+      signal?.addEventListener('abort', abort, {once: true});
+    });
   }
 
   /** Borrow only this registry's live capability. A private reference pins the mutex
@@ -118,7 +159,7 @@ export class TargetLocks {
     }
   }
 
-  #lease(target: string, entry: Entry, group={references:0}): TargetLease {
+  #lease(target: string, entry: Entry, group={references:0,shared:false}): TargetLease {
     group.references++;this.#heldLeaseReferenceCount++;let released = false;
     const lease=Object.freeze({
       target,
@@ -130,8 +171,12 @@ export class TargetLocks {
         released = true;
         this.#heldLeaseReferenceCount--;
         if(--group.references!==0)return;
+        if(group.shared&&--entry.readers!==0)return;
         const next = entry.waiters.shift();
-        if (next !== undefined) { this.#queuedWaiterCount--; next.grant(); }
+        if (next !== undefined) {
+          this.#queuedWaiterCount--; next.grant();
+          if(next.shared)while(entry.waiters[0]?.shared){this.#queuedWaiterCount--;entry.waiters.shift()!.grant();}
+        }
         else {
           entry.held = false;
           if (this.#entries.get(target) === entry) this.#entries.delete(target);

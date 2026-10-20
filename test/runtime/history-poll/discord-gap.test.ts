@@ -66,7 +66,7 @@ import {pollDiscordHistoryChannel} from '../../../src/runtime/history-poll/disco
 import {HistoryPollState} from '../../../src/runtime/history-poll/state.ts';
 it('periodic prime discards historical commands without ingress or execution, then processes new arrivals',async()=>{
  const page=[message(3,'!new'),message(2)];await fixture(page,async f=>{
-  const options={...f.options,context:{...f.options.context,now:()=>1577836801000}};const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();
+  const options={...f.options,context:{...f.options.context,now:()=>1577836801}};const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();
   try{const prime=await pollDiscordHistoryChannel(options,history,rx,1n);assert.equal(prime!.phase,'Prime');assert.equal(prime!.discarded,2);assert.equal(prime!.processed,0);assert.equal(await state.getIngress(f.path,'message:3'),null);assert.equal(await state.pendingNewPrompt(f.path,1n,2n,4n),null);assert.deepEqual(f.seen,['GET']);assert.equal(history.isPrimed(1n),true);
    page.unshift({...message(4),timestamp:'2020-01-01T00:00:02+00:00'});const incremental=await pollDiscordHistoryChannel(options,history,rx,1n);assert.equal(incremental!.phase,'Incremental');assert.equal(incremental!.processed,1);assert.equal((await state.getIngress(f.path,'message:4'))!.confirmationDelivered,true);assert.deepEqual(f.calls.map((v:any)=>v.key),['message:4']);
   }finally{rx.dispose();tracker.close();}
@@ -76,17 +76,17 @@ it('periodic pending gap skips before HTTP or prime boundary creation',async()=>
  const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();try{record(tracker);assert.equal(await pollDiscordHistoryChannel(f.options,history,rx,1n),null);assert.deepEqual(f.seen,[]);assert.equal(history.primedCount,0);assert.equal(await state.isProcessedMessage(f.path,2n),false);}finally{rx.dispose();tracker.close();}
 }));
 it('gap advancing during policy await rejects old-page discard and prevents cursor commit',async()=>fixture([message(2)],async f=>{
- const options={...f.options,context:{...f.options.context,now:()=>1577836801000}};const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();try{const pending=pollDiscordHistoryChannel(options,history,rx,1n);record(tracker);await assert.rejects(pending,/claim/);assert.equal(history.isPrimed(1n),false);assert.equal(await state.isProcessedMessage(f.path,2n),false);assert.equal(rx.snapshot().length,1);assert.deepEqual(f.calls,[]);}finally{rx.dispose();tracker.close();}
+ const options={...f.options,context:{...f.options.context,now:()=>1577836801}};const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();try{const pending=pollDiscordHistoryChannel(options,history,rx,1n);record(tracker);await assert.rejects(pending,/claim/);assert.equal(history.isPrimed(1n),false);assert.equal(await state.isProcessedMessage(f.path,2n),false);assert.equal(rx.snapshot().length,1);assert.deepEqual(f.calls,[]);}finally{rx.dispose();tracker.close();}
 }));
 it('failed periodic policy keeps first prime boundary so later valid requests are not silently discarded',async()=>fixture([{...message(2),timestamp:'2020-01-01T00:00:02+00:00'}],async f=>{
- const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();let time=1577836801000;const options={...f.options,context:{...f.options.context,now:()=>time}};
+ const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();let time=1577836801;const options={...f.options,context:{...f.options.context,now:()=>time}};
  const {readFileSync}=await import('node:fs');await state.isProcessedMessage(f.path,1n);const original=readFileSync(f.path);
- try{writeFileSync(f.path,'corrupt database');await assert.rejects(pollDiscordHistoryChannel(options,history,rx,1n),/policy/);assert.deepEqual(f.seen,[]);writeFileSync(f.path,original);time=1577836803000;const out=await pollDiscordHistoryChannel(options,history,rx,1n);assert.equal(out!.processed,1);assert.equal((await state.getIngress(f.path,'message:2'))!.confirmationDelivered,true);}finally{rx.dispose();tracker.close();}
+ try{writeFileSync(f.path,'corrupt database');await assert.rejects(pollDiscordHistoryChannel(options,history,rx,1n),/policy/);assert.deepEqual(f.seen,[]);writeFileSync(f.path,original);time=1577836803;const out=await pollDiscordHistoryChannel(options,history,rx,1n);assert.equal(out!.processed,1);assert.equal((await state.getIngress(f.path,'message:2'))!.confirmationDelivered,true);}finally{rx.dispose();tracker.close();}
 }));
 
 import {runPeriodicDiscordHistory} from '../../../src/runtime/discord-runtime/periodic-history.ts';
 it('real periodic driver loads target through facade and reports durable prime',async()=>fixture([message(2)],async f=>{
- const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();const options={...f.options,allowedChannelIds:new Set([1n]),startupChannelId:1n,context:{...f.options.context,now:()=>1577836801000}};
+ const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();const options={...f.options,allowedChannelIds:new Set([1n]),startupChannelId:1n,context:{...f.options.context,now:()=>1577836801}};
  try{await runPeriodicDiscordHistory(history,rx,options);assert.equal(history.isPrimed(1n),true);assert.equal(await state.isProcessedMessage(f.path,2n),true);assert.deepEqual(f.reports,['discord_history_poll']);assert.deepEqual(f.seen,['GET']);}finally{rx.dispose();tracker.close();}
 }));
 it('failed target lookup retains previous cursors, successful empty target set prunes them',async()=>fixture([],async f=>{
@@ -101,7 +101,7 @@ it('periodic malformed source is reported without advancing state or claiming wo
  const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();try{await runPeriodicDiscordHistory(history,rx,{...f.options,allowedChannelIds:new Set([1n]),startupChannelId:null});assert.equal(history.isPrimed(1n),false);assert.deepEqual(f.reports,['discord_history_source_failed']);assert.deepEqual(f.calls,[]);}finally{rx.dispose();tracker.close();}
 }));
 it('gap advancing after capture is a deferral rather than ordinary failure or cursor commit',async()=>fixture([message(2)],async f=>{
- const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();const options={...f.options,allowedChannelIds:new Set([1n]),startupChannelId:null,context:{...f.options.context,now:()=>{record(tracker);return 1577836801000;}}};
+ const history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();const options={...f.options,allowedChannelIds:new Set([1n]),startupChannelId:null,context:{...f.options.context,now:()=>{record(tracker);return 1577836801;}}};
  try{await runPeriodicDiscordHistory(history,rx,options);assert.equal(history.isPrimed(1n),false);assert.equal(await state.isProcessedMessage(f.path,2n),false);assert.deepEqual(f.reports,['discord_history_poll_skipped']);assert.equal(rx.snapshot().length,1);}finally{rx.dispose();tracker.close();}
 }));
 it('periodic driver propagates unusable gap receiver instead of treating it as a recoverable lookup',async()=>fixture([message(2)],async f=>{
@@ -145,7 +145,7 @@ import {runMessageConsumer} from '../../../src/runtime/discord-runtime/message-c
 import {setImmediate as custodyTick} from 'node:timers/promises';
 for(const phase of ['Prime','Incremental'] as const)it(`periodic ${phase} defers accepted originals without marker or cursor commit`,async()=>fixture([message(2)],async f=>{
  const owner=new GatewayIngress(),rx=owner.subscribeMessageGaps(),history=new HistoryPollState(),event=decodeGatewayMessage(JSON.stringify(message(2))),view=owner.acceptedMessageView();
- const options={...f.options,acceptedMessages:view,allowedChannelIds:new Set([1n]),startupChannelId:null,context:{...f.options.context,now:()=>1577836801000}};
+ const options={...f.options,acceptedMessages:view,allowedChannelIds:new Set([1n]),startupChannelId:null,context:{...f.options.context,now:()=>1577836801}};
  try{if(phase==='Incremental'){const c=history.begin(1n,1577836801000000n);history.commit(1n,history.propose(c,[]).commitToken);}
   owner.publish({kind:'Message',event},1);const before=history.watermark(1n);await runPeriodicDiscordHistory(history,rx,options);assert.equal(await state.isProcessedMessage(f.path,2n),false);assert.equal(await state.getIngress(f.path,'message:2'),null);assert.deepEqual(f.calls,[]);assert.equal(history.watermark(1n),before);assert.equal(history.isPrimed(1n),phase==='Incremental');assert.equal(f.reports.at(-1),'discord_history_poll_skipped');assert.notEqual(rx.captureClearFence(1n),null);assert.deepEqual(rx.snapshot(),[]);
   owner.receivers.messages.dispose();await runPeriodicDiscordHistory(history,rx,options);assert.equal(history.isPrimed(1n),true);assert.equal(await state.isProcessedMessage(f.path,2n),true);
@@ -155,7 +155,7 @@ it('accepted active and queued Gateway originals survive periodic discard then e
  const page=[message(2)];await fixture(page,async f=>{
   const owner=new GatewayIngress(),rx=owner.subscribeMessageGaps(),identity=owner.subscribeIdentity(),conflict=owner.subscribeIdentityConflict(),stop=new AbortController(),force=new AbortController(),history=new HistoryPollState(),view=owner.acceptedMessageView(),a=decodeGatewayMessage(JSON.stringify(message(2))),b=decodeGatewayMessage(JSON.stringify(message(3)));
   let enter!:()=>void,release!:()=>void;const entered=new Promise<void>(r=>enter=r),hold=new Promise<void>(r=>release=r),seen:unknown[]=[];const actual=createGatewayMessageHandler(f.options),handler=async(event:typeof a,id:Parameters<typeof actual>[1],signal:AbortSignal)=>{seen.push(event);if(event===a){enter();await hold;}await actual(event,id,signal);};
-  const options={...f.options,acceptedMessages:view,allowedChannelIds:new Set([1n]),startupChannelId:null,context:{...f.options.context,now:()=>1577836801000}};let pending:Promise<void>|undefined;
+  const options={...f.options,acceptedMessages:view,allowedChannelIds:new Set([1n]),startupChannelId:null,context:{...f.options.context,now:()=>1577836801}};let pending:Promise<void>|undefined;
   try{owner.publish({kind:'Ready',identity:{userId:9n,applicationId:4n}},0);owner.publish({kind:'Message',event:a},1);owner.publish({kind:'Message',event:b},2);pending=runMessageConsumer(owner.receivers.messages,identity,conflict,stop.signal,force.signal,handler);await entered;assert.equal(view.size,2);
    for(const id of [2,3]){page.splice(0,page.length,message(id));await runPeriodicDiscordHistory(history,rx,options);assert.equal(await state.isProcessedMessage(f.path,BigInt(id)),false);assert.equal(await state.getIngress(f.path,'message:'+id),null);assert.equal(history.isPrimed(1n),false);assert.deepEqual(rx.snapshot(),[]);}
    release();for(let i=0;i<500&&Number(view.size)!==0;i++)await custodyTick();assert.equal(view.size,0);assert.deepEqual(seen,[a,b]);assert.deepEqual(f.calls.map((v:any)=>v.key),['message:2','message:3']);for(const id of [2,3]){const row=(await state.getIngress(f.path,'message:'+id))!;assert.equal(row.confirmationDelivered,true);assert.equal(row.eventId,BigInt(id));assert.equal(row.sourceMessageId,BigInt(id));assert.equal(row.createdAt,102);assert.equal(row.channelId,1n);assert.equal(row.ownerUserId,2n);}assert.deepEqual(f.seen,['GET','GET','POST','POST']);stop.abort();await pending;
@@ -169,14 +169,14 @@ it('accepted original does not prevent History Process from winning canonical du
 }));
 it('accepted-original deferral keeps the first Prime boundary fixed when time moves forward',async()=>{
  const page=[message(2)];await fixture(page,async f=>{
-  const owner=new GatewayIngress(),rx=owner.subscribeMessageGaps(),history=new HistoryPollState();let time=1577836801000;const options={...f.options,acceptedMessages:owner.acceptedMessageView(),context:{...f.options.context,now:()=>time}};
-  try{owner.publish({kind:'Message',event:decodeGatewayMessage(JSON.stringify(message(2)))},1);await assert.rejects(pollDiscordHistoryChannel(options,history,rx,1n),error=>error instanceof HistoryPollRunError&&isAcceptedGatewayMessageDeferral(error.source));owner.receivers.messages.dispose();time=1577836803000;page.unshift({...message(3),timestamp:'2020-01-01T00:00:02+00:00'});const result=await pollDiscordHistoryChannel(options,history,rx,1n);assert.equal(result!.phase,'Prime');assert.equal(result!.processed,1);assert.equal((await state.getIngress(f.path,'message:3'))!.confirmationDelivered,true);assert.deepEqual(f.calls.map((v:any)=>v.key),['message:3']);
+  const owner=new GatewayIngress(),rx=owner.subscribeMessageGaps(),history=new HistoryPollState();let time=1577836801;const options={...f.options,acceptedMessages:owner.acceptedMessageView(),context:{...f.options.context,now:()=>time}};
+  try{owner.publish({kind:'Message',event:decodeGatewayMessage(JSON.stringify(message(2)))},1);await assert.rejects(pollDiscordHistoryChannel(options,history,rx,1n),error=>error instanceof HistoryPollRunError&&isAcceptedGatewayMessageDeferral(error.source));owner.receivers.messages.dispose();time=1577836803;page.unshift({...message(3),timestamp:'2020-01-01T00:00:02+00:00'});const result=await pollDiscordHistoryChannel(options,history,rx,1n);assert.equal(result!.phase,'Prime');assert.equal(result!.processed,1);assert.equal((await state.getIngress(f.path,'message:3'))!.confirmationDelivered,true);assert.deepEqual(f.calls.map((v:any)=>v.key),['message:3']);
   }finally{for(const lane of Object.values(owner.receivers))lane.dispose();rx.dispose();owner.close();}
  });
 });
 
 for(const content of ['!repair t','!recover t'])it(`periodic discard protects queued and active Emergency original ${content}`,async()=>fixture([message(2,content)],async f=>{
- const owner=new GatewayIngress(),rx=owner.subscribeMessageGaps(),history=new HistoryPollState(),event=decodeGatewayMessage(JSON.stringify(message(2,content))),view=owner.acceptedMessageView(),options={...f.options,acceptedMessages:view,allowedChannelIds:new Set([1n]),startupChannelId:null,context:{...f.options.context,now:()=>1577836801000}};
+ const owner=new GatewayIngress(),rx=owner.subscribeMessageGaps(),history=new HistoryPollState(),event=decodeGatewayMessage(JSON.stringify(message(2,content))),view=owner.acceptedMessageView(),options={...f.options,acceptedMessages:view,allowedChannelIds:new Set([1n]),startupChannelId:null,context:{...f.options.context,now:()=>1577836801}};
  let original:import('../../../src/discord/gateway/ingress.ts').MessageIngress|null=null;
  try{owner.publish({kind:'Message',event},1);assert.equal(owner.receivers.emergencyMessages.length,1);for(const active of [false,true]){if(active)original=await owner.receivers.emergencyMessages.receive();await runPeriodicDiscordHistory(history,rx,options);assert.equal(await state.isProcessedMessage(f.path,2n),false);assert.equal(await state.getIngress(f.path,'message:2'),null);assert.equal(history.isPrimed(1n),false);assert.equal(view.size,1);assert.notEqual(rx.captureClearFence(1n),null);}assert.deepEqual(f.calls,[]);
  }finally{if(original!==null)owner.receivers.emergencyMessages.complete(original);for(const lane of Object.values(owner.receivers))lane.dispose();rx.dispose();owner.close();}
@@ -197,3 +197,22 @@ it('native same-page mapping change after !new is rechecked and cannot retarget 
  const options={...f.options,classifyMessage:(...args:Parameters<typeof native>)=>{if(++calls===2){const db=new DatabaseSync(f.path);try{db.exec("INSERT INTO mirror_threads VALUES('changed','p','title',9,1,1)");}finally{db.close();}}return native(...args);}};
  const out=await recoverDiscordHistoryChannel(options,1n,floor);assert.equal(out.processed,2);assert.deepEqual(f.calls,[]);assert.match(JSON.stringify(((await state.getIngress(f.path,'message:3'))!.payload as any).plan),/방 연결이 변경/);
 }));
+
+it('startup history uses the production seconds clock and never executes pre-start commands',async()=>{
+ const page=[message(3,'!new'),message(2)];await fixture(page,async f=>{
+  const {now:_fixtureClock,...context}=f.options.context;
+  const options={...f.options,context},history=new HistoryPollState(),tracker=new MessageGapTracker(),rx=tracker.subscribe();
+  try{
+   const prime=await pollDiscordHistoryChannel(options,history,rx,1n);
+   assert.equal(prime!.processed,0);assert.equal(prime!.discarded,2);
+   assert.deepEqual(f.calls,[]);assert.deepEqual(f.seen,['GET']);
+   for(const id of [2n,3n]){assert.equal(await state.isProcessedMessage(f.path,id),true);assert.equal(await state.getIngress(f.path,'message:'+id),null);}
+   const nextAt=Number(history.watermark(1n)!.micros/1000n)+1000;
+   page.unshift({...message(4),timestamp:new Date(nextAt).toISOString().replace('Z','+00:00')});
+   const incremental=await pollDiscordHistoryChannel(options,history,rx,1n);
+   assert.equal(incremental!.processed,1);assert.deepEqual(f.calls.map((v:any)=>v.key),['message:4']);
+   const row=(await state.getIngress(f.path,'message:4'))!;assert.ok(Math.abs(row.createdAt-Date.now()/1000)<10);
+   const again=await pollDiscordHistoryChannel(options,history,rx,1n);assert.equal(again!.processed,0);assert.equal(f.calls.length,1);
+  }finally{rx.dispose();tracker.close();}
+ });
+});

@@ -13,7 +13,7 @@ import type {DiscordReceiptTransport} from '../../src/runtime/completion/receipt
 // passive branch witnesses, not an HTTP client or evidence of remote acceptance.
 function deferred(){let resolve!:()=>void;const promise=new Promise<void>(r=>{resolve=r;});return {promise,resolve};}
 function receipt(path:string){const db=new DatabaseSync(path,{readOnly:true});try{return db.prepare('SELECT message_id,retryable,blocked_reason FROM codex_delivery_receipts').all();}finally{db.close();}}
-function idle(){assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0});}
+function idle(){assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});}
 function observe(p:Promise<void>){return p.then(()=>({ok:true as const}),error=>({ok:false as const,error}));}
 async function bounded<T>(promise:Promise<T>,label:string):Promise<T>{let timer:ReturnType<typeof setTimeout>|undefined;try{return await Promise.race([promise,new Promise<never>((_resolve,reject)=>{timer=setTimeout(()=>reject(new Error('Timed out observing '+label)),3000);})]);}finally{clearTimeout(timer);}}
 async function entryBeforeExit(entry:Promise<void>,pending:Promise<unknown>){await bounded(Promise.race([entry,pending.then(()=>{throw new Error('Delivery settled before passive callback entry');})]),'passive callback entry');}

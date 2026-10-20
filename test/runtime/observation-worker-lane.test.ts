@@ -20,11 +20,11 @@ test('question maintenance refuses saturated Background before submission and ca
  const db=await openInitialized(path);db.close();const owner=new NativeObservationLedgerOwner(path),memory=new SharedArrayBuffer(4),slots=Array.from({length:3},()=>new OwnedWorkerSlot('Background')),tasks=slots.map(s=>s.run(blocked,memory,10000));
  for(const task of tasks)void task.catch(()=>{});
  try{
-  assert.deepEqual(ownedWorkerUsage(),{Background:3,Control:0,Observation:0,Discovery:0,Maintenance:0});
+  assert.deepEqual(ownedWorkerUsage(),{Background:3,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});
   await assert.rejects(owner.prepareQuestions('owner',1n),e=>e instanceof OwnedWorkerBudgetError&&Object.getPrototypeOf(e)===OwnedWorkerBudgetError.prototype);
-  assert.equal(owner.busy,false);assert.deepEqual(ownedWorkerUsage(),{Background:3,Control:0,Observation:0,Discovery:0,Maintenance:0});
+  assert.equal(owner.busy,false);assert.deepEqual(ownedWorkerUsage(),{Background:3,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});
   Atomics.store(new Int32Array(memory),0,1);Atomics.notify(new Int32Array(memory),0);assert.deepEqual(await Promise.all(tasks),[true,true,true]);await Promise.all(slots.map(s=>s.join()));
   assert.equal(await owner.prepareQuestions('owner',1n),undefined);assert.equal(owner.busy,false);
  }finally{Atomics.store(new Int32Array(memory),0,1);Atomics.notify(new Int32Array(memory),0);await Promise.allSettled(tasks);await Promise.all(slots.map(s=>s.join()));await owner.close();}
- assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0});
+ assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});
 }));

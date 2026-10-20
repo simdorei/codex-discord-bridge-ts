@@ -79,7 +79,7 @@ test('abort and timeout keep each codec receipt pending through actual native ex
 });
 
 test('true global Background exhaustion remains a distinct explicit refusal with unchanged finite budgets',{timeout:15000},async()=>{
- assert.deepEqual(OWNED_WORKER_LIMITS,{Background:3,Control:1,Observation:2,Discovery:1,Maintenance:1});
+ assert.deepEqual(OWNED_WORKER_LIMITS,{Background:3,Control:1,Bridge:1,Observation:2,Discovery:1,Maintenance:1});
  const shared=new SharedArrayBuffer(4),gate=new Int32Array(shared),held=Array.from({length:3},()=>new OwnedWorkerSlot());
  const module=new URL('data:text/javascript,'+encodeURIComponent("import {parentPort,workerData} from 'node:worker_threads';Atomics.wait(new Int32Array(workerData),0,0,10000);parentPort.postMessage('settled');parentPort.close();"));
  const running=held.map(owner=>owner.run(module,shared,12000));const all=Promise.all(running);

@@ -1,0 +1,38 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {cp,readFile,readdir} from 'node:fs/promises';
+import {dirname,join,resolve} from 'node:path';
+import {storeFixture} from '../helpers/store-fixture.ts';
+import {runConversation} from '../../src/pro/helper/conversation.ts';
+import {canonicalProbe,handleEvidence} from '../../src/pro/helper/evidence.ts';
+const scope='codex-pro-'+'a'.repeat(24),url='https://chatgpt.com/c/original';
+test('conversation leases, one replacement, protected deletion and recovery use the Rust SQLite contract',()=>storeFixture(async path=>{
+ const env={SIMDOREI_PRO_CONVERSATION_DB:path},run=(action:string,extra:string[]=[],now=100)=>runConversation([action,'--scope',scope,...extra],env,now) as any;
+ const first=run('acquire');assert.equal(first.status,'acquired');assert.deepEqual(run('acquire'),{status:'busy'});
+ assert.throws(()=>run('set',['--url',url,'--lease-token','wrong'.repeat(8)]),/lease/u);
+ assert.deepEqual(run('set',['--url',url,'--lease-token',first.lease_token]),{status:'saved'});assert.deepEqual(run('acquire'),{status:'found',url});
+ const replacement=run('restart',['--failed-url',url]);assert.equal(replacement.status,'acquired');assert.deepEqual(run('delete'),{status:'protected'});assert.throws(()=>run('set',['--url',url,'--lease-token',replacement.lease_token]),/differ/u);
+ assert.deepEqual(run('release',['--lease-token',replacement.lease_token]),{status:'released'});assert.deepEqual(run('status'),{status:'found',url});
+ const retry=run('restart',['--failed-url',url]);assert.equal(retry.status,'acquired');assert.deepEqual(run('restore-stalled',['--failed-url',url],221),{status:'restored',url});
+ assert.throws(()=>run('restart',['--failed-url','https://example.invalid/c/a']),/canonical/u);
+}));
+test('fresh plugin copy runs its JS helper without a Rust executable or global plugin cache',{timeout:15000},()=>storeFixture(async path=>{
+ const plugin=join(dirname(path),'plugin'),source=resolve('plugins/codex-discord-remote');await cp(source,plugin,{recursive:true});
+ const exec=promisify(execFile),env={...process.env,PLUGIN_ROOT:plugin,SIMDOREI_PRO_CONVERSATION_DB:path,PLUGIN_DATA:join(dirname(path),'data')};
+ const run=(...args:string[])=>exec(process.execPath,[join(plugin,'bin','cdr-pro-helper.mjs'),...args],{env,windowsHide:true});
+ const probe=await run('browser-probe-code');assert.equal(probe.stdout.trimEnd(),canonicalProbe(plugin,'browser'));assert.deepEqual((await readdir(join(plugin,'bin'))).filter(name=>name.endsWith('.exe')),[]);
+ const acquired=JSON.parse((await run('conversation','acquire','--scope',scope)).stdout);assert.equal(acquired.status,'acquired');
+ await run('conversation','set','--scope',scope,'--url',url,'--lease-token',acquired.lease_token);assert.deepEqual(JSON.parse((await run('conversation','status','--scope',scope)).stdout),{status:'found',url});
+ const payload={hook_event_name:'PostToolUse',tool_name:'functions.exec',tool_input:canonicalProbe(plugin,'browser'),session_id:'session',turn_id:'turn',tool_response:JSON.stringify({protocol:'ask-chatgpt-pro-browser-evidence-v2',browser_type:'chrome',status:'unavailable',can_report_unavailable:true,failed_stage:'select_chrome_retry',public_error:'fixture'})};
+ const stop={hook_event_name:'Stop',session_id:'session',turn_id:'turn',last_assistant_message:'Chrome is unavailable.'};
+ assert.equal((await handleEvidence('browser',stop,plugin,env.PLUGIN_DATA) as any).decision,'block');
+ assert.equal(await handleEvidence('browser',payload,plugin,env.PLUGIN_DATA),null);assert.equal(await handleEvidence('browser',stop,plugin,env.PLUGIN_DATA),null);
+ assert.equal((await handleEvidence('browser',{...stop,turn_id:'different'},plugin,env.PLUGIN_DATA) as any).decision,'block');
+ const receipts=await readdir(join(env.PLUGIN_DATA,'browser-evidence'));assert.equal(receipts.length,1);const receipt=JSON.parse(await readFile(join(env.PLUGIN_DATA,'browser-evidence',receipts[0]!),'utf8'));assert.equal(receipt.public_error,undefined);
+ const connector={protocol:'ask-chatgpt-pro-connector-control-v1',browser_type:'chrome',connector_name:'Simdorei Local Project Oauth',connector_path:'/plugins/plugin_asdk_app_6a6ae90be0a08191b877eddba93b631c',status:'verified',chat_mode:'chat',pro_mode:true,action:'attached'};
+ await handleEvidence('connector',{...payload,tool_input:canonicalProbe(plugin,'connector'),tool_response:JSON.stringify(connector)},plugin,env.PLUGIN_DATA);
+ const connectorFiles=await readdir(join(env.PLUGIN_DATA,'pro-connector-evidence'));assert.equal(JSON.parse(await readFile(join(env.PLUGIN_DATA,'pro-connector-evidence',connectorFiles[0]!),'utf8')).status,'verified');
+ await assert.rejects(run('conversation','set','--scope',scope,'--url','https://evil.invalid/c/a','--lease-token','a'.repeat(30)),error=>(error as {code?:number}).code===2);
+}));

@@ -9,6 +9,7 @@ import {NotificationState,type AppNotification} from "../../src/app-server/notif
 import {CompletionSourceReconciler,type SourceReconcileFailure} from "../../src/runtime/completion/source-reconciler.ts";
 import {installRuntimeIdleJournal} from "../../src/runtime/idle-release-journal.ts";
 import {PortableResidentLifecycle} from "../../src/app-server/portable-resident-lifecycle.ts";
+import {createNativeObservationState} from '../../src/runtime/completion/native-observation-state.ts';
 const OWNER='00000000-0000-4000-8000-000000000001' as const,scope={ownerId:OWNER,generation:1n};
 const final:AppNotification={method:'item/completed',params:{threadId:'target',turnId:'turn',item:{type:'agentMessage',phase:'final_answer',text:'exact final'}}};
 function fake(){const notifications=new NotificationState(),cleared:{generation:bigint;through:bigint}[]=[],reports:SourceReconcileFailure[]=[];let gen=1n,idle=0;
@@ -68,4 +69,38 @@ test("reconciler awaits native prefix verification rather than finishing with an
 test("reconciler propagates asynchronous native proof failure without invoking sync fallback",async()=>storeFixture(async path=>{
  const f=fake(),marker=new Error('native proof refused');const server={...f.server,reconcileIdleObservationPrefixAsync:async()=>{throw marker;}};
  await assert.rejects(new CompletionSourceReconciler(path,server,false,()=>{}).scanOnce(),e=>e===marker);assert.equal(f.cleared.length,0);
+}));
+
+test('idle native reconciliation batches discovery and proof but still awaits resident verification each pass',async()=>storeFixture(async path=>{
+ await state.activateObservation(path,scope);const f=fake(),native=createNativeObservationState(path);let inspections=0,residentChecks=0;
+ const unexpected=async()=>{throw new Error('idle pass must use the single native inspection');};
+ const injected={...native.state,discoverObservation:unexpected,nextObservationGap:unexpected,observationScopeVerified:unexpected,inspectObservation:async(...args:Parameters<typeof native.state.inspectObservation>)=>{inspections++;return native.state.inspectObservation(...args);}};
+ const server={...f.server,reconcileIdleObservationPrefixAsync:async(g:bigint,n:bigint)=>{residentChecks++;return f.server.reconcileIdleObservationPrefix(g,n);}};
+ try{const r=new CompletionSourceReconciler(path,server,false,()=>{},injected,native.state,native.observeQuestions);await r.scanOnce();await r.scanOnce();assert.equal(inspections,2);assert.equal(residentChecks,2);assert.deepEqual(f.cleared,[{generation:1n,through:0n},{generation:1n,through:0n}]);}finally{await native.close();}
+}));
+
+test('new source events after inspection require a fresh proof before prefix clearance',async()=>storeFixture(async path=>{
+ await running(path);const f=fake(),native=createNativeObservationState(path);let freshChecks=0,append=true;
+ const injected={...native.state,inspectObservation:async(...args:Parameters<typeof native.state.inspectObservation>)=>{const result=await native.state.inspectObservation(...args);if(append){append=false;f.notifications.record(final);}return result;},observationScopeVerified:async(...args:Parameters<typeof state.observationScopeVerified>)=>{freshChecks++;return native.state.observationScopeVerified(...args);}};
+ try{const r=new CompletionSourceReconciler(path,f.server,false,()=>{},injected,native.state,native.observeQuestions);await r.scanOnce();assert.equal(freshChecks,1);assert.deepEqual(f.cleared,[]);await r.scanOnce();assert.equal(freshChecks,2);assert.equal(await state.getObservedFinalAnswer(path,'target','turn',1n),'exact final');assert.deepEqual(f.cleared,[{generation:1n,through:1n}]);}finally{await native.close();}
+}));
+
+test('inspection completion after cancellation or generation replacement cannot clear the prefix',async()=>storeFixture(async path=>{
+ await state.activateObservation(path,scope);const native=createNativeObservationState(path);
+ try{for(const changed of ['cancel','generation'] as const){const f=fake(),c=new AbortController();const injected={...native.state,inspectObservation:async(...args:Parameters<typeof native.state.inspectObservation>)=>{const result=await native.state.inspectObservation(...args);if(changed==='cancel')c.abort(new Error('cancelled inspection'));else f.setGeneration(2n);return result;}};
+ await assert.rejects(new CompletionSourceReconciler(path,f.server,false,()=>{},injected).scanOnce(c.signal),changed==='cancel'?/cancelled inspection/:/native generation changed/);assert.deepEqual(f.cleared,[]);}}finally{await native.close();}
+}));
+
+test('inspection rejects a foreign source window before its database operation',async()=>storeFixture(async path=>{
+ const f=fake(),window=f.server.observationWindow;f.server.observationWindow=(g,a,u)=>({...window(g,a,u),ownerId:'00000000-0000-4000-8000-000000000002'});let inspections=0;
+ const injected={...state,inspectObservation:async()=>{inspections++;return {gap:null,verified:true};}};
+ await assert.rejects(new CompletionSourceReconciler(path,f.server,false,()=>{},injected).scanOnce(),/different original observation stream/);assert.equal(inspections,0);assert.deepEqual(f.cleared,[]);
+}));
+
+test('idle periodic checks coalesce without delaying new source sequences and recheck unchanged storage within one second',async()=>storeFixture(async path=>{
+ const f=fake(),shutdown=new AbortController(),inspections:bigint[]=[];let ticks=0,closed=0;
+ const injected={...state,inspectObservation:async(_p:string,_s:Parameters<typeof state.discoverObservation>[1],upper:bigint)=>{inspections.push(upper);return {gap:null,verified:false};}};
+ const r=new CompletionSourceReconciler(path,f.server,false,()=>{},injected);
+ await r.run(shutdown.signal,{wait:async()=>{ticks++;if(ticks===3)f.notifications.record(final);if(ticks===4)await delay(1050);if(ticks===5)shutdown.abort();},close:()=>{closed++;}});
+ assert.deepEqual(inspections,[0n,1n,1n]);assert.deepEqual(f.cleared,[]);assert.equal(closed,1);
 }));

@@ -6,8 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${PLUGIN_ROOT}/bin/cdr-pro-helper\" browser-hook",
-            "commandWindows": "\"${PLUGIN_ROOT}\\bin\\cdr-pro-helper.exe\" browser-hook",
+            "command": "node \"${PLUGIN_ROOT}/bin/cdr-pro-helper.mjs\" browser-hook",
+            "commandWindows": "node \"${PLUGIN_ROOT}\\bin\\cdr-pro-helper.mjs\" browser-hook",
             "timeout": 10,
             "statusMessage": "Verifying Chrome evidence"
           }
@@ -19,8 +19,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${PLUGIN_ROOT}/bin/cdr-pro-helper\" browser-hook",
-            "commandWindows": "\"${PLUGIN_ROOT}\\bin\\cdr-pro-helper.exe\" browser-hook",
+            "command": "node \"${PLUGIN_ROOT}/bin/cdr-pro-helper.mjs\" browser-hook",
+            "commandWindows": "node \"${PLUGIN_ROOT}\\bin\\cdr-pro-helper.mjs\" browser-hook",
             "timeout": 10,
             "statusMessage": "Checking Chrome claims"
           }

@@ -30,8 +30,8 @@ questions, or as a substitute for local tests.
    - Treat Chrome acquisition as an evidence-gated step. After initializing the
      Chrome runtime, inspect `codex plugin list --json`, find the installed and
      enabled `codex-discord-remote@codex-discord-remote` entry, and take its
-     `source.path`. Run `<source.path>/bin/cdr-pro-helper browser-probe-code`
-     (append `.exe` to the executable name on Windows), then submit the emitted code unchanged through
+     `source.path`. Run `node "<source.path>/bin/cdr-pro-helper.mjs" browser-probe-code`
+     using Node.js 24.21 or newer in the 24.x series, then submit the emitted code unchanged through
      the execution tool. Do not use the skill file's source-tree path instead.
      The trusted probe selects the actual `chrome` runtime and records evidence
      for this exact turn; a successful result with zero tabs still means Chrome
@@ -45,8 +45,8 @@ questions, or as a substitute for local tests.
      Leave the relevant Chrome tab open so work can resume after the user finishes.
 2. Route the browser conversation before sending anything:
    - When `<local-device-mcp>` supplies `conversation_scope`, use the bundled
-     `<source.path>/bin/cdr-pro-helper conversation` before opening or creating a chat. Run
-     `conversation acquire --scope <conversation_scope>` with that Rust helper. This local SQLite map is
+     `node "<source.path>/bin/cdr-pro-helper.mjs" conversation` before opening or creating a chat. Run
+     `conversation acquire --scope <conversation_scope>` with that helper. This local SQLite map is
      authoritative across Codex and Browser restarts; keep only the live tab
      binding in browser-runtime memory.
    - For `status: found`, open or rebind the returned canonical URL. During
@@ -74,7 +74,7 @@ questions, or as a substitute for local tests.
    first binding, assignment on reuse). Do not use `globalThis`; the native probes
    receive these lexical bindings explicitly. Inspect `codex plugin list --json` again and
    use the installed plugin's `source.path` to run
-   `<source.path>/bin/cdr-pro-helper connector-probe-code`. Submit
+   `node "<source.path>/bin/cdr-pro-helper.mjs" connector-probe-code`. Submit
    the emitted code unchanged through the execution tool. This trusted helper,
    rather than model-written click steps, must attach exactly `Simdorei Local
    Project Oauth`, return the composer from Work to normal Chat mode, and verify
@@ -83,7 +83,7 @@ questions, or as a substitute for local tests.
    before every retry helper invocation, including fresh-chat recovery below, set
    it to true; if it is already true, stop without sending.
    If this same turn requires its one permitted recovery retry, run
-   `<source.path>/bin/cdr-pro-helper connector-retry-probe-code`
+   `node "<source.path>/bin/cdr-pro-helper.mjs" connector-retry-probe-code`
    and submit that emitted code unchanged. Never rename the result variable or
    hand-edit either emitted wrapper.
    If a saved legacy conversation cannot present that connector, preserve the old

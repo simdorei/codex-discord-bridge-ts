@@ -1,11 +1,12 @@
-import {parentPort,workerData as q} from 'node:worker_threads';
+import {serveReusableWorker} from '../reusable-worker-entry.ts';
+import type {ReusableNativeOperation} from '../reusable-worker-operations.ts';
 import {newThreadOriginExisting,pendingNewPromptExisting} from '../../store/message-classification-read.ts';
 import {abandonmentCommandTarget} from '../../store/abandonment-routing.ts';
 import {SelectedReadBudget} from '../../store/selected-read-budget.ts';
 import {StoreIntegrityError} from '../../store/schema-assembly.ts';
 import {needsNewPromptArm,messageSqlId,frozenMessagePlan,discardClassificationJob} from './classification-plan.ts';
 import {captureNativeMessageClassificationLimits,captureClassificationReadResult,classificationReadFailure} from './classification-wire.ts';
-if(parentPort===null)throw new Error('Classification requires an owned native worker');
+export const runNativeOperation:ReusableNativeOperation=(q,parentPort)=>{
 try{
  const limits=captureNativeMessageClassificationLimits(q.limits),budget=new SelectedReadBudget(limits.maxRows,limits.maxValueBytes);
  const origin=newThreadOriginExisting(q.path,q.channel,budget);
@@ -18,3 +19,5 @@ try{
  parentPort.postMessage({ok:true,value});
 }catch(error){parentPort.postMessage({ok:false,error:classificationReadFailure(error)});}
 finally{parentPort.close();}
+};
+await serveReusableWorker(runNativeOperation);

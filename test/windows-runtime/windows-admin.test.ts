@@ -19,6 +19,8 @@ import {selectDelivery} from '../../src/store/delivery.ts';
 import {finalRecoveryAuthorizedIn,validateFinalRecoveryClaimIn} from '../../src/store/final-recovery-claims.ts';
 import {inspectLifecycleIntent} from '../../src/cli/admin-intent.ts';
 import {pathToFileURL} from 'node:url';
+import {installPluginWithRunner} from '../../src/cli/plugin-install.ts';
+import {trayPayload} from '../../src/cli/windows-tray.ts';
 const windows={skip:process.platform!=='win32',timeout:30000};
 const digest=(text:string)=>createHash('sha256').update(text).digest('hex');
 test('packaged Pro manifest and explicit skill input share the installed plugin, preserving a local override',windows,()=>storeFixture(async path=>{
@@ -69,6 +71,24 @@ test('plugin installation verification rejects duplicate or wrong repository reg
  const record={name:'market',root};await writeFile(m,JSON.stringify({marketplaces:[record]}));await writeFile(p,JSON.stringify({installed:[{pluginId:'plugin',installed:true,enabled:true,version:'1'}]}));await writeFile(f,'{"version":"1"}');
  assert.equal(await verifyInstallInventory(root,m,p,f,'market','plugin'),'1');await writeFile(m,JSON.stringify({marketplaces:[record,record]}));await assert.rejects(verifyInstallInventory(root,m,p,f,'market','plugin'),/unique/);
 }));
+test('explicit plugin installer registers packaged helper and verifies actual inventory before success',windows,()=>storeFixture(async path=>{
+ const root=dirname(path),source=await import('node:fs/promises').then(fs=>fs.realpath(process.cwd())),version=JSON.parse(await readFile(join(source,'plugins/codex-discord-remote/.codex-plugin/plugin.json'),'utf8')).version,calls:string[][]=[];
+ const run=async(args:readonly string[])=>{calls.push([...args]);if(args.includes('--json'))return JSON.stringify(args.includes('marketplace')?{marketplaces:[{name:'codex-discord-remote',root:source}]}:{installed:[{pluginId:'codex-discord-remote@codex-discord-remote',installed:true,enabled:true,version}]});return '';};
+ assert.match(await installPluginWithRunner(root,source,run),/Installed and verified/);assert.deepEqual(calls.slice(0,2),[['plugin','marketplace','add',source],['plugin','add','codex-discord-remote@codex-discord-remote']]);assert.equal(calls.length,4);
+ let attempts=0;await assert.rejects(installPluginWithRunner(root,source,async()=>{attempts++;throw Error('registration failed');}),/registration failed/);assert.equal(attempts,1);
+}));
+test('tray payload binds every action to one installation and keeps force separate',()=>{
+ const root='C:\\한글 & space',entry='C:\\npm\\bin.mjs',payload=JSON.parse(Buffer.from(trayPayload(root,entry,'C:\\node.exe'),'base64').toString());
+ assert.equal(payload.root,root);assert.match(payload.status,/--supervisor-status/u);assert.match(payload.restart,/--supervisor-control restart/u);assert.match(payload.force,/--supervisor-control force_restart/u);for(const value of [payload.status,payload.restart,payload.force])assert.ok(value.endsWith('"'+root+'"'));
+});
+test('packaged restart script queues Immediate gracefully, forwards quiet/wait, and rejects a stale expected process',windows,()=>storeFixture(async path=>{
+ const root=dirname(path),entry=join(root,'control-fixture.mjs'),output=join(root,'args.json');await writeFile(entry,'import {writeFileSync} from "node:fs";writeFileSync('+JSON.stringify(output)+',JSON.stringify(process.argv.slice(2)));');
+ await writeFile(join(root,'.cdr-ts-supervisor.json'),JSON.stringify({version:1,root,node:process.execPath,entry,childPid:process.pid}));await writeFile(join(root,'.codex_discord_rust.drain.identity'),'version=1\nruntime_id=fixture-generation\npid='+process.pid+'\nstate=open\n');
+ const ps=join(process.env.SystemRoot!,'System32/WindowsPowerShell/v1.0/powershell.exe'),script=join(process.cwd(),'plugins/codex-discord-remote/scripts/restart.ps1'),run=(args:string[])=>runOwnedCommand({executable:ps,arguments:['-NoProfile','-NonInteractive','-WindowStyle','Hidden','-File',script,'-RepoRoot',root,...args],environment:{}},{timeoutMs:15000,maxBytes:65536});
+ const graceful=await run(['-Immediate','-QuietSeconds','3','-WaitTimeoutSeconds','7']);assert.equal(graceful.exitCode,0,graceful.stderr.toString());const argv=JSON.parse(await readFile(output,'utf8'));assert.equal(argv[1],'restart');assert.deepEqual(argv.slice(-6),['--delay-seconds','0','--restart-quiet-seconds','3','--restart-wait-timeout-seconds','7']);assert.ok(argv.includes('fixture-generation'));
+ const before=await readFile(output,'utf8'),stale=await run(['-ExpectedBotIdentity','1|1']);assert.notEqual(stale.exitCode,0);assert.equal(await readFile(output,'utf8'),before);
+ const force=await run(['-Force']);assert.equal(force.exitCode,0);assert.equal(JSON.parse(await readFile(output,'utf8'))[1],'force_restart');
+}));
 test('legacy mirror migration backs up, preserves cursor and rejects concurrent runtime',windows,()=>storeFixture(async path=>{
  const root=dirname(path),log=join(root,'rollout.jsonl');await writeFile(log,'{"type":"old"}\n');const db=await openInitialized(path);
  db.prepare('INSERT INTO codex_session_mirror_offsets(codex_thread_id,rollout_path,cursor,updated_at,turn_context) VALUES(?,?,?,?,?)').run('thread',log,15,1,'turn');db.close();
@@ -94,7 +114,7 @@ test('attachment CLI makes exactly one upload and preserves an uncertain outcome
  t.mock.method(globalThis,'fetch',async()=>{calls++;throw new Error('SECRET MUST NOT LEAK');});await assert.rejects(sendAdminAttachments(args,'fixture-only','123'),e=>e instanceof Error&&e.message.includes('unconfirmed')&&!e.message.includes('SECRET'));assert.equal(calls,2);
 }));
 test('bundled recovery PowerShell parses without running any recovery effects',windows,async()=>{
- const scripts=['CdrDesktopRecovery.ps1','CdrOwnedProcesses.ps1','CdrToolsRecovery.ps1','Invoke-CdrDesktopRecovery.ps1','Test-NativeWorkspace.ps1'].map(name=>join(process.cwd(),'scripts',name));
+ const scripts=['CdrDesktopRecovery.ps1','CdrOwnedProcesses.ps1','CdrToolsRecovery.ps1','Invoke-CdrDesktopRecovery.ps1','Test-NativeWorkspace.ps1','codex-discord-tray.ps1','CdrRuntimeCutover.ps1'].map(name=>join(process.cwd(),'scripts',name));
  scripts.push(...['status.ps1','restart.ps1','qa-smoke.ps1'].map(name=>join(process.cwd(),'plugins','codex-discord-remote','scripts',name)));
  const payload=Buffer.from(JSON.stringify(scripts)).toString('base64');
  const script=`$ErrorActionPreference='Stop'; $files=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${payload}'))|ConvertFrom-Json; foreach($file in $files){$tokens=$null; $errors=$null; [void][Management.Automation.Language.Parser]::ParseFile($file,[ref]$tokens,[ref]$errors); if($errors.Count){throw ($errors|Out-String)}}; 'PARSE_OK'`;

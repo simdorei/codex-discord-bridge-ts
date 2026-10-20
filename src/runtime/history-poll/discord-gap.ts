@@ -71,7 +71,8 @@ async function runDiscordHistory(options:DiscordHistoryGapOptions,channel:bigint
   const discard=mode.kind==='Poll'?DiscordHistoryDiscardFence.capture(mode.gaps,channel,accepted??undefined):null;
   if(mode.kind==='Poll'&&discard===null)return null;
   let observedAt=mode.kind==='Poll'?readCustodyTimestamp(now):0;
-  const cycle=mode.kind==='Poll'?HistoryPollState.prototype.begin.call(mode.state,channel,BigInt(Math.floor(observedAt*1000))):null;
+  // Custody timestamps are Unix seconds; Discord history watermarks use microseconds.
+  const cycle=mode.kind==='Poll'?HistoryPollState.prototype.begin.call(mode.state,channel,BigInt(Math.floor(observedAt*1000000))):null;
   let policy:InteractionAccessPolicy,refreshPending:Promise<InteractionAccessPolicy>|undefined;
   try{refreshPending=refresh(basePolicy,database,signal);if(!types.isPromise(refreshPending))throw new TypeError('Expected history policy refresh Promise');policy=await refreshPending;}
   catch(error){if(signal?.aborted&&error===signal.reason)throw error;const capacity=takeMirrorPolicyCapacityRefusal(refreshPending,error),failure=new DiscordHistoryPolicyError(error);if(capacity&&origin!==undefined)capacityOrigins.set(failure,origin);throw failure;}

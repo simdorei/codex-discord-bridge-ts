@@ -55,6 +55,23 @@ test("owned polling cycle deadline is cooperative, retains its claim and emits o
   const worker=new StopControlWorker("fixture",f.server,f.bridge,f.locks,render,e=>{f.failures.push(e);if(e.stage==="deadline")shutdown.abort();},f.store);
   await worker.run(shutdown.signal,()=>({wait:()=>{waits++;return Promise.resolve();},close:()=>{closed++;}}));assert.equal(f.failures.length,1);assert.equal(f.failures[0]!.stage,"deadline");assert.equal(f.rows[0]!.phase,"dispatching");assert.equal(closed,1);assert.equal(waits,1);assert.equal(f.locks.activeTargetCount,0);
 });
+
+test("slow verification cannot consume the original interrupt's two-second dispatch budget",{timeout:5000},async()=>{
+  const f=fake([control('a')]),shutdown=new AbortController();
+  f.setCheck(async()=>{await delay(1500);return false;});
+  f.setHook(async signal=>{await delay(650,undefined,{signal});setImmediate(()=>shutdown.abort());});
+  const worker=new StopControlWorker('fixture',f.server,f.bridge,f.locks,render,event=>{f.failures.push(event);shutdown.abort();},f.store);
+  let first=true;await worker.run(shutdown.signal,()=>({wait:()=>{if(first){first=false;return Promise.resolve();}return new Promise<void>(()=>{});},close(){}}));
+  assert.equal(f.rows[0]!.phase,'acknowledged');assert.deepEqual(f.calls.filter(value=>value.startsWith('wire:')),['wire:a']);assert.equal(f.failures.length,0);assert.equal(f.locks.activeTargetCount,0);
+});
+
+test('polling yields after one claim so renewed budgets cannot monopolize a page of Stops',async()=>{
+  const f=fake([control('a'),control('b')]),shutdown=new AbortController(),afterFirst=deferred<void>(),afterSecond=deferred<void>(),next=deferred<void>();let waits=0;
+  const running=f.worker.run(shutdown.signal,()=>({wait:()=>{waits++;if(waits===1)return Promise.resolve();if(waits===2){afterFirst.resolve();return next.promise;}afterSecond.resolve();return new Promise<void>(()=>{});},close(){}}));
+  try{await afterFirst.promise;assert.deepEqual(f.rows.map(row=>row.phase),['acknowledged','accepted']);next.resolve();await afterSecond.promise;assert.deepEqual(f.calls.filter(value=>value.startsWith('wire:')),['wire:a','wire:b']);}
+  finally{shutdown.abort();next.resolve();await running;}
+  assert.equal(f.locks.activeTargetCount,0);
+});
 test("shutdown joins an outstanding verification before releasing its shared target lease",async()=>{
   const f=fake([control("a")]),entered=deferred<void>(),release=deferred<boolean>(),shutdown=new AbortController();let closed=false,ended=false;f.setCheck(async()=>{entered.resolve();return release.promise;});const run=f.worker.run(shutdown.signal,()=>({wait:()=>Promise.resolve(),close:()=>{closed=true;}})).then(()=>{ended=true;});await entered.promise;shutdown.abort();await Promise.resolve();assert.equal(ended,false);assert.equal(f.locks.activeTargetCount,1);release.resolve(false);await run;assert.equal(closed,true);assert.equal(f.locks.activeTargetCount,0);assert.equal(f.rows[0]!.phase,"accepted");
 });

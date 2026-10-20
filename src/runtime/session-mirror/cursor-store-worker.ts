@@ -1,9 +1,10 @@
 import {advanceMirrorCursorWithSkips} from './mixed-cursor-transaction.ts';
-import {parentPort,workerData as q} from 'node:worker_threads';
+import {serveReusableWorker} from '../reusable-worker-entry.ts';
+import type {ReusableNativeOperation} from '../reusable-worker-operations.ts';
 import {usingExistingStore} from '../../store/owned-scope.ts';
 import {usingExistingReadOnlyStore} from '../../store/owned-scope.ts';
 import {initializeMirrorCursorJournal,readBoundMirrorCursor,initializeFreshMirrorCursor,advanceBoundMirrorCursor,advanceMappedMirrorCursor} from '../../store/mirror-cursor-journal.ts';
-if(parentPort===null)throw new Error('Mirror cursor store requires owned native worker');
+export const runNativeOperation:ReusableNativeOperation=(q,parentPort)=>{
 try{
  const run=(db:Parameters<typeof readBoundMirrorCursor>[0])=>{
   switch(q.kind){
@@ -20,3 +21,5 @@ try{
  parentPort.postMessage({ok:true,value});
 }catch(error){parentPort.postMessage({ok:false,detail:[...(error instanceof Error?error.message:'Mirror cursor operation failed')].slice(0,2048).join('')});}
 finally{parentPort.close();}
+};
+await serveReusableWorker(runNativeOperation);

@@ -211,7 +211,7 @@ test('source interleaving captures heartbeat and mirror before await and leaves 
    assert.equal(core.heartbeat.worker.peek(),undefined);assert.equal(removed,0);assert.ok(publications.every(text=>text==='pid=123\nupdated_at=456\n'));assert.equal(context.owner.lifecycleSnapshot().healthy,true);assert.deepEqual(errors,[]);assert.deepEqual(seen,[]);for(const usage of budgetDeferrals)for(const lane of Object.keys(OWNED_WORKER_LIMITS) as (keyof typeof OWNED_WORKER_LIMITS)[])assert.ok(usage[lane]<=OWNED_WORKER_LIMITS[lane]);
    core.heartbeat.requestStop();assert.deepEqual(await core.heartbeat.worker.join(),{kind:'Returned',result:{ok:true}});assert.equal(removed,1);assert.equal(sends,1);
   }finally{core.requestStop();await core.close();core.heartbeat?.requestStop();await core.heartbeat?.worker.join();}
- });}finally{stop.abort();exits.close();await context.disposeBeforeWorkers();}gone(o.paths.root);assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0});
+ });}finally{stop.abort();exits.close();await context.disposeBeforeWorkers();}gone(o.paths.root);assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});
 }));
 
 test('disabled mirror interleaving preserves seven source-ordered tasks with separate heartbeat ownership',{timeout:15000},async()=>storeFixture(async path=>{
@@ -436,5 +436,5 @@ for(const mode of ['append','marker-body','sibling-rate'] as const)test(`explici
  }finally{
   stop.abort();owner?.requestStop();await http?.close();await gateway.shutdown(performance.now()+3000);await owner?.close();owner?.heartbeat.requestStop();await owner?.heartbeat.worker.join();owner?.disposeMonitor();await context?.disposeBeforeWorkers();await controller.dispose();db?.close();web.closeAllConnections();if(web.listening)await new Promise<void>((resolve,reject)=>web.close(error=>error?reject(error):resolve()));
  }
- assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0});
+ assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});
 }));

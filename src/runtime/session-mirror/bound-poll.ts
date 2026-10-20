@@ -72,8 +72,8 @@ export interface BoundMirrorWorkerConfig{
  * a later epoch. Bindings must be preinitialized unless bootstrap is explicitly
  * selected. Bootstrap and polling share the existing target/channel owner, the
  * original queue target/global mapping locks, and cancellation lifetime without
- * an intermediate release or another loop. Global mapping ownership currently
- * serializes targets; this is a correctness guard, not performance qualification.
+ * an intermediate release or another loop. Shared mapping ownership lets targets
+ * deliver concurrently while excluding mapping writers until delivery joins.
  * Requires a validated transport, independent producer contract and stable DB
  * identity/mapping under the caller's application-owned abort lifetime.
  * No service boot, schema creation, account login or independent retry mechanism. */

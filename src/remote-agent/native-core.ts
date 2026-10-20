@@ -7,14 +7,19 @@ import {redactRemoteText} from './files/redaction.ts';
 import {NativeCheckpoints,type FileMutation} from './native-checkpoints.ts';
 import {findNativeExecutable} from './native-terminal.ts';
 import {runOwnedCommand} from '../runtime/windows/owned-command.ts';
-import {imageEntry,downloadRemoteImage} from './native-images.ts';
+import {imageEntry,downloadRemoteImage,RemoteImageInputError} from './native-images.ts';
 import type {CoreRequest} from './core-request.ts';
 import type {RemoteCoreOutput} from './core-output.ts';
 import type {RemoteOperationContext} from './dispatcher-ports.ts';
 const lines=(text:string)=>text===''?[]:text.replace(/\n$/,'').split('\n').map(s=>s.replace(/\r$/,''));
 const strict=(bytes:Buffer)=>new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);
 const utf8cut=(text:string,max:number)=>new TextDecoder().decode(Buffer.from(text).subarray(0,max));
-const conflict=(path:string)=>new RemoteFileFailure('Conflict',path,'file already exists or changed since it was read');
+/** Emitted only by the core's checks before entering a checkpoint mutation.
+ * A later filesystem/checkpoint conflict must retain uncertain-effect handling. */
+export class RemoteCoreInputConflict extends RemoteFileFailure{
+ constructor(path:string){super('Conflict',path,'file already exists or changed since it was read');}
+}
+const conflict=(path:string)=>new RemoteCoreInputConflict(path);
 export function safeCommandEnvironment():Record<string,string>{const env:Record<string,string>={};for(const key of ['PATH','HOME','LANG','LC_ALL','TMPDIR','TMP','TEMP','SystemDrive','SystemRoot','ProgramData','COMSPEC','ComSpec','PATHEXT','LOCALAPPDATA','APPDATA','USERPROFILE','SSH_AUTH_SOCK','CODEX_HOME'])if(process.env[key]!==undefined)env[key]=process.env[key]!;return env;}
 type Command={command_id:string;display:string;source:string;risk_tier:'read'|'verify'|'network'|'destructive';argv:string[];};
 /** Native project operations use the same session budget and mutation cache in
@@ -43,10 +48,36 @@ export class NativeRemoteCore{
  }
  async status(context:RemoteOperationContext):Promise<Extract<RemoteCoreOutput,{kind:'repo_status'}>>{
   const branch=(await this.git(['branch','--show-current'],context)).stdout.trim(),porcelain=(await this.git(['status','--porcelain=v1','-z'],context)).stdout.split('\0');const dirty_files:string[]=[],staged_files:string[]=[];
-  for(let i=0;i<porcelain.length;i++){const row=porcelain[i]!;if(row.length<4)continue;const path=row.slice(3);dirty_files.push(path);if(row[0]!==' '&&row[0]!=='?')staged_files.push(path);if(row[0]==='R'||row[0]==='C'||row[1]==='R'||row[1]==='C')i++;}
+  for(let i=0;i<porcelain.length;i++){const row=porcelain[i]!;if(row.length<4)continue;const path=row.slice(3),renamed=row[0]==='R'||row[0]==='C'||row[1]==='R'||row[1]==='C',original=renamed?porcelain[++i]:undefined;
+   if(!this.#visible(path)||(original!==undefined&&!this.#visible(original)))continue;
+   if(row[1]!==' ')dirty_files.push(path);if(row[0]!==' '&&row[0]!=='?')staged_files.push(path);}
   const remotes=lines((await this.git(['remote'],context)).stdout),tracking=await this.git(['rev-parse','--abbrev-ref','--symbolic-full-name','@{upstream}'],context,true);let ahead=0n,behind=0n;
   if(tracking.success){const counts=(await this.git(['rev-list','--left-right','--count','HEAD...@{upstream}'],context)).stdout.trim().split(/\s+/);ahead=BigInt(counts[0]??0);behind=BigInt(counts[1]??0);}
   return {kind:'repo_status',branch,dirty_files,staged_files,remotes,upstream:tracking.success?tracking.stdout.trim():null,ahead,behind};
+ }
+ #visible(path:string):boolean{try{this.files.path(path);return true;}catch(error){if(error instanceof RemoteFileFailure)return false;throw error;}}
+ async #diff(context:RemoteOperationContext):Promise<Extract<RemoteCoreOutput,{kind:'repo_diff'}>>{
+  const paths=(await this.git(['diff','--no-renames','--name-only','-z','HEAD','--'],context)).stdout.split('\0').filter(p=>p!==''&&this.#visible(p));
+  const files:Extract<RemoteCoreOutput,{kind:'repo_diff'}>['files'][number][]=[];let patch='',truncated=false;
+  const append=(text:string)=>{const available=200000-Buffer.byteLength(patch);if(Buffer.byteLength(text)>available)truncated=true;if(available>0)patch+=utf8cut(text,available);};
+  // Bound argv on Windows, and never invoke an unrestricted diff when no path
+  // survives the exact same policy used for remote file access.
+  for(let at=0;at<paths.length;){const batch:string[]=[];let size=0;while(at<paths.length&&batch.length<128){const path=paths[at]!;if(size+path.length>12000&&batch.length)break;batch.push(path);size+=path.length+3;at++;}
+   const numeric=await this.git(['diff','--no-ext-diff','--no-textconv','--no-renames','--numstat','-z','HEAD','--',...batch],context);
+   for(const row of numeric.stdout.split('\0').filter(Boolean)){const [a,r,...rest]=row.split('\t'),path=rest.join('\t');if(this.#visible(path))files.push({path,added:/^\d+$/.test(a??'')?BigInt(a!):0n,removed:/^\d+$/.test(r??'')?BigInt(r!):0n});}
+   if(Buffer.byteLength(patch)<200000){const result=await this.git(['diff','--no-ext-diff','--no-textconv','--no-renames','HEAD','--',...batch],context,false,true);append(result.stdout);truncated||=result.truncated;}else truncated=true;
+  }
+  const untracked=(await this.git(['ls-files','--others','--exclude-standard','-z'],context)).stdout.split('\0').filter(Boolean);
+  if(untracked.length>10000)throw new RangeError('Too many untracked files');
+  for(const path of untracked){context.signal.throwIfAborted();context.budget.remaining();if(!this.#visible(path))continue;let bytes:Buffer|null;
+   try{bytes=await this.files.read(path);}catch(error){if(error instanceof RemoteFileFailure&&(error.kind==='Size'||error.kind==='UnsafePath'))continue;throw error;}if(bytes===null)continue;
+   let content:string|null=null;try{if(!bytes.includes(0))content=strict(bytes);}catch{}
+   const added=content===null?0n:BigInt(lines(content).length);files.push({path,added,removed:0n});
+   const label=JSON.stringify(path);if(content===null)append(`Binary untracked file ${label}\n`);
+   else append(`diff --git ${JSON.stringify('a/'+path)} ${JSON.stringify('b/'+path)}\nnew file mode 100644\n--- /dev/null\n+++ ${JSON.stringify('b/'+path)}\n@@ -0,0 +1,${added} @@\n`+lines(content).map(line=>'+'+line+'\n').join(''));
+  }
+  const added=files.reduce((n,file)=>n+file.added,0n),removed=files.reduce((n,file)=>n+file.removed,0n);
+  return {kind:'repo_diff',files,summary:`${files.length} changed files, +${added} -${removed}`,patch:await redactRemoteText(patch,context.signal),truncated};
  }
  async write(path:string,content:string,expected:string|null,signal?:AbortSignal){const bytes=Buffer.from(content);if(bytes.length>1048576)throw new RangeError('File exceeds 1 MiB');const checkpoint_id=await this.checkpoints.mutate('write file',[{path,content:bytes,expected}],signal);return {path,sha256:fileDigest(bytes),bytes_written:BigInt(bytes.length),created:expected===null,checkpoint_id};}
  async execute(request:CoreRequest,context:RemoteOperationContext):Promise<RemoteCoreOutput>{
@@ -60,7 +91,7 @@ export class NativeRemoteCore{
     return {kind:'command_run',command_id:request.command_id,exit_code:BigInt(r.exitCode??-1),stdout:await redactRemoteText(r.stdout.toString('utf8')),stderr:await redactRemoteText(r.stderr.toString('utf8')),duration_ms:BigInt(Math.round(performance.now()-start)),truncated:r.truncated};}
    case 'repo_status':return this.status(context);
    case 'project_status':{const status=await this.status(context),rules=await this.execute({kind:'project_rules'},context);return {kind:'project_status',branch:status.branch,dirty_files:status.dirty_files,staged_files:status.staged_files,rule_files:rules.kind==='project_rules'?rules.rules.map(r=>r.path):[],command_ids:(await this.commands()).map(c=>c.command_id)};}
-   case 'repo_diff':{const nums=await this.git(['diff','--no-ext-diff','--no-textconv','--numstat','HEAD','--'],context),patch=await this.git(['diff','--no-ext-diff','--no-textconv','HEAD','--'],context,false,true);const files=lines(nums.stdout).map(row=>{const [a,r,...path]=row.split('\t');return {path:path.join('\t'),added:/^\d+$/.test(a??'')?BigInt(a!):0n,removed:/^\d+$/.test(r??'')?BigInt(r!):0n};});return {kind:'repo_diff',files,summary:`${files.length} changed files`,patch:await redactRemoteText(utf8cut(patch.stdout,200000)),truncated:patch.truncated||Buffer.byteLength(patch.stdout)>200000};}
+   case 'repo_diff':return this.#diff(context);
    case 'git_commit':{for(const path of request.paths)this.files.path(path);const untracked=new Set((await this.git(['ls-files','--others','--exclude-standard','-z'],context)).stdout.split('\0')),newPaths=request.paths.filter(p=>untracked.has(p));if(newPaths.length)await this.git(['add','--intent-to-add','--',...newPaths],context);await this.git(['commit','--only','-m',request.message,'--',...request.paths],context);
     return {kind:'git_commit',commit:(await this.git(['rev-parse','--short','HEAD'],context)).stdout.trim(),branch:(await this.git(['branch','--show-current'],context)).stdout.trim(),staged_files:lines((await this.git(['diff-tree','--no-commit-id','--name-only','-r','HEAD'],context)).stdout)};}
    case 'git_push':{const remotes=lines((await this.git(['remote'],context)).stdout);if(!remotes.includes(request.remote))throw new Error('Git remote is not configured');const branch=request.branch??(await this.git(['branch','--show-current'],context)).stdout.trim();if(!branch)throw new Error('Detached HEAD requires an explicit branch');const r=await this.git(['push','-u','--',request.remote,branch],context,false,false,true);return {kind:'git_push',remote:request.remote,branch,output:await redactRemoteText(utf8cut((r.stdout+'\n'+r.stderr).trim(),200000))};}
@@ -74,7 +105,9 @@ export class NativeRemoteCore{
    case 'checkpoint_list':return {kind:'checkpoint_list',checkpoints:await this.checkpoints.list()};
    case 'checkpoint_show':{const r=await this.checkpoints.show(request.checkpoint_id);return {kind:'checkpoint_show',checkpoint:r.checkpoint,patch:await redactRemoteText(r.patch,context.signal)};}
    case 'checkpoint_restore':return {kind:'checkpoint_restore',checkpoint_id:request.checkpoint_id,restored_files:await this.checkpoints.restore(request.checkpoint_id,context.signal)};
-   case 'save_image':case 'save_image_from_url':{let bytes:Buffer;if(request.kind==='save_image'){if(!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(request.data_base64))throw new TypeError('Invalid image base64');bytes=Buffer.from(request.data_base64,'base64');}else bytes=await downloadRemoteImage(request.url,context);const image=imageEntry(request.path,bytes),before=await this.files.read(request.path,5242880);if(before!==null&&!request.overwrite)throw conflict(request.path);await this.checkpoints.mutate('save image',[{path:request.path,content:bytes,expected:before===null?null:fileDigest(before)}],context.signal);return {kind:'image_save',image,sha256:fileDigest(bytes)};}
+   case 'save_image':case 'save_image_from_url':{let bytes:Buffer;if(request.kind==='save_image'){bytes=Buffer.from(request.data_base64,'base64');if(bytes.toString('base64')!==request.data_base64)throw new RemoteImageInputError('Invalid image base64');}else bytes=await downloadRemoteImage(request.url,context);
+    let image:ReturnType<typeof imageEntry>;try{image=imageEntry(request.path,bytes);}catch(error){if(error instanceof RangeError||error instanceof TypeError)throw new RemoteImageInputError(error.message);throw error;}
+    const before=await this.files.read(request.path,5242880);if(before!==null&&!request.overwrite)throw conflict(request.path);await this.checkpoints.mutate('save image',[{path:request.path,content:bytes,expected:before===null?null:fileDigest(before)}],context.signal);return {kind:'image_save',image,sha256:fileDigest(bytes)};}
    case 'retrieve_image':{const bytes=await this.files.read(request.path,5242880);if(bytes===null)throw new Error('Image does not exist');return {kind:'image_retrieve',image:imageEntry(request.path,bytes),data_base64:bytes.toString('base64')};}
    case 'list_images':{const images=[];for(const {path}of (await scanRemoteOwnedFiles(this.reader,context.signal)).files){context.signal.throwIfAborted();if(!/\.(png|jpe?g|gif|webp)$/i.test(path))continue;try{const bytes=await this.files.read(path,5242880);if(bytes)images.push(imageEntry(path,bytes));}catch{}if(images.length>=200)break;}return {kind:'image_list',images};}
   }

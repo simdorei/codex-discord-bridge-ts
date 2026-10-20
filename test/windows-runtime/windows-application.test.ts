@@ -5,6 +5,7 @@ import {createServer} from 'node:http';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
+import {inspect} from 'node:util';
 import test from 'node:test';
 import {setTimeout as delay} from 'node:timers/promises';
 import {WebSocketServer, type WebSocket} from 'ws';
@@ -17,6 +18,8 @@ import {RuntimeStopSignal} from '../../src/runtime/discord-runtime/stop-signal.t
 import {WindowsRuntimeInstance} from '../../src/runtime/windows/windows-runtime-instance.ts';
 import {OwnedWorkerSlot,ownedWorkerUsage} from '../../src/runtime/owned-worker-slot.ts';
 import {openInitialized} from '../../src/store/owned-driver.ts';
+import {ControlTurnVerifier} from '../../src/runtime/action-executor/control-turn.ts';
+import {StopControlWorker} from '../../src/runtime/action-executor/stop-worker.ts';
 
 const message = (id: string, content: string, user = '2',channel='7') => ({
   attachments: [], author: {id: user, username: 'fixture', discriminator: '0', bot: user === '9'},
@@ -58,6 +61,11 @@ for(const parallel of [false,true])test(parallel?'three simultaneous threads del
   if(parallel){const mirror=await openInitialized(join(root,'discord_mirror.sqlite'));for(const c of channels)mirror.prepare('INSERT INTO mirror_threads VALUES(?,?,?,?,?,?)').run(threadFor(c),'project','Fixture',BigInt(c),BigInt(c),1);mirror.close();}
   const sent: string[] = [], calls: string[] = [], processes: OwnedPortableAppServerProcess[] = [];
   const refusals=new Set<string>(),runWorker=OwnedWorkerSlot.prototype.run;
+  for(const method of ['process','processRecoveries'] as const){const original=StopControlWorker.prototype[method];t.mock.method(StopControlWorker.prototype,method,function(this:StopControlWorker,...args:Parameters<typeof original>){const pending=original.apply(this,args);void pending.catch(error=>refusals.add('STOP '+method+' '+inspect(error,{depth:5})));return pending;});}
+  const verifyControl=ControlTurnVerifier.prototype.owned;
+  t.mock.method(ControlTurnVerifier.prototype,'owned',function(this:ControlTurnVerifier,...args:Parameters<typeof verifyControl>){const pending=verifyControl.apply(this,args);void pending.catch(error=>refusals.add('STOP VERIFY '+inspect(error,{depth:5})));return pending;});
+  const executeStop=PortableResidentLifecycle.prototype.executeStopControl;
+  t.mock.method(PortableResidentLifecycle.prototype,'executeStopControl',function(this:PortableResidentLifecycle,...args:Parameters<typeof executeStop>){const pending=executeStop.apply(this,args);void pending.catch(error=>refusals.add('STOP EXECUTE '+inspect(error,{depth:5})));return pending;});
   t.mock.method(OwnedWorkerSlot.prototype,'run',function(this:OwnedWorkerSlot,...args:Parameters<typeof runWorker>){
     const origin=new Error().stack,pending=runWorker.apply(this,args);
     void pending.catch(error=>{refusals.add(String(error)+' '+args[0].pathname+'\n'+origin);});return pending;
@@ -134,6 +142,9 @@ for(const parallel of [false,true])test(parallel?'three simultaneous threads del
     if(parallel){
       send('500','HOLD_FOR_STOP','7');
       await until(()=>queueMatches("SELECT 1 FROM codex_turn_queue WHERE target_thread_id='fixture-thread' AND state='running'",true),'held fixture turn starts');
+      for(const channel of ['8','9'])send(String(600+Number(channel)),'fixture while another target is held',channel);
+      await until(()=>['8','9'].every(c=>sent.filter(text=>text.includes('WINDOWS_FINAL_OK '+threadFor(c)+' ')).length===4),'other targets finish while first target is held');
+      assert.ok(queueMatches("SELECT 1 FROM codex_turn_queue WHERE target_thread_id='fixture-thread' AND state='running'",true));
       send('501','!stop','7');await until(()=>sent.some(text=>/Stop request|Stop accepted|stop request|정지|중지/.test(text)),'stop acknowledgement');
       await until(()=>queueMatches("SELECT 1 FROM codex_turn_queue WHERE target_thread_id='fixture-thread' AND state IN ('running','starting')",false),'stopped job leaves active queue');
       send('502','fixture after stop','7');await until(()=>sent.filter(text=>text.includes('WINDOWS_FINAL_OK fixture-thread ')).length===4,'final after stop');
@@ -143,6 +154,7 @@ for(const parallel of [false,true])test(parallel?'three simultaneous threads del
     assert.ok(calls.includes('app-server'));
     stop.abort(); await running; assert.equal(failed, undefined);
     t.diagnostic(JSON.stringify({parallel,threads:channels.length,startupMs: Math.round(registeredAt - startedAt), workMs: Math.round(finalAt - promptAt), shutdownMs: Math.round(performance.now() - finalAt),rssStart,rssPeak:peakRss,rssEnd:process.memoryUsage().rss}));
+    if(parallel)t.diagnostic(JSON.stringify({stopDiagnostics:[...refusals].filter(value=>value.startsWith('STOP '))}));
     // The automatic mirror owns a separate reader session in addition to the
     // turn provider. Both native owners must really exit before root release.
     assert.equal(processes.length, 2); assert.ok(processes.every(child => child.exitConfirmed));

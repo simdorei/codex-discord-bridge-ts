@@ -8,12 +8,19 @@ if(process.argv.length!==3)throw new Error('Usage: node tools/test-installed-pac
 const tarball=await realpath(resolve(process.argv[2]));
 if(!tarball.endsWith('.tgz'))throw new Error('Expected a packed npm tarball');
 await mkdir(join(root,'.runtime'),{recursive:true});
-const prefix=await mkdtemp(join(root,'.runtime/npm-installed-alpha2-'));
+const prefix=await mkdtemp(join(root,'.runtime/npm-installed-'));
 const npm=join(dirname(process.execPath),'node_modules/npm/bin/npm-cli.js');
 execFileSync(process.execPath,[npm,'install','--prefix',prefix,'--ignore-scripts','--no-audit','--no-fund','--package-lock=false',tarball],{cwd:root,stdio:'inherit',windowsHide:true});
 const pkg=join(prefix,'node_modules/codex-discord-bridge-ts'),entry=join(pkg,'bin/codex-discord-bridge.mjs');
 execFileSync(process.execPath,[entry,'--version'],{cwd:prefix,stdio:'inherit',windowsHide:true});
 execFileSync(process.execPath,[entry,'--help'],{cwd:prefix,stdio:'ignore',windowsHide:true});
+const gateway=join(pkg,'bin/cdr-mcp-server.mjs');
+execFileSync(process.execPath,[gateway,'--help'],{cwd:prefix,stdio:'ignore',windowsHide:true});
+const gatewayEnv={...process.env};for(const key of Object.keys(gatewayEnv))if(key.startsWith('SIMDOREI_MCP_'))delete gatewayEnv[key];
+Object.assign(gatewayEnv,{SIMDOREI_MCP_PUBLIC_BASE_URL:'https://gateway.invalid',SIMDOREI_MCP_OWNER_TOKEN:'INSTALL_OWNER_FIXTURE_'.repeat(3),SIMDOREI_MCP_DEVICE_ID:'fixture',SIMDOREI_MCP_DEVICE_TOKEN:'INSTALL_DEVICE_FIXTURE_'.repeat(3),SIMDOREI_MCP_BIND:'127.0.0.1:0'});
+const gatewayCheck=execFileSync(process.execPath,[gateway,'--check-config'],{cwd:prefix,env:gatewayEnv,encoding:'utf8',windowsHide:true});
+if(JSON.parse(gatewayCheck).configured_devices!==1||gatewayCheck.includes('INSTALL_'))throw new Error('Installed gateway configuration check failed');
+process.stdout.write('Installed MCP server CLI PASS; configuration check starts no listener.\n');
 if(process.platform==='win32'){
  const cwd=join(prefix,'cli-check');await mkdir(cwd);
  await writeFile(join(cwd,'.env'),'DISCORD_BOT_TOKEN=INSTALL_FIXTURE_NOT_A_TOKEN\nDISCORD_ALLOWED_CHANNEL_IDS=123\nDISCORD_SESSION_MIRROR=0\n');
@@ -32,21 +39,22 @@ if(process.platform==='win32'){
 // Consumer dependencies only: tests run the installed dist graph with source
 // stripping disabled. Compile fixture code in the development checkout once.
 const {output}=JSON.parse(execFileSync(process.execPath,['tools/build-test-profile.mjs'],{cwd:root,encoding:'utf8',windowsHide:true}).trim());
-const names=['windows-application','windows-resources','windows-configured-remote','windows-supervisor','windows-admin','windows-admin-threads','windows-archive-delete','windows-project','windows-files','windows-handoff','windows-mirror-continuity'];
+const names=['windows-install-defaults','windows-application','windows-resources','windows-configured-remote','windows-remote-conflicts','windows-supervisor','windows-admin','windows-admin-threads','windows-archive-delete','windows-project','windows-files','windows-handoff','windows-mirror-continuity','windows-review-gaps'].map(name=>'windows-runtime/'+name);
+names.push('runtime/session-mirror/parallel-mapping','runtime/session-mirror/two-target-backlog-measurement','runtime/discord-runtime/receipt-echo','runtime/attachment-proxy','runtime/stop-worker','pro/helper','pro/release-tools','pro/connector-script','cli/cutover','mcp-server/gateway','mcp-server/oauth-worker-deadline','mcp-server/broker');
 const fixtureRoot=join(prefix,'fixtures');await mkdir(fixtureRoot);
 const targets=[];
 for(const name of names){
- const source=join(output,'test/windows-runtime',name+'.test.js');let code=await readFile(source,'utf8');
+ const source=join(output,'test',name+'.test.js');let code=await readFile(source,'utf8');
  const targetModule=specifier=>{
   const original=resolve(dirname(source),specifier),within=relative(join(output,'src'),original);
   return pathToFileURL(!isAbsolute(within)&&!within.startsWith('..')?join(pkg,'dist/src',within):original).href;
  };
  code=code.replace(/from\s*(['"])(\.\.?\/[^'"]+)\1/g,(_,quote,specifier)=>'from '+JSON.stringify(targetModule(specifier)));
  code=code.replace(/new URL\((['"])(\.\.?\/[^'"]+)\1,\s*import\.meta\.url\)/g,(_,quote,specifier)=>'new URL('+JSON.stringify(targetModule(specifier))+')');
- code=code.replace(/import\s*\{\s*WebSocketServer\s*\}\s*from\s*['"]ws['"];?/g,`import {createRequire} from 'node:module'; const {WebSocketServer}=createRequire(${JSON.stringify(pathToFileURL(join(pkg,'package.json')).href)})('ws');`);
- const target=join(fixtureRoot,name+'.test.mjs');await writeFile(target,code);targets.push(target);
+ code=code.replace(/import\s*\{\s*(WebSocketServer|WebSocket)\s*\}\s*from\s*['"]ws['"];?/g,(_,name)=>`import {createRequire} from 'node:module'; const {${name}}=createRequire(${JSON.stringify(pathToFileURL(join(pkg,'package.json')).href)})('ws');`);
+ const target=join(fixtureRoot,name.replaceAll('/','-')+'.test.mjs');await writeFile(target,code);targets.push(target);
 }
-await writeFile(join(root,'.runtime/npm-installed-alpha2-prefix.txt'),prefix+'\n');
+await writeFile(join(root,'.runtime/npm-installed-prefix.txt'),prefix+'\n');
 const result=spawnSync(process.execPath,['--no-strip-types','--test','--test-concurrency=1',...targets],{cwd:pkg,env:{...process.env,NODE_OPTIONS:[process.env.NODE_OPTIONS,'--no-strip-types'].filter(Boolean).join(' ')},stdio:'inherit',windowsHide:true});
 if(result.error)throw result.error;
 process.exitCode=result.status??1;

@@ -18,15 +18,17 @@ export class NativeBridgeStateUnavailableError extends Error{
 }
 /** Standalone foundation only. Production must inject one owner into every Bridge
  * user before enabling native writes; mixed synchronous writers are unsafe.
- * Existing global Control lane serializes accepted operations even across owners.
- * Zero waiting queue; no new worker pool. Timeout/abort always joins native exit. */
+ * The Bridge lane serializes file operations across owners independently of SQL,
+ * matching the Rust BridgeState mutex ownership.
+ * Standalone calls retain zero-queue semantics; installed calls use the bounded
+ * runtime pool. Timeout/abort always joins actual native completion. */
 export interface BridgeSelectionSnapshot {readonly __bridgeSelectionSnapshot?:never}
 export interface BridgeSelectionLease {readonly __bridgeSelectionLease?:never}
 /** Internal transport extracted only from an authentic held lease. The shared
  * word communicates liveness; it is not independently minted authority. */
 export interface BridgeSelectionProof {readonly requestId:string;readonly operationId:string;readonly target:string;readonly active:SharedArrayBuffer}
 export class NativeBridgeStateOwner{
- readonly #path:string;readonly #slot=new OwnedWorkerSlot('Control');
+ readonly #path:string;readonly #slot=new OwnedWorkerSlot('Bridge');
  #epoch=0n;readonly #snapshots=new WeakMap<object,{epoch:bigint,selected:string|null}>();
  #selectionLease:{lease:BridgeSelectionLease;token:BridgeSelectionSnapshot;proof:BridgeSelectionProof}|null=null;
  constructor(path:string){requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new TypeError('Invalid Bridge path');this.#path=pinNativeRuntimePath(path);if(Buffer.byteLength(this.#path)>32768)throw new RangeError('Bridge path exceeds budget');Object.freeze(this);}

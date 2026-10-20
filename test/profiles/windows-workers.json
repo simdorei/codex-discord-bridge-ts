@@ -12,6 +12,7 @@
   "test/runtime/native-response-completion-owner.test.ts",
   "test/runtime/native-idle-before.test.ts",
   "test/runtime/owned-worker-slot.test.ts",
+  "test/runtime/owned-worker-reuse.test.ts",
   "test/runtime/owned-worker-budget.test.ts",
   "test/runtime/store-worker-authority.test.ts",
   "test/runtime/native-discovery-boundary.test.ts",
@@ -41,5 +42,13 @@
   "test/runtime/new-reply/native-store.test.ts",
   "test/runtime/completion/scheduler/discovery.test.ts",
   "test/runtime/completion/scheduler/native-discovery.test.ts",
-  "test/runtime/action-executor/stop-pending-native.test.ts"
+  "test/runtime/action-executor/stop-pending-native.test.ts",
+  "test/runtime/prompt-roundtrip-reuse.test.ts",
+  "test/runtime/message-worker/native-journal.test.ts",
+  "test/runtime/native-mutation-transport.test.ts",
+  "test/runtime/bridge-state-native.test.ts",
+  "test/runtime/bridge-selection-epoch.test.ts",
+  "test/runtime/bridge-runtime-selected-guard.test.ts",
+  "test/windows-runtime/windows-application.test.ts",
+  "test/runtime/message-worker/native-classification.test.ts"
 ]

@@ -73,6 +73,8 @@ const entries:readonly (readonly [string,'path'|'mirror'|'mirrorDb'|null])[]=[
  ['runtime/native-mutation-worker.ts','path'],
  ['runtime/native-observation-ledger-worker.ts','path'],
  ['runtime/native-response-completion-worker.ts','path'],
+ ['runtime/reusable-read-worker.ts',null],
+ ['runtime/reusable-store-worker.ts','path'],
  ['runtime/new-reply/store-worker.ts','path'],
  ['runtime/new-reply/thread-worker.ts',null],
  ['runtime/new-reply/window-worker.ts',null],

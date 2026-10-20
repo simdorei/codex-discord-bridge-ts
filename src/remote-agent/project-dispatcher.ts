@@ -33,7 +33,7 @@ export interface RemoteDispatcherConnection {readonly generation:bigint;}
 type Session={identity:RemoteSessionIdentity;cleanup:RemoteSessionCleanupOwner;ports:Pick<RemoteSessionBackend,'computer'|'terminal'|'terminalWindow'>;stop:AbortController;active:number;idle:(()=>void)|null;closing:Promise<void>|null};
 type Project={binding:RemoteProjectBinding;backend:RemoteProjectBackend;session:Session|null;sessionLock:DispatcherLock;mutations:DispatcherLock;cache:RemoteMutationCache;uncertain:boolean;closing:Promise<void>|null;active:number;idle:(()=>void)|null;retiring:Set<Session>};
 type Accepted={stop:AbortController;done:Promise<void>};
-const MAX_PROJECTS=16,MAX_BYTES=4194304,MAX_COMMANDS=4;
+const MAX_PROJECTS=16,MAX_FRAME_BYTES=12000000,MAX_BYTES=144000000,MAX_COMMANDS=4,CACHE_BYTES=4194304;
 const stale='The command belongs to a stale local bridge connection.';
 const cleanupFailure='Previous project session cleanup failed.';
 function text(value:unknown):string{requireDiscordText(value);if(value.length>4096)throw new RangeError('Dispatcher identity exceeds budget');return value;}
@@ -44,7 +44,7 @@ function signal(value:unknown):asserts value is AbortSignal{if(types.isProxy(val
 function call<T extends (...args:never[])=>unknown>(fn:T,...args:Parameters<T>):ReturnType<T>{return Reflect.apply(fn,undefined,args) as ReturnType<T>;}
 function capability(requestId:string):BridgeResult{return Object.freeze({type:'operation_error',request_id:requestId,error_code:'projectcapability',message:'This project capability has no qualified local backend.'});}
 function charge(command:GatewayCommand):number{
- requireImmutableRemoteDto(command,Math.floor(MAX_BYTES/3));let size=128;
+ requireImmutableRemoteDto(command,MAX_FRAME_BYTES);let size=128;
  const visit=(v:unknown):void=>{if(typeof v==='string')size+=v.length*3;else if(v!==null&&typeof v==='object')for(const k of Object.keys(v)){size+=k.length*3;visit(own(v,k));}else size+=16;};visit(command);return size;
 }
 
@@ -52,7 +52,8 @@ function charge(command:GatewayCommand):number{
  * and still uninstalled from CLI roots. Callers provide already decoded commands and qualified resource
  * factories, never an arbitrary execute callback. The outer command loop remains
  * the sole 4-active/16-total worker queue; this owner only rejects excess direct
- * calls and bounds its lock waiters and retained command text to four/4 MiB.
+ * calls and bounds its lock waiters to four. Each protocol frame is at most
+ * 12 MB, charged at three bytes per UTF-16 unit; retained caches stay at 4 MiB.
  * One instance survives reconnect, preserving each still-bound project's cache. */
 export class RemoteProjectDispatcher {
  readonly #resultBytes:number;
@@ -139,7 +140,7 @@ export class RemoteProjectDispatcher {
   let close:()=>Promise<void>;try{close=ownedPort<()=>Promise<void>>(raw,'close');}catch(error){return this.#rejectTransfer(raw,error,null);}
   try{backend=captureProjectBackend(raw);}catch(error){return this.#rejectTransfer(raw,error,close);}
   if(this.#cleanupFailed())return this.#rejectTransfer(raw,new Error(cleanupFailure),close);
-  const project:Project={binding,backend,session:null,sessionLock:new DispatcherLock(),mutations:new DispatcherLock(),cache:new RemoteMutationCache(Math.floor(MAX_BYTES/(MAX_PROJECTS+MAX_COMMANDS)),256,this.#resultBytes,this.#codec),uncertain:false,closing:null,active:0,idle:null,retiring:new Set()};
+  const project:Project={binding,backend,session:null,sessionLock:new DispatcherLock(),mutations:new DispatcherLock(),cache:new RemoteMutationCache(Math.floor(CACHE_BYTES/(MAX_PROJECTS+MAX_COMMANDS)),256,MAX_FRAME_BYTES,this.#codec),uncertain:false,closing:null,active:0,idle:null,retiring:new Set()};
   const previous=this.#projects.get(binding.threadId);this.#projects.set(binding.threadId,project);
   if(previous)try{await this.#closeProject(previous);}catch(error){throw new DispatcherReplacementError(error);}
   return project;

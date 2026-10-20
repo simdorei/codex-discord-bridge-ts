@@ -58,8 +58,10 @@ export async function runRemoteCommandLoop(generation:bigint,ports:RemoteCommand
    if(message.type==='project_ack')continue;
    const bytes=Buffer.byteLength(selected.raw);
    try{
-    if(bytes>4194304)throw new RemoteWorkerCapacityError();
-    workers.submit((original,cancelled)=>promise<BridgeResult>(execute(message,original,cancelled)),bytes);
+    workers.submit(async(original,cancelled)=>{
+     try{return await promise<BridgeResult>(execute(message,original,cancelled));}
+     catch(error){if(!(error instanceof RemoteWorkerCapacityError))throw error;return Object.freeze({type:'operation_error',request_id:message.request_id,error_code:'bridge_busy',message:'The local bridge is busy. Retry this request shortly.'});}
+    },bytes);
    }catch(error){
     if(!(error instanceof RemoteWorkerCapacityError))throw error;
     await write(Object.freeze({type:'operation_error',request_id:message.request_id,error_code:'bridge_busy',message:'The local bridge is busy. Retry this request shortly.'}));

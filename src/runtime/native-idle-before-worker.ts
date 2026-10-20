@@ -1,8 +1,9 @@
-import {parentPort,workerData as q} from 'node:worker_threads';
+import {serveReusableWorker} from './reusable-worker-entry.ts';
+import type {ReusableNativeOperation} from './reusable-worker-operations.ts';
 import * as stateIdleReleaseStore from '../store/idle-release-store.ts';
 import {requireDiscordText} from '../discord/text.ts';
 import {passiveErrorText} from '../core/passive-error-text.ts';
-const port=parentPort;if(port===null)throw new Error('Idle admission requires owned worker');
+export const runNativeOperation:ReusableNativeOperation=(q,port)=>{
 try{let value:unknown;switch(q.operation){case 'validateInstallation':{
  if(Object.keys(q).length!==3||typeof q.nonce!=='string'||!/^[-a-f0-9]{36}$/.test(q.nonce))throw new TypeError('Invalid exact idle installation request');
  stateIdleReleaseStore.pendingIdleIntentsExisting(q.path);value={operation:q.operation,path:q.path,nonce:q.nonce};break;
@@ -12,3 +13,5 @@ try{let value:unknown;switch(q.operation){case 'validateInstallation':{
  }default:throw new TypeError('Unsupported native idle operation');}port.postMessage({ok:true,value});}
 catch(error){port.postMessage({ok:false,detail:Array.from(passiveErrorText(error,'Native idle admission failed')).slice(0,2048).join('')});}
 finally{port.close();}
+};
+await serveReusableWorker(runNativeOperation);
