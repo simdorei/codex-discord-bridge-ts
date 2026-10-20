@@ -1,6 +1,6 @@
 # Rust / TS 비교 보고서 후속 통합
 
-기준일: 2026-10-20. 패키지: `0.1.0-alpha.7`.
+기준일: 2026-10-20. 통합 패키지: `0.1.0-alpha.7`, 트레이 보정: `0.1.0-alpha.8`.
 
 기존 비교 기준은 TS `83301de`, Rust `8f35020`이다. 그 TS 메인에는 GUNG
 alpha6에서 사용하던 변경이 모두 포함되어 있지 않았다. 기능 이름이나 이전
@@ -27,7 +27,7 @@ alpha6에서 사용하던 변경이 모두 포함되어 있지 않았다. 기능
 npm run test:parity
 node tools/run-tests.mjs --profile windows-features
 node tools/run-tests.mjs --profile windows-workers
-node tools/test-installed-package.mjs .\codex-discord-bridge-ts-0.1.0-alpha.7.tgz
+node tools/test-installed-package.mjs .\codex-discord-bridge-ts-0.1.0-alpha.8.tgz
 ```
 
 `test:parity`는 이 보고서의 항목들을 한 번에 검사하는 회귀 진입점이다.
@@ -58,6 +58,15 @@ Windows에서 사용할 수 없는 `PosixDrainMarkerStore` 및 플랫폼 의존 
 결과와 구분했다. 이를 전체 저장소 테스트 성공으로 집계하지 않는다.
 
 ## 성능과 실서비스 확인 범위
+
+GUNG에서 alpha7 전환 후 실제 트레이 실행을 확인하는 과정에서, PowerShell의
+기본 `Restricted` 정책 때문에 패키지 트레이 스크립트가 실행되지 않는 경우를
+재현했다. alpha8은 해당 자식 PowerShell 프로세스에만 실행 정책을 지정한다.
+사용자·컴퓨터의 실행 정책은 변경하지 않는다. 실제 프로세스로 제한 정책을
+상속하는 회귀 검사를 추가했으며, 대화형 트레이 UI는 유한한 검사 스크립트로
+대체하여 실행 경로를 검증한다. 수정 전 해당 재현 검사만 실패했고 수정 후
+관리·트레이·워치독 검사 20개가 통과했다. 별도 prefix에 설치한 alpha8의
+통합 검사도 새 재현 검사를 포함해 100개 전부 통과했다.
 
 TS는 이미 async/Promise 기반이며 이번 수정은 함수에 async를 붙이는 작업이
 아니다. 실제 반복 비용을 줄이는 worker 수명과 작업별 잠금 범위를 통합한

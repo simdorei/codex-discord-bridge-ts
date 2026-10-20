@@ -20,7 +20,8 @@ import {finalRecoveryAuthorizedIn,validateFinalRecoveryClaimIn} from '../../src/
 import {inspectLifecycleIntent} from '../../src/cli/admin-intent.ts';
 import {pathToFileURL} from 'node:url';
 import {installPluginWithRunner} from '../../src/cli/plugin-install.ts';
-import {trayPayload} from '../../src/cli/windows-tray.ts';
+import {trayPayload,runWindowsTray} from '../../src/cli/windows-tray.ts';
+import {OwnedPortableAppServerProcess,type PortableProcessConfig} from '../../src/app-server/portable-process.ts';
 const windows={skip:process.platform!=='win32',timeout:30000};
 const digest=(text:string)=>createHash('sha256').update(text).digest('hex');
 test('packaged Pro manifest and explicit skill input share the installed plugin, preserving a local override',windows,()=>storeFixture(async path=>{
@@ -81,6 +82,22 @@ test('tray payload binds every action to one installation and keeps force separa
  const root='C:\\한글 & space',entry='C:\\npm\\bin.mjs',payload=JSON.parse(Buffer.from(trayPayload(root,entry,'C:\\node.exe'),'base64').toString());
  assert.equal(payload.root,root);assert.match(payload.status,/--supervisor-status/u);assert.match(payload.restart,/--supervisor-control restart/u);assert.match(payload.force,/--supervisor-control force_restart/u);for(const value of [payload.status,payload.restart,payload.force])assert.ok(value.endsWith('"'+root+'"'));
 });
+
+test('tray starts its packaged script when the inherited PowerShell policy is Restricted',windows,t=>storeFixture(async path=>{
+ const root=dirname(path),script=join(root,'tray policy 한글.ps1'),proof=join(root,'policy.txt'),parentPolicy=process.env.PSExecutionPolicyPreference;
+ await writeFile(script,"param([string]$Payload)\n$p=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($Payload))|ConvertFrom-Json\n[IO.File]::WriteAllText((Join-Path $p.root 'policy.txt'),[string](Get-ExecutionPolicy))\n");
+ const spawn=OwnedPortableAppServerProcess.spawn;let launches=0;
+ t.mock.method(OwnedPortableAppServerProcess,'spawn',async(config:PortableProcessConfig)=>{
+  launches++;const args=[...config.arguments],index=args.indexOf('-File');assert.ok(index>=0);
+  assert.ok(args[index+1]?.endsWith(join('scripts','codex-discord-tray.ps1')));
+  // Replace only the interactive GUI with a finite probe; use the real owned
+  // PowerShell process, arguments, policy precedence and quoted Unicode path.
+  args[index+1]=script;
+  return spawn.call(OwnedPortableAppServerProcess,{...config,arguments:args,environment:{...config.environment,PSExecutionPolicyPreference:'Restricted'}});
+ });
+ await runWindowsTray(root,join(root,'entry.mjs'),new AbortController().signal);
+ assert.equal(launches,1);assert.equal(await readFile(proof,'utf8'),'Bypass');assert.equal(process.env.PSExecutionPolicyPreference,parentPolicy);
+}));
 test('packaged restart script queues Immediate gracefully, forwards quiet/wait, and rejects a stale expected process',windows,()=>storeFixture(async path=>{
  const root=dirname(path),entry=join(root,'control-fixture.mjs'),output=join(root,'args.json');await writeFile(entry,'import {writeFileSync} from "node:fs";writeFileSync('+JSON.stringify(output)+',JSON.stringify(process.argv.slice(2)));');
  await writeFile(join(root,'.cdr-ts-supervisor.json'),JSON.stringify({version:1,root,node:process.execPath,entry,childPid:process.pid}));await writeFile(join(root,'.codex_discord_rust.drain.identity'),'version=1\nruntime_id=fixture-generation\npid='+process.pid+'\nstate=open\n');
