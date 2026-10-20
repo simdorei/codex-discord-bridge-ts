@@ -7,6 +7,10 @@ import {serializeBusyChoice,BusyChoiceUnavailableError,mirroredThreadIdIn,type B
 import {admitPromptIntake} from "../../src/store/prompt-intake-write.ts";
 import {getPromptIntake} from "../../src/store/prompt-intake.ts";
 import {getIngress} from "../../src/store/ingress-read.ts";
+import {admitBusyInteraction} from "../../src/store/ingress-busy.ts";
+import {recordIngressResult,confirmIngress} from "../../src/store/ingress-lifecycle.ts";
+import {recoverPriorRuntimeIngress} from "../../src/store/ingress-recovery.ts";
+import {finalDeliveryPreflight} from "../../src/store/delivery-preflight.ts";
 const choice=():BusyChoice=>({choiceId:"choice",ownerUserId:2n,channelId:1n,targetThreadId:"target",prompt:"raw",allowSteer:false,createdAt:1,expiresAt:100});
 async function sql(path:string,value:string):Promise<void>{const db=await openInitialized(path);try{db.exec(value);}finally{db.close();}}
 async function seed(path:string,mode="0"):Promise<void>{await sql(path,`INSERT INTO busy_choices(choice_id,owner_user_id,channel_id,target_thread_id,prompt,allow_steer,created_at,expires_at,claimed_at,require_current_mirror)
@@ -29,6 +33,41 @@ test("repeated acceptance uses durable receipt even after choice and intake remo
     const repeated=await admitBusyQueue(path,choice(),"target",false,"confirmation",20);assert.equal(repeated.intake,null);assert.equal(repeated.jobId,first.jobId);
     assert.equal(await getPromptIntake(path,first.jobId),null);
   });
+});
+
+for(const restartBeforeQueue of [false,true])test(`queue after an undispatched busy rejection preserves final delivery across restart (${restartBeforeQueue})`,async()=>{
+  await storeFixture(async path=>{await seed(path);
+    await sql(path,"DELETE FROM discord_ingress_journal");
+    await admitBusyInteraction(path,{ingressId:"i",kind:"interaction",eventId:3n,applicationId:5n,channelId:1n,ownerUserId:2n,sourceMessageId:null,payload:{version:1n},targetThreadId:null,canonicalOwner:null,now:1},"choice","steer");
+    await recordIngressResult(path,"i",{kind:"busy_control_preflight_rejected",control_dispatched:false},1);
+    if(restartBeforeQueue)await recoverPriorRuntimeIngress(path,"restarted",1.5);
+    const rejected=await getIngress(path,"i");
+    const next=await admitBusyInteraction(path,{ingressId:"accepted",kind:"interaction",eventId:4n,applicationId:5n,channelId:1n,ownerUserId:2n,sourceMessageId:null,payload:{version:1n},targetThreadId:null,canonicalOwner:null,now:2},"choice","queue");
+    assert.equal(next.created,true);
+    const admitted=await admitBusyQueue(path,choice(),"target",false,"confirmation",3);assert.ok(admitted.intake);
+    assert.deepEqual(await getIngress(path,"i"),rejected);
+    assert.equal((await getIngress(path,"accepted"))?.ownerId,admitted.jobId);
+    const final={deliveryId:admitted.jobId,jobId:admitted.jobId,targetThreadId:"target",turnId:"turn",channelId:1n,content:"Final response",attemptCount:0n,lastError:"",createdAt:4,updatedAt:4};
+    assert.deepEqual(finalDeliveryPreflight(path,final),{kind:"FirstReply",request:"accepted"});
+    await recordIngressResult(path,"accepted",{kind:"component",action_completed:true},4);await confirmIngress(path,"accepted",5);
+    assert.deepEqual(finalDeliveryPreflight(path,final),{kind:"Ready"});
+    await recoverPriorRuntimeIngress(path,"restarted-again",5.5);
+    const recovered=await getIngress(path,"i");assert.equal(recovered?.state,"held");assert.equal(recovered?.ownerId,null);
+    const repeated=await admitBusyQueue(path,choice(),"target",false,"confirmation",6);assert.equal(repeated.intake,null);
+    assert.deepEqual(await getIngress(path,"i"),recovered);
+    assert.deepEqual(finalDeliveryPreflight(path,final),{kind:"Ready"});
+  });
+});
+
+test("busy ownership keeps the first-reply barrier without an exact terminal undispatched rejection",async()=>{
+  for(const held of [false,true])for(const outcome of [null,{}, {kind:"other",control_dispatched:false},{kind:"busy_control_preflight_rejected",control_dispatched:true},{kind:"busy_control_preflight_rejected",control_dispatched:"false"}]){
+    await storeFixture(async path=>{await seed(path);await recordIngressResult(path,"i",outcome,1);
+      if(held)await recoverPriorRuntimeIngress(path,"restarted",2);
+      const admitted=await admitBusyQueue(path,choice(),"target",false,"confirmation",3);
+      assert.equal((await getIngress(path,"i"))?.ownerId,admitted.jobId);
+      assert.deepEqual(finalDeliveryPreflight(path,{deliveryId:admitted.jobId,jobId:admitted.jobId,targetThreadId:"target",turnId:"turn",channelId:1n,content:"Final response",attemptCount:0n,lastError:"",createdAt:4,updatedAt:4}),{kind:"FirstReply",request:"i"});
+    });
+  }
 });
 test("changed displayed choice, expired choice, unknown route and route mode mismatch do not claim",async()=>{
   for(const variant of ["prompt","expires","unknown","mode"]){await storeFixture(async path=>{await seed(path,variant==="unknown"?"NULL":"0");const c=choice();if(variant==="prompt")c.prompt="changed";

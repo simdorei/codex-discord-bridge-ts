@@ -29,7 +29,7 @@ function admitBusyInteractionBody(db:DatabaseSync,request:NewIngress,choiceId:st
     const receiptRow=db.prepare(`SELECT owner_id,payload_json,CAST(owner_id AS BLOB) AS raw_owner,CAST(payload_json AS BLOB) AS raw_payload,(SELECT encoding FROM pragma_encoding) AS encoding FROM discord_ingress_owner_receipts WHERE owner_key=?`).get(canonical);
     const receipt=receiptRow===undefined?null:{owner:decodeTextField(receiptRow.owner_id,receiptRow.raw_owner,"owner_id",false,textDecoderFor(receiptRow.encoding))!,payload:decodeTextField(receiptRow.payload_json,receiptRow.raw_payload,"payload_json",false,textDecoderFor(receiptRow.encoding))!};
     const parentRow=db.prepare(`SELECT ingress_id,CAST(ingress_id AS BLOB) AS raw,(SELECT encoding FROM pragma_encoding) AS encoding FROM discord_ingress_journal WHERE canonical_owner=?
-      AND phase != 'canonical_duplicate' AND COALESCE(state='completed' AND owner_id IS NULL AND json_extract(outcome_json,'$.kind')='busy_control_preflight_rejected' AND json_type(outcome_json,'$.control_dispatched')='false',0)=0 ORDER BY created_at,ingress_id LIMIT 1`).get(canonical);
+      AND phase != 'canonical_duplicate' AND COALESCE((state='completed' OR (state='held' AND phase='result_recorded')) AND owner_id IS NULL AND json_extract(outcome_json,'$.kind')='busy_control_preflight_rejected' AND json_type(outcome_json,'$.control_dispatched')='false',0)=0 ORDER BY created_at,ingress_id LIMIT 1`).get(canonical);
     const parent=parentRow===undefined?null:decodeTextField(parentRow.ingress_id,parentRow.raw,"ingress_id",false,textDecoderFor(parentRow.encoding))!;
     let choice:BusyChoice|null;
     if(receipt!==null)choice=parseBusyChoice(receipt.payload);

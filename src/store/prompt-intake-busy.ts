@@ -9,8 +9,12 @@ function recordBusyOwnerIn(db:DatabaseSync,choice:BusyChoice,job:string,target:s
   const canonical=`busy-choice:${choice.choiceId}`;
   db.prepare(`INSERT INTO discord_ingress_owner_receipts(owner_key,owner_kind,owner_id,target_thread_id,channel_id,owner_user_id,payload_json,created_at)
     VALUES (?,'prompt',?,?,?,?,?,?) ON CONFLICT(owner_key) DO NOTHING`).run(canonical,job,target,choice.channelId,choice.ownerUserId,serializeBusyChoice(choice),now);
+  // Match busy admission's terminal-refusal exclusion, including a restart's
+  // confirmation hold: a rejected control is not this prompt's reply barrier.
   db.prepare(`UPDATE discord_ingress_journal SET state='owned',phase='durable_prompt',owner_kind='prompt',owner_id=?,target_thread_id=?,updated_at=?
-    WHERE canonical_owner=? AND channel_id=? AND owner_user_id=?`).run(job,target,now,canonical,choice.channelId,choice.ownerUserId);
+    WHERE canonical_owner=? AND channel_id=? AND owner_user_id=?
+      AND COALESCE((state='completed' OR (state='held' AND phase='result_recorded')) AND owner_id IS NULL AND json_extract(outcome_json,'$.kind')='busy_control_preflight_rejected'
+        AND json_type(outcome_json,'$.control_dispatched')='false',0)=0`).run(job,target,now,canonical,choice.channelId,choice.ownerUserId);
 }
 export function captureBusyAdmission(input:BusyChoice,target:string,requireCurrentMirror:boolean,confirmationKey:string,now:number) {
   const choice=snapshotBusyChoice(input);
