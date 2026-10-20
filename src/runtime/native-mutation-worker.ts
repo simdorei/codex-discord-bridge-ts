@@ -1,7 +1,8 @@
-import {parentPort,workerData as q} from 'node:worker_threads';
+import {serveReusableWorker} from './reusable-worker-entry.ts';
+import type {ReusableNativeOperation} from './reusable-worker-operations.ts';
 import {createMutationCustodyFence} from './mutation-custody-fence.ts';
 import {passiveErrorText} from '../core/passive-error-text.ts';
-const port=parentPort;if(port===null)throw new Error('Native mutation requires owned worker');
+export const runNativeOperation:ReusableNativeOperation=(q,port)=>{
 const bounded=(value:string)=>Array.from(value).slice(0,2048).join('');
 try{
  const fence=createMutationCustodyFence(q.path,q.runtime,error=>bounded(passiveErrorText(error,'Native mutation failed')));
@@ -20,3 +21,5 @@ try{
  port.postMessage({ok:true});
 }catch(error){port.postMessage({ok:false,detail:bounded(passiveErrorText(error,'Native mutation failed'))});}
 finally{port.close();}
+};
+await serveReusableWorker(runNativeOperation);

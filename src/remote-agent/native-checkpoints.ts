@@ -25,7 +25,7 @@ export class NativeCheckpoints{
  }
  async #load(id:string):Promise<Checkpoint>{const bytes=await this.files.read(privatePath(id),33554432,true);if(bytes===null)throw new Error('Checkpoint is unavailable');const r=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes)) as Checkpoint;
   if(r.checkpoint_id!==id||typeof r.created_at!=='string'||typeof r.reason!=='string'||!Array.isArray(r.snapshots)||r.snapshots.length>400||r.state!==undefined&&!['pending','complete','rolled_back'].includes(r.state))throw new TypeError('Malformed checkpoint');
-  let size=0;for(const s of r.snapshots){this.files.path(s.path);for(const key of ['before_base64','after_base64']as const){if(typeof s[key]!=='string'||!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(s[key]))throw new TypeError('Malformed checkpoint bytes');size+=Buffer.byteLength(s[key]);}if(typeof s.before_exists!=='boolean'||typeof s.after_exists!=='boolean')throw new TypeError('Malformed checkpoint existence');}if(size>30000000)throw new RangeError('Checkpoint exceeds budget');return r;
+  let size=0;for(const s of r.snapshots){this.files.path(s.path);for(const key of ['before_base64','after_base64']as const){if(typeof s[key]!=='string'||Buffer.from(s[key],'base64').toString('base64')!==s[key])throw new TypeError('Malformed checkpoint bytes');size+=Buffer.byteLength(s[key]);}if(typeof s.before_exists!=='boolean'||typeof s.after_exists!=='boolean')throw new TypeError('Malformed checkpoint existence');}if(size>30000000)throw new RangeError('Checkpoint exceeds budget');return r;
  }
  async mutate(reason:string,changes:readonly FileMutation[],signal?:AbortSignal):Promise<string>{
   if(this.#busy)throw new Error('Project checkpoint mutation already active');this.#busy=true;

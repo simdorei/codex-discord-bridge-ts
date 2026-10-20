@@ -28,6 +28,7 @@ export class StopControlWorker{
   readonly #path:string;readonly #server:Server|null;readonly #bridge:Pick<BridgeState,"selectedThreadId">;readonly #locks:TargetLocks;readonly #state:Store;readonly #verify:ControlTurnVerifier;readonly #render:(e:unknown)=>string;readonly #report:(e:StopWorkerFailure)=>void;readonly #mapped:ReturnType<typeof createRuntimeFenceErrors>;
   readonly #recovery: {readonly queue:QueueStartCoordinator;readonly server:PortableResidentLifecycle}|undefined;
   #recoveryCursor=0n;
+  #renewCycleBudget:(()=>void)|undefined;
   #cursor=0n;#processing=false;#running=false;
   constructor(path:string,server:Server|null,bridge:Pick<BridgeState,"selectedThreadId">,locks:TargetLocks,render:(e:unknown)=>string,report:(e:StopWorkerFailure)=>void,state:Store=StateAccessFacade,nativeBridge?:NativeBridgeStateOwner,pendingReader?:NativeStopPendingReader,recovery?:{readonly queue:QueueStartCoordinator;readonly server:PortableResidentLifecycle},dispatchWriter?:NativeStopDispatchWriter){if(dispatchWriter!==undefined){if(nativeBridge===undefined)throw new TypeError("Native Stop dispatch requires its Bridge owner");NativeStopDispatchWriter.prototype.assertOwner.call(dispatchWriter,path,nativeBridge);}this.#dispatchWriter=dispatchWriter;if(recovery!==undefined&&(recovery.queue.locks!==locks||recovery.queue.dbPath!==path||recovery.server!==server))throw new TypeError("Stop recovery runtime ownership differs");this.#recovery=recovery===undefined?undefined:Object.freeze({queue:recovery.queue,server:recovery.server});if(pendingReader!==undefined)NativeStopPendingReader.prototype.assertPath.call(pendingReader,path);this.#pendingReader=pendingReader;this.#nativeBridge=nativeBridge;sync(render);sync(report);this.#path=path;this.#server=server;this.#bridge=bridge;this.#locks=locks;this.#state=state;this.#render=render;this.#report=report;this.#verify=new ControlTurnVerifier(path,server,bridge,locks,state,nativeBridge);this.#mapped=createRuntimeFenceErrors(render);}
   get cursor():bigint{return this.#cursor;}
@@ -61,15 +62,22 @@ export class StopControlWorker{
           const captured=this.#dispatchWriter===undefined?original:captureStopDispatch(original),binding=snapshotSettingsBinding(captured.binding);let selected:BridgeSelectionSnapshot|null=null;
           const check=this.#nativeBridge===undefined?()=>validateSelectedSettingsSnapshot(binding,this.#bridge):binding.route!=='Selected'?()=>{}:(selected=await NativeBridgeStateOwner.prototype.captureSelected.call(this.#nativeBridge,signal),()=>NativeBridgeStateOwner.prototype.validateSelected.call(this.#nativeBridge!,selected!,binding.target));
           checkSignal();check();try{await this.#verify.owned(captured.target,captured.turn);}catch{checkSignal();continue;}
-          checkSignal();if(this.#dispatchWriter!==undefined)storeActionCheck(check,this.#render)();const claim=this.#dispatchWriter===undefined?this.#state.claimStopControl(this.#path,captured,storeActionCheck(check,this.#render)):await NativeStopDispatchWriter.prototype.claim.call(this.#dispatchWriter,captured,selected,signal);if(claim===null)continue;checkSignal();let failed=false,error:unknown;
+          checkSignal();if(this.#dispatchWriter!==undefined)storeActionCheck(check,this.#render)();this.#renewCycleBudget?.();const claim=this.#dispatchWriter===undefined?this.#state.claimStopControl(this.#path,captured,storeActionCheck(check,this.#render)):await NativeStopDispatchWriter.prototype.claim.call(this.#dispatchWriter,captured,selected,signal);if(claim===null){if(this.#renewCycleBudget!==undefined)return dispatched;continue;}checkSignal();this.#renewCycleBudget?.();let failed=false,error:unknown;
           try{await server.executeStopControl({...interruptTurn(captured.target,captured.turn),timeoutMs:2000},captured.generation,claim,()=>{checkSignal();this.#mapped.run("MutationHeld",check);},signal);}catch(e){if(isolated?.isCancellation(e)||(signal?.aborted&&e===signal.reason))throw e;failed=true;error=e;}
-          if(!failed)checkSignal();dispatched++;if(failed){try{checkSignal();const diagnostic=this.#diagnostic(error);if(this.#dispatchWriter===undefined)this.#state.recordStopControlError(this.#path,claim,diagnostic);else await NativeStopDispatchWriter.prototype.recordError.call(this.#dispatchWriter,claim,diagnostic,signal);}catch(persistence){throw new AggregateError([error,persistence],"Stop dispatch and error persistence failed; original claim retained, no retry");}this.#notify({stage:"dispatch",operationId:captured.operation_id,error});}
+          if(!failed)checkSignal();dispatched++;if(failed){try{checkSignal();this.#renewCycleBudget?.();const diagnostic=this.#diagnostic(error);if(this.#dispatchWriter===undefined)this.#state.recordStopControlError(this.#path,claim,diagnostic);else await NativeStopDispatchWriter.prototype.recordError.call(this.#dispatchWriter,claim,diagnostic,signal);}catch(persistence){throw new AggregateError([error,persistence],"Stop dispatch and error persistence failed; original claim retained, no retry");}this.#notify({stage:"dispatch",operationId:captured.operation_id,error});}
+          // The polling owner yields after one claim attempt. A fresh phase
+          // budget must not turn a page of independent Stops into a long cycle.
+          if(this.#renewCycleBudget!==undefined)return dispatched;
         }finally{lease.release();}
       }
       return dispatched;
     }catch(error){if(this.#dispatchWriter!==undefined&&NativeStopDispatchWriter.prototype.takeUnresolvedReport.call(this.#dispatchWriter,error))this.#notify({stage:'dispatch',operationId:(error as NativeStopClaimUnknownError).operationId,error});throw error;}finally{try{isolated?.release();}finally{this.#processing=false;}}
   }
-  /** Cooperative 2-second cycle cancellation; joins its sole cycle before exit.
+  /** Cooperative 2-second stage cancellation; joins its sole cycle before exit.
+   * Read/verification, claim, interrupt and error persistence get separate time.
+   * Otherwise a slow read can consume the interrupt's budget AFTER claiming it,
+   * leaving an unsent Stop permanently dispatching. One claim per polling cycle
+   * preserves keyset fairness; external shutdown is never renewed or suppressed.
    * Injected native claims/error writes join actual SQLite exit on cancellation;
    * verification/recovery and uninjected compatibility remain cooperative. This
    * is not a hard real-time deadline or Rust future-Drop equivalence. */
@@ -80,9 +88,10 @@ export class StopControlWorker{
       tick=ticks();recoveryTick=this.#recovery===undefined?undefined:recoveryTicks();
       let dispatchWait=tick.wait().then(()=>false),recoveryWait=recoveryTick?.wait().then(()=>true);
       while(!shutdown.aborted){const stopWait=new Promise<boolean>(resolve=>{wake=()=>resolve(false);});const recovering=await Promise.race([dispatchWait,...(recoveryWait===undefined?[]:[recoveryWait]),stopWait]);if(shutdown.aborted)break;
-        cycle=new AbortController();const current=cycle,timeout=new Error("stop control worker cycle deadline; durable authority retained, no replay"),timer=setTimeout(()=>current.abort(timeout),2000);
+        cycle=new AbortController();const current=cycle,timeout=new Error("stop control worker cycle deadline; durable authority retained, no replay");let timer=setTimeout(()=>current.abort(timeout),2000);
+        this.#renewCycleBudget=recovering?undefined:()=>{current.signal.throwIfAborted();clearTimeout(timer);timer=setTimeout(()=>current.abort(timeout),2000);};
         try{if(recovering)await this.processRecoveries(current.signal);else await this.process(current.signal);}catch(error){if(shutdown.aborted&&error===shutdown.reason)break;if(this.#dispatchWriter===undefined||!NativeStopDispatchWriter.prototype.ownsUnresolved.call(this.#dispatchWriter,error))this.#notify({stage:current.signal.aborted&&error===timeout?"deadline":"cycle",error});}
-        finally{clearTimeout(timer);cycle=undefined;}
+        finally{this.#renewCycleBudget=undefined;clearTimeout(timer);cycle=undefined;}
         if(shutdown.aborted)break;
         if(recovering)recoveryWait=recoveryTick!.wait().then(()=>true);else dispatchWait=tick.wait().then(()=>false);
       }

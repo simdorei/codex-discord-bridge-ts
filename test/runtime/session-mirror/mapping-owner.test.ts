@@ -5,10 +5,11 @@ import {TargetLocks} from '../../../src/core/keyed-locks.ts';
 import {QueueStartCoordinator} from '../../../src/runtime/queue-runner/start-coordinator.ts';
 import {captureMirrorMappingLocks,withMirrorMappingLocks} from '../../../src/runtime/session-mirror/mapping-owner.ts';
 import {mirrorQueueFixture} from '../../helpers/mirror-queue-fixture.ts';
+import {pinNativeRuntimePath} from '../../../src/runtime/runtime-paths/path-text.ts';
 
 function deferred(){let resolve!:()=>void;const promise=new Promise<void>(r=>resolve=r);return {promise,resolve};}
 async function until(condition:()=>boolean){const end=performance.now()+3000;while(!condition()){assert.ok(performance.now()<end,'Expected lock state was not reached');await sleep(1);}}
-const path='/synthetic/mirror.sqlite',global='mirror-sync-operation';
+const path=pinNativeRuntimePath('/synthetic/mirror.sqlite'),global='mirror-sync-operation';
 
 test('mapping capture requires the real queue, original authentic registry, and exact pinned database',()=>{
  const queue=mirrorQueueFixture(path);assert.equal(captureMirrorMappingLocks(queue,path),queue.locks);

@@ -13,8 +13,8 @@ export class BoundedRemoteWorkers<T>{
  readonly #maxActive:number;readonly #maxPending:number;readonly #maxBytes:number;
  #active=0;#pending=0;#bytes=0;#waiting:Job<T>[]=[];#completed:Completed<T>[]=[];
  #joiner:{deliver:()=>void}|null=null;
- constructor(maxActive=4,maxPending=16,maxBytes=4194304){
-  if(!Number.isSafeInteger(maxActive)||maxActive<1||maxActive>4||!Number.isSafeInteger(maxPending)||maxPending<maxActive||maxPending>16||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>4194304)throw new RangeError('Invalid remote worker capacity');
+ constructor(maxActive=4,maxPending=16,maxBytes=48000000){
+  if(!Number.isSafeInteger(maxActive)||maxActive<1||maxActive>4||!Number.isSafeInteger(maxPending)||maxPending<maxActive||maxPending>16||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>48000000)throw new RangeError('Invalid remote worker capacity');
   this.#maxActive=maxActive;this.#maxPending=maxPending;this.#maxBytes=maxBytes;
  }
  snapshot(){return Object.freeze({active:this.#active,waiting:this.#waiting.length,completed:this.#completed.length,pending:this.#pending,retainedBytes:this.#bytes});}

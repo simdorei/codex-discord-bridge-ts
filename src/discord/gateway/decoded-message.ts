@@ -1,7 +1,7 @@
 import {types} from 'node:util';
 import {OwnedWorkerSlot,OwnedWorkerBusyError} from '../../runtime/owned-worker-slot.ts';
 import {decodeGatewayDispatchPayload} from './dispatch-envelope.ts';
-import {discordMessageField} from '../model/message.ts';
+import {discordGatewayMessageField} from '../model/message.ts';
 import {decodeDiscordMessage} from '../model/message.ts';
 export interface DecodedGatewayMessage{readonly id:bigint;readonly channel_id:bigint;readonly content:string;readonly timestamp:{readonly unixNanoseconds:bigint};readonly [key:string]:unknown}
 const messages=new WeakSet<object>();
@@ -12,7 +12,7 @@ export function decodeGatewayMessage(text:string):DecodedGatewayMessage{const re
 export function isDecodedGatewayMessage(value:unknown):value is DecodedGatewayMessage{return value!==null&&typeof value==='object'&&messages.has(value);}
 
 /** Full MESSAGE_CREATE envelope; retains duplicate fields and parent depth. */
-export function decodeGatewayMessageDispatch(text:string):DecodedGatewayMessage{const result=decodeGatewayDispatchPayload(text,'MESSAGE_CREATE',discordMessageField) as Record<string,unknown>;freezeOwned(result);messages.add(result);return result as unknown as DecodedGatewayMessage;}
+export function decodeGatewayMessageDispatch(text:string):DecodedGatewayMessage{const result=decodeGatewayDispatchPayload(text,'MESSAGE_CREATE',discordGatewayMessageField) as Record<string,unknown>;freezeOwned(result);messages.add(result);return result as unknown as DecodedGatewayMessage;}
 
 const historySlot=new OwnedWorkerSlot();
 const historyByteLength=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Uint8Array.prototype),'byteLength')!.get!;

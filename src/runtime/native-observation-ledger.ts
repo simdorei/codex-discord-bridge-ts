@@ -24,7 +24,8 @@ function scope(input:ObservationScope):ObservationScope {
 function same(a:ObservationScope,b:ObservationScope):boolean{return a.ownerId===b.ownerId&&a.generation===b.generation;}
 function boolean(value:unknown):boolean{if(typeof value!=='boolean')throw new TypeError('Expected native observation boolean');return value;}
 function nothing(value:unknown):void{if(value!==null)throw new TypeError('Expected native observation acknowledgement');}
-type Operation='activate'|'discover'|'unknown'|'next'|'certify'|'finish'|'verified'|'terminal'|'final'|'questions'|'prepareQuestions';
+export interface NativeObservationInspection{readonly gap:ObservationGap|null;readonly verified:boolean}
+type Operation='activate'|'discover'|'unknown'|'next'|'inspect'|'certify'|'finish'|'verified'|'terminal'|'final'|'questions'|'prepareQuestions';
 
 /** Closed existing-store ledger operations for the owned event producer.
  * Two concurrent intake/reconciler calls may occupy Observation lanes, never
@@ -55,6 +56,16 @@ export class NativeObservationLedgerOwner {
    if(value===null)return null;const gap=cloneObservationGap(value as ObservationGap);
    if(!same(gap.scope,expected)||gap.verified.length>4096)throw new TypeError('Native observation gap changed original scope');
    return gap;
+  },signal);
+ }
+ /** One bounded worker for the ordered discovery/read/proof pass. Transactions
+  * stay separate; any gap still requires original event certification. */
+ inspect(input:ObservationScope,upper:bigint,signal?:AbortSignal):Promise<NativeObservationInspection>{
+  const expected=scope(input);integer(upper);return this.#run('inspect',{scope:expected,upper},value=>{
+   if(!same(scope(own(value,'scope') as ObservationScope),expected)||own(value,'upper')!==upper)throw new TypeError('Native observation inspection changed original scope');
+   const raw=own(value,'gap'),gap=raw===null?null:cloneObservationGap(raw as ObservationGap),verified=boolean(own(value,'verified'));
+   if(gap!==null&&(!same(gap.scope,expected)||gap.verified.length>4096||verified))throw new TypeError('Native observation inspection returned unconfirmed proof');
+   return {gap,verified};
   },signal);
  }
  /** Effects are produced by the internal event classifier; not external permission claims. */

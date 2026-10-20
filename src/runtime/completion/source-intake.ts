@@ -33,7 +33,7 @@ export class CompletionSourceQueue{
  * retains the cursor, bounded byte permits, FIFO and resident subscription. */
 export class CompletionSourceIntake{
  readonly queue=new CompletionSourceQueue();readonly #sink:(event:ReadyLive<CompletionNotification>)=>boolean;readonly #budget:CompletionEventBudget;readonly #path:string;readonly #server:Server;readonly #fence:TerminalFence;readonly #certifier:CompletionSourceCertifier;readonly #report:(failure:SourceIntakeFailure)=>void;readonly #state:Store;readonly #certificationState:Pick<IStateAccessFacade,"certifyObservation"|"recordObservedCompletionForResident"|"recordObservedFinalAnswer">;
- #current:ObservationScope|null=null;#forwarded=0n;#busy=false;#running=false;#closed=false;
+ #current:ObservationScope|null=null;#discovered:bigint|null=null;#forwarded=0n;#busy=false;#running=false;#closed=false;
  constructor(path:string,server:Server,fence:TerminalFence,commentaryEnabled:boolean,report:(failure:SourceIntakeFailure)=>void,budget=new CompletionEventBudget(),state:Store=StateAccessFacade,sink?:(event:ReadyLive<CompletionNotification>)=>boolean,certificationState:Pick<IStateAccessFacade,"certifyObservation"|"recordObservedCompletionForResident"|"recordObservedFinalAnswer">=StateAccessFacade,observeQuestions:typeof observeAsyncQuestionNotification=observeAsyncQuestionNotification){if(sink!==undefined&&(typeof sink!=="function"||types.isProxy(sink)||types.isAsyncFunction(sink)||types.isGeneratorFunction(sink)))throw new TypeError("Expected synchronous owned source sink");this.#sink=sink??(event=>this.queue.offer(event));this.#path=path;this.#server=server;this.#fence=fence;this.#report=report;this.#budget=budget;this.#state=state;this.#certificationState=certificationState;this.#certifier=new CompletionSourceCertifier(path,server,commentaryEnabled,undefined,certificationState,observeQuestions);}
  close():void{if(this.#running||this.#busy)throw new TypeError("Source intake still owned");this.queue.close();this.#closed=true;}
  get forwarded():bigint{return this.#forwarded;}
@@ -65,11 +65,13 @@ export class CompletionSourceIntake{
   if(this.#current?.ownerId!==scope.ownerId||this.#current.generation!==scope.generation){
    try{await this.#state.activateObservation(this.#path,scope);}catch(error){this.#server.markIdleObservationGap(this.#gapError);this.#notify("activate",error);return;}
    if(this.#server.generation()!==scope.generation){this.#server.markIdleObservationGap(this.#gapError);this.#notify("activate",new CompletionHeldError("original observation generation changed during activation"));return;}
-   this.#current=scope;this.#forwarded=0n;
+   this.#current=scope;this.#discovered=null;this.#forwarded=0n;
   }
   signal?.throwIfAborted();let page:ReturnType<Server['observationWindow']>;
   try{page=this.#server.observationWindow(scope.generation,this.#forwarded,null);if(page.ownerId!==scope.ownerId||page.generation!==scope.generation)throw new CompletionHeldError("different original observation stream");}catch(error){this.#server.markIdleObservationGap(this.#gapError);this.#notify("window",error);return;}
-  try{await this.#state.discoverObservation(this.#path,scope,page.sourceUpper);}catch(error){this.#server.markIdleObservationGap(this.#gapError);this.#notify("discover",error);}
+  // Only skip a discovery already confirmed for this exact source generation.
+  // This is not a proof cache: event certification and reconciliation still run.
+  if(this.#discovered!==page.sourceUpper)try{await this.#state.discoverObservation(this.#path,scope,page.sourceUpper);this.#discovered=page.sourceUpper;}catch(error){this.#server.markIdleObservationGap(this.#gapError);this.#notify("discover",error);}
   if(this.#server.generation()!==scope.generation){this.#server.markIdleObservationGap(this.#gapError);this.#notify("discover",new CompletionHeldError("original observation generation changed during discovery"));return;}
   const next=page.scannedThrough===(1n<<64n)-1n?page.scannedThrough:page.scannedThrough+1n;
   if(page.firstAvailable>(page.events[0]?.sequence??next))this.#server.markSourceObservationGap(page.generation,this.#gapError);

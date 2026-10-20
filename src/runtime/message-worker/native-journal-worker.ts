@@ -1,4 +1,5 @@
-import {parentPort,workerData as q} from 'node:worker_threads';
+import {serveReusableWorker} from '../reusable-worker-entry.ts';
+import type {ReusableNativeOperation} from '../reusable-worker-operations.ts';
 import {admitIngressExisting} from '../../store/ingress-admission.ts';
 import {beginIngressExecutionExisting,recordIngressProcessingModeExisting,recordIngressResultExisting,confirmIngressExisting} from '../../store/ingress-lifecycle.ts';
 import {recordNewInputExisting} from '../../store/ingress-new-input.ts';
@@ -7,7 +8,7 @@ import {newIngressFromWire,storedIngressToWire} from '../prompt-intake/native-jo
 import {intakeNumberFromWire} from '../prompt-intake/native-wire.ts';
 import {parseSerdeValue} from '../../core/serde-json-parse.ts';
 import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
-const port=parentPort;if(port===null)throw new TypeError('Message journal requires native ownership');
+export const runNativeOperation:ReusableNativeOperation=(q,port)=>{
 try{
  let value:unknown=true;
  if(q.operation==='Admit'){const admitted=admitIngressExisting(q.path,newIngressFromWire(q.envelope));value={...admitted,record:admitted.record===null?null:storedIngressToWire(admitted.record)};}
@@ -20,3 +21,5 @@ try{
  else throw new TypeError('Unknown message journal operation');
  const result={ok:true,operation:q.operation,path:q.path,id:q.id,value,...(q.operation==='NewInput'?{origin:q.origin,owner:q.owner,requestId:q.requestId}:{})};if(boundedSerdeByteCount(result,16*1024*1024)===null)throw new RangeError('Journal result exceeds boundary');port.postMessage(result);
 }catch{port.postMessage({ok:false});}finally{port.close();}
+};
+await serveReusableWorker(runNativeOperation);

@@ -1,10 +1,11 @@
-import {parentPort,workerData as q} from 'node:worker_threads';
+import {serveReusableWorker} from '../reusable-worker-entry.ts';
+import type {ReusableNativeOperation} from '../reusable-worker-operations.ts';
 import * as stateRuntimeFenceReads from '../../store/runtime-fence-reads.ts';
 import * as stateMirrorEventRead from '../../store/mirror-event-read.ts';
 import * as stateObservedCompletion from '../../store/observed-completion.ts';
 import * as stateObservedFinalAnswer from '../../store/observed-final-answer.ts';
 import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
-const port=parentPort;if(port===null)throw new Error('History read requires owned worker');
+export const runNativeOperation:ReusableNativeOperation=(q,port)=>{
 try{
  let value:boolean|string|null;
  switch(q.operation){
@@ -16,3 +17,5 @@ try{
  }
  const result={ok:true,value};if(boundedSerdeByteCount(result,4*1024*1024)===null)throw new Error('History result exceeds native boundary');port.postMessage(result);
 }catch{port.postMessage({ok:false});}finally{port.close();}
+};
+await serveReusableWorker(runNativeOperation);

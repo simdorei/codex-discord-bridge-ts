@@ -4,6 +4,7 @@ node_modules/
 .env.*
 !.env.example
 dist/
+plugins/codex-discord-remote/lib/
 .npm-cache/
 
 # Local migration build caches and execution logs.

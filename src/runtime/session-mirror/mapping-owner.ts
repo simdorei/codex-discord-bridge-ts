@@ -17,15 +17,16 @@ export function captureMirrorMappingLocks(queue:QueueStartCoordinator,databasePa
 /** Always target BEFORE global mapping ownership. Fork finalization acquires only
  * ordered target pairs; new/sync/inspection hold only the global key and never
  * request a target while holding it. Do not replace this order with runPair.
- * The global key conservatively serializes mirror targets, including HTTP/native
- * cleanup. Cancellation stops waiting but never releases still-running work.
+ * Polls share mapping ownership, so independent targets deliver concurrently.
+ * Mapping writers still acquire the exclusive key. Cancellation stops waiting
+ * but never releases still-running work or its mapping protection.
  * The global operation key is reserved and rejected as a thread identity. */
 export async function withMirrorMappingLocks<T>(locks:TargetLocks,thread:string,signal:AbortSignal,work:()=>Promise<T>):Promise<T>{
  requireThreadTargetKey(thread);
  const target=await TargetLocks.prototype.acquire.call(locks,thread,signal);let mapping:TargetLease|undefined;
  try{
   signal.throwIfAborted();
-  mapping=await TargetLocks.prototype.acquire.call(locks,MIRROR_SYNC_OPERATION_LOCK,signal);
+  mapping=await TargetLocks.prototype.acquireShared.call(locks,MIRROR_SYNC_OPERATION_LOCK,signal);
   signal.throwIfAborted();return await work();
  }finally{mapping?.release();target.release();}
 }

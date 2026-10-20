@@ -1,9 +1,10 @@
-import {parentPort,workerData as q} from 'node:worker_threads';
+import {serveReusableWorker} from '../reusable-worker-entry.ts';
+import type {ReusableNativeOperation} from '../reusable-worker-operations.ts';
 import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {CompletionDiscovery} from './scheduler/discovery.ts';
 import {CompletionReady} from './scheduler/ready.ts';
 import {discoveryText,discoveryI64,discoveryEntry,discoveryCursor,discoveryScan} from './native-discovery.ts';
-const port=parentPort;if(port===null)throw new Error('Discovery requires owned worker');
+export const runNativeOperation:ReusableNativeOperation=(q,port)=>{
 try{
  if(boundedSerdeByteCount(q,16*1024*1024)===null)throw new TypeError('Oversize discovery request');discoveryText(q.path);discoveryText(q.runtime);discoveryI64(q.generation);
  if(!Array.isArray(q.state)||!Array.isArray(q.http)||q.state.length+q.http.length>128||!Array.isArray(q.active)||q.active.length>128||!Array.isArray(q.samples)||q.samples.length<1||q.samples.length>8||q.samples.some((n:unknown)=>typeof n!=='number'||!Number.isFinite(n)||n<0))throw new TypeError('Invalid discovery request');q.active.forEach(discoveryText);
@@ -18,3 +19,5 @@ try{
  const result={ok:true,state,http:ready.httpSnapshot().slice(q.http.length),scans:discovery.snapshotNative().scans,reports:reports.map(r=>r.ok?r:{source:r.source,ok:false})};
  if(boundedSerdeByteCount(result,16*1024*1024)===null)throw new Error('Discovery output exceeds boundary');port.postMessage(result);
 }catch{port.postMessage({ok:false});}finally{port.close();}
+};
+await serveReusableWorker(runNativeOperation);

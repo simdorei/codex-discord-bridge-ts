@@ -12,6 +12,7 @@ import {MessageWorkerError} from '../message-worker/errors.ts';
 import {SettingsTargetResolver} from '../settings-binding.ts';
 import {refreshMirrorPolicy} from './mirror-policy.ts';
 import {takeMirrorPolicyCapacityRefusal} from './native-mirror-policy.ts';
+import {confirmGatewayReceiptEcho} from './receipt-echo.ts';
 type Kind='Ignore'|'Duplicate'|'Unavailable'|'Admitted';
 const token=Symbol('PreparedGatewayMessage');
 /** Owns the gate permit from preparation through processing AND error reporting.
@@ -74,6 +75,11 @@ export function prepareGatewayMessage(message:DecodedGatewayMessage,botUserId:bi
 async function prepare(message:DecodedGatewayMessage,botUserId:bigint|null,options:MessageCreateOptions,signal:AbortSignal|undefined,origin:object):Promise<PreparedGatewayMessage>{
  signal?.throwIfAborted();
  const target=messageErrorReportTarget(message),{database,config,basePolicy,gate,allowDrainControl,resolver,observedAt}=options;
+ if((message.author as {id:bigint}).id===botUserId){
+  const confirmed=await confirmGatewayReceiptEcho(database,message,botUserId,signal);
+  if(confirmed)process.stderr.write(`discord_gateway_receipt_confirmed channel_id=${message.channel_id} message_id=${message.id}\n`);
+  return new PreparedGatewayMessage(token,'Ignore',target,null,null,Object.freeze({reason:'own bot message',channelId:message.channel_id,userId:botUserId!}));
+ }
  const custody=captureMessageCustodyOptions(database,options.custody);
  if(typeof allowDrainControl!=='boolean')throw new TypeError('Expected drain control availability');
  const refresh=captureMessagePolicyRefresh(options),classify=captureMessageClassifier(options);let policy:InteractionAccessPolicy,refreshPending:Promise<InteractionAccessPolicy>|undefined;

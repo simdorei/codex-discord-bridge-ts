@@ -23,8 +23,8 @@ test('937 simultaneous native lanes: bounded admission, FIFO, cancellation and a
  const probe=new ObservedWorker(new URL('../helpers/native-mixed-lane-probe.js',import.meta.url),{workerData:{id:'probe'}});
  probe.on('message',(m:{sequence:number;target:number;sent:number})=>samples.push({...m,received:performance.now()}));
  const probeJoined=new Promise<void>((resolve,reject)=>{probe.once('exit',code=>code===0?resolve():reject(new Error('Probe exit')));probe.once('error',reject);});
- const lanes:Lane[]=['Background','Control','Observation','Discovery','Maintenance'],queues:Queue[]=['Control','Observation','Maintenance'];
- const full={Background:3,Control:1,Observation:2,Discovery:1,Maintenance:1},zero={Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0};
+ const lanes:Lane[]=['Background','Control','Bridge','Observation','Discovery','Maintenance'],queues:Queue[]=['Control','Observation','Maintenance'];
+ const full={Background:3,Control:1,Bridge:1,Observation:2,Discovery:1,Maintenance:1},zero={Background:0,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0};
  const pause=()=>new Promise<void>(r=>setTimeout(r,5));
  async function until(check:()=>boolean){const deadline=performance.now()+15000;while(!check()){assert.ok(performance.now()<deadline,'15000ms condition guard');await pause();}}
  function submit(id:string,lane:Lane,timeout:number,queued=false):Job{
@@ -77,10 +77,10 @@ test('937 simultaneous native lanes: bounded admission, FIFO, cancellation and a
   const fresh:Job[]=[];for(const lane of lanes){const j=submit(`fresh-${lane}`,lane,15000);fresh.push(j);await success(j);}
   await Promise.all(jobs.map(j=>j.slot.join()));assert.deepEqual(ownedWorkerUsage(),zero);unconstructed([...removed,...refused]);
   const expected=[...held,...live,...fresh].map(j=>j.id).sort();assert.deepEqual(constructors.filter(id=>id!=='probe').sort(),expected);assert.deepEqual(exits.filter(id=>id!=='probe').sort(),expected);assert.deepEqual(results.sort(),expected);assert.ok([...held,...live,...fresh].every(started));assert.ok(jobs.every(j=>j.settlements===1&&!j.slot.busy));
-  assert.equal(expected.length,19);assert.equal(refused.length,12);assert.equal(jobs.length,289);assert.equal(constructors.filter(id=>id==='probe').length,1);assert.ok(samples.length>0&&samples.length<=2400);assert.equal(constructors.length,20);assert.equal(results.length,19);
+  assert.equal(expected.length,21);assert.equal(refused.length,13);assert.equal(jobs.length,292);assert.equal(constructors.filter(id=>id==='probe').length,1);assert.ok(samples.length>0&&samples.length<=2400);assert.equal(constructors.length,22);assert.equal(results.length,21);
   assert.ok(samples.length>0);for(let i=0;i<samples.length;i++)assert.equal(samples[i]!.sequence,i+1);
   const late=samples.map(s=>Math.max(0,s.received-s.target)).sort((a,b)=>a-b);
-  summary={checkpoint:937,qualified:false,ownerAcceptance:true,nativeConstructed:expected.length,nativeStarted:expected.length,nativeExited:expected.length,initialHeld:8,queueOffered:258,queueExpired:3,queueCancelled:255,refusedWithoutConstruction:refused.length,liveFifo:6,freshAfterJoin:5,offeredBytesPerSubmission:64,totalOfferedFixtureBytes:jobs.length*64,submissions:jobs.length,probeIntervalMs:25,probeSamples:samples.length,probeP95LatenessMs:late[Math.floor((late.length-1)*0.95)],probeMaxLatenessMs:late.at(-1),probeMaxSendDriftMs:Math.max(...samples.map(s=>Math.max(0,s.sent-s.target))),probeMaxDeliveryDelayMs:Math.max(...samples.map(s=>Math.max(0,s.received-s.sent))),finalUsage:ownedWorkerUsage()};
+  summary={checkpoint:937,qualified:false,ownerAcceptance:true,nativeConstructed:expected.length,nativeStarted:expected.length,nativeExited:expected.length,initialHeld:9,queueOffered:258,queueExpired:3,queueCancelled:255,refusedWithoutConstruction:refused.length,liveFifo:6,freshAfterJoin:6,offeredBytesPerSubmission:64,totalOfferedFixtureBytes:jobs.length*64,submissions:jobs.length,probeIntervalMs:25,probeSamples:samples.length,probeP95LatenessMs:late[Math.floor((late.length-1)*0.95)],probeMaxLatenessMs:late.at(-1),probeMaxSendDriftMs:Math.max(...samples.map(s=>Math.max(0,s.sent-s.target))),probeMaxDeliveryDelayMs:Math.max(...samples.map(s=>Math.max(0,s.received-s.sent))),finalUsage:ownedWorkerUsage()};
  }finally{
   for(const j of jobs){j.controller.abort('synthetic-cleanup');release(j);}await Promise.allSettled(jobs.map(j=>j.pending));await Promise.all(jobs.map(j=>j.slot.join()));probe.postMessage('stop');await probeJoined;builtin.Worker=OriginalWorker;syncBuiltinESMExports();
  }

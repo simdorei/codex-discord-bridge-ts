@@ -6,7 +6,7 @@ import {ownedWorkerUsage} from '../../../src/runtime/owned-worker-slot.ts';
 import {serializeSerdeValue} from '../../../src/core/serde-json.ts';
 const id={threadId:'thread',cwd:'/project',turnId:'first-turn',promptSha256:'be41aba2fd84362ba49d22d8635d6c05f86426ee40846f1354e944062c4557a8'};
 const meta=JSON.stringify({type:'session_meta',payload:{id:'thread',cwd:'/project'}})+'\n',turn=JSON.stringify({type:'turn_context',payload:{turn_id:'first-turn'}})+'\n',user=JSON.stringify({type:'event_msg',payload:{type:'user_message',message:'요청'}})+'\n';
-async function fixture(body:(p:string)=>Promise<void>){const root=await mkdtemp(join(tmpdir(),'new-reply-window-'));try{await body(join(root,'rollout.jsonl'));}finally{await rm(root,{recursive:true,force:true});assert.equal(activeMirrorFileReads(),0);assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0});}}
+async function fixture(body:(p:string)=>Promise<void>){const root=await mkdtemp(join(tmpdir(),'new-reply-window-'));try{await body(join(root,'rollout.jsonl'));}finally{await rm(root,{recursive:true,force:true});assert.equal(activeMirrorFileReads(),0);assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});}}
 test('native file append resumes exact prior boundary and state instead of rescanning prefix',async()=>fixture(async p=>{
  await writeFile(p,meta+turn+user.slice(0,-1));const start=await beginNewReplyFileCursor(p,id),first=await observeNewReplyFile(start);
  assert.equal(first.stop,'IncompleteRecord');assert.equal(first.cursor.anchor.offset,BigInt(Buffer.byteLength(meta+turn)));assert.equal(first.cursor.state.turn,'first-turn');assert.equal(first.cursor.state.matched,false);

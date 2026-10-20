@@ -1,4 +1,5 @@
 import {requestPreparedRuntimeRemoteHandoff,assertPreparedRuntimeRemoteReleased} from './remote-start.ts';
+import {closeOwnedWorkerPool} from '../owned-worker-slot.ts';
 import {AttachmentHttpClient} from '../attachment-client.ts';
 import {RecommendedGateway} from '../../discord/gateway/recommended.ts';
 import {types} from 'node:util';
@@ -49,6 +50,7 @@ export async function runPreparedRuntimeLifetime(workers:PreparedRuntimeWorkerOw
  const deadline=selection.startedAt+RUNTIME_SHUTDOWN_TIMEOUT_MS;
  if(binding.remote!==null)await completeBeforeRuntimeShutdownDeadline(deadline,'remote-restart-marker',requestPreparedRuntimeRemoteHandoff(binding.remote),policy);
  const cleanup=await shutdownRuntimeOwners(binding.gateway,workers,binding.resident,selection.cause,deadline,policy);
+ await completeBeforeRuntimeShutdownDeadline(deadline,'native-worker-pool',closeOwnedWorkerPool(),policy);
  const finalized=await finalizeRuntimeShutdown(selection.cause,cleanup,selection.drainKey,controller,workers.heartbeat,userStop,deadline,()=>binding.remote===null?undefined:requestPreparedRuntimeRemoteHandoff(binding.remote),policy,(event,error)=>invokeSynchronousVoid(transitionReport as Function,{},[event,error]));
  if(binding.remote!==null)assertPreparedRuntimeRemoteReleased(binding.remote);
  workers.disposeMonitor();const result=Object.freeze({selection,cleanup,finalized,deadline});

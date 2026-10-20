@@ -1,5 +1,6 @@
 import {newIngressFromWire,storedIngressToWire} from './native-journal-wire.ts';
-import {parentPort,workerData as q} from 'node:worker_threads';
+import {serveReusableWorker} from '../reusable-worker-entry.ts';
+import type {ReusableNativeOperation} from '../reusable-worker-operations.ts';
 import * as stateArchiveFence from '../../store/archive-fence.ts';
 import * as stateIngressRead from '../../store/ingress-read.ts';
 import * as stateIngressLifecycle from '../../store/ingress-lifecycle.ts';
@@ -15,7 +16,7 @@ import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {intakeNumberFromWire,intakeToWire} from './native-wire.ts';
 import {completedAppServerForkTargetForSourceExisting,DeadGenerationTargetHeldError} from '../../store/fork-completed-target.ts';
 import {projectNativeStoreReadDiagnostic} from '../native-store-read-diagnostic.ts';
-const port=parentPort;if(port===null)throw new Error('Intake state requires owned native worker');
+export const runNativeOperation:ReusableNativeOperation=(q,port)=>{
 try{
  let value:unknown;
  if(q.operation==='CompletedForkTarget')value={id:q.id,target:completedAppServerForkTargetForSourceExisting(q.path,q.id)};
@@ -51,3 +52,5 @@ try{
   port.postMessage(boundedSerdeByteCount(refusal,16*1024*1024)===null?{ok:false}:refusal);
  }else {const storeDiagnostic=q.operation==='MirrorTarget'?projectNativeStoreReadDiagnostic(error):null;port.postMessage(storeDiagnostic===null?{ok:false}:{ok:false,operation:'MirrorTarget',channel:q.channel,storeDiagnostic});}
 }finally{port.close();}
+};
+await serveReusableWorker(runNativeOperation);

@@ -3,7 +3,7 @@ import {snapshotMirrorCursorAnchor as captureExpected,mirrorCursorAnchorVersionF
 import {observeMirrorBatch,type MirrorBatchObservation} from './batch-observation.ts';
 import {snapshotMirrorReadLimits,type MirrorReadLimits} from './read-window.ts';
 import {snapshotMirrorItemOptions,type MirrorItemOptions} from './decode-reader.ts';
-import {createHash} from 'node:crypto';
+import {createHash,type Hash} from 'node:crypto';
 import {MirrorFileWindow,type MirrorFileStamp,MirrorFileChangedError} from './file-window.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 export type {MirrorCursorAnchor} from '../../core/mirror-cursor-anchor.ts';
@@ -12,6 +12,10 @@ const stampKeys=['dev','ino','birthtimeNs','mtimeNs','ctimeNs','size'] as const;
 const token=Symbol('native mirror continuity observation');
 const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
 const sameStamp=(a:MirrorFileStamp,b:MirrorFileStamp)=>stampKeys.every(k=>a[k]===b[k]);
+// Bounded process-local acceleration only. No cache survives restart and every
+// changed native stamp requires a fresh prefix verification. Hash.copy retains
+// constant-sized SHA state, never consumed rollout contents.
+const historyCache=new Map<string,{path:string;offset:bigint;stamp:MirrorFileStamp;digest:Hash}>();
 /** A bounded point-in-time continuity observation, never historical integrity,
  * delivery evidence, cursor authority or permission to adopt a legacy cursor. */
 export class MirrorContinuityObservation{
@@ -88,14 +92,20 @@ export async function observeAnchoredMirrorBatch(expected:MirrorCursorAnchor,lim
  signal?.throwIfAborted();return new AnchoredMirrorBatch(token,observed.kind,anchor,batch,pinned);
 }
 
-/** Hash every consumed byte, bounded to 512 MiB and 10 seconds. Unlike sampled
- * anchors this detects rewrites in the middle followed by append, across restart.
- * Replacement, mutation during observation or a budget overrun holds the cursor. */
+/** Verify consumed bytes with 1 MiB memory and a ten-second deadline. Unchanged
+ * generations reuse verified SHA state; advancing within that generation hashes
+ * only the new range. Changed generations and process restarts verify afresh,
+ * including middle rewrites followed by append. No fixed file-size cutoff. */
 async function hashMirrorHistoryPrefix(path:string,offset:bigint,expected:MirrorFileStamp,signal?:AbortSignal):Promise<string>{
- if(offset>536870912n)throw new RangeError('Mirror history exceeds 512 MiB verification budget');
  const file=await open(path,'r'),deadline=performance.now()+10000;
- try{if(!sameStamp(expected,await file.stat({bigint:true})))throw new MirrorFileChangedError();const digest=createHash('sha256'),buffer=Buffer.alloc(1048576);let at=0n;
+ try{if(!sameStamp(expected,await file.stat({bigint:true})))throw new MirrorFileChangedError();
+  let digest=createHash('sha256'),at=0n;
+  for(const cached of historyCache.values())if(cached.path===path&&cached.offset<=offset&&cached.offset>=at&&sameStamp(cached.stamp,expected)){digest=cached.digest.copy();at=cached.offset;}
+  const buffer=Buffer.alloc(1048576);
   while(at<offset){signal?.throwIfAborted();if(performance.now()>deadline)throw new RangeError('Mirror history verification deadline');const length=Number(offset-at>1048576n?1048576n:offset-at),{bytesRead}=await file.read(buffer,0,length,at);if(bytesRead===0)throw new MirrorFileChangedError();digest.update(buffer.subarray(0,bytesRead));at+=BigInt(bytesRead);}
-  if(!sameStamp(expected,await file.stat({bigint:true}))||!sameStamp(expected,await stat(path,{bigint:true})))throw new MirrorFileChangedError();return digest.digest('hex');
+  if(!sameStamp(expected,await file.stat({bigint:true}))||!sameStamp(expected,await stat(path,{bigint:true})))throw new MirrorFileChangedError();
+  signal?.throwIfAborted();const key=path+'\0'+offset;historyCache.delete(key);historyCache.set(key,{path,offset,stamp:expected,digest:digest.copy()});
+  while(historyCache.size>32)historyCache.delete(historyCache.keys().next().value!);
+  return digest.digest('hex');
  }finally{await file.close();}
 }

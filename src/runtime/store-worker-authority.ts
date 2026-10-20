@@ -7,6 +7,7 @@ import {requirePersistentResidentRole,requirePersistentResidentStoreOpen} from '
 // A bounded transport descriptor, never a transferable authority capability.
 // Only this module may touch this environment-data entry in production.
 const key='codex-discord-bridge:store-accounting:v1';
+const reuseKey='codex-discord-bridge:reusable-worker:v1';
 type Descriptor={version:1;module:string;path:string|null;live:SharedArrayBuffer};
 type Record={descriptor:Descriptor|undefined;writer:StoreWriterTicket|null;finish:()=>void;submitted:boolean;released:boolean};
 declare const workerBrand:unique symbol;
@@ -26,12 +27,16 @@ export function registerStoreWorker(url:URL,data:unknown):StoreWorkerRegistratio
 }
 /** No await, message handshake or business-input mutation. Restore even on
  * structured-clone failure. The actual main registration remains private. */
-export function constructStoreWorker<T>(token:StoreWorkerRegistration,construct:()=>T):T{
+export function constructStoreWorker<T>(token:StoreWorkerRegistration,construct:()=>T,reusable:boolean|'dispatch'=false):T{
  const entry=record(token);if(entry.submitted)throw new TypeError('Native registration already submitted');
- const prior=getEnvironmentData(key);try{
-  setEnvironmentData(key,entry.descriptor);const result=construct();entry.submitted=true;if(entry.writer!==null)markStoreWorkerSubmitted(entry.writer);return result;
- }finally{setEnvironmentData(key,prior);}
+ const prior=getEnvironmentData(key),priorReuse=getEnvironmentData(reuseKey);try{
+  setEnvironmentData(key,entry.descriptor);setEnvironmentData(reuseKey,reusable);const result=construct();entry.submitted=true;if(entry.writer!==null)markStoreWorkerSubmitted(entry.writer);return result;
+ }finally{setEnvironmentData(key,prior);setEnvironmentData(reuseKey,priorReuse);}
 }
+/** Scheduling mode only; writable path authority still uses the original live
+ * descriptor and remains registered until the native worker actually exits. */
+export function storeWorkerReuseEnabled():boolean{return !isMainThread&&(getEnvironmentData(reuseKey)===true||getEnvironmentData(reuseKey)==='dispatch');}
+export function storeWorkerDispatchEnabled():boolean{return !isMainThread&&getEnvironmentData(reuseKey)==='dispatch';}
 export function releaseStoreWorker(token:StoreWorkerRegistration,exited:boolean):void{
  const entry=record(token);if(entry.submitted!==exited)throw new TypeError('Native store release requires actual exit');
  entry.released=true;if(entry.descriptor!==undefined)Atomics.store(new Int32Array(entry.descriptor.live),0,0);

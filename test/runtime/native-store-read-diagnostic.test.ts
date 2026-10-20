@@ -23,7 +23,7 @@ const secret='DO_NOT_TRANSPORT_ROW_OR_SQL_OR_PATH';
 const sqlite=(errcode?:number)=>Object.assign(new Error(secret),{code:'ERR_SQLITE_ERROR',...(errcode===undefined?{}:{errcode}),errstr:secret});
 async function rejected(p:Promise<unknown>):Promise<unknown>{try{await p;}catch(error){return error;}assert.fail('Expected rejection');}
 function storeKind(error:unknown,kind:string):boolean{return error instanceof NativeStoreReadError&&error.diagnostic.kind===kind&&!(error instanceof PromptAuthorityError)&&!error.message.includes(secret);}
-function idle(){assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0});}
+function idle(){assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});}
 
 test('passive projection keeps known classifications and never reads sensitive diagnostic fields',()=>{
  const integrity=new StoreIntegrityError(secret),invalid=new InvalidQueueStateError(secret),json=new StoreJsonError(),db=sqlite(5);

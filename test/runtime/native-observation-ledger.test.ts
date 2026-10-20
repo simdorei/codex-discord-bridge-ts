@@ -58,3 +58,19 @@ test('caller mutation after submission cannot replace original observation ident
  await new Promise(r=>setTimeout(r,30));db.exec('ROLLBACK');await pending;
  assert.equal(state.observationScopeVerifiedExisting(path,scope,0n),true);assert.equal(state.observationScopeVerifiedExisting(path,original,0n),false);
 }));
+
+test('batched inspection retains original bigint scope, gaps and durable proof',async()=>fixture(async(_db,o)=>{
+ await o.activate(scope);assert.deepEqual(await o.inspect(scope,0n),{gap:null,verified:true});
+ const pending=await o.inspect(scope,2n);assert.equal(pending.gap!.scope.generation,scope.generation);assert.equal(pending.gap!.last,2n);assert.equal(pending.verified,false);
+ await o.certify(scope,1n,[{kind:'NoRequiredStore'}]);assert.equal((await o.inspect(scope,2n)).verified,false);
+ await o.certify(scope,2n,[{kind:'NoRequiredStore'}]);assert.deepEqual(await o.inspect(scope,2n),{gap:null,verified:true});
+ await o.markUnknown(scope,'unattributed');assert.equal((await o.inspect(scope,2n)).verified,false);
+}));
+
+test('cancelled inspection joins accepted database work and retains its original scope',async()=>fixture(async(db,o,path)=>{
+ state.activateObservationExisting(path,scope);db.exec('BEGIN IMMEDIATE');const original={...scope},c=new AbortController(),pending=o.inspect(original,1n,c.signal);
+ original.ownerId='foreign';original.generation=8n;const rejected=assert.rejects(pending,IdleObservationError);c.abort(new Error('cancel'));let done=false;void pending.then(()=>{done=true;},()=>{done=true;});
+ await new Promise(r=>setTimeout(r,40));assert.equal(done,false);assert.equal(ownedWorkerUsage().Observation,1);db.exec('ROLLBACK');await rejected;
+ assert.equal(state.nextObservationGapExisting(path,scope)!.last,1n);assert.equal(o.busy,false);
+ assert.throws(()=>o.inspect(scope,1n,c.signal),/cancel/);assert.equal(ownedWorkerUsage().Observation,0);
+}));

@@ -1,4 +1,5 @@
-import {parentPort,workerData as q} from 'node:worker_threads';
+import {serveReusableWorker} from './reusable-worker-entry.ts';
+import type {ReusableNativeOperation} from './reusable-worker-operations.ts';
 import * as stateQuestionRetention from '../store/async-question-retention.ts';
 import * as stateQuestionObservation from '../store/async-question-observation.ts';
 import * as stateObservedCompletion from '../store/observed-completion.ts';
@@ -6,7 +7,7 @@ import * as stateObservedFinalAnswer from '../store/observed-final-answer.ts';
 import * as stateObservationLedger from '../store/observation-ledger.ts';
 import * as stateObservationProof from '../store/observation-proof.ts';
 import {boundedSerdeByteCount} from '../core/serde-byte-count.ts';
-const port=parentPort;if(port===null)throw new Error('Observation ledger requires owned native worker');
+export const runNativeOperation:ReusableNativeOperation=(q,port)=>{
 try{
  let value:unknown=null;
  switch(q.operation){
@@ -18,6 +19,11 @@ try{
   case 'discover':stateObservationLedger.discoverObservationExisting(q.path,q.scope,q.upper);break;
   case 'unknown':stateObservationLedger.markUnknownObservationExisting(q.path,q.scope,q.detail);break;
   case 'next':value=stateObservationLedger.nextObservationGapExisting(q.path,q.scope);break;
+  case 'inspect':{
+   stateObservationLedger.discoverObservationExisting(q.path,q.scope,q.upper);
+   const gap=stateObservationLedger.nextObservationGapExisting(q.path,q.scope);
+   value={scope:q.scope,upper:q.upper,gap,verified:gap===null&&stateObservationLedger.observationScopeVerifiedExisting(q.path,q.scope,q.upper)};break;
+  }
   case 'certify':value=stateObservationProof.certifyObservationExisting(q.path,q.scope,q.sequence,q.effects);break;
   case 'finish':value=stateObservationProof.finishObservationPageExisting(q.path,q.gap,q.through);break;
   case 'verified':value=stateObservationLedger.observationScopeVerifiedExisting(q.path,q.scope,q.through);break;
@@ -26,3 +32,5 @@ try{
  if(boundedSerdeByteCount(value,1048500)===null)throw new TypeError('Observation result exceeds native boundary');
  port.postMessage({ok:true,value});
 }catch{port.postMessage({ok:false,value:null});}finally{port.close();}
+};
+await serveReusableWorker(runNativeOperation);

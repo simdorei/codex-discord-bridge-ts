@@ -101,7 +101,8 @@ export function takeMessageClassificationCapacityRefusal(pending:Promise<Message
 function capturePath(path:string):string{
  requireDiscordText(path);if(path.includes('\0')||Buffer.byteLength(path)>32768)throw new RangeError('Invalid native classification path');const fixed=pinNativeRuntimePath(path);if(Buffer.byteLength(fixed)>32768)throw new RangeError('Invalid native classification path');return fixed;
 }
-/** One zero-queue Control read per invocation. Shared class budget is unchanged;
+/** Read-only classification uses the shared Background lane so it cannot evict
+ * the resident Control writer. Standalone calls retain zero-queue semantics;
  * cancellation/timeout joins actual native exit, never terminates database I/O. */
 export function createNativeMessageClassifier(database:string,limits:NativeMessageClassificationLimits):MessageClassifier{
  const path=capturePath(database),fixed=captureNativeMessageClassificationLimits(limits);
@@ -113,7 +114,7 @@ export function createNativeMessageClassifier(database:string,limits:NativeMessa
   signal?.throwIfAborted();if(given!==database)throw new TypeError('Classifier belongs to another database');
   const input=capture(message,given,config,policy,botUserId);
   if(boundedSerdeByteCount(input.facts,4194304)===null)throw new RangeError('Classification input exceeds native budget');
-  const slot=new OwnedWorkerSlot('Control');let pending:Promise<unknown>|undefined,response:unknown,admitted=false,joined=Promise.resolve();
+  const slot=new OwnedWorkerSlot('Background');let pending:Promise<unknown>|undefined,response:unknown,admitted=false,joined=Promise.resolve();
   try{
    try{pending=slot.run(new URL('./native-classification-worker.ts',import.meta.url),{path,limits:fixed,facts:input.facts,channel:input.channelId,event:input.persistedId,actor:input.userId},fixed.timeoutMs,signal);}
    finally{admitted=slot.busy;joined=slot.join();}

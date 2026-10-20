@@ -3,6 +3,7 @@ import {joinRuntimePath,type PathPlatform} from '../runtime/runtime-paths/path-t
 const options:ReadonlyMap<string,readonly string[]>=new Map([
  ['setup-discord',['--bot-id','--dry-run','--input-stdin','--input-lines']],
  ['configure-install',['--codex-home','--codex-exe']],
+ ['install-plugin',['--codex-home','--codex-exe']],
  ['verify-plugin-inventory',['--marketplace-inventory','--plugin-inventory','--plugin-manifest','--marketplace-name','--plugin-id']],
  ['discover-codex',['--codex-exe']],['backup-store',[]],['active-queue-count',[]],['retire-automatic-reserve',[]],
  ['authorize-saved-final',['--request-file']],['list-threads',['--limit']],['archive-thread',['--thread-id']],
@@ -10,7 +11,7 @@ const options:ReadonlyMap<string,readonly string[]>=new Map([
  ['recover-writer',['--thread-id','--channel-id','--owner-user-id','--dry-run']],
  ['recover-tools',['--thread-id','--channel-id','--owner-user-id','--dry-run']],
  ['inspect-async-recovery',['--database','--thread-id','--dry-run']],
- ['migrate-mirror-cursors',['--thread-id']],
+ ['migrate-mirror-cursors',['--thread-id','--env']],
  ['check-recovery-compatibility',['--database','--env']],
  ['send-attachment',['--channel-id','--thread-ref','--work-thread','--content','--content-file']],
 ]);

@@ -65,7 +65,7 @@ test('application schema stage prepares both extension stores without starting a
  paths.mirrorDb=join(root,'foreign.sqlite');Object.assign(p,{schemaTimeoutMs:0});Object.assign(p.worker,{bridgeDatabasePath:paths.mirrorDb});Object.assign(p.worker.bootstrap.context,{maxBytes:0});await pending;assert.equal(existsSync(paths.mirrorDb),false);
  const cursor=new NativeMirrorCursorStore(mirrorDb),intent=new NativeMirrorStartupIntentStore(mirrorDb);
  try{assert.equal(await cursor.read('missing'),null);assert.equal(await intent.read('missing'),null);}finally{await cursor.close();await intent.close();}
- assert.equal(mirrorRunnerBusy(),false);assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0});
+ assert.equal(mirrorRunnerBusy(),false);assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});
 }));
 
 test('schema failure preserves partial preparation and joins native work without starting mirror polling',async()=>storeFixture(async path=>{
@@ -73,5 +73,5 @@ test('schema failure preserves partial preparation and joins native work without
  const db=await openInitialized(mirrorDb);try{db.exec('CREATE TABLE cdr_ts_mirror_startup_intents_v1(wrong TEXT)');}finally{db.close();}
  await assert.rejects(prepareLocalSessionMirrorSchemas(p,paths),error=>{assert.ok(error instanceof MirrorStartupIntentWriteUnconfirmedError);assert.match(String(error.cause),/schema|incompatible/i);return true;});
  const read=new DatabaseSync(mirrorDb,{readOnly:true});try{assert.ok(read.prepare("SELECT 1 FROM sqlite_master WHERE name='cdr_ts_mirror_cursor_anchors_v1'").get());assert.equal(read.prepare('SELECT count(*) AS n FROM cdr_ts_mirror_cursor_anchors_v1').get()!.n,0);assert.deepEqual(read.prepare('PRAGMA table_info(cdr_ts_mirror_startup_intents_v1)').all().map(r=>r.name),['wrong']);}finally{read.close();}
- assert.equal(mirrorRunnerBusy(),false);assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0});
+ assert.equal(mirrorRunnerBusy(),false);assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});
 }));

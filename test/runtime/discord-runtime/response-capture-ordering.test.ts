@@ -24,7 +24,7 @@ async function fixture(t:TestContext,run:(fixture:Fixture)=>Promise<void>):Promi
   }finally{
    try{await owner.dispose();}finally{db?.close();}
    assert.equal(owner.lifecycleSnapshot().processId,null,'original child was joined');
-   assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0},'all original native slots released after exit');
+   assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0},'all original native slots released after exit');
   }
  });
 }

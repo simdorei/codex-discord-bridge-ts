@@ -6,8 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${PLUGIN_ROOT}/bin/cdr-pro-helper\" connector-hook",
-            "commandWindows": "\"${PLUGIN_ROOT}\\bin\\cdr-pro-helper.exe\" connector-hook",
+            "command": "node \"${PLUGIN_ROOT}/bin/cdr-pro-helper.mjs\" connector-hook",
+            "commandWindows": "node \"${PLUGIN_ROOT}\\bin\\cdr-pro-helper.mjs\" connector-hook",
             "timeout": 10,
             "statusMessage": "Verifying Pro OAuth connector"
           }

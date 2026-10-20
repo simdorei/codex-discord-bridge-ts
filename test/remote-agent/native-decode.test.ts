@@ -54,10 +54,10 @@ test('native decoder shares finite global background capacity without consuming 
  const shared=new SharedArrayBuffer(4),a=new Int32Array(shared),owners=Array.from({length:3},()=>new OwnedWorkerSlot());
  const pending=owners.map(owner=>owner.run(url,shared,6000));
  try{
-  assert.deepEqual(ownedWorkerUsage(),{Background:3,Control:0,Observation:0,Discovery:0,Maintenance:0});
+  assert.deepEqual(ownedWorkerUsage(),{Background:3,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});
   await assert.rejects(decode('{"kind":"computer_stop"}',budget),OwnedWorkerBudgetError);
-  assert.deepEqual(ownedWorkerUsage(),{Background:3,Control:0,Observation:0,Discovery:0,Maintenance:0});
+  assert.deepEqual(ownedWorkerUsage(),{Background:3,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});
  }finally{Atomics.store(a,0,1);Atomics.notify(a,0);await Promise.all(pending);await Promise.all(owners.map(o=>o.join()));}
- assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0});
+ assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});
  assert.equal((await decode('{"kind":"computer_stop"}',budget)).operation.kind,'computer_stop');
 });

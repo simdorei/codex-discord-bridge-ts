@@ -1,8 +1,9 @@
-import {parentPort,workerData} from 'node:worker_threads';
+import {serveReusableWorker} from '../reusable-worker-entry.ts';
+import type {ReusableNativeOperation} from '../reusable-worker-operations.ts';
 import {usingExistingReadOnlyStore} from '../../store/owned-scope.ts';
 import {boundedMirrorTargetsIn} from '../../store/mirror-target-snapshot.ts';
 import {boundedQueueJobsIn} from '../../store/queue-snapshot.ts';
-if(parentPort===null)throw new Error('Mirror store discovery requires owned worker');
+export const runNativeOperation:ReusableNativeOperation=(workerData,parentPort)=>{
 try{
  const snapshot=usingExistingReadOnlyStore(workerData.path,db=>{
   // Source performs the mapping query before the queue read. Separate bounded
@@ -17,3 +18,5 @@ try{
  parentPort.postMessage({ok:true,...snapshot});
 }catch(error){parentPort.postMessage({ok:false,detail:[...(error instanceof Error?error.message:'Mirror store discovery failed')].slice(0,2048).join('')});}
 finally{parentPort.close();}
+};
+await serveReusableWorker(runNativeOperation);

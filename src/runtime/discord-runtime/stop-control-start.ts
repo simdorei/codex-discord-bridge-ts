@@ -5,7 +5,8 @@ import type {TickSource} from '../delayed-ticks.ts';
 import {RuntimeMonitoredWorker,RuntimeWorkerExitChannel} from './monitored-worker.ts';
 /** One serial Stop worker built from the same executor as accepted commands.
  * Original queue locks, bridge selection and native custody owner are retained.
- * Default skipped-tick interval is 250ms and cooperative cycle budget 2s.
+ * Default skipped-tick interval is 250ms and each cooperative stage gets 2s.
+ * The polling owner attempts at most one durable claim before yielding.
  * Actual common-deadline shutdown joins this task; no detached task per Stop. */
 export function startStopControlRuntimeWorker(executor:RuntimeCommandExecutor,shutdown:AbortSignal,notifier:RuntimeWorkerExitChannel,report:(event:StopWorkerFailure)=>void,ticks?:()=>TickSource):RuntimeMonitoredWorker{
  if(types.isProxy(shutdown)||!(shutdown instanceof AbortSignal))throw new TypeError('Expected stop worker shutdown signal');

@@ -169,7 +169,7 @@ it('project replacement joins the original session operation before releasing it
 it('project and command text limits reject excess before acquiring resources',async()=>{
  const f=fixture();for(let i=0;i<16;i++)await f.owner.upsert({threadId:String(i),root:'/synthetic/'+i,expiresAt:date(300n)});
  await assert.rejects(f.owner.upsert({threadId:'overflow',root:'/synthetic/overflow',expiresAt:date(300n)}),RemoteWorkerCapacityError);assert.equal(f.counts().opens,16);
- const c=await f.owner.beginConnection(1n),large=Object.freeze({...command('write_file'),content:'x'.repeat(1500000)});
+ const c=await f.owner.beginConnection(1n),large=Object.freeze({...command('write_file'),content:'x'.repeat(12000000)});
  assert.throws(()=>execute(f.owner,large,c),RangeError);assert.equal(f.owner.snapshot().accepted,0);await f.owner.close();
 });
 it('nonmutating malformed backend result is rejected before it can leave the owner',async()=>{

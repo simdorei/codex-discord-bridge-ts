@@ -4,6 +4,8 @@ import {isIP,BlockList} from 'node:net';
 import {extname} from 'node:path';
 import type {RemoteOperationContext} from './dispatcher-ports.ts';
 const MAX=5242880;
+/** Validation completed before checkpoint creation or any filesystem mutation. */
+export class RemoteImageInputError extends Error{constructor(message:string){super(message);this.name='RemoteImageInputError';}}
 const blocked=new BlockList();
 for(const [ip,prefix]of [['0.0.0.0',8],['10.0.0.0',8],['127.0.0.0',8],['100.64.0.0',10],['169.254.0.0',16],['172.16.0.0',12],['192.0.0.0',16],['192.168.0.0',16],['198.18.0.0',15],['198.51.0.0',16],['203.0.0.0',16],['224.0.0.0',3]]as const)blocked.addSubnet(ip,prefix,'ipv4');
 for(const [ip,prefix]of [['::',128],['::1',128],['fc00::',7],['fe80::',10],['fec0::',10],['ff00::',8],['2001:db8::',32]]as const)blocked.addSubnet(ip,prefix,'ipv6');

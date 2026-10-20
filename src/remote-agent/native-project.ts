@@ -4,7 +4,8 @@ import {RemoteFileMutations,fileDigest} from './files/mutations.ts';
 import {RemoteFileFailure} from './files/error.ts';
 import {RemoteOperationFailure} from './operation-failure.ts';
 import {settledRemoteOperationFailure} from './operation-error-result.ts';
-import {NativeRemoteCore} from './native-core.ts';
+import {NativeRemoteCore,RemoteCoreInputConflict} from './native-core.ts';
+import {RemoteImageInputError} from './native-images.ts';
 import {NativeTerminalEngine} from './native-terminal.ts';
 import {WindowsTerminalWindows} from './windows-terminal.ts';
 import {RemoteSessionComputerOwner} from './session-computer.ts';
@@ -38,7 +39,13 @@ export async function openNativeRemoteProject(binding:RemoteProjectBinding,codex
    if(before===null?command.expected_sha256!==null:command.expected_sha256===null||fileDigest(before)!==command.expected_sha256)return settledRemoteOperationFailure(command,new RemoteOperationFailure({family:'checkpoint',failure:{kind:'File',error:new RemoteFileFailure('Conflict',command.path,'file changed since it was read')}}));
    const r=await core.write(command.path,command.content,command.expected_sha256,c.signal);return {path:r.path,sha256:r.sha256,bytes_written:r.bytes_written,created:r.created};
   }),
-  core:(request,context)=>run(context,c=>core.execute(request,c)),
+  core:(request,context)=>run(context,async c=>{try{return await core.execute(request,c);}catch(error){
+   if(error instanceof RemoteCoreInputConflict){
+    const family=request.kind==='save_image'||request.kind==='save_image_from_url'?'image':request.kind==='file_create'||request.kind==='file_apply_patch'?'checkpoint':null;
+    if(family!==null)return settledRemoteOperationFailure(request,new RemoteOperationFailure({family,failure:{kind:'File',error}}));
+   }
+   if(error instanceof RemoteImageInputError&&(request.kind==='save_image'||request.kind==='save_image_from_url'))return settledRemoteOperationFailure(request,new RemoteOperationFailure({family:'image',failure:{kind:'Invalid',path:request.path,reason:error.message}}));throw error;
+  }}),
   close:()=>{closed=true;stop.abort(new Error('Remote project closed'));return closing??=(async()=>{const results=await Promise.allSettled([...sessions.values()].map(async({backend})=>{const joined=await Promise.allSettled([backend.stopComputer(),backend.closeTerminalWindows(),backend.closeTerminals()]);const failures=joined.filter((r):r is PromiseRejectedResult=>r.status==='rejected');if(failures.length)throw new AggregateError(failures.map(r=>r.reason),'Remote session cleanup unconfirmed');}));await Promise.allSettled([...active]);const failures=results.filter((r):r is PromiseRejectedResult=>r.status==='rejected');if(failures.length||debts.length)throw new AggregateError([...failures.map(r=>r.reason),...debts],'Remote project cleanup is unconfirmed');await closeRemoteNativeRead(native);mutations.close();})();},
  } satisfies RemoteProjectBackend);
 }

@@ -1,6 +1,6 @@
 {
   "name": "codex-discord-bridge-ts",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.7",
   "private": true,
   "type": "module",
   "engines": {
@@ -17,7 +17,7 @@
     "ws": "8.22.0"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && node tools/stage-pro-helper.mjs",
     "typecheck": "tsc --noEmit",
     "build:test": "node tools/build-test-profile.mjs",
     "maintenance": "node --no-strip-types dist/src/cli/maintenance-main.js",
@@ -27,16 +27,20 @@
     "test": "npm run build && node tools/run-tests.mjs",
     "start": "node bin/codex-discord-bridge.mjs",
     "test:migration": "npm run build && node tools/run-tests.mjs --profile windows-migration",
-    "test:features": "npm run build && node tools/run-tests.mjs --profile windows-features"
+    "test:features": "npm run build && node tools/run-tests.mjs --profile windows-features",
+    "test:parity": "npm run build && node tools/run-tests.mjs --profile rs-parity && node --test test/pro/connector-current.test.mjs"
   },
   "bin": {
-    "codex-discord-bridge": "bin/codex-discord-bridge.mjs"
+    "codex-discord-bridge": "bin/codex-discord-bridge.mjs",
+    "cdr-pro-helper": "plugins/codex-discord-remote/bin/cdr-pro-helper.mjs",
+    "cdr-mcp-server": "bin/cdr-mcp-server.mjs"
   },
   "files": [
     "bin/",
     "dist/src/",
     "scripts/",
     "plugins/",
+    ".agents/plugins/marketplace.json",
     "README.md",
     ".env.example",
     "THIRD_PARTY_NOTICES.md"

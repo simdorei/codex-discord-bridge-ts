@@ -2,7 +2,9 @@ import type {PortableResidentLifecycle} from "../../app-server/portable-resident
 import {captureAsyncQuestionNotification,type observeAsyncQuestionNotification} from '../async-question-observation.ts';
 import {NativeObservationLedgerOwner} from '../native-observation-ledger.ts';
 import type {IStateAccessFacade} from '../../store/state-access-facade.ts';
-type Store=Pick<IStateAccessFacade,'activateObservation'|'discoverObservation'|'nextObservationGap'|'certifyObservation'|'finishObservationPage'|'observationScopeVerified'|'recordObservedCompletionForResident'|'recordObservedFinalAnswer'>;
+import type {NativeObservationInspection} from '../native-observation-ledger.ts';
+import type {ObservationScope} from '../../store/observation-gap-model.ts';
+type Store=Pick<IStateAccessFacade,'activateObservation'|'discoverObservation'|'nextObservationGap'|'certifyObservation'|'finishObservationPage'|'observationScopeVerified'|'recordObservedCompletionForResident'|'recordObservedFinalAnswer'>&{inspectObservation(p:string,s:ObservationScope,n:bigint,signal?:AbortSignal):Promise<NativeObservationInspection>};
 /** Pipeline-owned adapter only. The path cannot be replaced per call; every
  * certificate still comes from the original event producer and store transaction. */
 export function createNativeObservationState(path:string):{readonly state:Store;readonly observeQuestions:typeof observeAsyncQuestionNotification;prepareQuestions(p:string,runtime:string,generation:bigint,signal?:AbortSignal):Promise<void>;prepareResidentQuestions(server:Pick<PortableResidentLifecycle,"instanceId"|"admitResponse">,generation:bigint,signal?:AbortSignal):Promise<void>;close():Promise<void>}{
@@ -13,6 +15,7 @@ export function createNativeObservationState(path:string):{readonly state:Store;
   activateObservation:(p,s)=>{check(p);return owner.activate(s);},
   discoverObservation:(p,s,n)=>{check(p);return owner.discover(s,n);},
   nextObservationGap:(p,s)=>{check(p);return owner.next(s);},
+  inspectObservation:(p,s,n,signal)=>{check(p);return owner.inspect(s,n,signal);},
   certifyObservation:(p,s,n,effects)=>{check(p);return owner.certify(s,n,effects);},
   finishObservationPage:(p,g,n)=>{check(p);return owner.finish(g,n);},
   observationScopeVerified:(p,s,n)=>{check(p);return owner.verified(s,n);},

@@ -15,6 +15,7 @@ import {setupDiscord,sendAdminAttachments,discordId} from './admin-http.ts';
 import {resolveThreadReferenceOffThread} from '../codex-state/reference-reader.ts';
 import {createWindowsRecoveryController} from '../runtime/writer-recovery/windows-controller.ts';
 import {recoveryReceiptPath} from '../runtime/writer-recovery/handoff.ts';
+import {installBundledPlugin} from './plugin-install.ts';
 const slot=new OwnedWorkerSlot('Control');
 export async function adminDatabase(data:Record<string,unknown>,signal?:AbortSignal,migration=false):Promise<any>{
  const pending=slot.run(new URL(migration?'./mirror-migration-worker.ts':'./admin-database-worker.ts',import.meta.url),data,migration?30000:10000,signal);let result:any;try{result=await pending;}finally{await slot.join();}
@@ -29,7 +30,8 @@ export async function runAdmin(argv:readonly string[],environment:ReadonlyMap<st
  if(args.command==='configure-install'){await updateAdminEnvironment(root,{CODEX_HOME:args.required('--codex-home'),...(args.value('--codex-exe')===undefined?{}:{CODEX_EXE:args.required('--codex-exe')})});return 'Configured installation environment; existing unrelated settings preserved.';}
  if(args.command==='setup-discord')return setupDiscord(args,root,signal);
  if(args.command==='verify-plugin-inventory')return 'Verified Codex plugin inventory: '+await verifyInstallInventory(root,resolve(root,args.required('--marketplace-inventory')),resolve(root,args.required('--plugin-inventory')),resolve(root,args.required('--plugin-manifest')),args.value('--marketplace-name')??'codex-discord-remote',args.value('--plugin-id')??'codex-discord-remote@codex-discord-remote');
- const env=Object.fromEntries(await loadStartupEnvironmentOffThread(environment,join(root,'.env'),'',signal));if(args.value('--codex-exe')!==undefined)env.CODEX_EXE=args.required('--codex-exe');
+ const envPath=args.command==='migrate-mirror-cursors'&&args.value('--env')!==undefined?resolve(root,args.required('--env')):join(root,'.env');
+ const env=Object.fromEntries(await loadStartupEnvironmentOffThread(environment,envPath,'',signal));if(args.value('--codex-exe')!==undefined)env.CODEX_EXE=args.required('--codex-exe');if(args.command==='install-plugin'&&args.value('--codex-home')!==undefined)env.CODEX_HOME=args.required('--codex-home');
  const store=resolveRuntimeStorePaths(env,root,env.USERPROFILE??env.HOME??null),database=resolve(cwd,store.mirrorDb);
  if(args.command==='retire-automatic-reserve'||args.command==='migrate-mirror-cursors'){
   const guard=await acquireRuntimePlatform(await realpath(resolve(cwd,store.root)));try{
@@ -51,6 +53,7 @@ export async function runAdmin(argv:readonly string[],environment:ReadonlyMap<st
   return sendAdminAttachments(args,env.DISCORD_BOT_TOKEN??'',channel,signal);
  }
  const resolved=await paths();
+ if(args.command==='install-plugin')return installBundledPlugin(root,resolved.codexExe,resolved.codexHome,signal);
  if(args.command==='discover-codex')return resolved.codexExe;
  if(args.command==='list-threads'||args.command==='archive-thread'){const raw=args.value('--limit')??'50';if(!/^\d+$/.test(raw))throw new Error('--limit must be a nonnegative integer');return runThreadAdmin(resolved,version,args.command==='archive-thread'?args.required('--thread-id'):undefined,BigInt(raw),signal);}
  if(args.command==='recover-writer'||args.command==='recover-tools'){

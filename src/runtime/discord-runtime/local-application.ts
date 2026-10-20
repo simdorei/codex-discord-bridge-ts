@@ -27,7 +27,7 @@ import {AdmittedRecoverExecutor} from '../action-executor/recover-action.ts';
 import {createWindowsRecoveryController} from '../writer-recovery/windows-controller.ts';
 import {createWindowsHostControl} from '../windows/host-control.ts';
 import {createArchiveDeletionController} from '../archive-delete/controller.ts';
-import {withOwnedWorkerBackpressure} from '../owned-worker-slot.ts';
+import {withOwnedWorkerBackpressure,withOwnedWorkerReuse,closeOwnedWorkerPool} from '../owned-worker-slot.ts';
 
 export class LocalRuntimeUnsupportedError extends Error{
  constructor(){super('Host commands require the Windows controller');this.name='LocalRuntimeUnsupportedError';}
@@ -47,7 +47,7 @@ function milliseconds(value:bigint):number{
  * a failed active lifetime retains its owners rather than guessing it has joined.
  */
 export function runLocalRuntimeApplication(config:RuntimeConfig,environment:RuntimeEnvironment,root:string,version:string,mirrorProfile?:LocalSessionMirrorProfile,authorityProfile?:LocalStoreAuthorityProfile,remoteProfile?:RuntimeRemoteProfile):Promise<void>{
- return withOwnedWorkerBackpressure(()=>runApplication(config,environment,root,version,mirrorProfile,authorityProfile,remoteProfile));
+ return withOwnedWorkerReuse(()=>withOwnedWorkerBackpressure(()=>runApplication(config,environment,root,version,mirrorProfile,authorityProfile,remoteProfile)));
 }
 async function runApplication(config:RuntimeConfig,environment:RuntimeEnvironment,root:string,version:string,mirrorProfile?:LocalSessionMirrorProfile,authorityProfile?:LocalStoreAuthorityProfile,remoteProfile?:RuntimeRemoteProfile):Promise<void>{
  if(config.hostCommands&&process.platform!=='win32')throw new LocalRuntimeUnsupportedError();
@@ -100,7 +100,7 @@ async function runApplication(config:RuntimeConfig,environment:RuntimeEnvironmen
   // Startup may retain an exact pending session inside its original aggregate
   // before a prepared context exists. Do not remove that exclusion identity.
   if(requiresPortableSessionCleanupRetention(primary)||primary instanceof RuntimeResidentStartupCleanupError||primary instanceof ManagedRemoteOwnershipRetainedError||workers!==undefined){retained=true;throw new LocalRuntimeOwnershipRetainedError(primary,new Error('Active ownership requires explicit reconciliation'),owners);}
-  try{if(remote!==undefined){await closePreparedRuntimeRemote(remote);assertPreparedRuntimeRemoteReleased(remote);}await context?.disposeBeforeWorkers();await gateway?.close();await attachment?.close();await controller?.dispose();authority?.closeAfterOwnersJoined();await instance?.release();}
+  try{if(remote!==undefined){await closePreparedRuntimeRemote(remote);assertPreparedRuntimeRemoteReleased(remote);}await context?.disposeBeforeWorkers();await gateway?.close();await attachment?.close();await controller?.dispose();await closeOwnedWorkerPool();authority?.closeAfterOwnersJoined();await instance?.release();}
   catch(cleanup){retained=true;throw new LocalRuntimeOwnershipRetainedError(primary,cleanup,owners);}
   throw primary;
  }finally{if(!retained)stop.dispose();}
