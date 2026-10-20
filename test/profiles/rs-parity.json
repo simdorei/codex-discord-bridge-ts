@@ -19,5 +19,6 @@
   "test/runtime/action-executor/archive-action.test.ts",
   "test/store/archive-fence-existing.test.ts",
   "test/runtime/discord-runtime/diagnostics.test.ts",
-  "test/runtime/session-mirror/append-journal.test.ts"
+  "test/runtime/session-mirror/append-journal.test.ts",
+  "test/runtime/session-mirror/gung-recovery.test.ts"
 ]

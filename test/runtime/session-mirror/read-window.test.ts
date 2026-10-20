@@ -14,7 +14,7 @@ test('damaged record stops before it and never converts the remainder into succe
 }));
 test('invalid limits and active option getters are rejected before opening a file',async()=>storeFixture(async path=>{
  let reads=0;await assert.rejects(readStableMirrorWindow(path,0n,{...limits,get maxRecords(){reads++;return 1;}}));assert.equal(reads,0);
- await assert.rejects(readStableMirrorWindow(path,0n,{...limits,maxRecordBytes:1048576}),RangeError);assert.equal(activeMirrorFileReads(),0);assert.equal(mirrorDecoderBusy(),false);
+ await assert.rejects(readStableMirrorWindow(path,0n,{...limits,maxRecordBytes:1048577}),RangeError);assert.equal(activeMirrorFileReads(),0);assert.equal(mirrorDecoderBusy(),false);
 }));
 test('abort during actual off-thread decoding does not return before native worker exit',async()=>storeFixture(async path=>{
  await writeFile(path,'{"payload":"'+ 'x'.repeat(250000)+'"}\n');const stop=new AbortController(),reason={cancel:true};

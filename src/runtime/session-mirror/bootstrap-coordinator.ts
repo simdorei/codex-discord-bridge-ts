@@ -11,6 +11,7 @@ import {captureMirrorStartupCutoff} from './startup-context-reader.ts';
 import {MirrorStartupContextHeldError,sameMirrorStartupStamp,snapshotMirrorStartupContextLimits,type MirrorStartupContextLimits} from './startup-context-limits.ts';
 import {NativeMirrorStartupIntentStore,MirrorStartupIntentWriteUnconfirmedError} from './startup-intent-store.ts';
 import type {MirrorStartupRecoveryData} from './startup-intent-recovery-data.ts';
+import {sameMirrorRolloutPath} from './rollout-path-binding.ts';
 
 export interface MirrorTargetBootstrapInput {
  readonly databasePath:string;readonly thread:string;readonly rolloutPath:string;readonly channel:bigint;
@@ -90,12 +91,12 @@ export class MirrorTargetBootstrapCoordinator {
   try{
    check();const initial=await store.readTarget(input.thread,input.channel,active);
    if(initial.kind==='Bound'){
-    if(initial.cursor.thread!==input.thread||initial.cursor.anchor.path!==input.rolloutPath)throw new MirrorBootstrapBindingError();
+    if(initial.cursor.thread!==input.thread||!await sameMirrorRolloutPath(initial.cursor.anchor.path,input.rolloutPath,active))throw new MirrorBootstrapBindingError();
     return Object.freeze({kind:'Existing',cursor:initial.cursor,reconciled:false});
    }
    let pending:PendingMirrorStartupIntent,reconciled=false;
    if(initial.kind==='Pending'){
-    pending=initial.pending;if(pending.cutoff.path!==input.rolloutPath)throw new MirrorBootstrapBindingError();
+    pending=initial.pending;if(!await sameMirrorRolloutPath(pending.cutoff.path,input.rolloutPath,active))throw new MirrorBootstrapBindingError();
    }else{
     // Persist the authentic original N before reading any historical context.
     check();const cutoff=await captureMirrorStartupCutoff(input.rolloutPath,Math.min(input.context.timeoutMs,Math.max(1,Math.ceil(deadline-performance.now()))),active,input.fullPrefix===true);

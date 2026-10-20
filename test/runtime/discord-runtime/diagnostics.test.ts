@@ -49,3 +49,11 @@ test('diagnostic sink failures remain visible instead of becoming a successful r
  assert.throws(()=>diagnostics.report(Error('problem')),e=>e===failure);
  assert.throws(()=>diagnostics.render(Error('problem')),e=>e===failure);
 });
+
+test('normal history polling stays informational and startup holds expose only the known reason',()=>{
+ const lines:string[]=[],diagnostics=createRuntimeDiagnostics(line=>lines.push(line));
+ diagnostics.forScope('ingress')('discord_history_poll','channel=42 source=mirror_thread phase=Completed fetched=0 processed=0');
+ const poll=JSON.parse(lines[0]!);assert.equal(poll.level,'info');assert.equal(poll.details[0].channel,'42');assert.ok(!lines[0]!.includes('OperationFailure'));
+ diagnostics.report(Object.assign(new Error('Mirror startup context held: RecordBytes'),{reason:'RecordBytes'}));
+ assert.equal(JSON.parse(lines[1]!).details[0].reason,'RecordBytes');
+});

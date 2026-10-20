@@ -38,6 +38,20 @@ function turnFromLine(bytes:Uint8Array,decoder:TextDecoder):string|undefined {
  const turn=serdeField(payload,'turn_id');return typeof turn==='string'&&turn!==''?turn:undefined;
 }
 
+// The Rust first-200-scalar filter does not parse unrelated image/tool records.
+// Recognize that filter before exceeding the JSON record buffer, while still
+// validating every subsequent UTF8 byte with a streaming decoder.
+function unrelatedLargeRecord(previous:Uint8Array,next:Uint8Array):boolean{
+ const bytes=new Uint8Array(Math.min(800,previous.length+next.length)),saved=Math.min(previous.length,bytes.length);
+ bytes.set(previous.subarray(0,saved));bytes.set(next.subarray(0,bytes.length-saved),saved);
+ let text:string;try{text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes,{stream:true});}catch(error){throw new MirrorStartupContextHeldError('InvalidUtf8',error);}
+ let prefix='',count=0;for(const scalar of text){prefix+=scalar;if(++count===200)break;}
+ return count===200&&!prefix.includes('turn_context')&&!prefix.includes('task_started');
+}
+function validateIgnored(decoder:TextDecoder,bytes:Uint8Array,complete:boolean):void{
+ try{decoder.decode(bytes,{stream:true});if(complete)decoder.decode();}catch(error){throw new MirrorStartupContextHeldError('InvalidUtf8',error);}
+}
+
 /** Scan only [0,N), never the newly observed EOF. All bytes, records and parser
  * work are bounded and remain in the native owner. Same-identity pre-scan growth
  * is classified by existing sampled anchors, not certified append-only history.
@@ -47,7 +61,7 @@ export async function readMirrorStartupContextNative(cutoff:MirrorStartupCutoffD
  if(cutoff.offset>BigInt(limits.maxBytes))throw new MirrorStartupContextHeldError('ByteBudget');
  const continuity=await observeMirrorCursorContinuity(cutoff.anchor);check();const anchor=continuity.observation.anchor;
  const decoder=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}),record=new Uint8Array(limits.maxRecordBytes);
- let offset=0n,used=0,scannedRecords=0,currentTurn:string|null=null;
+ let offset=0n,used=0,scannedRecords=0,currentTurn:string|null=null,ignored:TextDecoder|null=null;
  while(offset<cutoff.offset){
   check();const remaining=cutoff.offset-offset,maximum=Number(remaining<BigInt(limits.maxWindowBytes)?remaining:BigInt(limits.maxWindowBytes));
   const window=await MirrorFileWindow.read(cutoff.path,offset,maximum);check();
@@ -56,13 +70,21 @@ export async function readMirrorStartupContextNative(cutoff:MirrorStartupCutoffD
   while(start<bytes.length){
    check();if(scannedRecords===limits.maxRecords)throw new MirrorStartupContextHeldError('RecordBudget');
    const lf=bytes.indexOf(10,start),end=lf===-1?bytes.length:lf+1,length=end-start;
-   if(used+length>limits.maxRecordBytes)throw new MirrorStartupContextHeldError('RecordBytes');
+   const segment=bytes.subarray(start,end);
+   if(ignored===null&&used+length>limits.maxRecordBytes){
+    if(!unrelatedLargeRecord(record.subarray(0,used),segment))throw new MirrorStartupContextHeldError('RecordBytes');
+    ignored=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true});validateIgnored(ignored,record.subarray(0,used),false);used=0;
+   }
+   if(ignored!==null){
+    validateIgnored(ignored,segment,lf!==-1);start=end;
+    if(lf!==-1){scannedRecords++;ignored=null;}check();continue;
+   }
    record.set(bytes.subarray(start,end),used);used+=length;start=end;
    if(lf!==-1){const turn=turnFromLine(record.subarray(0,used-1),decoder);if(turn!==undefined)currentTurn=turn;scannedRecords++;used=0;check();}
   }
   offset+=BigInt(bytes.length);
  }
- if(used!==0)throw new MirrorStartupContextHeldError('IncompleteBoundary');
+ if(used!==0||ignored!==null)throw new MirrorStartupContextHeldError('IncompleteBoundary');
  if(currentTurn!==null&&(currentTurn.length>limits.maxTurnBytes||Buffer.byteLength(currentTurn)>limits.maxTurnBytes))throw new MirrorStartupContextHeldError('TurnBudget');
  await continuity.observation.verifyCurrent();check();
  return {anchor,continuity:continuity.kind,currentTurn,scannedRecords,scannedBytes:offset};
