@@ -18,7 +18,7 @@ Use **Node.js >=24.21.0 <25** with npm on Windows x64. No Rust/Cargo or global
 TypeScript compiler is needed to install the supplied compiled package:
 
 ```powershell
-npm install --global --ignore-scripts .\codex-discord-bridge-ts-0.1.0-alpha.8.tgz
+npm install --global --ignore-scripts .\codex-discord-bridge-ts-0.1.0-alpha.10.tgz
 codex-discord-bridge --version
 ```
 
@@ -98,8 +98,12 @@ codex-discord-bridge --remove-startup --runtime-root C:\codex-discord
 codex-discord-bridge --tray --runtime-root C:\codex-discord
 ```
 
-The tray exposes status, logs, graceful restart and explicit force restart.
-Closing the tray leaves the watchdog running. To install the bundled plugin into
+`--start` and `--watchdog` launch a hidden background watchdog and open the tray.
+The logon task created by `--install-startup` uses the bundled Windows Script Host
+GUI launcher, waits for its child, and preserves its exit code for scheduler
+retries. It does not attach the watchdog to the invoking terminal.
+Closing the tray leaves the watchdog running. The
+tray exposes status, logs, graceful restart and explicit force restart. To install the bundled plugin into
 the selected Codex profile, run this explicit local command:
 
 ```powershell
@@ -114,8 +118,7 @@ actual Codex marketplace and plugin inventory after registration. The helper's
 and hook commands work in a copied plugin without the source checkout.
 
 `--start` runs the watchdog and clears an explicit stop marker. `--watchdog`
-honors that marker, including on subsequent logons. Run installation in another
-terminal while a foreground watchdog is running. The task uses the current
+honors that marker, including on subsequent logons. The task uses the current
 user's interactive logon at normal privileges. Graceful restart drains work;
 `force_restart` cancels the exact owned process job. Control requests carry
 runtime identity and expiry; `--expected-runtime ID` adds an explicit generation

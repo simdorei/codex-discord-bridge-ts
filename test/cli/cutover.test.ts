@@ -46,3 +46,27 @@ $rejected=$false; try { Start-RestoredLegacy $null } catch { $rejected=$true }; 
  const result=await promisify(execFile)(join(process.env.SystemRoot??'C:\\Windows','System32/WindowsPowerShell/v1.0/powershell.exe'),['-NoLogo','-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(script,'utf16le').toString('base64')],{env:{...process.env,CDR_FIXTURE_CUTOVER_SCRIPT:resolve('scripts/CdrRuntimeCutover.ps1')},windowsHide:true,timeout:10000});
  assert.deepEqual(JSON.parse(result.stdout.replace(/^\uFEFF/u,'')),{starts:1,waits:2,staleRejected:true});
 });
+test('native cutover accepts its recorded GUI launcher and legacy Node action but rejects an altered task',{skip:process.platform!=='win32'},async()=>{
+ const script=`
+$ErrorActionPreference='Stop'
+$tokens=$null;$errors=$null
+$ast=[Management.Automation.Language.Parser]::ParseFile($env:CDR_FIXTURE_CUTOVER_SCRIPT,[ref]$tokens,[ref]$errors)
+if($errors.Count){throw 'Script parse failed'}
+$fn=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Assert-TargetTask'},$true)
+Invoke-Expression $fn.Extent.Text
+$Root='C:\\fixture'
+$s=[pscustomobject]@{taskName='fixture';node='C:\\node.exe';taskArguments='encoded fixture'}
+$script:task=[pscustomobject]@{Actions=@([pscustomobject]@{Execute=$s.node;Arguments=$s.taskArguments;WorkingDirectory=$Root})}
+function Get-ScheduledTask { param($TaskName,$ErrorAction) if($TaskName -ne 'fixture'){throw 'Wrong task'};return $script:task }
+[void](Assert-TargetTask)
+$s|Add-Member -NotePropertyName taskExecute -NotePropertyValue 'C:\\Windows\\System32\\wscript.exe'
+$script:task.Actions[0].Execute=$s.taskExecute
+[void](Assert-TargetTask)
+$script:task.Actions[0].Arguments='foreign'
+$rejected=$false;try{[void](Assert-TargetTask)}catch{$rejected=$true}
+if(-not $rejected){throw 'Foreign launcher accepted'}
+'BOUND'
+`;
+ const result=await promisify(execFile)(join(process.env.SystemRoot??'C:\\Windows','System32/WindowsPowerShell/v1.0/powershell.exe'),['-NoLogo','-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(script,'utf16le').toString('base64')],{env:{...process.env,CDR_FIXTURE_CUTOVER_SCRIPT:resolve('scripts/CdrRuntimeCutover.ps1')},windowsHide:true,timeout:10000});
+ assert.match(result.stdout,/BOUND/u);
+});

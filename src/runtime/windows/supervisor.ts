@@ -33,7 +33,7 @@ export async function requestSupervisor(root:string,action:SupervisorAction,sign
 /** Acquiring the original mutex proves there is no live conforming runtime.
  * This clears only transport markers; queue attempts and uncertain work survive. */
 async function clearJoinedMarkers(root:string,includeStop:boolean){const guard=acquireWindowsSingletonOwner(root);try{for(const kind of ['identity','prepare','ack','restart'] as const)await remove(join(root,DRAIN_MARKER_NAMES[kind]));if(includeStop)await remove(join(root,DRAIN_MARKER_NAMES.stop));}finally{const result=await releaseWindowsSingletonOwner(guard);if(result.closure!=='closed')throw new Error('Runtime exclusion release is unconfirmed');}}
-export interface SupervisorOptions{root:string;entry:string;arguments:readonly string[];environment:Readonly<Record<string,string>>;signal?:AbortSignal;clearStop?:boolean;restartDelayMs?:number;}
+export interface SupervisorOptions{root:string;entry:string;arguments:readonly string[];environment:Readonly<Record<string,string>>;signal?:AbortSignal;clearStop?:boolean;restartDelayMs?:number;onRuntimeStarted?:()=>void;}
 export async function runWindowsSupervisor(options:SupervisorOptions):Promise<void>{
  if(process.platform!=='win32')throw new Error('Windows supervisor requires Windows');
  const root=await realpath(options.root);if(root!==options.root)throw new Error('Supervisor root must be canonical');const pin=WindowsFilePin.acquire(root,'directory'),guard=acquireWindowsSingletonOwner(join(root,'.cdr-ts-watchdog'));
@@ -45,7 +45,7 @@ export async function runWindowsSupervisor(options:SupervisorOptions):Promise<vo
   await mkdir(directory,{recursive:true});if(!options.clearStop&&await optional(join(root,DRAIN_MARKER_NAMES.stop))!==null)return;await clearJoinedMarkers(root,options.clearStop===true);
   for(;;){
    options.signal?.throwIfAborted();const config:PortableProcessConfig={executable:process.execPath,arguments:[options.entry,...options.arguments],cwd:root,environment:{...options.environment,CODEX_DISCORD_ROOT:root,CDR_SUPERVISOR_NONCE:manifest.nonce,CODEX_REMOTE_MCP_RESUME_BINDINGS:resumeBindings?'1':'0'},inheritEnvironment:false};
-   child=await OwnedPortableAppServerProcess.spawn(config);manifest.childPid=child.processId;await publish();await child.input.shutdown();
+   child=await OwnedPortableAppServerProcess.spawn(config);manifest.childPid=child.processId;await publish();await child.input.shutdown();options.onRuntimeStarted?.();
    const pump=async(source:OwnedPortableAppServerProcess['stdout'],channel:string)=>{const path=join(root,'cdr-'+channel+'.log');let file=await open(path,'a',0o600),size=(await file.stat()).size;try{for(;;){const b=await source.readChunk();if(b===null)return;if(size+b.length>5242880){await file.close();await remove(path+'.1');await rename(path,path+'.1');file=await open(path,'w',0o600);size=0;}await file.writeFile(b);size+=b.length;}}finally{await file.close();}};
    pipes=Promise.all([pump(child.stdout,'stdout'),pump(child.stderr,'stderr')]);void pipes.catch(()=>{try{child?.startKill();}catch{}});
    let selected:Request|undefined,stop=false,forced=false;
