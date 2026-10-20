@@ -52,7 +52,8 @@ function Assert-Task($record) {
 function Assert-TargetTask {
  $task = Get-ScheduledTask -TaskName $s.taskName -ErrorAction SilentlyContinue
  if ($null -eq $task) { return $null }
- if (@($task).Count -ne 1 -or @($task.Actions).Count -ne 1 -or $task.Actions[0].Execute -ine $s.node -or $task.Actions[0].Arguments -cne $s.taskArguments -or $task.Actions[0].WorkingDirectory -ine $Root) { throw 'TS task belongs to another installation.' }
+ $expectedExecute = if ($s.PSObject.Properties['taskExecute']) { $s.taskExecute } else { $s.node }
+ if (@($task).Count -ne 1 -or @($task.Actions).Count -ne 1 -or $task.Actions[0].Execute -ine $expectedExecute -or $task.Actions[0].Arguments -cne $s.taskArguments -or $task.Actions[0].WorkingDirectory -ine $Root) { throw 'TS task belongs to another installation.' }
  return $task
 }
 function Legacy-RestartTask($Records) {

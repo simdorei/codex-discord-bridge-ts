@@ -5,10 +5,9 @@ import {fileURLToPath} from 'node:url';
 import {runOwnedCommand} from '../runtime/windows/owned-command.ts';
 import {writeWindowsAtomicFile} from '../runtime/windows/windows-atomic-file.ts';
 import {acquireWindowsSingletonOwner,releaseWindowsSingletonOwner} from '../runtime/windows/windows-singleton-owner.ts';
-import {quoteWindowsArgument} from '../runtime/windows/windows-window-process.ts';
 import {WindowsFilePin} from '../runtime/windows/windows-file-pin.ts';
-import {startupTaskName} from './windows-control.ts';
-export interface CutoverState{version:1;operation:string;phase:string;root:string;entry:string;node:string;binary:string;env:string;taskName:string;taskArguments:string;disableText:string;stopText:string;inventory:unknown;backup:string|null;target:unknown;}
+import {startupTaskName,startupTaskAction} from './windows-control.ts';
+export interface CutoverState{version:1;operation:string;phase:string;root:string;entry:string;node:string;binary:string;env:string;taskName:string;taskExecute?:string;taskArguments:string;disableText:string;stopText:string;inventory:unknown;backup:string|null;target:unknown;}
 export type CutoverAction='inventory'|'preflight'|'backup'|'prepare'|'stop-legacy'|'migrate-store'|'install-target'|'start-target'|'observe-target'|'stop-target'|'restore-legacy';
 export interface CutoverPorts{perform:(action:CutoverAction,state:CutoverState)=>Promise<any>;save:(state:CutoverState)=>Promise<void>;}
 /** Persist intent before every external effect. Recovery proves the target has
@@ -38,7 +37,8 @@ export async function runCutoverCli(argv:readonly string[],entry:string):Promise
  let existing:CutoverState|null=null;try{existing=JSON.parse(await readFile(statePath,'utf8'));}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
  if(recover&&!existing)throw Error('No interrupted cutover record exists');if(existing&&(existing.version!==1||existing.root!==root||existing.entry!==entry||existing.node!==process.execPath))throw Error('Cutover record belongs to another installation');
  if(existing&&!recover)throw Error('Cutover record already exists; inspect it or use --recover-cutover');
- const operation=randomUUID(),state:CutoverState=existing??{version:1,operation,phase:'inventoried',root,entry,node:process.execPath,binary:await realpath(resolve(args.get('--legacy-binary')??join(root,'target/release/cdr-runtime.exe'))),env:await realpath(resolve(args.get('--env')??join(root,'.env'))),taskName:startupTaskName(root),taskArguments:[entry,'--watchdog','--runtime-root',root,'--env',resolve(args.get('--env')??join(root,'.env'))].map(quoteWindowsArgument).join(' '),disableText:'kind=ts_cutover\ntransaction_id='+operation+'\n',stopText:'ts_cutover_stop='+operation+'\n',inventory:null,backup:null,target:null};
+ const action=startupTaskAction(root,entry,process.execPath,['--env',resolve(args.get('--env')??join(root,'.env'))]);
+ const operation=randomUUID(),state:CutoverState=existing??{version:1,operation,phase:'inventoried',root,entry,node:process.execPath,binary:await realpath(resolve(args.get('--legacy-binary')??join(root,'target/release/cdr-runtime.exe'))),env:await realpath(resolve(args.get('--env')??join(root,'.env'))),taskName:startupTaskName(root),taskExecute:action.execute,taskArguments:action.arguments,disableText:'kind=ts_cutover\ntransaction_id='+operation+'\n',stopText:'ts_cutover_stop='+operation+'\n',inventory:null,backup:null,target:null};
  if(!existing)state.inventory=await perform('inventory',state);
  if(dry){process.stdout.write(JSON.stringify({dryRun:true,recover,state})+'\n');return 0;}
  const pin=WindowsFilePin.acquire(root,'directory');let guard;

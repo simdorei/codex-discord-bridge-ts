@@ -5,7 +5,7 @@ if ([string]::IsNullOrWhiteSpace($RepoRoot)) { $RepoRoot = Join-Path $PSScriptRo
 $RepoRoot = [IO.Path]::GetFullPath($RepoRoot)
 $Node = (Get-Command node.exe -ErrorAction Stop).Source
 $Entry = Join-Path $RepoRoot 'bin/codex-discord-bridge.mjs'
-foreach ($Relative in @('package.json', 'bin/codex-discord-bridge.mjs', 'dist/src/cli/local-runtime.js', 'dist/src/runtime/windows/supervisor.js', 'dist/src/remote-agent/native-project.js', 'dist/src/cli/admin-database-worker.js', 'scripts/Invoke-CdrDesktopRecovery.ps1')) {
+foreach ($Relative in @('package.json', 'bin/codex-discord-bridge.mjs', 'dist/src/cli/local-runtime.js', 'dist/src/runtime/windows/supervisor.js', 'dist/src/remote-agent/native-project.js', 'dist/src/cli/admin-database-worker.js', 'scripts/Invoke-CdrDesktopRecovery.ps1', 'scripts/codex-discord-hidden.vbs')) {
     if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot $Relative) -PathType Leaf)) { throw "Missing package asset: $Relative" }
 }
 & $Node $Entry --version
