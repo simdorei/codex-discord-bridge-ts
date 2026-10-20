@@ -16,7 +16,7 @@ function category(value:unknown):string{
  if(/rate.?limit|too many requests/i.test(text))return 'RateLimited';
  if(/no .*target|target.*(?:missing|changed)|mapping.*(?:missing|changed)/i.test(text))return 'TargetUnavailable';
  if(/outcome.*unknown|unconfirmed|acknowledgement|ownership retained/i.test(text))return 'OutcomeUnconfirmed';
- if(/capacity|slot.*(?:busy|occupied)|worker.*(?:busy|occupied)/i.test(text))return 'CapacityBusy';
+ if(/capacity|slot.*(?:busy|occupied)|worker.*(?:busy|occupied)|reader is still running/i.test(text))return 'CapacityBusy';
  if(/invalid|malformed|unsupported/i.test(text))return 'InvalidOperation';
  if(/disconnect|connection|ECONN|socket/i.test(text))return 'ConnectionFailure';
  if(/abort|cancel/i.test(text))return 'Cancelled';
@@ -56,6 +56,7 @@ export function createRuntimeDiagnostics(write:(line:string)=>unknown,secrets:re
    }
    const result:Record<string,unknown>={};
    for(const key of labels){const text=safeLabel(field(value,key));if(text!==undefined)result[key]=text;}
+   const reason=field(value,'reason');if(typeof reason==='string'&&['IncompleteBoundary','ByteBudget','RecordBudget','RecordBytes','TurnBudget','InvalidUtf8','ChangedFile','Deadline','Cancelled','NativeRead'].includes(reason))result.reason=reason;
    for(const key of identities){const text=idText(field(value,key));if(text!==undefined)result[key]=text;}
    const action=actionExecutionErrorInfo(value);
    if(action!==null)result.actionKind=action.kind;
@@ -83,7 +84,8 @@ export function createRuntimeDiagnostics(write:(line:string)=>unknown,secrets:re
    }
   }
   const event=typeof values[0]==='string'?safeLabel(values[0]):undefined;
-  const record={type:'runtime_diagnostic',time:new Date().toISOString(),scope,event,details:summarize([...values.slice(0,4)])};
+  const history=event==='discord_history_poll'&&typeof values[1]==='string'?/^channel=([0-9]{1,20}) source=(startup|allowed|mirror_project|mirror_thread) phase=([A-Za-z]{1,32}) fetched=([0-9]{1,10}) processed=([0-9]{1,10})$/.exec(values[1]):null;
+  const record={type:'runtime_diagnostic',time:new Date().toISOString(),scope,event,...(history===null?{}:{level:'info'}),details:history===null?summarize([...values.slice(0,4)]):[{channel:history[1],source:history[2],phase:history[3],fetched:Number(history[4]),processed:Number(history[5])}]};
   const line=JSON.stringify(record);write((Buffer.byteLength(line)<=16384?line:JSON.stringify({type:record.type,time:record.time,scope,event,omitted:'diagnostic_budget'}))+'\n');
  };
  const report=(...args:unknown[]):void=>publish('runtime',args);

@@ -38,7 +38,7 @@ export function captureLocalSessionMirrorProfile(input:LocalSessionMirrorProfile
 export function createVerifiedLocalSessionMirrorProfile(paths:Pick<RuntimePaths,'stateDb'|'mirrorDb'>):LocalSessionMirrorProfile{
  return captureLocalSessionMirrorProfile({kind:'RootOwnedAppendOnlyMirror',ownership:'CooperatingSingletonRootWithStableDatabaseIdentity',producer:{kind:'VerifiedRolloutPrefix',qualification:'Native file identity and complete consumed-prefix SHA-256; changed history is held without reset or replay.'},schemaTimeoutMs:10000,worker:{stateDatabasePath:paths.stateDb,bridgeDatabasePath:paths.mirrorDb,
   discovery:{threads:{maxRows:4096n,maxValueBytes:4194304n,maxOutputBytes:4194304,timeoutMs:10000},store:{maxTargets:4096n,maxJobs:4096n,maxValueBytes:4194304n,maxOutputBytes:4194304,timeoutMs:10000}},ready:{maxTargets:4096,maxBytes:1048576},
-  poll:{read:{maxWindowBytes:1048576,maxRecordBytes:262144,maxRecords:1024,decodeTimeoutMs:10000},ownership:{maxJobs:4096n,maxValueBytes:4194304n,timeoutMs:10000}},
+  poll:{read:{maxWindowBytes:1048576,maxRecordBytes:1048576,maxRecords:1024,decodeTimeoutMs:10000},ownership:{maxJobs:4096n,maxValueBytes:4194304n,timeoutMs:10000}},
   bootstrap:{kind:'SkipExistingHistory',fullPrefix:true,totalTimeoutMs:10000,context:{maxBytes:67108864,maxRecords:1048576,maxRecordBytes:262144,maxWindowBytes:1048576,maxTurnBytes:16384,timeoutMs:10000}}}});
 }
 

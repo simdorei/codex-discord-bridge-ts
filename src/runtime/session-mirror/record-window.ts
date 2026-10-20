@@ -15,7 +15,7 @@ const U64_MAX=(1n<<64n)-1n;
  * or durably hand off every event, and only then persist a complete-record offset.
  * Unlike legacy Rust read_line, an unterminated JSON value is never consumed. */
 export function copyBoundedMirrorRecordWindow(input:Uint8Array,startOffset:bigint,maxWindowBytes:number,maxRecordBytes:number,maxRecords:number):Uint8Array{
- for(const [value,maximum] of [[maxWindowBytes,1048576],[maxRecordBytes,262144],[maxRecords,1024]] as const)if(!Number.isSafeInteger(value)||value<1||value>maximum)throw new RangeError('Expected bounded mirror decode limit');
+ for(const [value,maximum] of [[maxWindowBytes,1048576],[maxRecordBytes,1048576],[maxRecords,1024]] as const)if(!Number.isSafeInteger(value)||value<1||value>maximum)throw new RangeError('Expected bounded mirror decode limit');
  if(maxRecordBytes>maxWindowBytes)throw new RangeError('Record budget exceeds window budget');
  if(typeof startOffset!=='bigint'||startOffset<0n||startOffset>U64_MAX)throw new RangeError('Expected u64 mirror offset');
  if(!types.isUint8Array(input))throw new TypeError('Expected byte window');

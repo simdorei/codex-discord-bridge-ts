@@ -19,6 +19,7 @@ import {observeAnchoredMirrorBatch} from './continuity-observation.ts';
 import {executeObservedMirrorBatch} from './observed-batch-executor.ts';
 import {MirrorTargetBootstrapCoordinator} from './bootstrap-coordinator.ts';
 import {snapshotMirrorStartupContextLimits,type MirrorStartupContextLimits} from './startup-context-limits.ts';
+import {sameMirrorRolloutPath} from './rollout-path-binding.ts';
 export interface BoundMirrorPollOptions{readonly read:MirrorReadLimits;readonly ownership:MirrorOwnershipReadLimits;}
 export class MirrorBoundCursorRequiredError extends Error{constructor(){super('Mirror polling requires an explicitly initialized, generation-bound cursor; no adoption or reset performed');this.name='MirrorBoundCursorRequiredError';}}
 export class MirrorPollRecordHeldError extends Error{readonly stop:string;constructor(stop:string){super('Mirror record held at current cursor: '+stop);this.name='MirrorPollRecordHeldError';this.stop=stop;}}
@@ -38,7 +39,7 @@ export async function pollBoundMirrorTarget(databasePath:string,hint:MirrorThrea
  if(typeof channel!=='bigint'||channel<=0n||channel>=(1n<<63n))throw new RangeError('Expected positive i64 mirror channel');
  captureMirrorPollJobs(path,thread,jobs);const {read,ownership}=snapshotBoundMirrorPollOptions(options),timeoutMs=ownership.timeoutMs;const store=new NativeMirrorCursorStore(path,timeoutMs);
  let expected;try{expected=await store.read(thread,signal)}finally{await store.close()}
- if(expected===null)throw new MirrorBoundCursorRequiredError();if(expected.anchor.path!==rollout)throw new MirrorRolloutBindingError();
+ if(expected===null)throw new MirrorBoundCursorRequiredError();if(!await sameMirrorRolloutPath(expected.anchor.path,rollout,signal))throw new MirrorRolloutBindingError();
  const observation=await observeAnchoredMirrorBatch(expected.anchor,read,{thread,detail:{databasePath:path},currentTurn:expected.turn===''?null:expected.turn},signal);
  // An unfinished tail can wait for its producer. Invalid or oversized records
  // must surface to the caller's failure/backoff path, never silently look idle.

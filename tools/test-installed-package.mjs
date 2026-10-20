@@ -42,6 +42,7 @@ const {output}=JSON.parse(execFileSync(process.execPath,['tools/build-test-profi
 const names=['windows-install-defaults','windows-application','windows-resources','windows-configured-remote','windows-remote-conflicts','windows-supervisor','windows-admin','windows-admin-threads','windows-archive-delete','windows-project','windows-files','windows-handoff','windows-mirror-continuity','windows-review-gaps'].map(name=>'windows-runtime/'+name);
 names.push('runtime/action-executor/archive-action','store/archive-fence-existing','runtime/discord-runtime/diagnostics','runtime/session-mirror/append-journal','runtime/session-mirror/parallel-mapping','runtime/session-mirror/two-target-backlog-measurement','runtime/discord-runtime/receipt-echo','runtime/attachment-proxy','runtime/stop-worker','pro/helper','pro/release-tools','pro/connector-script','cli/cutover','mcp-server/gateway','mcp-server/oauth-worker-deadline','mcp-server/broker');
 const fixtureRoot=join(prefix,'fixtures');await mkdir(fixtureRoot);
+names.push('runtime/session-mirror/gung-recovery');
 const targets=[];
 for(const name of names){
  const source=join(output,'test',name+'.test.js');let code=await readFile(source,'utf8');
