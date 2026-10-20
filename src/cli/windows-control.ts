@@ -2,16 +2,18 @@ import {createHash} from 'node:crypto';
 import {realpath,mkdir} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
 import {runOwnedCommand} from '../runtime/windows/owned-command.ts';
-import {quoteWindowsArgument} from '../runtime/windows/windows-window-process.ts';
 import {runWindowsSupervisor,requestSupervisor,supervisorStatus,type SupervisorAction} from '../runtime/windows/supervisor.ts';
 import {RuntimeStopSignal} from '../runtime/discord-runtime/stop-signal.ts';
 
 export function startupTaskName(root:string):string{return 'CodexDiscordTS-'+createHash('sha256').update(root.toLowerCase()).digest('hex').slice(0,16);}
 export function startupScript(root:string,entry:string,node:string,args:readonly string[],remove=false):string{
- const payload=Buffer.from(JSON.stringify({root,entry,node,args:[entry,'--watchdog','--runtime-root',root,...args],name:startupTaskName(root)}),'utf8').toString('base64');
+ const launchPayload=Buffer.from(JSON.stringify({node,args:[entry,'--watchdog','--runtime-root',root,...args]}),'utf8').toString('base64');
+ const launchScript=`$p=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${launchPayload}'))|ConvertFrom-Json; $a=$p.args; & $p.node @a; exit $LASTEXITCODE`;
+ const launchArguments=`-NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -EncodedCommand ${Buffer.from(launchScript,'utf16le').toString('base64')}`;
+ const payload=Buffer.from(JSON.stringify({root,name:startupTaskName(root),launchArguments}),'utf8').toString('base64');
  return `$ErrorActionPreference='Stop'; $p=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${payload}'))|ConvertFrom-Json; `+
   (remove?`Unregister-ScheduledTask -TaskName $p.name -Confirm:$false -ErrorAction Stop;`:
-   `$a=New-ScheduledTaskAction -Execute $p.node -Argument ([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${Buffer.from([entry,'--watchdog','--runtime-root',root,...args].map(quoteWindowsArgument).join(' ')).toString('base64')}'))) -WorkingDirectory $p.root; $u=[Security.Principal.WindowsIdentity]::GetCurrent().Name; $t=New-ScheduledTaskTrigger -AtLogOn -User $u; $s=New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -Hidden; $ppl=New-ScheduledTaskPrincipal -UserId $u -LogonType Interactive -RunLevel Limited; Register-ScheduledTask -TaskName $p.name -Action $a -Trigger $t -Settings $s -Principal $ppl -Force | Out-Null;`)+` Write-Output $p.name;`;
+   `$runner=Join-Path $env:SystemRoot 'System32\\WindowsPowerShell\\v1.0\\powershell.exe'; $a=New-ScheduledTaskAction -Execute $runner -Argument $p.launchArguments -WorkingDirectory $p.root; $u=[Security.Principal.WindowsIdentity]::GetCurrent().Name; $t=New-ScheduledTaskTrigger -AtLogOn -User $u; $s=New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -Hidden; $ppl=New-ScheduledTaskPrincipal -UserId $u -LogonType Interactive -RunLevel Limited; Register-ScheduledTask -TaskName $p.name -Action $a -Trigger $t -Settings $s -Principal $ppl -Force | Out-Null;`)+` Write-Output $p.name;`;
 }
 /** Returns null for the legacy runtime command line. No scheduler mutation is
  * performed except for the explicit install/remove flags. */
