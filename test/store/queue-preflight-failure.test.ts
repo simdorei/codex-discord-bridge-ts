@@ -13,8 +13,7 @@ import {
   takeUnicodeScalarChars,
   trimUnicodeWhitespace,
 } from "../../src/store/queue-preflight-failure.ts";
-import { selectJob, type StoredQueueJob } from "../../src/store/queue-read.ts";
-import { StoreIntegrityError } from "../../src/store/schema-assembly.ts";
+import { selectJob, StoreJsonError, type StoredQueueJob } from "../../src/store/queue-read.ts";
 
 async function fixture(
   run: (path: string, db: DatabaseSync) => Promise<void>,
@@ -843,7 +842,7 @@ test("malformed unrelated row is ignored, while malformed matching baseline thro
           1n,
           "will fail decode",
         ),
-      StoreIntegrityError,
+      StoreJsonError,
     );
 
     const rawStmt = db.prepare(

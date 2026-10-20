@@ -1,0 +1,61 @@
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import {existsSync} from 'node:fs';
+import {storeFixture} from '../helpers/store-fixture.ts';
+import {openInitialized} from '../../src/store/owned-driver.ts';
+import {StateAccessFacade as state} from '../../src/store/state-access-facade.ts';
+import {initialCompletionCursor,type CompletionEntry} from '../../src/store/completion-metadata.ts';
+import type {CompletionSource} from '../../src/store/completion-metadata-sql.ts';
+import {NativeHttpPayloadReader,NativeHttpPayloadUnavailable} from '../../src/runtime/completion/native-http-payload.ts';
+import {deliverCompletionEntry} from '../../src/runtime/completion/scheduler/http-work.ts';
+import {ownedWorkerUsage,OwnedWorkerBudgetError,OwnedWorkerTimeoutError} from '../../src/runtime/owned-worker-slot.ts';
+const fabricated:CompletionEntry={source:'Final',id:'d',target:'t',turn:'turn',channel:1n,bytes:4n,position:{stamp:1,ordinal:0n,id:'d'}};
+const head=async(path:string,source:CompletionSource)=>(await state.completionPage(path,source,initialCompletionCursor(),'runtime',1n)).page.entries[0]!;
+async function seed(path:string,content='body'){const db=await openInitialized(path);try{db.prepare("INSERT INTO codex_delivery_outbox(delivery_id,job_id,target_thread_id,turn_id,channel_id,content,created_at,updated_at) VALUES('d','j','t','turn',1,?,1,1)").run(content);}finally{db.close();}return head(path,'Final');}
+function delivery(sent:string[]){return {transport:{async sendValidated(r:{body:string}){sent.push(JSON.parse(r.body).content);return BigInt(sent.length);}},failures:{render:()=> 'safe'},now:()=>1};}
+const resident={instanceId:()=> 'runtime',generation:()=>1n};
+const questions={async deliverChecked(){throw new Error('Unexpected question');}};
+test('all five native HTTP payload kinds match exact initialized typed decoders',async()=>storeFixture(async path=>{
+ await seed(path);const db=await openInitialized(path);try{db.exec("INSERT INTO codex_commentary_outbox(delivery_key,job_id,target_thread_id,turn_id,channel_id,text) VALUES('c','j','t','turn',1,'progress'); INSERT INTO codex_goal_progress(thread,turn,channel,content,job_id) VALUES('t','turn',1,'goal',NULL); INSERT INTO codex_reserve_start_notices(job_id,target_thread_id,channel_id,app_server_generation,attempt_count,content) VALUES('j','t',1,1,0,'failure'); INSERT INTO cdr_async_questions(id,runtime_id,generation,thread_id,turn_id,item_id,origin_job_id,channel_id,owner_user_id,body,created_at,updated_at) VALUES('q','runtime',1,'t','turn','item','j',1,2,'{\"index\":18446744073709551615,\"title\":\"Q\",\"options\":[\"yes\"]}',1,1)");}finally{db.close();}
+ const reader=new NativeHttpPayloadReader(path);try{for(const source of ['Commentary','Goal','StartFailure','Question','Final'] as const){const e=await head(path,source);assert.ok(e);assert.deepEqual(await reader.read(e,'runtime',1n),await state.loadCompletionPayload(path,e,'runtime',1n));}assert.equal(reader.active,0);}finally{await reader.close();}
+}));
+test('stale metadata returns null, equal-size content is current data and Question scope never borrows another generation',async()=>storeFixture(async path=>{
+ const e=await seed(path),db=await openInitialized(path),reader=new NativeHttpPayloadReader(path);try{db.exec("UPDATE codex_delivery_outbox SET content='edit'");assert.deepEqual(await reader.read(e,'runtime',1n),await state.loadCompletionPayload(path,e,'runtime',1n));db.exec("UPDATE codex_delivery_outbox SET content='longer'");assert.equal(await reader.read(e,'runtime',1n),null);db.exec("INSERT INTO cdr_async_questions(id,runtime_id,generation,thread_id,turn_id,item_id,origin_job_id,channel_id,owner_user_id,body,created_at,updated_at) VALUES('q','runtime',1,'t','turn','i','j',1,2,'{\"index\":0,\"title\":\"Q\",\"options\":[]}',1,1)");const q=await head(path,'Question');assert.equal(await reader.read(q,'other',1n),null);assert.equal(await reader.read(q,'runtime',2n),null);}finally{await reader.close();db.close();}
+}));
+test('native HTTP reads do not initialize missing stores or repair dropped tables',async()=>storeFixture(async path=>{
+ const reader=new NativeHttpPayloadReader(path);try{await assert.rejects(reader.read(fabricated,'runtime',1n),NativeHttpPayloadUnavailable);assert.equal(existsSync(path),false);const e=await seed(path),db=await openInitialized(path);try{db.exec('DROP TABLE codex_delivery_outbox');await assert.rejects(reader.read(e,'runtime',1n),NativeHttpPayloadUnavailable);assert.equal(db.prepare("SELECT count(*) n FROM sqlite_schema WHERE name='codex_delivery_outbox'").get()!.n,0);}finally{db.close();}}finally{await reader.close();}
+}));
+test('selected invalid UTF8 is an error and durable bytes are retained',async()=>storeFixture(async path=>{
+ const e=await seed(path),db=await openInitialized(path),reader=new NativeHttpPayloadReader(path);try{db.exec("UPDATE codex_delivery_outbox SET content=CAST(x'ffffffff' AS TEXT)");await assert.rejects(reader.read(e,'runtime',1n),NativeHttpPayloadUnavailable);assert.equal(db.prepare('SELECT hex(CAST(content AS BLOB)) h FROM codex_delivery_outbox').get()!.h,'FFFFFFFF');}finally{await reader.close();db.close();}
+}));
+test('inclusive 2MiB escaped body succeeds and over-budget body remains unsent',async()=>{
+ for(const body of ['\u0001'.repeat(2*1024*1024),'x'.repeat(2*1024*1024+1)])await storeFixture(async path=>{const e=await seed(path,body),reader=new NativeHttpPayloadReader(path,10000);try{if(body.length===2*1024*1024){const payload=await reader.read(e,'runtime',1n);assert.equal(payload?.kind,'Final');if(payload?.kind==='Final')assert.equal(payload.value.content,body);}else await assert.rejects(reader.read(e,'runtime',1n),NativeHttpPayloadUnavailable);const db=await openInitialized(path);try{assert.equal(db.prepare('SELECT length(CAST(content AS BLOB)) n FROM codex_delivery_outbox').get()!.n,body.length);}finally{db.close();}}finally{await reader.close();}});
+});
+test('native read feeds original guarded Final delivery and receipt retirement',async()=>storeFixture(async path=>{
+ const e=await seed(path),reader=new NativeHttpPayloadReader(path),sent:string[]=[];try{await deliverCompletionEntry(path,e,resident,delivery(sent),questions,reader);assert.deepEqual(sent,['body']);assert.deepEqual(await state.listPendingDeliveries(path),[]);}finally{await reader.close();}
+}));
+test('current Question generation is reread after native payload without raw HTTP',async()=>storeFixture(async path=>{
+ const db=await openInitialized(path);try{db.exec("INSERT INTO cdr_async_questions(id,runtime_id,generation,thread_id,turn_id,item_id,origin_job_id,channel_id,owner_user_id,body,created_at,updated_at) VALUES('q','runtime',1,'t','turn','i','j',1,2,'{\"index\":0,\"title\":\"Q\",\"options\":[]}',1,1)");}finally{db.close();}const e=await head(path,'Question'),reader=new NativeHttpPayloadReader(path),sent:string[]=[];let calls=0,seen=0n;try{await deliverCompletionEntry(path,e,{instanceId:()=> 'runtime',generation:()=>++calls===1?1n:2n},delivery(sent),{async deliverChecked(_p,g,_t,q){seen=g;assert.equal(q.generation,1n);assert.equal(q.id,'q');}},reader);assert.equal(seen,2n);assert.deepEqual(sent,[]);}finally{await reader.close();}
+}));
+test('three blocked readers fill only Background; fourth refused without queued work',async()=>storeFixture(async path=>{
+ const e=await seed(path),db=await openInitialized(path),reader=new NativeHttpPayloadReader(path),pending:Promise<unknown>[]=[];try{db.exec('PRAGMA journal_mode=DELETE;BEGIN EXCLUSIVE');for(let i=0;i<3;i++){const p=reader.read(e,'runtime',1n);void p.catch(()=>{});pending.push(p);}assert.equal(reader.active,3);assert.deepEqual(ownedWorkerUsage(),{Background:3,Control:0,Observation:0,Discovery:0,Maintenance:0});await assert.rejects(reader.read(e,'runtime',1n),OwnedWorkerBudgetError);db.exec('ROLLBACK');await Promise.all(pending);assert.equal(reader.active,0);}finally{if(db.isTransaction)db.exec('ROLLBACK');await Promise.allSettled(pending);await reader.close();db.close();}
+}));
+test('cancelled native payload keeps HTTP operation owned through actual exit and never sends',async()=>storeFixture(async path=>{
+ const e=await seed(path),db=await openInitialized(path),reader=new NativeHttpPayloadReader(path),sent:string[]=[],c=new AbortController(),reason={originalCancel:true};let pending:Promise<void>|undefined;try{db.exec('PRAGMA journal_mode=DELETE;BEGIN EXCLUSIVE');pending=deliverCompletionEntry(path,e,resident,delivery(sent),questions,reader,c.signal);const rejected=assert.rejects(pending,x=>x===reason);c.abort(reason);let closed=false;const closing=reader.close().then(()=>{closed=true;});await new Promise(r=>setTimeout(r,40));assert.equal(closed,false);assert.equal(reader.active,1);assert.deepEqual(sent,[]);db.exec('ROLLBACK');await rejected;await closing;assert.deepEqual(sent,[]);assert.equal((await state.listPendingDeliveries(path)).length,1);}finally{if(db.isTransaction)db.exec('ROLLBACK');if(pending)await Promise.allSettled([pending]);await reader.close();db.close();}
+}));
+test('timeout waits for actual exit without exposing late payload',async()=>storeFixture(async path=>{
+ const e=await seed(path),db=await openInitialized(path),reader=new NativeHttpPayloadReader(path,20);let pending:Promise<unknown>|undefined;try{db.exec('PRAGMA journal_mode=DELETE;BEGIN EXCLUSIVE');pending=reader.read(e,'runtime',1n);const rejected=assert.rejects(pending,OwnedWorkerTimeoutError);await new Promise(r=>setTimeout(r,60));assert.equal(reader.active,1);db.exec('ROLLBACK');await rejected;assert.equal(reader.active,0);}finally{if(db.isTransaction)db.exec('ROLLBACK');if(pending)await Promise.allSettled([pending]);await reader.close();db.close();}
+}));
+test('preabort, invalid source and getter input do not allocate worker or database',async()=>storeFixture(async path=>{
+ const reader=new NativeHttpPayloadReader(path),c=new AbortController(),reason=new Error('preabort');try{c.abort(reason);assert.throws(()=>reader.read(fabricated,'runtime',1n,c.signal),e=>e===reason);await assert.rejects(deliverCompletionEntry(path,fabricated,resident,delivery([]),questions,reader,c.signal),e=>e===reason);for(const source of ['Observed','Queue','AsyncOrphan'] as const)assert.throws(()=>reader.read({...fabricated,source},'runtime',1n),TypeError);let calls=0;const input={...fabricated};Object.defineProperty(input,'id',{get(){calls++;return 'd';}});assert.throws(()=>reader.read(input,'runtime',1n),TypeError);assert.equal(calls,0);assert.equal(reader.active,0);assert.equal(existsSync(path),false);}finally{await reader.close();}
+}));
+
+test('malformed selected Question body fails closed without rewriting its stored evidence',async()=>storeFixture(async path=>{
+ const db=await openInitialized(path);try{db.exec("INSERT INTO cdr_async_questions(id,runtime_id,generation,thread_id,turn_id,item_id,origin_job_id,channel_id,owner_user_id,body,created_at,updated_at) VALUES('q','runtime',1,'t','turn','i','j',1,2,'{\"index\":0}',1,1)");}finally{db.close();}const e=await head(path,'Question'),reader=new NativeHttpPayloadReader(path);try{await assert.rejects(reader.read(e,'runtime',1n),NativeHttpPayloadUnavailable);const check=await openInitialized(path);try{assert.equal(check.prepare("SELECT body FROM cdr_async_questions WHERE id='q'").get()!.body,'{"index":0}');}finally{check.close();}}finally{await reader.close();}
+}));
+
+test('Question HTTP adapter forwards the exact lane signal after native payload capture',async()=>storeFixture(async path=>{
+ const db=await openInitialized(path);try{db.exec("INSERT INTO cdr_async_questions(id,runtime_id,generation,thread_id,turn_id,item_id,origin_job_id,channel_id,owner_user_id,body,created_at,updated_at) VALUES('q','runtime',1,'t','turn','i','j',1,2,'{\"index\":0,\"title\":\"Q\",\"options\":[]}',1,1)");}finally{db.close();}
+ const entry=await head(path,'Question'),reader=new NativeHttpPayloadReader(path),controller=new AbortController();let calls=0;
+ try{await deliverCompletionEntry(path,entry,resident,delivery([]),{async deliverChecked(_p,_g,_t,_q,signal){calls++;assert.equal(signal,controller.signal);}},reader,controller.signal);assert.equal(calls,1);}finally{await reader.close();}
+}));

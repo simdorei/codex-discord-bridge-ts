@@ -1,0 +1,61 @@
+{
+  "checkpoint": 670,
+  "scope": "Native durable Observed payload and exact finalization owner reads, preserving initialized compatibility and central facade aliases",
+  "qualifiedStage": {
+    "tests": 7636,
+    "pass": 7636,
+    "fail": 0,
+    "cancelled": 0,
+    "skip": 0,
+    "testFiles": 720,
+    "durationMs": 443691.425524
+  },
+  "actualApplied": {
+    "focused": 76,
+    "typecheck": 0,
+    "build": 0,
+    "sourceTestFiles": 1503,
+    "entireSourceTestEqualsQualifiedStage": true
+  },
+  "fullRerunOnActual": false,
+  "contracts": [
+    "Existing-only Observed read preserves metadata snapshot and2MiB raw body bound",
+    "Cross-generation Observed replay retains original evidence generation, never mints resident terminal proof",
+    "16MiB envelope accepts worst-case escaping of bounded raw body",
+    "Finalization decodes entire queue before exact Running target/turn find; malformed unrelated rows remain errors",
+    "Original target lease retained through native cancellation/deadline actual exit join",
+    "Exact facade inventory269, named aliases and signatures validated"
+  ],
+  "priorFailure": "668full7632:7631pass/1 stale facade inventory failure. Corrected explicit key list/count;670singlefull all passed. No partial result composition.",
+  "missingHistoricalFile": "test/remote-agent/redaction.test.ts (10 unavailable tests; not skipped)",
+  "remoteWrites": "paused after cancellation pending user reply",
+  "limitations": [
+    "General discovery and remaining live/history/HTTP DB operations unfinished",
+    "No performance/Windows24-hour/production deployment qualification",
+    "Original volume not recovered"
+  ],
+  "files": {
+    "src/store/state-access-facade.ts": "b9af3acbf03a14242c6c8d2364987f0e30ebd8799494ae6175096f5327a0b497",
+    "src/store/completion-payload.ts": "7311115222f561abcd93eeeefc94a9db585b14a560d795efb8cd9f21ea8f1019",
+    "src/runtime/completion/native-observed-payload-worker.ts": "cb19b81ecc68ec10d4add2f31a57ab44ba124f64e9ecc93ebfc3f3f6c8de79b4",
+    "src/runtime/completion/native-owner-read-worker.ts": "818cd3b1eaf039017d204430d9332d048f99e0740f434882dfa3d014a423656e",
+    "src/runtime/completion/staged-handler.ts": "792e93fb43350ddcf8cd15108aef1ef87e23a93bf987d3d357d2c2dea7984e3f",
+    "src/runtime/completion/pipeline.ts": "3d1d8163b2f1e795240bda3b182a1f9c977de4d8044e40974dc1489e68e27bec",
+    "src/runtime/completion/native-observed-payload.ts": "65dcdc7520106fd9212c93299aca5586ebefae0aeebc01e1e1130c9cd5109e96",
+    "src/runtime/completion/native-owner-read.ts": "14ade83fe7851cc6c73ade6df3dbaadf5d02e09e7ee1f5ea38e28baa63257bfb",
+    "test/runtime/staged-completion-handler.test.ts": "3da3993c976eeea775fc0376337d7bb3f292ba392b3bdfd0c8997b4f2be7115e",
+    "test/runtime/native-completion-owner-read.test.ts": "8d17832406d30a9f47df7879545776d1e6d2d941c217a6bd6e76f46c3857c670",
+    "test/runtime/native-observed-payload.test.ts": "ff73fd8c7af967ec1faef63dcaa1cccffebbbcccfcecf746efc8400324ece608",
+    "test/store/state-access-facade.test.ts": "1209a76418f471b48a3d8d7bc0bc97eb53a3b6a16ccaf21236a984b205496145"
+  },
+  "evidence": {
+    ".runtime/completion-state-reads-670/full.log": "81db6843fdcacb5e196260c9c61eed78108c2fbbe5360824c8b88a8d758fcffc",
+    ".runtime/completion-state-reads-670/full-exit.json": "ce51d139c1cbd8faabddc541d943a5302c29bda6abec8576301d0761a033ecf2",
+    ".runtime/completion-state-reads-670/REVIEW.md": "2f54605983972f553d85a1324b49083be1bdd8fe3438c6abee45110190757775",
+    ".runtime/completion-state-reads-670/scope-proof.json": "e94c6214dd989648bed1c30ec5bf21c4225a61783611775c4ed148634b76349f",
+    ".runtime/completion-state-reads-670/applied/applied-manifest.json": "17156d30195cd601e047cacf5dd7814134ab87dbb2cb752670ed3abecc94563b",
+    ".runtime/completion-state-reads-670/applied/source-test-identity.json": "287fddb9aff80788823aec36d83d481fbf00a2d282d4183b5718f062a3785626",
+    ".runtime/completion-state-reads-670/applied/focused.log": "daa9c0d74b0656bf053152a542f0ee8db9396132355b8503666ff7091fbd76f2",
+    ".runtime/completion-state-reads-670/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

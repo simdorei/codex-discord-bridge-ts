@@ -1,0 +1,18 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {OwnedWorkerSlot,OwnedWorkerBudgetError,OwnedWorkerTimeoutError,ownedWorkerUsage,OWNED_WORKER_LIMITS} from '../../src/runtime/owned-worker-slot.ts';
+import {NativeCompletionDiscoveryReader} from '../../src/runtime/completion/native-discovery.ts';
+import {CompletionDiscovery} from '../../src/runtime/completion/scheduler/discovery.ts';import {CompletionReady} from '../../src/runtime/completion/scheduler/ready.ts';
+import {openInitialized} from '../../src/store/owned-driver.ts';import {storeFixture} from '../helpers/store-fixture.ts';
+const worker=(s:string)=>new URL('data:text/javascript,'+encodeURIComponent(s));
+const blocked=worker(`import {parentPort,workerData} from 'node:worker_threads';Atomics.wait(new Int32Array(workerData),0,0,10000);parentPort.postMessage('done');parentPort.close();`);
+test('autonomous discovery retains its reserved slot while all six preexisting slots are occupied',async()=>storeFixture(async path=>{
+ const db=await openInitialized(path);db.close();const slots=[new OwnedWorkerSlot(),new OwnedWorkerSlot(),new OwnedWorkerSlot(),new OwnedWorkerSlot('Control'),new OwnedWorkerSlot('Observation'),new OwnedWorkerSlot('Observation')],shared=new SharedArrayBuffer(4),a=new Int32Array(shared),tasks=slots.map(s=>s.run(blocked,shared,5000)),owner=new NativeCompletionDiscoveryReader(path),d=new CompletionDiscovery(['Final'],()=>0,owner),ready=new CompletionReady<null>();
+ try{assert.deepEqual(OWNED_WORKER_LIMITS,{Background:3,Control:1,Observation:2,Discovery:1,Maintenance:1});const pending=d.readAsync('runtime',1n,ready,new Set());assert.deepEqual(ownedWorkerUsage(),{Background:3,Control:1,Observation:2,Discovery:1,Maintenance:0});await assert.rejects(new OwnedWorkerSlot('Discovery').run(blocked,shared,5000),OwnedWorkerBudgetError);await assert.rejects(new OwnedWorkerSlot().run(blocked,shared,5000),OwnedWorkerBudgetError);await pending;assert.equal(d.drained,true);assert.deepEqual(ownedWorkerUsage(),{Background:3,Control:1,Observation:2,Discovery:0,Maintenance:0});}
+ finally{Atomics.store(a,0,1);Atomics.notify(a,0,6);await Promise.allSettled(tasks);await Promise.all(slots.map(s=>s.join()));await owner.close();ready.dispose();}assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Observation:0,Discovery:0,Maintenance:0});
+}));
+test('discovery abort and timeout hold one slot until native exit, never stealing Background',async()=>{
+ const slot=new OwnedWorkerSlot('Discovery'),shared=new SharedArrayBuffer(4),a=new Int32Array(shared),cancel=new AbortController(),reason=new Error('stop discovery'),task=slot.run(blocked,shared,5000,cancel.signal);cancel.abort(reason);
+ try{await assert.rejects(task,e=>e===reason);assert.equal(slot.busy,true);assert.equal(ownedWorkerUsage().Discovery,1);await assert.rejects(new OwnedWorkerSlot('Discovery').run(blocked,shared,5000),OwnedWorkerBudgetError);assert.equal(await new OwnedWorkerSlot().run(worker(`import {parentPort} from 'node:worker_threads';parentPort.postMessage('general');parentPort.close();`),null,2000),'general');}finally{Atomics.store(a,0,1);Atomics.notify(a,0);await slot.join();}assert.equal(ownedWorkerUsage().Discovery,0);
+ const other=new SharedArrayBuffer(4),b=new Int32Array(other);try{await assert.rejects(slot.run(blocked,other,10),OwnedWorkerTimeoutError);assert.equal(ownedWorkerUsage().Discovery,1);}finally{Atomics.store(b,0,1);Atomics.notify(b,0);await slot.join();}assert.equal(ownedWorkerUsage().Discovery,0);
+ assert.throws(()=>slot.run(blocked,()=>undefined,1000));assert.equal(slot.busy,false);assert.equal(ownedWorkerUsage().Discovery,0);
+});

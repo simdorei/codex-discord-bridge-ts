@@ -1,0 +1,14 @@
+{
+  "dependency": "764 candidate pending whole qualification",
+  "files": [
+    {
+      "path": "src/codex-state/reference-reader.ts",
+      "sha256": "49d4463d17140fb3961c49165e460a1af0076e3149873429a1fae6f4141b17f8"
+    },
+    {
+      "path": "src/codex-state/reference-worker.ts",
+      "sha256": "a2f5760d203e17012f6d5d60193f1ee283c10aabdb0b5281638b5d9fa222597f"
+    }
+  ],
+  "originPlan": "765"
+}

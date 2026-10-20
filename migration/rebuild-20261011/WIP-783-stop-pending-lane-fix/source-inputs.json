@@ -1,0 +1,13 @@
+{
+  "base": "actual779",
+  "prior782ManifestSha256": "1f7ff8bb2d4b9d97f98fd843d7656d7ac284f262946285ca6dc3e9ea2e0f5555",
+  "reason": "Executable full782 startup lifetime test failed OwnedWorkerBudgetError in restart snapshot while periodic Stop inventory occupied reserved Control. Reclassify periodic inventory to existing Maintenance1/FIFO2; no capacity growth, no new queue.",
+  "changes": [
+    "reader class and submission API",
+    "same-owner overlap oracle",
+    "mock correct API",
+    "actual concurrent restart snapshot test"
+  ],
+  "priorFull": "RUNNING_WITH_KNOWN_FAILURE",
+  "originalFailureLogSha256AtCapture": "1380b448e1ef8ec71dd783a9ca54f258e918b690165531865bbc01e147057ad6"
+}

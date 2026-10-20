@@ -1,0 +1,65 @@
+{
+  "status": "APPLIED_BUILD_AND_FOCUSED_PASS",
+  "files": [
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "9db155496d4c9cea49025642cf7e89930312c5b6608b42341dfbb293273f62ad"
+    },
+    {
+      "path": "src/runtime/mirror-sync/result.ts",
+      "sha256": "1eaae8abee7adb26c69b61e2a768e8a3fe919239f37cdc8096fb952ecec55ab8"
+    },
+    {
+      "path": "test/runtime/action-executor/mirror-sync-dispatch.test.ts",
+      "sha256": "defd64c415f91610c947eb96f09d047d9d1bb79a32e9d3738c07e85115299b48"
+    },
+    {
+      "path": "src/runtime/discord-runtime/prepared-workers.ts",
+      "sha256": "c68d5aedff54e71e933f693640207b025dc2f9932c236b204097cf90d72069f6"
+    },
+    {
+      "path": "src/runtime/discord-runtime/prepared-typed-ingress.ts",
+      "sha256": "704831e7dee3043d572f3c34d03ff3c181e62ccb8b1b50777cc4764f9eff9e7c"
+    },
+    {
+      "path": "src/runtime/mirror-sync/source-metadata.ts",
+      "sha256": "769c2f9aca8551b7ee424fc6384aef775eac83175272d4e7a1138789f08666b1"
+    },
+    {
+      "path": "test/runtime/discord-runtime/startup-context.test.ts",
+      "sha256": "faf73be4188610f9195bb05d227287c1b5b3322d09001d788619cdba102dd28b"
+    },
+    {
+      "path": "test/runtime/mirror-sync/source-metadata.test.ts",
+      "sha256": "65e6b35938ff38b9ec70f0e5a17b47c2f0634f6ab4a0330b0ee861d62492c1ed"
+    }
+  ],
+  "qualifiedStage": {
+    "receipt": "checkpoint-840-staged-verification.json",
+    "testsPassed": 8656,
+    "sourceTestToolsFilesMatched": 1723,
+    "drift": []
+  },
+  "postApply": {
+    "strictBuildExit": 0,
+    "focusedRuns": [
+      {
+        "tests": 51,
+        "passed": 51,
+        "exit": 0
+      },
+      {
+        "tests": 4,
+        "passed": 4,
+        "exit": 0
+      }
+    ],
+    "uniqueFocusedPassed": 55,
+    "single55Run": false
+  },
+  "limits": [
+    "Post-apply full suite not rerun; full8656 evidence belongs to byte-identical qualified stage.",
+    "Windows, real Discord, performance and deployment remain unverified.",
+    "Protected redaction fixture is absent and not counted as PASS."
+  ]
+}

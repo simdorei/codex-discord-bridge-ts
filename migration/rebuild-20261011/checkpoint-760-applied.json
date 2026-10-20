@@ -1,0 +1,67 @@
+{
+  "status": "APPLIED_VERIFIED",
+  "at": "2026-10-12T16:55:08.066115+00:00",
+  "baselineHead": "02c153d91f91cfb9501a8dd7c9e2bf4f8be75ef3",
+  "scope": [
+    {
+      "path": "src/codex-state/reference-reader.ts",
+      "beforeSha256": "13b4d874fe64bd0736eabd6ed975df739904fb85e8d40e3ffa5eca63b5459803",
+      "afterSha256": "2c252d4f5ac9fc55b83cf4532a1efb6f22b31b69b7a08cbc90e7a73b9396c7d3"
+    },
+    {
+      "path": "src/codex-state/reference-worker.ts",
+      "beforeSha256": "a8961621812bd07d635b597cb330b5aa551e5fe38f7f20eb92081eec8e5795a0",
+      "afterSha256": "42e9555e506f1ed2638cece4cd584d7818730266dcf45519db625590339adfa3"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "beforeSha256": "c69d4058d8675b2446cf8ddab84ad67993504a4065417152d6f42c397315960d",
+      "afterSha256": "79232ad5f86b3419cffb453a8229a80b1787ffb95dc9bc29df61aaa7774d565e"
+    },
+    {
+      "path": "src/runtime/action-executor/archive-persistence.ts",
+      "beforeSha256": "a9a62f213b2f845ae1afc1bb633520948f5edc748df7dc90c2aa1eb2493e757d",
+      "afterSha256": "bb7448a08e59d276377e5c499ae36898d23b26ade71d7293d4df9626400150c2"
+    },
+    {
+      "path": "src/runtime/action-executor/archive-action.ts",
+      "beforeSha256": "0609a52d15ac479aa4cc6707349298cc5b845d1e29663195bd8e78a83d0fdcf8",
+      "afterSha256": "b70796eb7bddc4b07988232055b9c46ac52ac2917a13c52f763523278812bda3"
+    },
+    {
+      "path": "test/codex-state/archive-scope-reader.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "b3a2bf2a5574b7dd0e662c513537c73cd2da7f99042e1a6cea2d33862ac20583"
+    },
+    {
+      "path": "test/runtime/action-executor/archive-action.test.ts",
+      "beforeSha256": "7d3be3d733a5194554dd816134d4b1ce6dddf2751545c0d3775e57b8b30eadc1",
+      "afterSha256": "7c64df936e26e04de16ee5a5e5fe3500e97ed396b413ea62607b5695d17e3576"
+    },
+    {
+      "path": "test/runtime/action-executor/archive-persistence-native.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "981e38762a173484a9a18e808095d485486c02f960300688afd2034892cf3938"
+    }
+  ],
+  "wholeTests": 8181,
+  "wholeFiles": 790,
+  "fullLogSha256": "86ee003c3d54ed63369dfa7f965a822e86dc1ba1e8ffc52704e0915c1813808b",
+  "stageInputsSha256": "cc16a548ac515b4b5e791c6ef70dc21d425242bf244d115362c3a069c64312df",
+  "all1606InputsMatchStage": true,
+  "actualFocused": 58,
+  "typecheck": 0,
+  "build": 0,
+  "verifiedAt": "2026-10-12T16:56:03.668572+00:00",
+  "wholeTestFiles": 790,
+  "testFileConcurrency": 1,
+  "missingProtectedFixture": "not executed or counted as skipped",
+  "runtimeWindowsLive24h": "UNVERIFIED",
+  "evidence": {
+    ".runtime/archive-persistence-native-760/full.log": "86ee003c3d54ed63369dfa7f965a822e86dc1ba1e8ffc52704e0915c1813808b",
+    ".runtime/archive-persistence-native-760/applied/focused.log": "07f5c800d02138d642562749c6d8f20e0d4cc57d8325dd1acd3d0258c9355de4",
+    ".runtime/archive-persistence-native-760/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/archive-persistence-native-760/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/archive-persistence-native-760/stage-inputs.json": "cc16a548ac515b4b5e791c6ef70dc21d425242bf244d115362c3a069c64312df"
+  }
+}

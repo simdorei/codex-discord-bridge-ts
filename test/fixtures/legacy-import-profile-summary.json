@@ -1,0 +1,383 @@
+{
+  "profile": "source-fixed-file-backed-legacy-v1-import",
+  "checkpoint": 938,
+  "status": "passed-bounded-profile",
+  "base": {
+    "local": "4d0f19ceeffc810046795a056b8e1ccdb726fd10",
+    "remote": "c7ae870a95ec113ce6c8023a028a9cfeee958e66",
+    "tree": "b9eca3cf5d81f25843d752d9a6765a99dc83989b"
+  },
+  "source": {
+    "repository": "simdorei/codex-discord-remote-rust",
+    "commit": "d7e1aa0106b2eefd9ea3f96e8e4bc5afdd296d34",
+    "blobs": {
+      "crates/cdr-store/src/schema.rs": "96486dcb2414aee2feba67ce59da923bf494ebd4",
+      "crates/cdr-store/src/queue.rs": "078b56998176ba42a43b697410feff21eacacb1a",
+      "crates/cdr-store/src/queue/read.rs": "51908634a7bf40ea1aa5073f212e7f39b93a0a5e",
+      "crates/cdr-store/src/mirror.rs": "5c28c5d7c22e97c168bca5e6d6054130ff2745a1",
+      "crates/cdr-store/src/mirror/context.rs": "b570e7ce8044ff6c01e2c29f523a90ea356c0a75"
+    }
+  },
+  "runtime": {
+    "node": "24.21.0",
+    "typescript": "7.0.2",
+    "sqlite": "3.53.4",
+    "platform": "linux",
+    "arch": "x64",
+    "existingDriverTimeoutMs": 5000
+  },
+  "workload": {
+    "databases": 1,
+    "literalV1Statements": 11,
+    "queueRows": 4,
+    "processedMarkers": 4,
+    "legacyCursors": 1,
+    "migrations": 1,
+    "backups": 1,
+    "explicitInitializationOpens": 2,
+    "implicitConsumerInitializationOpens": 13,
+    "totalInitializationCapableOpens": 15,
+    "rawSeedOpens": 1,
+    "rawReadOnlyBackupOpens": 1,
+    "publicCalls": {
+      "list": 1,
+      "listFiltered": 2,
+      "isProcessedMessage": 5,
+      "getMirrorOffset": 2,
+      "getMirrorCursorTurn": 2,
+      "getOrInitMirrorCursor": 1
+    }
+  },
+  "syntheticFixture": {
+    "target": "thread_legacy_001",
+    "channelId": "9007199254740995",
+    "ownerUserId": "9007199254740996",
+    "messageIds": [
+      "9007199254740997",
+      "9007199254740998",
+      "9007199254740999",
+      "9007199254741000"
+    ],
+    "absentMessageId": "9007199254741001",
+    "prompt": "legacy 한글😀",
+    "baselineTurnIds": [
+      "turn-before"
+    ],
+    "createdAt": 1712000000.125,
+    "updatedAt": 1712000000.875,
+    "processedSeenAt": 1712000000.125,
+    "rolloutPath": "legacy/rollout-한글.jsonl",
+    "cursor": "9007199254740993",
+    "matchingPathInitial": "0",
+    "matchingPathProposedNow": 1712000001.875,
+    "states": [
+      "Pending",
+      "Starting",
+      "Running",
+      "Quarantined"
+    ],
+    "rawQuarantineState": "running",
+    "quarantineTurn": "cdr-quarantined:turn-held",
+    "quarantineError": "[cdr-rust:app-server-fork-quarantine:v1] process died"
+  },
+  "acceptance": [
+    "Exact original queue fields and UTF-8 bytes preserved",
+    "Version 2, current extensions and integrity",
+    "Exactly one version-1 backup with original catalog, fields, no added columns",
+    "Four typed queue states and exact bigint identities",
+    "Generation defaults 0/NULL/NULL and goal_waiting false",
+    "Four processed markers and absent marker remain correct",
+    "Legacy cursor bigint, fractional timestamp and NULL turn_context preserved by matching-path get-or-init",
+    "Final reopen preserves complete seeded row snapshots and catalog, no second backup",
+    "Actual compiler file list equals guarded closure",
+    "All 28 production emits byte-identical in selected and production-only compiles"
+  ],
+  "sourceGraph": [
+    {
+      "path": "src/core/serde-json-parse.ts",
+      "sha256": "79749fdba950ce395a718199944075c78020675098fdce009b3cbfb960c9bb8a"
+    },
+    {
+      "path": "src/core/serde-json.ts",
+      "sha256": "54502bcf8b4d5bccbe9f1a568edc87904c8797d8af7adbe6207f1dd3d98b17c2"
+    },
+    {
+      "path": "src/discord/text.ts",
+      "sha256": "f238990df945d560bf694b78217e4e4a9c5fd76fb232d4ab4023cca126886525"
+    },
+    {
+      "path": "src/protocol/ids.ts",
+      "sha256": "88c4c252d74ecdd711d5f5048c0df7a2de6ccc21aed7b6b209703e07a76ba7b4"
+    },
+    {
+      "path": "src/runtime/runtime-paths/path-text.ts",
+      "sha256": "a96057633a6e608b0da1fb42e6409dc9b98381e55ebd05a39dcd90ed2b9b9ad0"
+    },
+    {
+      "path": "src/runtime/store-worker-authority.ts",
+      "sha256": "67b93f446c7253b144f1e47ec8e60aba72456f96fad84e41e94c7d9e58beb792"
+    },
+    {
+      "path": "src/runtime/store-worker-manifest.ts",
+      "sha256": "2591bfb48895a052d6ad045ff903588a5674b08ba3b24bf90fde1aa55e5f6784"
+    },
+    {
+      "path": "src/store/authority-connection.ts",
+      "sha256": "f4a8ee35635cb476ad6b32b71d36258d254db56a53cd42f49736360e49bf0973"
+    },
+    {
+      "path": "src/store/catalog-cache.ts",
+      "sha256": "d09f20989032eba66bce6e462d2ffad8727472862dcaf52a7a0b6485175fb026"
+    },
+    {
+      "path": "src/store/delivery-receipt-key.ts",
+      "sha256": "fc16a896b248ffca9866ba8662f64704fc6cb1eb0cf52b6bda653ce8ced2867e"
+    },
+    {
+      "path": "src/store/existing-store.ts",
+      "sha256": "f5fa2c96ad43d9e300ec68170d1f73e0019da7553b15ddd7f02f97b56c23b2ed"
+    },
+    {
+      "path": "src/store/mirror-cursor.ts",
+      "sha256": "5c993cd693a9c8876cef48f0ca4139d0c4e89295b9471c93f853f852b8eb6a80"
+    },
+    {
+      "path": "src/store/owned-driver.ts",
+      "sha256": "b19a997c2c316a88bba9fc92f43d7c5865dbe45f4b6a45d3bd2b610e204e1065"
+    },
+    {
+      "path": "src/store/owned-scope.ts",
+      "sha256": "11056d4d91487120391349fe10019100c4598d442a6a6c32c4571d6c5653b0fa"
+    },
+    {
+      "path": "src/store/processed-messages.ts",
+      "sha256": "f1a92ff5ab4d1199550ec0635df7cfe9e239806b774f848a6f9de927e55823f6"
+    },
+    {
+      "path": "src/store/queue-read.ts",
+      "sha256": "85b5c6292d42585659fb1fc6e6ddf6be83d3834ab2d20db2b53bd46c4f94ac1b"
+    },
+    {
+      "path": "src/store/schema-abandonment.ts",
+      "sha256": "cdac68a1cb6de88cf778ddd93bca27cd9974c988e041ca47f167770c247ceca2"
+    },
+    {
+      "path": "src/store/schema-admission-order.ts",
+      "sha256": "78a1f5c304d41c5399cf882c3874d1ce0d608f8583b6bc32691e8b3c88d37fc5"
+    },
+    {
+      "path": "src/store/schema-assembly.ts",
+      "sha256": "5fc19f624fc5a6a18d6dd9c600865ef7795c75f2244c9454e822607f6b132a65"
+    },
+    {
+      "path": "src/store/schema-async-resolution.ts",
+      "sha256": "a27240c973b6231a8e0775599d1edda84756d7158bcba1e6c0849bf125625abd"
+    },
+    {
+      "path": "src/store/schema-extensions-a.ts",
+      "sha256": "ecd0f8ec58807a190d231eb74530c4a760e083814629f0c7475e9de0082d5c4c"
+    },
+    {
+      "path": "src/store/schema-extensions-b1.ts",
+      "sha256": "fa8b4261f433dc89cc62e88a09f1a1254b4561818e260213c71f0733a8649d58"
+    },
+    {
+      "path": "src/store/schema-extensions-b2.ts",
+      "sha256": "68895b8439e70d2d6d8aa4ef0618f496ce5bafac0f32df84c06c6e6850a6a80e"
+    },
+    {
+      "path": "src/store/schema-extensions-b3.ts",
+      "sha256": "6a5a0ad2c4dd0d202b313360d02d690def5df450028e57dcdaba072b5a0425d7"
+    },
+    {
+      "path": "src/store/schema-extensions-c.ts",
+      "sha256": "15063f8bde3ce03749c87e196d04f041a100e9d41b47e34986d4a51e72bdbc15"
+    },
+    {
+      "path": "src/store/schema-publication-consent.ts",
+      "sha256": "307989292cfbe400621dcec88e41b83b223e4f2e0c39a4441645d51619d01264"
+    },
+    {
+      "path": "src/store/sqlite-values.ts",
+      "sha256": "64f064bf31151e31e63299ca73ac409b0530371b8594024a8391354a5f01d5be"
+    },
+    {
+      "path": "src/store/store-authority-domain.ts",
+      "sha256": "6030e1da7ccf747bb8a3b6d3100412bd47f5c3d572bab39695782d6b893db328"
+    },
+    {
+      "path": "test/store/legacy-import-profile.test.ts",
+      "sha256": "b24bc65e3989c6dcad0fa9c7d85d228bec092520082d3e1066e6721f01ddbee6"
+    }
+  ],
+  "commands": [
+    {
+      "name": "compile-selected",
+      "executable": ".runtime/node24/node_modules/node-linux-x64/bin/node",
+      "argv": [
+        "--no-strip-types",
+        "node_modules/typescript/bin/tsc",
+        "--ignoreConfig",
+        "--target",
+        "ES2023",
+        "--module",
+        "NodeNext",
+        "--moduleResolution",
+        "NodeNext",
+        "--strict",
+        "--rewriteRelativeImportExtensions",
+        "--verbatimModuleSyntax",
+        "--noUncheckedIndexedAccess",
+        "--exactOptionalPropertyTypes",
+        "--types",
+        "node",
+        "--skipLibCheck",
+        "false",
+        "--rootDir",
+        ".",
+        "--listFiles",
+        "--outDir",
+        ".runtime/legacy-import-938-plan/emitted",
+        "src/core/serde-json-parse.ts",
+        "src/core/serde-json.ts",
+        "src/discord/text.ts",
+        "src/protocol/ids.ts",
+        "src/runtime/runtime-paths/path-text.ts",
+        "src/runtime/store-worker-authority.ts",
+        "src/runtime/store-worker-manifest.ts",
+        "src/store/authority-connection.ts",
+        "src/store/catalog-cache.ts",
+        "src/store/delivery-receipt-key.ts",
+        "src/store/existing-store.ts",
+        "src/store/mirror-cursor.ts",
+        "src/store/owned-driver.ts",
+        "src/store/owned-scope.ts",
+        "src/store/processed-messages.ts",
+        "src/store/queue-read.ts",
+        "src/store/schema-abandonment.ts",
+        "src/store/schema-admission-order.ts",
+        "src/store/schema-assembly.ts",
+        "src/store/schema-async-resolution.ts",
+        "src/store/schema-extensions-a.ts",
+        "src/store/schema-extensions-b1.ts",
+        "src/store/schema-extensions-b2.ts",
+        "src/store/schema-extensions-b3.ts",
+        "src/store/schema-extensions-c.ts",
+        "src/store/schema-publication-consent.ts",
+        "src/store/sqlite-values.ts",
+        "src/store/store-authority-domain.ts",
+        "test/store/legacy-import-profile.test.ts"
+      ]
+    },
+    {
+      "name": "compile-production",
+      "executable": ".runtime/node24/node_modules/node-linux-x64/bin/node",
+      "argv": [
+        "--no-strip-types",
+        "node_modules/typescript/bin/tsc",
+        "--ignoreConfig",
+        "--target",
+        "ES2023",
+        "--module",
+        "NodeNext",
+        "--moduleResolution",
+        "NodeNext",
+        "--strict",
+        "--rewriteRelativeImportExtensions",
+        "--verbatimModuleSyntax",
+        "--noUncheckedIndexedAccess",
+        "--exactOptionalPropertyTypes",
+        "--types",
+        "node",
+        "--skipLibCheck",
+        "false",
+        "--rootDir",
+        ".",
+        "--listFiles",
+        "--outDir",
+        ".runtime/legacy-import-938-plan/production-emitted",
+        "src/core/serde-json-parse.ts",
+        "src/core/serde-json.ts",
+        "src/discord/text.ts",
+        "src/protocol/ids.ts",
+        "src/runtime/runtime-paths/path-text.ts",
+        "src/runtime/store-worker-authority.ts",
+        "src/runtime/store-worker-manifest.ts",
+        "src/store/authority-connection.ts",
+        "src/store/catalog-cache.ts",
+        "src/store/delivery-receipt-key.ts",
+        "src/store/existing-store.ts",
+        "src/store/mirror-cursor.ts",
+        "src/store/owned-driver.ts",
+        "src/store/owned-scope.ts",
+        "src/store/processed-messages.ts",
+        "src/store/queue-read.ts",
+        "src/store/schema-abandonment.ts",
+        "src/store/schema-admission-order.ts",
+        "src/store/schema-assembly.ts",
+        "src/store/schema-async-resolution.ts",
+        "src/store/schema-extensions-a.ts",
+        "src/store/schema-extensions-b1.ts",
+        "src/store/schema-extensions-b2.ts",
+        "src/store/schema-extensions-b3.ts",
+        "src/store/schema-extensions-c.ts",
+        "src/store/schema-publication-consent.ts",
+        "src/store/sqlite-values.ts",
+        "src/store/store-authority-domain.ts"
+      ]
+    },
+    {
+      "name": "test",
+      "executable": ".runtime/node24/node_modules/node-linux-x64/bin/node",
+      "argv": [
+        "--no-strip-types",
+        "--test",
+        "--test-concurrency=1",
+        "--test-reporter=tap",
+        ".runtime/legacy-import-938-plan/emitted/test/store/legacy-import-profile.test.js"
+      ]
+    }
+  ],
+  "limitations": [
+    "Linux synthetic fixture only",
+    "No Rust binary executed",
+    "No native Windows evidence",
+    "No enqueue/start/recovery/external-effect calls",
+    "No new ownership or authority inferred from legacy defaults",
+    "No entire G6 or release acceptance claim"
+  ],
+  "results": {
+    "authorTest": {
+      "passed": 1,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "independentReviewerTest": {
+      "passed": 1,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "actualCompilerAudit": {
+      "selectedProjectFiles": 29,
+      "selectedTotalListedFiles": 207,
+      "productionProjectFiles": 28,
+      "productionTotalListedFiles": 206,
+      "productionByteParityModules": 28
+    },
+    "emittedGraphSha256": "914483d94e59b352f688e889b0034096f80917b5ca18a2722892fcddf966c026",
+    "testSourceSha256": "b24bc65e3989c6dcad0fa9c7d85d228bec092520082d3e1066e6721f01ddbee6",
+    "executionManifestSha256": "d00deade95d5795eb0c6900e266e39d3913ffd813dde4debc0c48f109b2d4db8",
+    "runnerSha256": "b04c73b638ee6100beb0440c6f9c0d37ec370e0cc36696e5a8c8a3b03274b16f",
+    "compileAuditSha256": "b43cf1eb500cd8ec6587c03fd59be46ca949e8fee5162cd350e6aac4f7fe86eb",
+    "authorReceiptSha256": "7bf549cf627f529aa220dd440d23efb1e54f2a89f989263d5278d405b87a0881",
+    "authorTapSha256": "86a0758ceae80c74905ce475aa7d6d4a896646cbdd329131c31dcec3143e8259",
+    "reviewerReceiptSha256": "69044554d989bf52c81401256f2041a2e2abee37ffb09029c53abeebfb523ebe",
+    "reviewerTapSha256": "7e337ff191fad2fe1c8b36257bd5e42ecb129c2161f7a128be08672357337a91",
+    "acceptanceChangedAfterRun": false,
+    "productionSourceChanges": false
+  }
+}

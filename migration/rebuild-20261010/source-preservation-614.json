@@ -1,0 +1,42 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 614,
+  "localCommit": "f52cc0b0e33d68be44c4f416dfc3daafc995e383",
+  "fullTests": 7308,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/remote-agent/file-error-result.ts": "ca7cfbf02052c719e0cf3e15d3f76b82f821d918d1f88d6bde76b03f627b1f1e",
+    "src/remote-agent/files/error.ts": "4e6fd3a159de7cb9dc16d6717ca0f10548c39d71a4b087f8570fe007e0d260fd",
+    "src/remote-agent/files/path-policy.ts": "62f2103c3bbb30543a0305facb58427df00ed78530b0fa48dfd07bd02556d960",
+    "src/remote-agent/files/read-file.ts": "101a218ce500dcefd36dcaed51314b13c3a9e27e95f5b0e9fd096ebb118fc9d3",
+    "src/remote-agent/files/read-owner.ts": "2caabdd3f0111da08724ae752448d3acc689a5ce42f3ac98f2a77b20b4b78877",
+    "test/remote-agent/file-error-result.test.ts": "cfe5161e331aa2edd47b953f316ccef6773331d42b3a9f8df43dd2197e1f7413",
+    "test/remote-agent/read-file.test.ts": "a93316b6a5d2adcf95d569a91e6a95d4281462af5e07d48687193a39a5c7df3c",
+    "test/remote-agent/read-owner.test.ts": "4ed926f2012d8086dc2bf4c39681a0689715cd9652ee3ba15e4829e6a5737560"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Additional byte and wire caps are explicit bounded TS profile, not arbitrary Rust error string equality",
+    "Actual native IO error text platform-specific",
+    "Source redaction heuristic not complete secret detection",
+    "No actual dispatcher/project authority integration",
+    "Windows and full runtime qualification remain incomplete",
+    "Original VM not recovered",
+    "One inherited test file remains outside remote preservation"
+  ],
+  "fullTestProfile": "Compiled JS stage --no-strip-types; entire actual1434 src/test files verified byte-identical",
+  "actualRootVerification": {
+    "strictTS": 0,
+    "focusedPass": 35,
+    "productionBuild": 0
+  },
+  "inheritedWithheldFiles": {
+    "test/remote-agent/redaction.test.ts": "613 GitHub push protection rejection; remains local only, no retry/bypass"
+  },
+  "remoteFullTestTreeMatchesLocal": false,
+  "localTestEvidenceOnly": true
+}

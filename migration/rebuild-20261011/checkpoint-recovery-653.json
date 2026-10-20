@@ -1,0 +1,30 @@
+{
+  "kind": "exact-source-recovery-revalidated",
+  "recoveredSourceCheckpoint": 653,
+  "previousLocalCode": "b239849c46a15e6988432f9c037f719e1f56f29b",
+  "baseRemote": "7dbe18648817f40d599d569a9736e7638e426cf2",
+  "exactRecoveredFiles": 9,
+  "sourceTestFiles": 1486,
+  "full": {
+    "tests": 7551,
+    "pass": 7551,
+    "fail": 0,
+    "cancelled": 0,
+    "skip": 0,
+    "files": 709,
+    "durationMs": 379987.230262
+  },
+  "focused": 62,
+  "typecheck": 0,
+  "build": 0,
+  "missingHistoricalTest": "test/remote-agent/redaction.test.ts (10 tests unavailable; not skipped in this run)",
+  "missingLaterWork": [
+    "applied655 native gap lifetime",
+    "unapplied656/657 question producer",
+    "658 envelope probe and proposed tests"
+  ],
+  "remoteWrites": "paused pending user reply after cancellation",
+  "permanentVolumeLossConfirmed": false,
+  "originalPathsOverwritten": false,
+  "completedAt": "2026-10-11T21:10:24.185674+00:00"
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "path": "src/store/state-access-facade.ts",
+    "baseSha256": "1144f0b01cb54ed456305ec6b2b10a383effc9cea7a18e2e871ab9ed761bfa67",
+    "candidateSha256": "1144f0b01cb54ed456305ec6b2b10a383effc9cea7a18e2e871ab9ed761bfa67",
+    "unchanged": true
+  },
+  {
+    "path": "src/store/prompt-intake-write.ts",
+    "baseSha256": "b8e0e46b719740d7531a12420712cdf2dead0117daf17d59f5b7026933201885",
+    "candidateSha256": "b8e0e46b719740d7531a12420712cdf2dead0117daf17d59f5b7026933201885",
+    "unchanged": true
+  },
+  {
+    "path": "src/runtime/prompt-intake/native-state.ts",
+    "baseSha256": "194680cf6b33475fe0893516ccfe0009268498b287cbfdcd97cbb90cebbec31b",
+    "candidateSha256": "cff005065be4d786130878d7459b3cb80696b49da42a4b96c3377278f85dc5fb",
+    "unchanged": false
+  },
+  {
+    "path": "src/runtime/prompt-intake/native-state-worker.ts",
+    "baseSha256": "7b6507b4316948187d3a51e0bef838b04520266b4fcf9132c5a116acb3283b56",
+    "candidateSha256": "5a5972a31d873c65428992ba6477e3646f2e8c953d78f2c00476ab6b8858a72c",
+    "unchanged": false
+  },
+  {
+    "path": "test/store/ingress-prompt.test.ts",
+    "baseSha256": "5077ce716f57527924709f9e9374497610cbddf627947e1ada8293415ad022b7",
+    "candidateSha256": "5077ce716f57527924709f9e9374497610cbddf627947e1ada8293415ad022b7",
+    "unchanged": true
+  },
+  {
+    "path": "test/store/prompt-intake-admission-existing.test.ts",
+    "baseSha256": "0ceabd96ed3c35232885c4f723cccaa18af0137bc476267c839531d6f9f31b96",
+    "candidateSha256": "0ceabd96ed3c35232885c4f723cccaa18af0137bc476267c839531d6f9f31b96",
+    "unchanged": true
+  },
+  {
+    "path": "test/store/state-access-facade.test.ts",
+    "baseSha256": "1931562d118e8a7e325f92b342d6d2e921e98f8f63153edf71c734a8a37426d5",
+    "candidateSha256": "1931562d118e8a7e325f92b342d6d2e921e98f8f63153edf71c734a8a37426d5",
+    "unchanged": true
+  },
+  {
+    "path": "test/runtime/prompt-intake/native-admission.test.ts",
+    "baseSha256": "7c301c1436a8d07862a7a30874236980dd5c1ea06de6ba546614b0b9e682f44d",
+    "candidateSha256": "7c301c1436a8d07862a7a30874236980dd5c1ea06de6ba546614b0b9e682f44d",
+    "unchanged": true
+  },
+  {
+    "path": "test/runtime/prompt-intake/native-state.test.ts",
+    "baseSha256": "de2e6bab6bd29dff549329f8b0998bfe63cb8300dad34c6f0af059a0cc55bf8a",
+    "candidateSha256": "7b65bc5f35f28bbccec16dc52b2d1c14193ecb6880c1a0765ed356e978cc4fab",
+    "unchanged": false
+  },
+  {
+    "path": "test/runtime/prompt-intake/native-maintenance.test.ts",
+    "baseSha256": "1b12306ecdb0bae05d4f924af5dba020b418300f7fe6bbdd78f23c0527246d97",
+    "candidateSha256": "1b12306ecdb0bae05d4f924af5dba020b418300f7fe6bbdd78f23c0527246d97",
+    "unchanged": true
+  }
+]

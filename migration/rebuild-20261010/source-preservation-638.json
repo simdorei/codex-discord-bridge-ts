@@ -1,0 +1,30 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 638,
+  "localCommit": "996c7f4a9038cd50d707269c64e3179bceea6028",
+  "fullTests": 7496,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/app-server/idle-target-gate.ts": "d8add9da187a29391f312e90587b18ed05f2cb0a1eb6c7dc965eb6b0548894e0",
+    "src/app-server/maintenance-transport.ts": "c82ca0bf89cbf20abbfaaa4ca13891ecdd1194acac32731ff0c540a7ec5c0a1b",
+    "src/app-server/portable-resident-lifecycle.ts": "f56d3b29ad9314f116bcabed6932c6bfe4269611b3b0b24c9463ceada034008c",
+    "src/app-server/resident-native-idle.ts": "abe7143d1de0c120093b21a44010b8592369d9611c7338bf16772e847973e438",
+    "src/runtime/discord-runtime/resident-startup.ts": "fa90cb571ae1109f19bcea1b465d6df1d3ef5701619f756b9782f956a6ffbd80",
+    "src/runtime/native-idle-before-worker.ts": "c0517dc1c2e6d7fad6ef4f2da6b391029458087b897a15af0918c8559945e7e4",
+    "src/runtime/native-idle-before.ts": "542823329ceb4708631bee595b4cb18febe249ca4a60dea888efbc046136624c",
+    "test/app-server/owned-idle-gate.test.ts": "5caf7b6715314ed137e33cc68793528e27b2995016e793c9ac1da350c40927ca",
+    "test/runtime/discord-runtime/startup-idle-admission.test.ts": "8ce7179110df5f72c3052f6ab61f19a620e072c85e09eedce91617a193ed40fa",
+    "test/runtime/discord-runtime/startup-native-binding.test.ts": "c6a20ceb2c2114603b71f4de244972ab823c15d58c83c1bd3c2f591b3915c136",
+    "test/runtime/native-idle-before.test.ts": "e24ec3837d51817ee39d6e47a1a57ad8b17a37d59e709c2a96f1599ee1dae33d"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

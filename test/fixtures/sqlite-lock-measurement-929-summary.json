@@ -1,0 +1,1214 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": 929,
+  "scope": "Partial synthetic installed prepared-message G3/G4 evidence; not gate closure, performance PASS, whole-runtime or provider qualification",
+  "profile": {
+    "checkpoint": 929,
+    "baseLocal": "688151fec24bcd87d7efa3ff5941431c16271200",
+    "baseRemote": "807a421723fca4473498dc19f6b6830477cfca2b",
+    "baseTree": "6896e236e165c9e5c7ad8c7fc1c778f5a2641ab6",
+    "node": "24.21.0",
+    "typescript": "7.0.2",
+    "sourceGraphSha256": "778612e3f4aab25678d6a56b48425f4a174c26bb95b7b55b13d9759a3f80fa64",
+    "sourceFiles": 631,
+    "emittedGraphSha256": "8b351bbd1173c6bc0bdb79d924a7230f7da1bb9c5d924743144bc64980bb7f6e",
+    "emittedModules": 631,
+    "runnerSha256": "c160077b3528f669e3705151af97dc4a4034742cae342b321fa4d52121e3b322",
+    "compilerActualGraphAudited": true,
+    "protectedExcluded": true,
+    "nativeRead913Excluded": true,
+    "reservedWindowsExcluded": true,
+    "profileSha256": "6eeedf3c0378ec349958eee94648c21cdae18f35c12cf785332d75ff675b377d"
+  },
+  "plan": {
+    "checkpoint": 929,
+    "command": "!qa buttons",
+    "ids": [
+      "9007199254740993",
+      "9007199254740994",
+      "9007199254740995",
+      "9007199254740996",
+      "9007199254740997",
+      "9007199254740998",
+      "9007199254740999",
+      "9007199254741000",
+      "9007199254741001"
+    ],
+    "unique": 9,
+    "handlerInvocations": 13,
+    "journal": {
+      "Admit": 13,
+      "Begin": 9,
+      "Result": 9,
+      "Confirm": 5,
+      "Hold": 4
+    },
+    "totalJournal": 40,
+    "faults": [
+      "lock",
+      "lock",
+      "lock",
+      "ack-loss"
+    ],
+    "limits": {
+      "nativeMs": 5000,
+      "lockReleaseMs": 6500,
+      "exitReleaseMs": 7500,
+      "conditionMs": 15000,
+      "wholeMs": 120000,
+      "maxProbes": 6000,
+      "maxEvents": 20000,
+      "probePeriodMs": 25,
+      "maxFaults": 1,
+      "maxLockHolders": 1,
+      "maxProbers": 1
+    },
+    "interpretation": "Partial synthetic G3/G4 evidence only; no performance/full qualification"
+  },
+  "independentPreRunReview": {
+    "sourceAndEmittedHashesVerified": true,
+    "actualCompilerProjectListVerified": true,
+    "finalFrozenCandidateApprovedBeforeRun": true
+  },
+  "preservedFailedFirstCandidate": {
+    "profile": {
+      "checkpoint": 929,
+      "baseLocal": "688151fec24bcd87d7efa3ff5941431c16271200",
+      "baseRemote": "807a421723fca4473498dc19f6b6830477cfca2b",
+      "baseTree": "6896e236e165c9e5c7ad8c7fc1c778f5a2641ab6",
+      "node": "24.21.0",
+      "typescript": "7.0.2",
+      "sourceGraphSha256": "28652dd9fb353f5528d5fdba3acb257931e7292d823c93722857679af5e040bf",
+      "sourceFiles": 631,
+      "emittedGraphSha256": "8d2228b2a870748b3470d5431078f9b1bd1645be88adef6d698c452d3c2ae05c",
+      "emittedModules": 631,
+      "runnerSha256": "77c320cb1a685b6419b9ba0a7bf2649d32c29aee34eaaa3446403443e8b729e7",
+      "compilerActualGraphAudited": true,
+      "protectedExcluded": true,
+      "nativeRead913Excluded": true,
+      "reservedWindowsExcluded": true,
+      "profileSha256": "391ee2e217f132c7304ed2227a69cdc41aa8eaf0d2c2d7f08abbf70f5ac700a1"
+    },
+    "command": "!qa_buttons",
+    "failure": "Unsupported prefix spelling; qa_buttons is slash-only. Correct installed prefix is !qa buttons.",
+    "faultsReached": 0,
+    "handlerInvocations": 1,
+    "journal": {
+      "Admit": 1,
+      "Hold": 1
+    },
+    "runtimeReport": "unknown prefix command: !qa_buttons",
+    "probeAccounting": {
+      "planned": 15,
+      "sent": 15,
+      "main": 14,
+      "acknowledged": 14,
+      "failures": 1
+    },
+    "cleanup": {
+      "debt": [],
+      "fixtureRetained": false,
+      "ownedConstructed": 5,
+      "ownedExited": 5,
+      "finalUsage": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      }
+    },
+    "fullPrivateReportSha256": "8c039a46d47bf0c2ed815d06c79c97697375326976cee5f6344b772da25b955a",
+    "corrections": [
+      "Source-supported !qa buttons plus pure prefix/message-plan preflight",
+      "Freeze probe cutoff and join prior ACKs through FIFO stop handshake",
+      "Exclusive-create logs preserve earlier executions"
+    ],
+    "countsAndDeadlinesRelaxed": false
+  },
+  "author": {
+    "status": "passed",
+    "fullPrivateReportSha256": "c8f0cb984d034950788b8ff67cdf6b9eb639e0317ba93e8634904cd00de7e74f",
+    "environment": {
+      "node": "v24.21.0",
+      "sqlite": "3.53.4",
+      "busyTimeout": {
+        "timeout": 5000
+      },
+      "journalMode": {
+        "journal_mode": "delete"
+      },
+      "synchronous": {
+        "synchronous": 2
+      },
+      "foreignKeys": {
+        "foreign_keys": 0
+      }
+    },
+    "durationMs": 35824.427197,
+    "handlerInvocations": 13,
+    "uniqueOriginalIds": 9,
+    "journalSubmissionCounts": {
+      "Admit": 13,
+      "Begin": 9,
+      "Result": 9,
+      "Confirm": 5,
+      "Hold": 4
+    },
+    "journalSubmissions": 40,
+    "handlerObservations": [
+      {
+        "id": "9007199254740993",
+        "label": "baseline",
+        "semanticOutcome": "confirmed-success",
+        "handlerFulfilled": true,
+        "plannedMs": 149.51936,
+        "sentMs": 149.672887,
+        "mainMs": 149.740053,
+        "settledMs": 718.936586,
+        "sentToHandlerSettlementMs": 569.263699
+      },
+      {
+        "id": "9007199254740994",
+        "label": "lock-1",
+        "semanticOutcome": "held-unconfirmed",
+        "handlerFulfilled": true,
+        "plannedMs": 721.317624,
+        "sentMs": 721.441942,
+        "mainMs": 721.495452,
+        "settledMs": 8702.817274,
+        "sentToHandlerSettlementMs": 7981.375332
+      },
+      {
+        "id": "9007199254740994",
+        "label": "lock-duplicate-1",
+        "semanticOutcome": "duplicate-observation",
+        "handlerFulfilled": true,
+        "plannedMs": 8705.559727,
+        "sentMs": 8705.726508,
+        "mainMs": 8705.757345,
+        "settledMs": 8946.571776,
+        "sentToHandlerSettlementMs": 240.845268
+      },
+      {
+        "id": "9007199254740995",
+        "label": "recovery-1",
+        "semanticOutcome": "confirmed-success",
+        "handlerFulfilled": true,
+        "plannedMs": 8948.504659,
+        "sentMs": 8948.602601,
+        "mainMs": 8948.666963,
+        "settledMs": 9468.74882,
+        "sentToHandlerSettlementMs": 520.146219
+      },
+      {
+        "id": "9007199254740996",
+        "label": "lock-2",
+        "semanticOutcome": "held-unconfirmed",
+        "handlerFulfilled": true,
+        "plannedMs": 9470.720542,
+        "sentMs": 9470.843136,
+        "mainMs": 9470.887734,
+        "settledMs": 17450.420203,
+        "sentToHandlerSettlementMs": 7979.577067
+      },
+      {
+        "id": "9007199254740996",
+        "label": "lock-duplicate-2",
+        "semanticOutcome": "duplicate-observation",
+        "handlerFulfilled": true,
+        "plannedMs": 17452.285203,
+        "sentMs": 17452.436782,
+        "mainMs": 17452.472906,
+        "settledMs": 17717.491873,
+        "sentToHandlerSettlementMs": 265.055091
+      },
+      {
+        "id": "9007199254740997",
+        "label": "recovery-2",
+        "semanticOutcome": "confirmed-success",
+        "handlerFulfilled": true,
+        "plannedMs": 17719.63987,
+        "sentMs": 17719.806972,
+        "mainMs": 17719.851799,
+        "settledMs": 18260.585171,
+        "sentToHandlerSettlementMs": 540.778199
+      },
+      {
+        "id": "9007199254740998",
+        "label": "lock-3",
+        "semanticOutcome": "held-unconfirmed",
+        "handlerFulfilled": true,
+        "plannedMs": 18262.527508,
+        "sentMs": 18262.657184,
+        "mainMs": 18262.700449,
+        "settledMs": 26297.601325,
+        "sentToHandlerSettlementMs": 8034.944141
+      },
+      {
+        "id": "9007199254740998",
+        "label": "lock-duplicate-3",
+        "semanticOutcome": "duplicate-observation",
+        "handlerFulfilled": true,
+        "plannedMs": 26299.406996,
+        "sentMs": 26299.613853,
+        "mainMs": 26299.688611,
+        "settledMs": 26547.447552,
+        "sentToHandlerSettlementMs": 247.833699
+      },
+      {
+        "id": "9007199254740999",
+        "label": "recovery-3",
+        "semanticOutcome": "confirmed-success",
+        "handlerFulfilled": true,
+        "plannedMs": 26549.631203,
+        "sentMs": 26549.693848,
+        "mainMs": 26549.717513,
+        "settledMs": 27105.109103,
+        "sentToHandlerSettlementMs": 555.415255
+      },
+      {
+        "id": "9007199254741000",
+        "label": "ack-loss-4",
+        "semanticOutcome": "held-unconfirmed",
+        "handlerFulfilled": true,
+        "plannedMs": 27107.315218,
+        "sentMs": 27107.404257,
+        "mainMs": 27107.444223,
+        "settledMs": 35045.705333,
+        "sentToHandlerSettlementMs": 7938.301076
+      },
+      {
+        "id": "9007199254741000",
+        "label": "ack-loss-duplicate-4",
+        "semanticOutcome": "duplicate-observation",
+        "handlerFulfilled": true,
+        "plannedMs": 35047.439046,
+        "sentMs": 35047.614931,
+        "mainMs": 35047.674831,
+        "settledMs": 35297.063957,
+        "sentToHandlerSettlementMs": 249.449026
+      },
+      {
+        "id": "9007199254741001",
+        "label": "recovery-4",
+        "semanticOutcome": "confirmed-success",
+        "handlerFulfilled": true,
+        "plannedMs": 35298.885702,
+        "sentMs": 35299.044356,
+        "mainMs": 35299.100025,
+        "settledMs": 35804.148346,
+        "sentToHandlerSettlementMs": 505.10399
+      }
+    ],
+    "handlerSentToSettlementMs": {
+      "all-including-faults": {
+        "count": 13,
+        "min": 240.845268,
+        "p50": 540.778199,
+        "p95": 8034.944141,
+        "max": 8034.944141
+      },
+      "confirmed-success": {
+        "count": 5,
+        "min": 505.10399,
+        "p50": 540.778199,
+        "p95": 569.263699,
+        "max": 569.263699
+      },
+      "held-unconfirmed": {
+        "count": 4,
+        "min": 7938.301076,
+        "p50": 7979.577067,
+        "p95": 8034.944141,
+        "max": 8034.944141
+      },
+      "duplicate-observation": {
+        "count": 4,
+        "min": 240.845268,
+        "p50": 247.833699,
+        "p95": 265.055091,
+        "max": 265.055091
+      }
+    },
+    "persistedOutcomes": [
+      {
+        "id": "9007199254740993",
+        "label": "baseline",
+        "state": "completed",
+        "confirmed": true,
+        "actionPosts": 1,
+        "errorPosts": 0,
+        "holdNotices": 0
+      },
+      {
+        "id": "9007199254740994",
+        "mode": "lock",
+        "state": "held",
+        "phase": "processing",
+        "confirmed": false,
+        "resultPersisted": false,
+        "actualResult": null,
+        "actionPosts": 0,
+        "errorPosts": 1,
+        "holdNotices": 1,
+        "duplicateAdmitOnly": true
+      },
+      {
+        "id": "9007199254740995",
+        "label": "recovery-1",
+        "state": "completed",
+        "confirmed": true,
+        "actionPosts": 1,
+        "errorPosts": 0,
+        "holdNotices": 0
+      },
+      {
+        "id": "9007199254740996",
+        "mode": "lock",
+        "state": "held",
+        "phase": "processing",
+        "confirmed": false,
+        "resultPersisted": false,
+        "actualResult": null,
+        "actionPosts": 0,
+        "errorPosts": 1,
+        "holdNotices": 1,
+        "duplicateAdmitOnly": true
+      },
+      {
+        "id": "9007199254740997",
+        "label": "recovery-2",
+        "state": "completed",
+        "confirmed": true,
+        "actionPosts": 1,
+        "errorPosts": 0,
+        "holdNotices": 0
+      },
+      {
+        "id": "9007199254740998",
+        "mode": "lock",
+        "state": "held",
+        "phase": "processing",
+        "confirmed": false,
+        "resultPersisted": false,
+        "actualResult": null,
+        "actionPosts": 0,
+        "errorPosts": 1,
+        "holdNotices": 1,
+        "duplicateAdmitOnly": true
+      },
+      {
+        "id": "9007199254740999",
+        "label": "recovery-3",
+        "state": "completed",
+        "confirmed": true,
+        "actionPosts": 1,
+        "errorPosts": 0,
+        "holdNotices": 0
+      },
+      {
+        "id": "9007199254741000",
+        "mode": "ack-loss",
+        "state": "held",
+        "phase": "result_recorded",
+        "confirmed": false,
+        "resultPersisted": true,
+        "actualResult": {
+          "response": "Rust button QA contracts are enabled: busy, approval, input, one-use claim, and retry release.",
+          "waits_for_final": false
+        },
+        "actionPosts": 0,
+        "errorPosts": 1,
+        "holdNotices": 1,
+        "duplicateAdmitOnly": true
+      },
+      {
+        "id": "9007199254741001",
+        "label": "recovery-4",
+        "state": "completed",
+        "confirmed": true,
+        "actionPosts": 1,
+        "errorPosts": 0,
+        "holdNotices": 0
+      }
+    ],
+    "faults": [
+      {
+        "id": "message:9007199254740994",
+        "mode": "lock",
+        "forwardMs": 1096.369701,
+        "actualNativeTimeoutDelayMs": 5000,
+        "lowerTimerFiredMs": 6097.353127,
+        "preExitObservation": {
+          "control": 1,
+          "handlerSettled": false,
+          "atMs": 6097.544725
+        },
+        "nativeRejectionAfterJoin": "OwnedWorkerTimeoutError",
+        "actualConnection": {
+          "sqlite": "3.53.4",
+          "busyTimeout": {
+            "timeout": 5000
+          },
+          "journalMode": {
+            "journal_mode": "delete"
+          },
+          "synchronous": {
+            "synchronous": 2
+          },
+          "foreignKeys": {
+            "foreign_keys": 0
+          }
+        },
+        "sqlite": {
+          "beginCalls": 1,
+          "beginStartMs": 1184.464483,
+          "beginEndMs": 6192.311842,
+          "callDurationMs": 5007.847359,
+          "outcome": "SQLITE_BUSY"
+        },
+        "ack": {
+          "attempts": 1,
+          "ok": false,
+          "dropped": false,
+          "atMs": 6192.923474
+        },
+        "moduleCompleteMs": 6193.0201,
+        "actualExitMs": 8598.864083,
+        "postModuleExitRetentionMs": 2405.843983,
+        "lowerTimeoutToExitMs": 2501.510956,
+        "lockReleaseMs": 7597.781195,
+        "lockReleaseReason": "anchored-release",
+        "realSqliteCallProbeWindow": {
+          "startMs": 1184.464483,
+          "endMs": 6192.311842,
+          "observedProbes": 200,
+          "acknowledgedProbes": 200,
+          "sentToMainMs": {
+            "count": 200,
+            "min": 0.084202,
+            "p50": 0.117477,
+            "p95": 0.195575,
+            "max": 0.313442
+          },
+          "boundarySamples": [
+            {
+              "sequence": 42,
+              "failure": null,
+              "plannedMs": 1198.881674,
+              "sentMs": 1199.587834,
+              "mainMs": 1199.692381,
+              "ackMs": 1199.765632
+            },
+            {
+              "sequence": 43,
+              "failure": null,
+              "plannedMs": 1223.881674,
+              "sentMs": 1224.893741,
+              "mainMs": 1224.995804,
+              "ackMs": 1225.064859
+            },
+            {
+              "sequence": 240,
+              "failure": null,
+              "plannedMs": 6148.881674,
+              "sentMs": 6148.532211,
+              "mainMs": 6148.748471,
+              "ackMs": 6148.826084
+            },
+            {
+              "sequence": 241,
+              "failure": null,
+              "plannedMs": 6173.881674,
+              "sentMs": 6174.975832,
+              "mainMs": 6175.165007,
+              "ackMs": 6175.251938
+            }
+          ]
+        },
+        "artificialExitRetentionProbeWindow": {
+          "startMs": 6193.0201,
+          "endMs": 8598.864083,
+          "observedProbes": 96,
+          "acknowledgedProbes": 96,
+          "sentToMainMs": {
+            "count": 96,
+            "min": 0.074673,
+            "p50": 0.178703,
+            "p95": 0.299746,
+            "max": 1.306624
+          },
+          "boundarySamples": [
+            {
+              "sequence": 242,
+              "failure": null,
+              "plannedMs": 6198.881674,
+              "sentMs": 6198.410389,
+              "mainMs": 6198.544485,
+              "ackMs": 6198.628558
+            },
+            {
+              "sequence": 243,
+              "failure": null,
+              "plannedMs": 6223.881674,
+              "sentMs": 6224.786298,
+              "mainMs": 6225.086044,
+              "ackMs": 6225.171098
+            },
+            {
+              "sequence": 336,
+              "failure": null,
+              "plannedMs": 8548.881674,
+              "sentMs": 8550.106763,
+              "mainMs": 8550.363351,
+              "ackMs": 8550.46594
+            },
+            {
+              "sequence": 337,
+              "failure": null,
+              "plannedMs": 8573.881674,
+              "sentMs": 8574.660244,
+              "mainMs": 8574.851784,
+              "ackMs": 8574.936461
+            }
+          ]
+        }
+      },
+      {
+        "id": "message:9007199254740996",
+        "mode": "lock",
+        "forwardMs": 9838.977548,
+        "actualNativeTimeoutDelayMs": 5000,
+        "lowerTimerFiredMs": 14840.144019,
+        "preExitObservation": {
+          "control": 1,
+          "handlerSettled": false,
+          "atMs": 14840.244681
+        },
+        "nativeRejectionAfterJoin": "OwnedWorkerTimeoutError",
+        "actualConnection": {
+          "sqlite": "3.53.4",
+          "busyTimeout": {
+            "timeout": 5000
+          },
+          "journalMode": {
+            "journal_mode": "delete"
+          },
+          "synchronous": {
+            "synchronous": 2
+          },
+          "foreignKeys": {
+            "foreign_keys": 0
+          }
+        },
+        "sqlite": {
+          "beginCalls": 1,
+          "beginStartMs": 9923.580613,
+          "beginEndMs": 14931.354491,
+          "callDurationMs": 5007.773878,
+          "outcome": "SQLITE_BUSY"
+        },
+        "ack": {
+          "attempts": 1,
+          "ok": false,
+          "dropped": false,
+          "atMs": 14931.942787
+        },
+        "moduleCompleteMs": 14932.030019,
+        "actualExitMs": 17341.108149,
+        "postModuleExitRetentionMs": 2409.07813,
+        "lowerTimeoutToExitMs": 2500.96413,
+        "lockReleaseMs": 16339.65966,
+        "lockReleaseReason": "anchored-release",
+        "realSqliteCallProbeWindow": {
+          "startMs": 9923.580613,
+          "endMs": 14931.354491,
+          "observedProbes": 201,
+          "acknowledgedProbes": 201,
+          "sentToMainMs": {
+            "count": 201,
+            "min": 0.073732,
+            "p50": 0.103556,
+            "p95": 0.173502,
+            "max": 0.471536
+          },
+          "boundarySamples": [
+            {
+              "sequence": 391,
+              "failure": null,
+              "plannedMs": 9923.881674,
+              "sentMs": 9924.770972,
+              "mainMs": 9924.868769,
+              "ackMs": 9924.941949
+            },
+            {
+              "sequence": 392,
+              "failure": null,
+              "plannedMs": 9948.881674,
+              "sentMs": 9950.053538,
+              "mainMs": 9950.135677,
+              "ackMs": 9950.201471
+            },
+            {
+              "sequence": 590,
+              "failure": null,
+              "plannedMs": 14898.881674,
+              "sentMs": 14899.412979,
+              "mainMs": 14899.549455,
+              "ackMs": 14899.610737
+            },
+            {
+              "sequence": 591,
+              "failure": null,
+              "plannedMs": 14923.881674,
+              "sentMs": 14924.760459,
+              "mainMs": 14924.901396,
+              "ackMs": 14924.966088
+            }
+          ]
+        },
+        "artificialExitRetentionProbeWindow": {
+          "startMs": 14932.030019,
+          "endMs": 17341.108149,
+          "observedProbes": 96,
+          "acknowledgedProbes": 96,
+          "sentToMainMs": {
+            "count": 96,
+            "min": 0.08234,
+            "p50": 0.123471,
+            "p95": 0.185239,
+            "max": 0.414891
+          },
+          "boundarySamples": [
+            {
+              "sequence": 592,
+              "failure": null,
+              "plannedMs": 14948.881674,
+              "sentMs": 14950.08257,
+              "mainMs": 14950.196702,
+              "ackMs": 14950.260588
+            },
+            {
+              "sequence": 593,
+              "failure": null,
+              "plannedMs": 14973.881674,
+              "sentMs": 14973.376655,
+              "mainMs": 14973.492239,
+              "ackMs": 14973.551558
+            },
+            {
+              "sequence": 686,
+              "failure": null,
+              "plannedMs": 17298.881674,
+              "sentMs": 17299.749019,
+              "mainMs": 17299.864163,
+              "ackMs": 17299.925926
+            },
+            {
+              "sequence": 687,
+              "failure": null,
+              "plannedMs": 17323.881674,
+              "sentMs": 17325.05168,
+              "mainMs": 17325.174606,
+              "ackMs": 17325.248206
+            }
+          ]
+        }
+      },
+      {
+        "id": "message:9007199254740998",
+        "mode": "lock",
+        "forwardMs": 18685.23279,
+        "actualNativeTimeoutDelayMs": 5000,
+        "lowerTimerFiredMs": 23685.640229,
+        "preExitObservation": {
+          "control": 1,
+          "handlerSettled": false,
+          "atMs": 23685.731326
+        },
+        "nativeRejectionAfterJoin": "OwnedWorkerTimeoutError",
+        "actualConnection": {
+          "sqlite": "3.53.4",
+          "busyTimeout": {
+            "timeout": 5000
+          },
+          "journalMode": {
+            "journal_mode": "delete"
+          },
+          "synchronous": {
+            "synchronous": 2
+          },
+          "foreignKeys": {
+            "foreign_keys": 0
+          }
+        },
+        "sqlite": {
+          "beginCalls": 1,
+          "beginStartMs": 18774.473798,
+          "beginEndMs": 23782.303514,
+          "callDurationMs": 5007.829716,
+          "outcome": "SQLITE_BUSY"
+        },
+        "ack": {
+          "attempts": 1,
+          "ok": false,
+          "dropped": false,
+          "atMs": 23782.923348
+        },
+        "moduleCompleteMs": 23783.003469,
+        "actualExitMs": 26187.359537,
+        "postModuleExitRetentionMs": 2404.356068,
+        "lowerTimeoutToExitMs": 2501.719308,
+        "lockReleaseMs": 25186.726645,
+        "lockReleaseReason": "anchored-release",
+        "realSqliteCallProbeWindow": {
+          "startMs": 18774.473798,
+          "endMs": 23782.303514,
+          "observedProbes": 200,
+          "acknowledgedProbes": 200,
+          "sentToMainMs": {
+            "count": 200,
+            "min": 0.071769,
+            "p50": 0.108904,
+            "p95": 0.165946,
+            "max": 1.480021
+          },
+          "boundarySamples": [
+            {
+              "sequence": 746,
+              "failure": null,
+              "plannedMs": 18798.881674,
+              "sentMs": 18799.485548,
+              "mainMs": 18799.602344,
+              "ackMs": 18799.671429
+            },
+            {
+              "sequence": 747,
+              "failure": null,
+              "plannedMs": 18823.881674,
+              "sentMs": 18824.7937,
+              "mainMs": 18824.910877,
+              "ackMs": 18825.00616
+            },
+            {
+              "sequence": 944,
+              "failure": null,
+              "plannedMs": 23748.881674,
+              "sentMs": 23750.106792,
+              "mainMs": 23750.254405,
+              "ackMs": 23750.425092
+            },
+            {
+              "sequence": 945,
+              "failure": null,
+              "plannedMs": 23773.881674,
+              "sentMs": 23773.533477,
+              "mainMs": 23773.652807,
+              "ackMs": 23773.713559
+            }
+          ]
+        },
+        "artificialExitRetentionProbeWindow": {
+          "startMs": 23783.003469,
+          "endMs": 26187.359537,
+          "observedProbes": 96,
+          "acknowledgedProbes": 96,
+          "sentToMainMs": {
+            "count": 96,
+            "min": 0.093756,
+            "p50": 0.167242,
+            "p95": 0.241544,
+            "max": 0.317243
+          },
+          "boundarySamples": [
+            {
+              "sequence": 946,
+              "failure": null,
+              "plannedMs": 23798.881674,
+              "sentMs": 23799.853883,
+              "mainMs": 23799.966402,
+              "ackMs": 23800.07103
+            },
+            {
+              "sequence": 947,
+              "failure": null,
+              "plannedMs": 23823.881674,
+              "sentMs": 23824.237991,
+              "mainMs": 23824.350049,
+              "ackMs": 23824.402999
+            },
+            {
+              "sequence": 1040,
+              "failure": null,
+              "plannedMs": 26148.881674,
+              "sentMs": 26149.753819,
+              "mainMs": 26149.924431,
+              "ackMs": 26149.995463
+            },
+            {
+              "sequence": 1041,
+              "failure": null,
+              "plannedMs": 26173.881674,
+              "sentMs": 26175.129672,
+              "mainMs": 26175.309197,
+              "ackMs": 26175.377696
+            }
+          ]
+        }
+      },
+      {
+        "id": "message:9007199254741000",
+        "mode": "ack-loss",
+        "forwardMs": 27450.939337,
+        "actualNativeTimeoutDelayMs": 5000,
+        "lowerTimerFiredMs": 32451.341355,
+        "preExitObservation": {
+          "control": 1,
+          "handlerSettled": false,
+          "atMs": 32451.433173
+        },
+        "nativeRejectionAfterJoin": "OwnedWorkerTimeoutError",
+        "actualConnection": {
+          "sqlite": "3.53.4",
+          "busyTimeout": {
+            "timeout": 5000
+          },
+          "journalMode": {
+            "journal_mode": "delete"
+          },
+          "synchronous": {
+            "synchronous": 2
+          },
+          "foreignKeys": {
+            "foreign_keys": 0
+          }
+        },
+        "sqlite": {
+          "beginCalls": 1,
+          "beginStartMs": 27533.230222,
+          "beginEndMs": 27533.244243,
+          "callDurationMs": 0.014021,
+          "outcome": "succeeded"
+        },
+        "ack": {
+          "attempts": 1,
+          "ok": true,
+          "dropped": true,
+          "atMs": 27540.125864
+        },
+        "moduleCompleteMs": 27540.300076,
+        "actualExitMs": 34952.98731,
+        "postModuleExitRetentionMs": 7412.687234,
+        "lowerTimeoutToExitMs": 2501.645955,
+        "lockReleaseMs": null,
+        "lockReleaseReason": null,
+        "realSqliteCallProbeWindow": {
+          "startMs": 27533.230222,
+          "endMs": 27533.244243,
+          "observedProbes": 0,
+          "acknowledgedProbes": 0,
+          "sentToMainMs": {
+            "count": 0,
+            "min": null,
+            "p50": null,
+            "p95": null,
+            "max": null
+          },
+          "boundarySamples": []
+        },
+        "artificialExitRetentionProbeWindow": {
+          "startMs": 27540.300076,
+          "endMs": 34952.98731,
+          "observedProbes": 297,
+          "acknowledgedProbes": 297,
+          "sentToMainMs": {
+            "count": 297,
+            "min": 0.073451,
+            "p50": 0.12578,
+            "p95": 0.202991,
+            "max": 1.646721
+          },
+          "boundarySamples": [
+            {
+              "sequence": 1096,
+              "failure": null,
+              "plannedMs": 27548.881674,
+              "sentMs": 27549.862757,
+              "mainMs": 27549.992403,
+              "ackMs": 27550.057621
+            },
+            {
+              "sequence": 1097,
+              "failure": null,
+              "plannedMs": 27573.881674,
+              "sentMs": 27574.193055,
+              "mainMs": 27574.355038,
+              "ackMs": 27574.419656
+            },
+            {
+              "sequence": 1391,
+              "failure": null,
+              "plannedMs": 34923.881674,
+              "sentMs": 34924.774708,
+              "mainMs": 34924.91235,
+              "ackMs": 34924.989872
+            },
+            {
+              "sequence": 1392,
+              "failure": null,
+              "plannedMs": 34948.881674,
+              "sentMs": 34950.13103,
+              "mainMs": 34950.309174,
+              "ackMs": 34950.372975
+            }
+          ]
+        }
+      }
+    ],
+    "workerConstructionCounts": {
+      "probe": 1,
+      "native": 66,
+      "lock-holder": 3
+    },
+    "workerModuleConstructionCounts": {
+      "test/helpers/sqlite-lock-probe-worker.js": 1,
+      "src/runtime/discord-runtime/mirror-policy-worker.js": 13,
+      "src/runtime/message-worker/native-classification-worker.js": 13,
+      "src/runtime/message-worker/native-journal-worker.js": 40,
+      "test/helpers/sqlite-lock-holder-worker.js": 3
+    },
+    "exactConstructedAndExitedLifetimePeak": {
+      "all": 3,
+      "probe": 1,
+      "native": 1,
+      "lock-holder": 1
+    },
+    "sampledLaneMaximum": {
+      "Background": 1,
+      "Control": 1,
+      "Observation": 0,
+      "Discovery": 0,
+      "Maintenance": 0
+    },
+    "workerAccountingNote": "Constructor/actual exit totals and observed Worker lifetime peaks are exact for this fixture; lane maxima are 25-ms samples, not exact slot peaks or submission totals.",
+    "probeAccounting": {
+      "planned": 1426,
+      "sent": 1426,
+      "main": 1426,
+      "acknowledged": 1426,
+      "failures": 0
+    },
+    "probeTimingMs": {
+      "plannedToSent": {
+        "count": 1426,
+        "min": -0.669131,
+        "p50": 0.789795,
+        "p95": 1.24737,
+        "max": 3.531817
+      },
+      "sentToMain": {
+        "count": 1426,
+        "min": 0.040215,
+        "p50": 0.122059,
+        "p95": 0.219241,
+        "max": 5.951453
+      },
+      "plannedToMain": {
+        "count": 1426,
+        "min": -0.500808,
+        "p50": 0.929658,
+        "p95": 1.435198,
+        "max": 6.854165
+      },
+      "sentToAck": {
+        "count": 1426,
+        "min": 0.078839,
+        "p50": 0.195855,
+        "p95": 0.337945,
+        "max": 6.057423
+      }
+    },
+    "probeBoundarySamples": [
+      {
+        "sequence": 1,
+        "failure": null,
+        "plannedMs": 173.881674,
+        "sentMs": 173.941851,
+        "mainMs": 174.10417,
+        "ackMs": 174.289915
+      },
+      {
+        "sequence": 2,
+        "failure": null,
+        "plannedMs": 198.881674,
+        "sentMs": 198.579411,
+        "mainMs": 198.72847,
+        "ackMs": 198.841776
+      },
+      {
+        "sequence": 3,
+        "failure": null,
+        "plannedMs": 223.881674,
+        "sentMs": 225.027989,
+        "mainMs": 225.241336,
+        "ackMs": 225.402624
+      },
+      {
+        "sequence": 1424,
+        "failure": null,
+        "plannedMs": 35748.881674,
+        "sentMs": 35749.765755,
+        "mainMs": 35749.89156,
+        "ackMs": 35749.959727
+      },
+      {
+        "sequence": 1425,
+        "failure": null,
+        "plannedMs": 35773.881674,
+        "sentMs": 35775.078477,
+        "mainMs": 35775.199489,
+        "ackMs": 35775.262895
+      },
+      {
+        "sequence": 1426,
+        "failure": null,
+        "plannedMs": 35798.881674,
+        "sentMs": 35798.374395,
+        "mainMs": 35798.508006,
+        "ackMs": 35798.571392
+      }
+    ],
+    "probeFailures": [],
+    "probeNote": "Signed planned scheduling skew retained, including early timer observations; distributions use all observed samples and do not establish a latency/performance threshold. Boundary samples are explicitly sampled.",
+    "cleanup": {
+      "debt": [],
+      "fixtureRetained": false,
+      "ownedConstructed": 70,
+      "ownedExited": 70,
+      "finalUsage": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      }
+    }
+  },
+  "independentRerun": {
+    "status": "passed",
+    "sameFrozenSourceEmittedAndProfileHashes": true,
+    "fullPrivateReportSha256": "374b8a62b11a4b138c99e0349112433ee385971034b301e39474e2d20a1a57e7",
+    "environment": {
+      "node": "v24.21.0",
+      "sqlite": "3.53.4",
+      "busyTimeout": {
+        "timeout": 5000
+      },
+      "journalMode": {
+        "journal_mode": "delete"
+      },
+      "synchronous": {
+        "synchronous": 2
+      },
+      "foreignKeys": {
+        "foreign_keys": 0
+      }
+    },
+    "handlerInvocations": 13,
+    "uniqueOriginalIds": 9,
+    "journalSubmissionCounts": {
+      "Admit": 13,
+      "Begin": 9,
+      "Result": 9,
+      "Confirm": 5,
+      "Hold": 4
+    },
+    "journalSubmissions": 40,
+    "workerCounts": {
+      "native": 66,
+      "lockHolder": 3,
+      "probe": 1
+    },
+    "probeAccounting": {
+      "planned": 1419,
+      "sent": 1419,
+      "main": 1419,
+      "acknowledged": 1419,
+      "failures": 0
+    },
+    "cleanup": {
+      "debt": [],
+      "fixtureRetained": false,
+      "ownedConstructed": 70,
+      "ownedExited": 70,
+      "finalUsage": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      }
+    },
+    "faults": [
+      {
+        "id": "message:9007199254740994",
+        "mode": "lock",
+        "actualNativeTimeoutDelayMs": 5000,
+        "sqliteCallDurationMs": 5007.89874,
+        "sqliteOutcome": "SQLITE_BUSY",
+        "postModuleExitRetentionMs": 2411.608178,
+        "submissionToActualExitMs": 7502.151964,
+        "ackDropped": false,
+        "preExitControl": 1,
+        "preExitHandlerSettled": false
+      },
+      {
+        "id": "message:9007199254740996",
+        "mode": "lock",
+        "actualNativeTimeoutDelayMs": 5000,
+        "sqliteCallDurationMs": 5008.366245,
+        "sqliteOutcome": "SQLITE_BUSY",
+        "postModuleExitRetentionMs": 2407.214823,
+        "submissionToActualExitMs": 7502.131535,
+        "ackDropped": false,
+        "preExitControl": 1,
+        "preExitHandlerSettled": false
+      },
+      {
+        "id": "message:9007199254740998",
+        "mode": "lock",
+        "actualNativeTimeoutDelayMs": 5000,
+        "sqliteCallDurationMs": 5008.799172,
+        "sqliteOutcome": "SQLITE_BUSY",
+        "postModuleExitRetentionMs": 2407.015808,
+        "submissionToActualExitMs": 7501.965644,
+        "ackDropped": false,
+        "preExitControl": 1,
+        "preExitHandlerSettled": false
+      },
+      {
+        "id": "message:9007199254741000",
+        "mode": "ack-loss",
+        "actualNativeTimeoutDelayMs": 5000,
+        "sqliteCallDurationMs": 0.014642,
+        "sqliteOutcome": "succeeded",
+        "postModuleExitRetentionMs": 7397.323318,
+        "submissionToActualExitMs": 7502.301906,
+        "ackDropped": true,
+        "preExitControl": 1,
+        "preExitHandlerSettled": false
+      }
+    ],
+    "timingSamplesNotPooledWithAuthor": true
+  },
+  "limitsAndNonClaims": [
+    "Real SQLite busy wait and artificial post-SQLite native exit retention are distinct",
+    "No native journal/SQLite timeout or production setting change",
+    "No automatic failed-work replay",
+    "Original failed first runtime retained separately; subsequent runs use fresh temporary fixtures",
+    "893 enrollment inactive and final synchronous guards unchanged",
+    "Synchronous action/error receipt leaves remain after lock release",
+    "No provider, live database, UNIX singleton, reserved Windows/G7, matched Rust comparison or full migration qualification"
+  ]
+}

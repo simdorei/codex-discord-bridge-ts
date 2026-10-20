@@ -1,0 +1,76 @@
+{
+  "status": "APPLIED_831_SOURCE_TEST_GRAPH_MATCHES_QUALIFIED_STAGE",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/orphan-cleanup.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-830-orphan-cleanup/files/src/runtime/mirror-sync/orphan-cleanup.ts",
+      "sha256": "3274b454e862fe9577bc2a2bd11d124fd766e80af1b50ee74ae23daa28da928b"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/orphan-cleanup.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-830-orphan-cleanup/files/test/runtime/mirror-sync/orphan-cleanup.test.ts",
+      "sha256": "268a87fa732377bd86ff469050334d6335560f1d7e187a4f48431c9cae974c38"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-record.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-831-source-reader/files/src/runtime/mirror-sync/source-record.ts",
+      "sha256": "2b76a773d5c30aacb114f73bc4e656d6f4dbd1c2d9d55ca02838858bb7603093"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-scope.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-831-source-reader/files/src/runtime/mirror-sync/source-scope.ts",
+      "sha256": "b8dbdb7632253b3b2d08a9474385d75bada7307d5edb4eb0c430fa46c28f5b46"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-reader.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-831-source-reader/files/src/runtime/mirror-sync/source-reader.ts",
+      "sha256": "c4d20e2b0db6f674830759ca3c7e7b8492d46cbed8c35280ca684f192aabcd4d"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-reader-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-831-source-reader/files/src/runtime/mirror-sync/source-reader-worker.ts",
+      "sha256": "4b235818eaa57d1b34f10b6eadefc17667bc52deca916fb29e696e349defe112"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/source-reader.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-831-source-reader/files/test/runtime/mirror-sync/source-reader.test.ts",
+      "sha256": "2ecaaa65a4e37d4991af87fad61ab4128b30629e076d903589ed537e94d4703c"
+    }
+  ],
+  "beforeSha256": {
+    "src/runtime/mirror-sync/orphan-cleanup.ts": null,
+    "test/runtime/mirror-sync/orphan-cleanup.test.ts": null,
+    "src/runtime/mirror-sync/source-record.ts": null,
+    "src/runtime/mirror-sync/source-scope.ts": "d3325506ba9836666d90fc64fec107e3eee0b1a7ac1b5b0788929942dfd66225",
+    "src/runtime/mirror-sync/source-reader.ts": null,
+    "src/runtime/mirror-sync/source-reader-worker.ts": null,
+    "test/runtime/mirror-sync/source-reader.test.ts": null
+  },
+  "full": {
+    "started": "2026-10-13T18:25:13.485Z",
+    "ended": "2026-10-13T18:42:42.581Z",
+    "exit": 0,
+    "signal": null,
+    "testFiles": 842,
+    "tests": 8584,
+    "passCount": 8584,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "fullLogSha256": "c190f44656a37deaacf8ab799f468c74d5e8a93d6faed7169a7679abc5db15e6",
+  "allSourceTestToolBytesMatchStage": true,
+  "limitations": [
+    "Whole run is isolated-stage evidence, not a second root execution",
+    "832-835 archived cleanup candidates are not applied",
+    "Full BridgeSync dispatch, Windows, production and protected missing redaction test remain unverified"
+  ],
+  "postApply": {
+    "strictBuildExit": 0,
+    "focusedTests": 20,
+    "pass": 20,
+    "fail": 0,
+    "skipped": 0,
+    "logSha256": "afca412694c9c34f34e28467de66746a1a465d9a8a166dc6995b41e380b27a9a"
+  }
+}

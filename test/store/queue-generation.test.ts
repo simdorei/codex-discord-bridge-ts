@@ -15,7 +15,7 @@ import { openInitialized } from "../../src/store/owned-driver.ts";
 import {
   allJobs,
   selectJob,
-  StoreIntegrityError,
+  StoreJsonError,
   InvalidQueueStateError,
   QUARANTINED_TURN_PREFIX,
   QUARANTINED_ERROR_PREFIX,
@@ -805,7 +805,7 @@ describe("queue-generation test suite", () => {
   });
 
   describe("Suite 9: Decoding failure and transaction rollback", () => {
-    it("throws StoreIntegrityError and rolls back target changes when an unrelated row has malformed baseline_turn_ids", async () => {
+    it("throws StoreJsonError and rolls back target changes when an unrelated row has malformed baseline_turn_ids", async () => {
       const dbPath = await createTestDb();
       const setupDb = trackDb(await openInitialized(dbPath));
 
@@ -830,10 +830,10 @@ describe("queue-generation test suite", () => {
       setupDb.close();
 
       // In adoptTargetGeneration, allJobs(db) decodes ALL rows before filtering by target.
-      // Since target-B row is malformed, allJobs throws StoreIntegrityError and aborts transaction.
+      // Since target-B row is malformed, allJobs throws StoreJsonError and aborts transaction.
       await assert.rejects(
         adoptTargetGeneration(dbPath, "target-A", 99n),
-        StoreIntegrityError,
+        StoreJsonError,
       );
 
       // Verify on a separate fresh connection that target-A's update was ROLLED BACK
@@ -847,7 +847,7 @@ describe("queue-generation test suite", () => {
       verifyDb.close();
     });
 
-    it("throws StoreIntegrityError and rolls back global adoption when a matching row has malformed baseline_turn_ids", async () => {
+    it("throws StoreJsonError and rolls back global adoption when a matching row has malformed baseline_turn_ids", async () => {
       const dbPath = await createTestDb();
       const setupDb = trackDb(await openInitialized(dbPath));
 
@@ -867,7 +867,7 @@ describe("queue-generation test suite", () => {
       });
       setupDb.close();
 
-      await assert.rejects(adoptGeneration(dbPath, 99n), StoreIntegrityError);
+      await assert.rejects(adoptGeneration(dbPath, 99n), StoreJsonError);
 
       const verifyDb = trackDb(await openInitialized(dbPath));
       const validJob = selectJob(verifyDb, "job-valid-1");

@@ -1,0 +1,68 @@
+{
+  "status": "WIP_NOT_APPLIED",
+  "createdAt": "2026-10-12T17:07:20.976773+00:00",
+  "focused": {
+    "tests": 158,
+    "pass": 158,
+    "fail": 0,
+    "typecheck": 0,
+    "build": 0
+  },
+  "whole": "PENDING",
+  "node": "24.21.0",
+  "candidate": [
+    {
+      "path": "src/codex-state/reference-reader.ts",
+      "sha256": "49d4463d17140fb3961c49165e460a1af0076e3149873429a1fae6f4141b17f8"
+    },
+    {
+      "path": "src/codex-state/reference-worker.ts",
+      "sha256": "a2f5760d203e17012f6d5d60193f1ee283c10aabdb0b5281638b5d9fa222597f"
+    },
+    {
+      "path": "src/codex-state/store.ts",
+      "sha256": "01e9c4f7eb314b0033424e399619ec08140f8ae990a2bcfb9d5ce62e5391948d"
+    },
+    {
+      "path": "src/runtime/action-executor/basic-dispatcher.ts",
+      "sha256": "10355b3f6d31498b7ac5799737cc5fac57dbef0e0d1874f1d700dd6a5f1c932b"
+    },
+    {
+      "path": "src/runtime/action-executor/context-store-native.ts",
+      "sha256": "faf8934f7f9ffb125e4522a3ea623ebd52b0447e9b514d6b04d4ae3724b88f3b"
+    },
+    {
+      "path": "src/runtime/action-executor/context-action.ts",
+      "sha256": "4dc834f46318175fe5c4300b9fa7b02a89c3cfe5f3f50073aea7efdf934e90ed"
+    },
+    {
+      "path": "test/codex-state/limited-thread-store.test.ts",
+      "sha256": "8918254f3b8a3cdc4c4514c660f2f8374da5c4bec765674a7f89d01f8e2217e5"
+    },
+    {
+      "path": "test/codex-state/context-native-reader.test.ts",
+      "sha256": "527850f47467619e5038bd7722e9a1d3880c9f89d1fe2cbd0973875f7120b6be"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "sha256": "c960357b95c4e18ccca3b6a94dd3f62374e15aa9fd2c45d7cc09824261a2963e"
+    },
+    {
+      "path": "test/runtime/action-executor/context-action-native.test.ts",
+      "sha256": "66be2a5060be097dc8ffab0a3e9672514d824655b366ff6af09597b583a0d8ee"
+    }
+  ],
+  "productionBaseline": "0a8901f10b82c35276f3d8ed20e66d8395f53e2c",
+  "limitations": [
+    "No full regression yet",
+    "No Windows/live/24h/performance qualification",
+    "Native bounds may refuse unrestricted source input",
+    "Native query error taxonomy differs from source SQL class"
+  ],
+  "evidenceSha256": {
+    "focused.log": "5711d1d70bef50abec7fcbfaf58bf03004e0a9dfd153c223355705aaaf42ced9",
+    "typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stage-inputs.json": "fbb882fed61606b5b1266d2a03e5ec122fe2e1d63e1f66258351426d9c3e2f81"
+  }
+}

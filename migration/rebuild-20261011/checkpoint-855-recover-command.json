@@ -1,0 +1,39 @@
+{
+  "status": "CONDITIONAL_RECOVER_COMMAND_CONNECTED",
+  "files": [
+    {
+      "path": "src/runtime/action-executor/recover-action.ts",
+      "sha256": "43017c50171204f1d226c2a9d1221c755c941a5b50f9b3becfe9d8045aa67076"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "d954537b53d2beb30a109bd76ab366e4570323c3925fc885192ad2fa8ac18377"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "sha256": "e9f48a0eb1f0a182df8e525c6827de8b4e4d643ed37d938cb01bc0c21a01aa31"
+    }
+  ],
+  "strictExit": 0,
+  "verification": {
+    "initialFocused": 78,
+    "dependentFiles": 9,
+    "dependentPass": 103,
+    "finalGuardFocusedPass": 4,
+    "dependentLogSha256": "ebbfd0364f77cf63e3640b861c939fb720bccc8af8939ebeec9674ecb6ab5921",
+    "finalLogSha256": "b55cadf69149768938ef5c76454d6e353dcd0d5fa705f6a700466e792ece33b0",
+    "fullRun": false,
+    "note": "Dependent103 ran before final absolute-root and signal-type precondition guards. Final strict build and4 affected Recover cases pass. Counts overlap; do not sum."
+  },
+  "scope": [
+    "RuntimeCommandExecutor Recover branch accepts an explicitly configured, database-bound AdmittedRecoverExecutor. Default remains Unsupported before claiming.",
+    "Explicit or Mapped original message custody only. Controller is invoked without target-lock wait. Claim and cancellation are not replayed.",
+    "Actual local gateway-to-native-store-to-mock-controller-to-HTTP path passes while target lock held; repeated event invokes controller once.",
+    "Report confirms dispatched receipt only, not restart or tool readiness."
+  ],
+  "limits": [
+    "No production OS controller/bootstrap configuration supplied; real Windows restart is still unavailable.",
+    "Selected routes remain refused. Native direct-child transport854 is not a process-tree owner.",
+    "No Windows/live/deployment/24hour/full-regression qualification."
+  ]
+}

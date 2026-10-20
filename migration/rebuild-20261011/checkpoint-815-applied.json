@@ -1,0 +1,34 @@
+{
+  "status": "APPLIED_DELETION_GUARD_815",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/delete-guard.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-814-mirror-delete-guard/files/src/runtime/mirror-sync/delete-guard.ts",
+      "sha256": "16158f4a7557956cbeac47f9fc84bda027050f3837f84b63cb509b91c38be237"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/delete-guard.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-815-delete-guard-hardened/files/test/runtime/mirror-sync/delete-guard.test.ts",
+      "sha256": "bbf34f2bd1f576062315fdba6f32f475ba6531699855eef2efd3f9cfb1eafef1"
+    }
+  ],
+  "full": {
+    "tests": 8499,
+    "pass": 8499,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "started": "2026-10-13T12:05:06.552Z",
+    "ended": "2026-10-13T12:21:51.894Z",
+    "exit": 0,
+    "signal": null,
+    "testFiles": 830
+  },
+  "otherSourceTestToolBytesMatchWholeStage": true,
+  "limitations": [
+    "No fullBridgeSync caller/global lock wiring",
+    "No archived-rejected-Steer exception",
+    "No Windows or deployment qualification",
+    "Protected redaction fixture absent, not reconstructed"
+  ]
+}

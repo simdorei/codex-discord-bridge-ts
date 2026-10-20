@@ -1,0 +1,5 @@
+# Native Context store boundary candidate
+
+WIP, not applied. Limited-store762 Codex-state suite105PASS strictTS/build0. Initial763 suite111 with110PASS/1FAIL: public runtime limit=null entered the private probe sentinel and submitted native work. One public u32 guard corrected this; exact same test SHA retained, final111/111PASS strictTS/build0. Original RED/source/logs preserved locally. No full regression or ContextAction wiring yet.
+
+SQL limit precedes selected-subset measurement/decoding in one readonly transaction. Zero means all rows,4096/4MiB adapter overflow refuses whole read. Native existing-only probe performs no schema query; limited inventory complete row decoder and mode/path/limit binding are strict. Existing reference slot reused with6s timeout and actual join. Missing store never creates. Tests distinguish excluded corruption from selected failure, no partial/truncated success, exact order/default/i64, readonly bytes, crossed binding and invalid limits. New Windows profile remains unqualified. Limits do not bound SQLite internal memory/work. Root Context mapping/open-order integration remains next.

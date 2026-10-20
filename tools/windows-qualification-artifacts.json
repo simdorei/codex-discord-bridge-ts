@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "artifactSetId": "checkpoint928",
+  "sourceBasis": {
+    "localCommit": "2172156030eb82cbf472edb8e66b2a2bfbd9e696",
+    "remoteCommit": "04df2dcfacb01c4bc560948049bf732c17dbe615"
+  },
+  "source": {
+    "src/runtime/windows/windows-native.ts": "ceecefa09f6ddb9dd9317953ac19ea4e95afa77f11aa51251a1cfadb2582be1d",
+    "src/runtime/windows/windows-singleton-owner.ts": "b651411a0ec45a4f175f8180be558288c86c7f07984058bd01213832d750f785",
+    "src/runtime/windows/windows-atomic-marker.ts": "d0b57bfe8d508c0b2fa930d21a1ac0ddc431ebdcdd6eff9474c933d14833c22a",
+    "tools/windows-qualification.ts": "aeee21f1be1da4c9d2248bdfecf3c811afaa46eab8af64ab77d7bdbf78cdc1d4"
+  },
+  "emitted": {
+    "src/runtime/windows/windows-native.js": "179cf4749f080996e2c862acc7abffe31f845f08f7fe07583faf6038a18d7430",
+    "src/runtime/windows/windows-singleton-owner.js": "30d52906b4fac6784b2fb40f18a2ba7e2c262d284de74ead98ecff13359e8e75",
+    "src/runtime/windows/windows-atomic-marker.js": "1aa22fa01c88ae8c5ebb45d82b6a85823bfd22e498d4ebe426cb295e34548301",
+    "tools/windows-qualification.js": "6072dccac5d333f860b1d78e4dfaf8df2993d901f874b77b0747acc9a8980486"
+  },
+  "targets": {
+    "win32-x64": {
+      "nodeSha256": "ba4e6d110e8c1592a1ecd390f6b05f3da124b13871a5be62b341a07a853c6c32",
+      "mainArchiveSha512": "XWNI4eyxJJzR2MakPZzR3QeZ06JOklLbxglin0dHhx/qIQCby8lqHs9Acq4Q7CpCKnOrBSj+6b9J5y69wfr2ZA==",
+      "prebuildArchiveSha512": "tLTF17wl4CCwOlo1Tt0NbduwUduDvM6c8JSyearcLu6hpNHQo44RF3rKN2i7UkxwCqXyiudZK0lS421CC/TPZA==",
+      "files": {
+        "node_modules/koffi/package.json": "32348b820c55b8da99c14edd319eb4bc393c26f0bd405201031fd5b94d5c3046",
+        "node_modules/koffi/index.cjs": "a200e15ec168d00cb3155794808a98243051c61dd7f6989c23c57ee220c918b9",
+        "node_modules/koffi/src/koffi/index.cjs": "36c3d1ee2d0bf767c1c1acd9c00c71361496bdfd05c4519d08cab5afcccae170",
+        "node_modules/koffi/src/koffi/src/static.cjs": "522a9d98e271b565de4013910b8c81bb061a34d3460e43fd9a92daab8fbadddc",
+        "node_modules/@koromix/koffi-win32-x64/package.json": "0c190d0c2e35518967a254826e54c19f08e83de7097f47c89a5757e5bf3ec71b",
+        "node_modules/@koromix/koffi-win32-x64/index.js": "f9991ec70a0f775487ffadc2461d69edd1555e3d9bf80de0bbdd2eec7d245c49",
+        "node_modules/@koromix/koffi-win32-x64/win32_x64/koffi.node": "f7af4982457657d2e7ad46acb076614ed7122d6efbdbfbc75f21ec12681fa121"
+      },
+      "entry": "node_modules/koffi/index.cjs",
+      "prebuildEntry": "node_modules/@koromix/koffi-win32-x64/index.js",
+      "binary": "node_modules/@koromix/koffi-win32-x64/win32_x64/koffi.node",
+      "prebuildName": "@koromix/koffi-win32-x64",
+      "forbidden": [
+        "node_modules/koffi/build/koffi/win32_x64/koffi.node"
+      ]
+    },
+    "win32-arm64": {
+      "nodeSha256": "dff59da18b6ffe1bf1ca99e1d2af4906080c481740619f5b5098c0fca28bd9b7",
+      "mainArchiveSha512": "XWNI4eyxJJzR2MakPZzR3QeZ06JOklLbxglin0dHhx/qIQCby8lqHs9Acq4Q7CpCKnOrBSj+6b9J5y69wfr2ZA==",
+      "prebuildArchiveSha512": "eL7gW4D22OBb3fi04s5ElzzNk+gkGEahaTNMB29UDLDeORe+0qIkhccBPovXW3/IRpdt8W7o8X2myUDXlTSYDQ==",
+      "files": {
+        "node_modules/koffi/package.json": "32348b820c55b8da99c14edd319eb4bc393c26f0bd405201031fd5b94d5c3046",
+        "node_modules/koffi/index.cjs": "a200e15ec168d00cb3155794808a98243051c61dd7f6989c23c57ee220c918b9",
+        "node_modules/koffi/src/koffi/index.cjs": "36c3d1ee2d0bf767c1c1acd9c00c71361496bdfd05c4519d08cab5afcccae170",
+        "node_modules/koffi/src/koffi/src/static.cjs": "522a9d98e271b565de4013910b8c81bb061a34d3460e43fd9a92daab8fbadddc",
+        "node_modules/@koromix/koffi-win32-arm64/package.json": "eb945afe5b9a3e5474d42ec9d5087d491c3594a84f7c6eff1b8cc8c749a75c02",
+        "node_modules/@koromix/koffi-win32-arm64/index.js": "09f48691688c734d9e953d7b9c4e570e8ea909ff94ffabb75fc6a99249d8a50f",
+        "node_modules/@koromix/koffi-win32-arm64/win32_arm64/koffi.node": "902e5e1a5d949b8ff361ffd5897f87863e3506747ac701875250988cf930bdf3"
+      },
+      "entry": "node_modules/koffi/index.cjs",
+      "prebuildEntry": "node_modules/@koromix/koffi-win32-arm64/index.js",
+      "binary": "node_modules/@koromix/koffi-win32-arm64/win32_arm64/koffi.node",
+      "prebuildName": "@koromix/koffi-win32-arm64",
+      "forbidden": [
+        "node_modules/koffi/build/koffi/win32_arm64/koffi.node"
+      ]
+    }
+  },
+  "rust": null,
+  "blockers": [
+    "Rust fixture mode and exact source/build/binary identities are absent; Rust interop NOT RUN."
+  ],
+  "provenance": {
+    "koffiMainArchive": "https://registry.npmjs.org/koffi/-/koffi-3.3.3.tgz",
+    "x64PrebuildArchive": "https://registry.npmjs.org/@koromix/koffi-win32-x64/-/koffi-win32-x64-3.3.3.tgz",
+    "arm64PrebuildArchive": "https://registry.npmjs.org/@koromix/koffi-win32-arm64/-/koffi-win32-arm64-3.3.3.tgz",
+    "review": "Independent read-only review verified pinned SHA512 before extracting and hashing member bytes. No install or binary execution.",
+    "node": {
+      "version": "24.21.0",
+      "verifiedDateUtc": "2026-10-16",
+      "checksumUrl": "https://nodejs.org/dist/v24.21.0/SHASUMS256.txt",
+      "clearSignedChecksumUrl": "https://nodejs.org/dist/v24.21.0/SHASUMS256.txt.asc",
+      "detachedSignatureUrl": "https://nodejs.org/dist/v24.21.0/SHASUMS256.txt.sig",
+      "keyringUrl": "https://raw.githubusercontent.com/nodejs/release-keys/481637f813e912c4aa3622d7964ab426c97b8e8d/gpg/pubring.kbx",
+      "signerFingerprint": "5BE8A3F6C8A5C01D106C0AD820B1A390B168D356",
+      "checksumsSha256": "f410428039e2c922a14058df067a4482691c9304a5c01a75847f9f3f2d3307f6",
+      "artifacts": [
+        {
+          "architecture": "x64",
+          "archiveUrl": "https://nodejs.org/dist/v24.21.0/node-v24.21.0-win-x64.zip",
+          "archiveSha256": "158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541",
+          "archiveBytes": 37618919,
+          "archiveSha256MatchesOfficial": true,
+          "innerPath": "node-v24.21.0-win-x64/node.exe",
+          "nodeExeSha256": "ba4e6d110e8c1592a1ecd390f6b05f3da124b13871a5be62b341a07a853c6c32",
+          "nodeExeBytes": 93580104,
+          "nodeExeSha256MatchesOfficialStandaloneEntry": true,
+          "peMachineHex": "0x8664",
+          "peMagicHex": "0x020B",
+          "peHeaderOffset": 120,
+          "nodeExecuted": false
+        },
+        {
+          "architecture": "arm64",
+          "archiveUrl": "https://nodejs.org/dist/v24.21.0/node-v24.21.0-win-arm64.zip",
+          "archiveSha256": "8779b1bde1d39f8d420e3b57aa657b39891af434d3de44a919044cec06785921",
+          "archiveBytes": 33679608,
+          "archiveSha256MatchesOfficial": true,
+          "innerPath": "node-v24.21.0-win-arm64/node.exe",
+          "nodeExeSha256": "dff59da18b6ffe1bf1ca99e1d2af4906080c481740619f5b5098c0fca28bd9b7",
+          "nodeExeBytes": 81881416,
+          "nodeExeSha256MatchesOfficialStandaloneEntry": true,
+          "peMachineHex": "0xAA64",
+          "peMagicHex": "0x020B",
+          "peHeaderOffset": 120,
+          "nodeExecuted": false
+        }
+      ],
+      "limits": [
+        "No downloaded executable was run or installed.",
+        "No Windows device was accessed.",
+        "PE identity was read from bytes only.",
+        "Authenticode signature, certificate chain, timestamp and revocation were not verified.",
+        "No runtime or OS compatibility claims; Windows qualification remains pending.",
+        "No repository or frozen artifacts modified."
+      ],
+      "trust": "Official HTTPS release keys and fingerprints; GnuPG GOODSIG/VALIDSIG. No independent out-of-band key trust or Authenticode verification."
+    }
+  }
+}

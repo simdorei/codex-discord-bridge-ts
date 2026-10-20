@@ -1,0 +1,37 @@
+{
+  "status": "WIP_UNAPPLIED_WHOLE_PENDING",
+  "files": [
+    {
+      "candidatePath": "src/store/mirror-project-creation.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-820-project-lookup/files/src/store/mirror-project-creation.ts",
+      "sha256": "42b329c9fc3788600fe6e82d58500ad5ee58c195d943d5ab5721b832c1891d63"
+    },
+    {
+      "candidatePath": "src/store/state-access-facade.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-820-project-lookup/files/src/store/state-access-facade.ts",
+      "sha256": "e1265a6c3f04448831ea6ae2e3a6a6d501d23e66a3ef17827f528c494e20e6ab"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/store-native-protocol.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-820-project-lookup/files/src/runtime/mirror-sync/store-native-protocol.ts",
+      "sha256": "d71007a7f719befb4e355f8ace109a293694e57baab99bb5944f75e750eb5e60"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/store-native-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-820-project-lookup/files/src/runtime/mirror-sync/store-native-worker.ts",
+      "sha256": "e55d124ee9f7650ad897ba4d85a2ef18bcccea0fba654ae16e45eacfd6dec341"
+    },
+    {
+      "candidatePath": "test/store/mirror-project-lookup.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-820-project-lookup/files/test/store/mirror-project-lookup.test.ts",
+      "sha256": "64bcca8adb7dc83533907006e5a068c779132bee8bec1a9f211d9b6bc86578f8"
+    }
+  ],
+  "authority": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca mapping/project.rs blob cfdb9ed8166f0a0cec5af32a45683212b8a85c62",
+  "scope": "Exact-first project lookup and native worker room-owner lookup",
+  "limitations": [
+    "Whole suite pending",
+    "Depends on WIP819 stage",
+    "Full synchronization caller and Windows unverified"
+  ]
+}

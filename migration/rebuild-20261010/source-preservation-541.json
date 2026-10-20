@@ -1,0 +1,26 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 541,
+  "localCommit": "d25543e816aa38102c74d4e6219421998fb5aa84",
+  "fullTests": 6994,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/remote-agent/bridge-inbound.ts": "3d59147abed9421ad87eac12e750706f3283cb1a16f923c080d9a7641f243075",
+    "src/remote-agent/decode-worker.ts": "c666502e89a66f1a9a0f47daae092ecfd6b49c35900e458d964d03dc31ccae33",
+    "src/remote-agent/native-decode.ts": "b60cec1a3ca99cff9b02c3ea753e21978fffbea4bd50340a6eb7fbab0eab33a1",
+    "src/remote-agent/terminal-output.ts": "23f73174bf7bbe5cb276b4c7cb4da0eed713fea18d0a9daae6968fe695d396d0",
+    "test/remote-agent/bridge-inbound.test.ts": "32875b88771582c1451f29652a95a300208b21c623502c6f30d85accdaa6b151",
+    "test/remote-agent/native-bridge.test.ts": "8027196b1b7cb51a44ef0e2a3a47bc168fcf213a2996e984f7d203312f4e671c",
+    "test/remote-agent/terminal-output.test.ts": "f08acd0e424acb5be06b7de55a610ffed11c2e9f9f01f455628f157dbb9ffc5c"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

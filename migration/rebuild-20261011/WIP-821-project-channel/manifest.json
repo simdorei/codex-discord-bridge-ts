@@ -1,0 +1,22 @@
+{
+  "status": "WIP_UNAPPLIED_FOCUSED8_PASS_WHOLE_PENDING",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/project-channel.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-821-project-channel/files/src/runtime/mirror-sync/project-channel.ts",
+      "sha256": "71edbc22d56bb2734d06498840a20c0bdeda2d40e05d4091374c3b1f59a1d705"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/project-channel.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-821-project-channel/files/test/runtime/mirror-sync/project-channel.test.ts",
+      "sha256": "6c48d1af56b9c977a9b9b42c4a850ac320145dbd31285c8fcfd1804477fb6633"
+    }
+  ],
+  "authority": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca mirror_sync/channels.rs and names.rs",
+  "scope": "One project resolution with existing lookup/adoption/update/create/atomic mapping commit; copied inventory result",
+  "limitations": [
+    "Depends on unqualified819+820 stage",
+    "Full sync lock/deadline caller not wired",
+    "Windows/deployment unverified"
+  ]
+}

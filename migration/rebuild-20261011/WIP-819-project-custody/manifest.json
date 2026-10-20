@@ -1,0 +1,22 @@
+{
+  "status": "WIP_UNQUALIFIED_UNAPPLIED",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/project-custody.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-819-project-custody/files/src/runtime/mirror-sync/project-custody.ts",
+      "sha256": "d098c5e55d431deda52607fc1864178df5a4904df8571bbefd23b24c63ebef53"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/project-custody.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-819-project-custody/files/test/runtime/mirror-sync/project-custody.test.ts",
+      "sha256": "1410e506c88e7b113c71b5c75d29af6d9f577c4138e0d1937871fec8147ed4a8"
+    }
+  ],
+  "authority": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca mirror_sync/container_creation.rs",
+  "scope": "Project receipt readback and begin/create/confirm only; later coordinator commits mapping",
+  "limitations": [
+    "Full test run pending",
+    "Full BridgeSync and global lock not wired",
+    "Windows/deployment unverified"
+  ]
+}

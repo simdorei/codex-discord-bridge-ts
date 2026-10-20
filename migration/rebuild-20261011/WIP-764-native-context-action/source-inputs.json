@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-10-12T16:30:40.553097+00:00",
+  "files": [
+    {
+      "path": "crates/cdr-runtime/src/action_executor/context_action.rs",
+      "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+      "frozenSha256": "d372ece81fb401258edccec2630903abb74cab846989500ab5a239b13eb41449",
+      "mainSha256": "d372ece81fb401258edccec2630903abb74cab846989500ab5a239b13eb41449",
+      "matchesFrozen": true
+    },
+    {
+      "path": "crates/cdr-codex-state/src/store.rs",
+      "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+      "frozenSha256": "ab311172a96b1d6f6fd0917a2183e38807496f6e302e95971b5df2a096ae3395",
+      "mainSha256": "ab311172a96b1d6f6fd0917a2183e38807496f6e302e95971b5df2a096ae3395",
+      "matchesFrozen": true
+    },
+    {
+      "path": "crates/cdr-runtime/src/context_view.rs",
+      "main": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+      "frozenSha256": "58a826e7f2d68527361a785425675c64529b37ebd46f21836b72b095ee839709",
+      "mainSha256": "58a826e7f2d68527361a785425675c64529b37ebd46f21836b72b095ee839709",
+      "matchesFrozen": true
+    }
+  ],
+  "reviewedScope": "context_action.rs complete, store.rs open/load_recent_threads/query_threads and TS store full corresponding paths, context_view.rs render/bounded_reader/render_blocking entry; downstream rendering grammar remains existing qualification"
+}

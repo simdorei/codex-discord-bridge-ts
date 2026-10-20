@@ -1,4 +1,6 @@
-import { openInitialized } from "./owned-driver.ts";
+import { openInitialized, verifyCurrentCatalogIn } from "./owned-driver.ts";
+import type { DatabaseSync } from "node:sqlite";
+import { openExisting } from "./existing-store.ts";
 import { targetIsHeldIn } from "./dead-generation-admission.ts";
 import { ensureForkHandoffTable } from "./fork-handoff-admission.ts";
 import { decodeTextField, textDecoderFor } from "./sqlite-values.ts";
@@ -44,16 +46,29 @@ export async function completedAppServerForkTargetForSource(
   requireWellFormedString(path, "path");
   requireWellFormedString(sourceThreadId, "sourceThreadId");
 
-  const db = await openInitialized(path);
+  return completedTargetInOwned(await openInitialized(path), sourceThreadId, false);
+}
+
+/** Existing-only lookup keeps the original IMMEDIATE lock profile and source-hold
+ * ordering. mode=rw prevents creation; catalog verification never migrates. This
+ * uses no query_only pragma (which forbids BEGIN IMMEDIATE), DDL or row writes. */
+export function completedAppServerForkTargetForSourceExisting(path:string,sourceThreadId:string):string|null {
+  requireWellFormedString(path, "path");
+  requireWellFormedString(sourceThreadId, "sourceThreadId");
+  return completedTargetInOwned(openExisting(path),sourceThreadId,true);
+}
+
+function completedTargetInOwned(db:DatabaseSync,sourceThreadId:string,existingOnly:boolean):string|null {
   let committed = false;
   try {
     db.exec("BEGIN IMMEDIATE;");
+    if (existingOnly) verifyCurrentCatalogIn(db);
 
     if (targetIsHeldIn(db, sourceThreadId)) {
       throw new DeadGenerationTargetHeldError(sourceThreadId);
     }
 
-    ensureForkHandoffTable(db);
+    if (!existingOnly) ensureForkHandoffTable(db);
 
     const stmt = db.prepare(`SELECT target_thread_id, CAST(target_thread_id AS BLOB) AS raw,
   (SELECT encoding FROM pragma_encoding) AS encoding

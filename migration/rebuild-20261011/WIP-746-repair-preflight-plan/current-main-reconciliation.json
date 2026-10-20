@@ -1,0 +1,6 @@
+{
+  "file": "crates/cdr-runtime/src/action_executor/repair_custody_tests.rs",
+  "currentSHA256": "1991f79a5fd3a86a124f2700b0bd226a793cecd97de8e705a612a05e7e4a6342",
+  "difference": "Two test helper functions enqueue and fake_controller gain cfg(windows). Production Repair/recovery/read files in this bounded pack are unchanged. Use current-main test file alongside original frozen evidence.",
+  "runtimeImplementationDelta": false
+}

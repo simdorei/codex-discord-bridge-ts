@@ -1,0 +1,43 @@
+{
+  "status": "WIP_UNAPPLIED_TESTS_UNVERIFIED",
+  "files": [
+    {
+      "candidatePath": "src/store/mirror-policy-read.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-828-cleanup-reads/files/src/store/mirror-policy-read.ts",
+      "sha256": "1e8ed6982a7ccd1b77267a72179b593d719232225357ee41208745e0482ee49d"
+    },
+    {
+      "candidatePath": "src/store/state-access-facade.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-828-cleanup-reads/files/src/store/state-access-facade.ts",
+      "sha256": "f568bdc972f859297ef273fd329b14b157d36a1e09a970ed168abb3db6806795"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/store-native-protocol.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-828-cleanup-reads/files/src/runtime/mirror-sync/store-native-protocol.ts",
+      "sha256": "e3c22352ced2245f2ed317f58bc5f2bb3d3072395020aa98464c83a9246788ce"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/store-native-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-828-cleanup-reads/files/src/runtime/mirror-sync/store-native-worker.ts",
+      "sha256": "2a1890311c2cee850c41013f87082bbf409e7e4f386be5e5bcd867ebc55acb57"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/cleanup-admission.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-828-cleanup-reads/files/src/runtime/mirror-sync/cleanup-admission.ts",
+      "sha256": "dbe6391372e34d916cbcf7d3bcece9a9b18e7c8a4ec85ded6704f8fba7e17010"
+    },
+    {
+      "candidatePath": "test/store/state-access-facade.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-828-cleanup-reads/files/test/store/state-access-facade.test.ts",
+      "sha256": "7f7db7a83b3dc0d092579cf35d044ca3b53da7b3786e6ea735d1efad318eccef"
+    }
+  ],
+  "scope": "Cleanup mapping reads, native store protocol and read-only cleanup admission; no DELETE implementation",
+  "limitations": [
+    "Strict build output exists, but terminal exit receipt was not captured; not claimed PASS",
+    "No focused tests for this candidate yet",
+    "Checkpoint827 whole run interrupted: process absent, no terminal receipt; partial log retained locally",
+    "Actual applied baseline remains819; no new product application",
+    "Windows, runtime integration and deployment unverified"
+  ]
+}

@@ -1,0 +1,53 @@
+import {newIngressFromWire,storedIngressToWire} from './native-journal-wire.ts';
+import {parentPort,workerData as q} from 'node:worker_threads';
+import * as stateArchiveFence from '../../store/archive-fence.ts';
+import * as stateIngressRead from '../../store/ingress-read.ts';
+import * as stateIngressLifecycle from '../../store/ingress-lifecycle.ts';
+import * as stateIngressAdmission from '../../store/ingress-admission.ts';
+import * as stateIngressRecovery from '../../store/ingress-recovery.ts';
+import * as stateNewReplyFinish from '../../store/new-reply-finish.ts';
+import * as stateMirrorMapping from '../../store/busy-choice.ts';
+import * as stateBusyPromptIntake from '../../store/prompt-intake-busy.ts';
+import * as stateNewPromptIntake from '../../store/prompt-intake-new-thread.ts';
+import * as statePromptIntakeLease from '../../store/prompt-intake.ts';
+import * as statePromptIntakeWrite from '../../store/prompt-intake-write.ts';
+import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
+import {intakeNumberFromWire,intakeToWire} from './native-wire.ts';
+import {completedAppServerForkTargetForSourceExisting,DeadGenerationTargetHeldError} from '../../store/fork-completed-target.ts';
+import {projectNativeStoreReadDiagnostic} from '../native-store-read-diagnostic.ts';
+const port=parentPort;if(port===null)throw new Error('Intake state requires owned native worker');
+try{
+ let value:unknown;
+ if(q.operation==='CompletedForkTarget')value={id:q.id,target:completedAppServerForkTargetForSourceExisting(q.path,q.id)};
+ else if(q.operation==='ArchiveUnfinished')value={target:q.target,ownRequest:q.ownRequest,request:stateArchiveFence.unfinishedArchiveRequestExisting(q.path,q.target,q.ownRequest)};
+ else if(q.operation==='IngressRead'){const record=stateIngressRead.getIngressExisting(q.path,q.id);value={id:q.id,record:record===null?null:storedIngressToWire(record)};}
+ else if(q.operation==='IngressBegin')value={id:q.id,gen:q.gen,won:stateIngressLifecycle.beginIngressThreadStartExisting(q.path,q.id,q.gen,intakeNumberFromWire(q.now))};
+ else if(q.operation==='IngressCreation'){stateIngressLifecycle.recordIngressNewCreationExisting(q.path,q.id,q.gen,q.cwd,q.channel,intakeNumberFromWire(q.now));value={id:q.id,gen:q.gen,cwd:q.cwd,channel:q.channel,recorded:true};}
+ else if(q.operation==='IngressCreated'){stateIngressLifecycle.recordIngressCreatedThreadExisting(q.path,q.id,q.gen,q.target,intakeNumberFromWire(q.now));value={id:q.id,gen:q.gen,target:q.target,recorded:true};}
+ else if(q.operation==='IngressOrigin'){const record=stateIngressRead.ingressByOriginExisting(q.path,q.event);value={event:q.event,record:record===null?null:storedIngressToWire(record)};}
+ else if(q.operation==='IngressAdmit'){const admitted=stateIngressAdmission.admitIngressExisting(q.path,newIngressFromWire(q.envelope));value={id:q.id,created:admitted.created,canonicalRepeatCreated:admitted.canonicalRepeatCreated,busyChoice:admitted.busyChoice,record:admitted.record===null?null:storedIngressToWire(admitted.record)};}
+ else if(q.operation==='IngressHold'){stateIngressRecovery.holdIngressExisting(q.path,q.id,q.reason,q.notExecuted,intakeNumberFromWire(q.now));value={id:q.id,held:true};}
+ else if(q.operation==='FirstReplyFinish')value={ingress:q.ingress,record:stateNewReplyFinish.getNewFirstReplyFinishExisting(q.path,q.ingress)};
+ else if(q.operation==='MirrorTarget')value={channel:q.channel,target:stateMirrorMapping.mirroredThreadIdExisting(q.path,q.channel)};
+ else if(q.operation==='AdmitBusy'){const admitted=stateBusyPromptIntake.admitBusyQueueExisting(q.path,{...q.choice,createdAt:intakeNumberFromWire(q.choice.createdAt),expiresAt:intakeNumberFromWire(q.choice.expiresAt)},q.target,q.requireCurrentMirror,q.confirmationKey,q.now);value={jobId:admitted.jobId,intake:admitted.intake===null?null:intakeToWire(admitted.intake)};}
+ else if(q.operation==='AdmitWithIngress'){const admitted=stateNewPromptIntake.admitPromptIntakeWithIngressExisting(q.path,{...q.request,createdAt:intakeNumberFromWire(q.request.createdAt)},q.key,q.generation,q.seed);value={created:admitted.created,intake:intakeToWire(admitted.intake)};}
+ else if(q.operation==='ReleaseAll')value=statePromptIntakeLease.releaseAllPromptIntakeClaimsExisting(q.path);
+ else if(q.operation==='Admit'){const valueIn=statePromptIntakeWrite.admitPromptIntakeExisting(q.path,{...q.request,createdAt:intakeNumberFromWire(q.request.createdAt)});value={created:valueIn.created,intake:intakeToWire(valueIn.intake)};}
+ else if(q.operation==='Canonicalize'){const row=statePromptIntakeWrite.canonicalizePromptIntakeTargetExisting(q.path,q.id);value=row===null?null:intakeToWire(row);}
+ else if(q.operation==='Get'){const row=statePromptIntakeLease.getPromptIntakeExisting(q.path,q.id);value=row===null?null:intakeToWire(row);}
+ else if(q.operation==='List')value=statePromptIntakeLease.listPromptIntakesExisting(q.path,q.readyAt===null?null:intakeNumberFromWire(q.readyAt)).map(intakeToWire);
+ else if(q.operation==='DurableOwner')value=statePromptIntakeLease.promptIntakeHasDurableOwnerExisting(q.path,q.id);
+ else if(q.operation==='RecordFailure'){const row=statePromptIntakeLease.recordPromptIntakeFailureExisting(q.path,q.id,q.token,q.error,q.retryAfter);value=row===null?null:intakeToWire(row);}
+ else if(q.operation==='RemoveQueued')value=statePromptIntakeWrite.removePromptIntakeIfQueuedExisting(q.path,q.id);
+ else if(q.operation==='Claim'||q.operation==='Renew'){
+  const claim=q.operation==='Claim'?statePromptIntakeLease.tryClaimPromptIntakeExisting(q.path,q.id,q.now,q.expires):statePromptIntakeLease.renewPromptIntakeClaimExisting(q.path,q.id,q.token,q.now,q.expires);
+  value=claim===null?null:{claimToken:claim.claimToken,intake:intakeToWire(claim.intake)};
+ }else throw new TypeError('Unknown intake operation');
+ const result={ok:true,operation:q.operation,value};if(boundedSerdeByteCount(result,16*1024*1024)===null)throw new Error('Intake output exceeds native wire boundary');port.postMessage(result);
+}catch(error){
+ // Only this worker's exact nominal pre-commit refusal preserves manual-hold authority.
+ if((q.operation==='CompletedForkTarget'||q.operation==='Admit'||q.operation==='Canonicalize'||q.operation==='AdmitBusy'||q.operation==='AdmitWithIngress')&&error instanceof DeadGenerationTargetHeldError&&Object.getPrototypeOf(error)===DeadGenerationTargetHeldError.prototype){
+  const refusal={ok:false,operation:q.operation,kind:'DeadTargetHeld',id:q.id,target:error.targetThreadId};
+  port.postMessage(boundedSerdeByteCount(refusal,16*1024*1024)===null?{ok:false}:refusal);
+ }else {const storeDiagnostic=q.operation==='MirrorTarget'?projectNativeStoreReadDiagnostic(error):null;port.postMessage(storeDiagnostic===null?{ok:false}:{ok:false,operation:'MirrorTarget',channel:q.channel,storeDiagnostic});}
+}finally{port.close();}

@@ -1,0 +1,30 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 619,
+  "localCommit": "796f618f237feebd4d55327f28e41a19d4f44fdd",
+  "fullTests": 7347,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/native-custody-read-worker.ts": "76b53ceec419c556e6835e9bf2fc5b17dbbf971c39be90c310f42d6c65fc4064",
+    "src/runtime/native-custody-read.ts": "a882751a24a283b2136b47e0fc5ba2dd3be1a56c3f435be397ffa8c2bc88167f",
+    "test/runtime/native-custody-read.test.ts": "d6bb5ac08306a4f8071311cf6e05ca018813a3354b3cd8bbcc6fcf464a10032f"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ],
+  "qualificationProfile": "Compiled stage full7347 PASS, actual1442 src/test files byte-identical; actual focused6/strictTS0/build0",
+  "scope": "Pinned pathname/runtime native check owner, not a claim or native file identity; resident DB hooks not yet migrated",
+  "inheritedRemoteExclusion": {
+    "path": "test/remote-agent/redaction.test.ts",
+    "reason": "Existing GitHub secret-scanning refusal; not retried or bypassed",
+    "lastCompleteSourceTestRemote": "32b17de2306aab7c084be10db7732460f4007f3d"
+  },
+  "remoteTestTreeComplete": false
+}

@@ -1,0 +1,12 @@
+import {parentPort,workerData} from 'node:worker_threads';
+const port=parentPort;if(port===null)throw new Error('Owned probe requires parent');
+const q=workerData as {periodMs:number;maxProbes:number;wholeMs:number};
+const clock=()=>process.hrtime.bigint(),start=clock(),period=BigInt(q.periodMs)*1_000_000n;
+type Probe={sequence:number;planned:string;sent:string|null;main:string|null;ack:string|null;failure:string|null};
+const probes:Probe[]=[];let stopped=false,cutoff:bigint|null=null,timer:NodeJS.Timeout|undefined;
+function schedule(){if(stopped||cutoff!==null)return;const planned=start+BigInt(probes.length+1)*period;timer=setTimeout(tick,Math.max(1,Math.ceil(Number(planned-clock())/1e6)));}
+function tick(){if(stopped||cutoff!==null)return;if(probes.length>=q.maxProbes){port!.postMessage({kind:'failure',code:'probe-cap'});stop('probe-cap');return;}const sequence=probes.length+1,planned=start+BigInt(sequence)*period,probe:Probe={sequence,planned:String(planned),sent:String(clock()),main:null,ack:null,failure:null};probes.push(probe);try{port!.postMessage({kind:'probe',...probe});}catch{probe.failure='send-failed';}schedule();}
+function stop(reason:string){if(stopped)return;stopped=true;clearTimeout(timer);clearTimeout(guard);const end=cutoff??clock(),due=Math.floor(Number(end-start)/Number(period));if(due>q.maxProbes)reason='probe-cap';while(probes.length<Math.min(due,q.maxProbes)){const sequence=probes.length+1;probes.push({sequence,planned:String(start+BigInt(sequence)*period),sent:null,main:null,ack:null,failure:'scheduled-due-not-sent'});}for(const p of probes)if(p.ack===null)p.failure??='missing-ack-at-stop';port!.postMessage({kind:'stopped',reason,start:String(start),end:String(end),plannedDue:due,probes});port!.close();}
+const guard=setTimeout(()=>stop('whole-safety-guard'),q.wholeMs);
+port.on('message',message=>{if(message?.kind==='ack'){const p=probes[message.sequence-1];if(!p||p.ack!==null)throw new Error('Unexpected probe ACK');p.main=message.main;p.ack=String(clock());}else if(message?.kind==='inject')port!.postMessage({kind:'inject',sequence:message.sequence,id:message.id,label:message.label,planned:message.planned,sent:String(clock())});else if(message?.kind==='stop'){if(cutoff===null){cutoff=clock();clearTimeout(timer);port!.postMessage({kind:'stopping',at:String(cutoff)});}}else if(message?.kind==='finish-stop'){if(cutoff===null)throw new Error('Unrequested stop completion');stop('requested');}});
+port.postMessage({kind:'ready',at:String(start)});schedule();

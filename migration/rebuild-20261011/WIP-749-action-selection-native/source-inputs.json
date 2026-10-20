@@ -1,0 +1,46 @@
+{
+  "rustMain": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+  "remoteCheckedAt": "2026-10-12T13:40:29Z",
+  "scope": "three current full Rust authorities plus exact current TS; bounded mapping-wiring only",
+  "files": [
+    {
+      "path": "crates/cdr-runtime/src/action_executor/selection.rs",
+      "currentMainSha256": "2dda5c9d5555d416f55fb976dad343384e73f732ed8b9457d608e18d48af6208",
+      "frozenEqual": true
+    },
+    {
+      "path": "crates/cdr-runtime/src/action_executor/target_resolution.rs",
+      "currentMainSha256": "b6fa6be592d44c30852538a5cb5e54a725be5a5b91f51cb0028d160c3a80af7d",
+      "frozenEqual": true
+    },
+    {
+      "path": "crates/cdr-store/src/mapping/thread.rs",
+      "currentMainSha256": "9d6b46fea51c74f089d4f1f8c6030c94ed299cb0c2d702a2485429812bdccb5c",
+      "frozenEqual": true
+    },
+    {
+      "path": "src/runtime/action-executor/thread-selection.ts",
+      "sha256": "ae1315e64a1dc16857bc0552c206938abfd85b4b1fb7c6ba4384c45fc6d9c6eb"
+    },
+    {
+      "path": "src/runtime/action-executor/basic-dispatcher.ts",
+      "sha256": "846a2d571ba96a5f4966cf69494b26c52cf32958a8ca2aee78846ab92d893967"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "6862fa522207eb3a4735c1251b2ca54d58c4e582c3055a51a7a83f7ebaa931f4"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state.ts",
+      "sha256": "c6778987f38a561bdecf7a9cf7a33f6674babcd010917c3089939816a59200b8"
+    },
+    {
+      "path": "test/runtime/action-executor/thread-selection.test.ts",
+      "sha256": "99db095acb0cd21f2a995f69cc8c4af08c66362689c2f9da71f55a8e232408af"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "sha256": "9f32b068db0481db0a1211a09bc670e04a3d6a4a9b288279dca0fd021ebb5291"
+    }
+  ]
+}

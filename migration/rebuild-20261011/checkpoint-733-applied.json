@@ -1,0 +1,93 @@
+{
+  "beforeHead": "a1d5fe9a4e2bd00757f51b26b036defb0efece76",
+  "stageFileCount": 1578,
+  "scope": [
+    {
+      "path": "src/runtime/action-executor/busy-queue.ts",
+      "beforeSha256": "88ca2898f9ec7015f76cafbcd141099ec11547d555badfc8397800135f343b63",
+      "afterSha256": "e11b4d64bbf0e395da7bf8cc40db0122d9e61865012a63e1b074ecf67b9d96d5"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "beforeSha256": "fa7a3600e7dbf8d380571bde26c6c4a859de5c9454db0ce50aa04ad9c5bf499e",
+      "afterSha256": "03887c339e2c75c41390207ab7e8ce4bf7baba5098a7c817522a11e1ee33fd1a"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state-worker.ts",
+      "beforeSha256": "807037d6346d3002f68bc760255dfe60d6ea83647bbb0a56c82314db5d5bdb82",
+      "afterSha256": "f733a4be1c91e2b2228a28a177c456f9dac40c36440e675713eb559d5975b12c"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state.ts",
+      "beforeSha256": "f16781a809060bbde95610bb498dd56b7ad4c86534f7a51460310bf3bae7d61f",
+      "afterSha256": "87029a29f24ec74512ea1e09dfdc8fee98ea267f11463fe02d8b0696bf294a7e"
+    },
+    {
+      "path": "src/store/busy-choice.ts",
+      "beforeSha256": "1b006cd1f21f5a3f4c74fc2b0a8984b8a170a8c0cb62949bd2d3efe6ff416195",
+      "afterSha256": "b8c9c91ae326733a718c2e58bd4ef7ed9f0e9d52fe5655d0ed6fee3c7b962ab0"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "17398d527adc26ec23ac48a15941dfafd5b932b135653b6cd560539bd6a880bd",
+      "afterSha256": "ff102779a2122caff8cec1c7c77e0d2b1a8c0b3982436b577bbbcc82313429bb"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-mapping.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "41b8c01e3f84d51ff1442a0d1aaed2cc581725f16926f665a6adae47040c25cd"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-state.test.ts",
+      "beforeSha256": "9e3f95b459ef866f9c7e27e368f79053ac4c7b8f09c7018e9526bbaffafeb82e",
+      "afterSha256": "f768c44d6d1c0cce7b883a583d1906c2280a2f1a57a9ca18385cd8282da785c2"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "e4c1c2d2b31b025193b10cfa7f39a72e20b58aa4666cd3583cce6f8f308c5703",
+      "afterSha256": "2649e52d09428459f865622dd0f5bde2a4f9783492528bce6f6bc796c164c63c"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 7999,
+    "pass": 7999,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 769,
+    "logSha256": "0d84c0fec13c2eed598acb941a6e425dc3f0e044c72942b0af934b793c75e2dd",
+    "tapSha256": "873c174abc03a1d82c6dbf4b08c7d4afd8a083d8f5896418ffaee7e176275ff0"
+  },
+  "claim": "Staged whole7999PASS plus actual71PASS/TS0/build0 and all1578source/test hashes identical. No separate actual whole rerun or Windows/live/performance certification.",
+  "remoteWrite": "Qualified731 remotee46e847 verified; candidate733 unapplied.",
+  "actualAll1578HashesMatchQualifiedStage": true,
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 71,
+      "pass": 71,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1578
+  },
+  "limitations": [
+    "Remaining mirror mapping, new-reply/journal/project/replay reads not all offloaded",
+    "Existing catalog name/column checks are not exact DDL certification",
+    "Protected redaction fixture is absent and neither executed nor counted as skip",
+    "No Windows, live Discord/appserver, G1-G7, 24h, or deployment approval"
+  ],
+  "evidence": {
+    ".runtime/busy-mapping-native-733/full.log": "0d84c0fec13c2eed598acb941a6e425dc3f0e044c72942b0af934b793c75e2dd",
+    ".runtime/busy-mapping-native-733/full.tap": "873c174abc03a1d82c6dbf4b08c7d4afd8a083d8f5896418ffaee7e176275ff0",
+    ".runtime/busy-mapping-native-733/full-exit.json": "cd9c79baa979e2c7da2c644203728c4b980e374e7158d95f51ff48b353f1828a",
+    ".runtime/busy-mapping-native-733/scope-proof.json": "ae3a0f1bf25c900f2ba781ce614f16d9555d70fef7dca72ca2999f9c03ee086d",
+    ".runtime/busy-mapping-native-733/stage-inputs.json": "c866bf86dbd6aa8a01617f898608d6873c6e127c34b8b6a77bae8541936f0660",
+    ".runtime/busy-mapping-native-733/authored-manifest.json": "9f241a0c5e2dc5da9465c3cd619c824dd939f0acf4c6e11bf2583fcead0534ad",
+    ".runtime/busy-mapping-native-733/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/busy-mapping-native-733/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/busy-mapping-native-733/applied/focused.log": "6ab021d0aa04c49a5910567d2ae42240ae1d257aa60f94d122a4df0cf64c03d6",
+    ".runtime/busy-mapping-native-733/body-identity-proof.json": "0693333ed5868d8d387b184f4f1473071e2c06435a028fe82e2e7efadb0b8076",
+    ".runtime/busy-mapping-native-plan-732/source-inputs.json": "d95215b2f09785f604e136f302e36e09546b25b5291d9e12c241f8268099b358"
+  }
+}

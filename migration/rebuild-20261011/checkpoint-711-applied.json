@@ -1,0 +1,89 @@
+{
+  "beforeHead": "25e647abe566ec081dbc2a9a530b5d1f24a5b56e",
+  "stageFileCount": 1562,
+  "scope": [
+    {
+      "path": "src/runtime/queue-runner/native-state.ts",
+      "beforeSha256": "c01e059c09bbc2b3534cea7534de02f4e42d34eee4e8048173185019cdbc7e42",
+      "afterSha256": "684b8bce1f421028b7c84053cdd38214071fc16719325597f20393f99ec48f40"
+    },
+    {
+      "path": "src/runtime/queue-runner/native-submission-state.ts",
+      "beforeSha256": null,
+      "afterSha256": "23ec3636b76300878146845bdae48b271ab786a57a78c572fd970e64bb368931"
+    },
+    {
+      "path": "src/runtime/queue-runner/native-submission-worker.ts",
+      "beforeSha256": null,
+      "afterSha256": "939da2250d90b2e0ab5a57470f62743521f69955bc8a719b24cbc94f0a8aedc9"
+    },
+    {
+      "path": "src/store/queue-enqueue.ts",
+      "beforeSha256": "02f5b47fad169aa4f547518b3d59020dd773e992f9d6307c5a1816ffa58e6527",
+      "afterSha256": "d5e733faee7d6b80d96b9793685e86414902cc3bab9b3099edcbee93e10720bd"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "2f6df5a513d81f5339ab4d8222367d1791be24cb201f30d1607dc76e20634597",
+      "afterSha256": "8b1bb2866f08ce6013defe694e6f3d7f720af2ac2aaddfa683bc7478320643bc"
+    },
+    {
+      "path": "test/runtime/queue-runner/native-attempt.test.ts",
+      "beforeSha256": "cbad7b0e8bc7553822273456c9a3797098167fed06d8c3a1d517ac9276771a80",
+      "afterSha256": "09f96c37468818c7cf304dbdda73c2dba8d01afb494ac412cbfd8c6efecad625"
+    },
+    {
+      "path": "test/runtime/queue-runner/native-submission.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "979fc6327e0caa2f330ff56f09e2f333aed9284990141296b59f950748cd1255"
+    },
+    {
+      "path": "test/store/queue-enqueue-existing.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "87d992f7a5ecba6db2914e6d59f06c6abdfa98adf4109abe5c4be1637f44aaea"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "4f5e606297bab06f1bb3775a45dc776dd4c132cf221504b696934d0ca52d2fa1",
+      "afterSha256": "2b0eb158ad26baf812a42f0dee1a260d9277f0b3d255cb8cc7c62e9d6e65d0e3"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 7880,
+    "pass": 7880,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 756,
+    "logSha256": "098546eca4a5d322b24f721fa3c734d80320774c48e64cb021af6c8c63f441aa",
+    "tapSha256": "87f2e64bdd10cdd79ffbd63e18409f46154633115cc1647245bcada6d7023d1d"
+  },
+  "claim": "Qualified staged whole7880PASS plus actual1278PASS/TS0/build0 and all1562source/test hashes identical. No separate actual whole rerun/Windows/performance claim.",
+  "remoteWrite": "Authorized publication active; baseline708 plus WIP710 verified7142b2b8; candidate711 not published.",
+  "actualAll1562HashesMatchQualifiedStage": true,
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 1278,
+      "pass": 1278,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1562
+  },
+  "evidence": {
+    ".runtime/queue-submission-native-711/full.log": "098546eca4a5d322b24f721fa3c734d80320774c48e64cb021af6c8c63f441aa",
+    ".runtime/queue-submission-native-711/full.tap": "87f2e64bdd10cdd79ffbd63e18409f46154633115cc1647245bcada6d7023d1d",
+    ".runtime/queue-submission-native-711/full-exit.json": "0dcd187ab2c429315d45e8bd26c6d6df5ebdf61009b1a604f6c6b562096bbe60",
+    ".runtime/queue-submission-native-711/scope-proof.json": "0b112949895577657939e3d28f492b7b57aee3d1b1115e003d7bbdb2bf42fde7",
+    ".runtime/queue-submission-native-711/stage-inputs.json": "1be42e8a85a273b6cd3726d5acab1f60badab6db6cb4b3f1878f479013ab4a4b",
+    ".runtime/queue-submission-native-711/source-inputs.json": "836a3d377bd23ad205bfd01ac0fc1f4f757c0370e4d102517064230122e0bdce",
+    ".runtime/queue-submission-native-711/foundation-identity.json": "20d6291eded656731d3675af56137675db003d7aafed3d5d065a3c90617404c5",
+    ".runtime/queue-submission-native-711/typecheck-correction.json": "52175321f3788c5bbe84fcc970ca35708cc970fd960e68a1adfa9f7c21914f14",
+    ".runtime/queue-enqueue-existing-710/final-body-identity-proof.json": "d2025e268ebe4ae5a5aad9c87b18d93bee7f49e3875798a51df1238180a072c5",
+    ".runtime/queue-submission-native-plan-709/source-inputs.json": "a7cc62df3f3498695ee99d58f4e1a6817e82e36882b58b8976a87518bd4026b8",
+    ".runtime/queue-submission-native-711/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/queue-submission-native-711/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/queue-submission-native-711/applied/focused.log": "6a3e5c30b6aa3a2bc208db984c25ea9dfacd3dcac250b60f4df5e83797ad0588"
+  }
+}

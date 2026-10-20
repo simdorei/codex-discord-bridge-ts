@@ -1,0 +1,69 @@
+{
+  "status": "WIP_FULL_REGRESSION_RUNNING",
+  "upstream": "d7e1aa0106b2eefd9ea3f96e8e4bc5afdd296d34",
+  "baseRemote": "11482bf0e2b243b5830e461314f3eefbd634ffd2",
+  "files": [
+    {
+      "path": "src/app-server/independent-tools-config.ts",
+      "sha256": "38c8bb656807e0b6797d9dd5926ef0c129a79dc060d5dece438c800cfb9f1d2f"
+    },
+    {
+      "path": "src/app-server/startup-handshake.ts",
+      "sha256": "88c32db25ad4427cf65b95927b2aaf6b9a04391313812266b7860cb574af7301"
+    },
+    {
+      "path": "src/runtime/discord-runtime/resident-config.ts",
+      "sha256": "02783137582be9887e8f6482c8b95df25a6eebaa5bfb87fefe62e3ca90daee8f"
+    },
+    {
+      "path": "src/runtime/server-request-delivery.ts",
+      "sha256": "c0556e51c6da53f4036f7569c47805432fc8ead2e07547a6a75319dbc568c775"
+    },
+    {
+      "path": "src/runtime/server-request-local-tools.ts",
+      "sha256": "85068ed00b1b93dbc877e3ef849b0ac889f850e10756674fed2bf9e122ecd5af"
+    },
+    {
+      "path": "test/app-server/independent-tools-config.test.ts",
+      "sha256": "79156c0e26f1e7dee3f914a84828c09740cbb9e1e898de883f74160b272da9f9"
+    },
+    {
+      "path": "test/app-server/startup-handshake.test.ts",
+      "sha256": "e8f1bf803e7a7f0283f18020a82b15c2780a08caa1d94cef1f5aacfeab97bab9"
+    },
+    {
+      "path": "test/runtime/discord-runtime/resident-config.test.ts",
+      "sha256": "7e9f9aac6626a1bc988c4f42e76004baaefd24210686289dcf3ea999174f5ddf"
+    },
+    {
+      "path": "test/runtime/server-request-delivery.test.ts",
+      "sha256": "a3431ab2604a6868c3ac743ef1b99fc1881d491d417bf34d6f4745cc30fb8a6c"
+    },
+    {
+      "path": "test/runtime/server-request-local-tools.test.ts",
+      "sha256": "6f50294364986540f801bbee25d63961420be974e3254490c48412ba6e79144d"
+    }
+  ],
+  "focused": {
+    "tests": 48,
+    "pass": 48,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "buildExit": 0,
+  "priorFixtureFailure": "First48-testrun:47pass1fail due test SQL thread_id instead of actual codex_thread_id. Only test column corrected; original failure retained locally.",
+  "scope": [
+    "Pure local-tool form decision with fail-closed schema",
+    "Original authority then actual resident occurrence/generation-bound response, without Discord prompt",
+    "Initialize form capability and platform-specific default arguments",
+    "Pure inherited Windows environment filter available for future Windows process owner"
+  ],
+  "limitations": [
+    "Windows process owner remains unimplemented; filter is NOT wired to a Windows child spawn.",
+    "No live local-tool action, deployment, persistent grants or native Windows PASS.",
+    "Full regression pending; prior809 full8465PASS does not validate these changes.",
+    "Protected redaction fixture missing and not reconstructed.",
+    "Inventory810 and fullBridgeSync remain incomplete."
+  ]
+}

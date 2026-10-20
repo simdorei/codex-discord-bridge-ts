@@ -1,0 +1,548 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": 935,
+  "qualification": "partial synthetic retained-cutoff bootstrap read-work only",
+  "node": "v24.21.0",
+  "profile": {
+    "historyRecords": 16384,
+    "recordBytes": 256,
+    "retainedOffset": 4194304,
+    "appendedBytes": 256,
+    "maxBytes": 4194304,
+    "maxRecords": 16384,
+    "maxRecordBytes": 512,
+    "maxWindowBytes": 65536,
+    "maxTurnBytes": 16384,
+    "timeoutMs": 5000,
+    "coordinatorTimeoutMs": 10000,
+    "testSafetyTimeoutMs": 60000
+  },
+  "totals": {
+    "payloadBytes": 4194304,
+    "anchorBytes": 1024,
+    "returnedBytes": 4195328,
+    "scannedRecords": 16384,
+    "scannedBytes": 4194304,
+    "workerSubmissions": 3,
+    "rolloutOpens": 69,
+    "rolloutCloses": 69,
+    "finalOffset": 4194304,
+    "finalRevision": 1,
+    "pendingRetired": true,
+    "originalOperationPreserved": true,
+    "historicalFinalTurnRetained": true,
+    "receiptRows": 0,
+    "transportApplicable": false
+  },
+  "operations": [
+    {
+      "kind": "ReadTarget",
+      "payloadBytes": 0,
+      "anchorBytes": 0,
+      "returnedBytes": 0,
+      "readCalls": 0,
+      "opens": 0,
+      "closes": 0,
+      "nativeWorkerExited": true,
+      "activeFileReads": 0,
+      "handles": 0
+    },
+    {
+      "kind": "RecoverContext",
+      "payloadBytes": 4194304,
+      "anchorBytes": 512,
+      "returnedBytes": 4194816,
+      "readCalls": 66,
+      "opens": 67,
+      "closes": 67,
+      "nativeWorkerExited": true,
+      "activeFileReads": 0,
+      "handles": 0
+    },
+    {
+      "kind": "CompleteContext",
+      "payloadBytes": 0,
+      "anchorBytes": 512,
+      "returnedBytes": 512,
+      "readCalls": 2,
+      "opens": 2,
+      "closes": 2,
+      "nativeWorkerExited": true,
+      "activeFileReads": 0,
+      "handles": 0
+    }
+  ],
+  "outcome": "passed",
+  "failureStage": null,
+  "observations": [
+    {
+      "kind": "ReadTarget",
+      "module": "startup-intent-store-worker",
+      "ready": 1,
+      "exited": 1,
+      "opens": 0,
+      "closes": 0,
+      "handles": 0,
+      "activeFileReads": 0,
+      "overflow": 0,
+      "observerErrors": 0,
+      "readFailures": 0,
+      "closeFailures": 0,
+      "responseReceived": true,
+      "reads": []
+    },
+    {
+      "kind": "RecoverContext",
+      "module": "startup-intent-store-worker",
+      "ready": 1,
+      "exited": 1,
+      "opens": 67,
+      "closes": 67,
+      "handles": 0,
+      "activeFileReads": 0,
+      "overflow": 0,
+      "observerErrors": 0,
+      "readFailures": 0,
+      "closeFailures": 0,
+      "responseReceived": true,
+      "reads": [
+        {
+          "position": 4194048,
+          "requested": 256,
+          "returned": 256,
+          "failed": 0
+        },
+        {
+          "position": 0,
+          "requested": 256,
+          "returned": 256,
+          "failed": 0
+        },
+        {
+          "position": 0,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 65536,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 131072,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 196608,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 262144,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 327680,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 393216,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 458752,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 524288,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 589824,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 655360,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 720896,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 786432,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 851968,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 917504,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 983040,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 1048576,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 1114112,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 1179648,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 1245184,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 1310720,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 1376256,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 1441792,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 1507328,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 1572864,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 1638400,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 1703936,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 1769472,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 1835008,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 1900544,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 1966080,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 2031616,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 2097152,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 2162688,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 2228224,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 2293760,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 2359296,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 2424832,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 2490368,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 2555904,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 2621440,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 2686976,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 2752512,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 2818048,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 2883584,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 2949120,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 3014656,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 3080192,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 3145728,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 3211264,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 3276800,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 3342336,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 3407872,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 3473408,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 3538944,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 3604480,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 3670016,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 3735552,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 3801088,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 3866624,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 3932160,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 3997696,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 4063232,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        },
+        {
+          "position": 4128768,
+          "requested": 65536,
+          "returned": 65536,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "kind": "CompleteContext",
+      "module": "startup-intent-store-worker",
+      "ready": 1,
+      "exited": 1,
+      "opens": 2,
+      "closes": 2,
+      "handles": 0,
+      "activeFileReads": 0,
+      "overflow": 0,
+      "observerErrors": 0,
+      "readFailures": 0,
+      "closeFailures": 0,
+      "responseReceived": true,
+      "reads": [
+        {
+          "position": 4194048,
+          "requested": 256,
+          "returned": 256,
+          "failed": 0
+        },
+        {
+          "position": 0,
+          "requested": 256,
+          "returned": 256,
+          "failed": 0
+        }
+      ]
+    }
+  ],
+  "cleanup": {
+    "temporaryFixtureRemoved": true,
+    "nativeHoldings": {
+      "Background": 0,
+      "Control": 0,
+      "Observation": 0,
+      "Discovery": 0,
+      "Maintenance": 0
+    },
+    "activeFileReads": 0
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "status": "WIP_SNAPSHOT_SAVED_FULL_UNVERIFIED",
+  "files": [
+    {
+      "path": "src/runtime/writer-recovery/native-owner.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-848-recovery-owner/files/src/runtime/writer-recovery/native-owner.ts",
+      "sha256": "e187acb0a1b4afcc8a19bef14d74ed8b906efa46406e1686f68d644a7f1d3323"
+    },
+    {
+      "path": "src/runtime/writer-recovery/native-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-848-recovery-owner/files/src/runtime/writer-recovery/native-worker.ts",
+      "sha256": "27486eda6e0fba59140748b923dc89d5c071d3181e559c002c8758896c6e1858"
+    },
+    {
+      "path": "src/store/ingress-recovery-custody.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-848-recovery-owner/files/src/store/ingress-recovery-custody.ts",
+      "sha256": "e7bc21e222cd2b6af072651cd0d43122a502a6d1e8bad550315b0b1eb035f03c"
+    },
+    {
+      "path": "test/runtime/writer-recovery/native-owner.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-848-recovery-owner/files/test/runtime/writer-recovery/native-owner.test.ts",
+      "sha256": "8b5ab8489a27e89662c5eb91fffd1e890e6d85279da6b6818c194ae58c31a6e2"
+    }
+  ],
+  "facadePatch": {
+    "path": "migration/rebuild-20261011/WIP-848-recovery-owner/facade.patch",
+    "base": "WIP-847-recovery-cancellation facade candidate, reconstructed from WIP845 plus WIP847 patch",
+    "bindings": [
+      {
+        "path": "src/store/state-access-facade.ts",
+        "baseSha256": "e6f22e5d43bcfe2513097f10c0299a2e2927e9ac0dbc1dfe03467ed95cb0f1ae",
+        "candidateSha256": "2b2cf72c1f5067d0588e2cf5da8d57ac8f2e98a5331a45cb4383b79ca4b3bdf1"
+      },
+      {
+        "path": "test/store/state-access-facade.test.ts",
+        "baseSha256": "3fd22632f562cae096f488e0449a3f95e3c0e2ee4e33c1af00e75f3c4b144fce",
+        "candidateSha256": "b096517bf865f9207c7de39cb12bb4aca8a8bfbd44b2de86f1f84451ee582339"
+      }
+    ]
+  },
+  "observedEvidence": {
+    "focusedLogCounts": {
+      "tests": 44,
+      "pass": 44,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "logSha256": "1b5d1335bf73f93ae723f7f6a5dbfbbd89246bd958fdbf8e779b8e43a1058633",
+    "completedBuildManifestPresent": true,
+    "independentRerunDuringPreservation": false
+  },
+  "limits": [
+    "Staged only; not applied to product source. Full regression not performed for848.",
+    "Opaque original claim belongs to exact native owner; selected-route recovery is explicitly refused.",
+    "Recover command/controller/process restart not connected. Payload budget review remains pending.",
+    "846 preceding full run has no terminal receipt and its old session is unavailable; a separate same-frozen-graph retry is active, no full PASS claimed.",
+    "Windows/live/runtime performance/operational/deployment unverified. No secrets, live DB, raw logs or protected redaction fixture included."
+  ]
+}

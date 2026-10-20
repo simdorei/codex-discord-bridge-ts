@@ -1,0 +1,133 @@
+{
+  "archiveFiles": [
+    "docs/persistent-receiver-pre-admission-probe-20261017-manifest.json",
+    "docs/persistent-receiver-pre-admission-probe-20261017.md",
+    "src/runtime/persistent-receiver-owner.ts",
+    "src/runtime/persistent-resident-bootstrap.ts",
+    "src/runtime/persistent-resident-composition.ts",
+    "src/runtime/persistent-resident-store-role.ts",
+    "src/runtime/persistent-resident-worker.ts",
+    "test/runtime/persistent-receiver-pre-admission-probe.test.ts"
+  ],
+  "archiveFilesSha256ExcludingSelf": {
+    "docs/persistent-receiver-pre-admission-probe-20261017.md": "54b6a3dfbef1035b3739f123e698699115d2929cae1ddc70816a40685ba29686",
+    "src/runtime/persistent-receiver-owner.ts": "4e5f1b44ac1066d872f48b0d1f5823646014791698e2d061069969c080022fdb",
+    "src/runtime/persistent-resident-bootstrap.ts": "78315e2fb2666328b885faef21f90b00e4a6407ecce84c26caefb10531931e0d",
+    "src/runtime/persistent-resident-composition.ts": "227cd2fac119d3b813224c4ff2f7b31854a9c194df92e075e6e93d0a2869ee1c",
+    "src/runtime/persistent-resident-store-role.ts": "7c9fa60b9276146476fd13adf681fad0473cadd22180f299dba1b720ca95d9ff",
+    "src/runtime/persistent-resident-worker.ts": "115f79e1b16ae377d40717b8834859800cb6524fffe752f0edb17e6aada8f551",
+    "test/runtime/persistent-receiver-pre-admission-probe.test.ts": "b3fa7a0dd81a0ecf0631500af36cea6eb9bcc2d9dd83196c50199e504e751c9f"
+  },
+  "base": {
+    "local": "3da94087d649b651f21f6b10cda94634d19b06c8",
+    "published": "89c58773273b5b65a5a39b1f371c78b2ea17b103",
+    "tree": "ad0a558ce866e436029e97a2d751e69e6496fab2"
+  },
+  "boundaries": {
+    "actualFixImplemented": false,
+    "cleanupQualified": false,
+    "excludedFromArchive": [
+      "databases",
+      "raw logs",
+      "credentials",
+      "private execution directories"
+    ],
+    "historicalV4": "UNKNOWN and untouched",
+    "installedPersistentCutover": false,
+    "liveHttpOrCua": false,
+    "operationalRootQualified": false,
+    "overallComponentQualified": false,
+    "wholeMigrationQualified": false
+  },
+  "compileOnlyRoots": [],
+  "date": "2026-10-17",
+  "finalAuthorRun": {
+    "allFrozenInputsAndEmissionsUnchanged": true,
+    "artifactsSha256": {
+      "emitted-freeze.json": "0d6cd12580873a13e95c6f7a8e6f1b3e8d9f599da1dcb03f733b3501fd04fdab",
+      "manifest.json": "0513a10f24915366c096cc101da1029f46159f106cdc9d3f60907eb63061ff9f",
+      "posttest-audit.json": "3bc492fdfbeaae82d35eb611bc7ae00447300e2d1807630e1220f952212f8ee0",
+      "pretest-audit.json": "ea74f5b3c9b87e9870a830d234b377025528425f52153e07dc18135f85c5fc61",
+      "production-process/receipt.json": "b4dcfe1e7c6065896c4be7c339beb00ed07802da9946db9b10cf7dbc6c0b3756",
+      "selected-process/receipt.json": "db0162a95136dd55908e49f50fedbf7db05e387b64e171c2a9dbb6cf1fc682eb",
+      "tests-process/receipt.json": "357df0486e995ba2ccbad1a6a99a763a87634e3451132d0f77c4bb597de1be98"
+    },
+    "clientLogicalJoin": false,
+    "containmentErrors": 0,
+    "expectedMandatoryFailedNames": [
+      "mandatory pre-fix receiver logical cleanup qualification"
+    ],
+    "forcedSignals": 0,
+    "naturalOwnedProcessClosure": true,
+    "privateHomeEmpty": true,
+    "rescueAssistedPhysicalClosure": true,
+    "retainedProbeRoots": 1,
+    "retainedRootDebt": true,
+    "rootsDeleted": 0,
+    "runtimeElapsedSeconds": 1.1907554700155742,
+    "runtimeExitCode": 1,
+    "streamsEof": true,
+    "teardownInstrumented": true,
+    "tests": {
+      "cancelled": 0,
+      "fail": 1,
+      "pass": 1,
+      "skipped": 0,
+      "suites": 0,
+      "tests": 2,
+      "todo": 0
+    },
+    "waitReportedECHILD": true
+  },
+  "formatVersion": 1,
+  "graph": {
+    "declarations": 178,
+    "emittedMapSha256": {
+      "production": "eb3c62e3648fda8c5588c35275336b1e0967cd3da93d74bd101064ef41133b81",
+      "selected": "1ea96f5b29215489f46c86ff78bf23d72dd72fb3e39e13c46977059fbffd1c98"
+    },
+    "frozenInputs": 599,
+    "productionParityCount": 341,
+    "productionSources": 341,
+    "projectSources": 343,
+    "sha256": "4adcadb7cb0f88943e5dc3f9b90a0a80900cc19f3a7fa7e1d585467face607c3"
+  },
+  "preservedFailedAttempt": {
+    "allOwnedProcessesExited": true,
+    "applicationCleanupQualified": false,
+    "artifactsSha256": {
+      "emitted-freeze.json": "402dacfd6883058258228b5c87e2b1468c3f8e7d5b7e38ac669f39a0bfd6a732",
+      "manifest.json": "93d05a9999fba23533fdf0e2c8c67b12a95e3b774a7b605d1cc3a9ddec7372e7",
+      "pretest-audit.json": "9b8853b365899768709fdeed0a7b1a69c3a800bfcd5d32064814a8718f82d326",
+      "production-process/receipt.json": "1283f54a048824751dbcd21c12ffc98d50304d66143a7cb3e77d612934585674",
+      "selected-process/receipt.json": "4255d96b7434a16c364d0f36780549b161d95d42f7f461b0f8f22f583b530251",
+      "tests-process/receipt.json": "99afe9f00da4bbfe323e242c3a98a70db2613f763107b16ee0362bb9d29c8551"
+    },
+    "attribution": "Source-reviewed quarantine-before-disposal obstruction; first-run state witness absent",
+    "counterexampleWitnessEstablished": false,
+    "forcedOwnedSignals": 2,
+    "invariantTimeoutSeconds": 20,
+    "naturalOwnedProcessClosure": false,
+    "retainedProbeRoots": 1,
+    "runtimeElapsedSeconds": 300.0664741770015,
+    "shutdownReason": "deadline",
+    "sourceGraphSha256": "37deefecb53e82109a900f86f185095c5b580b969a24b3804e55d5e5b939b8e6",
+    "streamsEof": true,
+    "waitReportedECHILD": true
+  },
+  "review": {
+    "graphAndArgvBeforeExecution": true,
+    "independentRuntimeRerun": false,
+    "sourceBeforeExecution": true
+  },
+  "status": "Diagnostic pre-fix, teardown-instrumented and rescue-assisted; actual fix unimplemented",
+  "testRoots": [
+    "test/runtime/persistent-receiver-pre-admission-probe.test.ts"
+  ],
+  "validationToolsSha256": {
+    "audit-persistent-receiver-974-probe-20261017.py": "f544287c37f02bd4f5fe6e6f3aa93092a536261c2b99a2febf672b6bdfaa21c1",
+    "bounded-native-supervisor-20261017.py": "5300f8782a9be6806e2c7f1fc9e3f06743d6de5ca6d7f788da59d126f8fa6f2e",
+    "freeze-persistent-receiver-974-probe-20261017.py": "2a4780466f4c80d48a472da13a511bebdaa1018341484cf4930e35afff4627e7",
+    "verify-persistent-receiver-974-probe-20261017.py": "c51193d5a5d7d445f0cca6e6e5bb072373c695130ad988e9e36be719a50d3355"
+  }
+}

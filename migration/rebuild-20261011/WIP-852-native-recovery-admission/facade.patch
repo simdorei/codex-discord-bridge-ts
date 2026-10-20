@@ -1,0 +1,22 @@
+diff --git a/src/store/state-access-facade.ts b/.runtime/recovery-admission-852/stage/src/store/state-access-facade.ts
+index 7280cab..8370321 100644
+--- a/src/store/state-access-facade.ts
++++ b/.runtime/recovery-admission-852/stage/src/store/state-access-facade.ts
+@@ -202,0 +203 @@ export const claimIngressRecoverySnapshotExisting: typeof RecoveryCustody.claimI
++export const claimOriginalRecoverExisting: typeof RecoveryCustody.claimOriginalRecoverExisting = RecoveryCustody.claimOriginalRecoverExisting;
+@@ -676,0 +678 @@ export interface IStateAccessFacade {
++  readonly claimOriginalRecoverExisting: typeof RecoveryCustody.claimOriginalRecoverExisting;
+@@ -1024,0 +1027 @@ export const StateAccessFacade: IStateAccessFacade = {
++  claimOriginalRecoverExisting,
+diff --git a/test/store/state-access-facade.test.ts b/.runtime/recovery-admission-852/stage/test/store/state-access-facade.test.ts
+index 1169300..0d316c9 100644
+--- a/test/store/state-access-facade.test.ts
++++ b/.runtime/recovery-admission-852/stage/test/store/state-access-facade.test.ts
+@@ -443,0 +444,2 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
++    assert.strictEqual(StateAccessFacade.claimOriginalRecoverExisting, RecoveryCustody.claimOriginalRecoverExisting);
++    assert.strictEqual(FacadeExports.claimOriginalRecoverExisting, RecoveryCustody.claimOriginalRecoverExisting);
+@@ -850,0 +853 @@ describe("StateAccessFacade runtime function identity (no database)", () => {
++      "claimOriginalRecoverExisting",
+@@ -980 +983 @@ assert.strictEqual(StateAccessFacade.removePromptIntakeIfQueuedExisting, PromptI
+-    assert.strictEqual(actual.length, 362);
++    assert.strictEqual(actual.length, 363);

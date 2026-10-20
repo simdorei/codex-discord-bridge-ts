@@ -1,0 +1,55 @@
+{
+  "scope": [
+    {
+      "path": "src/runtime/action-executor/basic-dispatcher.ts",
+      "beforeSha256": "846a2d571ba96a5f4966cf69494b26c52cf32958a8ca2aee78846ab92d893967",
+      "afterSha256": "119874742eddec08c3fa433705f732c2822d53121857dea64725cc4bac85a99b"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "beforeSha256": "6862fa522207eb3a4735c1251b2ca54d58c4e582c3055a51a7a83f7ebaa931f4",
+      "afterSha256": "bf3c9e8c392f32d12e6427f93c7e8ab8aaa2489cdd918918dffd87a236ecd2d6"
+    },
+    {
+      "path": "src/runtime/action-executor/thread-selection.ts",
+      "beforeSha256": "ae1315e64a1dc16857bc0552c206938abfd85b4b1fb7c6ba4384c45fc6d9c6eb",
+      "afterSha256": "2056149c965cc8c31d567350c4db95cd3352b2a7d09a8bf25210687ed82705ea"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "beforeSha256": "9f32b068db0481db0a1211a09bc670e04a3d6a4a9b288279dca0fd021ebb5291",
+      "afterSha256": "aa6b60e00ba21cd63e78eccddcd146f1f6b5a0f0df430c64567edef91d524ae2"
+    },
+    {
+      "path": "test/runtime/action-executor/thread-selection-native-paired.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "2b40d5f8657ee9db6cd68a0ea472f9d0d6b1934f0b3a574f6043f3ea37c398d5"
+    }
+  ],
+  "stageFileCount": 1599,
+  "full": {
+    "tests": 8125,
+    "pass": 8125,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "fullLogSha256": "50a6667477799782e06dae89347a8a8e45d581f24f3d11d54bcd38fe86e8e23b",
+  "focused": 45,
+  "status": "APPLIED_VERIFIED",
+  "actualFocused": 45,
+  "typecheck": 0,
+  "build": 0,
+  "verifiedAt": "2026-10-12T14:10:00.289692+00:00",
+  "wholeTestFiles": 784,
+  "testFileConcurrency": 1,
+  "missingProtectedFixture": "not executed or counted as skipped",
+  "runtimeWindowsLive24h": "UNVERIFIED",
+  "evidence": {
+    ".runtime/action-selection-native-749/full.log": "50a6667477799782e06dae89347a8a8e45d581f24f3d11d54bcd38fe86e8e23b",
+    ".runtime/action-selection-native-749/applied/focused.log": "fc8e4223163e9294539443ada4b9de0c7a565b2885cfc9ccc4cc4ae14b56b72c",
+    ".runtime/action-selection-native-749/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/action-selection-native-749/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/action-selection-native-749/stage-inputs.json": "4e1ab6d75a9f220a41b84fc7adebb0c6d12ca8b681e6acb42317c466ef9df659"
+  }
+}

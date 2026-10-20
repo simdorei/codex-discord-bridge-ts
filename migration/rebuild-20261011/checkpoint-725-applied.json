@@ -1,0 +1,136 @@
+{
+  "beforeHead": "769195de282495141bd2430cb011f719a4418423",
+  "stageFileCount": 1574,
+  "scope": [
+    {
+      "path": "src/runtime/prompt-intake/native-state-worker.ts",
+      "beforeSha256": "86b147fd6e51b21d83ac5ec1981dd4c394307a25250e02149a8e386eaabcabe1",
+      "afterSha256": "5a5972a31d873c65428992ba6477e3646f2e8c953d78f2c00476ab6b8858a72c"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state.ts",
+      "beforeSha256": "514fb88237cbfd45fea9db3be8ceaa01e3bd8ba4a03730730460568fab8d9082",
+      "afterSha256": "cff005065be4d786130878d7459b3cb80696b49da42a4b96c3377278f85dc5fb"
+    },
+    {
+      "path": "src/store/prompt-intake-write.ts",
+      "beforeSha256": "7d0cec620a22eb675b96d1260685806eae5ee6a430318015207a014ac555d38f",
+      "afterSha256": "b8e0e46b719740d7531a12420712cdf2dead0117daf17d59f5b7026933201885"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "b642b1c376cc1918aed387e0c88ffbf49e2655ba6afe8bc0aa42d11cd032cd5b",
+      "afterSha256": "1144f0b01cb54ed456305ec6b2b10a383effc9cea7a18e2e871ab9ed761bfa67"
+    },
+    {
+      "path": "test/runtime/discord-dispatch/ordinary-dispatcher.test.ts",
+      "beforeSha256": "825e78167f01f20c604fe4dcd9eff7b4d06fc995862315e2762425757c8df90e",
+      "afterSha256": "c157727b1f518e7c733148f16f588791bdeb98b45448ca539447ef3405584b22"
+    },
+    {
+      "path": "test/runtime/discord-runtime/executor-bootstrap.test.ts",
+      "beforeSha256": "2203303bf7927b591cc7661182f1462204496e1d5ea8257f7efa1c65a7337f4d",
+      "afterSha256": "ec2ecdaf847cb7c85a5d91d8ac4098b8a573ebed90225bbabe72dda72c8c5d54"
+    },
+    {
+      "path": "test/runtime/discord-runtime/startup-context.test.ts",
+      "beforeSha256": "1d86d68611e4d975c576074f5dc101245485bd2502371836c5a57f6d6b81a99f",
+      "afterSha256": "d532212e5d4c2a1418bd2104a8e7cad6ad94103ba1931542d8938001d15ce82b"
+    },
+    {
+      "path": "test/runtime/discord-runtime/startup-subscriptions.test.ts",
+      "beforeSha256": "ab672e7fc3cdbd91f1951a7fd04d15a984354a4afe9b006024dd39fe67a4011c",
+      "afterSha256": "147eba932d20873bb55066bc6905a6b7d7f9894f053c083ed823f2e7cf26b850"
+    },
+    {
+      "path": "test/runtime/observation-worker-lane.test.ts",
+      "beforeSha256": "e5ce7774910ea4050ee264d4da3298dc14d65b547190fa05a4b3bb413847b998",
+      "afterSha256": "0b68df226cb4b226ec083d47b254ef0ac4261634d15ab3c9067313388ad1bb48"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-admission.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "7c301c1436a8d07862a7a30874236980dd5c1ea06de6ba546614b0b9e682f44d"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-maintenance.test.ts",
+      "beforeSha256": "05c533d3b60e08a344ac436c2d3242688ea31cd61858e92d4e5b904bee2b549e",
+      "afterSha256": "1b12306ecdb0bae05d4f924af5dba020b418300f7fe6bbdd78f23c0527246d97"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-startup-release.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "dbc2ca9d28eb88f17d716b50d55e9634cfaf83747ec9be2db0d590154c955866"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-state.test.ts",
+      "beforeSha256": "503b8d753fe5ffda27b17c9491c7b6c5b53c4d08acda122fec6304a848f1f2d8",
+      "afterSha256": "7b65bc5f35f28bbccec16dc52b2d1c14193ecb6880c1a0765ed356e978cc4fab"
+    },
+    {
+      "path": "test/store/ingress-prompt.test.ts",
+      "beforeSha256": "34c74fefe6c85249cad0eeb0ef9ea1bf4fa72ec35574a89088b347ecc0b43495",
+      "afterSha256": "5077ce716f57527924709f9e9374497610cbddf627947e1ada8293415ad022b7"
+    },
+    {
+      "path": "test/store/prompt-intake-admission-existing.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "0ceabd96ed3c35232885c4f723cccaa18af0137bc476267c839531d6f9f31b96"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "bdd527f310d137f55617613db6543d20422aad138d12d981c396b8f4ce23e862",
+      "afterSha256": "1931562d118e8a7e325f92b342d6d2e921e98f8f63153edf71c734a8a37426d5"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 7969,
+    "pass": 7969,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 765,
+    "logSha256": "b93fce3de0741ae639b18d7f02030d13ee8ce625e6c25982515b807e71b03268",
+    "tapSha256": "0fb805427397fa16ede432ed8c772edf1d2b9753dfe80e858ab5ad5c27cc1319"
+  },
+  "claim": "Qualified staged whole7969PASS plus actual1556PASS/TS0/build0 and all1574source/test hashes identical. No separate actual whole rerun/Windows/performance claim.",
+  "remoteWrite": "Qualified720 verified39e33f36; candidate725 unapplied.",
+  "actualAll1574HashesMatchQualifiedStage": true,
+  "initialApplicationEvidence": "pre-apply-proof.json retained unchanged;14 files were applied from earlier7968PASS graph.2 subsequent test-only corrections are recorded in interleaving-test-correction.json.",
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 1556,
+      "pass": 1556,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1574
+  },
+  "evidence": {
+    ".runtime/prompt-intake-complete-native-725/full.log": "b93fce3de0741ae639b18d7f02030d13ee8ce625e6c25982515b807e71b03268",
+    ".runtime/prompt-intake-complete-native-725/full.tap": "0fb805427397fa16ede432ed8c772edf1d2b9753dfe80e858ab5ad5c27cc1319",
+    ".runtime/prompt-intake-complete-native-725/full-exit.json": "d8b617f7381e01a5cc010de20a6d4a8e4b1656f1065ed8979153784c76c85aae",
+    ".runtime/prompt-intake-complete-native-725/scope-proof.json": "f7d941282ca237c2f7621407e61eac7a05f555a124bb8ae9d76b5c44bd73edd7",
+    ".runtime/prompt-intake-complete-native-725/stage-inputs.json": "4a837b2e810aba2c8e2d6dbad9f1e59cd6248f78c200c39a9ec6e4fe65cde901",
+    ".runtime/prompt-intake-complete-native-725/source-inputs.json": "8443c090ef8819e5f973ec05089d7026aa5400599a80f7357fb9b80c1fa91d95",
+    ".runtime/prompt-intake-complete-native-725/foundation-identity.json": "7879ac0fb453d48ff0449effd233667894337f22bbbfcbb8c655c5a2dfeaa556",
+    ".runtime/prompt-intake-admission-existing-722/body-identity-proof.json": "d3b2e3a5c5e977b10892482b49efde22fb78db87e1f46a20342a3818386dfd1f",
+    ".runtime/prompt-intake-admission-plan-721/source-inputs.json": "e5adbfc795d3a6282bf13b9187b063546a649bca1c5ab085f5c36901629505a1",
+    ".runtime/prompt-intake-complete-native-725/foundation-delta-proof.json": "3b6c3066de03bb7a6b4267d11cce6f3722a976e75d52dfaf722311ae90a5fde2",
+    ".runtime/prompt-intake-complete-native-725/fixture-correction.json": "019bb000737aea4814d36df1b5cec9477a48d9682e0c5d982d725e656d47a838",
+    ".runtime/prompt-intake-complete-native-725/interleaving-test-correction.json": "219f377cd7f410662c0a3fbec96815e485f134a536df4507dce6a85710f7d0bf",
+    ".runtime/prompt-intake-complete-native-725/initial-actual-red/focused.log": "3c2927e82787b00a06990a5f42771423f2e1d58c9c31ff1b4fa7d8de1577e3d6",
+    ".runtime/prompt-intake-complete-native-725/qualified-pre-deferral-test/full.log": "3bfc32376c5f3e3b441fd9f6862028b4ae99214f505cb193ac4435330636e211",
+    ".runtime/prompt-intake-complete-native-725/observation-test-correction.json": "2efddd285e6a2e1f4330bbe17ebbfc461fd5843fb88e7375c162ca51550cc090",
+    ".runtime/prompt-intake-complete-native-725/observation-regression-identity.json": "e6db7d4640357b224a01789a52d340fdf438a2a1fe4097d4ecb0144015b3a0ce",
+    ".runtime/prompt-intake-complete-native-725/observation-old-red.log": "715969c9a8b0272727ee65b3e210531d9b2cf8b9b6d2788bf761dec28accc23f",
+    ".runtime/prompt-intake-complete-native-725/initial-full-red/full.log": "f1746ee4a752776dc81954948511f1fa00fd9d68ae0f0c436abd08d96010074e",
+    ".runtime/prompt-intake-complete-native-725/initial-full-red/full-exit.json": "b73ec12123bd36c559e4f8e8cfa31cd2938c5c9d986914a3dc8cd1c7f509ab40",
+    ".runtime/prompt-intake-admission-native-723/fixture-correction.json": "379b8341c00184f43155fc8447a81ae3eef398c369901a6a27d7e2333d9c3d11",
+    ".runtime/prompt-intake-admission-existing-722/test-correction.json": "db13a90ef46915c51dc82b94cdfb869a20d0d4515810d8ddc8d1d4872fd013ba",
+    ".runtime/prompt-intake-complete-native-725/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/prompt-intake-complete-native-725/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/prompt-intake-complete-native-725/applied/focused.log": "f04cb28e5acee86282f8130085f8d179a19adc2e3b054b27fb20eef38edc3951"
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "baseRemote": "00bce736f96d5639b6b3cb847adb20b0567c79fa",
+  "baseTree": "4d98cbe8cd6ed635445351f6192661f93bcdfb99",
+  "files": [
+    {
+      "candidatePath": "src/store/state-access-facade.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-807-mirror-runtime/files/src/store/state-access-facade.ts",
+      "sha256": "0178a81104609cbb3a18161b7c7dbd6601b6bed9c553a021ff4e6f92f1cccdbf"
+    },
+    {
+      "candidatePath": "src/store/mirror-stale.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-807-mirror-runtime/files/src/store/mirror-stale.ts",
+      "sha256": "35c8d786de8a3a7e34038944525b49b3abb4dec3976232b919877e2949643a34"
+    },
+    {
+      "candidatePath": "src/store/room-cleanup-pending.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-807-mirror-runtime/files/src/store/room-cleanup-pending.ts",
+      "sha256": "cd3eec95ab5d09ea11cebc7a37e4854d597c34e0a7edbe8803680beb4f9a95bd"
+    },
+    {
+      "candidatePath": "src/store/mirror-mapping.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-807-mirror-runtime/files/src/store/mirror-mapping.ts",
+      "sha256": "01ccc5602876770f152d24232fa91d861f1ab270c8c283b4b5e693228b0d374b"
+    },
+    {
+      "candidatePath": "src/store/room-cleanup.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-807-mirror-runtime/files/src/store/room-cleanup.ts",
+      "sha256": "ebbc9b345c1e13870ce1122c14a9143508d5aa48273bb7f2f87a33d1933e7e4e"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/store-native.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-807-mirror-runtime/files/src/runtime/mirror-sync/store-native.ts",
+      "sha256": "22b177dbf43fcc576d5b7c7b765c11cae186afa88ff7876100418277c6129362"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/store-native-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-807-mirror-runtime/files/src/runtime/mirror-sync/store-native-worker.ts",
+      "sha256": "6e2b4dd293b1552c7b21446bad18bbfe542220ef6e21e2db66ad5e8205bab548"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/store-native-protocol.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-807-mirror-runtime/files/src/runtime/mirror-sync/store-native-protocol.ts",
+      "sha256": "a3bdc383d61c6cd2945ad38766039e8ac72a242b4664f57dc5c1c4421f243696"
+    },
+    {
+      "candidatePath": "test/store/mirror-sync-mapping.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-807-mirror-runtime/files/test/store/mirror-sync-mapping.test.ts",
+      "sha256": "e5e157ed6a444c73329832bd19b2e1ade38f15c59e0e44ce39bee6b09f95c9ab"
+    },
+    {
+      "candidatePath": "test/store/state-access-facade.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-807-mirror-runtime/files/test/store/state-access-facade.test.ts",
+      "sha256": "97a9ccde386191e137b957f30fd3c3b901134f6f2103e9448ef42d5ff0a70a87"
+    },
+    {
+      "candidatePath": "test/store/room-cleanup.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-807-mirror-runtime/files/test/store/room-cleanup.test.ts",
+      "sha256": "483c0253a3b10b6ca571e155ef10193229efac58bd3b6409884ec2605d87d11c"
+    },
+    {
+      "candidatePath": "test/store/room-cleanup-pending.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-807-mirror-runtime/files/test/store/room-cleanup-pending.test.ts",
+      "sha256": "570279de6c4e0e0ec2f87ac296376c590c3d11cf5ff4c211d4f776d61f34155f"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/store-native.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-807-mirror-runtime/files/test/runtime/mirror-sync/store-native.test.ts",
+      "sha256": "2097fefb763106a6e1c811728a060faea7baf0120347bcd18b5945e562e8bcb4"
+    }
+  ],
+  "checks": {
+    "strictTypecheckExit": 0,
+    "focused807": {
+      "passed": 57,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "native806": {
+      "passed": 10,
+      "failed": 0
+    },
+    "predecessor805Whole": "RUNNING_WITH_FAILURE: startup-context actual gateway/core shutdown test exceeded its 15000ms deadline; root cause unverified; raw result retained privately",
+    "whole807": "NOT_RUN"
+  },
+  "limitations": [
+    "Do not apply while full regression failure is unresolved",
+    "BridgeSync command and complete remote transport are not wired",
+    "Native storage worker uses initialized store API; no live database was touched",
+    "No Windows, performance, live Discord or deployment approval",
+    "Missing protected redaction fixture is not recreated or counted"
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "state": "WIP_NOT_APPLIED",
+  "createdAt": "2026-10-12T04:58:55.888321+00:00",
+  "baseLocalCommit": "793d7253fbbcce223d1b7cd16dd59757b9829f1f",
+  "baseRemoteCommit": "d75f82b04276138e5c890365184e2e2c7f05ffcf",
+  "baseQualifiedWhole": 7858,
+  "candidateFocused": {
+    "tests": 80,
+    "pass": 80,
+    "fail": 0,
+    "cancel": 0,
+    "skip": 0
+  },
+  "candidateTypecheck": 0,
+  "candidateBuild": 0,
+  "candidateWholeRun": false,
+  "candidateNativeIntegration": false,
+  "candidateProductionApply": false,
+  "correction": {
+    "initial": {
+      "tests": 20,
+      "pass": 16,
+      "fail": 4,
+      "typecheck": 0,
+      "build": 0
+    },
+    "sourceFinding": "Base initialization does not create codex_thread_fork_handoffs; original enqueue deliberately ensures it inside original transaction. Readonly guard substitution broke first submission. Restore exact original helper calls and lazy DDL; no full initialize or absent DB creation.",
+    "fixtureCorrection": "Legacy index fixture must establish original fork table first; original contract retires that index, not preserves it. Compare both initialized/existing paths.",
+    "passiveFinding": "Object.prototype.value getter invoked once from inherited accessor descriptor. Replace in with Object.hasOwn, same regression body retained.",
+    "actual708Affected": "Only inherited descriptor issue exists in prior snapshot validator; new native-enqueue integration not applied.",
+    "guardAndTransactionOrderingPreserved": true
+  },
+  "bodyProof": {
+    "sourceSha256": "02f5b47fad169aa4f547518b3d59020dd773e992f9d6307c5a1816ffa58e6527",
+    "candidateSha256": "d5e733faee7d6b80d96b9793685e86414902cc3bab9b3099edcbee93e10720bd",
+    "enqueueOwnedValuesByteIdentical": true,
+    "originalOwnedTransactionBodyExceptDeclaredCatalogCheckIdentical": true,
+    "transactionBodySha256": "7d2db7714942f49347c5ecd759fd39b0f509a7db3820d6c8fb1b2574f2456fbd",
+    "descriptorFix": "in operator replaced by Object.hasOwn only",
+    "sameDescriptorRegressionSha256": "4a30f5a00cc7c45ff6a816ecb7d0e6eedb3f0a92ff496a1bc8d3a201790adc5a",
+    "initialRed": {
+      "tests": 20,
+      "pass": 16,
+      "fail": 4
+    },
+    "correctedFocused": {
+      "tests": 20,
+      "pass": 20,
+      "fail": 0
+    }
+  },
+  "files": [
+    {
+      "path": "PLAN.md",
+      "sha256": "5b0a67eee7724c179ba09d5ba98facfaa0120113ed639444f185d1e543e309b3"
+    },
+    {
+      "path": "candidate/src/store/queue-enqueue.ts",
+      "sha256": "d5e733faee7d6b80d96b9793685e86414902cc3bab9b3099edcbee93e10720bd"
+    },
+    {
+      "path": "candidate/test/store/queue-enqueue-existing.test.ts",
+      "sha256": "87d992f7a5ecba6db2914e6d59f06c6abdfa98adf4109abe5c4be1637f44aaea"
+    },
+    {
+      "path": "source-inputs.json",
+      "sha256": "d9403935423b20894eb889992c04e19622e85230a0ffa0748eb349b3b8c249d3"
+    }
+  ],
+  "rawEvidenceHashes": {
+    "typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "focused.log": "e859497bac83eb12078e6dcf41c74259268ab2f5e7b28a69f5a92e1fab987043",
+    "stage-inputs.json": "b807aef070e9b8c4110bdb138d4a5ab097c112aa71302fdd7dcda51a0c3254b5",
+    "scope-proof.json": "2b3410396192a84ee9d92f96c064099c8ead2ad7e63855b07bcb3be029a78b95",
+    "initial-red/focused.log": "54827d2d22654a90d8a7457c780edce7214170f1cae9ad1cad1e444722b13f9e"
+  },
+  "excludes": [
+    "raw logs",
+    "DB files",
+    "credentials",
+    "protected fixture"
+  ],
+  "scope": "Preservation snapshot only; production source remains qualified708. No merge/deploy/Windows/full runtime PASS."
+}

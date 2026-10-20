@@ -1,0 +1,14 @@
+{
+  "status": "WIP_UNAPPLIED_PURE_PREDICATE",
+  "focused": {
+    "tests": 19,
+    "pass": 19,
+    "fail": 0,
+    "skip": 0
+  },
+  "typecheckExit": 0,
+  "buildExit": 0,
+  "full": "NOT_RUN",
+  "runtime": "NOT_INSTALLED",
+  "actualBaseline": "779 whole8259 PASS"
+}

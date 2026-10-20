@@ -1,0 +1,22 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 399,
+  "localCommit": "e72f86e6267555a0cf0a72bb7c9118fbfc910b10",
+  "fullTests": 6108,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/admission/drain-gate.ts": "ae4efc9f482dda3183944ca1ed4bab0e185a122c4c01081687e0b70345c0f7dc",
+    "test/admission/drain-gate-instrumentation.test.ts": "58b513bca195c71f2fb0aac997322fb25e83f0f7b7f94b8f720eb103c88c0bfb",
+    "test/admission/drain-wait.test.ts": "1a87df631c696e5e369baab49f7846154b5387028d8fba5d7fb92170f76cc07b"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

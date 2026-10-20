@@ -356,6 +356,8 @@ describe("schema-extensions-a: missing/malformed guards matching Rust predicates
       db.exec(
         "CREATE UNIQUE INDEX codex_mutation_prepared_target ON codex_mutation_attempts(attempt_id)",
       );
+      assert.equal(schemaCurrentMutationAttempt(db), false);
+      db.exec("CREATE TABLE cdr_resume_restart_recoveries(attempt_id TEXT PRIMARY KEY,original_json TEXT NOT NULL,proof_json TEXT NOT NULL,runtime_id TEXT NOT NULL,recovered_at REAL NOT NULL)");
       assert.equal(schemaCurrentMutationAttempt(db), true);
 
       // Drop attempts and re-create without request_sha256

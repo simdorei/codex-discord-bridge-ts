@@ -1,0 +1,25 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 360,
+  "localCommit": "c955fb2f72e4e9b7ce188fdea15326be9f506b0a",
+  "fullTests": 5809,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/app-server/portable-resident-lifecycle.ts": "dbd7019f739fc85e8359693a745546c3c70b4200d1e399d87f59582fbead8380",
+    "src/runtime/action-executor/archive-action.ts": "f548e4913fe86928586089055144def3259ec227e8d3d9fa2524852746d370a9",
+    "src/runtime/action-executor/resume-verifier.ts": "a9ce31b34d377a4d3d8d60d939f2ee1449c384eaf8e3acc113de1e3dff16868c",
+    "test/runtime/action-executor/archive-action.test.ts": "bff9a826a10478de3a7d4ac646ad6957cd1b6aa88ce0e1c2ef96e7a3d3d929ed",
+    "test/runtime/action-executor/resume-verifier.test.ts": "b48866253223be17de9d5548f3078819a3d002088f5b73d77f1ed05e3ca45530",
+    "test/runtime/idle-release-journal.test.ts": "e83225fd864cfb7832431ed56a90e1cc1a722a5356cdd5fecc71196279406eff"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

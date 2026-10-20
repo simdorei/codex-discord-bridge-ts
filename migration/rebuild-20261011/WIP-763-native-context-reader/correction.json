@@ -1,0 +1,9 @@
+{
+  "scope": "one public API guard",
+  "cause": "null runtime limit entered private probe sentinel and could launch native work",
+  "productApplied": false,
+  "testSha256": "527850f47467619e5038bd7722e9a1d3880c9f89d1fe2cbd0973875f7120b6be",
+  "testsUnchanged": true,
+  "beforeSourceSha256": "a768c64a5ffb05b01c783ee33832910af0143b6d2c42c23479d7b1d822bb9f0e",
+  "afterSourceSha256": "49d4463d17140fb3961c49165e460a1af0076e3149873429a1fae6f4141b17f8"
+}

@@ -1,0 +1,102 @@
+{
+  "beforeHead": "f23498bf9331d9a88c4026d04b29aea5225535ce",
+  "stageFileCount": 1558,
+  "scope": [
+    {
+      "path": "src/runtime/queue-runner/native-attempt-worker.ts",
+      "beforeSha256": "7b7365c6b39a6953e5a4a8a17c7e3aca020e6c14a47629c9c2b816db9950b9be",
+      "afterSha256": "bd0adf0872b9e0070deb3065567fd02a373a8803ee42e7d268d784e555b91883"
+    },
+    {
+      "path": "src/runtime/queue-runner/native-state.ts",
+      "beforeSha256": "db615959c26629febaaf0162aaccc118a6833c8b2c7494ce22023b6ebd3da162",
+      "afterSha256": "c01e059c09bbc2b3534cea7534de02f4e42d34eee4e8048173185019cdbc7e42"
+    },
+    {
+      "path": "src/store/delivery.ts",
+      "beforeSha256": "7fc408eca94c1b5c9bc185ed2c2a40fee1a67fefcf4cfa6516b3b19ae0509980",
+      "afterSha256": "3ffea4d4c6f23b17efaa0805696a1798e8f81926da298b119f89fb0449b03ff2"
+    },
+    {
+      "path": "src/store/goal-progress.ts",
+      "beforeSha256": "f6f0ca2749e2e3dfa85bfb62f8f54a16ff35eac750685d0255c059af2ac2887e",
+      "afterSha256": "820bdcdaf62eb9179ef1ad293925c1ed47841aa9499452be316b9b3843ddc5d6"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "9634828c3aae75babf58839ae47969415aa926218cb0b89d404cd4c7c003e6bf",
+      "afterSha256": "2f6df5a513d81f5339ab4d8222367d1791be24cb201f30d1607dc76e20634597"
+    },
+    {
+      "path": "test/runtime/queue-runner/native-attempt.test.ts",
+      "beforeSha256": "a2302b6a982f8c9bb6ab4150242509b4c137d1be08f850e9386fec63f6668bf2",
+      "afterSha256": "cbad7b0e8bc7553822273456c9a3797098167fed06d8c3a1d517ac9276771a80"
+    },
+    {
+      "path": "test/runtime/queue-runner/native-completion-stage.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "a6b07991508df4a3559a6b4af8b29f3437dc8d1df296d335464e85129e02a3f1"
+    },
+    {
+      "path": "test/runtime/staged-completion-handler.test.ts",
+      "beforeSha256": "5ea19b013feda895a2be13f2e8de17952bf4d8625bb6f59f7a42dbf8ebf9439d",
+      "afterSha256": "5ca611478e9a082c78a5fcd00b6f70779d5afc4f935e72344c8fa23a50ab6dec"
+    },
+    {
+      "path": "test/store/native-completion-settlement.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "8580e75e01f3f83a88ba27509acf0b790cfc285772e3622b08cdb263187d835c"
+    },
+    {
+      "path": "test/store/queue-completion-existing.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "45688a3e7edb1c3c480618aebb9beddb3db9721bee12a4d59057f0d775e979c2"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "81735f5dc26e269bfc135bf227a868d33f0a256d6cb425e8eb3cce1c879464f0",
+      "afterSha256": "4f5e606297bab06f1bb3775a45dc776dd4c132cf221504b696934d0ca52d2fa1"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 7858,
+    "pass": 7858,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 754,
+    "logSha256": "4d191705f67c7d00c5a557a78587c7120a0cb7400540fc8f43a6c8176284e236",
+    "tapSha256": "d8e8f7cb0a9955e305814438a57aa3ac4452c0e0201ec46ba3990a83cbacec8b"
+  },
+  "claim": "Qualified staged whole7858PASS plus actual1183PASS/TS0/build0 and all1558source/test hashes identical. No separate actual whole rerun/Windows/performance claim.",
+  "remoteWrite": "Authorized publication active; baseline705 verified507bd778; candidate708 not published.",
+  "actualAll1558HashesMatchQualifiedStage": true,
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 1183,
+      "pass": 1183,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1558
+  },
+  "evidence": {
+    ".runtime/queue-completion-native-708/full.log": "4d191705f67c7d00c5a557a78587c7120a0cb7400540fc8f43a6c8176284e236",
+    ".runtime/queue-completion-native-708/full.tap": "d8e8f7cb0a9955e305814438a57aa3ac4452c0e0201ec46ba3990a83cbacec8b",
+    ".runtime/queue-completion-native-708/full-exit.json": "12477ee8bb39095d7367210b4de5531f2a69fc8986836bc19a1f8931d8ecdb0b",
+    ".runtime/queue-completion-native-708/scope-proof.json": "d8c66b1e5860dba4a0fa5d248389935c7a9dc26c69d5e0d073ca75dae717451c",
+    ".runtime/queue-completion-native-708/stage-inputs.json": "2f520c2441b5b7de6d3265cbce02d86f2bcd4aae2b1cbad439acb1ef2014fd83",
+    ".runtime/queue-completion-native-708/source-inputs.json": "886ac7a038d8bf29252a3226da441812dbd79f696bc678b8f0db93f4d577233c",
+    ".runtime/queue-completion-native-plan-706/rust-source-identity.json": "e6156f6fa1053c5e8c189ee39c33d219d85d932df0e2915ffb397bd98394fd58",
+    ".runtime/queue-completion-store-707/body-identity-proof.json": "0e46ab5b7f934471fb65337f9c987f22081c7ff1702542824ff26dfd87da9398",
+    ".runtime/queue-completion-native-708/handler-test-provenance.json": "337b50eb3e5287eb9534f468d88b672808b1c576fc27c8f5356b798e609c6582",
+    ".runtime/queue-completion-native-708/foundation-identity.json": "7528e8e661af5b2e277dca9b5147b41e44ca7f3c4630801f4b75e29e6c8533cf",
+    ".runtime/queue-completion-native-708/oracle-correction.json": "1f154040aa5a66a364cb2e20ea9f73f435aac802d490ff538eea45242fbaaf86",
+    ".runtime/queue-completion-native-708/goal-ack-binding-correction.json": "0a2717284eb21f66ba0e3f3f5965fadfe965cb20b99805e9a08a04a142866176",
+    ".runtime/queue-completion-store-707/verification-result.json": "78ce7d47cf760196a8a8eece805c9968700121868625ddcf724373e1e8b2b15a",
+    ".runtime/queue-completion-native-708/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/queue-completion-native-708/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/queue-completion-native-708/applied/focused.log": "ed41bc5564d88d3c4258d7cbbd5261f1157ce3a42c836163deed6e81b43202f1"
+  }
+}

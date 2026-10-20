@@ -1,0 +1,13 @@
+{
+  "status": "WIP_NOT_APPLIED",
+  "strictTypecheckExit": 0,
+  "node": "24.21.0",
+  "tests": "NOT_RUN for integrated772",
+  "dependency770": "focused137 passed; whole regression still running; not applied",
+  "actualProduct": "769 standalone foundation, whole8235 and actual focused133 passed; no runtime native writer installation",
+  "limitations": [
+    "All 19 candidate files remain separate from product source.",
+    "No runtime integration PASS, no Windows or operational deployment approval.",
+    "Shared-owner mutation closure and synchronous final checks still require direct review and real regression tests."
+  ]
+}

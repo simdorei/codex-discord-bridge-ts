@@ -1,0 +1,55 @@
+{
+  "status": "APPLIED_VERIFIED_BOUNDED_RECOVERY_LEAVES",
+  "at": "2026-10-12T22:38:29.891093+00:00",
+  "baselineHead": "ba20013ad119c5b8daeaa0b979d594079c3f1dbb",
+  "scope": [
+    {
+      "path": "src/store/stop-terminal-observation.ts",
+      "beforeSha256": null,
+      "afterSha256": "d85ce18041ee10fded7dfd31710e6b1ca85a65fee2cb31a0b7ba54298a776ab5"
+    },
+    {
+      "path": "test/store/stop-terminal-observation.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "12ae1c735e764ff952b9dd3d0d9799b71bebb5c28d34788a8bbd3b616193cdc2"
+    },
+    {
+      "path": "src/store/stop-control-recovery-read.ts",
+      "beforeSha256": null,
+      "afterSha256": "c627b7835ae01ac51dbe725edce316ae693c10716ba84784f4b81ea4dbee65fa"
+    },
+    {
+      "path": "test/store/stop-control-recovery-read.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "16649935c0387c1565996cfe6336790b9f736236873e5ffb6c98e9628c53849d"
+    },
+    {
+      "path": "src/store/stop-recovery-custody.ts",
+      "beforeSha256": null,
+      "afterSha256": "b865c17ecc0205d720f107a94162466a1ba03009af991c1b7a29edc57d669cb8"
+    },
+    {
+      "path": "test/store/stop-recovery-custody.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "6ec88b1baef5bca5dafe95cde380243b3db373d2d4c3b7e901cda8709a4d198d"
+    }
+  ],
+  "wholeTests": 8304,
+  "wholeFiles": 808,
+  "fullLogSha256": "c3304bd64bf6a08801881c5e2cd847b8f87713a744b392de5523f4c37d14d374",
+  "stageInputsSha256": "5080a6d0a66ca28a182172737d446bdc874b134b571630a4ba315e9cfeb31625",
+  "priorRedRetained": true,
+  "liveDeploymentQualified": false,
+  "all1636InputsMatchStage": true,
+  "actualFocused": 37,
+  "typecheck": 0,
+  "build": 0,
+  "verifiedAt": "2026-10-12T22:39:06.908924+00:00",
+  "runtimeRecoveryInstalled": false,
+  "missingProtectedFixture": "not executed or counted skipped",
+  "evidence": {
+    ".runtime/stop-recovery-leaves-788/full.log": "c3304bd64bf6a08801881c5e2cd847b8f87713a744b392de5523f4c37d14d374",
+    ".runtime/stop-recovery-leaves-788/applied/focused.log": "da3b6655bddbdf478cda9dde85f62f107086efe88aaa1a8dd19673b12d70677c",
+    ".runtime/stop-recovery-leaves-788/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

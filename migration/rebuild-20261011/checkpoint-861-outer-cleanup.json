@@ -1,0 +1,24 @@
+{
+  "checkpoint": 861,
+  "status": "IMPLEMENTED_SCOPED_VERIFIED",
+  "changes": [
+    "Completed prepared lifetime emits module-private identity-bound receipt",
+    "Outer cleanup requires exact receipt, recommended gateway and drain controller",
+    "Shared HTTP and identify queue close before drain identity removal; no fabricated receipt or foreign owner grants cleanup",
+    "Singleton release remains caller responsibility and is not enabled by WIP858"
+  ],
+  "verification": {
+    "strictCompiledBuildExit": 0,
+    "focusedTests": 6,
+    "pass": 6,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "fullSuiteClaim": false
+  },
+  "limitations": [
+    "No full production executable assembly",
+    "No Windows or real Discord operational qualification",
+    "WIP858 socket tests remain unverified"
+  ]
+}

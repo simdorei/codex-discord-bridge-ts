@@ -1,3 +1,5 @@
+import type {DatabaseSync} from 'node:sqlite';
+import {openExisting} from './existing-store.ts';
 import { I64_MAX, I64_MIN } from "../protocol/ids.ts";
 import { openInitialized } from "./owned-driver.ts";
 import { selectJob, type StoredQueueJob } from "./queue-read.ts";
@@ -81,12 +83,12 @@ const UPDATE_PREFLIGHT_FAILURE_SQL =
   "last_error = ?, updated_at = ? " +
   "WHERE job_id = ? AND app_server_generation = ? AND state = 'pending'";
 
-export async function recordPreflightFailure(
+function preparePreflightFailure(
   path: string,
   jobId: string,
   generation: bigint,
   error: string,
-): Promise<StoredQueueJob | null> {
+): {snapshotPath:string;snapshotJobId:string;snapshotGeneration:bigint;snapshotError:string} {
   if (typeof path !== "string" || !isWellFormedString(path)) {
     throw new TypeError("Invalid database path");
   }
@@ -110,7 +112,10 @@ export async function recordPreflightFailure(
   const snapshotGeneration = generation;
   const snapshotError = error;
 
-  const db = await openInitialized(snapshotPath);
+  return {snapshotPath,snapshotJobId,snapshotGeneration,snapshotError};
+}
+
+function finishPreflightFailure(db: DatabaseSync, snapshotJobId:string, snapshotGeneration:bigint, snapshotError:string):StoredQueueJob|null {
   let committed = false;
   try {
     db.exec("BEGIN IMMEDIATE;");
@@ -145,4 +150,25 @@ export async function recordPreflightFailure(
       // ignore close failure
     }
   }
+}
+
+export async function recordPreflightFailure(
+  path: string,
+  jobId: string,
+  generation: bigint,
+  error: string,
+): Promise<StoredQueueJob | null> {
+  const {snapshotPath,snapshotJobId,snapshotGeneration,snapshotError}=preparePreflightFailure(path,jobId,generation,error);
+  const db=await openInitialized(snapshotPath);
+  return finishPreflightFailure(db,snapshotJobId,snapshotGeneration,snapshotError);
+}
+
+export function recordPreflightFailureExisting(
+  path: string,
+  jobId: string,
+  generation: bigint,
+  error: string,
+): StoredQueueJob | null {
+  const {snapshotPath,snapshotJobId,snapshotGeneration,snapshotError}=preparePreflightFailure(path,jobId,generation,error);
+  return finishPreflightFailure(openExisting(snapshotPath),snapshotJobId,snapshotGeneration,snapshotError);
 }

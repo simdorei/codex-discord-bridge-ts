@@ -1,0 +1,39 @@
+{
+  "sameRegressionBodySha256": "4cb3275fefcc6370647c77ad03ea4cb515c03ad061bf0bfe1c87c2f97c6ac1cc",
+  "firstWhole": {
+    "tests": 7967,
+    "pass": 7966,
+    "fail": 1,
+    "skip": 0,
+    "durationMs": 613434.073042
+  },
+  "originalLogSha256": "f1746ee4a752776dc81954948511f1fa00fd9d68ae0f0c436abd08d96010074e",
+  "production": [
+    {
+      "path": "src/runtime/prompt-intake/native-state-worker.ts",
+      "sha256": "5a5972a31d873c65428992ba6477e3646f2e8c953d78f2c00476ab6b8858a72c",
+      "unchanged": true
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state.ts",
+      "sha256": "cff005065be4d786130878d7459b3cb80696b49da42a4b96c3377278f85dc5fb",
+      "unchanged": true
+    },
+    {
+      "path": "src/store/prompt-intake-write.ts",
+      "sha256": "b8e0e46b719740d7531a12420712cdf2dead0117daf17d59f5b7026933201885",
+      "unchanged": true
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "sha256": "1144f0b01cb54ed456305ec6b2b10a383effc9cea7a18e2e871ab9ed761bfa67",
+      "unchanged": true
+    }
+  ],
+  "testPath": "test/runtime/discord-dispatch/ordinary-dispatcher.test.ts",
+  "beforeSha256": "825e78167f01f20c604fe4dcd9eff7b4d06fc995862315e2762425757c8df90e",
+  "afterSha256": "c157727b1f518e7c733148f16f588791bdeb98b45448ca539447ef3405584b22",
+  "oldRed": "observation-old-red.log",
+  "correction": "Replace 3000 setImmediate yields with actual request event barrier, still exact request count, 8s ceiling plus fixture force cancellation. Dispatch, queue, durable and duplicate assertions unchanged.",
+  "status": "CORRECTED_TEST_AWAITING_GREEN"
+}

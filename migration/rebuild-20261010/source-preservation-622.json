@@ -1,0 +1,31 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 622,
+  "localCommit": "3abc29132b5ca7ff44cb57bb85b516c88d0be3fd",
+  "fullTests": 7372,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/app-server-turn-backend.ts": "b59343b2bde10b5a48bb9b262048a891b57eff4532ee10100452b17891374e0f",
+    "src/store/resume-restart-recovery.ts": "9ae939b034b97ea62c2552df528b7df24365e0085135de0e8eba5234c309a35e",
+    "src/store/schema-extensions-a.ts": "ecd0f8ec58807a190d231eb74530c4a760e083814629f0c7475e9de0082d5c4c",
+    "src/store/state-access-facade.ts": "2f4526d0d7fb1c90ede359afc3f74fa1d7a59373cba430ed52fc35b4e2623c94",
+    "test/runtime/app-server-turn-backend.test.ts": "ae6839a6d1857c16b2731bfa5ec29f7264e4564ca12caf5644547e347fc03280",
+    "test/store/resume-restart-recovery.test.ts": "392cef52997ceb17adbc33c552b96751db9a88ea6c6005ac585467a03c19d883",
+    "test/store/schema-extensions-a.test.ts": "d989e38356c7483c879b48bf1972d9ca28a9ae109c448a8a97bd43451b3534d4",
+    "test/store/state-access-facade.test.ts": "3d030a543ed3222516a252383a8261c0232c8712d4589244f9c7c2e580bc3676"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ],
+  "qualification": "Composite7372 uniquePASS: original compiled full7371/7372 plus exact corrected facade8/8; unchanged7364 results reused. NOT single full green run. Actual1445 src/test hashes equal qualified stage; focused68/TS0/build0.",
+  "sourceCommit": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+  "remoteTestTreeComplete": false,
+  "withheldTest": "test/remote-agent/redaction.test.ts"
+}

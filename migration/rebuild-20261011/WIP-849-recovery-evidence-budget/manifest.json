@@ -1,0 +1,27 @@
+{
+  "status": "WIP_STAGED_STRICT0_FOCUSED23_FULL_PENDING",
+  "files": [
+    {
+      "path": "src/store/ingress-recovery-custody.ts",
+      "sha256": "f670657b9b7fe1dc96aea1440ae96f07bc6fd6394682cc494c8bceef74a0aa80"
+    },
+    {
+      "path": "test/runtime/writer-recovery/native-owner.test.ts",
+      "sha256": "de8ee4e44fa927c2f292d98a52f4b921fa0c0f62b818c8021471acaaecfce7c4"
+    }
+  ],
+  "scope": "Recovery original stored ingress scalar byte preflight before full decoding, transaction guard, and post-trigger readback guard. Conservative 1MiB text/blob sum limit; oversized evidence refuses, never truncates.",
+  "verification": {
+    "strictExit": 0,
+    "focusedExit": 0,
+    "focusedPass": 23,
+    "focusedFail": 0,
+    "focusedSkip": 0
+  },
+  "limits": [
+    "Product remains applied848. This snapshot is not applied.",
+    "857-file full coverage verification is running; no full PASS for849.",
+    "Cancellation queue/intake/associated ingress payload budgets remain pending.",
+    "No runtime command/controller/deployment qualification. Protected unavailable redaction fixture excluded."
+  ]
+}

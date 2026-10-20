@@ -1,0 +1,28 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 616,
+  "localCommit": "00a2f70392de28e511c89275bb1e8357df320dd0",
+  "fullTests": 7328,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/remote-agent/computer-observation.ts": "a93a6065d70b48dd61a75591f2fc9e3ad463ba5bf967f3544495fd259df76b8f",
+    "test/remote-agent/computer-observation.test.ts": "5247d7a465bd934fde1f4798d5327e93474ac3b7779806e65b40ed67e57e30e0"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ],
+  "qualificationProfile": "Compiled stage full7328 PASS, actual1438 src/test files byte-identical; actual focused9/strictTS0/build0",
+  "inheritedRemoteExclusion": {
+    "path": "test/remote-agent/redaction.test.ts",
+    "reason": "Existing GitHub secret-scanning refusal; not retried or bypassed",
+    "lastCompleteSourceTestRemote": "32b17de2306aab7c084be10db7732460f4007f3d"
+  },
+  "remoteTestTreeComplete": false
+}

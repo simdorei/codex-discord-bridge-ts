@@ -1,0 +1,22 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 570,
+  "localCommit": "ea121d470b59d7c696a89717b7406bcafef3c8b4",
+  "fullTests": 7150,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/cli/maintenance.ts": "fec69e18771f8828542affba616c311e79c713ca9d175b725192fd1ca0fbfc1c",
+    "test/cli/maintenance.test.ts": "c8af742b24b31b34b59da4929f0f9085a1a1ae920bab529a54a6a0fb26bb9d3c"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ],
+  "regressionCaution": "Initial full run7150 had1 file-level diagnostic failure. Unchanged isolated7,5paired runs and full retry7150 all passed. Cause remains unresolved; original failure retained, no weakened oracle or inferred environment blame."
+}

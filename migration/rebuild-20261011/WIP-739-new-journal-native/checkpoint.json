@@ -1,0 +1,101 @@
+{
+  "status": "WIP_UNAPPLIED_FULL_RUNNING",
+  "at": "2026-10-12T10:35:35.795227+00:00",
+  "actualProduct": "Qualified 735, 8007 tests passed",
+  "candidateFocused": {
+    "tests": 512,
+    "pass": 512,
+    "fail": 0,
+    "skip": 0,
+    "durationMs": 150611.912134
+  },
+  "typecheckExit": 0,
+  "buildExit": 0,
+  "full": "RUNNING; NOT A PASS",
+  "files": [
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "38fb59c8bdd4f7c39884da0f9cfbc84e7860ec3b47d9356e5db8fc06fa996c9d"
+    },
+    {
+      "path": "src/runtime/action-executor/new-executor.ts",
+      "sha256": "454fd96604a2245ff8016ef837d6938b085996c7e1924d5d1c1fa559aeea65e0"
+    },
+    {
+      "path": "src/runtime/action-executor/new-journal.ts",
+      "sha256": "5a838c2124639d9e486dfb001e97a5a791c883fcc56a01883ab1bee01fcf4c65"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-journal-wire.ts",
+      "sha256": "029e29b43b9b0e6d998434ce04f96d9233a203fbe70e71b7232305b08ecda086"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state-worker.ts",
+      "sha256": "3e824e31e1f3cdb63c4ca500807ed6a1220832a81aa88bd3d043c38e757dc808"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state.ts",
+      "sha256": "e7bddda7390638cdc63a16b7c679af098e42487a5768ca27a3edd49484b8fe03"
+    },
+    {
+      "path": "src/store/ingress-admission.ts",
+      "sha256": "16bb18b95a983c624a30209c15efbbe6eaab4229c3181e0ca4855f5b6b7b6a3e"
+    },
+    {
+      "path": "src/store/ingress-read.ts",
+      "sha256": "1f68d23c01d11303980786c4c9cd5aa3e16916c76389fe7e80255a692b6c881a"
+    },
+    {
+      "path": "src/store/ingress-recovery.ts",
+      "sha256": "f15bb194afabbf73abba3da201da9b87fe935cc3f26cd8c2aff6e9e338079645"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "sha256": "a2cc1fc51e57016aed739c96b4cd33c05607cec448ee3d501c6ebff97ebd2c87"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "sha256": "0b0e91b2342a7a950d59d3308c7a741b29b97dcd9110a993bba89d78f8932065"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-journal-wire.test.ts",
+      "sha256": "2e850c75825d15c83fc5f8ccbae92828c82d3bf2ccbcb561a2ff7f838e46f810"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-journal.test.ts",
+      "sha256": "2436554d6e8dce5111771bb92e043a50260db4a17162a804bb4b8bd362ef1f23"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-state.test.ts",
+      "sha256": "c08bc982b034b2e4986d302abe892cb4f24a81a9c01612ebb6d23e7fb2287924"
+    },
+    {
+      "path": "test/store/ingress-admission-existing.test.ts",
+      "sha256": "b4abc1d18539423b43cba924af94843461316dad8c9566665c6e046745578ed9"
+    },
+    {
+      "path": "test/store/ingress-existing-boundary.test.ts",
+      "sha256": "82814549fc856a29db73289b5c5bab2cc81cf66742843b9646894aecdd820cd2"
+    },
+    {
+      "path": "test/store/ingress-recovery-existing.test.ts",
+      "sha256": "f0f726e889e36d8c43b7c6fb14277095292ebe80f03fa47f8ca4543ccdc756b1"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "sha256": "7dbf0db1fcafe092c66f08eadc45325cc813d9c8796f0ad09ec1ebdd84cdf924"
+    }
+  ],
+  "limits": [
+    "Windows/live Discord and appserver/24-hour validation pending",
+    "NewThreadProject state lookup and statSync still synchronous",
+    "Attempt lifecycle and owner replay still need remaining native adapters",
+    "No automatic retry or new worker pool"
+  ],
+  "evidenceHashes": {
+    "focused.log": "74f401f4324e8d3f5e3b4f432c43b14647b1e6e1ad2acc6254aac3f4f1be9af5",
+    "typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stage-inputs.json": "51a30d6d0a410f79fc200406ea30150a736ffd8451a43b3812487c40503dc72f"
+  }
+}

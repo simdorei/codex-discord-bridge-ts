@@ -1,0 +1,60 @@
+{
+  "status": "WIP_NOT_APPLIED",
+  "createdAt": "2026-10-12T16:26:07.916498+00:00",
+  "focused": {
+    "tests": 58,
+    "pass": 58,
+    "fail": 0,
+    "typecheck": 0,
+    "build": 0
+  },
+  "whole": "PENDING",
+  "node": "24.21.0",
+  "candidate": [
+    {
+      "path": "src/codex-state/reference-reader.ts",
+      "sha256": "2c252d4f5ac9fc55b83cf4532a1efb6f22b31b69b7a08cbc90e7a73b9396c7d3"
+    },
+    {
+      "path": "src/codex-state/reference-worker.ts",
+      "sha256": "42e9555e506f1ed2638cece4cd584d7818730266dcf45519db625590339adfa3"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "79232ad5f86b3419cffb453a8229a80b1787ffb95dc9bc29df61aaa7774d565e"
+    },
+    {
+      "path": "src/runtime/action-executor/archive-persistence.ts",
+      "sha256": "bb7448a08e59d276377e5c499ae36898d23b26ade71d7293d4df9626400150c2"
+    },
+    {
+      "path": "src/runtime/action-executor/archive-action.ts",
+      "sha256": "b70796eb7bddc4b07988232055b9c46ac52ac2917a13c52f763523278812bda3"
+    },
+    {
+      "path": "test/codex-state/archive-scope-reader.test.ts",
+      "sha256": "b3a2bf2a5574b7dd0e662c513537c73cd2da7f99042e1a6cea2d33862ac20583"
+    },
+    {
+      "path": "test/runtime/action-executor/archive-action.test.ts",
+      "sha256": "7c64df936e26e04de16ee5a5e5fe3500e97ed396b413ea62607b5695d17e3576"
+    },
+    {
+      "path": "test/runtime/action-executor/archive-persistence-native.test.ts",
+      "sha256": "981e38762a173484a9a18e808095d485486c02f960300688afd2034892cf3938"
+    }
+  ],
+  "productionBaseline": "9823bcd32acff44f8c2f8c43e57e26d4d5259b77",
+  "limitations": [
+    "No full regression yet",
+    "No Windows/live/24h/performance qualification",
+    "Conservative native timeout can refuse slower success accepted by synchronous source",
+    "Whole archive batch is not one transaction snapshot"
+  ],
+  "evidenceSha256": {
+    "focused.log": "7d7eda4044b72c40eecf2d4d87fa698063ced38f58ec681cde256fe278e4044f",
+    "typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stage-inputs.json": "cc16a548ac515b4b5e791c6ef70dc21d425242bf244d115362c3a069c64312df"
+  }
+}

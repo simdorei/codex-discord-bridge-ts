@@ -1,0 +1,75 @@
+{
+  "status": "WIP_UNAPPLIED",
+  "baseRemote": "3365fba3f1771cd215cf34441ad15ea55fb69bce",
+  "baseTree": "b0bd7f48bab9a2b25833758eeeed7ffdc39c3ca6",
+  "files": [
+    {
+      "candidatePath": "src/discord/mirror-channel-request.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-809-mirror-delete-http/files/src/discord/mirror-channel-request.ts",
+      "sha256": "09e600bb98f55d05ef85c7c664de32935ce5d6c35c3e8d283d7dab0be61b48de"
+    },
+    {
+      "candidatePath": "src/discord/node-http-wire.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-809-mirror-delete-http/files/src/discord/node-http-wire.ts",
+      "sha256": "629b9eda264fe6f076ee98328c71f7066af790f5101c356ba15d7b6060ffda71"
+    },
+    {
+      "candidatePath": "src/discord/response-engine.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-809-mirror-delete-http/files/src/discord/response-engine.ts",
+      "sha256": "8b57c3d35d77ef4cd89dd0c91576ed5fc9ae66c632d0b7bdb7d55971f0aafd88"
+    },
+    {
+      "candidatePath": "src/discord/channel-client.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-809-mirror-delete-http/files/src/discord/channel-client.ts",
+      "sha256": "e17df93476d58bebab0f91c6b9a03a43e9e875f80e40f4304a7f60bcd10c6f57"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/delete-http.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-809-mirror-delete-http/files/src/runtime/mirror-sync/delete-http.ts",
+      "sha256": "01319de28d0dc9f530a57ba10076feed8a4fcd3561685cda56db6651b0f12ff3"
+    },
+    {
+      "candidatePath": "test/discord/mirror-delete-http.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-809-mirror-delete-http/files/test/discord/mirror-delete-http.test.ts",
+      "sha256": "8e3a14ab6d24158353d8cb72e51721826ddccf8d1376f05c5af8a54affa055d0"
+    }
+  ],
+  "authority": {
+    "ref": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca",
+    "source": {
+      "path": "crates/cdr-runtime/src/mirror_sync/http.rs",
+      "sha": "50aa18a27a76e1ce0de83eeabf79ee9457b6929f",
+      "size": 6645,
+      "actualBlob": "50aa18a27a76e1ce0de83eeabf79ee9457b6929f",
+      "matches": true
+    },
+    "fullRead": true,
+    "boundedScope": "Mirror deletion only, response/readback handling; no durable fence orchestration"
+  },
+  "verification": {
+    "sameCompiledTestSha256": "3a8bc6abed22bca8cbb44533d7f12be5fe565504ad0a11a0df173bb2a46b4fdb",
+    "red": {
+      "tests": 2,
+      "pass": 1,
+      "fail": 1
+    },
+    "greenFocused": {
+      "tests": 23,
+      "pass": 23
+    },
+    "dependent": {
+      "tests": 53,
+      "pass": 53
+    },
+    "typecheckExit": 0,
+    "whole": "RUNNING; no whole PASS claimed",
+    "applied": false,
+    "fix": "Preserve opted-in exact cancellation reason in non-429 error body catch; unchanged deadlines and assertions"
+  },
+  "limitations": [
+    "Full BridgeSync and cleanup-fence orchestration still unwired.",
+    "POSIX credential-free loopback fixtures, no live Discord or Windows qualification.",
+    "Whole suite running, candidate not applied.",
+    "Protected redaction fixture excluded from publication and not reconstructed."
+  ]
+}

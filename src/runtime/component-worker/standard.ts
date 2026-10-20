@@ -1,0 +1,91 @@
+import {StateAccessFacade as state} from '../../store/state-access-facade.ts';
+import {PortableResidentLifecycle} from '../../app-server/portable-resident-lifecycle.ts';
+import {ServerRequestOccurrence} from '../../protocol/ids.ts';
+import {clonePendingServerRequest, type PendingServerRequest} from '../../app-server/server-request-state.ts';
+import {type ComponentId, persistentComponentClaimKey} from '../../discord/components.ts';
+import {requireDiscordText} from '../../discord/text.ts';
+import {gatewayOwnField} from '../../discord/gateway/values.ts';
+import type {InboundInteractionWork} from '../discord-dispatch/interaction-work.ts';
+import {snapshotComponentId} from '../discord-dispatch/delivery-identity.ts';
+import {readCustodyTimestamp} from '../discord-dispatch/staged-custody.ts';
+import {now as systemNow} from '../../store/queue-attach-goal.ts';
+import {passiveErrorText} from '../../core/passive-error-text.ts';
+import {verifyPromptAuthority} from '../server-prompt-authority.ts';
+import {capturePromptAuthorityReads, type PromptAuthorityReads} from '../server-prompt-authority-reads.ts';
+import {prepareComponentResponse} from './response.ts';
+import {ComponentWorkerError} from './errors.ts';
+import {appServerClaimFailure, retainOrReleaseComponentClaim} from './claim-failure.ts';
+import {NativeStandardClaimOwner, type NativeStandardClaim} from './standard-claim-native.ts';
+import {claimStandardAction, standardConfirmationPlan, standardReadyMarker, recordConfirmationReady, ConfirmationError, type ConfirmationPlan} from './confirmation.ts';
+const ttl = 1800;
+function id(value: unknown): asserts value is bigint {if (typeof value !== 'bigint' || value <= 0n || value >= 1n << 64n) throw new TypeError('Expected nonzero Discord identity');}
+function recovery(error: unknown): ComponentWorkerError {return new ComponentWorkerError('Confirmation', new ConfirmationError('Recovery', passiveErrorText(error, 'confirmation recovery failed'), error));}
+type CapturedResponse = {readonly ok: true; readonly response: ReturnType<typeof prepareComponentResponse>; readonly request: PendingServerRequest} | {readonly ok: false; readonly error: unknown};
+function captureResponse(component: ComponentId, server: PortableResidentLifecycle): CapturedResponse {
+  try {
+    const response = prepareComponentResponse(component, server);
+    let requests;
+    try {requests = PortableResidentLifecycle.prototype.pendingServerRequests.call(server, null);} catch (error) {throw new ComponentWorkerError('AppServer', error);}
+    const occurrence = ServerRequestOccurrence.prototype.asBytes.call(response.occurrence);
+    const request = requests.find(r => r.id === response.requestId && Buffer.compare(ServerRequestOccurrence.prototype.asBytes.call(r.occurrence), occurrence) === 0);
+    if (request === undefined) throw new ComponentWorkerError('NoPendingRequest');
+    return {ok: true, response, request: clonePendingServerRequest(request)};
+  } catch (error) {return {ok: false, error};}
+}
+/** Bound approval/input branch only. Caller routes Busy, AsyncChoice and recovery
+ * components separately and owns processing-mode/execution-custody admission. */
+export async function prepareStandardComponentAction(work: Pick<InboundInteractionWork, 'sourceMessageId' | 'userId' | 'channelId'>,
+  input: ComponentId, database: string, server: PortableResidentLifecycle, now: () => number = systemNow, nativeClaims?: NativeStandardClaimOwner, inputReads?: PromptAuthorityReads): Promise<ConfirmationPlan> {
+  requireDiscordText(database); const component = snapshotComponentId(input);
+  if ('Busy' in component) throw new ComponentWorkerError('BusyChoice');
+  const message = gatewayOwnField(work, 'sourceMessageId'); if (message === null) throw new ComponentWorkerError('MissingSourceMessage'); id(message);
+  if ('Approval' in component || 'Input' in component) throw new ComponentWorkerError('LegacyComponentExpired');
+  if (!('BoundApproval' in component) && !('BoundInput' in component)) throw new ComponentWorkerError('InvalidComponent');
+  const user = gatewayOwnField(work, 'userId'), channel = gatewayOwnField(work, 'channelId'); id(user); id(channel);
+  const key = persistentComponentClaimKey(message, component); if (key === null) throw new ComponentWorkerError('InvalidComponent');
+  const claimId = `actor-v1:${key}:${user}:${channel}`, plan = standardConfirmationPlan(component, claimId), marker = standardReadyMarker(claimId);
+  const reads = inputReads === undefined ? undefined : capturePromptAuthorityReads(database, inputReads);
+  // Pin the installed flow's original request and response before the native
+  // claim await. A failed selection is deferred: durable ready recovery remains
+  // confirmation-only even when the original request is no longer pending.
+  const original = reads === undefined ? undefined : captureResponse(component, server);
+  let claimed: Awaited<ReturnType<typeof claimStandardAction>>, nativeClaim: NativeStandardClaim | undefined;
+  try {
+    if (nativeClaims === undefined) claimed = await claimStandardAction(database, claimId, marker, readCustodyTimestamp(now), ttl);
+    else {
+      NativeStandardClaimOwner.prototype.requireDatabase.call(nativeClaims, database);
+      const result = await NativeStandardClaimOwner.prototype.claim.call(nativeClaims, work as InboundInteractionWork, component, readCustodyTimestamp(now));
+      claimed = result.kind; if (result.kind === 'ExecuteAction') nativeClaim = result.claim;
+    }
+  }
+  catch (error) {throw new ComponentWorkerError('Store', error);}
+  if (claimed === 'DeliverConfirmation') return plan;
+  if (claimed === 'ActionUnconfirmed') throw new ComponentWorkerError('ActionUnconfirmed');
+  let response: ReturnType<typeof prepareComponentResponse>;
+  const release = async () => {try {
+    if (nativeClaims === undefined) await state.releaseComponentClaim(database, claimId);
+    else await NativeStandardClaimOwner.prototype.release.call(nativeClaims, nativeClaim!);
+  } catch (error) {throw new ComponentWorkerError('Store', error);}};
+  try {
+    const captured = original ?? captureResponse(component, server);
+    if (!captured.ok) throw captured.error;
+    response = captured.response;
+    try {const authority = await verifyPromptAuthority(database, server, captured.request, response.generation, reads); authority.requireActor(channel, user);}
+    catch (error) {throw new ComponentWorkerError('Authority', error);}
+  } catch (error) {await release(); throw error;}
+  try {await PortableResidentLifecycle.prototype.respond.call(server, response.requestId, response.occurrence, response.payload, response.generation);}
+  catch (error) {
+    let disposition;
+    try {
+      if (nativeClaims === undefined) disposition = await retainOrReleaseComponentClaim(database, claimId, error);
+      else {disposition = appServerClaimFailure(error); if (disposition === 'Release') await release();}
+    } catch (storeError) {throw new ComponentWorkerError('Store', storeError);}
+    if (disposition === 'RetainIndeterminate') throw new ComponentWorkerError('ActionOutcomeIndeterminate', passiveErrorText(error, 'app-server response outcome unknown'));
+    throw new ComponentWorkerError('AppServer', error);
+  }
+  try {
+    if (nativeClaims === undefined) await recordConfirmationReady(database, marker, readCustodyTimestamp(now), ttl);
+    else await NativeStandardClaimOwner.prototype.ready.call(nativeClaims, nativeClaim!, readCustodyTimestamp(now));
+  } catch (error) {throw recovery(error);}
+  return plan;
+}

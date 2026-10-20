@@ -1,0 +1,68 @@
+{
+  "status": "RECOVERED_WIP_UNAPPLIED",
+  "checkedAt": "2026-10-13T09:39:38.783360+00:00",
+  "restoredRemoteCommit": "cc5ebd13b9e3f0fed31e681c9397ad62f491a5a0",
+  "restoredRemoteTree": "b71cd099b2dc6a645feebd80201288be8215fe65",
+  "node": "24.21.0",
+  "candidateFiles": [
+    {
+      "path": "src/discord/mirror-channel-request.ts",
+      "sha256": "09e600bb98f55d05ef85c7c664de32935ce5d6c35c3e8d283d7dab0be61b48de",
+      "restoredStageMatches": true
+    },
+    {
+      "path": "src/discord/node-http-wire.ts",
+      "sha256": "629b9eda264fe6f076ee98328c71f7066af790f5101c356ba15d7b6060ffda71",
+      "restoredStageMatches": true
+    },
+    {
+      "path": "src/discord/response-engine.ts",
+      "sha256": "8b57c3d35d77ef4cd89dd0c91576ed5fc9ae66c632d0b7bdb7d55971f0aafd88",
+      "restoredStageMatches": true
+    },
+    {
+      "path": "src/discord/channel-client.ts",
+      "sha256": "e17df93476d58bebab0f91c6b9a03a43e9e875f80e40f4304a7f60bcd10c6f57",
+      "restoredStageMatches": true
+    },
+    {
+      "path": "src/runtime/mirror-sync/delete-http.ts",
+      "sha256": "01319de28d0dc9f530a57ba10076feed8a4fcd3561685cda56db6651b0f12ff3",
+      "restoredStageMatches": true
+    },
+    {
+      "path": "test/discord/mirror-delete-http.test.ts",
+      "sha256": "8e3a14ab6d24158353d8cb72e51721826ddccf8d1376f05c5af8a54affa055d0",
+      "restoredStageMatches": true
+    }
+  ],
+  "freshVerification": {
+    "typecheckExit": 0,
+    "buildExit": 0,
+    "focused": {
+      "tests": 76,
+      "pass": 76,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "exit": 0
+    },
+    "whole": "RUNNING; not a fresh whole PASS"
+  },
+  "priorObservation": {
+    "wholeTests": 8465,
+    "pass": 8465,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "exit": 0,
+    "observedAt": "2026-10-13T09:27:44Z",
+    "rawLogsCurrentlyAvailable": false
+  },
+  "limitations": [
+    "Former working directory became inaccessible; cause unknown.",
+    "Product remains applied808;809 is not applied.",
+    "Unpublished810 draft is not included and needs reconstruction and fresh validation.",
+    "Missing protected redaction fixture remains unverified; not reconstructed."
+  ]
+}

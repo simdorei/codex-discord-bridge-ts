@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {dirname,join} from 'node:path';
+import {mkdirSync,writeFileSync,chmodSync} from 'node:fs';
+import {once} from 'node:events';
+import {createServer} from 'node:http';
+import {setTimeout as delay} from 'node:timers/promises';
+import {WebSocketServer,type WebSocket} from 'ws';
+import {SecretToken} from '../../src/config/remote.ts';
+import {AdmissionGate} from '../../src/admission/drain-gate.ts';
+import {REMOTE_PLUGIN_ID,CHROME_PLUGIN_ID} from '../../src/pro/preflight.ts';
+import type {RuntimeProStartupContextOptions} from '../../src/runtime/discord-runtime/startup-context.ts';
+import type {PreparedRuntimeWorkerOptions} from '../../src/runtime/discord-runtime/prepared-workers.ts';
+import type {SyntheticRuntimeRemoteConfiguration} from '../../src/runtime/discord-runtime/remote-start.ts';
+import type {SyntheticRemoteHandoffPorts} from '../../src/remote-agent/managed-agent.ts';
+import type {RemoteProjectBackend,RemoteSessionBackend} from '../../src/remote-agent/dispatcher-ports.ts';
+export const deferred=<T=void>()=>{let resolve!:(value:T)=>void;let reject!:(error:unknown)=>void;const promise=new Promise<T>((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};};
+export async function until(check:()=>boolean){const end=performance.now()+7000;while(!check()){assert.ok(performance.now()<end,'fixture condition timed out');await delay(2);}}
+export function remoteRuntimeInput(mirrorDb:string):RuntimeProStartupContextOptions{
+ const root=dirname(mirrorDb),stateDb=join(root,'state.sqlite'),project=join(root,'project');mkdirSync(project);const db=new DatabaseSync(stateDb);db.exec('CREATE TABLE threads(id TEXT PRIMARY KEY,title TEXT,cwd TEXT,updated_at INTEGER,rollout_path TEXT,model TEXT,reasoning_effort TEXT,tokens_used INTEGER,archived INTEGER,archived_at INTEGER)');db.prepare("INSERT INTO threads(id,cwd,archived)VALUES('original',?,0)").run(project);db.close();
+ const plugin=join(root,'remote-plugin'),chrome=join(root,'chrome-plugin');mkdirSync(plugin);mkdirSync(chrome);writeFileSync(join(plugin,'plugin.json'),'remote');writeFileSync(join(chrome,'plugin.json'),'chrome');const manifest=join(root,'plugins/codex-discord-remote/.codex-plugin');mkdirSync(manifest,{recursive:true});writeFileSync(join(manifest,'plugin.json'),'{"version":"1"}');
+ const inventory=JSON.stringify({installed:[{pluginId:REMOTE_PLUGIN_ID,installed:true,enabled:true,version:'1',source:{path:plugin}},{pluginId:CHROME_PLUGIN_ID,installed:true,enabled:true,version:'2',source:{path:chrome}}]});
+ const executable=join(root,'codex-fixture');writeFileSync(executable,`#!${process.execPath}\nconst fs=require('node:fs');if(process.argv[2]==='plugin'){process.stdout.write(${JSON.stringify(inventory)});}else{fs.writeFileSync(${JSON.stringify(join(root,'pid'))},String(process.pid));require('node:readline').createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line);if(m.id!==undefined)process.stdout.write(JSON.stringify({id:m.id,result:{}})+'\\n');});}\n`);chmodSync(executable,0o700);
+ return {paths:{root,stateDb,mirrorDb,bridgeState:join(root,'bridge.json')},process:{process:{executable,arguments:['app-server','--stdio'],environment:{}},clientInfo:{name:'synthetic-remote-runtime',title:'fixture',version:'1'}},runtimeId:'runtime',startupChannel:null,admission:new AdmissionGate(),executor:{render:()=> 'fixture',mirror:null,reportNewAttempt:()=>{},reportPolicyFailure:()=>{},notifyDeliveryReady:()=>{},resumeTimeoutMs:1000,historyTimeoutMs:1000,pro:{executable,remote:null,report:()=>{}}},access:{allowedChannelIds:new Set([1n]),allowedUserIds:new Set([2n]),allowAllChannels:false},reserveLimits:{maxRows:128,maxBytes:1048576},policyLimits:{maxRows:100n,maxValueBytes:65536n,maxOutputIds:200,timeoutMs:5000},storageTimeoutMs:5000};
+}
+export function runtimeOptions(root:string):PreparedRuntimeWorkerOptions{return {remote:{kind:'DisabledRemote'},ingress:{messageClassificationLimits:{maxRows:100n,maxValueBytes:65536n,maxOutputBytes:65536,timeoutMs:5000},historyClassificationLimits:{maxRows:100n,maxValueBytes:65536n,maxOutputBytes:65536,timeoutMs:5000},messagePolicyLimits:{maxRows:100n,maxValueBytes:65536n,maxOutputIds:200,timeoutMs:5000},config:{attachmentsEnabled:false,attachmentMaxBytes:100n,attachmentTextInlineMaxBytes:100n},attachmentRoot:root,attachmentTransport:{get:async()=>{throw Error('unexpected attachment');}},attachmentReport:()=>{},classification:{enableMessageContent:true,plainAskMentionUserIds:new Set<bigint>()},report:()=>{},allowedChannelIds:new Set([1n]),startupChannelId:null,interactionPolicyLimits:{maxRows:100n,maxValueBytes:65536n,maxOutputIds:200,timeoutMs:5000},historyPolicyLimits:{maxRows:100n,maxValueBytes:65536n,maxOutputIds:200,timeoutMs:5000},historyTargetLimits:{maxRows:100,timeoutMs:5000},guildId:null,qaCommands:false,startupNotify:false,historyPeriodMs:null,reportReady:()=>{},reportDispatch:()=>{},reportInteraction:()=>{},reportReceiveError:()=>{}},completion:{commentaryEnabled:false,historyReadTimeoutMs:1000,render:()=> 'fixture',report:()=>{}},interleaving:{heartbeat:{port:{publish:async()=>{},removeIfOwned:async()=>{}},options:{report:()=>{}}},mirror:null},reportInteraction:()=>{}};}
+export function remoteInput(url='ws://127.0.0.1:1'){
+ const events:string[]=[],receivers:unknown[]=[];let opens=0,protects=0;
+ const session:RemoteSessionBackend={stopComputer:async()=>{events.push('computer');},closeTerminalWindows:async()=>{events.push('windows');},closeTerminals:async()=>{events.push('terminals');},computer:null,terminal:null,terminalWindow:null};
+ const backend:RemoteProjectBackend={close:async()=>{events.push('project');},createSession:async()=>session,listFiles:null,readFile:null,writeFile:async c=>Object.freeze({path:c.path,sha256:'a'.repeat(64),bytes_written:1n,created:true}),core:null};
+ const input:SyntheticRuntimeRemoteConfiguration & {readonly handoff:SyntheticRemoteHandoffPorts}={kind:'SyntheticRuntimeRemote',socket:{bridgeUrl:url,deviceId:'exact-synthetic-device',deviceToken:new SecretToken('synthetic-runtime-fixture')},reconnectDelaySeconds:0n,dispatcher:{openProject:async function(this:unknown){receivers.push(this);opens++;events.push('open');return backend;},nowUtc:function(this:unknown){receivers.push(this);return Object.freeze({seconds:100n,nanosecond:0n});},nowMonotonic:()=>0n},handoff:{kind:'SyntheticProtectedBindingPorts',restore:async function(this:unknown){receivers.push(this);events.push('restore');return Object.freeze([Object.freeze({threadId:'original',root:'/synthetic/project',expiresAt:Object.freeze({seconds:300n,nanosecond:0n})})]);},protect:async function(this:unknown){receivers.push(this);protects++;events.push('protect');}},disconnected:async function(this:unknown){receivers.push(this);events.push('disconnect');}};
+ return {input,events,receivers,backend,session,counts:()=>({opens,protects})};
+}
+export function change<T extends object,K extends keyof T>(target:T,key:K,value:T[K]){(target as {-readonly [P in keyof T]:T[P]})[key]=value;}
+export async function remoteSocket(connected:(peer:WebSocket,index:number)=>void){
+ const ws=new WebSocketServer({host:'127.0.0.1',port:0,perMessageDeflate:false});let count=0;const peers:WebSocket[]=[];ws.on('connection',(peer,request)=>{assert.equal(request.headers.authorization,'Bearer synthetic-runtime-fixture');peers.push(peer);connected(peer,++count);});await once(ws,'listening');
+ return {url:`ws://127.0.0.1:${(ws.address() as {port:number}).port}`,peers,count:()=>count,close:async()=>{for(const peer of ws.clients)peer.terminate();await new Promise<void>(r=>ws.close(()=>r()));}};
+}
+export async function gatewaySocket(){
+ const ws=new WebSocketServer({host:'127.0.0.1',port:0});ws.on('connection',peer=>peer.send('{"op":10,"d":{"heartbeat_interval":100000}}'));await once(ws,'listening');
+ const http=createServer((_req,res)=>res.end(JSON.stringify({shards:1,url:'wss://gateway.discord.gg',session_start_limit:{max_concurrency:1,remaining:100,total:100,reset_after:0}})));await new Promise<void>(r=>http.listen(0,'127.0.0.1',r));
+ return {httpOrigin:`http://127.0.0.1:${(http.address() as {port:number}).port}/api/v10/`,gatewayUrl:`ws://127.0.0.1:${(ws.address() as {port:number}).port}/`,messageContent:false,reportReceiveErrorDrop:()=>{},reportTriggerFailure:()=>{},reportHttpError:()=>{},close:async()=>{for(const peer of ws.clients)peer.terminate();await new Promise<void>(r=>ws.close(()=>r()));http.closeAllConnections();await new Promise<void>(r=>http.close(()=>r()));}};
+}
+export const command=(type:'project_session'|'write_file',extra:object={})=>JSON.stringify({type,request_id:'r',thread_id:'original',computer_session_id:'abcdefghijklmnop',deadline_at:'1970-01-01T00:03:20Z',...(type==='project_session'?{computer_session_generation:1}:{path:'a',content:'x'}),...extra});

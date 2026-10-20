@@ -1,0 +1,82 @@
+{
+  "status": "WIP_UNAPPLIED_FULL_RUNNING",
+  "utc": "2026-10-12T07:01:20.731072+00:00",
+  "baselineLocal": "46c6abff89b7dc3dd9f49c6a0637f20fb977a610",
+  "baselineRemote": "967f34fd8f825359520dab572e6642c3134b79f7",
+  "actualQualifiedTests": 7929,
+  "candidateChecks": {
+    "typecheckExit": 0,
+    "buildExit": 0,
+    "focusedPass": 1490,
+    "focusedFail": 0,
+    "focusedSkip": 0,
+    "whole": "RUNNING; no whole PASS claimed"
+  },
+  "limitations": [
+    "Candidate not applied to src/test",
+    "Windows/performance/24h/production unverified",
+    "Startup release-all stays original singleton-owned operation",
+    "Worker clock observation is not parent-entry timestamp equivalence",
+    "Historical protected redaction fixture is absent; not recovered or counted"
+  ],
+  "files": [
+    {
+      "path": "migration/wip-20261012/prompt-intake-maintenance-native-720/candidate/src/runtime/prompt-intake/native-state-worker.ts",
+      "target": "src/runtime/prompt-intake/native-state-worker.ts",
+      "sha256": "86b147fd6e51b21d83ac5ec1981dd4c394307a25250e02149a8e386eaabcabe1"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-maintenance-native-720/candidate/src/runtime/prompt-intake/native-state.ts",
+      "target": "src/runtime/prompt-intake/native-state.ts",
+      "sha256": "514fb88237cbfd45fea9db3be8ceaa01e3bd8ba4a03730730460568fab8d9082"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-maintenance-native-720/candidate/src/store/prompt-intake-write.ts",
+      "target": "src/store/prompt-intake-write.ts",
+      "sha256": "7d0cec620a22eb675b96d1260685806eae5ee6a430318015207a014ac555d38f"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-maintenance-native-720/candidate/src/store/prompt-intake.ts",
+      "target": "src/store/prompt-intake.ts",
+      "sha256": "675b8ea3913c7b02c0116989aeb2c7ea42367fc3635cfa091c99379d1542f301"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-maintenance-native-720/candidate/src/store/state-access-facade.ts",
+      "target": "src/store/state-access-facade.ts",
+      "sha256": "b642b1c376cc1918aed387e0c88ffbf49e2655ba6afe8bc0aa42d11cd032cd5b"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-maintenance-native-720/candidate/test/runtime/prompt-intake/native-maintenance.test.ts",
+      "target": "test/runtime/prompt-intake/native-maintenance.test.ts",
+      "sha256": "05c533d3b60e08a344ac436c2d3242688ea31cd61858e92d4e5b904bee2b549e"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-maintenance-native-720/candidate/test/runtime/prompt-intake/native-state.test.ts",
+      "target": "test/runtime/prompt-intake/native-state.test.ts",
+      "sha256": "503b8d753fe5ffda27b17c9491c7b6c5b53c4d08acda122fec6304a848f1f2d8"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-maintenance-native-720/candidate/test/store/prompt-intake-maintenance-existing.test.ts",
+      "target": "test/store/prompt-intake-maintenance-existing.test.ts",
+      "sha256": "ded1cc3ee9dd8ed8f6dc70a99e6c9c8eed60d99fd606eecc9ee67f26996ebc13"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-maintenance-native-720/candidate/test/store/prompt-intake.test.ts",
+      "target": "test/store/prompt-intake.test.ts",
+      "sha256": "13e82a50a386962c98c2b82b69f2e5b0e10561cfff3e452b0b72980140c95b70"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-intake-maintenance-native-720/candidate/test/store/state-access-facade.test.ts",
+      "target": "test/store/state-access-facade.test.ts",
+      "sha256": "bdd527f310d137f55617613db6543d20422aad138d12d981c396b8f4ce23e862"
+    }
+  ],
+  "evidenceHashes": {
+    "focused.log": "d81c93e217377b22450cb74ef4e875ba36ae874a5273177f0e7998453c04c6af",
+    "typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stage-inputs.json": "07ce45251df10a96fa8b50ce34120bef052b102fdfc2cc3b2aa79fe5923c9307",
+    "scope-proof.json": "f7d4e4c822f3e589174ea3860d2f74bdf10d6960766ee1a7d01e8a307966cccc",
+    "source-inputs.json": "489cc62697a1b6ab29d2f94f7abd1958197779db05748ceac10db4fa9e98bd04"
+  }
+}

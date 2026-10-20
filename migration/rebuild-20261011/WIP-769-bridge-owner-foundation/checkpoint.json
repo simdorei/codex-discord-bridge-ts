@@ -1,0 +1,38 @@
+{
+  "status": "WIP_NOT_APPLIED",
+  "runtimeInstalled": false,
+  "at": "2026-10-12T18:16:38.293499+00:00",
+  "focused": {
+    "tests": 133,
+    "pass": 133,
+    "fail": 0,
+    "typecheck": 0,
+    "build": 0
+  },
+  "whole": "PENDING",
+  "candidate": [
+    {
+      "path": "src/runtime/bridge-state-native-worker.ts",
+      "sha256": "8500b36d90b89379238d0cd43f368af62046e721b8ab3bdb12ce7f147c44149d"
+    },
+    {
+      "path": "src/runtime/bridge-state-native.ts",
+      "sha256": "afcf9380bddfe1baa0e75749fcf9f6881e4f69ab455ec57673999a1840edeab5"
+    },
+    {
+      "path": "src/runtime/bridge-state.ts",
+      "sha256": "618b5ab007c92be673d3f337ece55923c337670c4955f5f9247f6cc205902144"
+    },
+    {
+      "path": "test/runtime/bridge-state-native.test.ts",
+      "sha256": "1d06a1808eaba4d454688d24f6a803362addcaf2f9a382ef1e8e4ccd49444a91"
+    }
+  ],
+  "productionBaseline": "c6c46e00c63194f6c452af059614149d37459294",
+  "evidenceSha256": {
+    "focused.log": "45400f3bd9ad7143ccf47fe097c1c94fa6a534b0b37e9499fd28d088adfce6e2",
+    "typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stage-inputs.json": "8dfaf3b8cfe9b0fc224237e8525baba175eea2544b98cc71665c2b74bccfba1c"
+  }
+}

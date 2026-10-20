@@ -1,0 +1,24 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 295,
+  "localCommit": "c92bd52570a06e4b45de21abec144ddfab23c177",
+  "fullTests": 5285,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/discord/channel-client.ts": "501d14ac64663c4e79669aa34c18440d3e05de2d5ad8d984c531da03a966674a",
+    "src/discord/response-engine.ts": "1be7ff292483d568fca31d584b50913ee31e1b81ea5de2d5c3b4ea61c2864115",
+    "src/runtime/message-worker/recovery-abandonment.ts": "eb9a989a9d36a7e9da0967dc9f2ce7483ab901a09be0c02780bcb426177fb788",
+    "test/discord/receipt-cancellation.test.ts": "95d0c1ffc023a6ded583bbc98b1996e382a9a18c18d8b2cb2bbda8676b1788c6",
+    "test/runtime/message-worker/recovery-abandonment.test.ts": "b4c90ab5f766af8bfd2c9b75db0be428a0111b851f8afd2af7575ae9e00032ad"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

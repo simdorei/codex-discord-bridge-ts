@@ -1,0 +1,58 @@
+{
+  "status": "WIP_STRICT_AND_FOCUSED_PASS_FULL_PENDING",
+  "files": [
+    {
+      "path": "src/store/queue-cancel-recovery.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-847-recovery-cancellation/files/src/store/queue-cancel-recovery.ts",
+      "sha256": "65a1507d3a724acd64d32ab4f4979230795947ca8b47bc5efbedba27755475a1"
+    },
+    {
+      "path": "test/store/queue-cancel-recovery-existing.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-847-recovery-cancellation/files/test/store/queue-cancel-recovery-existing.test.ts",
+      "sha256": "c4d784c107803df767f88fd475d7217357db3ce56525cd92288fd6a7d0c0e2b5"
+    }
+  ],
+  "facadePatch": {
+    "path": "migration/rebuild-20261011/WIP-847-recovery-cancellation/facade.patch",
+    "base": "WIP-845-archive-fence/files (unchanged in846)",
+    "bindings": [
+      {
+        "path": "src/store/state-access-facade.ts",
+        "baseSha256": "b6ca9b26e405665e37c46b9cca48644cdae44e0d665873a7c77c7575c27148d6",
+        "candidateSha256": "e6f22e5d43bcfe2513097f10c0299a2e2927e9ac0dbc1dfe03467ed95cb0f1ae"
+      },
+      {
+        "path": "test/store/state-access-facade.test.ts",
+        "baseSha256": "4748f0bd10ee7109a632bc7ab99dfb2179ba6cb9c7bcf1b825461c1d63d93b91",
+        "candidateSha256": "3fd22632f562cae096f488e0449a3f95e3c0e2ee4e33c1af00e75f3c4b144fce"
+      }
+    ]
+  },
+  "authority": {
+    "rustCommit": "d7e1aa0106b2eefd9ea3f96e8e4bc5afdd296d34",
+    "sourcePath": "crates/cdr-store/src/queue/cancel_recovery.rs"
+  },
+  "strictBuildExit": 0,
+  "focused": {
+    "tests": 26,
+    "pass": 26,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "logSha256": "3ca156c22797dd175c0429783ca3b6ce6b9f52bee40b9e2d957d2436c8000813"
+  },
+  "semantics": [
+    "Extract one borrowed cancellation body; initialized compatibility and existing-only native-call boundary share it.",
+    "Caller transaction remains owned by caller; wrappers use central cleanup and preserve rollback failures instead of swallowing them.",
+    "Both inventory queries use129-row sentinel to refuse incomplete >128 scope.",
+    "Custody check executes before and after writes; rejected Promise callback is observed and rejected without commit.",
+    "Started-effect evidence, cancellation receipts, stop revision and no-replay semantics retained."
+  ],
+  "limits": [
+    "Staged only; full pending. Native recovery controller and Recover command not wired.",
+    "Existing-only synchronous entry must be called inside a native owner; this extraction alone does not qualify runtime DB isolation.",
+    "129-row bound changes which refusal may be reported beyond the allowed128 inventory; never grants cancellation to a partial scope.",
+    "Payload byte budgets and native proof transport require further work.",
+    "No process restart, Windows, live data, performance or deployment qualification."
+  ]
+}

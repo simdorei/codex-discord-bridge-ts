@@ -1,0 +1,86 @@
+{
+  "status": "WIP_UNAPPLIED_FULL_RUNNING",
+  "utc": "2026-10-12T06:07:10.339658+00:00",
+  "baselineLocal": "1f982f712907a71b263469da845d94accff2147d",
+  "baselineRemote": "be7930911ef5573dcdea52fed01f246a343c28c3",
+  "actualQualifiedTests": 7880,
+  "candidateChecks": {
+    "typecheckExit": 0,
+    "buildExit": 0,
+    "focusedPass": 1379,
+    "focusedFail": 0,
+    "focusedSkip": 0,
+    "whole": "RUNNING; no whole PASS claimed"
+  },
+  "limitations": [
+    "Candidate not applied to src/test",
+    "Windows/performance/24h/production unverified",
+    "Original catalog check does not certify exact DDL or unique-index predicates",
+    "Protected historical redaction fixture absent and excluded from these counts"
+  ],
+  "files": [
+    {
+      "path": "migration/wip-20261012/prompt-promotion-native-714/candidate/src/runtime/queue-runner/native-state.ts",
+      "target": "src/runtime/queue-runner/native-state.ts",
+      "sha256": "2c9cdac9b59326e955f0ea745ccfaf0bfd9ce753c7bca2905228f8799b840993"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-promotion-native-714/candidate/src/runtime/queue-runner/native-submission-state.ts",
+      "target": "src/runtime/queue-runner/native-submission-state.ts",
+      "sha256": "756ea7ed42e88a38b5fcfa17f38123a8dd0868b347c18fd5de2cdc689164874b"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-promotion-native-714/candidate/src/runtime/queue-runner/native-submission-worker.ts",
+      "target": "src/runtime/queue-runner/native-submission-worker.ts",
+      "sha256": "3a1c557ac75fe3c2406399419e8f94cca345effd344b8c1b3051d93b65a0927e"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-promotion-native-714/candidate/src/store/prompt-intake-promotion.ts",
+      "target": "src/store/prompt-intake-promotion.ts",
+      "sha256": "33d2d23ddb69dfef055b6e2c76a9422297b7b5c0c06530b949ea25fbba5a8fcf"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-promotion-native-714/candidate/src/store/prompt-intake.ts",
+      "target": "src/store/prompt-intake.ts",
+      "sha256": "b4a5ec01e48f56c2a4595873c1ebf6faf16e4e6b387deeba70913748c3c66ce4"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-promotion-native-714/candidate/src/store/state-access-facade.ts",
+      "target": "src/store/state-access-facade.ts",
+      "sha256": "95b6182e2dbaed3ec35ea2505ef23ea118428ee267a0a3da033065ddcea5f70c"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-promotion-native-714/candidate/test/runtime/queue-runner/native-attempt.test.ts",
+      "target": "test/runtime/queue-runner/native-attempt.test.ts",
+      "sha256": "7757ff42932049c419a93e1cc4451dd83f7ba6de5668d16451f4765e523e1e30"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-promotion-native-714/candidate/test/runtime/queue-runner/native-promotion.test.ts",
+      "target": "test/runtime/queue-runner/native-promotion.test.ts",
+      "sha256": "b73965c959d1d202dbd8b931895d140a8893ff44061fc7015353f692138120a4"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-promotion-native-714/candidate/test/store/prompt-intake-promotion-existing.test.ts",
+      "target": "test/store/prompt-intake-promotion-existing.test.ts",
+      "sha256": "a39a2f60d7651cdffef72beb637633afc9984e7549cd7c5d99aa5609c7d055f4"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-promotion-native-714/candidate/test/store/prompt-intake-promotion.test.ts",
+      "target": "test/store/prompt-intake-promotion.test.ts",
+      "sha256": "6e1c612a11a5cc79b504b918f608c9fbbaab1a9b602ef418484ccdcd5c3d3356"
+    },
+    {
+      "path": "migration/wip-20261012/prompt-promotion-native-714/candidate/test/store/state-access-facade.test.ts",
+      "target": "test/store/state-access-facade.test.ts",
+      "sha256": "d939f76bc73b29c8f10eea319f8acefc6d4afbe4c2df97c693ddb816d7771625"
+    }
+  ],
+  "evidenceHashes": {
+    "focused.log": "bdff1cb953190d4e17133da74db1563db973aa64f50547e921923d7a8a7abd8e",
+    "typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stage-inputs.json": "652fb38f771153f3afe1dad6bf3a2136b6e7ea917e9ceb258e63a89b755a168d",
+    "source-inputs.json": "45aa3168d5df85ee1b4bc81773a969c0641f63202cb9910c07ccd36574cbd277",
+    "scope-proof.json": "b6954299d44ea7bb23bfca57d37e2b2bee889ca2622268f43b1854197f632915"
+  }
+}

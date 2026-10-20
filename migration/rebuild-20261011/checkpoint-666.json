@@ -1,0 +1,62 @@
+{
+  "checkpoint": 666,
+  "scope": "Actor-owned asynchronous completion state selection and original owner native reads",
+  "qualifiedStage": {
+    "tests": 7619,
+    "pass": 7619,
+    "fail": 0,
+    "cancelled": 0,
+    "skip": 0,
+    "testFiles": 719,
+    "durationMs": 434548.024068
+  },
+  "actualApplied": {
+    "focused": 71,
+    "typecheck": 0,
+    "build": 0,
+    "sourceTestFiles": 1500,
+    "entireSourceTestEqualsQualifiedStage": true
+  },
+  "fullRerunOnActual": false,
+  "contracts": [
+    "Same target lease and original charged envelope retained during native read",
+    "4state/3native/4HTTP budgets and exact mixed-lane selection preserved",
+    "Blocked native classification releases lease and continues to independent nonnative candidate",
+    "Whole original target-filtered list decodes before first exact owner selection",
+    "No create/migrate,4MiB bounded immutable lossless owner snapshot",
+    "Shutdown and post-selection cancellation join native exit before ownership release"
+  ],
+  "rejectedDraft": "concurrent preparation waited for native capacity inside fourth state slot, stranding independent nonnative work; same executable probe RED then GREEN",
+  "missingHistoricalFile": "test/remote-agent/redaction.test.ts (10 unavailable tests; not skipped)",
+  "remoteWrites": "paused pending reply after cancellation",
+  "limitations": [
+    "General discovery and other body DB calls remain synchronous",
+    "Scheduler selection may await bounded reader; no scheduling-latency/performance equivalence claim",
+    "No Windows/24-hour/live deployment qualification",
+    "Original volume not recovered"
+  ],
+  "files": {
+    "src/runtime/completion/scheduler/execution.ts": "8e9ad59da418bb272466b0c8d0b474c56ed1c371947fccb6878414ec692e7fa6",
+    "src/runtime/completion/scheduler/ready.ts": "9a717c7fb5e669a49d46644fd172b56eb28c74864b50377526d1a4ca24ba9d7d",
+    "src/runtime/completion/scheduler/run.ts": "b82e23816a030347962603e2f610aa3a021556d7c5957b6015cbb86cb5805e4c",
+    "src/runtime/completion/scheduler/state-admission.ts": "1f69e5fedfdec89d13daf7db6acba8dee1653f223fb77db30149bfe1ec068001",
+    "src/runtime/completion/pipeline.ts": "7d899600483e200649189cc5ed140981c2690019c72b412120b34480938a318d",
+    "src/runtime/completion/native-owner-read.ts": "4e49fb62eea73e0a656256613ffe4395db362bd6f2b957171d5c0822c25beb73",
+    "src/runtime/completion/native-owner-read-worker.ts": "97fe81301bf9e9fa6a36868e2572088a64b90222467fc4b873e8b62d33a8924f",
+    "test/runtime/completion/scheduler/owned-preparation.test.ts": "59d9b7c5f199de7ecf3a875bf9e44d646d232c77112324d2eccdf298dc456dbc",
+    "test/runtime/native-completion-owner-read.test.ts": "a29f3f20faa75433073302c9a850473a6ed223a2df254dbc60bff6f08ed5a9e2"
+  },
+  "evidence": {
+    ".runtime/completion-admission-666/full.log": "2a770837ee3beca5daac44eb33c42edd34ef8013eb697e5945d4b60abb4c56bd",
+    ".runtime/completion-admission-666/full-exit.json": "afdbaaeeed2fe84884cb40557a3df55e9d507874271108e188c176bc5cdc28a8",
+    ".runtime/completion-admission-666/stage-inputs.json": "c60dfc8245684fb36639482b490a0faeefd59e6473f53ade5cd15abdf64bcf9b",
+    ".runtime/completion-admission-666/REVIEW.md": "b1ddbf623295db13691c890441fc1239d487c0640d6f2590eb5aaad9e611fa17",
+    ".runtime/completion-admission-666/same-probe-red.log": "a68df3cc7ee5314056b17b4e9196da247a4aedafbcefa48dcebf28a9eb593ff1",
+    ".runtime/completion-admission-666/same-probe-green.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/completion-admission-666/fairness-same-probe.mjs": "24d31ca6185b403d59cd06d05ad0d7cd1fc5519b7df607328889fce39bb4e24d",
+    ".runtime/completion-admission-666/applied/applied-manifest.json": "1d0c726fa44e12320247f32cbec45aa7dd5c874b1196a8955d0c31d995a95243",
+    ".runtime/completion-admission-666/applied/source-test-identity.json": "016ecfc1bdfbfe66e340597c21da3178c7a97171d04a412bacb47bc22b1c68d2",
+    ".runtime/completion-admission-666/applied/focused.log": "1e9b0f676728e2a88258186086e55580334e814ebd229c7a315630f820501ea0"
+  },
+  "at": "2026-10-11T22:41:54.354682+00:00"
+}

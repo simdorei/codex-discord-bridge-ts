@@ -1,0 +1,63 @@
+import {getEnvironmentData,isMainThread} from 'node:worker_threads';
+import {pathToFileURL} from 'node:url';
+import {types} from 'node:util';
+import {pinNativeRuntimePath} from './runtime-paths/path-text.ts';
+
+export const PERSISTENT_RESIDENT_ROLE_KEY='codex-discord-bridge:persistent-resident-role:v1';
+export const PERSISTENT_RESIDENT_HANDSHAKE_MS=5000;
+export type PersistentResidentDescriptor=Readonly<{version:1;role:'persistent-resident-v1';module:string;path:string;live:SharedArrayBuffer}>;
+export type PersistentResidentBootstrapData=Readonly<{version:1;kind:'persistent-resident-bootstrap'|'persistent-resident-component';runtimeId:string}>;
+/** Pure bootstrap inventory: deliberately imports no store-using graph. */
+export function persistentResidentEntryUrl():URL{return new URL(import.meta.url.endsWith('.js')?'./persistent-resident-worker.js':'./persistent-resident-worker.ts',import.meta.url);}
+export function isPersistentResidentEntry(filename:string|undefined):boolean{return filename!==undefined&&pathToFileURL(filename).href===persistentResidentEntryUrl().href;}
+function exact(value:unknown,keys:readonly string[]):Record<string,unknown>{
+ if(value===null||typeof value!=='object'||types.isProxy(value))throw new TypeError('Expected passive persistent role record');
+ const proto=Object.getPrototypeOf(value);if(proto!==Object.prototype&&proto!==null)throw new TypeError('Invalid persistent role prototype');
+ const own=Reflect.ownKeys(value);if(own.length!==keys.length||own.some(k=>typeof k!=='string'||!keys.includes(k)))throw new TypeError('Invalid persistent role fields');
+ const result:Record<string,unknown>=Object.create(null);for(const k of keys){const d=Object.getOwnPropertyDescriptor(value,k)!;if(!d.enumerable||!Object.hasOwn(d,'value'))throw new TypeError('Expected passive persistent role field');result[k]=d.value;}return result;
+}
+function text(value:unknown,max:number):string{
+ if(typeof value!=='string'||value.length===0||value.includes('\0')||Buffer.byteLength(value)>max||Buffer.from(value).toString('utf8')!==value)throw new TypeError('Invalid bounded persistent role text');return value;
+}
+export function capturePersistentResidentPath(value:unknown):string{const path=text(value,32768);if(pinNativeRuntimePath(path)!==path)throw new TypeError('Expected exact pinned persistent store path');return path;}
+export function capturePersistentResidentBootstrapData(value:unknown):PersistentResidentBootstrapData{
+ const data=exact(value,['version','kind','runtimeId']);if(data.version!==1||(data.kind!=='persistent-resident-bootstrap'&&data.kind!=='persistent-resident-component'))throw new TypeError('Invalid persistent bootstrap data');return Object.freeze({version:1,kind:data.kind as PersistentResidentBootstrapData['kind'],runtimeId:text(data.runtimeId,4096)});
+}
+export function capturePersistentResidentDescriptor(value:unknown):PersistentResidentDescriptor{
+ const data=exact(value,['version','role','module','path','live']);
+ if(data.version!==1||data.role!=='persistent-resident-v1'||text(data.module,65536)!==persistentResidentEntryUrl().href)throw new TypeError('Invalid persistent role module');
+ if(typeof data.live!=='object'||data.live===null||types.isProxy(data.live)||!(data.live instanceof SharedArrayBuffer)||Object.getPrototypeOf(data.live)!==SharedArrayBuffer.prototype||Reflect.ownKeys(data.live).length!==0||data.live.byteLength!==4||Atomics.load(new Int32Array(data.live),0)!==1)throw new TypeError('Persistent store registration is not live');
+ return Object.freeze({version:1,role:'persistent-resident-v1',module:data.module as string,path:capturePersistentResidentPath(data.path),live:data.live});
+}
+export function requirePersistentResidentRole():PersistentResidentDescriptor{
+ if(isMainThread||!isPersistentResidentEntry(process.argv[1]))throw new TypeError('Expected actual fixed persistent resident entry');
+ return capturePersistentResidentDescriptor(getEnvironmentData(PERSISTENT_RESIDENT_ROLE_KEY));
+}
+export function requirePersistentResidentStoreOpen(path:string):void{
+ const descriptor=requirePersistentResidentRole();if(capturePersistentResidentPath(path)!==descriptor.path)throw new TypeError('Persistent store path differs from registration');
+}
+export function persistentResidentFrame(value:unknown,kind:'role-ready'|'close-unstarted'|'unstarted-closed'):boolean{
+ try{const data=exact(value,['version','kind']);return data.version===1&&data.kind===kind;}catch{return false;}
+}
+
+export const PERSISTENT_RESIDENT_SCENARIOS=Object.freeze(['normal-start-close','ordinary-queue-stop','response-large','response-concurrent','response-cancel-before','response-cancel-after','response-begin-refused','response-unknown','observation-gap','idle-transition','normal-replacement','final-row-changed'] as const);
+// Deliberate retained-debt fixtures never enter the normal-close test inventory.
+export const PERSISTENT_RESIDENT_NEGATIVE_SCENARIOS=Object.freeze(['mutation-cancel-after-write'] as const);
+// Keep the original regression inventory stable. These cases exercise the one
+// original receiver and its separately owned native read/receipt services.
+export const PERSISTENT_RECEIVER_SCENARIOS=Object.freeze(['receiver-computer-form-recovery','receiver-browser-form-event','receiver-unsupported-form-event','receiver-approval-prompt','receiver-input-prompt','receiver-late-accept','receiver-read-json','receiver-native-join'] as const);
+export type PersistentReceiverScenario=typeof PERSISTENT_RECEIVER_SCENARIOS[number];
+export const PERSISTENT_RECEIVER_NEGATIVE_SCENARIOS=Object.freeze(['receiver-data-loss','receiver-ack-loss'] as const);
+export type PersistentReceiverNegativeScenario=typeof PERSISTENT_RECEIVER_NEGATIVE_SCENARIOS[number];
+// Temporary pre-fix diagnostic only: never a normal or negative qualification case.
+export const PERSISTENT_RECEIVER_PROBE_SCENARIOS=Object.freeze(['receiver-control-before-admission-probe'] as const);
+export const PERSISTENT_RESIDENT_FIXTURE_SCENARIOS=Object.freeze([...PERSISTENT_RESIDENT_SCENARIOS,...PERSISTENT_RESIDENT_NEGATIVE_SCENARIOS,...PERSISTENT_RECEIVER_SCENARIOS,...PERSISTENT_RECEIVER_NEGATIVE_SCENARIOS,...PERSISTENT_RECEIVER_PROBE_SCENARIOS]);
+export type PersistentResidentScenario=typeof PERSISTENT_RESIDENT_FIXTURE_SCENARIOS[number];
+export type PersistentResidentFixtureResult=Readonly<{scenario:typeof PERSISTENT_RESIDENT_SCENARIOS[number]|PersistentReceiverScenario;passed:true}>|Readonly<{scenario:'mutation-cancel-after-write';assertionsPassed:true;cleanupQualified:false;componentQualified:false}>;
+export function capturePersistentResidentFixtureCommand(value:unknown):Readonly<{kind:'run-fixture';scenario:PersistentResidentScenario}>|Readonly<{kind:'close-component'}>{
+ if(value!==null&&typeof value==='object'&&!types.isProxy(value)){const d=Object.getOwnPropertyDescriptor(value,'kind');if(d&&Object.hasOwn(d,'value')&&d.value==='close-component'){exact(value,['kind']);return Object.freeze({kind:'close-component'});}}
+ const data=exact(value,['kind','scenario']);if(data.kind!=='run-fixture'||typeof data.scenario!=='string'||!PERSISTENT_RESIDENT_FIXTURE_SCENARIOS.includes(data.scenario as PersistentResidentScenario))throw new TypeError('Invalid fixed fixture command');
+ return Object.freeze({kind:'run-fixture',scenario:data.scenario as PersistentResidentScenario});
+}
+
+export {PERSISTENT_RESIDENT_COMPONENT_PHASES,type PersistentResidentComponentPhase,PERSISTENT_RESIDENT_FIXTURE_FAILURE_STEPS,type PersistentResidentFixtureFailureStep,PERSISTENT_RESIDENT_CHILD_CLOSURES,type PersistentResidentChildClosure} from './persistent-resident-component-report.ts';

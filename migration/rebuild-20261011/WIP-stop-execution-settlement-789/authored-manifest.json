@@ -1,0 +1,10 @@
+[
+  {
+    "path": "src/store/async-history.ts",
+    "sha256": "88d6e4cb3a0cce8b57dd58f427be47baaae296b6232fa83112f60ff9e0ce3d66"
+  },
+  {
+    "path": "test/store/stop-execution-settlement.test.ts",
+    "sha256": "216952b8e9d69aa23a4bfa9b452109aa146663fbb93e1a22977e5844a224a149"
+  }
+]

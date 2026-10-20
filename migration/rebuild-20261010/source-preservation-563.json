@@ -1,0 +1,25 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 563,
+  "localCommit": "cf0740a609c6dd9e2ebf9fe1525476b3c72b66b8",
+  "fullTests": 7100,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/runtime/discord-runtime/finalize-shutdown.ts": "f38cadb3525b55c890377596b2dc3e94671beaef720ea4b4e60583f58fd66c81",
+    "src/runtime/discord-runtime/prepared-lifetime.ts": "b53ea307acd727f1b6c1a6518477326f3aed2ca1443e7f9ac54f0379ebf697d7",
+    "src/runtime/discord-runtime/prepared-workers.ts": "7448534c8fca8bce090ca2b633bec848428c83b58582b61f28026bf3f4a46102",
+    "test/runtime/discord-runtime/finalize-shutdown.test.ts": "18aa02573626cc78474057ae77740a4562ea4fe076e27c076c0ec75d8e4faf6e",
+    "test/runtime/discord-runtime/heartbeat-start.test.ts": "408eb6051e8ed72da0d00963bf06d6af1420ba4ead9dbafcf97718ca8244186c",
+    "test/runtime/discord-runtime/startup-context.test.ts": "1d86d68611e4d975c576074f5dc101245485bd2502371836c5a57f6d6b81a99f"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

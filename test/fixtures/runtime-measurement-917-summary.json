@@ -1,0 +1,2197 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": 917,
+  "classification": "partial-synthetic-G2-G4-evidence",
+  "timingVerdict": "UNQUALIFIED_NO_PREDECLARED_THRESHOLDS_OR_MATCHED_RUST_RUN",
+  "units": {
+    "timestamps": "process.hrtime nanoseconds as decimal strings; shared monotonic clock across worker threads",
+    "bytes": "UTF-8 wire bytes"
+  },
+  "profile": {
+    "baseHead": "f2863c09f1bc7373bc2e9a9d9e4e18acfe8e9964",
+    "sourceGraphSha256": "a17c3d8b49df7313ea3bf4a06130766776e58460375d35b333ece44cde348b27",
+    "sourceFiles": 913,
+    "emittedGraphSha256": "01e6338cf43d45fa12eb59f626478a8e91a8e7b322c9203d3b37ff391a66c7b9",
+    "emittedModules": 913,
+    "toolSha256": "1c15d5f8ab3e91278ce09761c67dbf0b2f7c9312163f135505526620e2b1da67",
+    "emission": "TypeScript 7.0.2, ES2023/NodeNext, strict, rewritten .js imports, private explicit roots and reachable literal worker URLs",
+    "node": "24.21.0",
+    "protectedTestExcluded": true,
+    "nativeRead913Excluded": true,
+    "reservedWindowsExcluded": true,
+    "profileSha256": "0e64a64e06de8ca328ccc1e49ae0373a77d271b37804cd3dcd72e5d7272ae13d"
+  },
+  "runtime": {
+    "node": "v24.21.0",
+    "sqlite": "3.53.4",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "boundary": "Actual prepared root with temporary SQLite, mock resident process, independent loopback driver, emitted native codecs and synthetic singleton seam",
+  "exclusions": [
+    "native singleton exclusion",
+    "native remote backends",
+    "protected durable handoff",
+    "all-lane saturation",
+    "repeated timeouts",
+    "expired queued work",
+    "G7 comparison",
+    "operational qualification",
+    "893 activation",
+    "913 qualification"
+  ],
+  "expectedScenarioCount": 3,
+  "recordedScenarioCount": 3,
+  "scenarios": [
+    {
+      "scenario": "held-versus-unrelated",
+      "sourceLimits": {
+        "connectionActive": 4,
+        "connectionTotal": 16,
+        "connectionWireBytes": 4194304
+      },
+      "safetyGuardMs": 15000,
+      "structuralOutcome": "completed",
+      "runtimeJoined": true,
+      "retained": false,
+      "operations": [
+        {
+          "requestId": "synthetic-held-versus-unrelated-session-0",
+          "role": "session-setup",
+          "wireBytes": 227,
+          "wireSha256": "8f541d9b9c0f4b85ec10a9d9f871d77f8f7d4de8e9941f4edc8b1b85b7af4d0e",
+          "outcome": "wire-result",
+          "injectedNs": "208553028865216",
+          "plannedNs": "208553029157723",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": "208553220817867",
+          "sendCompletedNs": "208553029180571",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": 90,
+          "resultWireSha256": "6c3e073feb31ae038cd2ae6cfed8bc76751fb873e2166c49ebb3a72e6758da3b",
+          "resultType": "project_session_result",
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-held-versus-unrelated-session-1",
+          "role": "session-setup",
+          "wireBytes": 227,
+          "wireSha256": "176dea060e4e4bbaf4c97be96979c17883f76b991430db0d16e23077b5d36df2",
+          "outcome": "wire-result",
+          "injectedNs": "208553233966018",
+          "plannedNs": "208553234878319",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": "208553387961665",
+          "sendCompletedNs": "208553234638772",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": 90,
+          "resultWireSha256": "090244876b989824d99518e7dcb9e42a389b5d4cc9f1c3d4c51d2fc2c5665845",
+          "resultType": "project_session_result",
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-held-versus-unrelated-session-2",
+          "role": "session-setup",
+          "wireBytes": 227,
+          "wireSha256": "b11e700cd99fffd93ae836303a6d50a376eeb7f1de90c8be3dc00adf67a9a793",
+          "outcome": "wire-result",
+          "injectedNs": "208553399909328",
+          "plannedNs": "208553400660947",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": "208553568665652",
+          "sendCompletedNs": "208553400253376",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": 90,
+          "resultWireSha256": "dddcb445ae5c3a2d9d6c3729fffc317ce215bf4af92e8b84513c6dcb16281795",
+          "resultType": "project_session_result",
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-held-versus-unrelated-session-3",
+          "role": "session-setup",
+          "wireBytes": 227,
+          "wireSha256": "778acea8389e9c4bb1727cc7aa7b7caf0c6034e984a40f8fdca42bce9fda9467",
+          "outcome": "wire-result",
+          "injectedNs": "208553581289308",
+          "plannedNs": "208553580941976",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": "208553770002157",
+          "sendCompletedNs": "208553581630893",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": 90,
+          "resultWireSha256": "d95187c137d329c2eb9daffd7d098ca8ff5c0785a5cd8d931eaf49aee661411e",
+          "resultType": "project_session_result",
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-held-9007199254740993-é",
+          "role": "held-leaf",
+          "wireBytes": 216,
+          "wireSha256": "6e31e9d24b7c25b548df139bfc67d7e07bc0397771299b4a45ebca7c82b235fa",
+          "outcome": "wire-result",
+          "injectedNs": "208553780433055",
+          "plannedNs": "208553781075720",
+          "startedNs": "208553875234522",
+          "cancelledNs": null,
+          "settledNs": "208554299920572",
+          "resultNs": "208554540221905",
+          "sendCompletedNs": "208553780772817",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": 209,
+          "resultWireSha256": "8c49f9313f49d7f7dca52739d1efecc5628235b03f5f36e293b1acc86b6a7cb0",
+          "resultType": "write_file_result",
+          "errorCode": null,
+          "leafOutcome": "returned-success"
+        },
+        {
+          "requestId": "synthetic-unrelated-9007199254740995",
+          "role": "unrelated-leaf",
+          "wireBytes": 218,
+          "wireSha256": "977c61d47416cc6da31e2b2831e7bdfd6a77cc06a56f7a26eef32808411b98e6",
+          "outcome": "wire-result",
+          "injectedNs": "208553879961354",
+          "plannedNs": "208553880670579",
+          "startedNs": "208553979215667",
+          "cancelledNs": null,
+          "settledNs": "208553979284500",
+          "resultNs": "208554292722110",
+          "sendCompletedNs": "208553880323670",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": 211,
+          "resultWireSha256": "6601f282a7427d1f7323343e6e3ae0def27758dcfd92e914a777429ca5364d8c",
+          "resultType": "write_file_result",
+          "errorCode": null,
+          "leafOutcome": "returned-success"
+        }
+      ],
+      "issues": [],
+      "phaseObservations": {
+        "loadUntilHeldRelease": {
+          "startNs": "208553775785923",
+          "endNs": "208554299720590",
+          "gatewayHeartbeatNs": [
+            "208553915610451",
+            "208554014829129",
+            "208554114439132",
+            "208554214302892"
+          ],
+          "observedProbeIds": [
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            123,
+            124,
+            125,
+            126,
+            127
+          ]
+        },
+        "shutdownUntilJoined": {
+          "startNs": "208554547777680",
+          "endNs": "208554719952614",
+          "gatewayHeartbeatNs": [],
+          "observedProbeIds": [
+            138,
+            139,
+            140,
+            141,
+            142,
+            143,
+            144
+          ]
+        }
+      },
+      "externalCounts": {
+        "declared": 6,
+        "injected": 6,
+        "startedLeaves": 2,
+        "settledLeaves": 2,
+        "cancellationObservedLeaves": 0,
+        "wireResults": 6,
+        "explicitRefusals": 0,
+        "wireErrors": 0,
+        "missingWireResults": 0,
+        "stillActiveLeaves": 0,
+        "peakActiveLeaves": 2,
+        "totalInjectedWireBytes": 1342,
+        "peakInjectedBytesAwaitingWireResult": 434,
+        "finalInjectedBytesWithoutWireResult": 0
+      },
+      "diagnosticsNs": {
+        "injectionLateness": {
+          "samples": 6,
+          "minimum": "-912301",
+          "median": "-709225",
+          "p95": "347332",
+          "maximum": "347332"
+        },
+        "injectToLeafStart": {
+          "samples": 2,
+          "minimum": "94801467",
+          "median": "94801467",
+          "p95": "99254313",
+          "maximum": "99254313"
+        },
+        "injectToWireResultIncludingErrors": {
+          "samples": 6,
+          "minimum": "153995647",
+          "median": "188712849",
+          "p95": "759788850",
+          "maximum": "759788850"
+        },
+        "independentProbePlannedToMainObservation": {
+          "samples": 144,
+          "minimum": "-1398612",
+          "median": "156074",
+          "p95": "2918779",
+          "maximum": "19739101"
+        },
+        "independentProbeSchedulingLateness": {
+          "samples": 144,
+          "minimum": "-1635179",
+          "median": "-42623",
+          "p95": "739719",
+          "maximum": "7487025"
+        },
+        "independentProbeSendToMainObservation": {
+          "samples": 144,
+          "minimum": "83846",
+          "median": "160937",
+          "p95": "2614330",
+          "maximum": "19664781"
+        }
+      },
+      "nativeLanes": {
+        "kind": "sampled-occupied-counts-not-exact-peaks",
+        "samples": 144,
+        "sampleMaxima": {
+          "Background": 2,
+          "Control": 1,
+          "Observation": 2,
+          "Discovery": 1,
+          "Maintenance": 1
+        }
+      },
+      "heartbeatObservations": [
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208553915610451"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208554014829129"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208554114439132"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208554214302892"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208554313948084"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208554413243187"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208554513560050"
+        }
+      ],
+      "lifecycle": [
+        {
+          "kind": "scenario-start",
+          "atNs": "208551053330090"
+        },
+        {
+          "kind": "runtime-start-requested",
+          "atNs": "208551133222342"
+        },
+        {
+          "kind": "synthetic-singleton-acquired",
+          "atNs": "208551136840754"
+        },
+        {
+          "kind": "runtime-workers-started",
+          "atNs": "208552924110571"
+        },
+        {
+          "kind": "remote-hello",
+          "atNs": "208553018450763"
+        },
+        {
+          "kind": "load-start",
+          "atNs": "208553775785923"
+        },
+        {
+          "kind": "held-release",
+          "atNs": "208554299720590"
+        },
+        {
+          "kind": "shutdown-requested",
+          "atNs": "208554547777680"
+        },
+        {
+          "kind": "project-closed",
+          "atNs": "208554556286020"
+        },
+        {
+          "kind": "project-closed",
+          "atNs": "208554556405500"
+        },
+        {
+          "kind": "project-closed",
+          "atNs": "208554556433462"
+        },
+        {
+          "kind": "project-closed",
+          "atNs": "208554556456226"
+        },
+        {
+          "kind": "singleton-released",
+          "atNs": "208554719917521"
+        },
+        {
+          "kind": "stop-signal-disposed",
+          "atNs": "208554719935178"
+        },
+        {
+          "kind": "runtime-joined",
+          "atNs": "208554719952614",
+          "outcome": "success"
+        },
+        {
+          "kind": "driver-closed",
+          "atNs": "208554726854859",
+          "outcome": "unacknowledged-probes:0"
+        },
+        {
+          "kind": "scenario-completed",
+          "atNs": "208554733656799",
+          "outcome": "structural-assertions-completed-no-timing-verdict"
+        }
+      ],
+      "independentProbes": {
+        "sent": 144,
+        "observed": 144,
+        "acknowledged": 144,
+        "retainedSampleCount": 14,
+        "selection": "First two, last two, and ten greatest actual driver-send to main-observation intervals; deduplicated. Distributions above use every observed probe.",
+        "observations": [
+          {
+            "probeId": 1,
+            "plannedNs": "208551131658516",
+            "sentNs": "208551131724165",
+            "observedNs": "208551132202776",
+            "acknowledgedNs": "208551132453694"
+          },
+          {
+            "probeId": 2,
+            "plannedNs": "208551156658516",
+            "sentNs": "208551155693878",
+            "observedNs": "208551155955457",
+            "acknowledgedNs": "208551156149204"
+          },
+          {
+            "probeId": 9,
+            "plannedNs": "208551331658516",
+            "sentNs": "208551330297417",
+            "observedNs": "208551341090078",
+            "acknowledgedNs": "208551341466035"
+          },
+          {
+            "probeId": 23,
+            "plannedNs": "208551681658516",
+            "sentNs": "208551681748085",
+            "observedNs": "208551684170204",
+            "acknowledgedNs": "208551684255233"
+          },
+          {
+            "probeId": 44,
+            "plannedNs": "208552206658516",
+            "sentNs": "208552205311634",
+            "observedNs": "208552208572527",
+            "acknowledgedNs": "208552208652007"
+          },
+          {
+            "probeId": 68,
+            "plannedNs": "208552806658516",
+            "sentNs": "208552806747637",
+            "observedNs": "208552809694878",
+            "acknowledgedNs": "208552810361693"
+          },
+          {
+            "probeId": 72,
+            "plannedNs": "208552906658516",
+            "sentNs": "208552906732836",
+            "observedNs": "208552926397617",
+            "acknowledgedNs": "208552928522749"
+          },
+          {
+            "probeId": 73,
+            "plannedNs": "208552931658516",
+            "sentNs": "208552930552207",
+            "observedNs": "208552933166537",
+            "acknowledgedNs": "208552933269011"
+          },
+          {
+            "probeId": 82,
+            "plannedNs": "208553156658516",
+            "sentNs": "208553160105705",
+            "observedNs": "208553162433517",
+            "acknowledgedNs": "208553163885741"
+          },
+          {
+            "probeId": 98,
+            "plannedNs": "208553556658516",
+            "sentNs": "208553564145541",
+            "observedNs": "208553568993346",
+            "acknowledgedNs": "208553569055770"
+          },
+          {
+            "probeId": 99,
+            "plannedNs": "208553581658516",
+            "sentNs": "208553581646827",
+            "observedNs": "208553593716809",
+            "acknowledgedNs": "208553595418443"
+          },
+          {
+            "probeId": 110,
+            "plannedNs": "208553856658516",
+            "sentNs": "208553859663605",
+            "observedNs": "208553863015185",
+            "acknowledgedNs": "208553863104560"
+          },
+          {
+            "probeId": 143,
+            "plannedNs": "208554681658516",
+            "sentNs": "208554680354773",
+            "observedNs": "208554680615531",
+            "acknowledgedNs": "208554680697760"
+          },
+          {
+            "probeId": 144,
+            "plannedNs": "208554706658516",
+            "sentNs": "208554706850547",
+            "observedNs": "208554707506846",
+            "acknowledgedNs": "208554707601133"
+          }
+        ]
+      },
+      "unobserved": [
+        "private connection and dispatcher queue peaks",
+        "internal retained command bytes and heap",
+        "exact native submission totals",
+        "whole-runtime lane saturation and fairness",
+        "external provider outcomes",
+        "durable acceptance and delivery acknowledgement"
+      ]
+    },
+    {
+      "scenario": "count-saturation",
+      "sourceLimits": {
+        "connectionActive": 4,
+        "connectionTotal": 16,
+        "connectionWireBytes": 4194304
+      },
+      "safetyGuardMs": 15000,
+      "structuralOutcome": "failed",
+      "runtimeJoined": true,
+      "retained": false,
+      "operations": [
+        {
+          "requestId": "synthetic-count-saturation-session-0",
+          "role": "session-setup",
+          "wireBytes": 222,
+          "wireSha256": "7d7e953314d4a4d9fe9c461ff046dbbf80bf1a697c7b6a0510639cc91ca0e123",
+          "outcome": "wire-result",
+          "injectedNs": "208556613198045",
+          "plannedNs": "208556613085799",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": "208556883084278",
+          "sendCompletedNs": "208556613521042",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": 85,
+          "resultWireSha256": "de23663ff71fd3e86b9827be067f5be04c459755f09e40498716f3f82c6375f9",
+          "resultType": "project_session_result",
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-count-saturation-session-1",
+          "role": "session-setup",
+          "wireBytes": 222,
+          "wireSha256": "94e8c64a125f093e29ac07d7ed267a18a1f7ba2984e17850c35f1f1244c9502d",
+          "outcome": "wire-result",
+          "injectedNs": "208556889856811",
+          "plannedNs": "208556890725848",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": "208557034378837",
+          "sendCompletedNs": "208556890294290",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": 85,
+          "resultWireSha256": "6031a1fbcca3c3d50e5cb6cdc8904046c088b50fe0d206e7f852f0d6756fa246",
+          "resultType": "project_session_result",
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-count-saturation-session-2",
+          "role": "session-setup",
+          "wireBytes": 222,
+          "wireSha256": "0c46e922e3261a7fc7df09238acf3364d6da692151cae5714ddbb2b902445459",
+          "outcome": "wire-result",
+          "injectedNs": "208557043815413",
+          "plannedNs": "208557044603578",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": "208557165373391",
+          "sendCompletedNs": "208557044315637",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": 85,
+          "resultWireSha256": "ed8bc8294d3fcf526c7ec906f11fd1e75ab15c2269af5c48d861d4085257c337",
+          "resultType": "project_session_result",
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-count-saturation-session-3",
+          "role": "session-setup",
+          "wireBytes": 222,
+          "wireSha256": "2e909c96d232970d2ab8cd4f7bc01f33a3f508ecfa8125d745bd84a46497686c",
+          "outcome": "wire-result",
+          "injectedNs": "208557175502430",
+          "plannedNs": "208557176254681",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": "208557305657098",
+          "sendCompletedNs": "208557175760999",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": 85,
+          "resultWireSha256": "261ce19bc7f9264ef9ccaa29ab081c6570a67f795b05f278aa180b83bdc9f660",
+          "resultType": "project_session_result",
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-count-saturation-held-0",
+          "role": "held-leaf",
+          "wireBytes": 210,
+          "wireSha256": "aa92ea980e543c738a0eae616f941d496f0f7113d4694b06e29e409ac1c499de",
+          "outcome": "no-result-observed",
+          "injectedNs": "208557315207865",
+          "plannedNs": "208557315896580",
+          "startedNs": "208557381703125",
+          "cancelledNs": null,
+          "settledNs": "208558734194164",
+          "resultNs": null,
+          "sendCompletedNs": "208557315406985",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": "returned-success"
+        },
+        {
+          "requestId": "synthetic-count-saturation-held-1",
+          "role": "held-leaf",
+          "wireBytes": 210,
+          "wireSha256": "a73009c61c549a26ea02ef1ba9647768fe372ebb0e22b182b086f3e19ecceb04",
+          "outcome": "no-result-observed",
+          "injectedNs": "208557323334597",
+          "plannedNs": "208557320896580",
+          "startedNs": "208557448670627",
+          "cancelledNs": null,
+          "settledNs": "208558734249788",
+          "resultNs": null,
+          "sendCompletedNs": "208557323615280",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": "returned-success"
+        },
+        {
+          "requestId": "synthetic-count-saturation-held-2",
+          "role": "held-leaf",
+          "wireBytes": 210,
+          "wireSha256": "ad0708e35260b769ed9fc4fef8dd556d649c87a3b4afbcad6e0f04466f74b437",
+          "outcome": "no-result-observed",
+          "injectedNs": "208557325754242",
+          "plannedNs": "208557325896580",
+          "startedNs": "208557517917402",
+          "cancelledNs": null,
+          "settledNs": "208558734261345",
+          "resultNs": null,
+          "sendCompletedNs": "208557325952270",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": "returned-success"
+        },
+        {
+          "requestId": "synthetic-count-saturation-held-3",
+          "role": "held-leaf",
+          "wireBytes": 210,
+          "wireSha256": "6b11cd8aa89e804af832cba23152cd4b06fe482115faed7532d8d17a391205a6",
+          "outcome": "no-result-observed",
+          "injectedNs": "208557331281509",
+          "plannedNs": "208557330896580",
+          "startedNs": "208557611486631",
+          "cancelledNs": null,
+          "settledNs": "208558734278081",
+          "resultNs": null,
+          "sendCompletedNs": "208557331518926",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": "returned-success"
+        },
+        {
+          "requestId": "synthetic-count-saturation-queued-0",
+          "role": "queued-candidate",
+          "wireBytes": 214,
+          "wireSha256": "1924d0ea8b86f5167ab98b39cc3c0a4a365715c9b19745c0f485d3a3547084bc",
+          "outcome": "no-result-observed",
+          "injectedNs": "208557618783454",
+          "plannedNs": "208557619451007",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208557619056385",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-count-saturation-queued-1",
+          "role": "queued-candidate",
+          "wireBytes": 214,
+          "wireSha256": "34364af4fe1fc6bf9e3dc6220218bb8588b974636ac97d3a701a37470ad0ec10",
+          "outcome": "no-result-observed",
+          "injectedNs": "208557623204774",
+          "plannedNs": "208557624451007",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208557623373158",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-count-saturation-queued-2",
+          "role": "queued-candidate",
+          "wireBytes": 214,
+          "wireSha256": "5b385ef4d95898370862673908434b88a6d1571ee70976eb1ceaaf131b0bea88",
+          "outcome": "no-result-observed",
+          "injectedNs": "208557628505089",
+          "plannedNs": "208557629451007",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208557628675015",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-count-saturation-queued-3",
+          "role": "queued-candidate",
+          "wireBytes": 214,
+          "wireSha256": "86c9feb09f52a03849b2eb86ec98af920be6cf53007697d59468110eee1f2343",
+          "outcome": "no-result-observed",
+          "injectedNs": "208557633155174",
+          "plannedNs": "208557634451007",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208557633551050",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-count-saturation-queued-4",
+          "role": "queued-candidate",
+          "wireBytes": 214,
+          "wireSha256": "0d3e59b67e1bdf4754472017accc98253fbce62430fcb1fc16d5e50c54ad3f41",
+          "outcome": "no-result-observed",
+          "injectedNs": "208557638866317",
+          "plannedNs": "208557639451007",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208557639061080",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-count-saturation-queued-5",
+          "role": "queued-candidate",
+          "wireBytes": 214,
+          "wireSha256": "9cba821032d9398319f5b42fd495df32666071b3829cde0baf5e36cb1d8675b4",
+          "outcome": "no-result-observed",
+          "injectedNs": "208557643174707",
+          "plannedNs": "208557644451007",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208557643462771",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-count-saturation-queued-6",
+          "role": "queued-candidate",
+          "wireBytes": 214,
+          "wireSha256": "894ea7fe71d1849f9cf05cc4b96387faad80c54bebf4b59d010b3983521bf90f",
+          "outcome": "no-result-observed",
+          "injectedNs": "208557648987854",
+          "plannedNs": "208557649451007",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208557649339574",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-count-saturation-queued-7",
+          "role": "queued-candidate",
+          "wireBytes": 214,
+          "wireSha256": "76c7c537b6e49cd75d4bd7e496b521c7a1ec968b6c628dc43cc76e96ae9e7cb9",
+          "outcome": "no-result-observed",
+          "injectedNs": "208557653442455",
+          "plannedNs": "208557654451007",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208557653582105",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-count-saturation-queued-8",
+          "role": "queued-candidate",
+          "wireBytes": 214,
+          "wireSha256": "fb0efa74aa2740b2fc2118ff2ad18122d38072366f294834edbbcddaf69b9ee5",
+          "outcome": "no-result-observed",
+          "injectedNs": "208557659111655",
+          "plannedNs": "208557659451007",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208557659359979",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-count-saturation-queued-9",
+          "role": "queued-candidate",
+          "wireBytes": 214,
+          "wireSha256": "6d7c81ba67c3349fb1982b12d4a2735e49fc64d2aacddbdbcea81682496aa1a5",
+          "outcome": "no-result-observed",
+          "injectedNs": "208557663505264",
+          "plannedNs": "208557664451007",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208557663700848",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-count-saturation-queued-10",
+          "role": "queued-candidate",
+          "wireBytes": 215,
+          "wireSha256": "ce6bb8acb44ec30116d886daae97a4e1e052785a61020de1008dbf482e18b51d",
+          "outcome": "no-result-observed",
+          "injectedNs": "208557668853541",
+          "plannedNs": "208557669451007",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208557669030858",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-count-saturation-queued-11",
+          "role": "queued-candidate",
+          "wireBytes": 215,
+          "wireSha256": "632008725e94c66401fccb65cfbb5e083e142a6ada38afa03d4c6890282199b5",
+          "outcome": "no-result-observed",
+          "injectedNs": "208557673180148",
+          "plannedNs": "208557674451007",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208557673357946",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-count-saturation-refused-9007199254740997-é",
+          "role": "expected-explicit-refusal",
+          "wireBytes": 233,
+          "wireSha256": "5a87de9bb6a5bf5ed3b4614e435c8cce4d8b447fcfd85df25da150798522934e",
+          "outcome": "explicit-refusal",
+          "injectedNs": "208557678527524",
+          "plannedNs": "208557679451007",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": "208558693688450",
+          "sendCompletedNs": "208557678702988",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": 189,
+          "resultWireSha256": "77b2251eb3208e65b0ebad746eaacf1a02b703410d10e7db7262452207d641bb",
+          "resultType": "operation_error",
+          "errorCode": "bridge_busy",
+          "leafOutcome": null
+        }
+      ],
+      "issues": [],
+      "phaseObservations": {
+        "loadUntilHeldRelease": {
+          "startNs": "208557310381154",
+          "endNs": "208558733999190",
+          "gatewayHeartbeatNs": [
+            "208557501695975",
+            "208557599057468",
+            "208557698887504",
+            "208557799873222",
+            "208557899215908",
+            "208558000621674",
+            "208558099074896",
+            "208558198731952",
+            "208558298656005",
+            "208558400469734",
+            "208558499855130",
+            "208558599282645"
+          ],
+          "observedProbeIds": [
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            123,
+            124,
+            125,
+            126,
+            127,
+            128,
+            129,
+            130,
+            131,
+            132,
+            133,
+            134,
+            135,
+            136,
+            137,
+            138,
+            139,
+            140,
+            141,
+            142,
+            143,
+            144,
+            145,
+            146,
+            147,
+            148,
+            149,
+            150,
+            151,
+            152,
+            153,
+            154,
+            155,
+            156
+          ]
+        },
+        "shutdownUntilJoined": {
+          "startNs": "208558987614062",
+          "endNs": "208559142550432",
+          "gatewayHeartbeatNs": [],
+          "observedProbeIds": [
+            169,
+            170,
+            171,
+            172,
+            173,
+            174
+          ]
+        }
+      },
+      "externalCounts": {
+        "declared": 21,
+        "injected": 21,
+        "startedLeaves": 4,
+        "settledLeaves": 4,
+        "cancellationObservedLeaves": 0,
+        "wireResults": 5,
+        "explicitRefusals": 1,
+        "wireErrors": 0,
+        "missingWireResults": 16,
+        "stillActiveLeaves": 0,
+        "peakActiveLeaves": 4,
+        "totalInjectedWireBytes": 4531,
+        "peakInjectedBytesAwaitingWireResult": 3643,
+        "finalInjectedBytesWithoutWireResult": 3410
+      },
+      "diagnosticsNs": {
+        "injectionLateness": {
+          "samples": 21,
+          "minimum": "-1295833",
+          "median": "-752251",
+          "p95": "384929",
+          "maximum": "2438017"
+        },
+        "injectToLeafStart": {
+          "samples": 4,
+          "minimum": "66495260",
+          "median": "125336030",
+          "p95": "280205122",
+          "maximum": "280205122"
+        },
+        "injectToWireResultIncludingErrors": {
+          "samples": 5,
+          "minimum": "121557978",
+          "median": "144522026",
+          "p95": "1015160926",
+          "maximum": "1015160926"
+        },
+        "independentProbePlannedToMainObservation": {
+          "samples": 174,
+          "minimum": "-1244578",
+          "median": "141466",
+          "p95": "1845992",
+          "maximum": "31161188"
+        },
+        "independentProbeSchedulingLateness": {
+          "samples": 174,
+          "minimum": "-1385300",
+          "median": "-114794",
+          "p95": "533444",
+          "maximum": "2734906"
+        },
+        "independentProbeSendToMainObservation": {
+          "samples": 174,
+          "minimum": "81182",
+          "median": "147587",
+          "p95": "797597",
+          "maximum": "30632791"
+        }
+      },
+      "nativeLanes": {
+        "kind": "sampled-occupied-counts-not-exact-peaks",
+        "samples": 174,
+        "sampleMaxima": {
+          "Background": 2,
+          "Control": 1,
+          "Observation": 2,
+          "Discovery": 1,
+          "Maintenance": 1
+        }
+      },
+      "heartbeatObservations": [
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208557501695975"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208557599057468"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208557698887504"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208557799873222"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208557899215908"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208558000621674"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208558099074896"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208558198731952"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208558298656005"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208558400469734"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208558499855130"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208558599282645"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208558736425660"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208558838486242"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208558937974949"
+        }
+      ],
+      "lifecycle": [
+        {
+          "kind": "scenario-start",
+          "atNs": "208554740547472"
+        },
+        {
+          "kind": "runtime-start-requested",
+          "atNs": "208554807643102"
+        },
+        {
+          "kind": "synthetic-singleton-acquired",
+          "atNs": "208554809898796"
+        },
+        {
+          "kind": "runtime-workers-started",
+          "atNs": "208556497275006"
+        },
+        {
+          "kind": "remote-hello",
+          "atNs": "208556604737195"
+        },
+        {
+          "kind": "load-start",
+          "atNs": "208557310381154"
+        },
+        {
+          "kind": "held-release",
+          "atNs": "208558733999190"
+        },
+        {
+          "kind": "remote-disconnected",
+          "atNs": "208558986294204",
+          "generation": "1",
+          "outcome": "connection-error",
+          "errorChain": [
+            "OwnedWorkerBusyError"
+          ]
+        },
+        {
+          "kind": "scenario-failed",
+          "atNs": "208558987601743",
+          "outcome": "AssertionError"
+        },
+        {
+          "kind": "shutdown-requested",
+          "atNs": "208558987614062"
+        },
+        {
+          "kind": "project-closed",
+          "atNs": "208558991471633"
+        },
+        {
+          "kind": "project-closed",
+          "atNs": "208558991501468"
+        },
+        {
+          "kind": "project-closed",
+          "atNs": "208558991520176"
+        },
+        {
+          "kind": "project-closed",
+          "atNs": "208558991536581"
+        },
+        {
+          "kind": "singleton-released",
+          "atNs": "208559142532054"
+        },
+        {
+          "kind": "stop-signal-disposed",
+          "atNs": "208559142545254"
+        },
+        {
+          "kind": "runtime-joined",
+          "atNs": "208559142550432",
+          "outcome": "success"
+        },
+        {
+          "kind": "driver-closed",
+          "atNs": "208559143286245",
+          "outcome": "unacknowledged-probes:0"
+        }
+      ],
+      "independentProbes": {
+        "sent": 174,
+        "observed": 174,
+        "acknowledged": 174,
+        "retainedSampleCount": 13,
+        "selection": "First two, last two, and ten greatest actual driver-send to main-observation intervals; deduplicated. Distributions above use every observed probe.",
+        "observations": [
+          {
+            "probeId": 1,
+            "plannedNs": "208554804522590",
+            "sentNs": "208554804588469",
+            "observedNs": "208554807038461",
+            "acknowledgedNs": "208554807452014"
+          },
+          {
+            "probeId": 2,
+            "plannedNs": "208554829522590",
+            "sentNs": "208554828669319",
+            "observedNs": "208554828801433",
+            "acknowledgedNs": "208554828896561"
+          },
+          {
+            "probeId": 8,
+            "plannedNs": "208554979522590",
+            "sentNs": "208554979487835",
+            "observedNs": "208554985545175",
+            "acknowledgedNs": "208554985692603"
+          },
+          {
+            "probeId": 72,
+            "plannedNs": "208556579522590",
+            "sentNs": "208556578938962",
+            "observedNs": "208556580155239",
+            "acknowledgedNs": "208556580248244"
+          },
+          {
+            "probeId": 77,
+            "plannedNs": "208556704522590",
+            "sentNs": "208556704090518",
+            "observedNs": "208556704888115",
+            "acknowledgedNs": "208556704982662"
+          },
+          {
+            "probeId": 93,
+            "plannedNs": "208557104522590",
+            "sentNs": "208557103708137",
+            "observedNs": "208557105327757",
+            "acknowledgedNs": "208557105498554"
+          },
+          {
+            "probeId": 101,
+            "plannedNs": "208557304522590",
+            "sentNs": "208557304602339",
+            "observedNs": "208557305982688",
+            "acknowledgedNs": "208557310873185"
+          },
+          {
+            "probeId": 113,
+            "plannedNs": "208557604522590",
+            "sentNs": "208557605056034",
+            "observedNs": "208557605768488",
+            "acknowledgedNs": "208557605843561"
+          },
+          {
+            "probeId": 146,
+            "plannedNs": "208558429522590",
+            "sentNs": "208558429194957",
+            "observedNs": "208558430030095",
+            "acknowledgedNs": "208558430159600"
+          },
+          {
+            "probeId": 157,
+            "plannedNs": "208558704522590",
+            "sentNs": "208558705050987",
+            "observedNs": "208558735683778",
+            "acknowledgedNs": "208558735790553"
+          },
+          {
+            "probeId": 158,
+            "plannedNs": "208558729522590",
+            "sentNs": "208558729294838",
+            "observedNs": "208558735747274",
+            "acknowledgedNs": "208558735810023"
+          },
+          {
+            "probeId": 173,
+            "plannedNs": "208559104522590",
+            "sentNs": "208559103451772",
+            "observedNs": "208559103640752",
+            "acknowledgedNs": "208559103745805"
+          },
+          {
+            "probeId": 174,
+            "plannedNs": "208559129522590",
+            "sentNs": "208559129966650",
+            "observedNs": "208559130100517",
+            "acknowledgedNs": "208559130469387"
+          }
+        ]
+      },
+      "unobserved": [
+        "private connection and dispatcher queue peaks",
+        "internal retained command bytes and heap",
+        "exact native submission totals",
+        "whole-runtime lane saturation and fairness",
+        "external provider outcomes",
+        "durable acceptance and delivery acknowledgement"
+      ]
+    },
+    {
+      "scenario": "byte-saturation-cancel-drain",
+      "sourceLimits": {
+        "connectionActive": 4,
+        "connectionTotal": 16,
+        "connectionWireBytes": 4194304
+      },
+      "safetyGuardMs": 15000,
+      "structuralOutcome": "completed",
+      "runtimeJoined": true,
+      "retained": false,
+      "operations": [
+        {
+          "requestId": "synthetic-byte-saturation-cancel-drain-session-0",
+          "role": "session-setup",
+          "wireBytes": 234,
+          "wireSha256": "6cc1127754684b9cfc06880bae9d0aa66959e3841ca9e1bb6ea1ac48e3c636b7",
+          "outcome": "wire-result",
+          "injectedNs": "208561010400828",
+          "plannedNs": "208561010881679",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": "208561252925508",
+          "sendCompletedNs": "208561010736805",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": 97,
+          "resultWireSha256": "1c9c02e19ebe5c67d4d393fbca8f80439c2c85a954399e6af66ab897de9bf8c0",
+          "resultType": "project_session_result",
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-byte-saturation-cancel-drain-session-1",
+          "role": "session-setup",
+          "wireBytes": 234,
+          "wireSha256": "c23bc16285ef90c3bccfe519ff34a6e9fc9ccaaa64cb19760a9ffdc0cf4213bc",
+          "outcome": "wire-result",
+          "injectedNs": "208561264262550",
+          "plannedNs": "208561264679254",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": "208561414627521",
+          "sendCompletedNs": "208561264625587",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": 97,
+          "resultWireSha256": "2629e68dd927602acf8ab8b80cd71ea7a0c91faa2d66a9c5810c997b704d5142",
+          "resultType": "project_session_result",
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-byte-saturation-cancel-drain-session-2",
+          "role": "session-setup",
+          "wireBytes": 234,
+          "wireSha256": "470300d2cf7ac057c9fccd1dd0c8c79e021f15afbbdff280b2f66e5f2d6ab1ad",
+          "outcome": "wire-result",
+          "injectedNs": "208561423606150",
+          "plannedNs": "208561424342255",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": "208561576525334",
+          "sendCompletedNs": "208561424201127",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": 97,
+          "resultWireSha256": "059fbf378af1096d210d90dfe82f0a369172878062723593d8be450205d80380",
+          "resultType": "project_session_result",
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-byte-saturation-cancel-drain-session-3",
+          "role": "session-setup",
+          "wireBytes": 234,
+          "wireSha256": "1a8a94f8b571164186305e8785020a31ce4fea542769b0e81579cb733a1e2b81",
+          "outcome": "wire-result",
+          "injectedNs": "208561585617464",
+          "plannedNs": "208561586353919",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": "208561746667449",
+          "sendCompletedNs": "208561585856354",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": 97,
+          "resultWireSha256": "2fc0127b97b42b8891243d4bd2b000c2135b32e71584bd7c30ecaba0dd276aac",
+          "resultType": "project_session_result",
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-byte-saturation-cancel-drain-held-0",
+          "role": "held-leaf",
+          "wireBytes": 222,
+          "wireSha256": "cd300ee7386def62e84b253a181af6f7cfc9c78d5f4fb33dafc520be813479da",
+          "outcome": "cancelled-leaf-settled-no-wire",
+          "injectedNs": "208561757594935",
+          "plannedNs": "208561758087283",
+          "startedNs": "208561833646207",
+          "cancelledNs": "208562903385100",
+          "settledNs": "208562904334681",
+          "resultNs": null,
+          "sendCompletedNs": "208561757855268",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": "returned-after-cancellation"
+        },
+        {
+          "requestId": "synthetic-byte-saturation-cancel-drain-held-1",
+          "role": "held-leaf",
+          "wireBytes": 222,
+          "wireSha256": "a45cfc0cd738b6c57dbb111131dfa6b51eed5ca83fbe3657ac5e4ca561644265",
+          "outcome": "cancelled-leaf-settled-no-wire",
+          "injectedNs": "208561763003415",
+          "plannedNs": "208561763087283",
+          "startedNs": "208561896541865",
+          "cancelledNs": "208562903405531",
+          "settledNs": "208562904356374",
+          "resultNs": null,
+          "sendCompletedNs": "208561763621016",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": "returned-after-cancellation"
+        },
+        {
+          "requestId": "synthetic-byte-saturation-cancel-drain-held-2",
+          "role": "held-leaf",
+          "wireBytes": 222,
+          "wireSha256": "60ee7467a01747771204a01effd8478619e0388a3db61212b2494dd5ed1d5b8d",
+          "outcome": "cancelled-leaf-settled-no-wire",
+          "injectedNs": "208561767819752",
+          "plannedNs": "208561768087283",
+          "startedNs": "208561974273033",
+          "cancelledNs": "208562903416478",
+          "settledNs": "208562904363855",
+          "resultNs": null,
+          "sendCompletedNs": "208561768247317",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": "returned-after-cancellation"
+        },
+        {
+          "requestId": "synthetic-byte-saturation-cancel-drain-held-3",
+          "role": "held-leaf",
+          "wireBytes": 222,
+          "wireSha256": "b39c94a8a54c5caf4d9383c00245d9380e86aaf046947f6053722040b3fce05a",
+          "outcome": "cancelled-leaf-settled-no-wire",
+          "injectedNs": "208561772391857",
+          "plannedNs": "208561773087283",
+          "startedNs": "208562039259737",
+          "cancelledNs": "208562903426082",
+          "settledNs": "208562904379118",
+          "resultNs": null,
+          "sendCompletedNs": "208561772632329",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": "returned-after-cancellation"
+        },
+        {
+          "requestId": "synthetic-byte-saturation-cancel-drain-queued-0",
+          "role": "queued-candidate",
+          "wireBytes": 800220,
+          "wireSha256": "035f251725022470dff0e2260aed58bca6b081546d5009a1529786411782ae36",
+          "outcome": "no-result-observed",
+          "injectedNs": "208562067858261",
+          "plannedNs": "208562064315037",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208562072080212",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-byte-saturation-cancel-drain-queued-1",
+          "role": "queued-candidate",
+          "wireBytes": 800220,
+          "wireSha256": "1fc7d9c6e23c84f38828aa07d284316f12ab886bc18b0175dd40d1a72f0ea1b7",
+          "outcome": "no-result-observed",
+          "injectedNs": "208562076213530",
+          "plannedNs": "208562069315037",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208562076821987",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-byte-saturation-cancel-drain-queued-2",
+          "role": "queued-candidate",
+          "wireBytes": 800220,
+          "wireSha256": "8348662a9e74bdbbf5080fe0e07ddc0a6c4f19ead7a2c7c514df2d71c822a9c0",
+          "outcome": "no-result-observed",
+          "injectedNs": "208562076838462",
+          "plannedNs": "208562074315037",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208562077328520",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-byte-saturation-cancel-drain-queued-3",
+          "role": "queued-candidate",
+          "wireBytes": 800220,
+          "wireSha256": "d51d9736efd0e6636c5ce29d8e561f8c1af60899da7e542fea331598c61ee648",
+          "outcome": "no-result-observed",
+          "injectedNs": "208562078257781",
+          "plannedNs": "208562079315037",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208562079170506",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-byte-saturation-cancel-drain-queued-4",
+          "role": "queued-candidate",
+          "wireBytes": 800220,
+          "wireSha256": "2c2867e20732c76756ca52087ea4110998238fce3ef8f0b7535bb5ba1e362a1e",
+          "outcome": "no-result-observed",
+          "injectedNs": "208562086642835",
+          "plannedNs": "208562084315037",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": null,
+          "sendCompletedNs": "208562087094366",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": null,
+          "resultWireSha256": null,
+          "resultType": null,
+          "errorCode": null,
+          "leafOutcome": null
+        },
+        {
+          "requestId": "synthetic-byte-saturation-cancel-drain-refused-9007199254740997-é",
+          "role": "expected-explicit-refusal",
+          "wireBytes": 800239,
+          "wireSha256": "266d5e7ac0d45be3fc6b2a6a921046c5988dd92fdbb615848dc19b3fb1d382b6",
+          "outcome": "explicit-refusal",
+          "injectedNs": "208562088089045",
+          "plannedNs": "208562089315037",
+          "startedNs": null,
+          "cancelledNs": null,
+          "settledNs": null,
+          "resultNs": "208562880178397",
+          "sendCompletedNs": "208562088832134",
+          "sendFailureNs": null,
+          "sendFailure": null,
+          "resultWireBytes": 201,
+          "resultWireSha256": "da534de3ac98722e01ea39fdb4fad8505684463ba6c773e032fcda85e10773a1",
+          "resultType": "operation_error",
+          "errorCode": "bridge_busy",
+          "leafOutcome": null
+        }
+      ],
+      "issues": [],
+      "phaseObservations": {
+        "loadUntilHeldRelease": {
+          "startNs": "208561752825303",
+          "endNs": "208562904310134",
+          "gatewayHeartbeatNs": [
+            "208561908085059",
+            "208562012156136",
+            "208562107770972",
+            "208562208589850",
+            "208562308149169",
+            "208562407718468",
+            "208562507951407",
+            "208562608502351",
+            "208562708881846",
+            "208562810930441"
+          ],
+          "observedProbeIds": [
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+            123,
+            124,
+            125,
+            126,
+            127,
+            128,
+            129,
+            130,
+            131,
+            132,
+            133,
+            134,
+            135,
+            136,
+            137,
+            138,
+            139,
+            140,
+            141,
+            142,
+            143,
+            144,
+            145,
+            146,
+            147,
+            148
+          ]
+        },
+        "shutdownUntilJoined": {
+          "startNs": "208562901022840",
+          "endNs": "208562927570452",
+          "gatewayHeartbeatNs": [],
+          "observedProbeIds": [
+            148,
+            149
+          ]
+        }
+      },
+      "externalCounts": {
+        "declared": 14,
+        "injected": 14,
+        "startedLeaves": 4,
+        "settledLeaves": 4,
+        "cancellationObservedLeaves": 4,
+        "wireResults": 5,
+        "explicitRefusals": 1,
+        "wireErrors": 0,
+        "missingWireResults": 9,
+        "stillActiveLeaves": 0,
+        "peakActiveLeaves": 4,
+        "totalInjectedWireBytes": 4803163,
+        "peakInjectedBytesAwaitingWireResult": 4802227,
+        "finalInjectedBytesWithoutWireResult": 4001988
+      },
+      "diagnosticsNs": {
+        "injectionLateness": {
+          "samples": 14,
+          "minimum": "-1225992",
+          "median": "-480851",
+          "p95": "6898493",
+          "maximum": "6898493"
+        },
+        "injectToLeafStart": {
+          "samples": 4,
+          "minimum": "76051272",
+          "median": "133538450",
+          "p95": "266867880",
+          "maximum": "266867880"
+        },
+        "injectToWireResultIncludingErrors": {
+          "samples": 5,
+          "minimum": "150364971",
+          "median": "161049985",
+          "p95": "792089352",
+          "maximum": "792089352"
+        },
+        "independentProbePlannedToMainObservation": {
+          "samples": 149,
+          "minimum": "-1461869",
+          "median": "152125",
+          "p95": "2643164",
+          "maximum": "6971892"
+        },
+        "independentProbeSchedulingLateness": {
+          "samples": 149,
+          "minimum": "-1585786",
+          "median": "-94747",
+          "p95": "1266696",
+          "maximum": "5314519"
+        },
+        "independentProbeSendToMainObservation": {
+          "samples": 149,
+          "minimum": "51157",
+          "median": "149720",
+          "p95": "1232062",
+          "maximum": "8380234"
+        }
+      },
+      "nativeLanes": {
+        "kind": "sampled-occupied-counts-not-exact-peaks",
+        "samples": 149,
+        "sampleMaxima": {
+          "Background": 3,
+          "Control": 1,
+          "Observation": 2,
+          "Discovery": 1,
+          "Maintenance": 1
+        }
+      },
+      "heartbeatObservations": [
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208561908085059"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208562012156136"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208562107770972"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208562208589850"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208562308149169"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208562407718468"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208562507951407"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208562608502351"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208562708881846"
+        },
+        {
+          "kind": "gateway-heartbeat",
+          "atNs": "208562810930441"
+        }
+      ],
+      "lifecycle": [
+        {
+          "kind": "scenario-start",
+          "atNs": "208559161145674"
+        },
+        {
+          "kind": "runtime-start-requested",
+          "atNs": "208559227440522"
+        },
+        {
+          "kind": "synthetic-singleton-acquired",
+          "atNs": "208559228509292"
+        },
+        {
+          "kind": "runtime-workers-started",
+          "atNs": "208560907750566"
+        },
+        {
+          "kind": "remote-hello",
+          "atNs": "208561002102375"
+        },
+        {
+          "kind": "load-start",
+          "atNs": "208561752825303"
+        },
+        {
+          "kind": "shutdown-requested",
+          "atNs": "208562901022840"
+        },
+        {
+          "kind": "held-cancellation-check",
+          "atNs": "208562904266829",
+          "retained": true
+        },
+        {
+          "kind": "held-release",
+          "atNs": "208562904310134"
+        },
+        {
+          "kind": "project-closed",
+          "atNs": "208562905703033"
+        },
+        {
+          "kind": "project-closed",
+          "atNs": "208562905750484"
+        },
+        {
+          "kind": "project-closed",
+          "atNs": "208562905775723"
+        },
+        {
+          "kind": "project-closed",
+          "atNs": "208562905796043"
+        },
+        {
+          "kind": "singleton-released",
+          "atNs": "208562927538765"
+        },
+        {
+          "kind": "stop-signal-disposed",
+          "atNs": "208562927555750"
+        },
+        {
+          "kind": "runtime-joined",
+          "atNs": "208562927570452",
+          "outcome": "success"
+        },
+        {
+          "kind": "driver-closed",
+          "atNs": "208562941060769",
+          "outcome": "unacknowledged-probes:0"
+        },
+        {
+          "kind": "scenario-completed",
+          "atNs": "208562948711247",
+          "outcome": "structural-assertions-completed-no-timing-verdict"
+        }
+      ],
+      "independentProbes": {
+        "sent": 149,
+        "observed": 149,
+        "acknowledged": 149,
+        "retainedSampleCount": 13,
+        "selection": "First two, last two, and ten greatest actual driver-send to main-observation intervals; deduplicated. Distributions above use every observed probe.",
+        "observations": [
+          {
+            "probeId": 1,
+            "plannedNs": "208559226773612",
+            "sentNs": "208559226840042",
+            "observedNs": "208559227090965",
+            "acknowledgedNs": "208559227329589"
+          },
+          {
+            "probeId": 2,
+            "plannedNs": "208559251773612",
+            "sentNs": "208559250546264",
+            "observedNs": "208559250679249",
+            "acknowledgedNs": "208559250947238"
+          },
+          {
+            "probeId": 8,
+            "plannedNs": "208559401773612",
+            "sentNs": "208559400365270",
+            "observedNs": "208559408745504",
+            "acknowledgedNs": "208559408923437"
+          },
+          {
+            "probeId": 38,
+            "plannedNs": "208560151773612",
+            "sentNs": "208560151678937",
+            "observedNs": "208560152753971",
+            "acknowledgedNs": "208560152851814"
+          },
+          {
+            "probeId": 66,
+            "plannedNs": "208560851773612",
+            "sentNs": "208560851469969",
+            "observedNs": "208560853616478",
+            "acknowledgedNs": "208560853735732"
+          },
+          {
+            "probeId": 87,
+            "plannedNs": "208561376773612",
+            "sentNs": "208561376603615",
+            "observedNs": "208561378427508",
+            "acknowledgedNs": "208561378579031"
+          },
+          {
+            "probeId": 102,
+            "plannedNs": "208561751773612",
+            "sentNs": "208561751993005",
+            "observedNs": "208561754416776",
+            "acknowledgedNs": "208561754475505"
+          },
+          {
+            "probeId": 114,
+            "plannedNs": "208562051773612",
+            "sentNs": "208562051948206",
+            "observedNs": "208562057958514",
+            "acknowledgedNs": "208562067821425"
+          },
+          {
+            "probeId": 115,
+            "plannedNs": "208562076773612",
+            "sentNs": "208562077340889",
+            "observedNs": "208562082854077",
+            "acknowledgedNs": "208562086536936"
+          },
+          {
+            "probeId": 130,
+            "plannedNs": "208562451773612",
+            "sentNs": "208562451311040",
+            "observedNs": "208562452305809",
+            "acknowledgedNs": "208562452410287"
+          },
+          {
+            "probeId": 139,
+            "plannedNs": "208562676773612",
+            "sentNs": "208562676598997",
+            "observedNs": "208562678010539",
+            "acknowledgedNs": "208562678144551"
+          },
+          {
+            "probeId": 148,
+            "plannedNs": "208562901773612",
+            "sentNs": "208562901551522",
+            "observedNs": "208562902783584",
+            "acknowledgedNs": "208562902866243"
+          },
+          {
+            "probeId": 149,
+            "plannedNs": "208562926773612",
+            "sentNs": "208562926454701",
+            "observedNs": "208562927172077",
+            "acknowledgedNs": "208562927276539"
+          }
+        ]
+      },
+      "unobserved": [
+        "private connection and dispatcher queue peaks",
+        "internal retained command bytes and heap",
+        "exact native submission totals",
+        "whole-runtime lane saturation and fairness",
+        "external provider outcomes",
+        "durable acceptance and delivery acknowledgement"
+      ]
+    }
+  ],
+  "summaryKind": "bounded-synthetic-observation-summary-not-raw-runtime-logs",
+  "privateFullObservationReportSha256": "65bd5fa6d652176456e5e4e067ffb8a5a7d3c81ca3fece64ac8f1037b1ca75fd",
+  "summaryPolicy": "All operations, outcome counts, lifecycle, heartbeat and phase observations retained. Probe trace limited by declared selection; all full-sample distributions retained. No payloads, raw exception messages, stack traces, token values or temporary resource paths.",
+  "verification": {
+    "strictSelectedGraph": "completed",
+    "accounting": {
+      "tests": 8,
+      "passed": 8,
+      "failed": 0
+    },
+    "boundedScenarios": {
+      "completed": 2,
+      "failed": 1
+    },
+    "performanceAcceptance": "NOT_QUALIFIED"
+  },
+  "developmentObservations": [
+    {
+      "sha256": "8c8163394ee72e1332058f0e5f43f3e8b30bbb5064165679a6bad1c74cd1ce19",
+      "profileSha256": "601304a8403f20ad0323975648dfddaf12bb7c8951ca58eeaac8e5068b2f2071",
+      "interpretation": "Development instrumentation: count recovery failure observed; send callback success misclassification and incomplete recorder validation remained.",
+      "scenarioOutcomes": [
+        {
+          "scenario": "held-versus-unrelated",
+          "structuralOutcome": "completed",
+          "runtimeJoined": true,
+          "missingWireResults": 0
+        },
+        {
+          "scenario": "count-saturation",
+          "structuralOutcome": "failed",
+          "runtimeJoined": true,
+          "missingWireResults": 16
+        },
+        {
+          "scenario": "byte-saturation-cancel-drain",
+          "structuralOutcome": "completed",
+          "runtimeJoined": true,
+          "missingWireResults": 9
+        }
+      ]
+    },
+    {
+      "sha256": "e73ceb21ff2479b866cbf69341edb9b10e047eaccc398d19ebdc99ecd0eb4e91",
+      "profileSha256": "5f8f6d21083fe01dad747246f9ad49e6b33dfd3eb56e54316762e02135d88101",
+      "interpretation": "Harness-invalid diagnostic: three scenarios stopped because successful null send callbacks were mislabeled as failures; no runtime-send-failure inference.",
+      "scenarioOutcomes": [
+        {
+          "scenario": "held-versus-unrelated",
+          "structuralOutcome": "failed",
+          "runtimeJoined": true,
+          "missingWireResults": 1
+        },
+        {
+          "scenario": "count-saturation",
+          "structuralOutcome": "failed",
+          "runtimeJoined": true,
+          "missingWireResults": 1
+        },
+        {
+          "scenario": "byte-saturation-cancel-drain",
+          "structuralOutcome": "failed",
+          "runtimeJoined": true,
+          "missingWireResults": 1
+        }
+      ]
+    },
+    {
+      "sha256": "ee522d160303b16e08b9b8fdcfc08adaa4bbee0e286bbe8ee1a0658b0242a42f",
+      "profileSha256": "08679ec7705b5f8c596b2f99941289e81e3e0923a677b7a0a8fcb92ef2ad4897",
+      "interpretation": "Corrected instrumentation: count recovery failed with OwnedWorkerBusyError; other two scenarios completed.",
+      "scenarioOutcomes": [
+        {
+          "scenario": "held-versus-unrelated",
+          "structuralOutcome": "completed",
+          "runtimeJoined": true,
+          "missingWireResults": 0
+        },
+        {
+          "scenario": "count-saturation",
+          "structuralOutcome": "failed",
+          "runtimeJoined": true,
+          "missingWireResults": 16
+        },
+        {
+          "scenario": "byte-saturation-cancel-drain",
+          "structuralOutcome": "completed",
+          "runtimeJoined": true,
+          "missingWireResults": 9
+        }
+      ]
+    },
+    {
+      "sha256": "463452b5ec299f40b52a66a6ea297ecf066499050072bd498dffaeff81d24b33",
+      "profileSha256": "3a53e3aabb0d79ad12c550c456008d4dd919443417689f4f4e5994210074a364",
+      "interpretation": "Final-candidate observation: count recovery failed with OwnedWorkerBusyError; other two scenarios completed.",
+      "scenarioOutcomes": [
+        {
+          "scenario": "held-versus-unrelated",
+          "structuralOutcome": "completed",
+          "runtimeJoined": true,
+          "missingWireResults": 0
+        },
+        {
+          "scenario": "count-saturation",
+          "structuralOutcome": "failed",
+          "runtimeJoined": true,
+          "missingWireResults": 16
+        },
+        {
+          "scenario": "byte-saturation-cancel-drain",
+          "structuralOutcome": "completed",
+          "runtimeJoined": true,
+          "missingWireResults": 9
+        }
+      ]
+    }
+  ]
+}

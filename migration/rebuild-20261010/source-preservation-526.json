@@ -1,0 +1,30 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 526,
+  "localCommit": "36b49aceb9bc99faa170e7e844a3cc0e747b656d",
+  "fullTests": 6895,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/codex-state/reference-reader.ts": "e4e335d29b20dabec26e56d6b8da8b6a215470e35e2f1b137a1905082c174317",
+    "src/codex-state/reference-worker.ts": "13b732f30d123a56b2d75fe18725cbb4f8acd10f812702ff26a333394ac065c4",
+    "src/codex-state/store.ts": "c0a344aa464a37de1cc6b9f43f627ca91b0b524f480e544c852cc27c944c4ad6",
+    "src/runtime/action-executor/basic-dispatcher.ts": "846a2d571ba96a5f4966cf69494b26c52cf32958a8ca2aee78846ab92d893967",
+    "src/runtime/action-executor/thread-list.ts": "77448605d4bf233e8cbe7f1bf5fd830968b28e34c89483ce61fc6e4ce4580606",
+    "src/runtime/action-executor/thread-selection.ts": "ae1315e64a1dc16857bc0552c206938abfd85b4b1fb7c6ba4384c45fc6d9c6eb",
+    "src/runtime/bridge-state.ts": "fe6bda868940706e0491ccf7848822d1986a041c2e7a752e81b9091ae2c1a426",
+    "test/codex-state/reference-reader.test.ts": "3642a99e7f14faa8e49f124295e8ab85de7962743b3f1d905153f6a6c53f85a1",
+    "test/runtime/action-executor/basic-dispatcher.test.ts": "4483eb6009ec590518c2b0100311891889793752ffcfab90f88fd6a5b9f5a804",
+    "test/runtime/action-executor/native-thread-list.test.ts": "f3d6604a5420e031f59bbde6f0b1ecb43ec57515d03e30009ca7066d6d50bec5",
+    "test/runtime/bridge-state.test.ts": "3862f4a1e5889cd2953380b9560abcc9e1300c0e24a3a003d82bf8d586510a14"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

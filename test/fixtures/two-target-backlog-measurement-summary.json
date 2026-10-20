@@ -1,0 +1,229 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": 941,
+  "status": "independently-qualified",
+  "qualification": "partial synthetic two-target bounded backlog component measurement; global FIFO serialization",
+  "expected": {
+    "bootstrap": {
+      "targets": 2,
+      "bytesEach": 512,
+      "revisionEach": 1
+    },
+    "rounds": 2,
+    "admittedEachRound": 2,
+    "A": {
+      "decodedEachRound": 4,
+      "stop": "RecordLimit",
+      "offsets": [
+        512,
+        1536,
+        2560
+      ],
+      "finalRevision": 3,
+      "returnedBytesEachRound": 5120,
+      "adapterSubmissionsEachRound": 17,
+      "finalUnreadBytes": 4192256,
+      "finalUnreadRecords": 16376
+    },
+    "B": {
+      "decodedEachRound": 1,
+      "stop": "WindowEnd",
+      "offsets": [
+        512,
+        768,
+        1024
+      ],
+      "finalRevision": 3,
+      "returnedBytesEachRound": 1280,
+      "adapterSubmissionsEachRound": 8
+    },
+    "totals": {
+      "payloadBytes": 8704,
+      "anchorBytes": 4096,
+      "returnedBytes": 12800,
+      "adapterSubmissions": 50,
+      "confirmedReceipts": 10
+    },
+    "firstATransport": {
+      "activeTargetCount": 3,
+      "queuedWaiterCount": 1,
+      "heldLeaseReferenceCount": 3,
+      "BReadCalls": 0,
+      "BTransportAttempts": 0
+    },
+    "fullyHarvestedRound": {
+      "dispatchSlots": 0,
+      "readyEntries": 0,
+      "nativeHoldings": 0,
+      "activeFileReads": 0,
+      "locks": 0,
+      "waiters": 0
+    }
+  },
+  "observed": {
+    "schemaVersion": 1,
+    "checkpoint": 941,
+    "qualification": "partial synthetic two-target bounded backlog component measurement; global FIFO serialization",
+    "node": "v24.21.0",
+    "outcome": "passed",
+    "failureStage": null,
+    "polls": [
+      {
+        "round": 1,
+        "target": "A",
+        "startOffset": 512,
+        "nextOffset": 1536,
+        "dataBytes": 4096,
+        "anchorBytes": 1024,
+        "returnedBytes": 5120,
+        "readCalls": 5,
+        "decodedRecords": 4,
+        "stop": "RecordLimit",
+        "adapterCalls": 17,
+        "transportAttempts": 4
+      },
+      {
+        "round": 1,
+        "target": "B",
+        "startOffset": 512,
+        "nextOffset": 768,
+        "dataBytes": 256,
+        "anchorBytes": 1024,
+        "returnedBytes": 1280,
+        "readCalls": 5,
+        "decodedRecords": 1,
+        "stop": "WindowEnd",
+        "adapterCalls": 8,
+        "transportAttempts": 1
+      },
+      {
+        "round": 2,
+        "target": "A",
+        "startOffset": 1536,
+        "nextOffset": 2560,
+        "dataBytes": 4096,
+        "anchorBytes": 1024,
+        "returnedBytes": 5120,
+        "readCalls": 5,
+        "decodedRecords": 4,
+        "stop": "RecordLimit",
+        "adapterCalls": 17,
+        "transportAttempts": 4
+      },
+      {
+        "round": 2,
+        "target": "B",
+        "startOffset": 768,
+        "nextOffset": 1024,
+        "dataBytes": 256,
+        "anchorBytes": 1024,
+        "returnedBytes": 1280,
+        "readCalls": 5,
+        "decodedRecords": 1,
+        "stop": "WindowEnd",
+        "adapterCalls": 8,
+        "transportAttempts": 1
+      }
+    ],
+    "rounds": [
+      {
+        "round": 1,
+        "admitted": 2,
+        "completed": 2,
+        "confirmedReceipts": 5,
+        "dispatchSlots": 0,
+        "nativeHoldings": 0,
+        "fileReads": 0,
+        "locks": 0,
+        "waiters": 0
+      },
+      {
+        "round": 2,
+        "admitted": 2,
+        "completed": 2,
+        "confirmedReceipts": 10,
+        "dispatchSlots": 0,
+        "nativeHoldings": 0,
+        "fileReads": 0,
+        "locks": 0,
+        "waiters": 0
+      }
+    ],
+    "observations": [
+      {
+        "round": 1,
+        "target": "A",
+        "returnedBytes": 5120,
+        "readCalls": 5,
+        "adapterCalls": 17,
+        "transportAttempts": 4
+      },
+      {
+        "round": 1,
+        "target": "B",
+        "returnedBytes": 1280,
+        "readCalls": 5,
+        "adapterCalls": 8,
+        "transportAttempts": 1
+      },
+      {
+        "round": 2,
+        "target": "A",
+        "returnedBytes": 5120,
+        "readCalls": 5,
+        "adapterCalls": 17,
+        "transportAttempts": 4
+      },
+      {
+        "round": 2,
+        "target": "B",
+        "returnedBytes": 1280,
+        "readCalls": 5,
+        "adapterCalls": 8,
+        "transportAttempts": 1
+      }
+    ],
+    "ordering": [
+      "1:A:enter",
+      "1:A:exit",
+      "1:B:enter",
+      "1:B:exit",
+      "2:A:enter",
+      "2:A:exit",
+      "2:B:enter",
+      "2:B:exit"
+    ],
+    "waiterObserved": true,
+    "adapterCalls": {
+      "cursor-store-worker:Read": 4,
+      "decode-worker": 4,
+      "ownership-worker": 14,
+      "receipt-plan-worker": 4,
+      "receipt-store-worker:Begin": 10,
+      "receipt-store-worker:Confirm": 10,
+      "cursor-store-worker:MixedAdvance": 4
+    },
+    "totals": {
+      "transportAttempts": 10,
+      "targetAAttempts": 8,
+      "targetBAttempts": 2
+    },
+    "cleanup": {
+      "temporaryFixtureRemoved": true,
+      "nativeHoldings": {
+        "Background": 0,
+        "Control": 0,
+        "Observation": 0,
+        "Discovery": 0,
+        "Maintenance": 0
+      },
+      "activeFileReads": 0,
+      "locks": {
+        "activeTargetCount": 0,
+        "queuedWaiterCount": 0,
+        "heldLeaseReferenceCount": 0
+      },
+      "dispatchSlots": 0
+    }
+  }
+}

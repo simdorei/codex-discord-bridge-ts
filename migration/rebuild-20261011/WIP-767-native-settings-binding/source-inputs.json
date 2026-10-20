@@ -1,0 +1,42 @@
+{
+  "scope": "bounded original settings/lifecycle target binding native read installation",
+  "frozenRust": "4e213aa69dc89bed1552d8b83e12471d7664b7ae",
+  "latestRustRef": "7c3c7d8c74be4b9854651166cf45be631808d1d9",
+  "latestRefCheckedAt": "2026-10-12T17:31:43Z",
+  "files": [
+    {
+      "path": ".runtime/rust-authority/crates/cdr-runtime/src/settings_binding.rs",
+      "sha256": "962cd3bc60936748db7f62e4794b0b15b69abfae664533d70a9d33aa181244b1"
+    },
+    {
+      "path": "src/runtime/settings-binding.ts",
+      "sha256": "bfd6d024c7cddce84796c24257e3b6b2e624a40efe58e4f24e76bd92d71b257a"
+    },
+    {
+      "path": "src/runtime/action-executor/settings-snapshot.ts",
+      "sha256": "694efe4e59b8cf96f6c7a2c7f4650a33390a6be9a62c78afc1a068918fa36c32"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state.ts",
+      "sha256": "4ccd76cfc73974aa8b7f8f759ae11088500b357f2f36ca92eeab4038eff315bd"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state-worker.ts",
+      "sha256": "f67a99f3759188884700538cba0aae18184a2205abc804bcf75a7b9a62f1eac9"
+    },
+    {
+      "path": "src/codex-state/reference-reader.ts",
+      "sha256": "49d4463d17140fb3961c49165e460a1af0076e3149873429a1fae6f4141b17f8"
+    },
+    {
+      "path": "src/codex-state/reference-worker.ts",
+      "sha256": "a2f5760d203e17012f6d5d60193f1ee283c10aabdb0b5281638b5d9fa222597f"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "sha256": "79232ad5f86b3419cffb453a8229a80b1787ffb95dc9bc29df61aaa7774d565e"
+    }
+  ],
+  "foundation766": "116/116 PASS strictTS/build0; candidate reused exactly",
+  "completeNewRustFileRead": "settings_binding.rs entire; other dependencies reuse previous scoped qualification"
+}

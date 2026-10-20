@@ -1,0 +1,10 @@
+[
+  {
+    "path": "test/runtime/action-executor/command-executor.test.ts",
+    "sha256": "54ad55148c966f768fc264281f82ddc0d1c9f5ac837b51e0c25bcf3f3ea2dae3"
+  },
+  {
+    "path": "test/runtime/bridge-runtime-selected-guard.test.ts",
+    "sha256": "79b1e511001061b93d24ac63d90597c6e27a812afd17912605b7164c32b723d1"
+  }
+]

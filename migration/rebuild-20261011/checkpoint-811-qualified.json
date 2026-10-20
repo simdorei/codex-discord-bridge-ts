@@ -1,0 +1,30 @@
+{
+  "status": "SCOPED_CODE_FULL_REGRESSION_PASSED",
+  "upstream": "d7e1aa0106b2eefd9ea3f96e8e4bc5afdd296d34",
+  "candidateRemote": "96918e1acd803ecc7defa3cc86332b8cefa84cd0",
+  "sourceTestBytesUnchanged": true,
+  "full": {
+    "tests": 8480,
+    "pass": 8480,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "started": "2026-10-13T11:27:31.872Z",
+    "ended": "2026-10-13T11:43:39.725Z",
+    "exit": 0,
+    "signal": null,
+    "testFiles": 828
+  },
+  "scope": [
+    "Pure local-tool form decision with fail-closed schema",
+    "Original authority then actual resident occurrence/generation-bound response, without Discord prompt",
+    "Initialize form capability and platform-specific default arguments",
+    "Pure inherited Windows environment filter available for future Windows process owner"
+  ],
+  "limitations": [
+    "Windows process owner remains unimplemented; filter is NOT wired to a Windows child spawn.",
+    "No live local-tool action, deployment, persistent grants or native Windows PASS.",
+    "Protected redaction fixture missing and not reconstructed.",
+    "Inventory810 and fullBridgeSync remain incomplete."
+  ]
+}

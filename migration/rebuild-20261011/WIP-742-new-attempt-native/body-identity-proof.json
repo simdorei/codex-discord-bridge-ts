@@ -1,0 +1,20 @@
+[
+  {
+    "function": "beginIngressThreadStart",
+    "bodySha256": "cdad1218a60a274cb7cee99f0b00043ca9d1642422157d8caf7e7b67bdd52544",
+    "byteIdenticalExtractedBody": true,
+    "transaction": "true"
+  },
+  {
+    "function": "recordIngressCreatedThread",
+    "bodySha256": "d41407f31d5181ea1514ce5d9aded925f6fa7aceb39dd19dfcc11522046bb929",
+    "byteIdenticalExtractedBody": true,
+    "transaction": "false"
+  },
+  {
+    "function": "recordIngressNewCreation",
+    "bodySha256": "0a4bf0214fce5667da90137856cf024e7fd5e34956d5221b164ea05e692b779f",
+    "byteIdenticalExtractedBody": true,
+    "transaction": "true"
+  }
+]

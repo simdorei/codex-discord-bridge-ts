@@ -1,0 +1,25 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 327,
+  "localCommit": "e395ba7238ab650c4d3e311789071fe3341b4290",
+  "fullTests": 5550,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/codex-state/context-reader.ts": "eb8e6345f7c21583506a1bac1ae4502cb187262bfe5a9e72d4e8c322f4d63ede",
+    "src/codex-state/context-worker.ts": "2fc1bddccd71f8cae48dee160529df8bceee060f260c91b9c9c1477b967a8df5",
+    "src/runtime/action-executor/context-action.ts": "0a580eef4c511746eae4996213af2bb22faf8c89b6b9d3a9d2bc8fb8c40e7d84",
+    "src/runtime/context-view-format.ts": "cc027a3d6befc052a9afbc337cbd3fdad776faed716cad86babf2de709591971",
+    "test/runtime/action-executor/context-action.test.ts": "506b087fecb1852d69a66126f4e4f6dd7b70577de52ecbe937aadbf032c86dd6",
+    "test/runtime/context-view-format.test.ts": "d7870bf0b51fe1faa68168748f08ed04f0d41ca3d2fbfb98ccbaa1e36113d1aa"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

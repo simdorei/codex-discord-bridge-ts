@@ -11,6 +11,7 @@ import {
   QueueJobNotFoundError,
   InvalidQueueStateError,
   StoreIntegrityError,
+  StoreJsonError,
   QUARANTINED_TURN_PREFIX,
   QUARANTINED_ERROR_PREFIX,
   type StoredQueueJob,
@@ -512,8 +513,12 @@ describe("queue-read decoder integration", () => {
       assert.throws(
         () => selectJob(db, "job-base-bad-json"),
         (err: unknown) => {
-          assert.ok(err instanceof StoreIntegrityError);
+          assert.ok(err instanceof StoreJsonError);
+          assert.equal(err.kind, "Json");
+          assert.equal(err instanceof StoreIntegrityError, false);
           assert.match(err.message, /Failed to parse baseline_turn_ids JSON/);
+          assert.equal(err.message.includes("broken"), false);
+          assert.equal(Object.hasOwn(err, "cause"), false);
           return true;
         },
       );
@@ -525,7 +530,8 @@ describe("queue-read decoder integration", () => {
       assert.throws(
         () => selectJob(db, "job-base-dup-overflow"),
         (err: unknown) => {
-          assert.ok(err instanceof StoreIntegrityError);
+          assert.ok(err instanceof StoreJsonError);
+          assert.equal(err instanceof StoreIntegrityError, false);
           return true;
         },
       );

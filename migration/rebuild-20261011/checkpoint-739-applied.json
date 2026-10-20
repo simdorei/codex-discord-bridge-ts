@@ -1,0 +1,137 @@
+{
+  "beforeHead": "fb52145f6eb579c8dee30ab3f3c63f793bef0111",
+  "scope": [
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "beforeSha256": "de16de87a832726b7c928ab687d091115bda23faf38bf9b391c3d98e461627a3",
+      "afterSha256": "38fb59c8bdd4f7c39884da0f9cfbc84e7860ec3b47d9356e5db8fc06fa996c9d"
+    },
+    {
+      "path": "src/runtime/action-executor/new-executor.ts",
+      "beforeSha256": "785f9433b71abb7521bd3f15975517d29d1ba299c3922a6d532d1807b6939648",
+      "afterSha256": "454fd96604a2245ff8016ef837d6938b085996c7e1924d5d1c1fa559aeea65e0"
+    },
+    {
+      "path": "src/runtime/action-executor/new-journal.ts",
+      "beforeSha256": "a12d79cc1a7941967d284774d32bd2957b2f5e8c32c1720d8e30c733b70ced1b",
+      "afterSha256": "5a838c2124639d9e486dfb001e97a5a791c883fcc56a01883ab1bee01fcf4c65"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-journal-wire.ts",
+      "beforeSha256": null,
+      "afterSha256": "029e29b43b9b0e6d998434ce04f96d9233a203fbe70e71b7232305b08ecda086"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state-worker.ts",
+      "beforeSha256": "ac299a8f2336a43f16b29a7c98e2a90e1515125df2bde1819fa020011bac7273",
+      "afterSha256": "3e824e31e1f3cdb63c4ca500807ed6a1220832a81aa88bd3d043c38e757dc808"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state.ts",
+      "beforeSha256": "0b80d2c39b8934d20fc1b6c030c50f5ca6e092f42da9cbfc14ce18d4e83bacda",
+      "afterSha256": "e7bddda7390638cdc63a16b7c679af098e42487a5768ca27a3edd49484b8fe03"
+    },
+    {
+      "path": "src/store/ingress-admission.ts",
+      "beforeSha256": "6d6729630770b3e6fc0c28d4d8394dddca286825fa3a2043ff1133a2ab20df29",
+      "afterSha256": "16bb18b95a983c624a30209c15efbbe6eaab4229c3181e0ca4855f5b6b7b6a3e"
+    },
+    {
+      "path": "src/store/ingress-read.ts",
+      "beforeSha256": "9e182f97f0b3154f67c89bdc2586968623cd744d1796e5fa2a2a00c9b3e569d8",
+      "afterSha256": "1f68d23c01d11303980786c4c9cd5aa3e16916c76389fe7e80255a692b6c881a"
+    },
+    {
+      "path": "src/store/ingress-recovery.ts",
+      "beforeSha256": "39bdc5afe47b6e843f6b66e4553dfce314827f4896c9ea5406a39bd0fffdfe83",
+      "afterSha256": "f15bb194afabbf73abba3da201da9b87fe935cc3f26cd8c2aff6e9e338079645"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "116036fbcb30a2fbc6fe5c7124a9806ff3015452e27df799f43835288a5774d1",
+      "afterSha256": "a2cc1fc51e57016aed739c96b4cd33c05607cec448ee3d501c6ebff97ebd2c87"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "beforeSha256": "a7bc001609af4a6e4fcc13d41099cbe0eda1f77d10f050723a14a29b5ba4a9be",
+      "afterSha256": "0b0e91b2342a7a950d59d3308c7a741b29b97dcd9110a993bba89d78f8932065"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-journal-wire.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "2e850c75825d15c83fc5f8ccbae92828c82d3bf2ccbcb561a2ff7f838e46f810"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-journal.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "2436554d6e8dce5111771bb92e043a50260db4a17162a804bb4b8bd362ef1f23"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-state.test.ts",
+      "beforeSha256": "f8ba3029f51f491df3e4dbbd679ff3e7d9eae7dd4a311f776564b3cd12bb4da7",
+      "afterSha256": "c08bc982b034b2e4986d302abe892cb4f24a81a9c01612ebb6d23e7fb2287924"
+    },
+    {
+      "path": "test/store/ingress-admission-existing.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "b4abc1d18539423b43cba924af94843461316dad8c9566665c6e046745578ed9"
+    },
+    {
+      "path": "test/store/ingress-existing-boundary.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "82814549fc856a29db73289b5c5bab2cc81cf66742843b9646894aecdd820cd2"
+    },
+    {
+      "path": "test/store/ingress-recovery-existing.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "f0f726e889e36d8c43b7c6fb14277095292ebe80f03fa47f8ca4543ccdc756b1"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "7b7affcffc9523039a8efd9c1103ded5c9110f1fc106e9cf18b892c980651ee0",
+      "afterSha256": "7dbf0db1fcafe092c66f08eadc45325cc813d9c8796f0ad09ec1ebdd84cdf924"
+    }
+  ],
+  "stageFileCount": 1586,
+  "full": {
+    "tests": 8052,
+    "pass": 8052,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0
+  },
+  "fileCount": 775,
+  "fullLogSha256": "6c54f20506cdb10c49c625eb98ce6baa988cd3d609df1f327070c528d5bdcc7c",
+  "focused": 512,
+  "status": "STAGED_QUALIFIED_ACTUAL_RECHECK_PENDING",
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 512,
+      "pass": 512,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1586
+  },
+  "claim": "Staged whole8052PASS plus actual512PASS/TS0/build0 and all1586source/test hashes identical. No separate actual whole rerun or Windows/live/performance certification.",
+  "limitations": [
+    "New attempt lifecycle, project/replay and delivery paths are not all offloaded",
+    "Existing catalog name/column checks are not exact DDL certification",
+    "Protected redaction fixture is absent and neither executed nor counted as skip",
+    "No Windows, live Discord/appserver, G1-G7, 24h, or deployment approval"
+  ],
+  "evidence": {
+    ".runtime/new-journal-native-739/full.log": "6c54f20506cdb10c49c625eb98ce6baa988cd3d609df1f327070c528d5bdcc7c",
+    ".runtime/new-journal-native-739/full.tap": "a931b24cd3982e91142e2ecf98a2320386d0d81ff1c2728cd15beaddd9374640",
+    ".runtime/new-journal-native-739/full-exit.json": "b26342fe9dbf0f7367a5b87b83bf9c4547ee77ec08e1b05f37f5f25c5da64c71",
+    ".runtime/new-journal-native-739/stage-inputs.json": "51a30d6d0a410f79fc200406ea30150a736ffd8451a43b3812487c40503dc72f",
+    ".runtime/new-journal-native-739/authored-manifest.json": "25d37ce86b74454f76b2d4781b54167448dcb8e98e6cd1fcdc40a8418b5a914b",
+    ".runtime/new-journal-native-739/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/new-journal-native-739/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/new-journal-native-739/applied/focused.log": "f04ad30953e083b6d12318f86e77bdd81098742e977c6c0a66bf22a7fd392f9a",
+    ".runtime/new-journal-native-739/body-identity-proof.json": "bb8fd7016411a3a67350e757ccbb32eda288b4d8c8970f963e7d9bd332657c04",
+    ".runtime/new-journal-native-plan-736/source-inputs.json": "8512684e99075b6b4b16448e182609df707c09ea9ddfca3d68fcef6118ef3be9"
+  }
+}

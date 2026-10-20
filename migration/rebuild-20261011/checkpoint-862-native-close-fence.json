@@ -1,0 +1,19 @@
+{
+  "checkpoint": 862,
+  "status": "IMPLEMENTED_SCOPED_VERIFIED",
+  "corrects": 861,
+  "finding": "A returned lifetime can carry rejected resident disposal. Such a report must not authorize outer drain identity cleanup.",
+  "fix": "Issue module-private outer cleanup receipt only when actual resident disposal fulfilled. A failed close retains identity and ownership for explicit handling.",
+  "verification": {
+    "strictCompiledBuildExit": 0,
+    "focusedTests": 7,
+    "pass": 7,
+    "fail": 0,
+    "skipped": 0,
+    "fullSuiteClaim": false
+  },
+  "limits": [
+    "WIP858 socket ownership unverified",
+    "No production gateway executable or Windows qualification"
+  ]
+}

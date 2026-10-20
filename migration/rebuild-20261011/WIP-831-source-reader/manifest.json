@@ -1,0 +1,44 @@
+{
+  "status": "WIP_UNAPPLIED_FOCUSED20_PASS_WHOLE_PENDING",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-record.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-831-source-reader/files/src/runtime/mirror-sync/source-record.ts",
+      "sha256": "2b76a773d5c30aacb114f73bc4e656d6f4dbd1c2d9d55ca02838858bb7603093"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-scope.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-831-source-reader/files/src/runtime/mirror-sync/source-scope.ts",
+      "sha256": "b8dbdb7632253b3b2d08a9474385d75bada7307d5edb4eb0c430fa46c28f5b46"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-reader.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-831-source-reader/files/src/runtime/mirror-sync/source-reader.ts",
+      "sha256": "c4d20e2b0db6f674830759ca3c7e7b8492d46cbed8c35280ca684f192aabcd4d"
+    },
+    {
+      "candidatePath": "src/runtime/mirror-sync/source-reader-worker.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-831-source-reader/files/src/runtime/mirror-sync/source-reader-worker.ts",
+      "sha256": "4b235818eaa57d1b34f10b6eadefc17667bc52deca916fb29e696e349defe112"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/source-reader.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-831-source-reader/files/test/runtime/mirror-sync/source-reader.test.ts",
+      "sha256": "2ecaaa65a4e37d4991af87fad61ab4128b30629e076d903589ed537e94d4703c"
+    }
+  ],
+  "authority": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca mirror_sync/cleanup.rs CodexThreadStore reads",
+  "scope": "Native complete active identity and exact archived/nonarchived thread queries; shared source-record validation",
+  "verification": {
+    "strictBuildExit": 0,
+    "focusedTests": 20,
+    "pass": 20,
+    "fail": 0
+  },
+  "limitations": [
+    "Focused20 includes source reader5, existing scope7, orphan cleanup8",
+    "Full regression pending",
+    "Worker transfer limit is not a SQLite/V8 allocation bound",
+    "Windows/live runtime/deployment unverified"
+  ]
+}

@@ -1,0 +1,10 @@
+[
+  {
+    "path": "src/store/stop-control-recovery-read.ts",
+    "sha256": "c627b7835ae01ac51dbe725edce316ae693c10716ba84784f4b81ea4dbee65fa"
+  },
+  {
+    "path": "test/store/stop-control-recovery-read.test.ts",
+    "sha256": "16649935c0387c1565996cfe6336790b9f736236873e5ffb6c98e9628c53849d"
+  }
+]

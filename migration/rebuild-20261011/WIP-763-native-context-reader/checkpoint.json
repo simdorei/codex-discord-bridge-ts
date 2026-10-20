@@ -1,0 +1,50 @@
+{
+  "status": "WIP_NOT_APPLIED",
+  "at": "2026-10-12T17:02:01.821511+00:00",
+  "focused": {
+    "tests": 111,
+    "pass": 111,
+    "fail": 0,
+    "typecheck": 0,
+    "build": 0
+  },
+  "initialRed": {
+    "tests": 111,
+    "pass": 110,
+    "fail": 1
+  },
+  "whole": "NOT_RUN",
+  "node": "24.21.0",
+  "candidate": [
+    {
+      "path": "src/codex-state/reference-reader.ts",
+      "sha256": "49d4463d17140fb3961c49165e460a1af0076e3149873429a1fae6f4141b17f8"
+    },
+    {
+      "path": "src/codex-state/reference-worker.ts",
+      "sha256": "a2f5760d203e17012f6d5d60193f1ee283c10aabdb0b5281638b5d9fa222597f"
+    },
+    {
+      "path": "src/codex-state/store.ts",
+      "sha256": "01e9c4f7eb314b0033424e399619ec08140f8ae990a2bcfb9d5ce62e5391948d"
+    },
+    {
+      "path": "test/codex-state/limited-thread-store.test.ts",
+      "sha256": "8918254f3b8a3cdc4c4514c660f2f8374da5c4bec765674a7f89d01f8e2217e5"
+    },
+    {
+      "path": "test/codex-state/context-native-reader.test.ts",
+      "sha256": "527850f47467619e5038bd7722e9a1d3880c9f89d1fe2cbd0973875f7120b6be"
+    }
+  ],
+  "limits": [
+    "ContextAction integration absent",
+    "Windows/live/performance/24h unverified"
+  ],
+  "evidenceSha256": {
+    "focused.log": "a89fed0a732fcafee8237730a529244ada6612cd509525516ce8245ce0a4f11a",
+    "typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "correction.json": "3fb553c5d7599730c5e395dacc4e486ca410752e8157fa5726b46f650a9a9713"
+  }
+}

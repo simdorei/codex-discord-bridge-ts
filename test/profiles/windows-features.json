@@ -1,0 +1,16 @@
+[
+  "test/windows-runtime/windows-files.test.ts",
+  "test/windows-runtime/windows-handoff.test.ts",
+  "test/windows-runtime/windows-mirror-continuity.test.ts",
+  "test/windows-runtime/windows-project.test.ts",
+  "test/windows-runtime/windows-computer.test.ts",
+  "test/windows-runtime/windows-supervisor.test.ts",
+  "test/windows-runtime/windows-archive-delete.test.ts",
+  "test/windows-runtime/windows-admin.test.ts",
+  "test/windows-runtime/windows-admin-threads.test.ts",
+  "test/windows-runtime/windows-admission.test.ts",
+  "test/windows-runtime/windows-configured-remote.test.ts",
+  "test/store/cutover-backup.test.ts",
+  "test/runtime/persistent-receiver-protocol.test.ts",
+  "test/runtime/persistent-receiver-pre-admission-probe.test.ts"
+]

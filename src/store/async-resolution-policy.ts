@@ -1,3 +1,4 @@
+import type {SelectedReadBudget} from './selected-read-budget.ts';
 import type { DatabaseSync, SQLInputValue } from "node:sqlite";
 import { StoreIntegrityError } from "./schema-assembly.ts";
 
@@ -23,21 +24,21 @@ function requireText(value: string): void {
   }
 }
 
-function exists(db: DatabaseSync, sql: string, value: SQLInputValue): boolean {
+function exists(db: DatabaseSync, sql: string, value: SQLInputValue, budget?:SelectedReadBudget): boolean {
   const stmt = db.prepare(sql);
   stmt.setReadBigInts(true);
-  const row = stmt.get(value);
+  const row = stmt.get(value);budget?.row(row);
   if (row === undefined || typeof row.held !== "bigint") {
     throw new StoreIntegrityError("Expected integer EXISTS result");
   }
   return row.held !== 0n;
 }
 
-function hasTable(db: DatabaseSync, name: string): boolean {
+function hasTable(db: DatabaseSync, name: string, budget?:SelectedReadBudget): boolean {
   return exists(
     db,
     "SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE type='table' AND name=?) AS held",
-    name,
+    name,budget,
   );
 }
 
@@ -45,17 +46,17 @@ function hasTable(db: DatabaseSync, name: string): boolean {
  * Checks whether the recovery policy holds execution for the given thread.
  * Operates strictly on a borrowed DatabaseSync handle (read-only query; no mutations).
  */
-export function asyncRecoveryPolicyHeldIn(db: DatabaseSync, thread: string): boolean {
+export function asyncRecoveryPolicyHeldIn(db: DatabaseSync, thread: string, budget?:SelectedReadBudget): boolean {
   requireText(thread);
   if (thread === REVIEWED_INCIDENT_THREAD) {
     return true;
   }
-  if (!hasTable(db, "cdr_async_recovery_policies")) {
+  if (!hasTable(db, "cdr_async_recovery_policies",budget)) {
     return false;
   }
   return exists(
     db,
     "SELECT EXISTS(SELECT 1 FROM cdr_async_recovery_policies WHERE thread_id=?) AS held",
-    thread,
+    thread,budget,
   );
 }

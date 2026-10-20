@@ -1,0 +1,54 @@
+{
+  "checkpoint": 672,
+  "scope": "Native existing-store HTTP payload read for Commentary, Goal, StartFailure, Question and Final",
+  "qualifiedStage": {
+    "tests": 7661,
+    "pass": 7661,
+    "fail": 0,
+    "cancelled": 0,
+    "skip": 0,
+    "testFiles": 723,
+    "durationMs": 489967.458897
+  },
+  "actualApplied": {
+    "focused": 49,
+    "typecheck": 0,
+    "build": 0,
+    "sourceTestFiles": 1510,
+    "entireSourceTestEqualsQualifiedStage": true
+  },
+  "fullRerunOnActual": false,
+  "contracts": [
+    "Original metadata equality and2MiB body bound, no missing-on-error",
+    "All five response discriminants and every scalar/body typed field validated",
+    "512KiB whole request and16MiB response bounds, worst-case escaped2MiB body admitted",
+    "Global Background3 and caller HTTP4 bounds, no queued retry",
+    "Cancelled or timed-out read retains operation until native exit, never sends late payload",
+    "Original receipt/dispatch guards and current Question generation preserved"
+  ],
+  "priorFailure": "Added malformed Question fixture {} failed metadata ordinal before payload decoder. Fixture-only changed to index0 missing title/options. Raw RED preserved; product unchanged.",
+  "missingHistoricalFile": "test/remote-agent/redaction.test.ts (10 unavailable tests; not skipped)",
+  "remoteWrites": "paused after cancellation pending user reply",
+  "limitations": [
+    "Receipt/dispatch guard DB writes and general discovery/live operations still synchronous",
+    "No Windows/performance/24hour qualification",
+    "Original volume not recovered"
+  ],
+  "files": {
+    "src/runtime/completion/native-http-payload.ts": "cff9ba3e27ea6548e26efdabb66c997f8b2b86a6e364cb1a82699698bbd912dd",
+    "src/runtime/completion/native-http-payload-worker.ts": "37dc2dfbf2302446c8086103fea655531ce1c325c0735190cf955eb499216243",
+    "src/runtime/completion/pipeline.ts": "21bca9b7f615de4c75a48a2e7b88e3ff66c373f6906b01b3a733db3a30a2b613",
+    "src/runtime/completion/scheduler/http-work.ts": "e8854d75a6398ede5883b992cdd8473a0f2f5c74fb83356fb10a1a7ed1671cba",
+    "test/runtime/native-http-payload.test.ts": "2ee6c75425ad7ba919e648d7530d1ebb5ae694b97734bec16db7eb67dcfc1d90"
+  },
+  "evidence": {
+    ".runtime/completion-http-payload-672/full.log": "47a6fa84a8a9ca15ff5ae8df0c38a5070184f02025eaf0c3e5e5d15af7abd610",
+    ".runtime/completion-http-payload-672/full-exit.json": "582527a365d63cd62441727d0b4571a2aa50cf1e5372c11def817c084cfd3df8",
+    ".runtime/completion-http-payload-672/REVIEW.md": "678669cf73773c5037d41fd65d50eaa2b8ec299100c23e95a7b867f3a35db5e7",
+    ".runtime/completion-http-payload-672/scope-proof.json": "a55a25016eeabfb6574fe729bf6cc33678a5267513f1e4e1d722ba576576d3b8",
+    ".runtime/completion-http-payload-672/applied/applied-manifest.json": "1a56660ca32ebe3fb6aa6c7ffe1c47b10e31359b600a500249cdaeed5cb3255b",
+    ".runtime/completion-http-payload-672/applied/source-test-identity.json": "98c251003850369648838175957ddf59837ae1328740cfbbbdcbadf6b49c6a00",
+    ".runtime/completion-http-payload-672/applied/focused.log": "175abb10de12dd3e5d46e6e09d17a09d604d7dcf936a64ce4276bdd7361e8210",
+    ".runtime/completion-http-payload-672/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

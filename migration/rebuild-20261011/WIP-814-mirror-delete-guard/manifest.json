@@ -1,0 +1,24 @@
+{
+  "status": "WIP_UNTESTED_UNAPPLIED",
+  "dependsOn": "WIP813 mirror inventory stage; applied809 deletion HTTP and808 native store",
+  "authority": "3ebf4223b75b9d36237a73a78ce52ce794aee4ca crates/cdr-runtime/src/mirror_sync/delete_guard.rs full read",
+  "files": [
+    {
+      "candidatePath": "src/runtime/mirror-sync/delete-guard.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-814-mirror-delete-guard/files/src/runtime/mirror-sync/delete-guard.ts",
+      "sha256": "16158f4a7557956cbeac47f9fc84bda027050f3837f84b63cb509b91c38be237"
+    },
+    {
+      "candidatePath": "test/runtime/mirror-sync/delete-guard.test.ts",
+      "snapshotPath": "migration/rebuild-20261011/WIP-814-mirror-delete-guard/files/test/runtime/mirror-sync/delete-guard.test.ts",
+      "sha256": "6257a54d6bf2963c0892f652c7f852615a445f70867fb49456eadd96d2afb186"
+    }
+  ],
+  "scope": "Begin durable fence before HTTP; complete only known success; release only genuine parsed rejection; unknown retains fence. Missing room tombstone and unresolved fence check.",
+  "limitations": [
+    "Not yet compiled/tested",
+    "No fullsync caller or shared global sync lock wired",
+    "No archived-rejected-Steer cleanup exception",
+    "No native Windows or operational validation"
+  ]
+}

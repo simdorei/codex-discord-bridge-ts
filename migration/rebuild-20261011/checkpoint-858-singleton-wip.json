@@ -1,0 +1,25 @@
+{
+  "checkpoint": 858,
+  "status": "WIP_UNVERIFIED",
+  "authority": "simdorei/codex-discord-remote-rust@d7e1aa0106b2eefd9ea3f96e8e4bc5afdd296d34:crates/cdr-runtime/src/runtime_instance.rs",
+  "implemented": "POSIX socket ownership candidate; canonical root; bounded marker cleanup; joined release; no stale socket deletion",
+  "validation": {
+    "strictTypecheckExit": 0,
+    "compiledTestBuildExit": 0,
+    "focused": {
+      "tests": 7,
+      "pass": 1,
+      "fail": 6,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "blocker": "Unix-domain listen returns EPERM in this executor, including approved escalated execution. OS ownership tests remain unverified."
+  },
+  "limits": [
+    "Not integrated into executable bootstrap",
+    "Windows named mutex adapter absent",
+    "Fail closed on stale socket; intentional difference from Rust automatic removal",
+    "Trusted private root required; hostile path replacement out of scope",
+    "No full regression or operational PASS"
+  ]
+}

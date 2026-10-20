@@ -1,0 +1,30 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 592,
+  "localCommit": "46d997f90cf4f9b37a30b4d72e5ddb81ee37d223",
+  "fullTests": 7224,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/pro/fingerprint-blocking.ts": "f465b665d2acb453d5c3e616e85209200231e0a84d05334403b2cc47eb6cb504",
+    "src/pro/runtime.ts": "a948011bdd2b223a14f006ddb904c8b24db1e4660682bb5a35ad95b8cfbce77f",
+    "src/runtime/attachment-download.ts": "5cf95fb6aa28ceaecab1fe123aaf33d6572510333cf2a150a15ab6f9149d0c57",
+    "src/runtime/attachments.ts": "e1cec30e1a702f8527fde97b06d27b72e92ef99b4ffe60a0c5a9bd4a1265013b",
+    "src/runtime/bridge-state.ts": "600b7a48c11d7a8209f4bfa6e4010c1189b69ae28a90f2cdd38b7a24ddf11c21",
+    "src/runtime/diagnostic-report-blocking.ts": "f2ea3b3ddb2fef003fc90c766fbfbf5d5896e497a5129e89250d490aa4dfaa15",
+    "src/store/abandonment-snapshot.ts": "290891b381a1e3d17bb45c2217e75bcfc6f37cd70df8d65a453871bd007c7516",
+    "test/pro/runtime.test.ts": "da79f7d5dd4025a3ab4952d2f34389cc8db7d37f4fad0b71bcac4241f7f758fc",
+    "test/runtime/attachment-native-path.test.ts": "c51b004e8473c83eb235d78791b94149c88d3a188c15309e954e6b9c41c91030",
+    "test/runtime/native-canonical.test.ts": "a36c8a51f851deac01b07fc8be9fed1631c623c50ba9196dc6e55aea46bd82a6",
+    "test/runtime/native-sibling-path.test.ts": "d0200646c2bb6a1503ad88eabc52bdbbaf3e5a91b763dda619aab281f0f7a55f"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

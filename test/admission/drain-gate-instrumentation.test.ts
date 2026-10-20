@@ -5,11 +5,13 @@ import * as path from "node:path";
 import * as os from "node:os";
 import * as crypto from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { execFileSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { AdmissionGate } from "../../src/admission/drain-gate.ts";
 import type { DrainFenceKeyRecord } from "../../src/admission/owned-key.ts";
 
-const BASE_GATE_SHA256 = "5a7dbf80ed00c61ac8c140ed1bbbef3690d27dd418f525a1b11b0eecde21f0ab";
-const BASE_KEY_SHA256 = "41e1fd6125b9ae1efd2587895c2f8b2cf942896c76fd9e8fc6cfdaff77de7f72";
+const BASE_GATE_SHA256 = "f812e401d6d3e4bf04a670230bf76d25c4ac7cd064568664b357dbd58a1e4706";
+const BASE_KEY_SHA256 = "864fa8ed7d51888503868e8ee0e07f4b3a4017f39d665b88dcaca762b9a7e6a8";
 
 export const INSTRUMENTATION_INSERTION = `
 // __AGY_INSTRUMENTATION_APPENDED_INSERTION__
@@ -70,6 +72,8 @@ describe("Instrumented Drain Gate Mirror Suite", () => {
   let fixtureDir: string;
   let realFixtureDir = "";
   let mirror: MirrorModule;
+  const compiledProfile = new URL(import.meta.url).pathname.endsWith(".js");
+  const fixtureModule = (name: string): string => pathToFileURL(path.join(realFixtureDir, "src", "admission", `${name}.${compiledProfile ? "js" : "ts"}`)).href;
 
   before(async () => {
     tmpRoot = await fs.promises.realpath(os.tmpdir());
@@ -94,6 +98,11 @@ describe("Instrumented Drain Gate Mirror Suite", () => {
     assert.equal(gateSha, BASE_GATE_SHA256);
     assert.equal(keySha, BASE_KEY_SHA256);
 
+    const helperSource = await fs.promises.readFile(fileURLToPath(new URL('../../src/core/synchronous-void.ts', import.meta.url)), 'utf8');
+    assert.equal(crypto.createHash('sha256').update(helperSource).digest('hex'), '519f2e706efdb272820d5b026281686caa822c046b9447e2ef76b650d5b264e3');
+    const coreDir = path.join(realFixtureDir, 'src', 'core');
+    await fs.promises.mkdir(coreDir, {recursive:true});
+    await fs.promises.writeFile(path.join(coreDir, 'synchronous-void.ts'), helperSource, 'utf8');
     const instrumentedSource = gateSource + INSTRUMENTATION_INSERTION;
     assert.equal(instrumentedSource.endsWith(INSTRUMENTATION_INSERTION), true);
     const strippedSource = instrumentedSource.slice(0, -INSTRUMENTATION_INSERTION.length);
@@ -120,7 +129,16 @@ describe("Instrumented Drain Gate Mirror Suite", () => {
     );
     await fs.promises.writeFile(instrumentedPath, instrumentedSource, "utf8");
 
-    mirror = (await import(pathToFileURL(instrumentedPath).href)) as unknown as MirrorModule;
+    if (compiledProfile) {
+      // Compile the same hash-verified source plus unchanged instrumentation.
+      // No source type-stripping fallback is allowed in this execution profile.
+      await fs.promises.writeFile(path.join(realFixtureDir, "package.json"), '{"type":"module"}');
+      const compiler = createRequire(import.meta.url).resolve("typescript/package.json");
+      const config = {compilerOptions: {target: "ES2023", module: "NodeNext", strict: true, noUncheckedIndexedAccess: true, rewriteRelativeImportExtensions: true, types: ["node"], typeRoots: [path.dirname(path.dirname(createRequire(import.meta.url).resolve("@types/node/package.json")))]}, include: ["src/**/*.ts"]};
+      await fs.promises.writeFile(path.join(realFixtureDir, "tsconfig.json"), JSON.stringify(config));
+      execFileSync(process.execPath, [path.join(path.dirname(compiler), "bin", "tsc"), "-p", path.join(realFixtureDir, "tsconfig.json")], {timeout: 30000, encoding: "utf8", maxBuffer: 1048576});
+    }
+    mirror = (await import(fixtureModule("drain-gate-instrumented"))) as unknown as MirrorModule;
   });
 
   after(async () => {
@@ -138,16 +156,16 @@ describe("Instrumented Drain Gate Mirror Suite", () => {
   it("verifies mirror and sibling module identity and separate weakmaps", async () => {
     const fixtureAdmissionDir = path.join(realFixtureDir, "src", "admission");
     const copiedKeyModule = (await import(
-      pathToFileURL(path.join(fixtureAdmissionDir, "owned-key.ts")).href
+      fixtureModule("owned-key")
     )) as unknown as { DrainFenceKey: MirrorModule["DrainFenceKey"] };
     const unmodifiedGateModule = (await import(
-      pathToFileURL(path.join(fixtureAdmissionDir, "drain-gate.ts")).href
+      fixtureModule("drain-gate")
     )) as unknown as {
       AdmissionGate: typeof AdmissionGate;
       DrainFenceKey: MirrorModule["DrainFenceKey"];
     };
     const mirrorModule = (await import(
-      pathToFileURL(path.join(fixtureAdmissionDir, "drain-gate-instrumented.ts")).href
+      fixtureModule("drain-gate-instrumented")
     )) as unknown as MirrorModule;
 
     assert.equal(unmodifiedGateModule.DrainFenceKey, copiedKeyModule.DrainFenceKey);

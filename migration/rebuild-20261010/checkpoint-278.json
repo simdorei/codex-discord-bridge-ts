@@ -1,0 +1,38 @@
+{
+  "kind": "source-backed-reimplementation",
+  "rustCommit": "4e213aa69dc89bed1552d8b83e12471d7664b7ae",
+  "sourceAuthority": {
+    "path": ".runtime/rust-authority/crates/cdr-store/src/async_resolution/abandonment/api.rs",
+    "sha256": "9c0a46652492eeacacc623f939d01d3a30668b684ae529c811ca9fb091196e53"
+  },
+  "files": {
+    "src/core/strict-serde-struct.ts": "fb3e193782f98a2ce6109435f3977c611a7a81aee572086effebdc3275d91f1f",
+    "src/store/abandonment-codec.ts": "3f3c7afbb6c815d9fd1bb5055df685e8f20efc3a06965a20e9f7b6caaaece6d7",
+    "test/store/abandonment-codec.test.ts": "aa8a2d8e99595301c6dce2b928469222a9ff1ed32596094dced6c5876b1b3258"
+  },
+  "strictTypeScriptExit": 0,
+  "focused": {
+    "tests": 6,
+    "pass": 6,
+    "fail": 0
+  },
+  "full": {
+    "tests": 5101,
+    "pass": 5101,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "exit": 0,
+    "fileConcurrency": 2
+  },
+  "logs": {
+    "migration/rebuild-20261010/evidence/278-focused.log.gz": "87eff864860167bd99bd25e2308e90e8f7a19bf988c26e26c99a6edb6cf2ad0c",
+    "migration/rebuild-20261010/evidence/278-typecheck.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "migration/rebuild-20261010/evidence/278-full-tests.log.gz": "9ff29eefd98b76047dca16c5f368d40038b14c85adc8ff3409a3c8bc417ac9ce"
+  },
+  "limitations": [
+    "Pure codec; does not apply abandonment or grant execution",
+    "Existing Serde numeric parser reused; no fresh Rust executable differential",
+    "Original lost workspace not recovered"
+  ]
+}

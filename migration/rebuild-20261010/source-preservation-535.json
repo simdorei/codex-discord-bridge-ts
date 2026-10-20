@@ -1,0 +1,25 @@
+{
+  "kind": "verified-source-only-preservation",
+  "localValidatedCheckpoint": 535,
+  "localCommit": "142e01592aed22544cf2caa712d97afbbe10366c",
+  "fullTests": 6957,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "strictTypeScriptExit": 0,
+  "files": {
+    "src/remote-agent/decode-worker.ts": "e3823fdaaafc5e2fe683201d611724bd4c208a9755c7d7c4b9541855020f87ba",
+    "src/remote-agent/gateway-inbound.ts": "5f1d74ca3fe37d7e56c296347d703c954855a279d19977844b6db99bff32af3c",
+    "src/remote-agent/native-decode.ts": "f339f28e632398271fba9536b34421870d9b7d7d8ff5a6949051e6bb14c2ef7d",
+    "src/remote-agent/request-budget.ts": "bea9efed3df1ca4830a3b0937477d96226f1c2c03ef552d00105c87a64dfc4db",
+    "test/remote-agent/native-gateway.test.ts": "cd5e084732f34e927a14a48f328ffea2853ed04afb0264cb0685e98f71e28143",
+    "test/remote-agent/request-budget.test.ts": "39ca3c169397105f2456a2683428c66b6f0a627d4734a557c92dc5e7ff5d061e"
+  },
+  "rawLogsPublished": false,
+  "reason": "Compressed logs excluded pending separate approval; previously approved source and test-summary preservation only.",
+  "limits": [
+    "Original workspace not recovered",
+    "Full runtime and Windows qualification incomplete",
+    "Local and remote histories retained separately"
+  ]
+}

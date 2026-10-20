@@ -1,3 +1,5 @@
+import type {DatabaseSync} from 'node:sqlite';
+import {openExisting} from './existing-store.ts';
 import { openInitialized } from "./owned-driver.ts";
 
 const I64_MIN = -9223372036854775808n;
@@ -82,12 +84,12 @@ function now(): number {
  * adding an explicit transaction (the function owns the connection).
  * Returns true if exactly 1 row was changed, false otherwise.
  */
-export async function markGoalWaiting(
+function prepareGoalWaiting(
   path: string,
   jobId: string,
   turnId: string,
   generation: bigint,
-): Promise<boolean> {
+): {snapshotPath:string;snapshotJobId:string;snapshotTurnId:string;snapshotGeneration:bigint} {
   if (typeof path !== "string") {
     throw new TypeError("path must be a string");
   }
@@ -113,7 +115,10 @@ export async function markGoalWaiting(
   validateScalarString(snapshotJobId, "jobId");
   validateScalarString(snapshotTurnId, "turnId");
 
-  const db = await openInitialized(snapshotPath);
+  return {snapshotPath,snapshotJobId,snapshotTurnId,snapshotGeneration};
+}
+
+function finishGoalWaiting(db: DatabaseSync,snapshotJobId:string,snapshotTurnId:string,snapshotGeneration:bigint):boolean {
   try {
     const updatedAt = now();
     const statement = db.prepare(UPDATE_GOAL_WAITING_SQL);
@@ -127,4 +132,24 @@ export async function markGoalWaiting(
   } finally {
     db.close();
   }
+}
+
+export async function markGoalWaiting(
+  path: string,
+  jobId: string,
+  turnId: string,
+  generation: bigint,
+): Promise<boolean> {
+  const q=prepareGoalWaiting(path,jobId,turnId,generation);
+  return finishGoalWaiting(await openInitialized(q.snapshotPath),q.snapshotJobId,q.snapshotTurnId,q.snapshotGeneration);
+}
+
+export function markGoalWaitingExisting(
+  path: string,
+  jobId: string,
+  turnId: string,
+  generation: bigint,
+): boolean {
+  const q=prepareGoalWaiting(path,jobId,turnId,generation);
+  return finishGoalWaiting(openExisting(q.snapshotPath),q.snapshotJobId,q.snapshotTurnId,q.snapshotGeneration);
 }

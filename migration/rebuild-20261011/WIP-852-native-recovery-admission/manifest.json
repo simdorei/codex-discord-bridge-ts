@@ -1,0 +1,50 @@
+{
+  "status": "WIP_STAGED_STRICT0_FOCUSED42_FULL_PENDING",
+  "files": [
+    {
+      "path": "src/runtime/writer-recovery/native-owner.ts",
+      "sha256": "cc65fca66826a91fb628a3f4e1c55a44ba22cecd87246fc245a801efbed1560a"
+    },
+    {
+      "path": "src/runtime/writer-recovery/native-worker.ts",
+      "sha256": "8ccf28fe5dd668d40f32521318f65a957593e1c1df9622c418b3ce9c7293695c"
+    },
+    {
+      "path": "src/store/ingress-recovery-custody.ts",
+      "sha256": "d16ea002ea51da1cf47838e16f2a83bacf6d64e3814bb07de3f093e68df63665"
+    },
+    {
+      "path": "test/runtime/writer-recovery/native-owner.test.ts",
+      "sha256": "103c9e03a308eb94212573a74eea142d0da34c866f67941d8a7de6c4dbfac7ed"
+    }
+  ],
+  "facadeBindings": [
+    {
+      "path": "src/store/state-access-facade.ts",
+      "baseSha256": "2b2cf72c1f5067d0588e2cf5da8d57ac8f2e98a5331a45cb4383b79ca4b3bdf1",
+      "candidateSha256": "0b3905703d6bcf9ae20a508d987718c874b2dbd2b5f7170b2e7c7200e86419b3"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "baseSha256": "b096517bf865f9207c7de39cb12bb4aca8a8bfbd44b2de86f1f84451ee582339",
+      "candidateSha256": "7a4a5eaa430475508186ae9ea6a212db33643535f82bd65f406555ee91ce2619"
+    }
+  ],
+  "scope": [
+    "Compact original key/channel/user/event/reference envelope is captured before dispatch; original payload is loaded only inside existing-store native transaction.",
+    "Original record, exact command plan/reference and route are checked before claiming. Explicit and Mapped Recover only; Selected and Repair remain refused by this native owner.",
+    "Main-side acknowledgement verifies exact envelope, claimed phase and timestamp before minting owner-local opaque capability. Target lookup accepts only that owner capability."
+  ],
+  "verification": {
+    "strictExit": 0,
+    "focusedExit": 0,
+    "focusedPass": 42,
+    "focusedFail": 0,
+    "focusedSkipped": 0
+  },
+  "limits": [
+    "Stage only; product remains851. Whole regression pending.",
+    "Controller/process restart and RuntimeCommandExecutor Recover routing remain unwired. This is original-admission plumbing, not completed recovery.",
+    "Protected unavailable redaction fixture excluded. Windows/live/performance/deployment unverified."
+  ]
+}

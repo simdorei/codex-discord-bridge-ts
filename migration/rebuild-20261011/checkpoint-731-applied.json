@@ -1,0 +1,138 @@
+{
+  "beforeHead": "df487542c5b8de8c8f526396d1b6d78832da88bd",
+  "stageFileCount": 1577,
+  "scope": [
+    {
+      "path": "src/core/windows-native-path.ts",
+      "beforeSha256": "42718f7aff2a86264914ce2163583aeca031db8bb7af7a7fae4f56c4a4a4316e",
+      "afterSha256": "c3ccae1b8025f126adfe3e4e6f6f335e400a131a2af9bccff33fbbcc9541db2f"
+    },
+    {
+      "path": "src/runtime/action-executor/busy-queue.ts",
+      "beforeSha256": "f9e5c38fa7ae3ce8ccdde74315e2685230d2259586c72d89faaa7eb354098832",
+      "afterSha256": "88ca2898f9ec7015f76cafbcd141099ec11547d555badfc8397800135f343b63"
+    },
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "beforeSha256": "f3e9a144e7b8c5d5236b29be69628bb3f9904c8ca16f5d52b622cd2a37a7f505",
+      "afterSha256": "fa7a3600e7dbf8d380571bde26c6c4a859de5c9454db0ce50aa04ad9c5bf499e"
+    },
+    {
+      "path": "src/runtime/action-executor/new-executor.ts",
+      "beforeSha256": "c808ce97f3a12988779470d55be43fd5240f256ae834edcd3101e3cf05193597",
+      "afterSha256": "6f47bc85b039c0bd8279a944c6c5ee09bc1cc9593c547f93edc16564ad171012"
+    },
+    {
+      "path": "src/runtime/action-executor/new-first-reply.ts",
+      "beforeSha256": "614d034903db2bf25ddbc060a02412158dad934b273a5bf8dc43a78f6ef4cc23",
+      "afterSha256": "731a03e2735c7bcbc708f574f3f1032172706af5243a0fb102316de00212cd5b"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state-worker.ts",
+      "beforeSha256": "5a5972a31d873c65428992ba6477e3646f2e8c953d78f2c00476ab6b8858a72c",
+      "afterSha256": "807037d6346d3002f68bc760255dfe60d6ea83647bbb0a56c82314db5d5bdb82"
+    },
+    {
+      "path": "src/runtime/prompt-intake/native-state.ts",
+      "beforeSha256": "cff005065be4d786130878d7459b3cb80696b49da42a4b96c3377278f85dc5fb",
+      "afterSha256": "f16781a809060bbde95610bb498dd56b7ad4c86534f7a51460310bf3bae7d61f"
+    },
+    {
+      "path": "src/store/prompt-intake-busy.ts",
+      "beforeSha256": "90d280b74db51a58a0500a0964a0fb70f09bd7b8340fe15414bc99ffe9fd19fd",
+      "afterSha256": "02b767ba28a0724aa3786b482d6ba60de04c92506c2bda1ddf222e8bf8e11547"
+    },
+    {
+      "path": "src/store/prompt-intake-new-thread.ts",
+      "beforeSha256": "c2ad7869c5fb69d1737b64c5f7e7686c6ab309706e238645c2db8c8a56826efe",
+      "afterSha256": "5c3a609dcba255de46fc9ffb62642f746d8b3ac52f327f8ef02f08054661d806"
+    },
+    {
+      "path": "src/store/state-access-facade.ts",
+      "beforeSha256": "1144f0b01cb54ed456305ec6b2b10a383effc9cea7a18e2e871ab9ed761bfa67",
+      "afterSha256": "17398d527adc26ec23ac48a15941dfafd5b932b135653b6cd560539bd6a880bd"
+    },
+    {
+      "path": "test/core/windows-native-path-passive-descriptors.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "6090fa5f26a0bd806b3b8e89730b0bfa47294db09c184c1987ad5ec178140b5a"
+    },
+    {
+      "path": "test/runtime/action-executor/command-executor.test.ts",
+      "beforeSha256": "ab31a6c9877be799bf7f7e1f5e631f94fbaec2b64b51980d0efa16a3f44f8231",
+      "afterSha256": "a7bc001609af4a6e4fcc13d41099cbe0eda1f77d10f050723a14a29b5ba4a9be"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-composites.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "48a4adf9603c3689a4dcc522eb41d41f5fa5fd2bf8047b9e24a3fcdb88cf0989"
+    },
+    {
+      "path": "test/runtime/prompt-intake/native-state.test.ts",
+      "beforeSha256": "7b65bc5f35f28bbccec16dc52b2d1c14193ecb6880c1a0765ed356e978cc4fab",
+      "afterSha256": "9e3f95b459ef866f9c7e27e368f79053ac4c7b8f09c7018e9526bbaffafeb82e"
+    },
+    {
+      "path": "test/store/prompt-intake-busy.test.ts",
+      "beforeSha256": "0f78b27c5c1def866ac3397cb64c3a1e14efc7a364a3626bd8e056c4f1a58262",
+      "afterSha256": "42c0fc6254e585f021a8427b5b52ecb0a5443209be2971a257e8935acb53c05f"
+    },
+    {
+      "path": "test/store/prompt-intake-composite-existing.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "d969737b3fd928b82af8b431fbfaa633e1e47d26d79146ff401a77b41024d93e"
+    },
+    {
+      "path": "test/store/prompt-intake-new-thread.test.ts",
+      "beforeSha256": "6711d27d2f657647ddce98950c06b38fcd33cc2da8b835d0ac74360cfb1ce673",
+      "afterSha256": "4d87cebfe627bd56ebe5117dce4fb5038972cb18c6a9e99a5d057098ef25b580"
+    },
+    {
+      "path": "test/store/state-access-facade.test.ts",
+      "beforeSha256": "1931562d118e8a7e325f92b342d6d2e921e98f8f63153edf71c734a8a37426d5",
+      "afterSha256": "e4c1c2d2b31b025193b10cfa7f39a72e20b58aa4666cd3583cce6f8f308c5703"
+    }
+  ],
+  "qualifiedFull": {
+    "tests": 7992,
+    "pass": 7992,
+    "fail": 0,
+    "skip": 0,
+    "fileCount": 768,
+    "logSha256": "c151e58e1443a950091e2e6e04a70eb043530b5c569c88066c7450ef6bb4b1d4",
+    "tapSha256": "60ca94067240e31df49914ee46ce93b3b250d86bea1f87217c3980ce9bf5f509"
+  },
+  "claim": "Staged whole7992PASS plus actual1614PASS/TS0/build0 and all1577source/test hashes identical. No separate actual whole rerun or Windows/live/performance certification.",
+  "remoteWrite": "Qualified725 remote495c08b verified; candidate731 WIP publication separately recorded.",
+  "actualAll1577HashesMatchQualifiedStage": true,
+  "actualChecks": {
+    "typecheck": 0,
+    "build": 0,
+    "focused": {
+      "tests": 1614,
+      "pass": 1614,
+      "fail": 0,
+      "skip": 0
+    },
+    "allFileHashesMatch": 1577
+  },
+  "limitations": [
+    "Remaining mirror mapping, new-reply/journal/project/replay reads not all offloaded",
+    "Existing catalog name/column checks are not exact DDL certification",
+    "Protected redaction fixture is absent and neither executed nor counted as skip",
+    "No Windows, live Discord/appserver, G1-G7, 24h, or deployment approval"
+  ],
+  "evidence": {
+    ".runtime/prompt-intake-composite-native-731/full.log": "c151e58e1443a950091e2e6e04a70eb043530b5c569c88066c7450ef6bb4b1d4",
+    ".runtime/prompt-intake-composite-native-731/full.tap": "60ca94067240e31df49914ee46ce93b3b250d86bea1f87217c3980ce9bf5f509",
+    ".runtime/prompt-intake-composite-native-731/full-exit.json": "50774c138c995e1327cb79b0af42b8b7b51ff68a153c919674b6c1f6c7f29859",
+    ".runtime/prompt-intake-composite-native-731/scope-proof.json": "a18630b394598cdadc080308db7b37b7c3ef12d7f91f9c70348ca4d0d45e89ca",
+    ".runtime/prompt-intake-composite-native-731/stage-inputs.json": "e35ce80847a6766f29b0fa4f0c7d9221c5819a2db40b42fb12a216cc367915e6",
+    ".runtime/prompt-intake-composite-native-731/authored-manifest.json": "ddccd1568ce5111808661f38048916ef631df89ed4fb526ac9151b5e575a44eb",
+    ".runtime/prompt-intake-composite-native-731/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/prompt-intake-composite-native-731/applied/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".runtime/prompt-intake-composite-native-731/applied/focused.log": "19ffec6e370b6d9a0526698aec0adbccc6ca4bc63645e566bf8ec0c47b4ae28a",
+    ".runtime/prompt-intake-composite-foundation-730/red-green-proof.json": "efe32da66f0ee248e2c0e292d1cf2c302a656d805a8101842c2e414a11e3a6b5",
+    ".runtime/prompt-intake-composite-existing-727/body-identity-proof.json": "18706e330f8436caea0ff94f6f4921e12e49bf6ee1edca677e952b9392b90775"
+  }
+}

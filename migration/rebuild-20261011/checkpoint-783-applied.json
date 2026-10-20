@@ -1,0 +1,82 @@
+{
+  "status": "APPLIED_VERIFIED_PENDING_MAINTENANCE_READ",
+  "at": "2026-10-12T22:06:59.016490+00:00",
+  "baselineHead": "861ca51d38f14880bf36b4a6e1b66eefb20f7f00",
+  "scope": [
+    {
+      "path": "src/runtime/action-executor/command-executor.ts",
+      "beforeSha256": "e2ec241d25f98cbb02d362681e5aa930a9e9ddbe6f8d115435a6bb3c66b640fa",
+      "afterSha256": "d771cca1725ca66fdd16e7346e807c17e2e08acf07f771bac6f01f3ae6567a7e"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-pending-native-worker.ts",
+      "beforeSha256": null,
+      "afterSha256": "ffbb37bd7d84cdff577f96423e5363267fac1fb6423c5a678f8fa27f99fb6e13"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-pending-native.ts",
+      "beforeSha256": null,
+      "afterSha256": "bf7b60e29e820a1832a4241674e5dff753d8876358bfc9ac160238a4d603ee37"
+    },
+    {
+      "path": "src/runtime/action-executor/stop-worker.ts",
+      "beforeSha256": "ea29c0996dabb0ff17a05215888182bcd6adc07cec332de7f553093760cce8c4",
+      "afterSha256": "b73e6051b6df2979a2152b6d8af5b6c8671670e3e2a66ee3b0da08dfbec00b30"
+    },
+    {
+      "path": "test/runtime/action-executor/stop-pending-integration.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "a34032bef025ea20e3276a9227d1d08645f588be35b15ce2ab51127aa5586092"
+    },
+    {
+      "path": "test/runtime/action-executor/stop-pending-lane-regression.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "c545af7c7e67741d792db6ab78a3c6f51b1f39abb816cab93c4cf14cbdbb01aa"
+    },
+    {
+      "path": "test/runtime/action-executor/stop-pending-native.test.ts",
+      "beforeSha256": null,
+      "afterSha256": "44a72f075507b8358e94a1d8ea40499b30874dffc986451d870d323533a91dff"
+    }
+  ],
+  "wholeTests": 8267,
+  "wholeFiles": 805,
+  "fullLogSha256": "4a433af1975600a7f96ca7078d26da47c0524ccf27b028b8ba8437527c3f611f",
+  "stageInputsSha256": "1e2a6da700948f613918120073e4b31d48be0290b50bbe19a07571aad32b9465",
+  "priorRedRetained": true,
+  "liveDeploymentQualified": false,
+  "all1630InputsMatchStage": true,
+  "actualFocused": 94,
+  "typecheck": 0,
+  "build": 0,
+  "verifiedAt": "2026-10-12T22:12:26.263010+00:00",
+  "firstFull": {
+    "pass": 8266,
+    "fail": 1,
+    "cancelled": 0,
+    "skipped": 0,
+    "cause": "native mirror read timeout, underlying cause UNVERIFIED"
+  },
+  "sameByteIsolated": 7,
+  "actualFirstFocused": {
+    "tests": 94,
+    "pass": 93,
+    "fail": 1,
+    "cause": "unchanged startup interleaving deadline; repeat94PASS, cause UNVERIFIED"
+  },
+  "repeatFull": {
+    "pass": 8267,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "durationMs": 1255208.267513
+  },
+  "missingProtectedFixture": "not executed or counted skipped",
+  "evidence": {
+    ".runtime/stop-pending-lane-fix-783/first-red-full.log": "10538be853a5ea7748dd227604bcb125a6a2c5e26c65b1e61747971c694c6b9e",
+    ".runtime/stop-pending-lane-fix-783/repeat-full.log": "4a433af1975600a7f96ca7078d26da47c0524ccf27b028b8ba8437527c3f611f",
+    ".runtime/stop-pending-lane-fix-783/same-test-proof.json": "d9c05acc8456a90d2d38bfefe979c719467b0bbfcf7be23df23bc26d1316f99d",
+    ".runtime/stop-pending-lane-fix-783/applied/focused.log": "e9e2912a62eb8db398a7a5d72e19690d7c601c83b0e3d058b8bf4adddd5eb6a7",
+    ".runtime/stop-pending-lane-fix-783/applied/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}
