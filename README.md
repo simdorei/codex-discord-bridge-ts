@@ -18,7 +18,7 @@ Use **Node.js >=24.21.0 <25** with npm on Windows x64. No Rust/Cargo or global
 TypeScript compiler is needed to install the supplied compiled package:
 
 ```powershell
-npm install --global --ignore-scripts .\codex-discord-bridge-ts-0.1.0-alpha.10.tgz
+npm install --global --ignore-scripts .\codex-discord-bridge-ts-0.1.0-alpha.11.tgz
 codex-discord-bridge --version
 ```
 
@@ -217,7 +217,7 @@ npm test
 npm run test:features
 npm run test:migration
 node tools/run-tests.mjs --profile windows-workers
-node tools/test-installed-package.mjs .\codex-discord-bridge-ts-0.1.0-alpha.8.tgz
+node tools/test-installed-package.mjs .\codex-discord-bridge-ts-0.1.0-alpha.11.tgz
 ```
 
 Tests exercise actual Windows file handles, SQLite, mutexes, Job Objects,

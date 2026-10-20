@@ -7,7 +7,7 @@ import {boundedSerdeByteCount} from '../../core/serde-byte-count.ts';
 import {cloneOwnedSerdeValue} from '../../core/owned-serde-value.ts';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {rustTrim} from '../../app-server/value.ts';
-export type ArchiveWrite={kind:'Reserve';scope:readonly string[];own:string|null}|{kind:'Verified'|'ReleaseRejected';operation:string};
+export type ArchiveWrite={kind:'Reserve';scope:readonly string[];own:string|null}|{kind:'Verified'|'ReleaseRejected';operation:string}|{kind:'Refused';key:string;error:string};
 function text(value:unknown):asserts value is string{requireDiscordText(value);if(Buffer.byteLength(value)>16384)throw new RangeError('Archive write text exceeds budget');}
 function capture(input:ArchiveWrite):ArchiveWrite{
  if(boundedSerdeByteCount(input,262144)===null)throw new RangeError('Archive write exceeds budget');const q=cloneOwnedSerdeValue(input),kind=own(q,'kind');
@@ -19,6 +19,9 @@ function capture(input:ArchiveWrite):ArchiveWrite{
  }
  if(kind==='Verified'||kind==='ReleaseRejected'){
   if(Object.keys(q).length!==2)throw new TypeError('Expected exact archive completion fields');const operation=own(q,'operation');text(operation);return Object.freeze({kind,operation});
+ }
+ if(kind==='Refused'){
+  if(Object.keys(q).length!==3)throw new TypeError('Expected exact archive refusal fields');const key=own(q,'key'),error=own(q,'error');text(key);text(error);return Object.freeze({kind,key,error});
  }
  throw new TypeError('Unknown archive write');
 }

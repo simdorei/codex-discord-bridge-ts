@@ -40,7 +40,7 @@ if(process.platform==='win32'){
 // stripping disabled. Compile fixture code in the development checkout once.
 const {output}=JSON.parse(execFileSync(process.execPath,['tools/build-test-profile.mjs'],{cwd:root,encoding:'utf8',windowsHide:true}).trim());
 const names=['windows-install-defaults','windows-application','windows-resources','windows-configured-remote','windows-remote-conflicts','windows-supervisor','windows-admin','windows-admin-threads','windows-archive-delete','windows-project','windows-files','windows-handoff','windows-mirror-continuity','windows-review-gaps'].map(name=>'windows-runtime/'+name);
-names.push('runtime/session-mirror/parallel-mapping','runtime/session-mirror/two-target-backlog-measurement','runtime/discord-runtime/receipt-echo','runtime/attachment-proxy','runtime/stop-worker','pro/helper','pro/release-tools','pro/connector-script','cli/cutover','mcp-server/gateway','mcp-server/oauth-worker-deadline','mcp-server/broker');
+names.push('runtime/action-executor/archive-action','store/archive-fence-existing','runtime/discord-runtime/diagnostics','runtime/session-mirror/append-journal','runtime/session-mirror/parallel-mapping','runtime/session-mirror/two-target-backlog-measurement','runtime/discord-runtime/receipt-echo','runtime/attachment-proxy','runtime/stop-worker','pro/helper','pro/release-tools','pro/connector-script','cli/cutover','mcp-server/gateway','mcp-server/oauth-worker-deadline','mcp-server/broker');
 const fixtureRoot=join(prefix,'fixtures');await mkdir(fixtureRoot);
 const targets=[];
 for(const name of names){

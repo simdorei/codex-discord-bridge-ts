@@ -54,6 +54,11 @@ function unfinishedIn(db:DatabaseSync,target:string,own:string|null):string|null
  const blocked=receiptRow(db,`SELECT ingress_id,${receiptTextColumns('ingress_id')} FROM discord_ingress_journal
     WHERE (target_thread_id=?1 OR target_thread_id IS NULL)
     AND state!='completed' AND NOT(state='owned' AND confirmation_delivered=1)
+    AND COALESCE(state='held' AND phase='result_recorded' AND owner_id IS NULL
+      AND json_extract(outcome_json,'$.kind')='archive_not_dispatched'
+      AND json_type(outcome_json,'$.version')='integer' AND json_extract(outcome_json,'$.version')=1
+      AND json_type(outcome_json,'$.archive_dispatched')='false'
+      AND json_type(payload_json,'$.plan.Execute.Archive')='object',0)=0
     AND (?2 IS NULL OR ingress_id!=?2) ORDER BY created_at,ingress_id LIMIT 1`,target,own);
  return blocked===undefined?null:receiptText(blocked,'ingress_id');
 }
