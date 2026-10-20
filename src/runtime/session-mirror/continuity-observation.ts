@@ -6,6 +6,7 @@ import {snapshotMirrorItemOptions,type MirrorItemOptions} from './decode-reader.
 import {createHash,type Hash} from 'node:crypto';
 import {MirrorFileWindow,type MirrorFileStamp,MirrorFileChangedError} from './file-window.ts';
 import {requireDiscordText} from '../../discord/text.ts';
+import {observeWindowsAppendJournal,sameWindowsAppendCheckpoint,type WindowsAppendCheckpoint} from './windows-append-journal.ts';
 export type {MirrorCursorAnchor} from '../../core/mirror-cursor-anchor.ts';
 export type MirrorContinuity='UnchangedMetadataAndAnchors'|'SameIdentityGrowthAndAnchors';
 const stampKeys=['dev','ino','birthtimeNs','mtimeNs','ctimeNs','size'] as const;
@@ -13,9 +14,14 @@ const token=Symbol('native mirror continuity observation');
 const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
 const sameStamp=(a:MirrorFileStamp,b:MirrorFileStamp)=>stampKeys.every(k=>a[k]===b[k]);
 // Bounded process-local acceleration only. No cache survives restart and every
-// changed native stamp requires a fresh prefix verification. Hash.copy retains
-// constant-sized SHA state, never consumed rollout contents.
-const historyCache=new Map<string,{path:string;offset:bigint;stamp:MirrorFileStamp;digest:Hash}>();
+// changed native stamp requires full verification unless the NTFS journal proves
+// append-only changes since that verified prefix. Hash.copy retains constant-size
+// SHA state, never consumed rollout contents.
+type CachedHistory={path:string;offset:bigint;stamp:MirrorFileStamp;digest:Hash;checkpoint:WindowsAppendCheckpoint|undefined};
+const historyCache=new Map<string,CachedHistory>();
+// Small prefixes are cheaper to hash than to query the native journal. This is
+// only an optimization threshold; full verification has no file-size cutoff.
+const JOURNAL_PREFIX_MIN_BYTES=16n*1024n*1024n;
 /** A bounded point-in-time continuity observation, never historical integrity,
  * delivery evidence, cursor authority or permission to adopt a legacy cursor. */
 export class MirrorContinuityObservation{
@@ -94,17 +100,26 @@ export async function observeAnchoredMirrorBatch(expected:MirrorCursorAnchor,lim
 
 /** Verify consumed bytes with 1 MiB memory and a ten-second deadline. Unchanged
  * generations reuse verified SHA state; advancing within that generation hashes
- * only the new range. Changed generations and process restarts verify afresh,
- * including middle rewrites followed by append. No fixed file-size cutoff. */
+ * only the new range. Changed generations use a bounded native append proof or
+ * verify afresh, including middle rewrites followed by append. Restarts always
+ * verify afresh. No fixed file-size cutoff. */
 async function hashMirrorHistoryPrefix(path:string,offset:bigint,expected:MirrorFileStamp,signal?:AbortSignal):Promise<string>{
  const file=await open(path,'r'),deadline=performance.now()+10000;
  try{if(!sameStamp(expected,await file.stat({bigint:true})))throw new MirrorFileChangedError();
   let digest=createHash('sha256'),at=0n;
-  for(const cached of historyCache.values())if(cached.path===path&&cached.offset<=offset&&cached.offset>=at&&sameStamp(cached.stamp,expected)){digest=cached.digest.copy();at=cached.offset;}
+  let cached:CachedHistory|undefined;
+  for(const value of historyCache.values())if(value.path===path&&value.offset<=offset&&(cached===undefined||value.offset>cached.offset))cached=value;
+  const unchanged=cached!==undefined&&sameStamp(cached.stamp,expected);
+  const growth=cached!==undefined&&cached.stamp.dev===expected.dev&&cached.stamp.ino===expected.ino&&cached.stamp.birthtimeNs===expected.birthtimeNs&&cached.stamp.size<expected.size;
+  const journal=unchanged||offset<JOURNAL_PREFIX_MIN_BYTES?null:await observeWindowsAppendJournal(path,expected,growth?cached?.checkpoint:undefined,signal);
+  if(cached!==undefined&&(unchanged||growth&&journal?.appendOnly)){digest=cached.digest.copy();at=cached.offset;}
   const buffer=Buffer.alloc(1048576);
   while(at<offset){signal?.throwIfAborted();if(performance.now()>deadline)throw new RangeError('Mirror history verification deadline');const length=Number(offset-at>1048576n?1048576n:offset-at),{bytesRead}=await file.read(buffer,0,length,at);if(bytesRead===0)throw new MirrorFileChangedError();digest.update(buffer.subarray(0,bytesRead));at+=BigInt(bytesRead);}
+  const after=journal===null?null:await observeWindowsAppendJournal(path,expected,undefined,signal);
+  if(journal?.appendOnly&&!sameWindowsAppendCheckpoint(journal.checkpoint,after?.checkpoint))throw new MirrorFileChangedError();
   if(!sameStamp(expected,await file.stat({bigint:true}))||!sameStamp(expected,await stat(path,{bigint:true})))throw new MirrorFileChangedError();
-  signal?.throwIfAborted();const key=path+'\0'+offset;historyCache.delete(key);historyCache.set(key,{path,offset,stamp:expected,digest:digest.copy()});
+  const checkpoint=unchanged?cached?.checkpoint:sameWindowsAppendCheckpoint(journal?.checkpoint,after?.checkpoint)?after?.checkpoint:undefined;
+  signal?.throwIfAborted();const key=path+'\0'+offset;historyCache.delete(key);historyCache.set(key,{path,offset,stamp:expected,digest:digest.copy(),checkpoint});
   while(historyCache.size>32)historyCache.delete(historyCache.keys().next().value!);
   return digest.digest('hex');
  }finally{await file.close();}

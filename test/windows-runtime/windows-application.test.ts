@@ -60,6 +60,11 @@ for(const parallel of [false,true])test(parallel?'three simultaneous threads del
   const channels=parallel?['7','8','9']:['7'],threadFor=(c:string)=>c==='7'?'fixture-thread':'fixture-thread-'+c;
   if(parallel){const mirror=await openInitialized(join(root,'discord_mirror.sqlite'));for(const c of channels)mirror.prepare('INSERT INTO mirror_threads VALUES(?,?,?,?,?,?)').run(threadFor(c),'project','Fixture',BigInt(c),BigInt(c),1);mirror.close();}
   const sent: string[] = [], calls: string[] = [], processes: OwnedPortableAppServerProcess[] = [];
+  const diagnostics:string[]=[],stderr=process.stderr.write;
+  t.mock.method(process.stderr,'write',function(chunk:any,...args:any[]){
+    if(typeof chunk==='string'&&chunk.startsWith('{"type":"runtime_diagnostic"')){diagnostics.push(chunk);return true;}
+    return Reflect.apply(stderr,process.stderr,[chunk,...args]) as boolean;
+  });
   const refusals=new Set<string>(),runWorker=OwnedWorkerSlot.prototype.run;
   for(const method of ['process','processRecoveries'] as const){const original=StopControlWorker.prototype[method];t.mock.method(StopControlWorker.prototype,method,function(this:StopControlWorker,...args:Parameters<typeof original>){const pending=original.apply(this,args);void pending.catch(error=>refusals.add('STOP '+method+' '+inspect(error,{depth:5})));return pending;});}
   const verifyControl=ControlTurnVerifier.prototype.owned;
@@ -97,11 +102,13 @@ for(const parallel of [false,true])test(parallel?'three simultaneous threads del
   });
   const stop = new AbortController();
   t.mock.method(RuntimeStopSignal, 'install', () => ({signal: stop.signal, dispose() {}} as unknown as RuntimeStopSignal));
-  t.mock.method(RecommendedGateway, 'startPaused', () => RecommendedGateway.startPausedForTest({
+  t.mock.method(RecommendedGateway, 'startPaused', (options:Parameters<typeof RecommendedGateway.startPaused>[0]) => {
+    options.reportHttpError(Object.assign(new Error('connection deadline; private fixture payload'),{code:'ETIMEDOUT'}));
+    return RecommendedGateway.startPausedForTest({
     httpOrigin: `http://127.0.0.1:${(http.address() as {port: number}).port}/api/v10/`,
     gatewayUrl: `ws://127.0.0.1:${(ws.address() as {port: number}).port}/`, messageContent: true, jitter: () => 0n,
     reportReceiveErrorDrop() {}, reportTriggerFailure() {}, reportHttpError() {},
-  }));
+  });});
   const spawn = OwnedPortableAppServerProcess.spawn;
   t.mock.method(OwnedPortableAppServerProcess, 'spawn', async (config: Parameters<typeof spawn>[0]) => {
     assert.equal(config.executable, process.execPath); calls.push(...config.arguments);
@@ -152,6 +159,9 @@ for(const parallel of [false,true])test(parallel?'three simultaneous threads del
     }finally{clearInterval(sample);}
     const finalAt = performance.now();
     assert.ok(calls.includes('app-server'));
+    const reported=diagnostics.map(line=>JSON.parse(line)).find(row=>row.scope==='gateway.http');
+    assert.equal(reported?.details[0].code,'ETIMEDOUT');assert.equal(reported?.details[0].category,'Timeout');
+    assert.ok(!diagnostics.join('').includes('private fixture payload'));
     stop.abort(); await running; assert.equal(failed, undefined);
     t.diagnostic(JSON.stringify({parallel,threads:channels.length,startupMs: Math.round(registeredAt - startedAt), workMs: Math.round(finalAt - promptAt), shutdownMs: Math.round(performance.now() - finalAt),rssStart,rssPeak:peakRss,rssEnd:process.memoryUsage().rss}));
     if(parallel)t.diagnostic(JSON.stringify({stopDiagnostics:[...refusals].filter(value=>value.startsWith('STOP '))}));

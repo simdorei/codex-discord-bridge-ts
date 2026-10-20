@@ -15,5 +15,9 @@
   "test/mcp-server/broker.test.ts",
   "test/pro/helper.test.ts",
   "test/pro/connector-script.test.ts",
-  "test/pro/release-tools.test.ts"
+  "test/pro/release-tools.test.ts",
+  "test/runtime/action-executor/archive-action.test.ts",
+  "test/store/archive-fence-existing.test.ts",
+  "test/runtime/discord-runtime/diagnostics.test.ts",
+  "test/runtime/session-mirror/append-journal.test.ts"
 ]

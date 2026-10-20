@@ -12,7 +12,7 @@ async function fixture(mode:string,run:(f:{path:string;codex:string;bridge:Bridg
  const cd=new DatabaseSync(codex);try{cd.exec("CREATE TABLE threads(id TEXT PRIMARY KEY,title TEXT,cwd TEXT,updated_at INTEGER,rollout_path TEXT,model TEXT,reasoning_effort TEXT,tokens_used INTEGER,archived INTEGER,archived_at INTEGER);INSERT INTO threads(id,title,cwd,updated_at,archived,archived_at) VALUES ('root','Root','/tmp',1,0,0),('child','Child','/tmp',1,0,0)");}finally{cd.close();}
  await state.admitIngress(path,{ingressId:'own',kind:'message',eventId:3n,applicationId:null,channelId:1n,ownerUserId:2n,sourceMessageId:3n,targetThreadId:'root',canonicalOwner:null,now:1,payload:{version:1n,content:'!archive',plan:{Execute:{Archive:{reference:null}}},lifecycle_binding:{target:'root',route:'Selected',command:{Archive:{reference:null}}},stop_origin:{target:'root',stopRevision:0n}}});
  const db=await openInitialized(path);try{db.exec("INSERT INTO codex_mutation_runtime VALUES(1,'runtime');INSERT INTO codex_app_server_runtime VALUES(1,'runtime');UPDATE discord_ingress_journal SET state='executing',phase='processing' WHERE ingress_id='own'");}finally{db.close();}
- const code=`import readline from 'node:readline';import {DatabaseSync} from 'node:sqlite';const mode=${JSON.stringify(mode)},file=${JSON.stringify(codex)},seen=[];let lists=0;const emit=x=>process.stdout.write(JSON.stringify(x)+'\\n');readline.createInterface({input:process.stdin}).on('line',l=>{const m=JSON.parse(l),reply=result=>emit({id:m.id,result});if(m.method==='initialize')reply({});else if(m.method==='initialized'){}else if(m.method==='seen')reply(seen);else{seen.push({method:m.method,params:m.params});if(m.method==='thread/resume')reply({thread:{id:m.params.threadId}});else if(m.method==='thread/read')reply({thread:{id:m.params.threadId,status:{type:'idle'}}});else if(m.method==='thread/list'){lists++;reply({data:mode==='scope-change'&&lists>1?[]:mode==='reserved-child'?[{id:'child'},{id:'mirror-sync-operation'}]:[{id:'child'}],nextCursor:null});}else if(m.method==='thread/archive'){if(mode==='writer-reject')emit({id:m.id,error:{code:-32600,message:'already has an active writer'}});else if(mode!=='no-ack'){const db=new DatabaseSync(file);try{db.exec('UPDATE threads SET archived=1,archived_at=2');}finally{db.close();}reply({});}}else reply({});}});`;
+ const code=`import readline from 'node:readline';import {DatabaseSync} from 'node:sqlite';const mode=${JSON.stringify(mode)},file=${JSON.stringify(codex)},seen=[];let lists=0;const emit=x=>process.stdout.write(JSON.stringify(x)+'\\n');readline.createInterface({input:process.stdin}).on('line',l=>{const m=JSON.parse(l),reply=result=>emit({id:m.id,result});if(m.method==='initialize')reply({});else if(m.method==='initialized'){}else if(m.method==='seen')reply(seen);else{seen.push({method:m.method,params:m.params});if(m.method==='thread/resume'){if(mode!=='resume-no-ack')reply({thread:{id:m.params.threadId}});}else if(m.method==='thread/read')reply({thread:{id:m.params.threadId,status:{type:'idle'}}});else if(m.method==='thread/list'){lists++;reply({data:mode==='scope-change'&&lists>1?[]:mode==='reserved-child'?[{id:'child'},{id:'mirror-sync-operation'}]:[{id:'child'}],nextCursor:null});}else if(m.method==='thread/archive'){if(mode==='writer-reject')emit({id:m.id,error:{code:-32600,message:'already has an active writer'}});else if(mode!=='no-ack'){const db=new DatabaseSync(file);try{db.exec('UPDATE threads SET archived=1,archived_at=2');}finally{db.close();}reply({});}}else reply({});}});`;
  const server=await PortableResidentLifecycle.start({process:{executable:process.execPath,arguments:['--input-type=module','-e',code],environment:{}},clientInfo:{name:'archive-coordinator',title:'fixture',version:'1'}},()=> 'fixture error',{persistDeadWork(){},oldChildExited(){}},undefined,{renderError:()=> 'fixture error',fence:createMutationCustodyFence(path,'runtime',()=> 'fixture error')});
  const seen=async()=>{const a=server.admitResponse(server.generation());try{return await a.client.requestAdmitted(a.permit,'seen',{},1000) as any[];}finally{a.release();}};
  try{await run({path,codex,bridge,locks,server,action:new AdmittedArchiveExecutor(path,codex,bridge,server,locks,timeout,undefined,undefined,undefined,persistence,undefined,nativeWrites?new NativeArchiveWriter(path):undefined),seen});}finally{await server.dispose();}
@@ -95,3 +95,42 @@ it('reserved admitted archive root cannot acquire the global mapping key or disp
  const global=await f.locks.acquire('mirror-sync-operation');try{await assert.rejects(f.action.execute({...actor,discordMessageId:4n},null,'reserved'),/Reserved mirror mapping lock key/);assert.deepEqual(await f.seen(),[]);assert.equal(f.locks.activeTargetCount,1);assert.equal(f.locks.tryAcquire('mirror-sync-operation'),undefined);}
  finally{global.release();}assert.equal(f.locks.activeTargetCount,0);
 }));
+
+it('known archive refusal is durable before failed notification and cannot fence later archive after restart',async()=>{
+ for(const nativeWrites of [false,true])await fixture('scope-change',async f=>{
+  await assert.rejects(f.action.execute(actor,null,'own'),/scope changed/);
+  const before=await state.getIngress(f.path,'own');
+  assert.equal(before?.state,'completed');assert.equal(before.phase,'result_recorded');
+  assert.equal((before.outcome as any)?.kind,'archive_not_dispatched');
+  assert.equal((before.outcome as any)?.archive_dispatched,false);
+  assert.equal((await f.seen()).filter(c=>c.method==='thread/archive').length,0);
+  await state.holdIngress(f.path,'own','notification failed',false,10);
+  await state.recoverPriorRuntimeIngress(f.path,'replacement-runtime',11);
+  const after=await state.getIngress(f.path,'own');
+  assert.equal(after?.confirmationDelivered,false);
+  assert.deepEqual(after?.outcome,before.outcome);
+  assert.equal(await state.unfinishedArchiveRequest(f.path,'root',null),null);
+  assert.equal(await state.archiveTargetFenced(f.path,'root'),false);
+ },3000,undefined,nativeWrites);
+});
+it('archive pre-dispatch lock deadline records refusal without releasing the foreign lock',async()=>fixture('ok',async f=>{
+ const lease=await f.locks.acquire('root');
+ try{
+  await assert.rejects(f.action.execute(actor,null,'own'),/timed out; no archive was sent/);
+  assert.equal(((await state.getIngress(f.path,'own'))?.outcome as any)?.archive_dispatched,false);
+  lease.requireTarget('root');assert.equal(f.locks.tryAcquire('root'),undefined);
+  assert.deepEqual(await f.seen(),[]);
+ }finally{lease.release();}
+},150));
+it('wrong archive actor cannot manufacture a known refusal for the real request',async()=>fixture('ok',async f=>{
+ await assert.rejects(f.action.execute({...actor,userId:9n},null,'own'));
+ const row=await state.getIngress(f.path,'own');
+ assert.equal(row?.state,'executing');assert.equal(row?.outcome,undefined);
+ assert.deepEqual(await f.seen(),[]);
+}));
+it('resume timeout before archive retains unknown mutation custody without a refusal receipt',async()=>fixture('resume-no-ack',async f=>{
+ await assert.rejects(f.action.execute(actor,null,'own'),/timed out|unverified|unknown/);
+ assert.equal((await state.getIngress(f.path,'own'))?.outcome,undefined);
+ const calls=await f.seen();assert.equal(calls.filter(c=>c.method==='thread/resume').length,1);
+ assert.equal(calls.filter(c=>c.method==='thread/archive').length,0);
+},300));

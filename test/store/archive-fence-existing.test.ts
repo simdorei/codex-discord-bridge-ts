@@ -43,3 +43,23 @@ it('busy existing writer neither creates a partial fence nor owns caller transac
 it('existing and initialized entry points share collision and operation authority',async()=>storeFixture(async path=>{
  const id=await state.reserveArchiveScope(path,['z'],null);assert.throws(()=>state.reserveArchiveScopeExisting(path,['a','z'],null),/existing archive fence/);assert.deepEqual(read(path).map(r=>r.target_thread_id),['z']);state.markArchiveVerifiedExisting(path,id);await assert.rejects(state.releaseRejectedArchive(path,id),/missing rejected/);
 }));
+it('only a completed archive refusal releases later admission when its notification is held',async()=>storeFixture(async path=>{
+ const payload={version:1,plan:{Execute:{Archive:{reference:null}}}};
+ await state.admitIngress(path,{ingressId:'refused',kind:'message',eventId:1n,applicationId:null,channelId:2n,ownerUserId:3n,sourceMessageId:1n,targetThreadId:'a',canonicalOwner:null,now:1,payload});
+ await state.beginIngressExecution(path,'refused','processing','a',2);
+ const outcome={kind:'archive_not_dispatched',version:1,archive_dispatched:false};
+ await state.recordIngressResult(path,'refused',outcome,3);
+ await state.holdIngress(path,'refused','notification failed',false,4);
+ const db=new DatabaseSync(path);try{
+  for(const changed of [{...outcome,archive_dispatched:true},{...outcome,archive_dispatched:'false'},{...outcome,archive_dispatched:0},{...outcome,version:2},{...outcome,kind:'unverified'},{}]){
+   db.prepare('UPDATE discord_ingress_journal SET outcome_json=?').run(JSON.stringify(changed));
+   assert.equal(state.unfinishedArchiveRequestExisting(path,'a',null),'refused');
+   assert.throws(()=>state.reserveArchiveScopeExisting(path,['a'],null),/unfinished/);
+  }
+  db.prepare('UPDATE discord_ingress_journal SET outcome_json=?,payload_json=?').run(JSON.stringify(outcome),JSON.stringify({version:1,plan:{Execute:{Stop:{reference:null}}}}));
+  assert.equal(state.unfinishedArchiveRequestExisting(path,'a',null),'refused');
+  db.prepare('UPDATE discord_ingress_journal SET payload_json=?').run(JSON.stringify(payload));
+ }finally{db.close();}
+ assert.equal(state.unfinishedArchiveRequestExisting(path,'a',null),null);
+ const reservation=state.reserveArchiveScopeExisting(path,['a'],null);assert.equal(read(path)[0]?.operation_id,reservation);
+}));
