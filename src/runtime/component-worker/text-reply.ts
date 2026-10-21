@@ -3,13 +3,14 @@ import {ResidentStateError} from '../../app-server/resident-state.ts';
 import type {PendingServerRequest} from '../../app-server/server-request-state.ts';
 import {buildApprovalResponse} from '../../app-server/approval-replies.ts';
 import {buildInputResponse} from '../../app-server/input-replies.ts';
+import {mcpFormNeedsInput} from '../../app-server/mcp-form.ts';
 import {requireDiscordText} from '../../discord/text.ts';
 import {parsePromptTextBinding, promptTextFingerprint} from '../server-prompt-text-binding.ts';
 import {verifyPromptAuthority} from '../server-prompt-authority.ts';
 import {capturePromptAuthorityReads, type PromptAuthorityReads} from '../server-prompt-authority-reads.ts';
 import {ComponentWorkerError} from './errors.ts';
 import {capturePendingRequests, isApprovalMethod} from './response.ts';
-const eligible = (r: PendingServerRequest): boolean => r.method === 'item/tool/requestUserInput' || isApprovalMethod(r.method, r.params);
+const eligible = (r: PendingServerRequest): boolean => r.method === 'item/tool/requestUserInput' || isApprovalMethod(r.method, r.params) || mcpFormNeedsInput(r.method,r.params);
 /** The vector must already be scoped to the requested thread. This pure selector
  * grants no actor authority and performs no submission. */
 export function selectPendingTextReply(input: readonly PendingServerRequest[], answer: string, generation: bigint): Readonly<{request: PendingServerRequest; answer: string}> | null {
@@ -45,7 +46,7 @@ export async function handlePendingTextReply(thread: string, answer: string, ser
   signal?.throwIfAborted(); let payload: unknown, confirmation: string;
   try {
     if (selected.request.method === 'item/tool/requestUserInput') {payload = buildInputResponse(selected.request.params, selected.answer).payload; confirmation = 'Codex input reply submitted.';}
-    else {const response = buildApprovalResponse(selected.request.method, selected.request.params, selected.answer); payload = response.payload; confirmation = `Approval response submitted: ${response.action}`;}
+    else {const response = buildApprovalResponse(selected.request.method, selected.request.params, selected.answer); payload = response.payload; confirmation = `${mcpFormNeedsInput(selected.request.method,selected.request.params)?'MCP input':'Approval'} response submitted: ${response.action}`;}
     await PortableResidentLifecycle.prototype.respond.call(server, selected.request.id, selected.request.occurrence, payload, generation, signal);
   } catch (error) {throw new ComponentWorkerError('AppServer', error);}
   return confirmation;

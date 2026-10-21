@@ -28,10 +28,10 @@ test('approval detail precedence, array-string filtering and1000 scalar limit fo
   assert.equal(detail({reason: '😀'.repeat(1001)}), '😀'.repeat(1000));
   assert.equal(detail({reason: {}, command: [], message: '  '}), method);
 });
-test('missing thread precedes unsupported method; non-URL elicitation stays unsupported', () => {
+test('missing thread precedes unsupported method; malformed input forms explain pending repair', () => {
   assert.throws(() => buildServerPrompt(request('unknown', {}), 1n), kind('MissingThread'));
   assert.throws(() => buildServerPrompt(request('unknown', {threadId: 't'}), 1n), kind('Unsupported'));
-  assert.throws(() => buildServerPrompt(request('mcpServer/elicitation/request', {threadId: 't', mode: 'form'}), 1n), kind('Unsupported'));
+  assert.match(buildServerPrompt(request('mcpServer/elicitation/request', {threadId: 't', mode: 'form'}), 1n).text, /request remains pending/i);
 });
 test('single input renders exact questions/descriptions/help and bound numeric choice buttons', () => {
   const prompt = buildServerPrompt(input([q()]), 7n), fp = requestFingerprint(7n, new Uint8Array(16).fill(3), 'r');

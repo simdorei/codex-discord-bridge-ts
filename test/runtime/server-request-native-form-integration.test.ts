@@ -10,6 +10,7 @@ import {ServerRequestDelivery} from '../../src/runtime/server-request-delivery.t
 import {runServerRequestWorker,type ServerRequestWorkerReport} from '../../src/runtime/server-request-worker.ts';
 import {createNativePromptAuthorityReads} from '../../src/runtime/server-prompt-authority-reads.ts';
 import {PromptAuthorityError} from '../../src/runtime/server-prompt-authority.ts';
+import {handlePendingTextReply} from '../../src/runtime/component-worker/text-reply.ts';
 import {ownedWorkerUsage} from '../../src/runtime/owned-worker-slot.ts';
 import {isOwnedMutationOutcomeUnknown} from '../../src/app-server/maintenance-attempt.ts';
 import {ServerRequestOccurrence} from '../../src/protocol/ids.ts';
@@ -66,14 +67,19 @@ function responseRow(db:DatabaseSync,owner:string,request:PendingServerRequest,r
  const authority=JSON.parse(String(row.authority_json)) as {request_sha256:string};assert.equal(authority.request_sha256,sha256SerdeValue({id:request.id,occurrence,method:request.method,params:request.params}));
 }
 
-for(const [connector,risk,action,recovery] of [['computer-use','low','accept',true],['browser','low','accept',false],['computer-use','low','cancel',false]] as const)test(`original native serial form: ${connector} ${risk}${action==='cancel'?' data-entry':''} -> ${action}${recovery?' through initial recovery':''}`,{timeout:20000},async t=>fixture(t.signal,async f=>{
+for(const [connector,risk,kind,recovery] of [['computer-use','low','approval',true],['browser','low','approval',false],['computer-use','low','input',false]] as const)test(`original native serial form: ${connector} ${risk} ${kind}${recovery?' through initial recovery':''}`,{timeout:20000},async t=>fixture(t.signal,async f=>{
  let sends=0;const transport:DiscordReceiptTransport={async sendValidated(){sends++;return 91n;}};
  if(!recovery)void f.start(transport);
- const request=await f.ask(form(connector,risk,action==='cancel'));if(recovery)void f.start(transport);
+ const request=await f.ask(form(connector,risk,kind==='input'));if(recovery)void f.start(transport);
+ if(kind==='input'){
+  await until(()=>f.db.prepare('SELECT count(*) AS n FROM codex_delivery_receipts WHERE message_id IS NOT NULL').get()!.n===1&&ownedWorkerUsage().Control===0);
+  assert.deepEqual(await f.call('answers'),[]);assert.equal(f.owner.pendingServerRequests('T').length,1);
+  assert.match((await handlePendingTextReply('T','reviewed',f.owner,f.path,42n,3n,t.signal,createNativePromptAuthorityReads(f.path)))!,/submitted/);
+ }
  await until(()=>f.db.prepare("SELECT count(*) AS n FROM cdr_server_responses WHERE phase='flushed'").get()!.n===1&&ownedWorkerUsage().Control===0);
- const result={action,content:action==='accept'?{}:null,_meta:null};assert.deepEqual(await f.call('answers'),[{id:'approval',result}]);responseRow(f.db,f.owner.instanceId,request,result);
- assert.equal(f.owner.pendingServerRequests('T').length,0);assert.equal(sends,0);assert.equal(f.db.prepare('SELECT count(*) AS n FROM codex_delivery_receipts').get()!.n,0);
- f.stop.abort(new Error('Normal loop shutdown'));await until(f.getEnded);await f.recover(transport);assert.deepEqual(await f.call('answers'),[{id:'approval',result}]);assert.equal(sends,0);
+ const result={action:'accept',content:kind==='input'?{answer:'reviewed'}:{},_meta:null};assert.deepEqual(await f.call('answers'),[{id:'approval',result}]);responseRow(f.db,f.owner.instanceId,request,result);
+ assert.equal(f.owner.pendingServerRequests('T').length,0);assert.equal(sends,kind==='input'?1:0);assert.equal(f.db.prepare('SELECT count(*) AS n FROM codex_delivery_receipts').get()!.n,kind==='input'?1:0);
+ f.stop.abort(new Error('Normal loop shutdown'));await until(f.getEnded);await f.recover(transport);assert.deepEqual(await f.call('answers'),[{id:'approval',result}]);assert.equal(sends,kind==='input'?1:0);
  // Initial recovery may consume the same occurrence before its already-buffered
  // event is visited. The original loop rejects that stale event; never replays.
  assert.ok(f.reports.every(e=>e.kind==='Error'&&e.error instanceof PromptAuthorityError));idle();

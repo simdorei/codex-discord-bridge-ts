@@ -58,12 +58,13 @@ test('one delivery owner rejects concurrent cycles and retains the in-flight sen
  try{await Promise.race([started,running]);await assert.rejects(worker.recover(),/already owned/);await assert.rejects(worker.process(1n,request),/already owned/);assert.equal(sends,1);}finally{release();await running;}await worker.recover();assert.equal(sends,1);
 }));
 
-for(const allowed of [true,false])test('empty approval or unsupported data-entry form responds through actual occurrence-bound resident; accepted='+allowed,async()=>promptFixture(async(path,server,request)=>{
+for(const allowed of [true,false])test('empty approval is accepted and data-entry form stays pending; empty='+allowed,async()=>promptFixture(async(path,server,request)=>{
  let sends=0;const worker=new ServerRequestDelivery(path,server,{sendValidated:async()=>{sends++;return 98n;}});
- await worker.process(1n,request);assert.equal(sends,0);assert.equal(server.pendingServerRequests().length,0);
+ await worker.process(1n,request);assert.equal(sends,allowed?0:1);assert.equal(server.pendingServerRequests().length,allowed?0:1);
  const answers=await callPromptFixture(server,'answers') as Array<{result:unknown}>;
- assert.equal(answers.length,1);assert.deepEqual(answers[0]!.result,{action:allowed?'accept':'cancel',content:allowed?{}:null,_meta:null});
- await assert.rejects(worker.process(1n,request));assert.equal((await callPromptFixture(server,'answers') as unknown[]).length,1);
+ if(allowed){assert.equal(answers.length,1);assert.deepEqual(answers[0]!.result,{action:'accept',content:{},_meta:null});await assert.rejects(worker.process(1n,request));}
+ else{assert.deepEqual(answers,[]);await worker.process(1n,request);assert.equal(sends,1);}
+ assert.equal((await callPromptFixture(server,'answers') as unknown[]).length,allowed?1:0);
 },{enableResponses:true,method:'mcpServer/elicitation/request',params:{threadId:'t',turnId:'v',mode:'openai/form',serverName:'node_repl',_meta:{codex_approval_kind:'mcp_tool_call',connector_id:'browser',riskLevel:'low'},requestedSchema:{type:'object',properties:allowed?{}:{answer:{type:'string'}},required:allowed?[]:['answer']}}}));
 
 test('local form never responds after original turn completion or generation mismatch',async()=>promptFixture(async(path,server,request)=>{

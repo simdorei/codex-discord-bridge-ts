@@ -1,21 +1,14 @@
 import {clonePendingServerRequest,type PendingServerRequest} from '../app-server/server-request-state.ts';
 import {cloneOwnedSerdeValue} from '../core/owned-serde-value.ts';
 import {requireLocalToolApprovalPolicy,type LocalToolApprovalPolicy} from '../config/runtime.ts';
+import {emptyApprovalSchema as emptySchema,isMcpFormRequest as isForm} from '../app-server/mcp-form.ts';
+export {emptyApprovalSchema as emptySchema} from '../app-server/mcp-form.ts';
 type RecordValue=Record<string,unknown>;
 const object=(v:unknown):v is RecordValue=>v!==null&&typeof v==='object'&&!Array.isArray(v);
 const field=(v:unknown,k:string):unknown=>object(v)&&Object.hasOwn(v,k)?v[k]:undefined;
-export function emptySchema(v:unknown):boolean{
- if(!object(v)||field(v,'type')!=='object')return false;
- const properties=field(v,'properties'),required=field(v,'required'),additional=field(v,'additionalProperties');
- return object(properties)&&Object.keys(properties).length===0
-  &&(!Object.hasOwn(v,'required')||(Array.isArray(required)&&required.length===0))
-  &&(!Object.hasOwn(v,'additionalProperties')||typeof additional==='boolean')
-  &&Object.keys(v).every(k=>['type','properties','required','additionalProperties'].includes(k)
-   ||(['title','description','$schema','$id','$comment'].includes(k)&&typeof field(v,k)==='string'));
-}
 export interface LocalToolFormResponse{
- readonly response:Readonly<{action:'accept'|'cancel';content:Readonly<Record<string,never>>|null;_meta:Readonly<{persist:'always'}>|null}>;
- readonly disposition:'local-tool-access-auto-accepted'|'saved-app-access-auto-accepted'|'local-tool-policy-auto-accepted'|'unsupported-form-cancelled';
+ readonly response:Readonly<{action:'accept';content:Readonly<Record<string,never>>;_meta:Readonly<{persist:'always'}>|null}>;
+ readonly disposition:'local-tool-access-auto-accepted'|'saved-app-access-auto-accepted'|'local-tool-policy-auto-accepted';
 }
 export function localToolPolicyResponse(input:PendingServerRequest,policy:LocalToolApprovalPolicy):LocalToolFormResponse|null{
  requireLocalToolApprovalPolicy(policy);
@@ -26,7 +19,6 @@ export function localToolPolicyResponse(input:PendingServerRequest,policy:LocalT
  // persistent-grant metadata are unchanged.
  return Object.freeze({response:Object.freeze({action:'accept',content:Object.freeze({}),_meta:null}),disposition:'local-tool-policy-auto-accepted'});
 }
-function isForm(method:string,p:unknown):boolean{return method==='mcpServer/elicitation/request'&&['form','openai/form'].includes(field(p,'mode') as string);}
 function isLocalForm(method:string,p:unknown):boolean{
  const meta=field(p,'_meta');
  return isForm(method,p)&&field(p,'serverName')==='node_repl'&&field(meta,'codex_approval_kind')==='mcp_tool_call'
@@ -59,11 +51,12 @@ function hasSavedGrant(app:string,configRead:unknown):boolean{
  * establish authority. Caller must first verify original owner/turn/generation
  * and send through the exact occurrence-bound response path. */
 export function localToolFormResponse(input:PendingServerRequest,configRead?:unknown):LocalToolFormResponse|null{
- const request=clonePendingServerRequest(input),p=request.params,mode=field(p,'mode');
- if(request.method!=='mcpServer/elicitation/request'||(mode!=='form'&&mode!=='openai/form'))return null;
+ const request=clonePendingServerRequest(input),p=request.params;
+ if(!isForm(request.method,p))return null;
  const app=candidate(request);
  if(app!==null&&configRead!==undefined&&hasSavedGrant(app,configRead))return Object.freeze({response:Object.freeze({action:'accept',content:Object.freeze({}),_meta:Object.freeze({persist:'always'})}),disposition:'saved-app-access-auto-accepted'});
  if(requiresUserApproval(request.method,p))return null;
  const accepted=isLocalForm(request.method,p)&&field(field(p,'_meta'),'riskLevel')==='low';
- return Object.freeze({response:Object.freeze({action:accepted?'accept':'cancel',content:accepted?Object.freeze({}):null,_meta:null}),disposition:accepted?'local-tool-access-auto-accepted':'unsupported-form-cancelled'});
+ // Value-bearing and invalid forms stay pending for a user response or repair.
+ return accepted?Object.freeze({response:Object.freeze({action:'accept',content:Object.freeze({}),_meta:null}),disposition:'local-tool-access-auto-accepted'}):null;
 }

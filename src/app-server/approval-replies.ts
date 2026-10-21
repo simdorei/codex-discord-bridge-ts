@@ -2,6 +2,8 @@ import {AppServerInvalidReplyError} from './client-errors.ts';
 import {rustTrim, serdeField, serdeObject} from './value.ts';
 import {requireDiscordText} from '../discord/text.ts';
 import {cloneOwnedSerdeValue} from '../core/owned-serde-value.ts';
+import {mcpFormNeedsInput} from './mcp-form.ts';
+import {buildMcpFormResponse} from './mcp-form-replies.ts';
 export interface ParsedApprovalAnswer {readonly decision: 'accept' | 'acceptForSession' | 'decline' | 'cancel'; readonly legacyDecision: 'approved' | 'approved_for_session' | 'denied' | 'abort'; readonly scope: 'turn' | 'session'}
 const accept = new Set(['approve', 'approved', 'accept', 'yes', 'y', 'ok', '예', '네', '승인']);
 const session = new Set(['approve session', 'accept session', 'session', 'approve_for_session']);
@@ -18,7 +20,9 @@ export function parseApprovalAnswer(answer: string): ParsedApprovalAnswer {
 /** Pure payload construction only: no approval is submitted and no permissions
  * are changed. Caller must verify exact original occurrence/actor before sending. */
 export function buildApprovalResponse(method: string, params: unknown, input: string): Readonly<{payload: unknown; action: string}> {
-  requireDiscordText(method); const answer = parseApprovalAnswer(input); let payload: unknown, action: string;
+  requireDiscordText(method); requireDiscordText(input);
+  if(mcpFormNeedsInput(method,params))return buildMcpFormResponse(cloneOwnedSerdeValue(params),input);
+  const answer = parseApprovalAnswer(input); let payload: unknown, action: string;
   if (method === 'mcpServer/elicitation/request') {
     action = answer.decision === 'acceptForSession' ? 'accept' : answer.decision;
     payload = {action, content: action === 'accept' ? {} : null, _meta: null};

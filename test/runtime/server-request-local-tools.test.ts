@@ -22,12 +22,12 @@ test('unknown server, connector, risk and metadata leave empty approvals for the
   assert.equal(decide({...params(),...change}),null,'unknown metadata must not choose cancel for the owner');
  }
 });
-test('schema ambiguity, data entry, null optionals and unknown validation keywords cancel',()=>{
+test('schema ambiguity, data entry, null optionals and unknown validation keywords remain pending',()=>{
  for(const schema of [null,[],{}, {type:'array',properties:{}},{type:'object',properties:[]},{type:'object',properties:{name:{type:'string'}}},
  {type:'object',properties:{},required:null},{type:'object',properties:{},required:['name']},
  {type:'object',properties:{},additionalProperties:null},{type:'object',properties:{},additionalProperties:{}},
  {type:'object',properties:{},title:42},{type:'object',properties:{},allOf:[]}]){
-  assert.equal(decide({...params(),requestedSchema:schema})?.response.action,'cancel');
+  assert.equal(decide({...params(),requestedSchema:schema}),null);
  }
 });
 test('no getter or proxy traps run and input remains untouched',()=>{
@@ -63,7 +63,7 @@ test('saved app grants require exact user config and native persistence support'
   {tool_params:{app:'Chrome',command:'other'}},{connector_id:'browser'},{tool_name:'other'},{codex_request_type:'other'}]){
   assert.equal(localToolFormResponse({...request,params:{...p,_meta:{...p._meta,...patch}}},config),null);
  }
- assert.equal(localToolFormResponse({...request,params:{...p,requestedSchema:{type:'object',properties:{secret:{type:'string'}}}}},config)?.response.action,'cancel');
+ assert.equal(localToolFormResponse({...request,params:{...p,requestedSchema:{type:'object',properties:{secret:{type:'string'}}}}},config),null);
  // A later config read without the grant immediately removes automatic access.
  assert.equal(localToolFormResponse(request,{layers:[{...user,config:{computer_use:{windows:{always_allowed_app_ids:[]}}}}]}),null);
 });
