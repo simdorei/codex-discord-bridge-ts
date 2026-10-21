@@ -1,4 +1,6 @@
 [
+  "test/app-server/mcp-form-input.test.ts",
+  "test/runtime/mcp-form-input.test.ts",
   "test/runtime/mcp-form-approval.test.ts",
   "test/runtime/all-approval-policy.test.ts",
   "test/runtime/server-request-local-tools.test.ts",

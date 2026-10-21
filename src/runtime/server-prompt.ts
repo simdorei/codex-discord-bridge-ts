@@ -6,6 +6,8 @@ import {serdeField, rustTrim} from '../app-server/value.ts';
 import {boundApprovalButtonRow, boundInputButtonRow, requestFingerprint, ComponentError, type DiscordComponent} from '../discord/components.ts';
 import {ServerRequestOccurrence} from '../protocol/ids.ts';
 import {requiresUserApproval} from './server-request-local-tools.ts';
+import {mcpFormNeedsInput} from '../app-server/mcp-form.ts';
+import {mcpFormPrompt} from './server-prompt-mcp-form.ts';
 export interface ServerPrompt {readonly threadId: string; readonly text: string; readonly components: readonly DiscordComponent[]}
 export type ServerPromptErrorKind = 'MissingThread' | 'Unsupported' | 'InvalidQuestions' | 'SecretInput' | 'Component';
 export class ServerPromptError extends Error {
@@ -31,6 +33,7 @@ export function buildServerPrompt(input: PendingServerRequest, generation: bigin
   if (thread === null) throw new ServerPromptError('MissingThread');
   const occurrence = ServerRequestOccurrence.prototype.asBytes.call(request.occurrence);
   try {
+    if(mcpFormNeedsInput(request.method,request.params))return mcpFormPrompt(request,thread,generation);
     if (approvalMethods.has(request.method) || (request.method === 'mcpServer/elicitation/request' && serdeField(request.params, 'mode') === 'url') || requiresUserApproval(request.method,request.params)) {
       let text = request.method;
       for (const key of ['reason', 'command', 'message']) {const candidate = detail(serdeField(request.params, key)); if (candidate !== null) {text = candidate; break;}}
