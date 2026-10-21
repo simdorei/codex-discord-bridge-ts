@@ -1,3 +1,5 @@
+import {parseComponentId} from '../../src/discord/components.ts';
+import {buildComponentResponse} from '../../src/runtime/component-worker/response.ts';
 import test from 'node:test';import assert from 'node:assert/strict';
 import {promptFixture,editPromptFixture,callPromptFixture} from '../helpers/server-prompt-fixture.ts';
 import {ServerRequestDelivery,ServerRequestGenerationMismatch} from '../../src/runtime/server-request-delivery.ts';
@@ -56,13 +58,13 @@ test('one delivery owner rejects concurrent cycles and retains the in-flight sen
  try{await Promise.race([started,running]);await assert.rejects(worker.recover(),/already owned/);await assert.rejects(worker.process(1n,request),/already owned/);assert.equal(sends,1);}finally{release();await running;}await worker.recover();assert.equal(sends,1);
 }));
 
-for(const allowed of [true,false])test('local form responds through actual occurrence-bound resident; accepted='+allowed,async()=>promptFixture(async(path,server,request)=>{
+for(const allowed of [true,false])test('empty approval or unsupported data-entry form responds through actual occurrence-bound resident; accepted='+allowed,async()=>promptFixture(async(path,server,request)=>{
  let sends=0;const worker=new ServerRequestDelivery(path,server,{sendValidated:async()=>{sends++;return 98n;}});
  await worker.process(1n,request);assert.equal(sends,0);assert.equal(server.pendingServerRequests().length,0);
  const answers=await callPromptFixture(server,'answers') as Array<{result:unknown}>;
  assert.equal(answers.length,1);assert.deepEqual(answers[0]!.result,{action:allowed?'accept':'cancel',content:allowed?{}:null,_meta:null});
  await assert.rejects(worker.process(1n,request));assert.equal((await callPromptFixture(server,'answers') as unknown[]).length,1);
-},{enableResponses:true,method:'mcpServer/elicitation/request',params:{threadId:'t',turnId:'v',mode:'openai/form',serverName:'node_repl',_meta:{codex_approval_kind:'mcp_tool_call',connector_id:'browser',riskLevel:allowed?'low':'high'},requestedSchema:{type:'object',properties:{}}}}));
+},{enableResponses:true,method:'mcpServer/elicitation/request',params:{threadId:'t',turnId:'v',mode:'openai/form',serverName:'node_repl',_meta:{codex_approval_kind:'mcp_tool_call',connector_id:'browser',riskLevel:'low'},requestedSchema:{type:'object',properties:allowed?{}:{answer:{type:'string'}},required:allowed?[]:['answer']}}}));
 
 test('local form never responds after original turn completion or generation mismatch',async()=>promptFixture(async(path,server,request)=>{
  const worker=new ServerRequestDelivery(path,server,{sendValidated:async()=>{throw new Error('must not send');}});
@@ -79,3 +81,53 @@ for(const bad of ['unowned','wrong-queue-generation','remapped','expired-occurre
  await assert.rejects(new ServerRequestDelivery(path,server,{sendValidated:async()=>{throw new Error('must not send');}}).process(1n,supplied));
  assert.deepEqual(await callPromptFixture(server,'answers'),[]);assert.equal(server.pendingServerRequests().length,1);
 },{enableResponses:true,method:'mcpServer/elicitation/request',params:{threadId:'t',turnId:'v',mode:'form',serverName:'node_repl',_meta:{codex_approval_kind:'mcp_tool_call',connector_id:'computer-use',riskLevel:'low',persist:['session','always']},requestedSchema:{type:'object',properties:{}}}}));
+
+const savedChromeConfig={layers:[{name:{type:'user',file:'C:/Users/test/.codex/config.toml'},config:{computer_use:{windows:{always_allowed_app_ids:['Chrome']}}}}]};
+const chromeAccess={threadId:'t',turnId:'v',mode:'form',serverName:'node_repl',message:'Allow Codex to use Google Chrome?',_meta:{codex_approval_kind:'mcp_tool_call',connector_id:'computer-use',riskLevel:'high',persist:['session','always'],tool_params:{app:'Chrome'}},requestedSchema:{type:'object',properties:{}}};
+test('saved Chrome access uses its original bound response without an approval prompt',async()=>promptFixture(async(path,server,request)=>{
+ let sends=0;const worker=new ServerRequestDelivery(path,server,{sendValidated:async()=>{sends++;return 99n;}});
+ await worker.process(1n,request);
+ assert.equal(sends,0,'the saved user grant must suppress the redundant prompt');
+ const answers=await callPromptFixture(server,'answers') as Array<{result:unknown}>;
+ assert.deepEqual(answers.map(x=>x.result),[{action:'accept',content:{},_meta:{persist:'always'}}]);
+ assert.equal(server.pendingServerRequests().length,0);
+ await assert.rejects(worker.process(1n,request));
+ assert.equal((await callPromptFixture(server,'answers') as unknown[]).length,1);
+},{enableResponses:true,method:'mcpServer/elicitation/request',params:chromeAccess,configResponse:savedChromeConfig}));
+
+test('high-risk access without a saved grant reaches the owner and the generated button answers the exact request',async()=>promptFixture(async(path,server,request)=>{
+ const bodies:string[]=[];
+ await new ServerRequestDelivery(path,server,{sendValidated:async(r:{body:string})=>{bodies.push(r.body);return 109n;}}).process(1n,request);
+ assert.equal(bodies.length,1);assert.equal(server.pendingServerRequests().length,1);
+ assert.deepEqual(await callPromptFixture(server,'answers'),[]);
+ const component=parseComponentId(JSON.parse(bodies[0]!).components[0].components[0].custom_id)!;
+ const response=buildComponentResponse(component,[request],1n);
+ assert.deepEqual(response.payload,{action:'accept',content:{},_meta:null});
+ assert.equal(response.occurrence.equals(request.occurrence),true);
+ assert.throws(()=>buildComponentResponse(component,[request],2n));
+},{enableResponses:true,method:'mcpServer/elicitation/request',params:chromeAccess}));
+test('saved access revalidates original ownership after the asynchronous config read',async()=>promptFixture(async(path,server,request)=>{
+ const proto=PortableResidentLifecycle.prototype,original=proto.request;
+ proto.request=async function(method,...args){const result=await original.call(this,method,...args);if(method==='config/read')await editPromptFixture(path,'UPDATE codex_turn_queue SET owner_user_id=77');return result;};
+ try{
+  await assert.rejects(new ServerRequestDelivery(path,server,{sendValidated:async()=>{throw new Error('must not send');}}).process(1n,request),/original authority changed/);
+  assert.deepEqual(await callPromptFixture(server,'answers'),[]);
+ }finally{proto.request=original;}
+},{enableResponses:true,method:'mcpServer/elicitation/request',params:chromeAccess,configResponse:savedChromeConfig}));
+
+for(const connector_id of ['computer-use','browser'])test('allow policy answers high-risk '+connector_id+' without saved app or prompt',async()=>promptFixture(async(path,server,request)=>{
+ let sends=0;const worker=new ServerRequestDelivery(path,server,{sendValidated:async()=>{sends++;return 110n;}},false,undefined,undefined,'allow');
+ await worker.process(1n,request);assert.equal(sends,0);assert.equal(server.pendingServerRequests().length,0);
+ assert.deepEqual((await callPromptFixture(server,'answers') as Array<{result:unknown}>).map(x=>x.result),[{action:'accept',content:{},_meta:null}]);
+ await assert.rejects(worker.process(1n,request));assert.equal((await callPromptFixture(server,'answers') as unknown[]).length,1);
+},{enableResponses:true,method:'mcpServer/elicitation/request',params:{...chromeAccess,_meta:{codex_approval_kind:'mcp_tool_call',connector_id,riskLevel:'high',tool_params:{app:'New app'}}}}));
+
+for(const bad of ['unowned','wrong-generation','remapped','expired','finished'] as const)test('allow policy still rejects '+bad,async()=>promptFixture(async(path,server,request)=>{
+ if(bad==='unowned')await editPromptFixture(path,'UPDATE codex_turn_queue SET owner_user_id=NULL');
+ if(bad==='wrong-generation')await editPromptFixture(path,'UPDATE codex_turn_queue SET app_server_generation=999');
+ if(bad==='remapped')await editPromptFixture(path,"UPDATE mirror_threads SET codex_thread_id='other'");
+ if(bad==='finished')await callPromptFixture(server,'finish');
+ const supplied=bad==='expired'?{...request,occurrence:ServerRequestOccurrence.fromBytes(new Uint8Array(16).fill(99))}:request;
+ await assert.rejects(new ServerRequestDelivery(path,server,{sendValidated:async()=>{throw new Error('must not send');}},false,undefined,undefined,'allow').process(1n,supplied));
+ assert.deepEqual(await callPromptFixture(server,'answers'),[]);
+},{enableResponses:true,method:'mcpServer/elicitation/request',params:chromeAccess}));

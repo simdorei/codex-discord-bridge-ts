@@ -377,3 +377,13 @@ test('input env map is never mutated by loadRuntimeConfig', () => {
   loadRuntimeConfig(env, defaultCliOptions());
   assert.equal(env.size, sizeBefore);
 });
+
+test('local-tool policy defaults to ask, allow is explicit and typos fail startup',()=>{
+ assert.equal(loadRuntimeConfig(requiredEnv()).localToolApprovalPolicy,'ask');
+ for(const [raw,expected] of [['','ask'],['ask','ask'],['allow','allow'],[' allow ','allow']] as const){
+  const env=requiredEnv();env.set('DISCORD_LOCAL_TOOL_APPROVAL_POLICY',raw);assert.equal(loadRuntimeConfig(env).localToolApprovalPolicy,expected);
+ }
+ for(const raw of ['true','1','ALLOW','all','invalid']){
+  const env=requiredEnv();env.set('DISCORD_LOCAL_TOOL_APPROVAL_POLICY',raw);assert.throws(()=>loadRuntimeConfig(env),/DISCORD_LOCAL_TOOL_APPROVAL_POLICY must be ask or allow/);
+ }
+});

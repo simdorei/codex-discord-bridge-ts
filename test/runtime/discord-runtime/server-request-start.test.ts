@@ -1,3 +1,4 @@
+import {loadRuntimeConfig} from '../../../src/config/runtime.ts';
 import test from 'node:test';import assert from 'node:assert/strict';import http from 'node:http';
 import {promptFixture,callPromptFixture} from '../../helpers/server-prompt-fixture.ts';
 import {DiscordChannelClient} from '../../../src/discord/channel-client.ts';
@@ -42,3 +43,37 @@ test('invalid HTTP owner or closed notifier fails before receiver ownership tran
  const stop=new AbortController(),exits=new RuntimeWorkerExitChannel(),receiver=owner.subscribeServerRequests();
  try{await assert.rejects(startServerRequestRuntimeWorker({owner,serverRequestReceiver:receiver},path,Object.create(DiscordChannelClient.prototype),stop.signal,exits,()=>{}),TypeError);assert.equal(receiver.tryReceive().kind,'Empty');exits.close();await assert.rejects(startServerRequestRuntimeWorker({owner,serverRequestReceiver:receiver},path,client,stop.signal,exits,()=>{}),/closed/);assert.equal(receiver.tryReceive().kind,'Empty');assert.equal(bodies.length,0);}finally{receiver.dispose();exits.close();}
 })));
+
+test('configured allow policy flows through actual startup and resident worker without HTTP',{timeout:15000},async()=>promptFixture(async(path,owner)=>wire(async(client,bodies)=>{
+ const config=loadRuntimeConfig(new Map([['DISCORD_BOT_TOKEN','fixture'],['DISCORD_ALLOW_ALL_CHANNELS','1'],['DISCORD_LOCAL_TOOL_APPROVAL_POLICY','allow']]));
+ const stop=new AbortController(),exits=new RuntimeWorkerExitChannel(),receiver=owner.subscribeServerRequests();let worker:RuntimeMonitoredWorker|undefined;const errors:unknown[]=[];
+ try{
+  worker=await startServerRequestRuntimeWorker({owner,serverRequestReceiver:receiver},path,client,stop.signal,exits,e=>errors.push(e),config.localToolApprovalPolicy);
+  const deadline=performance.now()+5000;
+  while(owner.pendingServerRequests().length!==0){assert.ok(performance.now()<deadline,'configured worker must answer approval');await new Promise(r=>setTimeout(r,5));}
+  assert.deepEqual((await callPromptFixture(owner,'answers') as Array<{result:unknown}>).map(x=>x.result),[{action:'accept',content:{},_meta:null}]);
+  assert.deepEqual(bodies,[]);assert.deepEqual(errors,[]);
+ }finally{stop.abort();if(worker)await worker.join();exits.close();receiver.dispose();}
+}),{enableResponses:true,method:'mcpServer/elicitation/request',params:{threadId:'t',turnId:'v',mode:'form',serverName:'node_repl',_meta:{codex_approval_kind:'mcp_tool_call',connector_id:'computer-use',riskLevel:'high',tool_params:{app:'Chrome'},persist:['session']},requestedSchema:{type:'object',properties:{}}}}));
+
+test('global approval allow policy flows through actual startup and resident worker without HTTP',{timeout:15000},async()=>promptFixture(async(path,owner)=>wire(async(client,bodies)=>{
+ const config=loadRuntimeConfig(new Map([['DISCORD_BOT_TOKEN','fixture'],['DISCORD_ALLOW_ALL_CHANNELS','1'],['DISCORD_APPROVAL_POLICY','allow']]));
+ const stop=new AbortController(),exits=new RuntimeWorkerExitChannel(),receiver=owner.subscribeServerRequests();let worker:RuntimeMonitoredWorker|undefined;const errors:unknown[]=[];
+ try{
+  worker=await startServerRequestRuntimeWorker({owner,serverRequestReceiver:receiver},path,client,stop.signal,exits,e=>errors.push(e),config.localToolApprovalPolicy,config.approvalPolicy);
+  const deadline=performance.now()+5000;
+  while(owner.pendingServerRequests().length!==0){assert.ok(performance.now()<deadline,'configured worker must answer approval');await new Promise(r=>setTimeout(r,5));}
+  assert.deepEqual((await callPromptFixture(owner,'answers') as Array<{result:unknown}>).map(x=>x.result),[{action:'accept',content:{},_meta:null}]);
+  assert.deepEqual(bodies,[]);assert.deepEqual(errors,[]);
+ }finally{stop.abort();if(worker)await worker.join();exits.close();receiver.dispose();}
+}),{enableResponses:true,method:'mcpServer/elicitation/request',params:{threadId:'t',turnId:'v',mode:'form',serverName:'codex_apps',_meta:{codex_approval_kind:'mcp_tool_call',connector_id:'github',riskLevel:'high',tool_params:{app:'Chrome'},persist:['session']},requestedSchema:{type:'object',properties:{},title:'Approval',description:'Allow publishing this commit'}}}));
+
+test('default ask startup delivers an external approval and keeps the resident pending',{timeout:15000},async()=>promptFixture(async(path,owner)=>wire(async(client,bodies,_reply,sent)=>{
+ const stop=new AbortController(),exits=new RuntimeWorkerExitChannel(),receiver=owner.subscribeServerRequests();let worker:RuntimeMonitoredWorker|undefined;const errors:unknown[]=[];
+ try{
+  worker=await startServerRequestRuntimeWorker({owner,serverRequestReceiver:receiver},path,client,stop.signal,exits,e=>errors.push(e));
+  await sent.promise;await confirmed(path,'991');
+  assert.equal(bodies.length,1);assert.ok(JSON.parse(bodies[0]!).components.length>0);
+  assert.equal(owner.pendingServerRequests().length,1);assert.deepEqual(await callPromptFixture(owner,'answers'),[]);assert.deepEqual(errors,[]);
+ }finally{stop.abort();if(worker)await worker.join();exits.close();receiver.dispose();}
+}),{enableResponses:true,method:'mcpServer/elicitation/request',params:{threadId:'t',turnId:'v',mode:'form',serverName:'codex_apps',_meta:{connector_id:'github',riskLevel:'high'},requestedSchema:{type:'object',properties:{}}}}));

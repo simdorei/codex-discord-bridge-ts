@@ -37,6 +37,9 @@ async function receiverRequest(scenario:unknown):Promise<void>{
  receiverScenario=scenario as ReceiverScenario;let method:string,params:Record<string,unknown>;
  if(scenario==='receiver-computer-form-recovery'||scenario==='receiver-browser-form-event'||scenario==='receiver-unsupported-form-event'){
   method='mcpServer/elicitation/request';params={threadId:TARGET,turnId:TURN,serverName:'node_repl',mode:scenario==='receiver-browser-form-event'?'openai/form':'form',message:'Fixed local tool fixture',requestedSchema:{type:'object',properties:{},required:[],additionalProperties:false},_meta:{connector_id:scenario==='receiver-computer-form-recovery'?'computer-use':scenario==='receiver-browser-form-event'?'browser':'unsupported',codex_approval_kind:'mcp_tool_call',riskLevel:'low'}};
+  // Unknown connectors now receive an approval prompt. Unsupported-input coverage
+  // must require a real value that the bridge cannot synthesize from Allow.
+  if(scenario==='receiver-unsupported-form-event')params.requestedSchema={type:'object',properties:{answer:{type:'string'}},required:['answer'],additionalProperties:false};
  }else if(scenario==='receiver-input-prompt'){
   method='item/tool/requestUserInput';params={threadId:TARGET,turnId:TURN,questions:[{id:'fixture-question',question:'Choose one fixed option',isSecret:false,options:[{label:'a'.repeat(79)+' b',description:'detail '.repeat(400)},{label:'Duplicate',description:'First duplicate label'},{label:'Duplicate',description:'Second duplicate label'}]}]};
  }else if(scenario==='receiver-approval-prompt'){

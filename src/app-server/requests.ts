@@ -1,7 +1,7 @@
 import {types} from "node:util";
 import {cloneOwnedSerdeValue} from "../core/owned-serde-value.ts";
 export interface AppRequest{readonly method:string;readonly params:unknown;readonly timeoutMs:number}
-const OBSERVATIONS=new Set(["account/rateLimits/read","account/usage/read","model/list","thread/list","thread/loaded/list","thread/read","thread/turns/list","thread/goal/get","mcpServerStatus/list"]);
+const OBSERVATIONS=new Set(["account/rateLimits/read","account/usage/read","config/read","model/list","thread/list","thread/loaded/list","thread/read","thread/turns/list","thread/goal/get","mcpServerStatus/list"]);
 /** Exact known observations only. Unknown methods/tool calls remain conservative. */
 export function isObservationalRequest(method:string):boolean{return OBSERVATIONS.has(method);}
 export type ServiceTierUpdate={readonly kind:"Unchanged"|"Clear"}|{readonly kind:"Set";readonly value:string};

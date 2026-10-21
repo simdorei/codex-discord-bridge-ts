@@ -23,7 +23,7 @@ import {instrumentStoreWorker,waitTrace,releaseTrace} from '../helpers/store-aut
 // Transport callbacks are passive witnesses. No HTTP, live computer/browser,
 // operational singleton, persistent-resident activation or full-root claim.
 const child="import readline from 'node:readline';const answers=[],emit=v=>process.stdout.write(JSON.stringify(v)+'\\n');readline.createInterface({input:process.stdin}).on('line',line=>{const m=JSON.parse(line);if(m.method===undefined&&m.id==='approval'){answers.push(m);return;}if(m.method==='ask'){emit({method:'turn/started',params:{threadId:'T',turnId:'V'}});emit({id:'approval',method:m.params.method,params:m.params.params});}if(m.id!==undefined)emit({id:m.id,result:m.method==='answers'?answers:{}});});";
-const form=(connector:'computer-use'|'browser',risk='low')=>({method:'mcpServer/elicitation/request',params:{threadId:'T',turnId:'V',mode:connector==='browser'?'openai/form':'form',serverName:'node_repl',_meta:{codex_approval_kind:'mcp_tool_call',connector_id:connector,riskLevel:risk},requestedSchema:{type:'object',properties:{}}}});
+const form=(connector:'computer-use'|'browser',risk='low',dataEntry=false)=>({method:'mcpServer/elicitation/request',params:{threadId:'T',turnId:'V',mode:connector==='browser'?'openai/form':'form',serverName:'node_repl',_meta:{codex_approval_kind:'mcp_tool_call',connector_id:connector,riskLevel:risk},requestedSchema:{type:'object',properties:dataEntry?{answer:{type:'string'}}:{},required:dataEntry?['answer']:[]}}});
 const approval={method:'item/commandExecution/requestApproval',params:{threadId:'T',turnId:'V'}};
 function idle(){assert.deepEqual(ownedWorkerUsage(),{Background:0,Control:0,Bridge:0,Observation:0,Discovery:0,Maintenance:0});}
 function deferred(){let resolve!:()=>void;const promise=new Promise<void>(r=>{resolve=r;});return {promise,resolve};}
@@ -66,10 +66,10 @@ function responseRow(db:DatabaseSync,owner:string,request:PendingServerRequest,r
  const authority=JSON.parse(String(row.authority_json)) as {request_sha256:string};assert.equal(authority.request_sha256,sha256SerdeValue({id:request.id,occurrence,method:request.method,params:request.params}));
 }
 
-for(const [connector,risk,action,recovery] of [['computer-use','low','accept',true],['browser','low','accept',false],['computer-use','high','cancel',false]] as const)test(`original native serial form: ${connector} ${risk} -> ${action}${recovery?' through initial recovery':''}`,{timeout:20000},async t=>fixture(t.signal,async f=>{
+for(const [connector,risk,action,recovery] of [['computer-use','low','accept',true],['browser','low','accept',false],['computer-use','low','cancel',false]] as const)test(`original native serial form: ${connector} ${risk}${action==='cancel'?' data-entry':''} -> ${action}${recovery?' through initial recovery':''}`,{timeout:20000},async t=>fixture(t.signal,async f=>{
  let sends=0;const transport:DiscordReceiptTransport={async sendValidated(){sends++;return 91n;}};
  if(!recovery)void f.start(transport);
- const request=await f.ask(form(connector,risk));if(recovery)void f.start(transport);
+ const request=await f.ask(form(connector,risk,action==='cancel'));if(recovery)void f.start(transport);
  await until(()=>f.db.prepare("SELECT count(*) AS n FROM cdr_server_responses WHERE phase='flushed'").get()!.n===1&&ownedWorkerUsage().Control===0);
  const result={action,content:action==='accept'?{}:null,_meta:null};assert.deepEqual(await f.call('answers'),[{id:'approval',result}]);responseRow(f.db,f.owner.instanceId,request,result);
  assert.equal(f.owner.pendingServerRequests('T').length,0);assert.equal(sends,0);assert.equal(f.db.prepare('SELECT count(*) AS n FROM codex_delivery_receipts').get()!.n,0);

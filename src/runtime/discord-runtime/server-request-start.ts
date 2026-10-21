@@ -1,3 +1,4 @@
+import {requireApprovalPolicy,type ApprovalPolicy,requireLocalToolApprovalPolicy,type LocalToolApprovalPolicy} from '../../config/runtime.ts';
 import {createNativePromptAuthorityReads} from '../server-prompt-authority-reads.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
@@ -17,12 +18,14 @@ const send=DiscordChannelClient.prototype.sendValidated;
  * strand this transferred receiver. Shared resident/HTTP owners are borrowed;
  * common-deadline runtime shutdown must join this worker before closing them.
  * No subscription replacement, default channel or service startup occurs here. */
-export async function startServerRequestRuntimeWorker(startup:RuntimeServerRequestStartup,database:string,http:DiscordChannelClient,shutdown:AbortSignal,notifier:RuntimeWorkerExitChannel,report:(event:ServerRequestWorkerReport)=>void):Promise<RuntimeMonitoredWorker>{
+export async function startServerRequestRuntimeWorker(startup:RuntimeServerRequestStartup,database:string,http:DiscordChannelClient,shutdown:AbortSignal,notifier:RuntimeWorkerExitChannel,report:(event:ServerRequestWorkerReport)=>void,localToolApprovalPolicy:LocalToolApprovalPolicy='ask',approvalPolicy:ApprovalPolicy='ask'):Promise<RuntimeMonitoredWorker>{
+ requireLocalToolApprovalPolicy(localToolApprovalPolicy);
+ requireApprovalPolicy(approvalPolicy);
  if(types.isProxy(shutdown)||!(shutdown instanceof AbortSignal))throw new TypeError('Expected server request shutdown signal');
  if(typeof report!=='function'||types.isProxy(report)||types.isAsyncFunction(report)||types.isGeneratorFunction(report))throw new TypeError('Expected synchronous server request diagnostic');
  const owner=own(startup,'owner') as PortableResidentLifecycle,receiver=own(startup,'serverRequestReceiver') as BroadcastReceiver<ResidentServerRequestEvent>;
  PortableResidentLifecycle.prototype.lifecycleSnapshot.call(owner);Reflect.apply(requests,http,[]);
- const delivery=new ServerRequestDelivery(database,owner,Object.freeze({sendValidated:(request:Parameters<typeof send>[0],signal?:AbortSignal)=>Reflect.apply(send,http,[request,signal]) as Promise<bigint>}),true,createNativePromptAuthorityReads(database));
+ const delivery=new ServerRequestDelivery(database,owner,Object.freeze({sendValidated:(request:Parameters<typeof send>[0],signal?:AbortSignal)=>Reflect.apply(send,http,[request,signal]) as Promise<bigint>}),true,createNativePromptAuthorityReads(database),undefined,localToolApprovalPolicy,approvalPolicy);
  let announce!:()=>void;const entered=new Promise<void>(resolve=>announce=resolve);
  const worker=new RuntimeMonitoredWorker('server-request',notifier,async force=>{
   announce();try{await runServerRequestWorker(receiver,owner,delivery,AbortSignal.any([shutdown,force]),report);return {ok:true};}catch(error){if(force.aborted&&error===force.reason)throw error;return {ok:false,error};}

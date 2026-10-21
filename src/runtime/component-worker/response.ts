@@ -10,10 +10,11 @@ import {buildInputResponse} from '../../app-server/input-replies.ts';
 import {ComponentWorkerError} from './errors.ts';
 import {PortableResidentLifecycle} from '../../app-server/portable-resident-lifecycle.ts';
 import {ResidentStateError} from '../../app-server/resident-state.ts';
+import {requiresUserApproval} from '../server-request-local-tools.ts';
 export interface ComponentResponse {readonly requestId: RequestId; readonly occurrence: ServerRequestOccurrence; readonly payload: unknown; readonly confirmation: string; readonly generation: bigint}
 const approvalMethods = new Set(['item/commandExecution/requestApproval', 'item/fileChange/requestApproval', 'item/permissions/requestApproval', 'execCommandApproval', 'applyPatchApproval']);
 export function isApprovalMethod(method: string, params: unknown): boolean {
-  return approvalMethods.has(method) || method === 'mcpServer/elicitation/request' && serdeField(params, 'mode') === 'url';
+  return approvalMethods.has(method) || method === 'mcpServer/elicitation/request' && serdeField(params, 'mode') === 'url' || requiresUserApproval(method,params);
 }
 export function capturePendingRequests(input: readonly PendingServerRequest[]): readonly PendingServerRequest[] {
   if (!Array.isArray(input) || types.isProxy(input)) throw new TypeError('Expected pending request array');

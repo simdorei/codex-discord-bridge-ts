@@ -5,7 +5,9 @@ import {clonePendingServerRequest,type PendingServerRequest} from '../app-server
 import {gatewayOwnField as own} from '../discord/gateway/values.ts';
 import {requireDiscordText,splitDeliveryChunks} from '../discord/text.ts';
 import {verifyPromptAuthority,PromptAuthorityError} from './server-prompt-authority.ts';
-import {localToolFormResponse} from './server-request-local-tools.ts';
+import {approvalPolicyResponse} from './server-request-approval-policy.ts';
+import {localToolFormResponse,savedAppCandidate,localToolPolicyResponse} from './server-request-local-tools.ts';
+import {requireApprovalPolicy,type ApprovalPolicy,requireLocalToolApprovalPolicy,type LocalToolApprovalPolicy} from '../config/runtime.ts';
 import {buildServerPrompt} from './server-prompt.ts';
 import {sendReceiptChunk,type DiscordReceiptTransport} from './completion/receipt-sender.ts';
 import {serverPromptIdentity,SentServerPromptCache,SERVER_REQUEST_PROMPT_DOMAIN,requirePromptGeneration} from './server-prompt-identity.ts';
@@ -20,8 +22,12 @@ export class ServerRequestSnapshotUnstable extends Error{readonly attempts=3;con
  * work; a late known acceptance is still committed by the receipt state machine.
  * Scheduler retries and runtime startup binding are separate. */
 export class ServerRequestDelivery{
+ readonly #approvalPolicy:ApprovalPolicy;
+ readonly #localToolApprovalPolicy:LocalToolApprovalPolicy;
  readonly #promptAuthorityReads:PromptAuthorityReads|undefined;readonly #nativePromptReceipts:boolean;readonly #database:string;readonly #server:PortableResidentLifecycle;readonly #transport:DiscordReceiptTransport|null;readonly #receiver:PersistentReceiverServicesClient|null;readonly #sent=new SentServerPromptCache();#busy=false;#workerOwned=false;
- constructor(database:string,server:PortableResidentLifecycle,transport:DiscordReceiptTransport|null,nativePromptReceipts=false,promptAuthorityReads?:PromptAuthorityReads,receiver?:PersistentReceiverServicesClient){
+ constructor(database:string,server:PortableResidentLifecycle,transport:DiscordReceiptTransport|null,nativePromptReceipts=false,promptAuthorityReads?:PromptAuthorityReads,receiver?:PersistentReceiverServicesClient,localToolApprovalPolicy:LocalToolApprovalPolicy='ask',approvalPolicy:ApprovalPolicy='ask'){
+  this.#approvalPolicy=requireApprovalPolicy(approvalPolicy);
+  this.#localToolApprovalPolicy=requireLocalToolApprovalPolicy(localToolApprovalPolicy);
   if(typeof nativePromptReceipts!=='boolean')throw new TypeError('Expected native prompt receipt profile flag');this.#nativePromptReceipts=nativePromptReceipts;
   requireDiscordText(database);PortableResidentLifecycle.prototype.lifecycleSnapshot.call(server);this.#database=database;this.#server=server;
   if(receiver!==undefined){
@@ -38,7 +44,16 @@ export class ServerRequestDelivery{
  #generation(expected:bigint){requirePromptGeneration(expected);const actual=PortableResidentLifecycle.prototype.generation.call(this.#server);if(actual!==expected)throw new ServerRequestGenerationMismatch(expected,actual);}
  async #process(generation:bigint,input:PendingServerRequest,signal?:AbortSignal):Promise<void>{
   signal?.throwIfAborted();this.#generation(generation);const request=clonePendingServerRequest(input),authority=await verifyPromptAuthority(this.#database,this.#server,request,generation,this.#promptAuthorityReads);signal?.throwIfAborted();
-  const local=localToolFormResponse(request);
+  let configRead:unknown;
+  const policyResponse=approvalPolicyResponse(request,this.#approvalPolicy)??localToolPolicyResponse(request,this.#localToolApprovalPolicy);
+  if(policyResponse===null&&savedAppCandidate(request)!==null){
+   try{configRead=await PortableResidentLifecycle.prototype.request.call(this.#server,'config/read',{includeLayers:true},3000,generation,signal);}
+   catch{signal?.throwIfAborted();}
+   signal?.throwIfAborted();this.#generation(generation);
+   const current=await verifyPromptAuthority(this.#database,this.#server,request,generation,this.#promptAuthorityReads);
+   if(current.threadId!==authority.threadId||current.turnId!==authority.turnId||current.channelId!==authority.channelId||current.userId!==authority.userId||current.generation!==authority.generation)throw new PromptAuthorityError('original authority changed during app access lookup');
+  }
+  const local=policyResponse??localToolFormResponse(request,configRead);
   if(local!==null){this.#generation(generation);await PortableResidentLifecycle.prototype.respond.call(this.#server,request.id,request.occurrence,local.response,generation,signal);return;}
   const prompt=buildServerPrompt(request,generation),key=serverPromptIdentity(generation,request,prompt);if(this.#sent.contains(generation,key))return;
   const chunks=splitDeliveryChunks(prompt.text,true);

@@ -1,3 +1,4 @@
+import {requireApprovalPolicy,type ApprovalPolicy,requireLocalToolApprovalPolicy,type LocalToolApprovalPolicy} from '../../config/runtime.ts';
 import {types} from 'node:util';
 import {gatewayOwnField as own} from '../../discord/gateway/values.ts';
 import {invokeSynchronousVoid} from '../../core/synchronous-void.ts';
@@ -39,7 +40,9 @@ export class RuntimeCoreWorkerStartError extends AggregateError{
  * interleaving starts heartbeat after supervisor and mirror before server-request.
  * Heartbeat is returned separately and remains alive after normal core close;
  * caller must finalize it after resident cleanup and drain acknowledgement. */
-export async function startRuntimeCoreWorkers(input:RuntimeCoreStartup,http:DiscordChannelClient,admission:AdmissionGate,shutdown:AbortSignal,notifier:RuntimeWorkerExitChannel,options:RuntimeCompletionOptions,interleaving?:RuntimeCoreInterleaving){
+export async function startRuntimeCoreWorkers(input:RuntimeCoreStartup,http:DiscordChannelClient,admission:AdmissionGate,shutdown:AbortSignal,notifier:RuntimeWorkerExitChannel,options:RuntimeCompletionOptions,interleaving?:RuntimeCoreInterleaving,localToolApprovalPolicy:LocalToolApprovalPolicy='ask',approvalPolicy:ApprovalPolicy='ask'){
+ requireLocalToolApprovalPolicy(localToolApprovalPolicy);
+ requireApprovalPolicy(approvalPolicy);
  if(types.isProxy(shutdown)||!(shutdown instanceof AbortSignal))throw new TypeError('Expected core shutdown signal');shutdown.throwIfAborted();
  const owner=own(input,'owner') as PortableResidentLifecycle,queue=own(input,'queue') as QueueStartCoordinator,executor=own(input,'executor') as RuntimeCommandExecutor,deliveryWake=own(input,'deliveryWake') as RuntimeDeliveryWake,dispose=own(input,'disposeReceivers');
  const report=own(options,'report'),render=own(options,'render'),commentaryEnabled=own(options,'commentaryEnabled'),historyReadTimeoutMs=own(options,'historyReadTimeoutMs');
@@ -68,7 +71,7 @@ export async function startRuntimeCoreWorkers(input:RuntimeCoreStartup,http:Disc
   accept(startStopControlRuntimeWorker(executor,signal,notifier,emit));
   accept(startPromptIntakeRuntimeWorker(executor,admission,signal,notifier,emit));
   if(mirrorInput!==null){const mirror=startSessionMirrorRuntimeWorker(true,mirrorInput.config,mirrorInput.transport,signal,notifier,mirrorInput.render,mirrorInput.report,queue)!;accept(mirror);}
-  accept(await startServerRequestRuntimeWorker(captured,database,http,signal,notifier,emit));signal.throwIfAborted();
+  accept(await startServerRequestRuntimeWorker(captured,database,http,signal,notifier,emit,localToolApprovalPolicy,approvalPolicy));signal.throwIfAborted();
   const owned=Object.freeze([...workers]);let closing:Promise<readonly RuntimeWorkerJoin[]>|undefined;
   return Object.freeze({workers:owned,heartbeat,startupOrder:Object.freeze([...started]),requestStop:()=>stop.abort(new Error('Core workers stopping')),close:():Promise<readonly RuntimeWorkerJoin[]>=>{if(closing===undefined){stop.abort(new Error('Core workers stopping'));closing=Promise.all(owned.map(worker=>worker.join())).then(results=>Object.freeze(results));}return closing;}});
  }catch(primary){
