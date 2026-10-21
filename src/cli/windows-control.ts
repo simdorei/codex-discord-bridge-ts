@@ -12,7 +12,9 @@ import {runWindowsTray} from './windows-tray.ts';
 export function startupTaskName(root:string):string{return 'CodexDiscordTS-'+createHash('sha256').update(root.toLowerCase()).digest('hex').slice(0,16);}
 function legacyTrayStartupTaskName(root:string):string{return 'CodexDiscordTS-Tray-'+createHash('sha256').update(root.toLowerCase()).digest('hex').slice(0,16);}
 export function startupTaskAction(root:string,entry:string,node:string,args:readonly string[]):{execute:string;arguments:string;workingDirectory:string;launcher:string}{
- const launchPayload=Buffer.from(JSON.stringify({node,args:[entry,'--watchdog-hidden','--runtime-root',root,...args]}),'utf8').toString('base64');
+ // A scheduler launch (manual or logon) is a new start request. Clear the prior
+ // stop only after the supervisor acquires the existing singleton guards.
+ const launchPayload=Buffer.from(JSON.stringify({node,args:[entry,'--start-hidden','--runtime-root',root,...args]}),'utf8').toString('base64');
  const launchScript=`$p=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${launchPayload}'))|ConvertFrom-Json; $a=$p.args; & $p.node @a; exit $LASTEXITCODE`;
  const system=join(process.env.SystemRoot??'C:\\Windows','System32'),launcher=fileURLToPath(new URL(import.meta.url.endsWith('.ts')?'../../scripts/codex-discord-hidden.vbs':'../../../scripts/codex-discord-hidden.vbs',import.meta.url));
  return {execute:join(system,'wscript.exe'),arguments:['//B','//NoLogo',launcher,join(system,'WindowsPowerShell/v1.0/powershell.exe'),Buffer.from(launchScript,'utf16le').toString('base64')].map(quoteWindowsArgument).join(' '),workingDirectory:root,launcher};
