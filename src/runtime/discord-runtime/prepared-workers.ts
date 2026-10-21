@@ -1,3 +1,4 @@
+import {requireApprovalPolicy,type ApprovalPolicy,requireLocalToolApprovalPolicy,type LocalToolApprovalPolicy} from '../../config/runtime.ts';
 import {claimPreparedRuntimeRemote,startPreparedRuntimeRemote,requestPreparedRuntimeRemoteStop,closePreparedRuntimeRemote,assertPreparedRuntimeRemoteReleased,type RuntimeRemoteBranch,type PreparedRuntimeRemote} from './remote-start.ts';
 import {AttachmentHttpClient} from '../attachment-client.ts';
 import {RuntimeCommandExecutor} from '../action-executor/command-executor.ts';
@@ -25,6 +26,8 @@ const bindings=new WeakMap<object,Readonly<{gateway:GatewayRuntime<DecodedGatewa
 export function preparedRuntimeWorkerBinding(owner:unknown){if(owner===null||typeof owner!=='object'||!bindings.has(owner))throw new TypeError('Expected actual prepared runtime worker owner');return bindings.get(owner)!;}
 export type PreparedRuntimeWorkerOwner=Awaited<ReturnType<typeof startPreparedRuntimeWorkers>>;
 export interface PreparedRuntimeWorkerOptions{
+ readonly localToolApprovalPolicy?:LocalToolApprovalPolicy;
+ readonly approvalPolicy?:ApprovalPolicy;
  readonly remote:RuntimeRemoteBranch;
  readonly ingress:PreparedTypedIngressOptions;
  readonly completion:RuntimeCompletionOptions;
@@ -49,6 +52,8 @@ export class PreparedRuntimeWorkerStartError extends AggregateError{
 export async function startPreparedRuntimeWorkers(input:RuntimeCoreStartup&RuntimeMessageStartup,gateway:GatewayRuntime<DecodedGatewayInteraction>,gate:AdmissionGate,http:DiscordChannelClient,catalog:AutocompleteCatalog,shutdown:AbortSignal,options:PreparedRuntimeWorkerOptions){
  if(types.isProxy(shutdown)||!(shutdown instanceof AbortSignal))throw new TypeError('Expected runtime shutdown signal');shutdown.throwIfAborted();
  const remoteInput=own(options,'remote') as RuntimeRemoteBranch;
+ const approvalPolicy=requireApprovalPolicy(Object.hasOwn(options,'approvalPolicy')?own(options,'approvalPolicy'):'ask');
+ const localToolApprovalPolicy=requireLocalToolApprovalPolicy(Object.hasOwn(options,'localToolApprovalPolicy')?own(options,'localToolApprovalPolicy'):'ask');
  GatewayRuntime.prototype.assertTypedStartupAvailable.call(gateway);
  const report=own(options,'reportInteraction') as PreparedRuntimeWorkerOptions['reportInteraction'];if(typeof report!=='function'||types.isProxy(report)||types.isAsyncFunction(report)||types.isGeneratorFunction(report))throw new TypeError('Expected synchronous interaction report');
  const context=Object.freeze({owner:own(input,'owner'),queue:own(input,'queue'),executor:own(input,'executor'),policy:own(input,'policy'),backend:own(input,'backend'),deliveryWake:own(input,'deliveryWake'),completionReceiver:own(input,'completionReceiver'),serverRequestReceiver:own(input,'serverRequestReceiver'),disposeReceivers:own(input,'disposeReceivers')}) as RuntimeCoreStartup&RuntimeMessageStartup;
@@ -76,7 +81,7 @@ export async function startPreparedRuntimeWorkers(input:RuntimeCoreStartup&Runti
   typed=await startTypedIngressWorkers(gateway,signal,notifier,typedOptions);signal.throwIfAborted();
   business=await startPreparedInteractionWorker(context,work,http,notifier,report);signal.throwIfAborted();
   if(remote!==null){remoteWorker=await startPreparedRuntimeRemote(remote,notifier);signal.throwIfAborted();}
-  core=await startRuntimeCoreWorkers(context,http,gate,signal,notifier,completion,interleaving);signal.throwIfAborted();
+  core=await startRuntimeCoreWorkers(context,http,gate,signal,notifier,completion,interleaving,localToolApprovalPolicy,approvalPolicy);signal.throwIfAborted();
   const heartbeatOwner=core.heartbeat!;const workers=Object.freeze([...typed,business.worker,...(remoteWorker===undefined?[]:[remoteWorker]),...core.workers]),startupOrder=Object.freeze([...typed,business.worker,...(remoteWorker===undefined?[]:[remoteWorker]),...core.startupOrder]);notifier.close();let closing:Promise<readonly RuntimeWorkerJoin[]>|undefined;
   const result=Object.freeze({workers,heartbeat:heartbeatOwner,startupOrder,exits,requestStop,close:()=>{if(closing===undefined){requestStop();closing=Promise.all(workers.map(w=>w.join())).then(results=>Object.freeze(results));}return closing;},disposeMonitor:()=>{if([...workers,heartbeatOwner.worker].some(w=>w.peek()===undefined))throw new TypeError('Join all runtime workers and heartbeat before disposing monitor');exits.dispose();work.sender.dispose();work.receiver.dispose();}});
   bindings.set(result,Object.freeze({gateway,resident:context.owner,gate,database,attachment,remote}));return result;

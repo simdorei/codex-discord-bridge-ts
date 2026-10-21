@@ -66,7 +66,7 @@ function responseRow(db:DatabaseSync,owner:string,request:PendingServerRequest,r
  const authority=JSON.parse(String(row.authority_json)) as {request_sha256:string};assert.equal(authority.request_sha256,sha256SerdeValue({id:request.id,occurrence,method:request.method,params:request.params}));
 }
 
-for(const [connector,risk,action,recovery] of [['computer-use','low','accept',true],['browser','low','accept',false],['computer-use','high','cancel',false]] as const)test(`original native serial form: ${connector} ${risk} -> ${action}${recovery?' through initial recovery':''}`,{timeout:20000},async t=>fixture(t.signal,async f=>{
+for(const [connector,risk,action,recovery] of [['computer-use','low','accept',true],['browser','low','accept',false],['computer-use','unknown','cancel',false]] as const)test(`original native serial form: ${connector} ${risk} -> ${action}${recovery?' through initial recovery':''}`,{timeout:20000},async t=>fixture(t.signal,async f=>{
  let sends=0;const transport:DiscordReceiptTransport={async sendValidated(){sends++;return 91n;}};
  if(!recovery)void f.start(transport);
  const request=await f.ask(form(connector,risk));if(recovery)void f.start(transport);

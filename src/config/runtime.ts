@@ -44,6 +44,8 @@ export class SecretString {
 }
 
 export type RuntimeConfigErrorKind =
+  | 'InvalidLocalToolApprovalPolicy'
+  | 'InvalidApprovalPolicy'
   | 'MissingRequired'
   | 'MissingAllowedChannels'
   | 'InvalidInteger'
@@ -68,6 +70,12 @@ export class RuntimeConfigError extends Error {
   ) {
     let message: string;
     switch (tag) {
+      case 'InvalidApprovalPolicy':
+        message = 'DISCORD_APPROVAL_POLICY must be ask or allow';
+        break;
+      case 'InvalidLocalToolApprovalPolicy':
+        message = 'DISCORD_LOCAL_TOOL_APPROVAL_POLICY must be ask or allow';
+        break;
       case 'MissingRequired':
         message = `missing required environment variable: ${details?.name ?? ''}`;
         break;
@@ -131,7 +139,21 @@ export class RuntimeConfigError extends Error {
   }
 }
 
+export type ApprovalPolicy = 'ask' | 'allow';
+export function requireApprovalPolicy(value: unknown): ApprovalPolicy {
+  if (value !== 'ask' && value !== 'allow') throw new RuntimeConfigError('InvalidApprovalPolicy');
+  return value;
+}
+
+export type LocalToolApprovalPolicy = 'ask' | 'allow';
+
+export function requireLocalToolApprovalPolicy(value: unknown): LocalToolApprovalPolicy {
+  if (value !== 'ask' && value !== 'allow') throw new RuntimeConfigError('InvalidLocalToolApprovalPolicy');
+  return value;
+}
+
 export interface RuntimeConfig {
+  readonly approvalPolicy: ApprovalPolicy;
   readonly botToken: SecretString;
   readonly remoteMcp: RemoteMcpConfig | null;
   readonly allowedChannelIds: Set<bigint>;
@@ -143,6 +165,7 @@ export interface RuntimeConfig {
   readonly enableMessageContent: boolean;
   readonly qaCommands: boolean;
   readonly hostCommands: boolean;
+  readonly localToolApprovalPolicy: LocalToolApprovalPolicy;
   readonly streamCommentary: boolean;
   readonly startupNotify: boolean;
   readonly sessionMirror: boolean;
@@ -378,6 +401,8 @@ export function loadRuntimeConfig(
   const guildId = optionalInteger(env, 'DISCORD_GUILD_ID');
   const qaCommands = flag(env, 'DISCORD_ENABLE_QA_COMMANDS', false);
   const hostCommands = flag(env, 'DISCORD_ENABLE_HOST_COMMANDS', false);
+  const approvalPolicy = requireApprovalPolicy(rustTrim(env.get('DISCORD_APPROVAL_POLICY') ?? '') || 'ask');
+  const localToolApprovalPolicy = requireLocalToolApprovalPolicy(rustTrim(env.get('DISCORD_LOCAL_TOOL_APPROVAL_POLICY') ?? '') || 'ask');
   const streamCommentary = flag(env, 'DISCORD_STREAM_COMMENTARY', true);
   const startupNotify = flag(env, 'DISCORD_STARTUP_NOTIFY', false);
   const sessionMirror = flag(env, 'DISCORD_SESSION_MIRROR', true);
@@ -429,6 +454,8 @@ export function loadRuntimeConfig(
     enableMessageContent: envMessageContent && !cli.noMessageContent,
     qaCommands,
     hostCommands,
+    localToolApprovalPolicy,
+    approvalPolicy,
     streamCommentary,
     startupNotify,
     sessionMirror,
