@@ -117,9 +117,12 @@ actual Codex marketplace and plugin inventory after registration. The helper's
 `--repo-root` pointing to a built source checkout. Runtime conversation, probe
 and hook commands work in a copied plugin without the source checkout.
 
-`--start` runs the watchdog and clears an explicit stop marker. `--watchdog`
-honors that marker, including on subsequent logons. The task uses the current
-user's interactive logon at normal privileges. Graceful restart drains work;
+`--start` runs the watchdog and clears an explicit stop marker. Standalone
+`--watchdog` honors that marker. Starting the installed scheduled task, manually
+or at the next logon, uses the explicit start path and clears the previous stop
+after acquiring the runtime singleton. A stop still leaves the current task
+stopped until another start. The task uses the current user's interactive logon
+at normal privileges. Graceful restart drains work;
 `force_restart` cancels the exact owned process job. Control requests carry
 runtime identity and expiry; `--expected-runtime ID` adds an explicit generation
 check. Crash retries and logs are bounded. Do not leave a Rust watchdog active

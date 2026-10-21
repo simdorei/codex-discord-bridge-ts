@@ -15,6 +15,10 @@ test('owned watchdog drains, force-replaces and stops only its fixture runtime',
  const root=await realpath(await mkdtemp(join(tmpdir(),'cdr-watchdog-'))),entry=join(root,'fixture.mjs'),stop=new AbortController();
  const instance=new URL('../../src/runtime/windows/windows-runtime-instance.js',import.meta.url).href;
  await writeFile(entry,`import {WindowsRuntimeInstance} from ${JSON.stringify(instance)}; import {readFile,writeFile} from 'node:fs/promises';import {randomUUID} from 'node:crypto';import {join} from 'node:path';const root=process.cwd(),owner=await WindowsRuntimeInstance.acquire(root);await owner.publishMarker('identity','version=1\\nruntime_id='+randomUUID()+'\\npid='+process.pid+'\\nstate=open\\n');const read=async name=>{try{return await readFile(join(root,'.codex_discord_rust.'+name),'utf8');}catch{return null;}};process.stdout.write('fixture-ready\\n');for(;;){if(await read('stop')!==null)break;const prepare=await read('drain.prepare');if(prepare!==null&&await read('fixture-stall')===null){await owner.publishMarker('ack',prepare);if(await read('restart')===prepare)break;}await new Promise(r=>setTimeout(r,20));}await owner.release();`);
+ await writeFile(join(root,'.codex_discord_rust.stop'),'supervisor_stop\n');
+ await runWindowsSupervisor({root,entry,arguments:[],environment:{SystemRoot:process.env.SystemRoot??'C:\\Windows'},clearStop:false});
+ assert.equal(await readFile(join(root,'.codex_discord_rust.stop'),'utf8'),'supervisor_stop\n','An unattended watchdog must preserve an explicit stop');
+ await assert.rejects(supervisorStatus(root));
  const task=runWindowsSupervisor({root,entry,arguments:[],environment:{SystemRoot:process.env.SystemRoot??'C:\\Windows'},signal:stop.signal,clearStop:true,restartDelayMs:10});void task.catch(()=>{});
  const ready=async(old=0)=>Promise.race([until(async()=>{const s=await supervisorStatus(root);const text=await readFile(join(root,'.codex_discord_rust.drain.identity'),'utf8');return s.childPid!==null&&s.childPid!==old&&text.includes('pid='+s.childPid+'\n')?s:false;}),task.then(()=>{throw new Error('Watchdog exited before fixture ready');})]);
  try{const first=await ready();await assert.rejects(requestSupervisor(root,'force_restart',undefined,'foreign-generation'));const graceful=await requestSupervisor(root,'restart');const second=await ready(first.childPid!);assert.notEqual(second.childPid,first.childPid);assert.equal(JSON.parse(await readFile(graceful.receipt,'utf8')).phase,'exited');
@@ -32,7 +36,7 @@ test('scheduled task command is user-scoped, hidden and quotes literal paths wit
  assert.deepEqual(startupTaskAction(root,entry,'C:\\node\\node.exe',['--env','C:\\my settings\\.env']).arguments,payload.arguments);
  const launch=Buffer.from(payload.arguments.split(' ').at(-1)!,'base64').toString('utf16le');
  const child=JSON.parse(Buffer.from(/FromBase64String\('([^']+)'\)/u.exec(launch)![1]!,'base64').toString('utf8'));
- assert.deepEqual(child,{node:'C:\\node\\node.exe',args:[entry,'--watchdog-hidden','--runtime-root',root,'--env','C:\\my settings\\.env']});
+ assert.deepEqual(child,{node:'C:\\node\\node.exe',args:[entry,'--start-hidden','--runtime-root',root,'--env','C:\\my settings\\.env']},'A new scheduled start must clear the previous stop through the singleton-protected start path');
  assert.match(launch,/& \$p\.node @a; exit \$LASTEXITCODE/u);
 });
 test('GUI task launcher hides a real console, preserves literal data and returns the child failure code',{skip:process.platform!=='win32',timeout:30000},async()=>{
