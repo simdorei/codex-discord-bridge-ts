@@ -10,7 +10,8 @@ export function emptySchema(v:unknown):boolean{
  return object(properties)&&Object.keys(properties).length===0
   &&(!Object.hasOwn(v,'required')||(Array.isArray(required)&&required.length===0))
   &&(!Object.hasOwn(v,'additionalProperties')||typeof additional==='boolean')
-  &&Object.keys(v).every(k=>['type','properties','required','additionalProperties'].includes(k));
+  &&Object.keys(v).every(k=>['type','properties','required','additionalProperties'].includes(k)
+   ||(['title','description','$schema','$id','$comment'].includes(k)&&typeof field(v,k)==='string'));
 }
 export interface LocalToolFormResponse{
  readonly response:Readonly<{action:'accept'|'cancel';content:Readonly<Record<string,never>>|null;_meta:Readonly<{persist:'always'}>|null}>;
@@ -31,7 +32,12 @@ function isLocalForm(method:string,p:unknown):boolean{
  return isForm(method,p)&&field(p,'serverName')==='node_repl'&&field(meta,'codex_approval_kind')==='mcp_tool_call'
   &&['computer-use','browser'].includes(field(meta,'connector_id') as string)&&emptySchema(field(p,'requestedSchema'));
 }
-export function requiresUserApproval(method:string,params:unknown):boolean{return isLocalForm(method,params)&&field(field(params,'_meta'),'riskLevel')==='high';}
+export function requiresUserApproval(method:string,params:unknown):boolean{
+ // Connector/risk restrictions govern automatic local access, not the owner's
+ // ability to answer a valid approval. Unknown tools must reach the prompt.
+ return isForm(method,params)&&emptySchema(field(params,'requestedSchema'))
+  &&!(isLocalForm(method,params)&&field(field(params,'_meta'),'riskLevel')==='low');
+}
 function candidate(request:PendingServerRequest):string|null{
  const p=request.params,meta=field(p,'_meta'),persist=field(meta,'persist'),tool=field(meta,'tool_params'),app=field(tool,'app');
  return isLocalForm(request.method,p)&&field(meta,'connector_id')==='computer-use'

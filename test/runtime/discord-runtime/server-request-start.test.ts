@@ -66,4 +66,14 @@ test('global approval allow policy flows through actual startup and resident wor
   assert.deepEqual((await callPromptFixture(owner,'answers') as Array<{result:unknown}>).map(x=>x.result),[{action:'accept',content:{},_meta:null}]);
   assert.deepEqual(bodies,[]);assert.deepEqual(errors,[]);
  }finally{stop.abort();if(worker)await worker.join();exits.close();receiver.dispose();}
-}),{enableResponses:true,method:'mcpServer/elicitation/request',params:{threadId:'t',turnId:'v',mode:'form',serverName:'codex_apps',_meta:{codex_approval_kind:'mcp_tool_call',connector_id:'github',riskLevel:'high',tool_params:{app:'Chrome'},persist:['session']},requestedSchema:{type:'object',properties:{}}}}));
+}),{enableResponses:true,method:'mcpServer/elicitation/request',params:{threadId:'t',turnId:'v',mode:'form',serverName:'codex_apps',_meta:{codex_approval_kind:'mcp_tool_call',connector_id:'github',riskLevel:'high',tool_params:{app:'Chrome'},persist:['session']},requestedSchema:{type:'object',properties:{},title:'Approval',description:'Allow publishing this commit'}}}));
+
+test('default ask startup delivers an external approval and keeps the resident pending',{timeout:15000},async()=>promptFixture(async(path,owner)=>wire(async(client,bodies,_reply,sent)=>{
+ const stop=new AbortController(),exits=new RuntimeWorkerExitChannel(),receiver=owner.subscribeServerRequests();let worker:RuntimeMonitoredWorker|undefined;const errors:unknown[]=[];
+ try{
+  worker=await startServerRequestRuntimeWorker({owner,serverRequestReceiver:receiver},path,client,stop.signal,exits,e=>errors.push(e));
+  await sent.promise;await confirmed(path,'991');
+  assert.equal(bodies.length,1);assert.ok(JSON.parse(bodies[0]!).components.length>0);
+  assert.equal(owner.pendingServerRequests().length,1);assert.deepEqual(await callPromptFixture(owner,'answers'),[]);assert.deepEqual(errors,[]);
+ }finally{stop.abort();if(worker)await worker.join();exits.close();receiver.dispose();}
+}),{enableResponses:true,method:'mcpServer/elicitation/request',params:{threadId:'t',turnId:'v',mode:'form',serverName:'codex_apps',_meta:{connector_id:'github',riskLevel:'high'},requestedSchema:{type:'object',properties:{}}}}));

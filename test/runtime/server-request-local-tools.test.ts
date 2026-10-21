@@ -17,16 +17,16 @@ test('other methods and URL or missing modes retain existing handling',()=>{
  for(const p of [null,{},[],{mode:'url'},{mode:'FORM'},{mode:1}])assert.equal(decide(p),null);
  assert.equal(decide(params(),'item/commandExecution/requestApproval'),null);
 });
-test('unknown server, connector, unknown risk and malformed metadata cancel',()=>{
+test('unknown server, connector, risk and metadata leave empty approvals for the owner',()=>{
  for(const change of [{serverName:'other'},{_meta:null},{_meta:{}},{_meta:{...params()._meta,connector_id:'filesystem'}},{_meta:{...params()._meta,riskLevel:'unknown'}},{_meta:{...params()._meta,codex_approval_kind:'other'}}]){
-  assert.deepEqual(decide({...params(),...change}),{response:{action:'cancel',content:null,_meta:null},disposition:'unsupported-form-cancelled'});
+  assert.equal(decide({...params(),...change}),null,'unknown metadata must not choose cancel for the owner');
  }
 });
 test('schema ambiguity, data entry, null optionals and unknown validation keywords cancel',()=>{
  for(const schema of [null,[],{}, {type:'array',properties:{}},{type:'object',properties:[]},{type:'object',properties:{name:{type:'string'}}},
  {type:'object',properties:{},required:null},{type:'object',properties:{},required:['name']},
  {type:'object',properties:{},additionalProperties:null},{type:'object',properties:{},additionalProperties:{}},
- {type:'object',properties:{},title:'approval'},{type:'object',properties:{},allOf:[]}]){
+ {type:'object',properties:{},title:42},{type:'object',properties:{},allOf:[]}]){
   assert.equal(decide({...params(),requestedSchema:schema})?.response.action,'cancel');
  }
 });

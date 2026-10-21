@@ -1,0 +1,10 @@
+[
+  "test/runtime/mcp-form-approval.test.ts",
+  "test/runtime/all-approval-policy.test.ts",
+  "test/runtime/server-request-local-tools.test.ts",
+  "test/runtime/server-request-delivery.test.ts",
+  "test/runtime/server-request-native-form-integration.test.ts",
+  "test/runtime/discord-runtime/server-request-start.test.ts",
+  "test/runtime/server-prompt.test.ts",
+  "test/runtime/component-worker/response.test.ts"
+]
