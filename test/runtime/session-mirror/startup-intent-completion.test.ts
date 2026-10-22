@@ -130,14 +130,21 @@ test('native completion refuses main-thread invocation',()=>fixture(async(store,
  const evidence=await store.recoverContext('thread','op',limits);await assert.rejects(completeMirrorStartupRecoveryNative(path,evidence.captured(),()=>{}),TypeError);assert.notEqual(await store.read('thread'),null);
 }));
 
-async function race(request:object):Promise<{ok:boolean;checks:number;name?:string}>{
- const slot=new OwnedWorkerSlot(),pending=slot.run(new URL('./startup-intent-completion-worker.ts',import.meta.url),request,5000),exited=slot.join();try{return await pending as {ok:boolean;checks:number;name?:string};}finally{await exited;}
+async function race(request:object):Promise<{ok:boolean;checks:number;name?:string;detail?:string}>{
+ const slot=new OwnedWorkerSlot(),pending=slot.run(new URL('./startup-intent-completion-worker.ts',import.meta.url),request,5000),exited=slot.join();try{return await pending as {ok:boolean;checks:number;name?:string;detail?:string};}finally{await exited;}
 }
 test('pending, database, and file changes just before native transaction cannot retire stale evidence',async()=>{
  // The last pre-transaction check is immediately followed by identity/file
  // metadata checks and the exact SQLite CAS, with no asynchronous gap.
  for(const change of ['Pending','Database','File'])await fixture(async(store,path)=>{
   const evidence=(await store.recoverContext('thread','op',limits)).captured();
-  const result=await race({path,evidence,change,changeAt:5,sql:`UPDATE ${PENDING} SET created_at=created_at+1`});assert.equal(result.ok,false);assert.equal(result.name,change==='File'?'MirrorFileChangedError':'MirrorStartupIntentConflictError');assert.notEqual(await store.read('thread'),null);
+  const result=await race({path,evidence,change,changeAt:5,sql:`UPDATE ${PENDING} SET created_at=created_at+1`});assert.equal(result.ok,false);
+  // Windows can prohibit the injected rename while the native DB owner is open.
+  // Prove that exact earlier refusal preserved the pending packet; unrelated
+  // errors must still fail this race test.
+  if(process.platform==='win32'&&change==='Database'&&result.name==='Error'){
+   assert.match(result.detail??'',/^EBUSY: resource busy or locked, rename /);assert.deepEqual(await store.read('thread'),evidence.pending);
+  }else assert.equal(result.name,change==='File'?'MirrorFileChangedError':'MirrorStartupIntentConflictError',JSON.stringify({change,result}));
+  assert.notEqual(await store.read('thread'),null);
  });
 });

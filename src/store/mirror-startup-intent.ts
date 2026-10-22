@@ -13,6 +13,7 @@ import {decodeTimestamp} from './sqlite-values.ts';
 import {requireMirrorCursorJournalIn,readBoundMirrorCursorInTransaction,snapshotBoundMirrorCursor,type BoundMirrorCursor} from './mirror-cursor-journal.ts';
 import {MIRROR_STARTUP_INTENT_TABLE as TABLE,requireMirrorStartupIntentJournalIn,MirrorStartupIntentConflictError} from './mirror-startup-intent-schema.ts';
 import {requireExactMirrorChannelIn} from './mirror-cursor-mapping.ts';
+import {requireNoMirrorDeferralIn} from './mirror-deferral.ts';
 export {initializeMirrorStartupIntentJournal,MirrorStartupIntentConflictError,MirrorStartupIntentSchemaError} from './mirror-startup-intent-schema.ts';
 const MAX_CUTOFF_BYTES=262144;
 /** Immutable descriptive pending state only. Reading it grants no native cutoff,
@@ -51,11 +52,13 @@ export function prepareMirrorStartupIntent(thread:string,input:MirrorStartupCuto
 }
 function schema(db:DatabaseSync):void {requireMirrorStartupIntentJournalIn(db);requireMirrorCursorJournalIn(db);}
 function absentCursor(db:DatabaseSync,thread:string):void {
+ requireNoMirrorDeferralIn(db,thread);
  for(const [table,key] of [['codex_session_mirror_offsets','codex_thread_id'],['cdr_ts_mirror_cursor_anchors_v1','thread_id']] as const)
   if(db.prepare(`SELECT 1 FROM ${table} WHERE ${key}=? LIMIT 1`).get(thread)!==undefined)throw new MirrorStartupIntentConflictError();
 }
 function bounded(column:string,max:number):string {return `CASE WHEN typeof(${column})='text' AND length(CAST(${column} AS BLOB))<=${max} THEN ${column} END AS ${column}`;}
 function readPacketIn(db:DatabaseSync,thread:string):PendingMirrorStartupIntent|null {
+ requireNoMirrorDeferralIn(db,thread);
  const q=db.prepare(`SELECT cutoff_json,operation_id,created_at,${receiptTextColumns('cutoff_json','operation_id')} FROM (SELECT ${bounded('cutoff_json',MAX_CUTOFF_BYTES*2)},${bounded('operation_id',256)},CASE WHEN typeof(created_at) IN ('integer','real') THEN created_at END AS created_at FROM ${TABLE} WHERE thread_id=? AND CAST(thread_id AS BLOB)=CAST(? AS BLOB) LIMIT 2)`);q.setReadBigInts(true);const rows=q.all(thread,thread);
  if(rows.length===0)return null;if(rows.length!==1)throw new MirrorStartupIntentConflictError();const row=rows[0]!;
  const result=snapshotPendingMirrorStartupIntent({thread,cutoff:decode(receiptText(row,'cutoff_json')!),operationId:receiptText(row,'operation_id')!,createdAt:decodeTimestamp(row.created_at,'created_at')});

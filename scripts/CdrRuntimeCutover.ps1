@@ -1,5 +1,7 @@
 param([Parameter(Mandatory=$true)][string]$Payload)
 $ErrorActionPreference = 'Stop'
+$OutputEncoding = [Text.UTF8Encoding]::new($false)
+[Console]::InputEncoding = $OutputEncoding; [Console]::OutputEncoding = $OutputEncoding
 $p = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($Payload)) | ConvertFrom-Json
 $s = $p.state
 $Root = [IO.Path]::GetFullPath($s.root)
@@ -31,10 +33,17 @@ function Legacy-Process {
  if ([IO.Path]::GetFullPath($found.Path) -ine $s.binary) { throw 'Runtime lock is owned by a different executable.' }
  return $found
 }
+function Task-Executable($action) {
+ $value = [string]$action.Execute
+ if ($value.Length -ge 2 -and $value.StartsWith('"') -and $value.EndsWith('"')) {
+  return $value.Substring(1, $value.Length - 2)
+ }
+ return $value
+}
 function Owned-LegacyAction($action) {
  if ([string]::IsNullOrWhiteSpace([string]$action.Execute)) { return $false }
- if ([IO.Path]::GetFullPath($action.Execute) -ieq $s.binary) { return $action.WorkingDirectory -ieq $Root }
- if ([IO.Path]::GetFileName($action.Execute) -notin @('powershell.exe','pwsh.exe')) { return $false }
+ if ([IO.Path]::GetFullPath((Task-Executable $action)) -ieq $s.binary) { return $action.WorkingDirectory -ieq $Root }
+ if ([IO.Path]::GetFileName((Task-Executable $action)) -notin @('powershell.exe','pwsh.exe')) { return $false }
  $parts = [CdrCutoverArgv]::Parse([string]$action.Arguments)
  $file = [Array]::IndexOf($parts,'-File'); if ($file -lt 0 -or $file+1 -ge $parts.Count) { return $false }
  if ([IO.Path]::GetFullPath($parts[$file+1]) -notin @($Watchdog,$Tray)) { return $false }
@@ -62,7 +71,7 @@ function Legacy-RestartTask($Records) {
   $task=Assert-Task $record
   foreach ($action in @($task.Actions)) {
    if (-not (Owned-LegacyAction $action)) { continue }
-   if ([IO.Path]::GetFullPath($action.Execute) -ieq $s.binary) { return $record }
+   if ([IO.Path]::GetFullPath((Task-Executable $action)) -ieq $s.binary) { return $record }
    $parts=[CdrCutoverArgv]::Parse([string]$action.Arguments); $file=[Array]::IndexOf($parts,'-File')
    if ($file -ge 0 -and $file+1 -lt $parts.Count -and [IO.Path]::GetFullPath($parts[$file+1]) -ieq $Watchdog) { return $record }
   }
@@ -81,6 +90,11 @@ function Invoke-Node([string[]]$Arguments) {
  $lines = & $s.node @Arguments
  if ($LASTEXITCODE -ne 0) { throw "TS command failed: $($Arguments[1])" }
  return ($lines -join "`n")
+}
+function Migration-Arguments([string]$Command) {
+ $policy = if ($s.PSObject.Properties['legacyMirrorPolicy']) { $s.legacyMirrorPolicy } else { 'strict' }
+ if ($policy -notin @('strict','rust-preserve')) { throw 'Invalid recorded legacy mirror policy.' }
+ return @($s.entry,'--admin',$Command,'--repo-root',$Root,'--env',$s.env,'--legacy-mirror-policy',$policy)
 }
 function Remove-Owned([string]$Path,[string]$Text) { if ([IO.File]::Exists($Path)) { if ([IO.File]::ReadAllText($Path) -cne $Text) { throw 'Foreign maintenance marker preserved.' }; [IO.File]::Delete($Path) } }
 function Target-State {
@@ -115,7 +129,7 @@ function Wait-Healthy([bool]$Target) {
 if ($p.action -eq 'inventory') {
  foreach ($path in @($Disable,$Stop,$Manifest,(Join-Path $Root '.codex_discord_rust.restart'),(Join-Path $Root '.codex_discord_rust.drain.prepare'),(Join-Path $Root '.codex_discord_rust.drain.ack'))) { if (Test-Path -LiteralPath $path) { throw 'Existing runtime/maintenance state must be resolved before cutover.' } }
  if ($null -ne (Get-ScheduledTask -TaskName $s.taskName -ErrorAction SilentlyContinue)) { throw 'Existing TS startup task preserved.' }
- $tasks=@(); foreach ($task in (Get-ScheduledTask)) { $owned=@($task.Actions | Where-Object { Owned-LegacyAction $_ }); if ($owned.Count -eq 0) { continue }; if ($owned.Count -ne @($task.Actions).Count) { throw 'Mixed-action legacy task requires explicit operator review.' }; $tasks+=@{ name=$task.TaskName; path=$task.TaskPath; enabled=$task.Settings.Enabled; definition=(Task-Definition $task); xml=(Export-ScheduledTask -TaskName $task.TaskName -TaskPath $task.TaskPath) } }
+ $tasks=@(); foreach ($task in (Get-ScheduledTask)) { $owned=@($task.Actions | Where-Object { try { Owned-LegacyAction $_ } catch { throw ("Task action inspection failed: " + $task.TaskName + "; " + $_.ScriptStackTrace + "; " + $_.Exception.Message) } }); if ($owned.Count -eq 0) { continue }; if ($owned.Count -ne @($task.Actions).Count) { throw 'Mixed-action legacy task requires explicit operator review.' }; $tasks+=@{ name=$task.TaskName; path=$task.TaskPath; enabled=$task.Settings.Enabled; definition=(Task-Definition $task); xml=(Export-ScheduledTask -TaskName $task.TaskName -TaskPath $task.TaskPath) } }
  @{ legacyIdentity=(Identity (Legacy-Process)); tasks=$tasks } | ConvertTo-Json -Depth 12 -Compress
  exit 0
 }
@@ -125,7 +139,29 @@ if ($p.action -eq 'preflight') {
  [void](Invoke-Node @($s.entry,'--check-config','--env',$s.env)); 'null'; exit 0
 }
 if ($p.action -eq 'backup') { $text=Invoke-Node @($s.entry,'--backup-store','--env',$s.env); if ($text -notmatch 'backup_created path=(.+)') { throw 'Verified backup receipt missing.' }; ConvertTo-Json -InputObject $Matches[1] -Compress; exit 0 }
-if ($p.action -eq 'migrate-store') { $result=(Invoke-Node @($s.entry,'--admin','migrate-mirror-cursors','--repo-root',$Root,'--env',$s.env)) | ConvertFrom-Json; if (@($result.held).Count -gt 0) { throw 'Mirror continuity could not be verified; historical requests were not replayed.' }; $result | ConvertTo-Json -Depth 8 -Compress; exit 0 }
+if ($p.action -eq 'rehearse-store') {
+ $reportPath=Join-Path $Root '.cdr-ts-rehearsal-report.json'
+ try {
+  $result=(Invoke-Node (Migration-Arguments 'rehearse-mirror-migration')) | ConvertFrom-Json
+  $json=$result | ConvertTo-Json -Depth 12 -Compress
+  [IO.File]::WriteAllText($reportPath,$json,[Text.UTF8Encoding]::new($false))
+  $json; exit 0
+ } catch {
+  $json=@{ready=$false;status='Unconfirmed';error=$_.Exception.Message} | ConvertTo-Json -Compress
+  [IO.File]::WriteAllText($reportPath,$json,[Text.UTF8Encoding]::new($false))
+  throw
+ }
+}
+if ($p.action -eq 'migrate-store') {
+ $result=(Invoke-Node (Migration-Arguments 'migrate-mirror-cursors')) | ConvertFrom-Json
+ $reportPath=Join-Path $Root '.cdr-ts-migration-report.json'
+ $json=$result | ConvertTo-Json -Depth 8 -Compress
+ [IO.File]::WriteAllText($reportPath,$json,[Text.UTF8Encoding]::new($false))
+ $expectedPolicy = if ($s.PSObject.Properties['legacyMirrorPolicy']) { $s.legacyMirrorPolicy } else { 'strict' }
+ if ($result.policy -ne $expectedPolicy) { throw 'Mirror migration policy mismatch.' }
+ if (@($result.held).Count -gt 0) { throw 'Mirror migration held; inspect .cdr-ts-migration-report.json. Historical requests were not replayed.' }
+ $json; exit 0
+}
 if ($p.action -eq 'install-target') { [void](Invoke-Node @($s.entry,'--install-startup','--runtime-root',$Root,'--env',$s.env)); [void](Assert-TargetTask); 'null'; exit 0 }
 if ($p.action -eq 'start-target') { [void](Assert-TargetTask); Start-ScheduledTask -TaskName $s.taskName; 'null'; exit 0 }
 if ($p.action -eq 'observe-target') { Wait-Healthy $true | ConvertTo-Json -Compress; exit 0 }

@@ -5,7 +5,9 @@ import {runAdminStore} from './admin-store.ts';
 import {loadStartupEnvironmentOffThread} from './environment.ts';
 import {boundedAdminRead,decodeAdminText,updateAdminEnvironment,verifyInstallInventory} from './admin-files.ts';
 import {discoverRuntimePathInputs} from '../runtime/runtime-paths/discovery.ts';
-import {resolveRuntimePaths,resolveRuntimeStorePaths} from '../runtime/runtime-paths/resolve.ts';
+import {resolveRuntimePaths,resolveRuntimeStorePaths,resolveRuntimeStatePaths} from '../runtime/runtime-paths/resolve.ts';
+import {rehearseMirrorMigration} from './mirror-rehearsal.ts';
+import {legacyMirrorPolicy} from './legacy-mirror-policy.ts';
 import {OwnedWorkerSlot} from '../runtime/owned-worker-slot.ts';
 import {acquireRuntimePlatform} from '../runtime/runtime-platform.ts';
 import {snapshotCutoverStore} from '../store/cutover-backup.ts';
@@ -30,12 +32,18 @@ export async function runAdmin(argv:readonly string[],environment:ReadonlyMap<st
  if(args.command==='configure-install'){await updateAdminEnvironment(root,{CODEX_HOME:args.required('--codex-home'),...(args.value('--codex-exe')===undefined?{}:{CODEX_EXE:args.required('--codex-exe')})});return 'Configured installation environment; existing unrelated settings preserved.';}
  if(args.command==='setup-discord')return setupDiscord(args,root,signal);
  if(args.command==='verify-plugin-inventory')return 'Verified Codex plugin inventory: '+await verifyInstallInventory(root,resolve(root,args.required('--marketplace-inventory')),resolve(root,args.required('--plugin-inventory')),resolve(root,args.required('--plugin-manifest')),args.value('--marketplace-name')??'codex-discord-remote',args.value('--plugin-id')??'codex-discord-remote@codex-discord-remote');
- const envPath=args.command==='migrate-mirror-cursors'&&args.value('--env')!==undefined?resolve(root,args.required('--env')):join(root,'.env');
+ const envPath=['migrate-mirror-cursors','rehearse-mirror-migration'].includes(args.command)&&args.value('--env')!==undefined?resolve(root,args.required('--env')):join(root,'.env');
  const env=Object.fromEntries(await loadStartupEnvironmentOffThread(environment,envPath,'',signal));if(args.value('--codex-exe')!==undefined)env.CODEX_EXE=args.required('--codex-exe');if(args.command==='install-plugin'&&args.value('--codex-home')!==undefined)env.CODEX_HOME=args.required('--codex-home');
  const store=resolveRuntimeStorePaths(env,root,env.USERPROFILE??env.HOME??null),database=resolve(cwd,store.mirrorDb);
+ if(args.command==='rehearse-mirror-migration'){
+  const state=await resolveRuntimeStatePaths(env,env.USERPROFILE??env.HOME??null);
+  return serializeSerdeValue(await rehearseMirrorMigration(database,resolve(cwd,state.stateDb),signal,undefined,legacyMirrorPolicy(args.value('--legacy-mirror-policy'))));
+ }
  if(args.command==='retire-automatic-reserve'||args.command==='migrate-mirror-cursors'){
+  const policy=legacyMirrorPolicy(args.value('--legacy-mirror-policy'));
+  const state=policy==='rust-preserve'?await resolveRuntimeStatePaths(env,env.USERPROFILE??env.HOME??null):undefined;
   const guard=await acquireRuntimePlatform(await realpath(resolve(cwd,store.root)));try{
-   const backup=await snapshotCutoverStore(database,signal),value=await adminDatabase({path:database,command:args.command,thread:args.value('--thread-id')},signal,args.command==='migrate-mirror-cursors');return serializeSerdeValue({backup,...value});
+   const backup=await snapshotCutoverStore(database,signal),value=await adminDatabase({path:database,command:args.command,thread:args.value('--thread-id'),policy,...(state===undefined?{}:{statePath:resolve(cwd,state.stateDb)})},signal,args.command==='migrate-mirror-cursors');return serializeSerdeValue({backup,...value});
   }finally{await guard.instance.release();}
  }
  if(args.command==='authorize-saved-final'){const request=decodeAdminText(await boundedAdminRead(resolve(root,args.required('--request-file')))),value=await adminDatabase({path:database,command:args.command,request},signal);return `saved_final_authorized delivery_id=${value.deliveryId} job_id=${value.jobId} (no turn submitted)`;}
