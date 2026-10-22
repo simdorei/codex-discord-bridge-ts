@@ -73,6 +73,17 @@ explicitly migrate existing cursors before enabling `DISCORD_SESSION_MIRROR=1`:
 codex-discord-bridge --admin migrate-mirror-cursors --repo-root C:\codex-discord
 ```
 
+Legacy NULL turn contexts (pre-upgrade Python/Rust rows) are recovered from the
+already-consumed source prefix. Existing text contexts, offsets and timestamps
+are preserved. Recovery uses bounded strict UTF-8 reads (64 KiB chunks, 8 MiB
+per line), a shared 25-second worker budget and the existing full-prefix verifier.
+Missing/changed sources, NULL with an existing TS anchor, and invalid or oversized
+contexts remain held. No historical messages are replayed and no files or rows
+are silently discarded. A held cutover retains its migration report in
+`.cdr-ts-migration-report.json`; the cutover journal records the failed phase even
+after rollback. Earlier successful per-row migrations are retained and repeat
+migration verifies them rather than replaying work.
+
 This command acquires runtime exclusion, backs up the store and preserves each
 cursor and turn. Changed/uncertain sources are reported as held. It does not
 replay old requests or assert that historical messages were delivered.
@@ -244,3 +255,70 @@ The experimental persistent-store receiver is not selected by installation;
 its negative probes are not a throughput qualification. See
 [the migration report](https://github.com/simdorei/codex-discord-bridge-ts/blob/codex/ts-npm-windows-20261018/docs/npm-windows-migration-checkpoint-20261018.md)
 for the implementation matrix and verification evidence.
+
+### Migration rehearsal before source shutdown
+
+`--cutover-from-rust --dry-run` and real cutover now run the same rehearsal
+before journal creation or any source shutdown preparation. A fatal held row, worker
+error, timeout, or cleanup failure leaves service control untouched. Existing
+cutover journals still require inspection/recovery; a preview does not clear them.
+
+For standalone diagnosis while Rust remains running:
+
+```powershell
+node bin/codex-discord-bridge.mjs --admin rehearse-mirror-migration --repo-root C:/path/to/runtime --env C:/path/to/runtime/.env
+```
+
+The command retains a consistent source backup, migrates a separate working copy,
+and removes confirmed working artifacts after workers exit. An uncertain outcome
+retains its work directory for inspection. No source runtime lock is acquired and
+no source cursor is changed. Cutover stores the result in
+`.cdr-ts-rehearsal-report.json`; the standalone command prints JSON. Inspect
+`ready`, not just the command exit code: a completed diagnosis can report holds.
+
+`ArchivedRelocatedCandidate` means state metadata points at an existing archived
+file; it does not establish file identity or authorize moving the cursor.
+`MissingState` means a completed state lookup found no thread; query errors are
+reported separately. `NonRecordBoundary` identifies a saved position inside a
+record. LF alignment alone is not readiness. In the default `strict` policy all
+unresolved rows block cutover. A successful preview never replaces the checks
+during actual migration.
+
+An explicitly selected `--legacy-mirror-policy rust-preserve` permits the same
+whole-service availability as Rust while retaining specific legacy mirror holds:
+
+```powershell
+node bin/codex-discord-bridge.mjs --cutover-from-rust --runtime-root C:/path/to/runtime --legacy-mirror-policy rust-preserve --dry-run
+```
+
+The same option is supported by the rehearsal and migration admin commands.
+Eligible unmapped archived/orphan offsets are reported as `inactivePreserved`;
+active mapped same-path non-LF offsets without TS anchors/intents are reported
+as `deferred`. Their paths, offsets and contexts remain unchanged. Deferred
+mirrors remain unavailable until explicit reconciliation, while normal mirrors
+and queue processing continue. No LF/EOF reset, path substitution, deletion or
+historical replay is authorized. A preserved unowned held ingress with no live
+work or undelivered output remains inert and is counted separately.
+
+Inspect `status: ReadyWithDeferredMirrors`, `migration.deferred`,
+`migration.inactivePreserved` and `migration.dormantHeldIngress`. This is an
+operational cutover result, not full mirror recovery or delivery verification.
+The policy and actual migration evidence persist in the cutover journal.
+
+The opted-in policy also recognizes exact `.jsonl.zst` candidates when the plain
+source is absent. Archived, unmapped relocation candidates still require the
+existing inactive-work checks. Active compressed sources and narrowly identified
+forward legacy-baseline binding conflicts receive a durable, mirror-only hold.
+Their cursor rows and existing anchors are never reset, rewritten or removed.
+The four-byte compressed header is diagnostic only; it does not verify history.
+
+Durable holds block startup recovery and polling before rollout reads, survive
+plain-file materialization and process restart, and keep their original audit
+evidence after a failed cutover and Rust progress. This release has no automatic
+or manual hold-release/rebinding command. Releasing one requires a separately
+reviewed reconciliation. Ordinary commands and queued turns remain independent.
+
+Missing required data, invalid metadata/schema, pending startup intents, other
+TS conflicts, timeouts and uncertain worker results remain fatal. Inactive
+targets with pending work cannot be preserved as inactive. Classification runs
+again after source shutdown; runtime polling gains no extra history scan.
